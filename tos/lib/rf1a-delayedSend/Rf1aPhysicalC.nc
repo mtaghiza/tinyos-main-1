@@ -47,6 +47,7 @@ generic configuration Rf1aPhysicalC () {
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
     interface DelayedSend;
+    interface Rf1aCoreInterrupt;
   }
   uses {
     interface Rf1aTransmitFragment;
@@ -67,6 +68,7 @@ generic configuration Rf1aPhysicalC () {
   Rf1aPhysicalMetadata = Rf1aC;
   Rf1aStatus = Rf1aC;
   DelayedSend = Rf1aC.DelayedSend[CLIENT];
+  Rf1aCoreInterrupt = Rf1aC.Rf1aCoreInterrupt[CLIENT];
 }
 
 /* 

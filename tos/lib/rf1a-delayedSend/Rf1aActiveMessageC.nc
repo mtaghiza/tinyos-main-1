@@ -61,6 +61,7 @@ configuration Rf1aActiveMessageC {
     interface Rf1aStatus;
 
     interface DelayedSend[am_id_t id];
+    interface Rf1aCoreInterrupt;
   }
   uses interface Rf1aConfigure;
 }
@@ -91,6 +92,8 @@ implementation {
   HplMsp430Rf1aIf = PhysicalC;
   Rf1aPhysical = PhysicalC;
   Rf1aStatus = PhysicalC;
+
+  Rf1aCoreInterrupt = PhysicalC;
 
   //wire through so that user can provide a different RF1A
   //configuration if desired. The bottom of the stack has a default

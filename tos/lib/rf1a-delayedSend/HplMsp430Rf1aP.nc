@@ -60,6 +60,7 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Rf1aStatus;
     interface Rf1aPhysicalMetadata;
     interface DelayedSend[uint8_t client];
+    interface Rf1aCoreInterrupt[uint8_t client];
   }
   uses {
     interface ArbiterInfo;
@@ -1439,6 +1440,10 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.coreInterrupt[uint8_t client] (uint16_t iv)
   {
+    signal Rf1aCoreInterrupt.interrupt[call ArbiterInfo.userId()](iv);
+  }
+
+  default async event void Rf1aCoreInterrupt.interrupt[uint8_t client](uint16_t iv){
   }
       
   default async event void Rf1aPhysical.receiveStarted[uint8_t client] (unsigned int length) { }

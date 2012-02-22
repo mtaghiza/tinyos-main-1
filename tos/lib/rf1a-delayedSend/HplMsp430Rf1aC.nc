@@ -55,6 +55,7 @@ generic configuration HplMsp430Rf1aC (
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
     interface DelayedSend[uint8_t client];
+    interface Rf1aCoreInterrupt[uint8_t client];
   }
   uses {
     interface Rf1aConfigure[uint8_t client];
@@ -85,6 +86,7 @@ generic configuration HplMsp430Rf1aC (
   Rf1aTransmitFragment = HplRf1aP;
   Rf1aStatus = HplRf1aP;
   DelayedSend = HplRf1aP;
+  Rf1aCoreInterrupt = HplRf1aP;
 
   //DC: added for timing debug
   //components HplMsp430GeneralIOC;
