@@ -38,5 +38,5 @@ rssiPlot <- function(dataFile, pdfOutput='', pngOutput='', maS=1,
   if(pngOutput != ''){
     garbage<-dev.off()
   }
-
+  rssi
 }

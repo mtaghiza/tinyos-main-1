@@ -307,7 +307,7 @@ module TestP{
       printf("RX ");
       #ifdef QUIET
       printf("%d ", TOS_NODE_ID);
-      printf("%x ", settings.hgm);
+      printf("%x ", settings.hasFe);
       printf("%d ", call CC2420Packet.getRssi(msg_) - 45);
       printf("%d ", call CC2420Packet.getLqi(msg_));
       printf("%x ", HAS_FE);
