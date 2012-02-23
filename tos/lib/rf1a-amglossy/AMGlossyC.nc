@@ -16,7 +16,9 @@ generic configuration AMGlossyC(am_id_t AMId){
   components new AMGlossyP();
   AMGlossyP.DelayedSend -> DelayedAMSenderC.DelayedSend;
   AMGlossyP.SubAMSend -> DelayedAMSenderC.AMSend;
+  AMGlossyP.SendNotifier -> DelayedAMSenderC.SendNotifier;
   AMGlossyP.SubReceive -> AMReceiverC;
+  AMGlossyP.SubAMPacket -> Rf1aActiveMessageC;
   AMGlossyP.Alarm -> AlarmMicro16C;
   
   //TODO: if there are multiple AMGlossyC's, they'll all be wired to the

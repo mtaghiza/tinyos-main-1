@@ -40,38 +40,53 @@ typedef struct msp430_usci_config_t {
 #define TOS_DEFAULT_BAUDRATE 115200
 #endif /* TOS_DEFAULT_BAUDRATE */
 
-msp430_usci_config_t msp430_usci_uart_default_config = {
-  /* N81 UART mode driven by SMCLK */
-  ctl0 : 0,
-  ctl1: UCSSEL__SMCLK,
-
-#if 9600 == TOS_DEFAULT_BAUDRATE
-  /* SLAU259 Table 16-4 2^20Hz 9600: UBR=109, BRS=2, BRF=0 */
-  brw : 109, // 9600
-  mctl : UCBRF_0 + UCBRS_2
-#elif 19200 == TOS_DEFAULT_BAUDRATE
-  /* SLAU259 Table 16-4 2^20Hz 19200: UBR=54, BRS=2, BRF=0 */
-  brw : 54, // 19200
-  mctl : UCBRF_0 + UCBRS_2
-#elif 38400 == TOS_DEFAULT_BAUDRATE
-  /* SLAU259 Table 16-4 2^20Hz 38400: UBR=27, BRS=2, BRF=0 */
-  brw : 27, // 38400
-  mctl : UCBRF_0 + UCBRS_2
-#elif 57600 == TOS_DEFAULT_BAUDRATE
-  /* SLAU259 Table 16-4 2^20Hz 57600: UBR=18, BRS=1, BRF=0 */
-  brw : 18, // 57600
-  mctl : UCBRF_0 + UCBRS_1
-#elif 115200 == TOS_DEFAULT_BAUDRATE
-  /* SLAU259 Table 16-4 2^20Hz 115200: UBR=9, BRS=1, BRF=0 */
-  br1 : 0, // 115200
-  br0 : 9, // 115200
-  mctl : UCBRF_0 + UCBRS_1
+#ifdef XT2_SMCLK
+  #if 115200 == TOS_DEFAULT_BAUDRATE
+  #else
+  #warning UART settings only defined for 115200 baud with xt2 smclk, using those
+  #endif
+  msp430_usci_config_t msp430_usci_uart_default_config = {
+    ctl0 : 0,
+    ctl1: UCSSEL__SMCLK,
+    br1 : 0,
+    br0 : 3,
+    mctl : UCBRF_8 + UCBRS_4 + UCOS16
+  };
 #else
-#warning Unrecognized value for TOS_DEFAULT_BAUDRATE, using 115200
-  brw : 9, // 115200
-  mctl : UCBRF_0 + UCBRS_1
+  
+  msp430_usci_config_t msp430_usci_uart_default_config = {
+    /* N81 UART mode driven by SMCLK */
+    ctl0 : 0,
+    ctl1: UCSSEL__SMCLK,
+  
+  #if 9600 == TOS_DEFAULT_BAUDRATE
+    /* SLAU259 Table 16-4 2^20Hz 9600: UBR=109, BRS=2, BRF=0 */
+    brw : 109, // 9600
+    mctl : UCBRF_0 + UCBRS_2
+  #elif 19200 == TOS_DEFAULT_BAUDRATE
+    /* SLAU259 Table 16-4 2^20Hz 19200: UBR=54, BRS=2, BRF=0 */
+    brw : 54, // 19200
+    mctl : UCBRF_0 + UCBRS_2
+  #elif 38400 == TOS_DEFAULT_BAUDRATE
+    /* SLAU259 Table 16-4 2^20Hz 38400: UBR=27, BRS=2, BRF=0 */
+    brw : 27, // 38400
+    mctl : UCBRF_0 + UCBRS_2
+  #elif 57600 == TOS_DEFAULT_BAUDRATE
+    /* SLAU259 Table 16-4 2^20Hz 57600: UBR=18, BRS=1, BRF=0 */
+    brw : 18, // 57600
+    mctl : UCBRF_0 + UCBRS_1
+  #elif 115200 == TOS_DEFAULT_BAUDRATE
+    /* SLAU259 Table 16-4 2^20Hz 115200: UBR=9, BRS=1, BRF=0 */
+    br1 : 0, // 115200
+    br0 : 9, // 115200
+    mctl : UCBRF_0 + UCBRS_1
+  #else
+  #warning Unrecognized value for TOS_DEFAULT_BAUDRATE, using 115200
+    brw : 9, // 115200
+    mctl : UCBRF_0 + UCBRS_1
+  #endif
+  };
 #endif
-};
 
 msp430_usci_config_t msp430_usci_spi_default_config = {
   /* Inactive high MSB-first 8-bit 3-pin master driven by SMCLK */

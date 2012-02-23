@@ -17,6 +17,23 @@ configuration TestSenderAppC {
   components ActiveMessageC;
   TestP.SplitControl -> ActiveMessageC;
 
+  components Rf1aActiveMessageC;
+  TestP.Rf1aPhysical -> Rf1aActiveMessageC;
+  TestP.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
+
+  //Switch at compile time if desired
+  components GlossyRf1aSettingsC as Rf1aSettings;
+
+  Rf1aActiveMessageC.Rf1aConfigure -> Rf1aSettings;
+
   components LedsC;
   TestP.Leds -> LedsC;
+
+  components PlatformSerialC;
+  TestP.SerialControl -> PlatformSerialC;
+  TestP.UartStream -> PlatformSerialC;
+  
+  components Rf1aDumpConfigC;
+  TestP.Rf1aConfigure -> Rf1aSettings;
+  TestP.Rf1aDumpConfig -> Rf1aDumpConfigC;
 }

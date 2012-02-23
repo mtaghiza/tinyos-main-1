@@ -74,7 +74,13 @@ module Msp430XV2ClockControlP @safe() {
       #ifndef XCAP_SETTING
       #define XCAP_SETTING 0
       #endif 
-      UCSCTL6 = (UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2);
+
+      #ifdef XT2_SMCLK
+      #warning Using XT2 for SMCLK
+      UCSCTL6 = (((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2))) & ~XT2OFF;
+      #else
+      UCSCTL6 = ((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2));
+      #endif
 
       //if an external crystal is available, then we'll use that for
       //  ACLK and for FLLREF. We have to wait until it stabilizes.
@@ -181,6 +187,18 @@ module Msp430XV2ClockControlP @safe() {
 
       /* Use XT1 for ACLK, and DCOCLKDIV for MCLK and SMCLK */
       //if XT1 is unavailble, then it will switch over to REFOCLK
+
+
+      #ifdef XT2_SMCLK
+      UCSCTL4 = SELA__XT1CLK | SELS__XT2CLK | SELM__DCOCLKDIV;;
+
+      /* DIVPA routes ACLK to external pin, undivided
+       * DIVA uses ACLK at 2^15 Hz, undivided
+       * DIVS (SMCLK) uses XT2CLK / 4 N to produce ~6.5 MHz
+       * DIVM (MCLK) uses DCOCLKDIV to produce DCO/2, undivided
+       */
+      UCSCTL5 = DIVPA__1 | DIVA__1 | DIVS__4 | DIVM__1;
+      #else
       UCSCTL4 = SELA__XT1CLK | SELS__DCOCLKDIV | SELM__DCOCLKDIV;;
 
       /* DIVPA routes ACLK to external pin, undivided
@@ -189,6 +207,7 @@ module Msp430XV2ClockControlP @safe() {
        * DIVM (MCLK) uses DCOCLKDIV to produce DCO/2, undivided
        */
       UCSCTL5 = DIVPA__1 | DIVA__1 | divs | DIVM__1;
+      #endif
 
     }
   }
@@ -198,7 +217,12 @@ module Msp430XV2ClockControlP @safe() {
     atomic {
       TA0CTL = TASSEL__ACLK | TACLR | MC__STOP | TAIE;
       TA0R = 0;
+      #ifdef XT2_SMCLK
+      //Divide 6.5 MHz by 4 to get TA 1 into the neighborhood of 1 MHz
+      TA1CTL = TASSEL__SMCLK | ID__4 | TACLR | MC__STOP | TAIE;
+      #else
       TA1CTL = TASSEL__SMCLK | TACLR | MC__STOP | TAIE;
+      #endif
       TA1R = 0;
     }
   }

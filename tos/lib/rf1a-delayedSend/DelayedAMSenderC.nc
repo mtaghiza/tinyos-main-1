@@ -51,6 +51,7 @@ generic configuration DelayedAMSenderC(am_id_t AMId) {
     interface AMPacket;
     interface PacketAcknowledgements as Acks;
     interface DelayedSend;
+    interface SendNotifier;
   }
 }
 
@@ -63,4 +64,5 @@ implementation {
 
   components Rf1aActiveMessageC;
   DelayedSend = Rf1aActiveMessageC.DelayedSend[AMId];
+  SendNotifier = Rf1aActiveMessageC.SendNotifier[AMId];
 }

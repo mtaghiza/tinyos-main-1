@@ -12,8 +12,9 @@ typedef nx_struct am_glossy_header_t {
   nx_uint16_t sn;
 } am_glossy_header_t;
 
-//10 ms
-#define RETX_DELAY 10240
+#ifndef RETX_DELAY
 //note that this is 64 ms at max in 16 bits (long enough for us?)
+#define RETX_DELAY 65535UL
+#endif
 
 #endif

@@ -43,6 +43,7 @@ generic configuration Msp430UsciUartA0C() {
     interface UartByte;
     interface Msp430UsciError;
   }
+  //TODO: uses interface Msp430UsciConfigure;
 } implementation {
   enum {
     CLIENT_ID = unique(MSP430_USCI_A0_RESOURCE),
@@ -57,4 +58,5 @@ generic configuration Msp430UsciUartA0C() {
   Msp430UsciError = UartC.Msp430UsciError[CLIENT_ID];
 
   UsciC.ResourceConfigure[CLIENT_ID] -> UartC.ResourceConfigure[CLIENT_ID];
+  //TODO: UsciC.Msp430UsciConfigure[CLIENT_ID] = Msp430UsciConfigure;
 }
