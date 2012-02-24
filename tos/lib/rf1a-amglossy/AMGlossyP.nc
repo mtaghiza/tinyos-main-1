@@ -34,52 +34,6 @@ generic module AMGlossyP(){
     S_SENDING,
  } ;
 
- void setSMCLKXT2(bool on){
-   uint8_t divs;
-   if (on){
-     UCSCTL4 = SELA__XT1CLK | SELS__XT2CLK | SELM__DCOCLKDIV;;
-     UCSCTL5 = DIVPA__1 | DIVA__1 | DIVS__16 | DIVM__1;
-     UCSCTL6 &= ~XT2OFF;
-   } else {
-     UCSCTL4 = SELA__XT1CLK | SELS__DCOCLKDIV | SELM__DCOCLKDIV;;
-     switch(MSP430XV2_DCO_CONFIG){
-       case MSP430XV2_DCO_2MHz_RSEL2:
-       default:
-         divs = DIVS__1;
-         break;
-       case MSP430XV2_DCO_4MHz_RSEL3:
-         divs = DIVS__2;
-         break;
-       case MSP430XV2_DCO_8MHz_RSEL3:
-         divs = DIVS__4;
-         break;
-       case MSP430XV2_DCO_8MHz_RSEL4:
-         divs = DIVS__4;
-         break;
-       case MSP430XV2_DCO_16MHz_RSEL4:
-         divs = DIVS__8;
-         break;
-       case MSP430XV2_DCO_16MHz_RSEL5:
-         divs = DIVS__8;
-         break;
-       case MSP430XV2_DCO_32MHz_RSEL5:
-         divs = DIVS__16;
-         break;
-       case MSP430XV2_DCO_32MHz_RSEL6:
-         divs = DIVS__16;
-         break;
-       case MSP430XV2_DCO_64MHz_RSEL6:
-         divs = DIVS__32;
-         break;
-       case MSP430XV2_DCO_64MHz_RSEL7:
-         divs = DIVS__32;
-         break;
-     }
-   }
-   UCSCTL5 = DIVPA__1 | DIVA__1 | divs | DIVM__1;
-   UCSCTL6 |= XT2OFF;
- }
-
  void printMsg(message_t* msg);
 
  const char* decodeState(uint8_t state_){
@@ -273,6 +227,7 @@ generic module AMGlossyP(){
       //done forwarding
     }
     state = S_IDLE;
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
   }
 
   command uint8_t AMSend.maxPayloadLength(){
