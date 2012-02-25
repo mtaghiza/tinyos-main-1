@@ -1,6 +1,6 @@
 #include "Rf1aConfigure.h"
 
-module GlossyRf1aSettingsC{
+module GlossyRf1aSettings500KC{
   provides interface Rf1aConfigure;
 } implementation{
   const rf1a_config_t cfg = {
@@ -26,7 +26,7 @@ module GlossyRf1aSettingsC{
     freq2:   0x23,   // FREQ2     Frequency control word, high byte.
     freq1:   0x31,   // FREQ1     Frequency control word, middle byte.
     freq0:   0x3B,   // FREQ0     Frequency control word, low byte.
-    mdmcfg4: 0x2D,   // MDMCFG4   Modem configuration.
+    mdmcfg4: 0x2E,   // MDMCFG4   Modem configuration.
     mdmcfg3: 0x3B,   // MDMCFG3   Modem configuration.
     mdmcfg2: 0x07,   // MDMCFG2   Modem configuration.
     mdmcfg1: 0x22,   // MDMCFG1   Modem configuration.

@@ -22,7 +22,18 @@ configuration TestSenderAppC {
   TestP.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
 
   //Switch at compile time if desired
-  components GlossyRf1aSettingsC as Rf1aSettings;
+  #if RF1A_BAUD == 500000
+  components GlossyRf1aSettings500KC as Rf1aSettings;
+  #elif RF1A_BAUD == 250000 
+  components GlossyRf1aSettings250KC as Rf1aSettings;
+  #elif RF1A_BAUD == 125000
+  components GlossyRf1aSettings125KC as Rf1aSettings;
+  #elif RF1A_BAUD == 1200
+  components GlossyRf1aSettings1P2KC as Rf1aSettings;
+  #else 
+  #warning RF1A_BAUD not defined or recognized, using 250K
+  components GlossyRf1aSettings250KC as Rf1aSettings;
+  #endif
 
   Rf1aActiveMessageC.Rf1aConfigure -> Rf1aSettings;
 
