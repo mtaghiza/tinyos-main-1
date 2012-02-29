@@ -123,7 +123,6 @@ generic module AMGlossyP(){
 
   event message_t* SubReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    P1OUT &= ~BIT1;
     if (state == S_WAIT_RECEIVE){
       message_t* swp = rx_msg;
 //      printf("r\n\r");
@@ -154,17 +153,14 @@ generic module AMGlossyP(){
   }
 
   async event void Alarm.fired(){
-    P1OUT |= BIT2;
     if (state == S_SEND_READY){
       call DelayedSend.completeSend();
       state = S_SENDING;
     } else if(state == S_WAIT_RECEIVE){
-      P1OUT &= ~BIT1;
       state = S_IDLE;
 //      setSMCLKXT2(FALSE);
       printf("RETX expired before packet received\n\r");
     } else {
-      P1OUT &= ~BIT1;
 //      setSMCLKXT2(FALSE);
       printf("%s: Unexpected alarm: %s \n\r", __FUNCTION__,
         decodeState(state));
@@ -172,7 +168,6 @@ generic module AMGlossyP(){
   }
   
   async event void Rf1aPhysical.frameStarted () { 
-    P1OUT |= BIT1;
     if (state == S_IDLE){
 //      setSMCLKXT2(TRUE);
       call Alarm.start(RETX_DELAY);
@@ -183,7 +178,6 @@ generic module AMGlossyP(){
 //      setSMCLKXT2(FALSE);
 //      printf("TX Frame start (cancel)\n\r");
     } else {
-      P1OUT &= ~BIT1;
       call Alarm.stop();
 //      setSMCLKXT2(FALSE);
       printf("Unexpected Frame start: %s\n\r", decodeState(state));
@@ -219,8 +213,6 @@ generic module AMGlossyP(){
   }
 
   event void SubAMSend.sendDone(message_t* msg, error_t error){
-    P1OUT &= ~BIT1;
-    P1OUT &= ~BIT2;
     if (state == S_ORIGIN_SENDING){
       signal AMSend.sendDone(msg, error);
     }else{

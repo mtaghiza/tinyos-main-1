@@ -233,10 +233,16 @@ generic module HplMsp430Rf1aIfP (
       
       RF1AINSTR1B = (addr | RF_REGRD);
       while (buf < b1e) {
+        #ifdef DEBUG_RX
+        P1OUT |= BIT4;
+        #endif
         while (! (RF1AIFCTL1 & RFDOUTIFG)) {
           ; // Wait for the Radio Core to update the RF1ADOUTB reg
         }
         *buf++ = RF1ADOUT1B;
+        #ifdef DEBUG_RX
+        P1OUT &=~BIT4;
+        #endif
       }
       *buf++ = RF1ADOUT0B;
     }

@@ -29,19 +29,10 @@ module TestSenderP {
 
   event void Boot.booted(){
     printf("Test AM Glossy\n\r");
-    P1SEL &= ~(BIT1|BIT2);
-    P1OUT &= ~(BIT1|BIT2);
-    P1DIR |= (BIT1|BIT2);
-    atomic{
-      PMAPPWD = PMAPKEY;
-      PMAPCTL = PMAPRECFG;
-      P1MAP3 = PM_MCLK;
-      P1MAP4 = PM_SMCLK;
-      PMAPPWD = 0x0;
-    }
-    P1SEL |= (BIT3|BIT4);
-    P1DIR |= (BIT3|BIT4);
-
+    P1SEL &= ~(BIT1|BIT2|BIT3|BIT4);
+    P1DIR |= (BIT1|BIT2|BIT3|BIT4);
+    P2SEL &= ~(BIT4);
+    P2DIR |= (BIT4);
     call Rf1aDumpConfig.display(call Rf1aConfigure.getConfiguration());
     call SplitControl.start();
   }
@@ -80,10 +71,16 @@ module TestSenderP {
     }
   }
 
+  uint32_t lastSN;
+  task void reportReceive(){
+    printf("Receive sn: %lu\n\r", lastSN);
+  }
+
   event message_t* Receive.receive(message_t* msg, void* payload,
       uint8_t len){
     test_packet_t* pl = (test_packet_t*)payload; 
-    printf("Receive sn: %lu\n\r", pl->seqNum);
+    lastSN = pl->seqNum;
+    post reportReceive();
     return msg;
   }
  

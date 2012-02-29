@@ -64,11 +64,17 @@ implementation {
     header_t* hp = header(msg);
     uint16_t msgSource = hp->src;
     uint8_t msgDsn = hp->dsn;
+    #ifdef DEBUG_RX_4
+    P2OUT |= BIT4;
+    #endif
     
     if(call KeyValueRecord.hasSeen(msgSource, msgDsn)) {
       return signal DuplicateReceive.receive(msg, payload, len);
     }
     call KeyValueRecord.insert(msgSource, msgDsn);
+    #ifdef DEBUG_RX_4
+    P2OUT &= ~BIT4;
+    #endif
     return signal Receive.receive(msg, payload, len);
   }
   

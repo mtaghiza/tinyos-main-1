@@ -576,7 +576,9 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     bool need_to_write_length = FALSE;
     bool need_signal_ds = FALSE;
-
+    #ifdef DEBUG_TX
+    P1OUT |= BIT4;
+    #endif
     atomic {
       client_ds = call ArbiterInfo.userId();
       result_ds = SUCCESS;
@@ -670,11 +672,17 @@ generic module HplMsp430Rf1aP () @safe() {
         call DelayedSend.completeSend[client_ds]();
       }
      }//atomic
+     #ifdef DEBUG_TX
+     P1OUT &=~BIT4;
+     #endif
    }
 
   async command void DelayedSend.completeSend[uint8_t clientId](){
     //DC should handle error case where clientId != client_ds
     atomic{
+      #ifdef DEBUG_TX
+      P2OUT |= BIT4;
+      #endif
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
       if (wrote_data_ds && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
@@ -687,6 +695,9 @@ generic module HplMsp430Rf1aP () @safe() {
         //call IndicatorPin.set();
         //TODO: ideally, this is the point where we split delayed send
         //(not above). But I don't see how to do this cleanly.
+        #ifdef DEBUG_TX_5
+        P1OUT |= BIT2;
+        #endif
         rc_ds = call Rf1aIf.strobe(RF_STX);
         while ((RF1A_S_TX != (RF1A_S_MASK & rc_ds))
                && (RF1A_S_RX != (RF1A_S_MASK & rc_ds))
@@ -694,16 +705,17 @@ generic module HplMsp430Rf1aP () @safe() {
                && (0 <= --loop_limit)) {
           rc_ds = call Rf1aIf.strobe(RF_SNOP);
         }
+        #ifdef DEBUG_TX_5
+        P1OUT &= ~BIT2;
+        #endif
         //call IndicatorPin.clr();
         if (RF1A_S_TX != (RF1A_S_MASK & rc_ds)) {
           tx_result = ERETRY;
           cancelTransmit_();
         }
       }
-
       /* If we've started transmitting, see if we're done yet. */
       if (TX_S_active <= tx_state) {
-        //TODO: DC used?
         /* If there's no more data to be transmitted, the task is
          * done.  However, there's an end-game: we don't really want
          * to signal sendDone until it's actually in the air.  */
@@ -714,6 +726,9 @@ generic module HplMsp430Rf1aP () @safe() {
             call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
           }
           if (0 == call Rf1aIf.readRegister(TXBYTES)) {
+            #ifdef DEBUG_TX_3
+            P1OUT |= BIT2;
+            #endif
             result_ds = tx_result;
             call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
 
@@ -755,6 +770,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
             tx_state = TX_S_inactive;
             send_done_ds = TRUE;
+            #ifdef DEBUG_TX_3
+            P1OUT &= ~BIT2;
+            #endif
           }
         }
       }
@@ -763,6 +781,9 @@ generic module HplMsp430Rf1aP () @safe() {
     if (need_repost_ds) {
       post sendFragment_task();
     }
+    #ifdef DEBUG_TX
+    P2OUT &= ~BIT4;
+    #endif
     if (send_done_ds) {
       signal Rf1aPhysical.sendDone[client_ds](result_ds);
     }
@@ -787,6 +808,9 @@ generic module HplMsp430Rf1aP () @safe() {
       uint8_t rc;
       bool entered_rx = FALSE;
       register int16_t loop_limit = RADIO_LOOP_LIMIT;
+      #ifdef DEBUG_TX_4
+      P1OUT |= BIT2;
+      #endif
 
       if (target_fstxon) {
         strobe = RF_SFSTXON;
@@ -794,6 +818,9 @@ generic module HplMsp430Rf1aP () @safe() {
       }
 
       rc = call Rf1aIf.strobe(RF_SNOP);
+      #ifdef DEBUG_TX_1
+      P1OUT |= BIT3;
+      #endif
       if (with_cca) {
         /* CCA test is valid only if in RX mode.  If necessary, enter it. */
         if (RF1A_S_RX != (RF1A_S_MASK & rc)) {
@@ -816,6 +843,9 @@ generic module HplMsp430Rf1aP () @safe() {
           rv = ERETRY;
         }
       }
+      #ifdef DEBUG_TX_1
+      P1OUT &= ~BIT3;
+      #endif
 
       if (SUCCESS == rv) {
         /* Enter the appropriate TX mode.  When things settle, the
@@ -843,6 +873,9 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       }
     }
+    #ifdef DEBUG_TX_4
+    P1OUT &= ~BIT2;
+    #endif
     return rv;
   }
 
@@ -868,7 +901,9 @@ generic module HplMsp430Rf1aP () @safe() {
                                                      unsigned int length)
   {
     uint8_t rc;
-
+    #ifdef DEBUG_TX
+    P1OUT |= BIT1;
+    #endif
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
       return EOFF;
@@ -975,6 +1010,9 @@ generic module HplMsp430Rf1aP () @safe() {
       }
     }
     post sendFragment_task();
+    #ifdef DEBUG_TX
+    P1OUT &= ~BIT1;
+    #endif
     return SUCCESS;
   }
 
@@ -1075,6 +1113,9 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     unsigned int avail;
     unsigned int avail2;
+    #ifdef DEBUG_RX_2
+    P1OUT|=BIT2;
+    #endif
 
     avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     avail = ~avail2;
@@ -1082,6 +1123,9 @@ generic module HplMsp430Rf1aP () @safe() {
       avail = avail2;
       avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     }
+    #ifdef DEBUG_RX_2
+    P1OUT&=~BIT2;
+    #endif
     return avail;
   }
 
@@ -1120,6 +1164,9 @@ generic module HplMsp430Rf1aP () @safe() {
     int result;
 
     atomic {
+      #ifdef DEBUG_RX
+      P1OUT |= BIT3;
+      #endif
       do {
         unsigned int need;
         unsigned int consume;
@@ -1133,6 +1180,7 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       
         /* Is there data available?  How much?  If none, stop now. */
+        //~6 uS to check
         avail = receiveCountAvailable_();
         if (0 == avail) {
           break;
@@ -1193,11 +1241,14 @@ generic module HplMsp430Rf1aP () @safe() {
         if (consume > avail) {
           consume = avail;
         }
+        //this is the only readburst we see
+        //~17 uS from start of function to this point, 11 uS of logic
+        //  in this function
+        //~33uS to read data
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, rx_pos, consume);
         rx_pos += consume;
         rx_received += consume;
         avail -= consume;
-
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
           /* If APPEND_STATUS is set, gotta clear out that data. */
@@ -1236,10 +1287,11 @@ generic module HplMsp430Rf1aP () @safe() {
           }
         }
 
+      //11 uS from readBurstRegister above to end of loop
       } while (0);
-
       /* If there's still data available, we'll have to come back,
        * even if we've finished this message. */
+      //~6 uS to check
       need_post = (0 < receiveCountAvailable_());
 
       /* Extract the start of any filled buffer (length was set above) */
@@ -1274,7 +1326,10 @@ generic module HplMsp430Rf1aP () @safe() {
     if (need_post) {
       post receiveData_task();
     }
-
+    #ifdef DEBUG_RX_4
+    P1OUT |= BIT1;
+    #endif
+    //~3 uS from need_post assignment above
     /* Announce the start of a message first, then completion of the
      * message, and finally that we need another receive buffer (if
      * any of these events happen to occur at the same time). */
@@ -1287,6 +1342,10 @@ generic module HplMsp430Rf1aP () @safe() {
     if (signal_filled) {
       signal Rf1aPhysical.receiveBufferFilled[client](start, received);
     }
+    //~7 uS from start of signal checks
+    #ifdef DEBUG_RX
+    P1OUT &= ~BIT3;
+    #endif
   }
       
   
@@ -1294,12 +1353,38 @@ generic module HplMsp430Rf1aP () @safe() {
                                                                        unsigned int length,
                                                                        bool single_use)
   {
+    #ifdef DEBUG_RX_4
+    P1OUT &= ~BIT1;
+    #endif
+    #ifdef DEBUG_RX
+    P2OUT |= BIT4;
+    #endif
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT |= BIT1;
+    #endif
+
+
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT |= BIT2;
+    #endif
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
+      #ifdef DEBUG_RX
+      P2OUT &= ~BIT4;
+      #endif
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT1;
+      #endif
       return EOFF;
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
+      #ifdef DEBUG_RX
+      P2OUT &= ~BIT4;
+      #endif
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT1;
+      #endif
       return EBUSY;
     }
     /* Buffer and length must be realistic; if either bogus, clear them both
@@ -1308,10 +1393,22 @@ generic module HplMsp430Rf1aP () @safe() {
       buffer = 0;
       length = 0;
     }
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT &= ~BIT2;
+    #endif
     atomic {
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT3;
+      #endif
       /* If there's a buffer in play and we're actively receiving into
        * it, reject the attempt. */
       if (rx_pos && (RX_S_listening < rx_state)) {
+        #ifdef DEBUG_RX
+        P2OUT &= ~BIT4;
+        #endif
+        #ifdef DEBUG_SET_RX_BUFFER
+        P1OUT |= BIT1;
+        #endif
         return EBUSY;
       }
 
@@ -1320,6 +1417,9 @@ generic module HplMsp430Rf1aP () @safe() {
       rx_start = 0;
       rx_single_use = single_use;
 
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT4;
+      #endif
       if (0 == rx_pos) {
         // Return to IDLE after RX and TX.
         call Rf1aIf.writeRegister(MCSM1, 0xf0 & call Rf1aIf.readRegister(MCSM1));
@@ -1338,6 +1438,9 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       } else if (RX_S_inactive == rx_state) {
         uint8_t off_mode;
+        #ifdef DEBUG_SET_RX_BUFFER
+        P2OUT |= BIT4;
+        #endif
 
         if (rx_single_use) {
           // Return to IDLE after RX, RX after TX
@@ -1348,8 +1451,21 @@ generic module HplMsp430Rf1aP () @safe() {
         }
         call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf0 & call Rf1aIf.readRegister(MCSM1)));
         startReception_();
+        #ifdef DEBUG_SET_RX_BUFFER
+        P2OUT &= ~BIT4;
+        #endif
       }
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT &= ~BIT3;
+      P1OUT &= ~BIT4;
+      #endif
     }
+    #ifdef DEBUG_RX
+    P2OUT &= ~BIT4;
+    #endif
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT &= ~BIT1;
+    #endif
     return SUCCESS;
   }
 
@@ -1377,6 +1493,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
   {
+    #ifdef DEBUG_RX_1
+    P1OUT |= BIT2;
+    #endif
     if (RX_S_inactive < rx_state) {
       /* If we have data, and the state doesn't reflect that we're
        * receiving, bump the state so we know to fast-exit out of
@@ -1387,6 +1506,9 @@ generic module HplMsp430Rf1aP () @safe() {
       }
       post receiveData_task();
     }
+    #ifdef DEBUG_RX_1
+    P1OUT &= ~BIT2;
+    #endif
   }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
@@ -1425,7 +1547,19 @@ generic module HplMsp430Rf1aP () @safe() {
   }
   async event void Rf1aInterrupts.syncWordEvent[uint8_t client] ()
   {
+    #ifdef DEBUG_RX
+    P1OUT |= BIT1;
+    #endif
+    #ifdef DEBUG_TX_2
+    P1OUT |= BIT3;
+    #endif
     signal Rf1aPhysical.frameStarted[call ArbiterInfo.userId()]();
+    #ifdef DEBUG_TX_2
+    P1OUT &= ~BIT3;
+    #endif
+    #ifdef DEBUG_RX
+    P1OUT &= ~BIT1;
+    #endif
   }
 
   async event void Rf1aInterrupts.clearChannel[uint8_t client] ()

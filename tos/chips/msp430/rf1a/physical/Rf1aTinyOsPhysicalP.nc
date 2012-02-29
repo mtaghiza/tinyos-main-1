@@ -332,7 +332,9 @@ generic module Rf1aTinyOsPhysicalP() {
     unsigned int payload_length;
     message_t* mp;
     uint8_t frame_type;
-
+    #ifdef DEBUG_RX_4
+    P1OUT |= BIT3;
+    #endif 
     atomic {
       mp = rx_message;
       rx_message = 0;
@@ -359,6 +361,10 @@ generic module Rf1aTinyOsPhysicalP() {
       printf("\r\n");
     }
 #endif
+    ;
+    #ifdef DEBUG_RX_4
+    P1OUT &= ~BIT3;
+    #endif 
     setReceiveBuffer(signal Receive.receive[frame_type](mp, mp->data, payload_length));
   }
 
@@ -366,6 +372,9 @@ generic module Rf1aTinyOsPhysicalP() {
                                              unsigned int count,
                                              int result)
   {
+    #ifdef DEBUG_RX_4
+    P1OUT|=BIT2;
+    #endif
     if (SUCCESS == result) {
       /* Store the message size and result.  We can ignore the buffer,
        * since we know it went into the current rx_message */
@@ -380,6 +389,9 @@ generic module Rf1aTinyOsPhysicalP() {
        * current buffer for the next message. */
       setReceiveBuffer(0);
     }
+    #ifdef DEBUG_RX_4
+    P1OUT&=~BIT2;
+    #endif
   }
 
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,

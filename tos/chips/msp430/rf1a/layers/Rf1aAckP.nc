@@ -355,7 +355,9 @@ generic module Rf1aAckP () {
   {
     phy_header_t* hp = header(msg);
     ieee154_fcf_t* fcfp = fcf(msg);
-
+    #ifdef DEBUG_RX_4
+    P1OUT |=BIT4;
+    #endif
     if (fcfp->ack_request) {
       /* Need to transmit an Ack, though we won't if we're still
        * waiting for one to finish transmitting. */
@@ -384,6 +386,9 @@ generic module Rf1aAckP () {
         }
       }
     }
+    #ifdef DEBUG_RX_4
+    P1OUT &= ~BIT4;
+    #endif
     return signal Receive.receive(msg, payload, len);
   }
 

@@ -1,5 +1,7 @@
 // $Id: SchedulerBasicP.nc,v 1.11 2010-06-29 22:07:56 scipio Exp $
-
+#ifdef DEBUG_TASK
+#include <stdio.h>
+#endif
 /*
  * Copyright (c) 2000-2003 The Regents of the University  of California.  
  * All rights reserved.
@@ -159,7 +161,15 @@ implementation
 	  call McuSleep.sleep();
 	}
       }
+      #ifdef DEBUG_TASK
+      P1OUT |= BIT3;
+      //printf("T%d\n\r", nextTask);
+      #endif
       signal TaskBasic.runTask[nextTask]();
+      #ifdef DEBUG_TASK
+      P1OUT &= ~BIT3;
+      #endif
+
     }
   }
 
