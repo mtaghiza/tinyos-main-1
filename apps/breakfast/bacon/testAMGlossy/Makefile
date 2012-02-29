@@ -9,6 +9,7 @@ RETX_DELAY?=65535UL
 RF1A_BAUD?=125000
 
 PFLAGS += -I$(TOSDIR)/lib/serialprintf
+PFLAGS += -I$(TOSDIR)/lib/rf1a-cx
 PFLAGS += -I$(TOSDIR)/lib/rf1a-delayedSend
 PFLAGS += -I$(TOSDIR)/lib/rf1a-amglossy
 CFLAGS += -I../concxmit-redux
@@ -35,6 +36,8 @@ CFLAGS+=-DRF1A_BAUD=$(RF1A_BAUD)
 
 CFLAGS+=-DDEBUG_TX
 
+#CFLAGS+=-DDEBUG_CCA
+
 ##P1.3
 ##spinforvalid
 #CFLAGS+=-DDEBUG_TX_1
@@ -49,6 +52,6 @@ CFLAGS+=-DDEBUG_TX_2
 ##startTransmission_
 #CFLAGS+=-DDEBUG_TX_4
 ##completeSend.STX
-CFLAGS+=-DDEBUG_TX_5
+#CFLAGS+=-DDEBUG_TX_5
 
 include $(MAKERULES)

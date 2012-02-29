@@ -201,12 +201,13 @@ generic module AMGlossyP(){
       hdr->src = call SubAMPacket.address();
       hdr->dest = addr;
       hdr->sn = mySn++;
+      state = S_ORIGIN_SEND_START;
       error = call SubAMSend.send(AM_BROADCAST_ADDR, msg, len +
         sizeof(am_glossy_header_t)); 
       lastSrc = hdr->src;
       lastSn = hdr->sn;
-      if (error == SUCCESS){
-        state = S_ORIGIN_SEND_START;
+      if (error != SUCCESS){
+        printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
       }
       return error;
     }
