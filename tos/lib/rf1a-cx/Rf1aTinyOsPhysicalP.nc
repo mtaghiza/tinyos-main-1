@@ -50,6 +50,8 @@ generic module Rf1aTinyOsPhysicalP() {
     interface Packet;
     interface Rf1aPacket;
   }
+  uses interface Get<bool> as GetCCACheck;
+  uses interface Get<bool> as GetFastReTX;
 } implementation {
 
   /** Bare physical header structure */
@@ -234,7 +236,8 @@ generic module Rf1aTinyOsPhysicalP() {
 
       /* Tricksy: limit the received length so it stops at the end of
        * the message_t structure. */
-      rv = call Rf1aPhysical.setReceiveBuffer(hp, ((uint8_t*)(rx_message + 1)) - hp, TRUE, FALSE);
+      rv = call Rf1aPhysical.setReceiveBuffer(hp,
+        ((uint8_t*)(rx_message + 1)) - hp, TRUE, call GetFastReTX.get());
 
       /* What do we do if this fails?  Really, it shouldn't: the only
        * way it would is if the radio was actively receiving into an
@@ -282,7 +285,8 @@ generic module Rf1aTinyOsPhysicalP() {
         rv = EBUSY;
       } else {
         fcfp->frame_type = frame_type;
-        rv = call Rf1aPhysical.send(packet_start, packet_length, FALSE);
+        rv = call Rf1aPhysical.send(packet_start, packet_length, call
+          GetCCACheck.get());
         if (SUCCESS == rv) {
           tx_message = msg;
           tx_state = TXS_active;
@@ -408,6 +412,15 @@ generic module Rf1aTinyOsPhysicalP() {
   async event void Rf1aPhysical.frameStarted () { }
   async event void Rf1aPhysical.clearChannel () { }
   async event void Rf1aPhysical.carrierSense () { }
+
+  //Defaults: "normal" behavior that AM stack expects.
+  default command bool GetCCACheck.get(){
+    return TRUE;
+  }
+
+  default command bool GetFastReTX.get(){
+    return FALSE;
+  }
 
 }
 

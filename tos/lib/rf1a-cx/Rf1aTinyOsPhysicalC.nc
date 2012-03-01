@@ -41,8 +41,13 @@
  * structures including the metadata section at a fixed position into
  * the buffer, while those for other frame types may be just large
  * enough to hold the over-the-air payload.
+ * 
+ * modified to optionally pass through the logic to determine whether
+ * to require CCA before TX and whether to switch from RX to FSTXON
+ * immediately (for rapid retransmission).
  *
- * @author Peter A. Bigot <pab@peoplepowerco.com> */
+ * @author Peter A. Bigot <pab@peoplepowerco.com> 
+ * @author Doug Carlson <carlson@cs.jhu.edu> */
 generic configuration Rf1aTinyOsPhysicalC() {
   provides {
     interface SplitControl;
@@ -56,6 +61,8 @@ generic configuration Rf1aTinyOsPhysicalC() {
     interface Packet;
     interface Rf1aPacket;
   }
+  uses interface Get<bool> as GetCCACheck;
+  uses interface Get<bool> as GetFastReTX;
 } implementation {
   
   components new Rf1aTinyOsPhysicalP();
@@ -67,6 +74,9 @@ generic configuration Rf1aTinyOsPhysicalC() {
   Rf1aPhysicalMetadata = Rf1aTinyOsPhysicalP;
   Packet = Rf1aTinyOsPhysicalP;
   Rf1aPacket = Rf1aTinyOsPhysicalP;
+
+  Rf1aTinyOsPhysicalP.GetCCACheck = GetCCACheck;
+  Rf1aTinyOsPhysicalP.GetFastReTX = GetFastReTX;
 }
 
 /* 
