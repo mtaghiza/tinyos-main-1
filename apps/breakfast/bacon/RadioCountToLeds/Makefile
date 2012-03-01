@@ -12,6 +12,8 @@ CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS+=-I$(TOSDIR)/lib/rf1a-cx
 CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
+CFLAGS+=-DDEBUG_TXFIFO_P
+
 #CFLAGS+=-DDEBUG_RX
 
 #CFLAGS+=-DDEBUG_RX

@@ -579,7 +579,7 @@ generic module HplMsp430Rf1aP () @safe() {
     #ifdef DEBUG_TX_P
     printf("ss_\n\r");
     #endif
-    #ifdef DEBUG_TX
+    #ifdef DEBUG_TX_6
     P1OUT |= BIT4;
     #endif
     atomic {
@@ -646,7 +646,7 @@ generic module HplMsp430Rf1aP () @safe() {
         signal DelayedSend.sendReady[tx_client]();
       } while (0);
      }//atomic
-     #ifdef DEBUG_TX
+     #ifdef DEBUG_TX_6
      P1OUT &=~BIT4;
      #endif
    }
@@ -669,6 +669,7 @@ generic module HplMsp430Rf1aP () @safe() {
       #endif
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
+      //DC: this should always hold, could remove it.
       if ((RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
         register int loop_limit = RADIO_LOOP_LIMIT;
         uint8_t rc;
@@ -686,6 +687,9 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_TX_5
         P1OUT |= BIT2;
         #endif
+        #ifdef DEBUG_TX_8
+        P1OUT |= BIT3;
+        #endif
         //This is the point where the packet starts exiting the fifo
         rc = call Rf1aIf.strobe(RF_STX);
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
@@ -697,6 +701,9 @@ generic module HplMsp430Rf1aP () @safe() {
         tx_state = TX_S_active;
         #ifdef DEBUG_TX_5
         P1OUT &= ~BIT2;
+        #endif
+        #ifdef DEBUG_TX_8
+        P1OUT &= ~BIT3;
         #endif
         //call IndicatorPin.clr();
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
@@ -1549,6 +1556,9 @@ generic module HplMsp430Rf1aP () @safe() {
         }
 
         tx_state = TX_S_inactive;
+        #ifdef DEBUG_TX
+        P2OUT &= ~BIT4;
+        #endif 
         signal Rf1aPhysical.sendDone[tx_client](SUCCESS);
       }      
     }

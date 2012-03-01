@@ -61,8 +61,8 @@ generic configuration Rf1aTinyOsPhysicalC() {
     interface Packet;
     interface Rf1aPacket;
   }
-  uses interface Get<bool> as GetCCACheck;
-  uses interface Get<bool> as GetFastReTX;
+  uses interface GetNow<bool> as GetCCACheck;
+  uses interface GetNow<bool> as GetFastReTX;
 } implementation {
   
   components new Rf1aTinyOsPhysicalP();
