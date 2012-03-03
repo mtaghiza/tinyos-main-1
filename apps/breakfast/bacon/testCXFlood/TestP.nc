@@ -25,8 +25,17 @@ module TestP {
   uses interface HplMsp430Rf1aIf;
 } implementation {
   bool isSending;
+  bool isOn = FALSE;
+  bool isRoot = FALSE;
   message_t msg_internal;
   message_t* _msg = &msg_internal;
+
+  void printState(){
+    printf("Current State\n\r");
+    printf(" isOn: %x\n\r", isOn);
+    printf(" isRoot: %x\n\r", isRoot);
+    printf(" isSending: %x\n\r", isSending);
+  }
 
   event void Boot.booted(){
     //timing pins
@@ -45,16 +54,23 @@ module TestP {
 
     call UartControl.start();
     printf("Booted\n\r");
-    call SplitControl.start();
+    printf(" r: toggle root on/off\n\r");
+    printf(" s: start/stop AM\n\r");
+    printf(" t: start/stop transmitting\n\r");
+    printState();
+    call CXFloodControl.setRoot(isRoot);
   }
 
   event void SplitControl.stopDone(error_t error){
+    printf("Stopped: %s\n\r", decodeError(error));
+    isOn = FALSE;
+    printState();
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("Started\n\r");
-    call Rf1aPhysical.setChannel(TEST_CHANNEL);
-    call HplMsp430Rf1aIf.writeSinglePATable(POWER_SETTINGS[TEST_POWER_INDEX]);
+//    printf("Started: %s\n\r", decodeError(error));
+    isOn = TRUE;
+//    printState();
   }
 
   error_t sendError;
@@ -82,6 +98,23 @@ module TestP {
       case '\r':
         printf("\n\r");
         break;
+      case 's':
+        if (isOn){
+          printState();
+          printf("Stop: %s\n\r", decodeError(call SplitControl.stop()));
+        } else {
+          printState();
+          printf("Start: %s\n\r", decodeError(call SplitControl.start()));
+        }
+        break;
+      case 'r':
+        isRoot = !isRoot;
+        printf("Set root to %x: %s\n\r", 
+          isRoot, decodeError(call CXFloodControl.setRoot(isRoot)));
+        if (isRoot){
+          call CXFloodControl.claimFrame(1);
+        }
+        break;
       case 't':
         isSending = !isSending;
         printf("Is sending: %x\n\r", isSending);
@@ -92,9 +125,6 @@ module TestP {
           call Timer.startOneShot(1);
         }
         break;
-      case 'r':
-        printf("Toggle ROOT: not impl\n\r");
-        break;
       default:
         printf("%c", byte);
         break;
@@ -103,18 +133,20 @@ module TestP {
 
   error_t sendDoneError;
   task void reportSendDone(){
-    printf("sendDone: %s\n\r", decodeError(sendDoneError));
+    printf("APP sendDone: %s\n\r", decodeError(sendDoneError));
   }
 
   event void AMSend.sendDone(message_t* msg, error_t error){
     sendDoneError = error;
     post reportSendDone();
-    call Timer.startOneShot(SEND_PERIOD);
+    if (isSending){
+      call Timer.startOneShot(SEND_PERIOD);
+    }
   }
 
   uint32_t lastSn;
   task void reportTask(){
-    printf("Received %lu\n\r", lastSn);
+    printf("APP Received %lu\n\r", lastSn);
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
@@ -122,6 +154,22 @@ module TestP {
     lastSn= pl->seqNum;
     post reportTask();
     return msg;
+  }
+
+  event void CXFloodControl.noSynch(){
+    error_t error;
+    printf("No synch! Try to restart.\n\r");
+    error = call SplitControl.start();
+    printf("sc.start: %s\n\r", decodeError(error));
+  }
+
+  event void CXFloodControl.synchInfo(uint32_t period, 
+      uint32_t frameLen, uint16_t numFrames){
+    error_t error;
+    printf("Synch obtained: period %lu frameLen %lu frames %u\n\r",
+      period, frameLen, numFrames);
+    error = call CXFloodControl.claimFrame(TOS_NODE_ID);
+    printf("Claim %d: %s\n\r", TOS_NODE_ID, decodeError(error));
   }
 
   //unused events

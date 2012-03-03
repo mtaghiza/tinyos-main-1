@@ -353,8 +353,8 @@ generic module HplMsp430Rf1aP () @safe() {
       call Rf1aIf.setIes(IFG_EDGE_Negative | ((~ IFG_EDGE_Positive) & call Rf1aIf.getIes()));
       call Rf1aIf.setIe(IFG_INTERRUPT | call Rf1aIf.getIe());
 
-      printf("RF1AIE: %x\n\r", RF1AIE);
-      printf("RF1AIES: %x\n\r", RF1AIES);
+//      printf("RF1AIE: %x\n\r", RF1AIE);
+//      printf("RF1AIES: %x\n\r", RF1AIES);
       /* Again regardless of configuration, the control flow in this
        * module assumes that the radio returns to IDLE mode after
        * receiving a packet, and IDLE mode after transmitting a

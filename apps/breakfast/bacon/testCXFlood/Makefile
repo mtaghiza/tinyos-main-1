@@ -6,8 +6,32 @@ CFLAGS+=-DTEST_CHANNEL=$(TEST_CHANNEL)
 TEST_POWER_INDEX?=0
 CFLAGS+=-DTEST_POWER_INDEX=$(TEST_POWER_INDEX)
 
-RETX_DELAY?=6000
-CFLAGS+=-DRETX_DELAY=$(RETX_DELAY)
+CX_FLOOD_RETX_DELAY?=6000
+CFLAGS+=-DCX_FLOOD_RETX_DELAY=$(CX_FLOOD_RETX_DELAY)
+
+CX_FLOOD_RADIO_START_SLACK?=10
+CFLAGS+=-DCX_FLOOD_RADIO_START_SLACK=$(CX_FLOOD_RADIO_START_SLACK)
+
+SEND_PERIOD?=30
+CFLAGS+=-DSEND_PERIOD=$(SEND_PERIOD)
+
+CX_FLOOD_DEFAULT_FRAMELEN?=256
+CFLAGS+=-DCX_FLOOD_DEFAULT_FRAMELEN=$(CX_FLOOD_DEFAULT_FRAMELEN)
+
+##P1.1: radio power
+##P1.2: sfd (gdo)
+##P1.3: PrepareSendAlarm.fired (clear at sendDone)
+##P1.4: SendAlarm.fired (clear at sendDone)
+CFLAGS+=-DDEBUG_CX_FLOOD
+
+##print state transitions that enter an error state 
+##P2.4: error state entered
+CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE_ERROR
+
+##print state transitions
+CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE
+##print function entry/general debug info
+#CFLAGS+=-DDEBUG_CX_FLOOD_P
 
 ##verify that contents written to txfifo match
 ##note that these are on the critical tx path, so they limit
@@ -24,7 +48,7 @@ CFLAGS+=-DRETX_DELAY=$(RETX_DELAY)
 
 ##P1.1 hpl.send
 ##P2.4 completeSend
-CFLAGS+=-DDEBUG_TX
+#CFLAGS+=-DDEBUG_TX
 
 #CFLAGS+=-DDEBUG_CCA
 
@@ -32,7 +56,7 @@ CFLAGS+=-DDEBUG_TX
 ##startSend_
 #CFLAGS+=-DDEBUG_TX_6
 ##interrupt
-CFLAGS+=-DDEBUG_TX_7
+#CFLAGS+=-DDEBUG_TX_7
 
 ##P1.3
 ##spinforvalid
@@ -42,7 +66,7 @@ CFLAGS+=-DDEBUG_TX_7
 ##Scheduler.run_task
 #CFLAGS+=-DDEBUG_TASK
 ##completeSend.STX
-CFLAGS+=-DDEBUG_TX_8
+#CFLAGS+=-DDEBUG_TX_8
 
 ##P1.2
 ##completeSend.wait

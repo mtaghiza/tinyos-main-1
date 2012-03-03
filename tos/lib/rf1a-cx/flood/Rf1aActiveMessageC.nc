@@ -42,7 +42,7 @@
  * - Rf1a physical layer
  *
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
-
+#include "CXFlood.h"
 configuration Rf1aActiveMessageC {
   provides {
     interface SplitControl;
@@ -130,20 +130,32 @@ implementation {
   //  whole unit.
   //Basic flood
   components Rf1aCXFloodP as RoutingLayer;
-  components new AlarmMicro16C();
-  RoutingLayer.Alarm -> AlarmMicro16C;
-
-
   //TODO: scopedFlood, multipathAODV
 
+  components new AlarmMicro16C() as SendAlarm;
+  components new Alarm32khz16C() as PrepareSendAlarm;
+  components new TimerMilliC() as OnTimer;
+  components new TimerMilliC() as OffTimer;
+  components new PoolC(message_t, CX_FLOOD_QUEUE_LEN) as MessagePool;
+  components new QueueC(message_t*, CX_FLOOD_QUEUE_LEN) as MessageQueue;
+  components new QueueC(uint8_t, CX_FLOOD_QUEUE_LEN) as LenQueue; 
+  RoutingLayer.MessagePool -> MessagePool;
+  RoutingLayer.MessageQueue -> MessageQueue;
+  RoutingLayer.LenQueue -> LenQueue;
+  RoutingLayer.PrepareSendAlarm -> PrepareSendAlarm;
+  RoutingLayer.SendAlarm -> SendAlarm;
+  RoutingLayer.OnTimer -> OnTimer;
+  RoutingLayer.OffTimer -> OffTimer;
   RoutingLayer.SubSend -> TinyOsPhysicalC.Send[IEEE154_TYPE_DATA];
   RoutingLayer.SubReceive -> TinyOsPhysicalC.Receive[IEEE154_TYPE_DATA];
   RoutingLayer.SubSplitControl -> TinyOsPhysicalC;
   RoutingLayer.DelayedSend -> PhysicalC;
   RoutingLayer.Rf1aPhysical -> PhysicalC;
+  RoutingLayer.HplMsp430Rf1aIf -> PhysicalC;
   RoutingLayer.CXPacket -> Rf1aCXPacketC;
   RoutingLayer.LayerPacket -> Rf1aCXPacketC;
   RoutingLayer.Ieee154Packet -> PhyPacketC;
+  RoutingLayer.Rf1aPacket -> PhyPacketC;
   RoutingLayer.SubPacket -> PhyPacketC.Packet;
   RoutingLayer.AMPacket -> PacketC;
   TinyOsPhysicalC.GetCCACheck -> RoutingLayer.GetCCACheck;

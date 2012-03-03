@@ -8,4 +8,9 @@ interface CXFloodControl{
 
   command error_t claimFrame(uint16_t index);
   //TODO: frame request event for root
+  //TODO: announcement event for non-root
+
+  event void synchInfo(uint32_t period, uint32_t frameLen, uint16_t numFrames);
+
+  event void noSynch();
 }
