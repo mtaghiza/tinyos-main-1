@@ -21,7 +21,7 @@ typedef nx_struct cx_flood_announcement_t {
 
 //TODO: tune this down as low as possible
 #ifndef CX_FLOOD_RETX_DELAY
-#define CX_FLOOD_RETX_DELAY 4000
+#define CX_FLOOD_RETX_DELAY 150
 #endif
 
 #ifndef CX_FLOOD_QUEUE_LEN

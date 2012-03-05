@@ -246,14 +246,15 @@ implementation {
       call Rf1aPhysical.setChannel(TEST_CHANNEL);
       call HplMsp430Rf1aIf.writeSinglePATable(POWER_SETTINGS[TEST_POWER_INDEX]);
 
-      //GDO1: RE on CRC OK, FE on read
-      call HplMsp430Rf1aIf.writeRegister(IOCFG1, 0x07);
-      //rising edge
-      call HplMsp430Rf1aIf.setIes(call HplMsp430Rf1aIf.getIes() & ~BIT1);
+      //GDO1: 0x07 = RE on CRC OK, FE on read
+      //GDO1: 0x06 = RE on synch, FE at end of packet
+      call HplMsp430Rf1aIf.writeRegister(IOCFG1, 0x06);
+      //falling edge
+      call HplMsp430Rf1aIf.setIes(call HplMsp430Rf1aIf.getIes() | BIT1);
       //enable interrupt
       call HplMsp430Rf1aIf.setIe(call HplMsp430Rf1aIf.getIe() | BIT1);
-
     }
+
     if (checkState(S_ROOT_INACTIVE)){
       error_t sendError;
       cx_flood_announcement_t* pl;
@@ -348,37 +349,53 @@ implementation {
   *    -> NR_RECEIVING
   *
   */
-  async event void Rf1aPhysical.frameStarted(){
-    call SendAlarm.start(CX_FLOOD_RETX_DELAY);
+
+  //Frame start: synch point for entire period
+  async event void Rf1aPhysical.frameStarted(){ 
     if (checkState(S_ROOT_ANNOUNCING) || 
           (checkState(S_NR_IDLE) && !synchedThisRound)){
       if (claimedFrame > 0){
+        //TODO: should correct for time spent being forwarded already.
         call PrepareSendAlarm.start((claimedFrame * frameLen)-
           STARTSEND_SLACK_32KHZ);
       }
       startTime = call OnTimer.getNow();
     } 
-//    printf("%s: \n\r", __FUNCTION__);
-
-    //don't try to retransmit our own packet
-    if (checkState(S_ROOT_ANNOUNCING) 
-        || checkState(S_ROOT_DATA_SENDING) 
-        || checkState(S_ROOT_FORWARDING) 
-        || checkState(S_NR_DATA_SENDING) 
-        || checkState(S_NR_FORWARDING)){
-      call SendAlarm.stop();
-
-    } else  if (checkState(S_ROOT_IDLE)){
-      setState(S_ROOT_RECEIVING);
-
-    } else if (checkState(S_NR_IDLE)){
-      setState(S_NR_RECEIVING);
-
-    } else {
-      call SendAlarm.stop();
-      setState(S_ERROR_3);
-    }
   }
+
+  async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
+    switch(iv){
+      //4: end-of-packet (good CRC): get ready to retransmit it! 
+      case 4:
+        call SendAlarm.start(CX_FLOOD_RETX_DELAY);
+        //don't try to retransmit our own packet
+        if (checkState(S_ROOT_ANNOUNCING) 
+            || checkState(S_ROOT_DATA_SENDING) 
+            || checkState(S_ROOT_FORWARDING) 
+            || checkState(S_NR_DATA_SENDING) 
+            || checkState(S_NR_FORWARDING)){
+          call SendAlarm.stop();
+    
+        } else  if (checkState(S_ROOT_IDLE)){
+          setState(S_ROOT_RECEIVING);
+    
+        } else if (checkState(S_NR_IDLE)){
+          setState(S_NR_RECEIVING);
+    
+        } else if (checkState(S_ROOT_INACTIVE) || checkState(S_NR_INACTIVE)){
+          //this seems to get hit when we turn the radio on. odd.
+          call SendAlarm.stop();
+        } else {
+          call SendAlarm.stop();
+          setState(S_ERROR_3);
+        }
+        break;
+
+      default:
+        printf("Unused core interrupt: %x\n\r", iv);
+        break;
+    }
+  } 
 
   /**
    *  ROOT_IDLE + dataPending: load data frame
@@ -534,9 +551,10 @@ implementation {
 //    printf("%s: \n\r", __FUNCTION__);
     if (isDuplicate){
       #ifdef DEBUG_CX_FLOOD_P_PACKET
-      printf("RD{%u(%u) %u(%u) %x}\n\r", 
+      printf("RD{%u(%u) %u(%u) %x %x}\n\r", 
         call CXPacket.source(msg), lastSrc,
-        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg));
+        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg),
+        call Rf1aPacket.crcPassed(msg));
       #endif
       call SendAlarm.stop();
       #ifdef DEBUG_CX_P
@@ -558,9 +576,10 @@ implementation {
       return msg;
     } else{
       #ifdef DEBUG_CX_FLOOD_P_PACKET
-      printf("RN{%u(%u) %u(%u) %x}\n\r", 
+      printf("RN{%u(%u) %u(%u) %x %x}\n\r", 
         call CXPacket.source(msg), lastSrc,
-        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg));
+        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg),
+        call Rf1aPacket.crcPassed(msg));
       #endif
     }
     //TODO: testing: enforce topology here (source and count). Treat
@@ -911,9 +930,6 @@ implementation {
     }
   }
 
-  async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
-    printf("Core interrupt: %x\n\r", iv);
-  } 
   
   //TODO: implement these. Should go into frame announcement, i guess.
   command error_t CXFloodControl.assignFrame(uint16_t index, am_addr_t nodeId){ return FAIL; }
@@ -935,12 +951,12 @@ implementation {
   task void signalStartDoneTask(){ signal SplitControl.startDone(SUCCESS); }
 
   //unused events
+  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
+      unsigned int count, int result) { }
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
   async event void Rf1aPhysical.clearChannel () { } 
   async event void Rf1aPhysical.carrierSense () { } 
   async event void Rf1aPhysical.sendDone (int result) { }
-  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
-    unsigned int count, int result) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
     unsigned int count) { }
   async event void Rf1aPhysical.released () { }
