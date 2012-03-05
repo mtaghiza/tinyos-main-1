@@ -24,12 +24,15 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_FRAMELEN=$(CX_FLOOD_DEFAULT_FRAMELEN)
 ##P1.4: SendAlarm.fired (clear at sendDone)
 CFLAGS+=-DDEBUG_CX_FLOOD
 
+##print src/sn/type of packets sent/received
+CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
+
 ##print state transitions that enter an error state 
 ##P2.4: error state entered
 CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE_ERROR
 
 ##print state transitions
-CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE
+#CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE
 ##print function entry/general debug info
 #CFLAGS+=-DDEBUG_CX_FLOOD_P
 

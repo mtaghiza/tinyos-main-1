@@ -272,8 +272,11 @@ implementation {
       call CXPacket.setType(announcement, CX_TYPE_FLOOD_ANNOUNCEMENT);
       call CXPacket.setSn(announcement, mySn++);
       setState(S_ROOT_ANNOUNCE_PREPARE);
-      printf("A{%u %u}\n\r", call CXPacket.source(announcement), 
-        call CXPacket.sn(announcement)); 
+      #ifdef DEBUG_CX_FLOOD_P_PACKET
+      printf("A{%u %u %x}\n\r", call CXPacket.source(announcement), 
+        call CXPacket.sn(announcement), 
+        call CXPacket.type(announcement)); 
+      #endif
       sendError = call SubSend.send(announcement,
         sizeof(cx_flood_announcement_t) + sizeof(cx_header_t));
       if (SUCCESS != sendError){
@@ -397,8 +400,10 @@ implementation {
           setState(S_NR_DATA_PREPARE);
         }
         call CXPacket.setSn(dataFrame, mySn++);
-        printf("D{%u %u}\n\r", call CXPacket.source(dataFrame), 
-          call CXPacket.sn(dataFrame)); 
+        #ifdef DEBUG_CX_FLOOD_P_PACKET
+        printf("D{%u %u %x}\n\r", call CXPacket.source(dataFrame), 
+          call CXPacket.sn(dataFrame), call CXPacket.type(dataFrame)); 
+        #endif
         error = call SubSend.send(dataFrame, dataFrameLen);
         if (SUCCESS != error){
           call SendAlarm.stop();
@@ -521,11 +526,13 @@ implementation {
     uint8_t thisSn = call CXPacket.sn(msg);
     bool isDuplicate = (thisSrc == lastSrc) &&
       (thisSn == lastSn);
-    printf("{%u(%u) %u(%u) %x}\n\r", 
-      call CXPacket.source(msg), lastSrc,
-      call CXPacket.sn(msg), lastSn, isDuplicate);
 //    printf("%s: \n\r", __FUNCTION__);
     if (isDuplicate){
+      #ifdef DEBUG_CX_FLOOD_P_PACKET
+      printf("RD{%u(%u) %u(%u) %x}\n\r", 
+        call CXPacket.source(msg), lastSrc,
+        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg));
+      #endif
       call SendAlarm.stop();
       #ifdef DEBUG_CX_P
       printf("Duplicate\n\r");
@@ -544,6 +551,12 @@ implementation {
         setState(S_ERROR_7);
       }
       return msg;
+    } else{
+      #ifdef DEBUG_CX_FLOOD_P_PACKET
+      printf("RN{%u(%u) %u(%u) %x}\n\r", 
+        call CXPacket.source(msg), lastSrc,
+        call CXPacket.sn(msg), lastSn, call CXPacket.type(msg));
+      #endif
     }
     //TODO: testing: enforce topology here (source and count). Treat
     //      like duplicate if no match.
@@ -600,8 +613,10 @@ implementation {
       } else {
         setState(S_NR_FORWARD_PREPARE);
       }
-      printf("F{%u %u}\n\r", call CXPacket.source(msg), 
-        call CXPacket.sn(msg)); 
+      #ifdef DEBUG_CX_FLOOD_P_PACKET
+      printf("F{%u %u %x}\n\r", call CXPacket.source(msg), 
+        call CXPacket.sn(msg), call CXPacket.type(msg)); 
+      #endif
       if (SUCCESS != call SubSend.send(msg, len)){
         setState(S_ERROR_8);
       } else {
