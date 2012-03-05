@@ -572,10 +572,69 @@ generic module HplMsp430Rf1aP () @safe() {
 
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
+  void loadFifo_(){
+    bool need_to_write_length = FALSE;
+    const uint8_t* data;
+    unsigned int count;
+    unsigned int inuse;
+    inuse = call Rf1aIf.readRegister(TXBYTES);
+    /* If we're using variable packet lengths, and we haven't
+     * written anything yet, we've got to reserve room for (and
+     * send) the length byte. */
+    need_to_write_length = (TX_S_preparing == tx_state) && (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
+
+    /* Calculate the headroom, adjust for the length byte if we
+     * need to write it, and adjust down to no more than we
+     * need */
+    count = FIFO_FILL_LIMIT - inuse;
+    if (need_to_write_length) {
+      count -= 1;
+    }
+    if (count > tx_remain) {
+      count = tx_remain;
+    }
+
+    /* Is there any data ready?  If not, try again later. */
+    count = call Rf1aTransmitFragment.transmitReadyCount[tx_client](count);
+    if (0 == count) {
+      return;
+    }
+
+    /* Get the data to be written.  If the callee returns a null
+     * pointer, the transmission is canceled; otherwise, stuff it
+     * into the transmit buffer. */
+    data = call Rf1aTransmitFragment.transmitData[tx_client](count);
+    if (0 == data) {
+      cancelTransmit_();
+      return;
+    }
+
+    /* We're committed to the write: tell the radio how long the
+     * packet is, if we haven't already. */
+    #ifdef DEBUG_TX_P
+    printf("WTX: %d + %d\n\r", sizeof(uint8_t), count);
+    #endif
+    //disable TXFIFO interrupt: only using it to wait for packet
+    //to clear.
+    call Rf1aIf.setIe( 
+      call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
+    if (need_to_write_length) {
+      uint8_t len8 = tx_remain;
+      call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
+    }
+    call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
+    tx_state = TX_S_loaded;
+    /* Account for what we just queued. */
+    tx_remain -= count;
+    if (tx_remain != 0){
+      #ifdef DEBUG_TX_P
+      printf("Trouble: %d bytes remain\n\r", tx_remain);
+      #endif
+    }  
+  }
 
   void startSend_ ()
   {
-    bool need_to_write_length = FALSE;
     #ifdef DEBUG_TX_P
     printf("ss_\n\r");
     #endif
@@ -584,72 +643,13 @@ generic module HplMsp430Rf1aP () @safe() {
     #endif
     atomic {
       tx_client = call ArbiterInfo.userId();
-
-      do {
-        const uint8_t* data;
-        unsigned int count;
-        unsigned int inuse;
-        inuse = call Rf1aIf.readRegister(TXBYTES);
-        /* If we're using variable packet lengths, and we haven't
-         * written anything yet, we've got to reserve room for (and
-         * send) the length byte. */
-        need_to_write_length = (TX_S_preparing == tx_state) && (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
-
-        /* Calculate the headroom, adjust for the length byte if we
-         * need to write it, and adjust down to no more than we
-         * need */
-        count = FIFO_FILL_LIMIT - inuse;
-        if (need_to_write_length) {
-          count -= 1;
-        }
-        if (count > tx_remain) {
-          count = tx_remain;
-        }
-
-        /* Is there any data ready?  If not, try again later. */
-        count = call Rf1aTransmitFragment.transmitReadyCount[tx_client](count);
-        if (0 == count) {
-          break;
-        }
-
-        /* Get the data to be written.  If the callee returns a null
-         * pointer, the transmission is canceled; otherwise, stuff it
-         * into the transmit buffer. */
-        data = call Rf1aTransmitFragment.transmitData[tx_client](count);
-        if (0 == data) {
-          cancelTransmit_();
-          break;
-        }
-
-        /* We're committed to the write: tell the radio how long the
-         * packet is, if we haven't already. */
-        #ifdef DEBUG_TX_P
-        printf("WTX: %d + %d\n\r", sizeof(uint8_t), count);
-        #endif
-        //disable TXFIFO interrupt: only using it to wait for packet
-        //to clear.
-        call Rf1aIf.setIe( 
-          call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
-        if (need_to_write_length) {
-          uint8_t len8 = tx_remain;
-          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
-        }
-        call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
-        tx_state = TX_S_loaded;
-        /* Account for what we just queued. */
-        tx_remain -= count;
-        if (tx_remain != 0){
-          #ifdef DEBUG_TX_P
-          printf("Trouble: %d bytes remain\n\r", tx_remain);
-          #endif
-        }
-        signal DelayedSend.sendReady[tx_client]();
-      } while (0);
-     }//atomic
-     #ifdef DEBUG_TX_6
-     P1OUT &=~BIT4;
-     #endif
-   }
+      loadFifo_();
+      signal DelayedSend.sendReady[tx_client]();
+    }//atomic
+    #ifdef DEBUG_TX_6
+    P1OUT &=~BIT4;
+    #endif
+  }
 
   task void signalSendDone(){
     signal Rf1aPhysical.sendDone[tx_client](tx_result);
