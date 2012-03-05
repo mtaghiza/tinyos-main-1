@@ -151,6 +151,7 @@ implementation {
   RoutingLayer.SubSplitControl -> TinyOsPhysicalC;
   RoutingLayer.DelayedSend -> PhysicalC;
   RoutingLayer.Rf1aPhysical -> PhysicalC;
+  RoutingLayer.Rf1aCoreInterrupt -> PhysicalC;
   RoutingLayer.HplMsp430Rf1aIf -> PhysicalC;
   RoutingLayer.CXPacket -> Rf1aCXPacketC;
   RoutingLayer.LayerPacket -> Rf1aCXPacketC;

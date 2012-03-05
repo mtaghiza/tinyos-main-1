@@ -1613,8 +1613,7 @@ generic module HplMsp430Rf1aP () @safe() {
     signal Rf1aCoreInterrupt.interrupt[call ArbiterInfo.userId()](iv);
   }
 
-  default async event void Rf1aCoreInterrupt.interrupt[uint8_t client](uint16_t iv){
-  }
+  default async event void Rf1aCoreInterrupt.interrupt[uint8_t client](uint16_t iv){ }
       
   default async event void Rf1aPhysical.receiveStarted[uint8_t client] (unsigned int length) { }
 

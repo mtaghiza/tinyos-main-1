@@ -23,6 +23,7 @@ module Rf1aCXFloodP {
   //should probably roll this into rf1aphysical
   uses interface DelayedSend;
   uses interface Rf1aPhysical;
+  uses interface Rf1aCoreInterrupt;
   uses interface HplMsp430Rf1aIf;
   uses interface CXPacket;
   uses interface Packet as LayerPacket;
@@ -244,9 +245,13 @@ implementation {
       radioOn = TRUE;
       call Rf1aPhysical.setChannel(TEST_CHANNEL);
       call HplMsp430Rf1aIf.writeSinglePATable(POWER_SETTINGS[TEST_POWER_INDEX]);
-      //TODO: set up GDO0 signal to 0x07 (received with CRC OK) or 6
-      //(FE at end of reception). Set up interrupt for this.
-      
+
+      //GDO1: RE on CRC OK, FE on read
+      call HplMsp430Rf1aIf.writeRegister(IOCFG1, 0x07);
+      //rising edge
+      call HplMsp430Rf1aIf.setIes(call HplMsp430Rf1aIf.getIes() & ~BIT1);
+      //enable interrupt
+      call HplMsp430Rf1aIf.setIe(call HplMsp430Rf1aIf.getIe() | BIT1);
 
     }
     if (checkState(S_ROOT_INACTIVE)){
@@ -905,6 +910,10 @@ implementation {
       return EBUSY;
     }
   }
+
+  async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
+    printf("Core interrupt: %x\n\r", iv);
+  } 
   
   //TODO: implement these. Should go into frame announcement, i guess.
   command error_t CXFloodControl.assignFrame(uint16_t index, am_addr_t nodeId){ return FAIL; }
