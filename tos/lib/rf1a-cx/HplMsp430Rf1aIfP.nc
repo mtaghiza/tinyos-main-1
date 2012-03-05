@@ -272,10 +272,16 @@ generic module HplMsp430Rf1aIfP (
         #ifdef DEBUG_TXFIFO_P
         printf("%x ", *buf);
         #endif
+        #ifdef DEBUG_TX_9
+        P1OUT |= BIT4;
+        #endif
         RF1ADINB = *buf++;
         while (! (RF1AIFCTL1 & RFDINIFG)) {
           ; // Wait for write to complete
         }
+        #ifdef DEBUG_TX_9
+        P1OUT &= ~BIT4;
+        #endif
       }
       (void) RF1ADOUTB;
       #ifdef DEBUG_TXFIFO_P

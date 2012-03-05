@@ -643,7 +643,7 @@ generic module HplMsp430Rf1aP () @safe() {
     #endif
     atomic {
       tx_client = call ArbiterInfo.userId();
-      loadFifo_();
+//      loadFifo_();
       signal DelayedSend.sendReady[tx_client]();
     }//atomic
     #ifdef DEBUG_TX_6
@@ -690,8 +690,10 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_TX_8
         P1OUT |= BIT3;
         #endif
-        //This is the point where the packet starts exiting the fifo
+        //we issue the strobe for start-tx first, then fill in the
+        //  fifo real quick while the preamble/synch are going out.
         rc = call Rf1aIf.strobe(RF_STX);
+        loadFifo_();
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
                && (RF1A_S_IDLE != (RF1A_S_MASK & rc))

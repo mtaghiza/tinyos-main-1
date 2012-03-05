@@ -22,7 +22,7 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_FRAMELEN=$(CX_FLOOD_DEFAULT_FRAMELEN)
 ##P1.2: sfd (gdo)
 ##P1.3: PrepareSendAlarm.fired (clear at sendDone)
 ##P1.4: SendAlarm.fired (clear at sendDone)
-CFLAGS+=-DDEBUG_CX_FLOOD
+#CFLAGS+=-DDEBUG_CX_FLOOD
 
 ##print src/sn/type of packets sent/received
 #CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
@@ -57,9 +57,11 @@ CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE_ERROR
 
 ##P1.4 
 ##startSend_
-#CFLAGS+=-DDEBUG_TX_6
+CFLAGS+=-DDEBUG_TX_6
 ##interrupt
 #CFLAGS+=-DDEBUG_TX_7
+##TXFIFO write
+#CFLAGS+=-DDEBUG_TX_9
 
 ##P1.3
 ##spinforvalid
@@ -69,7 +71,7 @@ CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE_ERROR
 ##Scheduler.run_task
 #CFLAGS+=-DDEBUG_TASK
 ##completeSend.STX
-#CFLAGS+=-DDEBUG_TX_8
+CFLAGS+=-DDEBUG_TX_8
 
 ##P1.2
 ##completeSend.wait
