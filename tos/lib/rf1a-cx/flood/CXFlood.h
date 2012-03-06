@@ -13,7 +13,7 @@ typedef nx_struct cx_flood_announcement_t {
 //TODO: these should both be derived from a single value. note that
 //  XT2DIV is not a nice multiple of 2**15
 #ifndef STARTSEND_SLACK_32KHZ
-#define STARTSEND_SLACK_32KHZ 1
+#define STARTSEND_SLACK_32KHZ 10
 #endif
 #ifndef STARTSEND_SLACK_XT2DIV
 #define STARTSEND_SLACK_XT2DIV 1024
@@ -50,4 +50,11 @@ typedef nx_struct cx_flood_announcement_t {
 #define CX_FLOOD_DEFAULT_NUMFRAMES 64
 #endif
 
+#define XT2_32KHZ_RATIO 25
+
+//programmed delay of 15000 ticks: see alarm at app level after
+//14711.125 ticks. unclear why, this behavior doesn't seem to be
+//present with the 32k timer.
+//#define MYSTERY_OFFSET 289
+#define MYSTERY_OFFSET 0
 #endif

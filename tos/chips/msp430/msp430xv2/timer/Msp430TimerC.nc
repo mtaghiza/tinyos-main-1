@@ -158,8 +158,14 @@ implementation
   components Msp430TimerCommonP as Common;
   
 #if defined(__MSP430_HAS_T0A5__)
+  #ifdef XT2_SMCLK
+  //xt2 is async to cpu!
+  components new Msp430TimerP( TA0IV_, TA0R_, TA0CTL_, TAIFG, TACLR, TAIE,
+                               TASSEL0, TASSEL1, TRUE ) as Msp430Timer0_A;
+  #else
   components new Msp430TimerP( TA0IV_, TA0R_, TA0CTL_, TAIFG, TACLR, TAIE,
                                TASSEL0, TASSEL1, FALSE ) as Msp430Timer0_A;
+  #endif
   
   Timer0_A = Msp430Timer0_A.Timer;
   Msp430Timer0_A.VectorTimerX0 -> Common.VectorTimer0_A0;

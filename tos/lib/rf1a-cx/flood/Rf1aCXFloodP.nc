@@ -351,9 +351,11 @@ implementation {
   *
   */
   uint16_t psaBase;
+  uint16_t frameStart;
   //Frame start: synch point for entire period
   async event void Rf1aPhysical.frameStarted(){ 
-    psaBase = call PrepareSendAlarm.getNow();
+    uint16_t s = call SendAlarm.getNow();
+    uint16_t p  = call PrepareSendAlarm.getNow();
     #ifdef DEBUG_CX_FLOOD_3
     P1OUT |= BIT1;
     #endif
@@ -363,9 +365,12 @@ implementation {
         #ifdef DEBUG_CX_FLOOD_1
         P1OUT |= BIT1;
         #endif
+        frameStart = s;
+        psaBase = p;
         //TODO: should correct for time spent being forwarded already.
         call PrepareSendAlarm.startAt(psaBase, (claimedFrame * frameLen)-
           STARTSEND_SLACK_32KHZ);
+
         //this must be getting interrupted.
 //        printf("psa %u -> %u\n\r", psaBase,
 //          call PrepareSendAlarm.getAlarm());
@@ -384,29 +389,28 @@ implementation {
   }
 
   async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
+    uint16_t isa = call SendAlarm.getNow();
     switch(iv){
       //4: end-of-packet (good CRC): get ready to retransmit it! 
       case 4:
-        call SendAlarm.start(CX_FLOOD_RETX_DELAY);
         //don't try to retransmit our own packet
         if (checkState(S_ROOT_ANNOUNCING) 
             || checkState(S_ROOT_DATA_SENDING) 
             || checkState(S_ROOT_FORWARDING) 
             || checkState(S_NR_DATA_SENDING) 
             || checkState(S_NR_FORWARDING)){
-          call SendAlarm.stop();
     
         } else  if (checkState(S_ROOT_IDLE)){
+          call SendAlarm.startAt(isa, CX_FLOOD_RETX_DELAY);
           setState(S_ROOT_RECEIVING);
     
         } else if (checkState(S_NR_IDLE)){
+          call SendAlarm.startAt(isa, CX_FLOOD_RETX_DELAY);
           setState(S_NR_RECEIVING);
     
         } else if (checkState(S_ROOT_INACTIVE) || checkState(S_NR_INACTIVE)){
           //this seems to get hit when we turn the radio on. odd.
-          call SendAlarm.stop();
         } else {
-          call SendAlarm.stop();
           setState(S_ERROR_3);
         }
         break;
@@ -424,10 +428,17 @@ implementation {
    *  NR_IDLE + data pending: load data frame
    *    -> NR_DATA_PREPARE
    */
+  uint32_t psa_fms;
+  uint16_t psa_f;
+  uint16_t targetXT2;
+
   async event void PrepareSendAlarm.fired(){
-    uint32_t fms = call OnTimer.getNow();
-    uint16_t f32 = call PrepareSendAlarm.getNow();
-    call SendAlarm.start(STARTSEND_SLACK_XT2DIV);
+    psa_fms = call OnTimer.getNow();
+    psa_f = call PrepareSendAlarm.getNow();
+
+    targetXT2 = frameStart + (claimedFrame * frameLen *
+      XT2_32KHZ_RATIO)+MYSTERY_OFFSET; 
+    call SendAlarm.startAt(targetXT2, 0);
     #ifdef DEBUG_CX_FLOOD_P
     printf("%s: \n\r", __FUNCTION__);
     #endif
@@ -437,10 +448,7 @@ implementation {
     #ifdef DEBUG_CX_FLOOD_1
     P1OUT &= ~BIT1;
     #endif
-    printf("psa.f %u -> %u (%u) %u %lu\n\r", psaBase, f32, 
-      call PrepareSendAlarm.getAlarm(), claimedFrame, frameLen);
-    printf("ms %lu -> %lu \n\r", startTime, fms);
-
+        
     if (checkState(S_ROOT_IDLE) || checkState(S_NR_IDLE)){
       error_t error;
       if (dataFrame != NULL){
@@ -488,10 +496,12 @@ implementation {
    *  NR_FORWARD_READY: complete send.
    *    -> NR_FORWARDING
    */
+  uint16_t saf;
   async event void SendAlarm.fired(){
     #ifdef DEBUG_CX_FLOOD
     P1OUT |= BIT4;
     #endif
+    saf = call SendAlarm.getNow();
 //    printf("%s: \n\r", __FUNCTION__);
     if (checkState(S_ROOT_DATA_READY)){
       call DelayedSend.completeSend();
@@ -533,11 +543,24 @@ implementation {
     #ifdef DEBUG_CX_FLOOD
     P1OUT &= ~(BIT3 | BIT4);
     #endif
-//    printf("%s: \n\r", __FUNCTION__);
+//    printf("%s: \n\r ", __FUNCTION__);
+
     if (checkState(S_ROOT_ANNOUNCING)){
       setState(S_ROOT_IDLE);
     }else if (checkState(S_ROOT_DATA_SENDING)){
       setState(S_ROOT_IDLE);
+    #ifdef DEBUG_CX_FLOOD_P_TIMERS
+    printf("psa.f from %u -> alarm %u actual %u claimed %u len %lu\n\r", psaBase, 
+      call PrepareSendAlarm.getAlarm(), 
+      psa_f,
+      claimedFrame, 
+      frameLen);
+    printf("ms from %lu -> actual %lu \n\r", startTime, 
+      psa_fms);
+    printf("xt2 from %u -> alarm %u actual %u target %u\n\r", frameStart, 
+      call SendAlarm.getAlarm(), saf, targetXT2);
+    #endif
+
       sendDoneError = error;
     } else if (checkState(S_ROOT_FORWARDING)){
       setState(S_ROOT_IDLE);
