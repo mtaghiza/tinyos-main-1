@@ -15,6 +15,8 @@ CFLAGS+=-DCX_FLOOD_RADIO_START_SLACK=$(CX_FLOOD_RADIO_START_SLACK)
 SEND_PERIOD?=1
 CFLAGS+=-DSEND_PERIOD=$(SEND_PERIOD)
 
+CX_FLOOD_FAILSAFE_LIMIT?=128
+CFLAGS+=-DCX_FLOOD_FAILSAFE_LIMIT=$(CX_FLOOD_FAILSAFE_LIMIT)
 
 ##32khz ticks
 ## at 125kbps, test packet payload is 1.8 ms, 2.6 ms including
@@ -47,14 +49,20 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
 #CFLAGS+=-DDEBUG_TX_6
 
 
-##P1.1: radio power
 ##P1.2: sfd (gdo)
-##P1.3: PrepareSendAlarm.fired (clear at sendDone)
+##P1.3: PrepareSendAlarm.fired  (clear at sendDone OR if no data
+##      pending)
 ##P1.4: SendAlarm.fired (clear at sendDone)
 CFLAGS+=-DDEBUG_CX_FLOOD
 
+##P1.1: 
+##preparesend alarm start/end 
+#CFLAGS+=-DDEBUG_CX_FLOOD_1
+##radio power
+CFLAGS+=-DDEBUG_CX_FLOOD_2
+
 ##print src/sn/type of packets sent/received
-#CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
+CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
 
 ##print state transitions that enter an error state 
 ##P2.4: error state entered
@@ -86,7 +94,7 @@ CFLAGS+=-DDEBUG_CX_FLOOD_P_STATE_ERROR
 
 ##P1.4 
 ##startSend_
-CFLAGS+=-DDEBUG_TX_6
+#CFLAGS+=-DDEBUG_TX_6
 ##interrupt
 #CFLAGS+=-DDEBUG_TX_7
 ##TXFIFO write
@@ -100,7 +108,7 @@ CFLAGS+=-DDEBUG_TX_6
 ##Scheduler.run_task
 #CFLAGS+=-DDEBUG_TASK
 ##completeSend.STX
-CFLAGS+=-DDEBUG_TX_8
+#CFLAGS+=-DDEBUG_TX_8
 
 ##P1.2
 ##completeSend.wait

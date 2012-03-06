@@ -13,7 +13,7 @@ typedef nx_struct cx_flood_announcement_t {
 //TODO: these should both be derived from a single value. note that
 //  XT2DIV is not a nice multiple of 2**15
 #ifndef STARTSEND_SLACK_32KHZ
-#define STARTSEND_SLACK_32KHZ 32
+#define STARTSEND_SLACK_32KHZ 1
 #endif
 #ifndef STARTSEND_SLACK_XT2DIV
 #define STARTSEND_SLACK_XT2DIV 1024

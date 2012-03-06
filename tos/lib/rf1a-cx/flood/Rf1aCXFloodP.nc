@@ -239,8 +239,10 @@ implementation {
     #endif
     if (error == SUCCESS){
       #ifdef DEBUG_CX_FLOOD
-      P1OUT |= BIT1;
       P1OUT &= ~BIT3;
+      #endif
+      #ifdef DEBUG_CX_FLOOD_2
+      P1OUT |= BIT1;
       #endif
       radioOn = TRUE;
       call Rf1aPhysical.setChannel(TEST_CHANNEL);
@@ -258,7 +260,6 @@ implementation {
     if (checkState(S_ROOT_INACTIVE)){
       error_t sendError;
       cx_flood_announcement_t* pl;
-      call OffTimer.startOneShot((frameLen >> 5)*numFrames);
 
       call Rf1aPacket.configureAsData(announcement);
       call AMPacket.setSource(announcement, call AMPacket.address());
@@ -355,12 +356,20 @@ implementation {
     if (checkState(S_ROOT_ANNOUNCING) || 
           (checkState(S_NR_IDLE) && !synchedThisRound)){
       if (claimedFrame > 0){
+        #ifdef DEBUG_CX_FLOOD_1
+        P1OUT |= BIT1;
+        #endif
         //TODO: should correct for time spent being forwarded already.
         call PrepareSendAlarm.start((claimedFrame * frameLen)-
           STARTSEND_SLACK_32KHZ);
+//        printf("sa (%lu) %lu\n\r", call PrepareSendAlarm.getNow(), claimedFrame*frameLen -
+//          STARTSEND_SLACK_32KHZ);
       }
       startTime = call OnTimer.getNow();
     } 
+    if (checkState(S_ROOT_ANNOUNCING)){
+      call OffTimer.startOneShot((frameLen >> 5)*numFrames);
+    }
   }
 
   async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
@@ -412,6 +421,9 @@ implementation {
     #ifdef DEBUG_CX_FLOOD
     P1OUT |= BIT3;
     #endif
+    #ifdef DEBUG_CX_FLOOD_1
+    P1OUT &= ~BIT1;
+    #endif
 
     if (checkState(S_ROOT_IDLE) || checkState(S_NR_IDLE)){
       error_t error;
@@ -435,6 +447,9 @@ implementation {
           lastSn = call CXPacket.sn(dataFrame);
         }
       } else {
+        #ifdef DEBUG_CX_FLOOD
+        P1OUT &= ~BIT3;
+        #endif
         call SendAlarm.stop();
       }
 
@@ -605,9 +620,9 @@ implementation {
         #ifdef DEBUG_CX_FLOOD_P
         printf("<p %lu fl %lu nf %u>\n\r", period, frameLen, numFrames);
         #endif
-//        printf("Now: %lu OnTimer: %lu %lu offTimer: %lu %lu\n\r",
-//          call OnTimer.getNow(), startTime-CX_FLOOD_RADIO_START_SLACK, period, startTime,
-//          (frameLen >>5)*numFrames);
+        printf("Now: %lu OnTimer: %lu %lu offTimer: %lu %lu\n\r",
+          call OnTimer.getNow(), startTime-CX_FLOOD_RADIO_START_SLACK, period, startTime,
+          (frameLen >>5)*numFrames);
         call OnTimer.startPeriodicAt(startTime - CX_FLOOD_RADIO_START_SLACK, period);
         call OffTimer.startOneShotAt(startTime, (frameLen >> 5 )* numFrames);
       } else {
@@ -711,7 +726,7 @@ implementation {
     printf("%s: \n\r", __FUNCTION__);
     #endif
     if (error == SUCCESS){
-      #ifdef DEBUG_CX_FLOOD
+      #ifdef DEBUG_CX_FLOOD_2
       P1OUT &= ~BIT1;
       #endif
       radioOn = FALSE;
