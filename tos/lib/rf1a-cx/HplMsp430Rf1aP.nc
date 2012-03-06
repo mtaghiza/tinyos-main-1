@@ -692,6 +692,10 @@ generic module HplMsp430Rf1aP () @safe() {
         #endif
         //we issue the strobe for start-tx first, then fill in the
         //  fifo real quick while the preamble/synch are going out.
+        #ifdef CX_FLOOD_TIMING_PINS
+        P1OUT |= BIT1;
+        #endif
+
         rc = call Rf1aIf.strobe(RF_STX);
         loadFifo_();
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
@@ -700,6 +704,10 @@ generic module HplMsp430Rf1aP () @safe() {
                && (0 <= --loop_limit)) {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
+        #ifdef CX_FLOOD_TIMING_PINS
+        P1OUT &= ~BIT1;
+        #endif
+
         tx_state = TX_S_active;
         #ifdef DEBUG_TX_5
         P1OUT &= ~BIT2;

@@ -365,6 +365,9 @@ implementation {
         #ifdef DEBUG_CX_FLOOD_1
         P1OUT |= BIT1;
         #endif
+        #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+        P1OUT |= BIT4;
+        #endif
         frameStart = s;
         psaBase = p;
         //TODO: should correct for time spent being forwarded already.
@@ -402,10 +405,16 @@ implementation {
     
         } else  if (checkState(S_ROOT_IDLE)){
           call SendAlarm.startAt(isa, CX_FLOOD_RETX_DELAY);
+          #ifdef CX_FLOOD_TIMING_PINS_FWD
+          P1OUT |= BIT4;
+          #endif
           setState(S_ROOT_RECEIVING);
     
         } else if (checkState(S_NR_IDLE)){
           call SendAlarm.startAt(isa, CX_FLOOD_RETX_DELAY);
+          #ifdef CX_FLOOD_TIMING_PINS_FWD
+          P1OUT |= BIT4;
+          #endif
           setState(S_NR_RECEIVING);
     
         } else if (checkState(S_ROOT_INACTIVE) || checkState(S_NR_INACTIVE)){
@@ -505,15 +514,30 @@ implementation {
     saf = call SendAlarm.getNow();
 //    printf("%s: \n\r", __FUNCTION__);
     if (checkState(S_ROOT_DATA_READY)){
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT4;
+      #endif
       call DelayedSend.completeSend();
       setState(S_ROOT_DATA_SENDING);
+
     } else if (checkState(S_ROOT_FORWARD_READY)){
+      #ifdef CX_FLOOD_TIMING_PINS_FWD
+      P1OUT &= ~BIT4;
+      #endif
       call DelayedSend.completeSend();
       setState(S_ROOT_FORWARDING);
+
     } else if (checkState(S_NR_DATA_READY)){
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT4;
+      #endif
       call DelayedSend.completeSend();
       setState(S_NR_DATA_SENDING);
+
     } else if (checkState(S_NR_FORWARD_READY)){
+      #ifdef CX_FLOOD_TIMING_PINS_FWD
+      P1OUT &= ~BIT4;
+      #endif
       call DelayedSend.completeSend();
       setState(S_NR_FORWARDING);
     } else {

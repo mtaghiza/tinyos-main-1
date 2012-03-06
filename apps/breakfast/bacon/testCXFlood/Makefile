@@ -36,6 +36,16 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_NUMFRAMES=$(CX_FLOOD_DEFAULT_NUMFRAMES)
 CX_FLOOD_DEFAULT_PERIOD?=256
 CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
 
+##p1.2 sfd(gdo): "ground truth" of offset between senders
+##p1.1 STX: how closely do two forwarders synchronize their actions?
+CFLAGS+=-DCX_FLOOD_TIMING_PINS
+
+##p1.4 frameStarted
+#CFLAGS+=-DCX_FLOOD_TIMING_PINS_FRAMING
+
+##p1.4 end-of-packet interrupt
+CFLAGS+=-DCX_FLOOD_TIMING_PINS_FWD
+
 ##P1.1 rf1aPhy.receiveData
 ##P1.2 sfd(gdo)
 ##P1.3 floodP.receive
@@ -54,7 +64,7 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
 ##P1.3: PrepareSendAlarm.fired  (clear at sendDone OR if no data
 ##      pending)
 ##P1.4: SendAlarm.fired (clear at sendDone)
-CFLAGS+=-DDEBUG_CX_FLOOD
+#CFLAGS+=-DDEBUG_CX_FLOOD
 
 ##P1.1: 
 ##preparesend alarm start/end 
@@ -62,7 +72,7 @@ CFLAGS+=-DDEBUG_CX_FLOOD
 ##radio power
 #CFLAGS+=-DDEBUG_CX_FLOOD_2
 ##framestarted
-CFLAGS+=-DDEBUG_CX_FLOOD_3
+#CFLAGS+=-DDEBUG_CX_FLOOD_3
 
 ##print src/sn/type of packets sent/received
 #CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
