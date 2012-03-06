@@ -66,7 +66,7 @@ CFLAGS+=-DDEBUG_CX_FLOOD_3
 ##print src/sn/type of packets sent/received
 #CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET
 ##print timer info
-CFLAGS+=-DDEBUG_CX_FLOOD_P_TIMERS
+#CFLAGS+=-DDEBUG_CX_FLOOD_P_TIMERS
 
 ##print state transitions that enter an error state 
 ##P2.4: error state entered

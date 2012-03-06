@@ -438,7 +438,8 @@ implementation {
 
     targetXT2 = frameStart + (claimedFrame * frameLen *
       XT2_32KHZ_RATIO)+MYSTERY_OFFSET; 
-    call SendAlarm.startAt(targetXT2, 0);
+    call SendAlarm.startAt(frameStart,
+      (claimedFrame*frameLen*XT2_32KHZ_RATIO));
     #ifdef DEBUG_CX_FLOOD_P
     printf("%s: \n\r", __FUNCTION__);
     #endif
@@ -659,9 +660,11 @@ implementation {
         #ifdef DEBUG_CX_FLOOD_P
         printf("<p %lu fl %lu nf %u>\n\r", period, frameLen, numFrames);
         #endif
+        #ifdef DEBUG_CX_FLOOD_P_TIMERS
         printf("Now: %lu OnTimer: %lu %lu offTimer: %lu %lu\n\r",
           call OnTimer.getNow(), startTime-CX_FLOOD_RADIO_START_SLACK, period, startTime,
           (frameLen >>5)*numFrames);
+        #endif
         call OnTimer.startPeriodicAt(startTime - CX_FLOOD_RADIO_START_SLACK, period);
         call OffTimer.startOneShotAt(startTime, (frameLen >> 5 )* numFrames);
       } else {
