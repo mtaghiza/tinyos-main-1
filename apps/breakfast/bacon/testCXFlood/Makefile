@@ -22,8 +22,9 @@ CFLAGS+=-DCX_FLOOD_FAILSAFE_LIMIT=$(CX_FLOOD_FAILSAFE_LIMIT)
 ## at 125kbps, test packet payload is 1.8 ms, 2.6 ms including
 ## preamble and forwarding
 ## So, framelen should be roughly 58 + (84*num_hops) + a few ticks of
-## slack
-CX_FLOOD_DEFAULT_FRAMELEN?=150
+## slack so that next user can get their affairs in order prior to
+## their frame start.
+CX_FLOOD_DEFAULT_FRAMELEN?=600
 CFLAGS+=-DCX_FLOOD_DEFAULT_FRAMELEN=$(CX_FLOOD_DEFAULT_FRAMELEN)
 
 ##1 + max number of nodes (one frame needed for announcement)

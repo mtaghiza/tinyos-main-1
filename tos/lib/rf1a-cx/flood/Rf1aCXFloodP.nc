@@ -680,12 +680,16 @@ implementation {
       //if pool is empty, refill from queue
       atomic {
         if (call MessagePool.empty()){
+          ret = call MessageQueue.dequeue();
+          printf("!dequeue %p\n\r", ret);
           //TODO: report queue drops!
-          call MessagePool.put(call MessageQueue.dequeue());
+          printf("!enpool %p\n\r", ret);
+          call MessagePool.put(ret);
           call LenQueue.dequeue();
         }
         ret = call MessagePool.get();
       }
+
       call CXPacket.setCount(msg, call CXPacket.count(msg)+1);
       if (checkState(S_ROOT_RECEIVING)){
         setState(S_ROOT_FORWARD_PREPARE);
@@ -699,6 +703,9 @@ implementation {
       if (SUCCESS != call SubSend.send(msg, len)){
         setState(S_ERROR_8);
       } else {
+        #ifdef DEBUG_CX_FLOOD_P_BUFFERS
+        printf("depool (ret) %p\n\r", ret);
+        #endif
         lastSrc = call CXPacket.source(msg);
         lastSn = call CXPacket.sn(msg);
         //record packet/len for later reporting.
@@ -706,6 +713,9 @@ implementation {
           call LenQueue.enqueue(len);
           call MessageQueue.enqueue(msg);
         }
+        #ifdef DEBUG_CX_FLOOD_P_BUFFERS
+        printf("enqueue (rx) %p\n\r", msg);
+        #endif
       }
       return ret;
 
@@ -893,6 +903,10 @@ implementation {
       }
     }
     if (needReport){
+      #ifdef DEBUG_CX_FLOOD_P_BUFFERS
+      printf("RR\n\r");
+      printf("dequeue %p\n\r", msg);
+      #endif
       pl = call LayerPacket.getPayload(msg, len);
       //Only signal up data, keep CX internal stuff at this layer.
       if (call CXPacket.type(msg) == CX_TYPE_DATA){
@@ -901,10 +915,18 @@ implementation {
           CXPacket.destination(msg));
         msg = signal Receive.receive(msg, pl, len -
           sizeof(cx_header_t));
+      } else {
+        #ifdef DEBUG_CX_FLOOD_P_BUFFERS
+        printf("in-layer\n\r");
+        #endif
       }
       atomic {
-       call MessagePool.put(msg);
+        call MessagePool.put(msg);
       }
+      #ifdef DEBUG_CX_FLOOD_P_BUFFERS
+      printf("enpool %p\n\r", msg);
+      printf("-----\n\r");
+      #endif
       post reportReceivesTask();
     }
   }

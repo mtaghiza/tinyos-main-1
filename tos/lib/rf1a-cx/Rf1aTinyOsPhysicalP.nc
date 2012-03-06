@@ -127,7 +127,7 @@ generic module Rf1aTinyOsPhysicalP() {
   /** A pointer to the message structure currently pinned for use in
    * physical receive operations.  This may or may not be
    * rx_buffer. */
-  message_t* rx_message;
+  message_t* rx_message=&rx_buffer;
   
   /** The number of octets in the received message.  Only valid for
    * the duration between the async Rf1aPhysical.receiveDone event and
@@ -191,8 +191,8 @@ generic module Rf1aTinyOsPhysicalP() {
     /* Upon granting the resource, the radio configuration has been
      * reset, and there are no buffers provided for receives.
      * Configure a default buffer. */
-    call Packet.clear(&rx_buffer);
-    setReceiveBuffer(&rx_buffer);
+    call Packet.clear(rx_message);
+    setReceiveBuffer(rx_message);
     atomic {
       split_control_state = SCS_on;
       tx_state = TXS_idle;
@@ -376,7 +376,7 @@ generic module Rf1aTinyOsPhysicalP() {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result)
-  {
+  { 
     #ifdef DEBUG_RX_4
     P1OUT|=BIT2;
     #endif

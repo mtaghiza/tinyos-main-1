@@ -152,7 +152,7 @@ module TestP {
     test_packet_t* pl = (test_packet_t*)payload;
     lastSn = pl->seqNum;
     lastSrc = call AMPacket.source(msg);
-    printf("APP Received %u %lu\n\r", lastSrc, lastSn);
+    printf("APP Received %p %u %lu\n\r", msg, lastSrc, lastSn);
     return msg;
   }
 
