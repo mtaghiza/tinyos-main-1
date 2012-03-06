@@ -350,10 +350,10 @@ implementation {
   *    -> NR_RECEIVING
   *
   */
-
+  uint16_t psaBase;
   //Frame start: synch point for entire period
   async event void Rf1aPhysical.frameStarted(){ 
-    uint16_t psaBase = call PrepareSendAlarm.getNow();
+    psaBase = call PrepareSendAlarm.getNow();
     #ifdef DEBUG_CX_FLOOD_3
     P1OUT |= BIT1;
     #endif
@@ -366,8 +366,10 @@ implementation {
         //TODO: should correct for time spent being forwarded already.
         call PrepareSendAlarm.startAt(psaBase, (claimedFrame * frameLen)-
           STARTSEND_SLACK_32KHZ);
-        printf("psa %u -> %u\n\r", psaBase,
-          call PrepareSendAlarm.getAlarm());
+        //this must be getting interrupted.
+//        printf("psa %u -> %u\n\r", psaBase,
+//          call PrepareSendAlarm.getAlarm());
+
 //        printf("sa (%lu) %lu\n\r", call PrepareSendAlarm.getNow(), claimedFrame*frameLen -
 //          STARTSEND_SLACK_32KHZ);
       }
@@ -423,6 +425,8 @@ implementation {
    *    -> NR_DATA_PREPARE
    */
   async event void PrepareSendAlarm.fired(){
+    uint32_t fms = call OnTimer.getNow();
+    uint16_t f32 = call PrepareSendAlarm.getNow();
     call SendAlarm.start(STARTSEND_SLACK_XT2DIV);
     #ifdef DEBUG_CX_FLOOD_P
     printf("%s: \n\r", __FUNCTION__);
@@ -433,8 +437,9 @@ implementation {
     #ifdef DEBUG_CX_FLOOD_1
     P1OUT &= ~BIT1;
     #endif
-    printf("psa.f %u (%u)\n\r", call PrepareSendAlarm.getNow(), 
-      call PrepareSendAlarm.getAlarm());
+    printf("psa.f %u -> %u (%u) %u %lu\n\r", psaBase, f32, 
+      call PrepareSendAlarm.getAlarm(), claimedFrame, frameLen);
+    printf("ms %lu -> %lu \n\r", startTime, fms);
 
     if (checkState(S_ROOT_IDLE) || checkState(S_NR_IDLE)){
       error_t error;
