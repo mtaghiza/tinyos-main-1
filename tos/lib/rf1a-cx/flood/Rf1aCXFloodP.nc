@@ -79,7 +79,7 @@ implementation {
     S_ROOT_ANNOUNCING = 0x13,
     S_ROOT_IDLE = 0x14,
     S_ROOT_DATA_PREPARE = 0x15,
-    S_ROOT_DATA_READY = 0x016,
+    S_ROOT_DATA_READY = 0x16,
     S_ROOT_DATA_SENDING = 0x17,
     S_ROOT_RECEIVING = 0x18,
     S_ROOT_FORWARD_PREPARE = 0x19,
@@ -510,13 +510,11 @@ implementation {
       sendDoneError = error;
     } else if (checkState(S_ROOT_FORWARDING)){
       setState(S_ROOT_IDLE);
-      post reportReceivesTask();
     }else if (checkState(S_NR_DATA_SENDING)){
       setState(S_NR_IDLE);
       sendDoneError = error;
     } else if (checkState(S_NR_FORWARDING)){
       setState(S_NR_IDLE);
-      post reportReceivesTask();
     } else {
       setState(S_ERROR_6);
     }
@@ -729,6 +727,7 @@ implementation {
         signal Send.sendDone(dataFrame, sendDoneError);
         dataFrame = NULL;
       }
+      post reportReceivesTask();
 
     } else if (checkState(S_NR_STOPPING)){
       if (failsafeCounter > CX_FLOOD_FAILSAFE_LIMIT){
@@ -751,6 +750,7 @@ implementation {
         signal Send.sendDone(dataFrame, sendDoneError);
         dataFrame = NULL;
       }
+      post reportReceivesTask();
 
     } else {
       setState(S_ERROR);

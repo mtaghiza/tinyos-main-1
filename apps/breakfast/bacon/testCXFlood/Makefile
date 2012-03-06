@@ -12,17 +12,46 @@ CFLAGS+=-DCX_FLOOD_RETX_DELAY=$(CX_FLOOD_RETX_DELAY)
 CX_FLOOD_RADIO_START_SLACK?=10
 CFLAGS+=-DCX_FLOOD_RADIO_START_SLACK=$(CX_FLOOD_RADIO_START_SLACK)
 
-SEND_PERIOD?=30
+SEND_PERIOD?=1
 CFLAGS+=-DSEND_PERIOD=$(SEND_PERIOD)
 
-CX_FLOOD_DEFAULT_FRAMELEN?=256
+
+##32khz ticks
+## at 125kbps, test packet payload is 1.8 ms, 2.6 ms including
+## preamble and forwarding
+## So, framelen should be roughly 58 + (84*num_hops) + a few ticks of
+## slack
+CX_FLOOD_DEFAULT_FRAMELEN?=150
 CFLAGS+=-DCX_FLOOD_DEFAULT_FRAMELEN=$(CX_FLOOD_DEFAULT_FRAMELEN)
+
+##1 + max number of nodes (one frame needed for announcement)
+CX_FLOOD_DEFAULT_NUMFRAMES?=4
+CFLAGS+=-DCX_FLOOD_DEFAULT_NUMFRAMES=$(CX_FLOOD_DEFAULT_NUMFRAMES)
+
+##ms
+## must be greater than (frameLen >>5) * numFrames
+CX_FLOOD_DEFAULT_PERIOD?=256
+CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
+
+##P1.1 rf1aPhy.receiveData
+##P1.2 sfd(gdo)
+##P1.3 floodP.receive
+##P1.4 rf1aphy.send -> sendReady
+#CFLAGS+=-DDEBUG_CX_FLOOD_FWD
+
+
+##P1.1 rf1aphysical signals receive -> setReceiveBuffer start
+#CFLAGS+=-DDEBUG_RX_4
+##P1.3 CXRf1aFloodP.receive
+##P1.4 startSend_
+#CFLAGS+=-DDEBUG_TX_6
+
 
 ##P1.1: radio power
 ##P1.2: sfd (gdo)
 ##P1.3: PrepareSendAlarm.fired (clear at sendDone)
 ##P1.4: SendAlarm.fired (clear at sendDone)
-#CFLAGS+=-DDEBUG_CX_FLOOD
+CFLAGS+=-DDEBUG_CX_FLOOD
 
 ##print src/sn/type of packets sent/received
 #CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET

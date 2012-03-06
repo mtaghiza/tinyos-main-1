@@ -15,6 +15,7 @@ module TestP {
   uses interface UartStream;
 
   uses interface AMSend;
+  uses interface AMPacket;
   uses interface Receive;
 
   uses interface CXFloodControl;
@@ -145,14 +146,13 @@ module TestP {
   }
 
   uint32_t lastSn;
-  task void reportTask(){
-    printf("APP Received %lu\n\r", lastSn);
-  }
+  uint16_t lastSrc;
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     test_packet_t* pl = (test_packet_t*)payload;
-    lastSn= pl->seqNum;
-    post reportTask();
+    lastSn = pl->seqNum;
+    lastSrc = call AMPacket.source(msg);
+    printf("APP Received %u %lu\n\r", lastSrc, lastSn);
     return msg;
   }
 

@@ -21,6 +21,7 @@ configuration TestAppC{
   TestP.Receive -> AMReceiverC;
   TestP.SplitControl -> ActiveMessageC;
   TestP.CXFloodControl -> Rf1aActiveMessageC;
+  TestP.AMPacket -> ActiveMessageC;
 
 
   components GlossyRf1aSettings125KC as Rf1aSettings;
