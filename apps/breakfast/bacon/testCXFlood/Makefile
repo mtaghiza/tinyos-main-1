@@ -59,7 +59,9 @@ CFLAGS+=-DDEBUG_CX_FLOOD
 ##preparesend alarm start/end 
 #CFLAGS+=-DDEBUG_CX_FLOOD_1
 ##radio power
-CFLAGS+=-DDEBUG_CX_FLOOD_2
+#CFLAGS+=-DDEBUG_CX_FLOOD_2
+##framestarted
+CFLAGS+=-DDEBUG_CX_FLOOD_3
 
 ##print src/sn/type of packets sent/received
 CFLAGS+=-DDEBUG_CX_FLOOD_P_PACKET

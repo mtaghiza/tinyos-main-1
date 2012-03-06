@@ -353,6 +353,10 @@ implementation {
 
   //Frame start: synch point for entire period
   async event void Rf1aPhysical.frameStarted(){ 
+    uint16_t psaBase = call PrepareSendAlarm.getNow();
+    #ifdef DEBUG_CX_FLOOD_3
+    P1OUT |= BIT1;
+    #endif
     if (checkState(S_ROOT_ANNOUNCING) || 
           (checkState(S_NR_IDLE) && !synchedThisRound)){
       if (claimedFrame > 0){
@@ -360,8 +364,10 @@ implementation {
         P1OUT |= BIT1;
         #endif
         //TODO: should correct for time spent being forwarded already.
-        call PrepareSendAlarm.start((claimedFrame * frameLen)-
+        call PrepareSendAlarm.startAt(psaBase, (claimedFrame * frameLen)-
           STARTSEND_SLACK_32KHZ);
+        printf("psa %u -> %u\n\r", psaBase,
+          call PrepareSendAlarm.getAlarm());
 //        printf("sa (%lu) %lu\n\r", call PrepareSendAlarm.getNow(), claimedFrame*frameLen -
 //          STARTSEND_SLACK_32KHZ);
       }
@@ -370,6 +376,9 @@ implementation {
     if (checkState(S_ROOT_ANNOUNCING)){
       call OffTimer.startOneShot((frameLen >> 5)*numFrames);
     }
+    #ifdef DEBUG_CX_FLOOD_3
+    P1OUT &= ~BIT1;
+    #endif
   }
 
   async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
@@ -424,6 +433,8 @@ implementation {
     #ifdef DEBUG_CX_FLOOD_1
     P1OUT &= ~BIT1;
     #endif
+    printf("psa.f %u (%u)\n\r", call PrepareSendAlarm.getNow(), 
+      call PrepareSendAlarm.getAlarm());
 
     if (checkState(S_ROOT_IDLE) || checkState(S_NR_IDLE)){
       error_t error;
