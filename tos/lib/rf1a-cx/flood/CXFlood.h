@@ -21,7 +21,7 @@ typedef nx_struct cx_flood_announcement_t {
 
 //TODO: tune this down as low as possible
 #ifndef CX_FLOOD_RETX_DELAY
-#define CX_FLOOD_RETX_DELAY 200
+#define CX_FLOOD_RETX_DELAY 400
 #endif
 
 #ifndef CX_FLOOD_QUEUE_LEN
@@ -50,7 +50,7 @@ typedef nx_struct cx_flood_announcement_t {
 #define CX_FLOOD_DEFAULT_NUMFRAMES 64
 #endif
 
-#define XT2_32KHZ_RATIO 25
+#define XT2_32KHZ_RATIO 50
 
 //programmed delay of 15000 ticks: see alarm at app level after
 //14711.125 ticks. unclear why, this behavior doesn't seem to be
