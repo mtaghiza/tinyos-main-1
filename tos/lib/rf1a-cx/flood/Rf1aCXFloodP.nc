@@ -44,7 +44,7 @@ module Rf1aCXFloodP {
   //field used)
   uses interface AMPacket;
 
-  uses interface Alarm<TMicro, uint16_t> as SendAlarm;
+  uses interface Alarm<TMicro, uint32_t> as SendAlarm;
 
   //can't do very long periods with 16-bit uS alarm (only up to ~65 ms,
   //  which won't be sufficient for large networks). use 32khz for
@@ -351,10 +351,10 @@ implementation {
   *
   */
   uint16_t psaBase;
-  uint16_t frameStart;
+  uint32_t frameStart;
   //Frame start: synch point for entire period
   async event void Rf1aPhysical.frameStarted(){ 
-    uint16_t s = call SendAlarm.getNow();
+    uint32_t s = call SendAlarm.getNow();
     uint16_t p  = call PrepareSendAlarm.getNow();
     #ifdef DEBUG_CX_FLOOD_3
     P1OUT |= BIT1;
@@ -392,7 +392,7 @@ implementation {
   }
 
   async event void Rf1aCoreInterrupt.interrupt (uint16_t iv) { 
-    uint16_t isa = call SendAlarm.getNow();
+    uint32_t isa = call SendAlarm.getNow();
     switch(iv){
       //4: end-of-packet (good CRC): get ready to retransmit it! 
       case 4:

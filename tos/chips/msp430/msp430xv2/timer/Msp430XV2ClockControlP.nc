@@ -218,8 +218,8 @@ module Msp430XV2ClockControlP @safe() {
       TA0CTL = TASSEL__ACLK | TACLR | MC__STOP | TAIE;
       TA0R = 0;
       #ifdef XT2_SMCLK
-      //26mhz / 4/4 = ~1.6 mhz
-      TA1CTL = TASSEL__SMCLK | ID__4 | TACLR | MC__STOP | TAIE;
+      //26mhz / 4/1 = ~6.4 mhz
+      TA1CTL = TASSEL__SMCLK | ID__1 | TACLR | MC__STOP | TAIE;
       #else
       TA1CTL = TASSEL__SMCLK | TACLR | MC__STOP | TAIE;
       #endif

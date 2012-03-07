@@ -132,7 +132,7 @@ implementation {
   components Rf1aCXFloodP as RoutingLayer;
   //TODO: scopedFlood, multipathAODV
 
-  components new AlarmMicro16C() as SendAlarm;
+  components new AlarmMicro32C() as SendAlarm;
   components new Alarm32khz16C() as PrepareSendAlarm;
   components new TimerMilliC() as OnTimer;
   components new TimerMilliC() as OffTimer;
