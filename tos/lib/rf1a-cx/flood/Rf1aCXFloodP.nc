@@ -117,6 +117,7 @@ implementation {
   //tx variables
   message_t* dataFrame;
   uint8_t dataFrameLen;
+  bool dataFrameSent = FALSE;
   error_t sendDoneError;
   uint8_t mySn;
 
@@ -244,6 +245,11 @@ implementation {
       #ifdef DEBUG_CX_FLOOD_2
       P1OUT |= BIT1;
       #endif
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT4;
+      //TODO: use 1.3 to distinguish frame start
+      #endif
+      dataFrameSent = FALSE;
       radioOn = TRUE;
       call Rf1aPhysical.setChannel(TEST_CHANNEL);
       call HplMsp430Rf1aIf.writeSinglePATable(POWER_SETTINGS[TEST_POWER_INDEX]);
@@ -365,9 +371,6 @@ implementation {
         #ifdef DEBUG_CX_FLOOD_1
         P1OUT |= BIT1;
         #endif
-        #ifdef CX_FLOOD_TIMING_PINS_FRAMING
-        P1OUT |= BIT4;
-        #endif
         frameStart = s;
         psaBase = p;
         //TODO: should correct for time spent being forwarded already.
@@ -445,6 +448,9 @@ implementation {
     psa_fms = call OnTimer.getNow();
     psa_f = call PrepareSendAlarm.getNow();
 
+    #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+    P1OUT |= BIT4;
+    #endif
     targetXT2 = frameStart + (claimedFrame * frameLen *
       XT2_32KHZ_RATIO)+MYSTERY_OFFSET; 
     call SendAlarm.startAt(frameStart,
@@ -514,9 +520,6 @@ implementation {
     saf = call SendAlarm.getNow();
 //    printf("%s: \n\r", __FUNCTION__);
     if (checkState(S_ROOT_DATA_READY)){
-      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
-      P1OUT &= ~BIT4;
-      #endif
       call DelayedSend.completeSend();
       setState(S_ROOT_DATA_SENDING);
 
@@ -528,7 +531,7 @@ implementation {
       setState(S_ROOT_FORWARDING);
 
     } else if (checkState(S_NR_DATA_READY)){
-      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      #ifdef CX_FLOOD_TIMING_PINS_FWD
       P1OUT &= ~BIT4;
       #endif
       call DelayedSend.completeSend();
@@ -573,7 +576,11 @@ implementation {
     if (checkState(S_ROOT_ANNOUNCING)){
       setState(S_ROOT_IDLE);
     }else if (checkState(S_ROOT_DATA_SENDING)){
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT4;
+      #endif
       setState(S_ROOT_IDLE);
+      dataFrameSent = TRUE;
     #ifdef DEBUG_CX_FLOOD_P_TIMERS
     printf("psa.f from %u -> alarm %u actual %u claimed %u len %lu\n\r", psaBase, 
       call PrepareSendAlarm.getAlarm(), 
@@ -590,6 +597,10 @@ implementation {
     } else if (checkState(S_ROOT_FORWARDING)){
       setState(S_ROOT_IDLE);
     }else if (checkState(S_NR_DATA_SENDING)){
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT4;
+      #endif
+      dataFrameSent = TRUE;
       setState(S_NR_IDLE);
       sendDoneError = error;
     } else if (checkState(S_NR_FORWARDING)){
@@ -643,6 +654,9 @@ implementation {
       } else if (checkState(S_NR_RECEIVING)){
         if (!synchedThisRound){
           call PrepareSendAlarm.stop();   
+          #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+          P1OUT &= ~BIT4;
+          #endif
         }
         setState(S_NR_IDLE);
 
@@ -675,6 +689,9 @@ implementation {
           //this alarm was set with stale information, so just kill it
           //  and pick it up next period.
           call PrepareSendAlarm.stop();
+          #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+          P1OUT &= ~BIT4;
+          #endif
         }
         frameLen = pl->frameLen;
         numFrames = pl->numFrames;
@@ -695,6 +712,9 @@ implementation {
         //not duplicate, but not a synch point either, so kill the
         //  prepareSendAlarm.
         call PrepareSendAlarm.stop();
+        #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+        P1OUT &= ~BIT4;
+        #endif
       }
     }
 
@@ -814,7 +834,7 @@ implementation {
         setState(S_ROOT_OFF);
         signal SplitControl.stopDone(SUCCESS);
       }
-      if (dataFrame != NULL){
+      if (dataFrame != NULL && dataFrameSent){
         signal Send.sendDone(dataFrame, sendDoneError);
         dataFrame = NULL;
       }
@@ -899,6 +919,9 @@ implementation {
     #ifdef DEBUG_CX_FLOOD_P
     printf("%s: \n\r", __FUNCTION__);
     #endif
+    if (checkState(S_NR_OFF) || checkState(S_ROOT_OFF)){
+      return EOFF;
+    }
     if (NULL == dataFrame){
       call CXPacket.setDestination(msg, call AMPacket.destination(msg));
       call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);

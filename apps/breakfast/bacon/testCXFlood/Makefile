@@ -40,11 +40,11 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
 ##p1.1 STX: how closely do two forwarders synchronize their actions?
 CFLAGS+=-DCX_FLOOD_TIMING_PINS
 
-##p1.4 frameStarted
-#CFLAGS+=-DCX_FLOOD_TIMING_PINS_FRAMING
+##p1.4 high from synch to data send done
+CFLAGS+=-DCX_FLOOD_TIMING_PINS_FRAMING
 
 ##p1.4 end-of-packet interrupt
-CFLAGS+=-DCX_FLOOD_TIMING_PINS_FWD
+#CFLAGS+=-DCX_FLOOD_TIMING_PINS_FWD
 
 ##P1.1 rf1aPhy.receiveData
 ##P1.2 sfd(gdo)

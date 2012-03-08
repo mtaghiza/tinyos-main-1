@@ -91,6 +91,10 @@ module TestP {
     post reportSend();
   }
 
+  task void startTimerTask(){
+    call Timer.startOneShot(10);
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch(byte){
       case 'q':
@@ -118,12 +122,12 @@ module TestP {
         break;
       case 't':
         isSending = !isSending;
-        printf("Is sending: %x\n\r", isSending);
+        //printf("Is sending: %x\n\r", isSending);
         if (!isSending && call Timer.isRunning()){
           call Timer.stop();
         }
         if (isSending && ! call Timer.isRunning()){
-          call Timer.startOneShot(1);
+          post startTimerTask();
         }
         break;
       default:
