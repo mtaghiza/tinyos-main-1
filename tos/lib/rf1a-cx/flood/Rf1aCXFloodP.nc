@@ -648,6 +648,7 @@ implementation {
       (thisSn == lastSn);
 //    printf("%s: \n\r", __FUNCTION__);
     if (isDuplicate){
+      message_t* ret;
       #ifdef DEBUG_CX_FLOOD_P_PACKET
       printf("RD{%u(%u) %u(%u) %x %x}\n\r", 
         call CXPacket.source(msg), lastSrc,
@@ -674,7 +675,13 @@ implementation {
         //root appears to *not* see own framestart?
         setState(S_ERROR_7);
       }
-      return msg;
+      //for reporting self-prr
+      atomic{
+        ret = call MessagePool.get();
+        call MessageQueue.enqueue(msg);
+        call LenQueue.enqueue(len);
+      }
+      return ret;
     } else{
       #ifdef DEBUG_CX_FLOOD_P_PACKET
       printf("RN{%u(%u) %u(%u) %x %x}\n\r", 
