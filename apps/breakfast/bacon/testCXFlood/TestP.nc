@@ -78,7 +78,8 @@ module TestP {
   task void reportSend(){
     test_packet_t* pl = call AMSend.getPayload(_msg,
       sizeof(test_packet_t));
-    printf("Send: %lu %s\n\r", pl->seqNum,
+    printf("TX: Sender: %u SN: %lu Error: %s\n\r", TOS_NODE_ID, 
+      pl->seqNum,
       decodeError(sendError));
   }
 
@@ -86,7 +87,7 @@ module TestP {
     error_t error;
     test_packet_t* pl = call AMSend.getPayload(_msg,
       sizeof(test_packet_t));
-    pl -> seqNum += 2;
+    pl -> seqNum += 1;
     error = call AMSend.send(AM_BROADCAST_ADDR, _msg, sizeof(test_packet_t));
     post reportSend();
   }
@@ -156,7 +157,10 @@ module TestP {
     test_packet_t* pl = (test_packet_t*)payload;
     lastSn = pl->seqNum;
     lastSrc = call AMPacket.source(msg);
-    printf("APP Received %p %u %lu\n\r", msg, lastSrc, lastSn);
+    printf("RX: Sender: %u Receiver: %u SN: %lu\n\r", 
+      lastSrc, 
+      TOS_NODE_ID, 
+      lastSn);
     return msg;
   }
 
