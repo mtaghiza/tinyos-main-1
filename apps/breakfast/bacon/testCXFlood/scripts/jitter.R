@@ -47,3 +47,12 @@ plotData(epiData, "End Packet Interrupt", outPrefix, "99.ep",
 minOffset, q99, "(uS)")
 plotData(stxData, "STX Strobe", outPrefix, "99.stx", minOffset, q99,
 "(uS)")
+
+print("Summary (SFD)")
+print(summary(sfdData))
+print("Mean")
+print(mean(sfdData$Offset))
+print("Variance")
+print(var(sfdData$Offset))
+
+

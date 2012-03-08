@@ -18,6 +18,13 @@ source('scripts/basicPlots.R')
 framingData <- read.csv(framingDataFile, col.names='Offset')
 framingData$Offset <- framingData$Offset * 1000000
 
+print("Summary")
+print(summary(framingData))
+print("Mean")
+print(mean(framingData$Offset))
+print("Variance")
+print(var(framingData$Offset))
+
 framingData$Offset <- framingData$Offset - mean(framingData$Offset)
 
 allOffsets <- rbind(framingData)
@@ -30,3 +37,4 @@ plotData(framingData, "Frame Length w.r.t Mean", outPrefix, "full.framing",
   minOffset, maxOffset, "(uS)")
 plotData(framingData, "Frame Length w.r.t Mean", outPrefix, "q80.framing", q10,
   q90, "(uS)")
+
