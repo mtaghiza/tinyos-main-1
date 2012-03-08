@@ -40,10 +40,11 @@ CFLAGS+=-DCX_FLOOD_DEFAULT_PERIOD=$(CX_FLOOD_DEFAULT_PERIOD)
 ##p1.1 STX: how closely do two forwarders synchronize their actions?
 CFLAGS+=-DCX_FLOOD_TIMING_PINS
 
-##p1.4 high from synch to data send done
+##p1.4 high from synch to data send done, used for seeing how stable
+##  frame starts are.
 CFLAGS+=-DCX_FLOOD_TIMING_PINS_FRAMING
 
-##p1.4 end-of-packet interrupt
+##p1.4 end-of-packet interrupt, used for jitter measurements
 #CFLAGS+=-DCX_FLOOD_TIMING_PINS_FWD
 
 ##P1.1 rf1aPhy.receiveData
