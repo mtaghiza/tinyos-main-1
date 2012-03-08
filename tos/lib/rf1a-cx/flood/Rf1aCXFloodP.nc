@@ -72,6 +72,11 @@ implementation {
     S_ERROR_8 = 0x88,
     S_ERROR_9 = 0x89,
     S_ERROR_a = 0x8a,
+    S_ERROR_b = 0x8b,
+    S_ERROR_c = 0x8c,
+    S_ERROR_d = 0x8d,
+    S_ERROR_e = 0x8e,
+    S_ERROR_f = 0x8f,
 
     S_ROOT_OFF = 0x10,
     S_ROOT_INACTIVE = 0x11,
@@ -294,7 +299,7 @@ implementation {
         sizeof(cx_flood_announcement_t) + sizeof(cx_header_t));
       if (SUCCESS != sendError){
         call OffTimer.stop();
-        setState(S_ERROR);
+        setState(S_ERROR_b);
       } else {
         lastSrc = call CXPacket.source(announcement);
         lastSn = call CXPacket.sn(announcement);
@@ -305,7 +310,7 @@ implementation {
       setState(S_NR_IDLE);
 
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_c);
     }
   }
   
@@ -481,7 +486,7 @@ implementation {
         error = call SubSend.send(dataFrame, dataFrameLen);
         if (SUCCESS != error){
           call SendAlarm.stop();
-          setState(S_ERROR);
+          setState(S_ERROR_d);
         }else{
           lastSrc = call CXPacket.source(dataFrame);
           lastSn = call CXPacket.sn(dataFrame);
@@ -494,6 +499,8 @@ implementation {
       }
 
     } else {
+      //BUG: observed from S_NR_FORWARDING: perhaps indicating that
+      //previous send did not report sendDone OR frames are too small.
       setState(S_ERROR_4);
       call SendAlarm.stop();
     }
@@ -543,10 +550,10 @@ implementation {
       #endif
       call DelayedSend.completeSend();
       setState(S_NR_FORWARDING);
+
     } else {
       printf("unexpected sendalarm.fired\n\r");
-      //TODO: will be hit for cases where we get SFD but don't receive
-      //a packet, which should be handled more gracefully.
+      //TODO: have seen this from S_INACTIVE
       setState(S_ERROR_5);
     }
   }
@@ -604,6 +611,9 @@ implementation {
       setState(S_NR_IDLE);
       sendDoneError = error;
     } else if (checkState(S_NR_FORWARDING)){
+      //TODO: occasionaly this is not hit prior to offtimer firing,
+      //  which would i guess indicate that we're not seeing the
+      //  sendDone from forwarding in some cases. 
       setState(S_NR_IDLE);
     } else {
       setState(S_ERROR_6);
@@ -783,7 +793,7 @@ implementation {
     #endif
     if (checkState(S_ROOT_IDLE) || checkState(S_NR_IDLE)){
       if (SUCCESS != call SubSplitControl.stop()){
-        setState(S_ERROR);
+        setState(S_ERROR_f);
       } else {
         if (checkState(S_ROOT_IDLE)){
           setState(S_ROOT_STOPPING);
@@ -792,7 +802,11 @@ implementation {
         }
       }
     } else {
-      setState(S_ERROR);
+      //TODO: observed at frame 2 owner during forwarding
+      //  for frame 3, and during own-data sending
+      //during forwarding for frame 3: this is the last frame, so
+      //maybe the tolerance is just too tight?
+      setState(S_ERROR_e);
     }
   }
 
