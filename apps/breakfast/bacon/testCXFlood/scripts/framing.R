@@ -37,3 +37,12 @@ plotData(framingData, "Frame Length w.r.t Mean", outPrefix, "full.framing",
 plotData(framingData, "Frame Length w.r.t Mean", outPrefix, "q80.framing", q10,
   q90, "(uS)")
 
+framing99Data <- framing99Data - mean(framing99Data)
+maxBin <- max(framing99Data)/0.25e-6
+minBin <- min(framing99Data)/0.25e-6
+pdf(paste(outPrefix, '.hist.pdf', sep=''))
+hist(framing99Data*1e6, 
+    breaks=0.25*((minBin-1):(maxBin+1)),
+    xlab="Offset (uS)",
+    main="Framing offset")
+garbage <- dev.off()
