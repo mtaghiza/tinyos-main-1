@@ -48,11 +48,13 @@ minOffset, q99, "(uS)")
 plotData(stxData, "STX Strobe", outPrefix, "99.stx", minOffset, q99,
 "(uS)")
 
-print("Summary (SFD)")
-print(summary(sfdData))
+origSfdData <- read.csv(sfdDataFile, col.names='Offset')
+#origSfdData <- sfdData
+sfd99Data <- origSfdData[origSfdData$Offset < quantile(origSfdData$Offset, 0.99),]
+#print("Summary (SFD) to 99th percentile")
+#print(summary(sfd99Data))
 print("Mean")
-print(mean(sfdData$Offset))
-print("Variance")
-print(var(sfdData$Offset))
-
+print(mean(sfd99Data))
+print("sd")
+print(sd(sfd99Data))
 

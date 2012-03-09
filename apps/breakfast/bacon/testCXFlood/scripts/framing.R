@@ -16,15 +16,14 @@ for (e in commandArgs()[(which(commandArgs() == "--args")+1):length(commandArgs(
 source('scripts/basicPlots.R')
 
 framingData <- read.csv(framingDataFile, col.names='Offset')
-framingData$Offset <- framingData$Offset * 1000000
 
-print("Summary")
-print(summary(framingData))
+framing99Data <- framingData[framingData$Offset < quantile(framingData$Offset, 0.99),]
 print("Mean")
-print(mean(framingData$Offset))
-print("Variance")
-print(var(framingData$Offset))
+print(mean(framing99Data))
+print("sd")
+print(sd(framing99Data))
 
+framingData$Offset <- framingData$Offset * 1000000
 framingData$Offset <- framingData$Offset - mean(framingData$Offset)
 
 allOffsets <- rbind(framingData)

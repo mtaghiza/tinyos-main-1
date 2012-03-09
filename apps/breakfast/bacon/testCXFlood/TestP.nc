@@ -53,6 +53,25 @@ module TestP {
       PMAPPWD = 0x00;
     }
 
+    #ifdef CLOCK_TEST
+    P1SEL |= BIT1|BIT2|BIT3;
+    P1DIR |= BIT1|BIT2|BIT3;
+
+    atomic{
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP1 = PM_ACLK;
+      //measured with 40 hz span
+      //P1-02 ant: 6499901.636 mhz
+      //P1-04 ant: 6499929.654 mhz
+      //P1-05 ant: 6499936.563 mhz
+      //so: this is about 5.4 ppm skew. not the culprit.
+      P1MAP2 = PM_SMCLK;
+      P1MAP3 = PM_MCLK;
+      PMAPPWD = 0x00;
+    }
+    #endif
+
     call UartControl.start();
     printf("Booted\n\r");
     printf(" r: toggle root on/off\n\r");
