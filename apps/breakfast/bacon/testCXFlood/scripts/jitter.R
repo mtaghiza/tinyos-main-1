@@ -58,3 +58,10 @@ print(mean(sfd99Data))
 print("sd")
 print(sd(sfd99Data))
 
+pdf(paste(outPrefix, '.hist.pdf', sep=''))
+maxBin <- max(sfd99Data)/0.25e-6
+hist(sfd99Data*1e6, 
+    breaks=0.25*(0:(maxBin+1)),
+    xlab="Offset (uS)",
+    main="Forwarder SFD offset")
+garbage <- dev.off()
