@@ -337,6 +337,9 @@ implementation {
 //    printf("%s: \n\r", __FUNCTION__);
     if (checkState(S_ROOT_ANNOUNCE_PREPARE)){
       setState(S_ROOT_ANNOUNCING);
+      #ifdef CX_FLOOD_TIMING_PINS_FWD
+      P1OUT |= BIT3;
+      #endif
       call DelayedSend.completeSend();
     } else if (checkState(S_ROOT_DATA_PREPARE)){
       setState(S_ROOT_DATA_READY);
@@ -458,6 +461,9 @@ implementation {
 
     #ifdef CX_FLOOD_TIMING_PINS_FRAMING
     P1OUT |= BIT4;
+    #endif
+    #ifdef CX_FLOOD_TIMING_PINS_FWD
+    P1OUT &= ~BIT3;
     #endif
     targetXT2 = frameStart + (claimedFrame * frameLen *
       XT2_32KHZ_RATIO)+MYSTERY_OFFSET; 

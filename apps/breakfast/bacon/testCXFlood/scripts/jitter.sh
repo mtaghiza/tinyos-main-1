@@ -13,6 +13,7 @@ do
 
     python scripts/jitter.py $data --stxForward \
         > $data.stx
+
     set -x
     R --no-save --slave --args \
       outPrefix=figures/$(basename $data)\

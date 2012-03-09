@@ -8,6 +8,9 @@ for (e in commandArgs()[(which(commandArgs() == "--args")+1):length(commandArgs(
   if (name == 'sfdDataFile'){
     sfdDataFile <- val
   }
+  if (name == 'sfdDelayDataFile'){
+    sfdDelayDataFile <- val
+  }
   if (name == 'epiDataFile'){
     epiDataFile <- val
   }
@@ -65,3 +68,12 @@ hist(sfd99Data*1e6,
     xlab="Offset (uS)",
     main="Forwarder SFD offset")
 garbage <- dev.off()
+
+sfdDelayData <- read.csv(sfdDelayDataFile, col.names='Delay')
+sfdDelay99Data <- sfdDelayData[sfdDelayData$Delay < quantile(sfdDelayData$Delay, 0.99),]
+minBin <- min(sfdDelay99Data)/0.25e-6
+maxBin <- max(sfdDelay99Data)/0.25e-6
+hist(sfdDelay99Data*1e6,
+    breaks=0.25*((minBin-1):(maxBin+1)),
+    xlab="Delay (uS)",
+    main="Forward delay")

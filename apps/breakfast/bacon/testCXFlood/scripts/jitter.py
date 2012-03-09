@@ -34,7 +34,8 @@ def stxForwardOffsets(data):
     else:
         offsets = [(abs(r[0]-l[0]),l,r) for (l,r) in zip(f1,f2)]
         return offsets
-    
+
+   
 
 if __name__=='__main__':
     data = parse(open(sys.argv[1], 'r'))
