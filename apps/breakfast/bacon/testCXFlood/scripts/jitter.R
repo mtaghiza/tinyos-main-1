@@ -37,20 +37,20 @@ maxOffset <- max(allOffsets$Offset)
 q99 <- quantile(allOffsets$Offset, c(0.99))
 minOffset <- 0
 
-plotData(sfdData, "SFD Detected", outPrefix, "full.sfd", minOffset,
-maxOffset, "(uS)")
-plotData(epiData, "End Packet Interrupt", outPrefix, "full.ep",
-minOffset, maxOffset, "(uS)")
-plotData(stxData, "STX Strobe", outPrefix, "full.stx", minOffset,
-maxOffset, "(uS)")
-
-plotData(sfdData, "SFD Detected", outPrefix, "99.sfd", minOffset, q99,
-"(uS)")
-plotData(epiData, "End Packet Interrupt", outPrefix, "99.ep",
-minOffset, q99, "(uS)")
-plotData(stxData, "STX Strobe", outPrefix, "99.stx", minOffset, q99,
-"(uS)")
-
+#  plotData(sfdData, "SFD Detected", outPrefix, "full.sfd", minOffset,
+#  maxOffset, "(uS)")
+#  plotData(epiData, "End Packet Interrupt", outPrefix, "full.ep",
+#  minOffset, maxOffset, "(uS)")
+#  plotData(stxData, "STX Strobe", outPrefix, "full.stx", minOffset,
+#  maxOffset, "(uS)")
+#  
+#  plotData(sfdData, "SFD Detected", outPrefix, "99.sfd", minOffset, q99,
+#  "(uS)")
+#  plotData(epiData, "End Packet Interrupt", outPrefix, "99.ep",
+#  minOffset, q99, "(uS)")
+#  plotData(stxData, "STX Strobe", outPrefix, "99.stx", minOffset, q99,
+#  "(uS)")
+  
 origSfdData <- read.csv(sfdDataFile, col.names='Offset')
 #origSfdData <- sfdData
 sfd99Data <- origSfdData[origSfdData$Offset < quantile(origSfdData$Offset, 0.99),]
@@ -68,12 +68,3 @@ hist(sfd99Data*1e6,
     xlab="Offset (uS)",
     main="Forwarder SFD offset")
 garbage <- dev.off()
-
-sfdDelayData <- read.csv(sfdDelayDataFile, col.names='Delay')
-sfdDelay99Data <- sfdDelayData[sfdDelayData$Delay < quantile(sfdDelayData$Delay, 0.99),]
-minBin <- min(sfdDelay99Data)/0.25e-6
-maxBin <- max(sfdDelay99Data)/0.25e-6
-hist(sfdDelay99Data*1e6,
-    breaks=0.25*((minBin-1):(maxBin+1)),
-    xlab="Delay (uS)",
-    main="Forward delay")
