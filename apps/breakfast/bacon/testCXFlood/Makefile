@@ -42,6 +42,7 @@ CFLAGS+=-DCX_FLOOD_TIMING_PINS
 
 ##p1.4 high from synch to data send done, used for seeing how stable
 ##  frame starts are.
+##p1.3 high during announcement transmission from root.
 CFLAGS+=-DCX_FLOOD_TIMING_PINS_FRAMING
 
 ##p1.4 end-of-packet interrupt, used for jitter measurements

@@ -252,7 +252,7 @@ implementation {
       #endif
       #ifdef CX_FLOOD_TIMING_PINS_FRAMING
       P1OUT &= ~BIT4;
-      //TODO: use 1.3 to distinguish frame start
+      P1OUT &= ~BIT3;
       #endif
       dataFrameSent = FALSE;
       radioOn = TRUE;
@@ -271,6 +271,9 @@ implementation {
     if (checkState(S_ROOT_INACTIVE)){
       error_t sendError;
       cx_flood_announcement_t* pl;
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT |= BIT3;
+      #endif
 
       call Rf1aPacket.configureAsData(announcement);
       call AMPacket.setSource(announcement, call AMPacket.address());
@@ -581,6 +584,9 @@ implementation {
 //    printf("%s: \n\r ", __FUNCTION__);
 
     if (checkState(S_ROOT_ANNOUNCING)){
+      #ifdef CX_FLOOD_TIMING_PINS_FRAMING
+      P1OUT &= ~BIT3;
+      #endif
       setState(S_ROOT_IDLE);
     }else if (checkState(S_ROOT_DATA_SENDING)){
       #ifdef CX_FLOOD_TIMING_PINS_FRAMING
