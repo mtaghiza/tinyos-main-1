@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "decodeError.h"
 #include "Rf1a.h"
+#include "message.h"
 
 module TestP {
   uses interface Boot;
@@ -20,25 +21,13 @@ module TestP {
   uses interface Rf1aStatus;
 
 } implementation {
+  bool nextStateRx = TRUE;
 
-  event void Boot.booted(){
-    //timing pins
-    P1SEL &= ~(BIT1|BIT3|BIT4);
-    P1SEL |= BIT2;
-    P1DIR |= (BIT1|BIT2|BIT3|BIT4);
-    P2SEL &= ~(BIT4);
-    P2DIR |= (BIT4);
-    //set up SFD GDO on 1.2
-    atomic{
-      PMAPPWD = PMAPKEY;
-      PMAPCTL = PMAPRECFG;
-      P1MAP2 = PM_RFGDO0;
-      PMAPPWD = 0x00;
-    }
+  message_t rx_msg_internal;
+  message_t* rx_msg = &rx_msg_internal;
 
-    call UartControl.start();
-    printf("Booted\n\r");
-  }
+  message_t tx_msg_internal;
+  message_t* tx_msg = &tx_msg_internal;
 
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
@@ -68,11 +57,73 @@ module TestP {
   }
 
   task void printStatus(){
-    printf("Core Status: %s\n\r", decodeStatus());
+    printf("* Core Status: %s\n\r", decodeStatus());
+    printf("* next state RX? %x\n\r", nextStateRx);
+    printf("--------\n\r");
   }
 
+  event void Boot.booted(){
+    //timing pins
+    P1SEL &= ~(BIT1|BIT3|BIT4);
+    P1SEL |= BIT2;
+    P1DIR |= (BIT1|BIT2|BIT3|BIT4);
+    P2SEL &= ~(BIT4);
+    P2DIR |= (BIT4);
+    //set up SFD GDO on 1.2
+    atomic{
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP2 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+    }
+
+    call UartControl.start();
+    printf("\n\rManual RF1A test\n\r");
+    printf("s: start (request resource)\n\r");
+    printf("r: receive (startReception/setRxBuffer)\n\r");
+    printf("f: FSTXON (startTransmit)\n\r");
+    printf("t: TX (completeTransmit)\n\r");
+    printf("n: toggle next state RX\n\r");
+    printf("========================\n\r");
+    post printStatus();
+  }
+
+
   task void startTask(){
-    call Resource.request();
+    error_t error = call Resource.request();
+    if (error != SUCCESS){
+      printf("%s: %s\n\r", __FUNCTION__, decodeError(error)); 
+    }
+  }
+
+  task void startReceiveTask(){
+    error_t error;
+    printf("%s: Start \n\r", __FUNCTION__);
+    error = call Rf1aPhysical.setReceiveBuffer(
+      (uint8_t*)(rx_msg->header),
+      TOSH_DATA_LENGTH + sizeof(message_header_t),
+      TRUE);
+//    if (error == SUCCESS){
+//      error = call Rf1aPhysical.startReception();
+//    }
+    printf("%s: done: %s\n\r", __FUNCTION__, decodeError(error));
+    post printStatus();
+  }
+
+  task void startTransmitTask(){
+    printf("%s: \n\r", __FUNCTION__);
+    //TODO: startTransmit
+  }
+
+  task void completeTransmitTask(){
+    printf("%s: \n\r", __FUNCTION__);
+    //TODO: completeTransmit
+  }
+
+  task void toggleNextStateRXTask(){
+    printf("%s: \n\r", __FUNCTION__);
+    nextStateRx = !nextStateRx;
+    post printStatus();
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
@@ -83,6 +134,18 @@ module TestP {
       case 's':
         printf("Starting\n\r");
         post startTask();
+        break;
+      case 'r':
+        post startReceiveTask();
+        break;
+      case 'f':
+        post startTransmitTask();
+        break;
+      case 't':
+        post completeTransmitTask();
+        break;
+      case 'n':
+        post toggleNextStateRXTask();
         break;
       case '\r':
         printf("\n\r");
@@ -95,6 +158,9 @@ module TestP {
 
   event void Resource.granted(){
     printf("%s: \n\r", __FUNCTION__);  
+    call Rf1aPhysical.setChannel(TEST_CHANNEL);
+    call HplMsp430Rf1aIf.writeSinglePATable(0x25);
+
     post printStatus();
   }
 
