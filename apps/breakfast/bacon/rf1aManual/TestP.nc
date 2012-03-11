@@ -129,7 +129,7 @@ module TestP {
 
   task void cancelReceiveTask(){
     error_t error = call Rf1aPhysical.setReceiveBuffer(0, 0,
-    nextStateRx? RF1A_OM_RX: RF1A_OM_FSTXON);
+      nextStateRx? RF1A_OM_RX: RF1A_OM_FSTXON);
     printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
     post printStatus();
   }
@@ -232,7 +232,14 @@ module TestP {
   }
 
   task void reportRX(){
+    error_t error;
     printf("RX from %x\n\r", call AMPacket.source(rx_msg));
+    error = call Rf1aPhysical.setReceiveBuffer(
+      (uint8_t*)(rx_msg->header),
+      TOSH_DATA_LENGTH + sizeof(message_header_t),
+      (nextStateRx ? RF1A_OM_RX : RF1A_OM_FSTXON));
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
+    post printStatus();
   }
 
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
