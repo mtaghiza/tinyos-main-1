@@ -80,10 +80,13 @@ module TestP {
     call UartControl.start();
     printf("\n\rManual RF1A test\n\r");
     printf("s: start (request resource)\n\r");
+    printf("S: stop (release resource)\n\r");
     printf("r: receive (startReception/setRxBuffer)\n\r");
+    printf("R: cancel receive (go back to idle) \n\r");
     printf("f: FSTXON (startTransmit)\n\r");
     printf("t: TX (completeTransmit)\n\r");
     printf("n: toggle next state RX\n\r");
+    printf("i: resume idle mode\n\r");
     printf("========================\n\r");
     post printStatus();
   }
@@ -96,17 +99,33 @@ module TestP {
     }
   }
 
+  task void stopTask(){
+    error_t error = call Resource.release();
+    if (error != SUCCESS){
+      printf("%s: %s\n\r", __FUNCTION__, decodeError(error)); 
+    }
+    post printStatus();
+  }
+
   task void startReceiveTask(){
     error_t error;
-    printf("%s: Start \n\r", __FUNCTION__);
     error = call Rf1aPhysical.setReceiveBuffer(
       (uint8_t*)(rx_msg->header),
       TOSH_DATA_LENGTH + sizeof(message_header_t),
-      TRUE);
+      (nextStateRx ? RF1A_OM_RX : RF1A_OM_FSTXON));
+//    //not necessary: setReceiveBuffer switches us into RX mode
+//    // already.
 //    if (error == SUCCESS){
 //      error = call Rf1aPhysical.startReception();
 //    }
     printf("%s: done: %s\n\r", __FUNCTION__, decodeError(error));
+    post printStatus();
+  }
+
+  task void cancelReceiveTask(){
+    error_t error = call Rf1aPhysical.setReceiveBuffer(0, 0,
+    nextStateRx? RF1A_OM_RX: RF1A_OM_FSTXON);
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
     post printStatus();
   }
 
@@ -121,8 +140,15 @@ module TestP {
   }
 
   task void toggleNextStateRXTask(){
-    printf("%s: \n\r", __FUNCTION__);
+//    printf("%s: \n\r", __FUNCTION__);
     nextStateRx = !nextStateRx;
+    post printStatus();
+  }
+
+  task void resumeIdleTask(){
+    error_t error;
+    error = call Rf1aPhysical.resumeIdleMode();
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
     post printStatus();
   }
 
@@ -135,17 +161,33 @@ module TestP {
         printf("Starting\n\r");
         post startTask();
         break;
+      case 'S':
+        printf("Stopping\n\r");
+        post stopTask();
+        break;
       case 'r':
+        printf("Start receive\n\r");
         post startReceiveTask();
         break;
+      case 'R':
+        printf("Cancel receive\n\r");
+        post cancelReceiveTask();
+        break;
       case 'f':
+        printf("Start Transmit\n\r");
         post startTransmitTask();
         break;
       case 't':
+        printf("Complete Transmit\n\r");
         post completeTransmitTask();
         break;
       case 'n':
+        printf("Toggle next state RX\n\r");
         post toggleNextStateRXTask();
+        break;
+      case 'i':
+        printf("Resume idle\n\r");
+        post resumeIdleTask();
         break;
       case '\r':
         printf("\n\r");
@@ -181,6 +223,10 @@ module TestP {
   async event void Rf1aPhysical.clearChannel () { }
   async event void Rf1aPhysical.carrierSense () { }
   async event void Rf1aPhysical.released () { }
+
+  async event bool Rf1aPhysical.idleModeRx () { 
+    return FALSE;
+  }
 
 }
 

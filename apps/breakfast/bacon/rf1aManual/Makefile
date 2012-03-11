@@ -5,6 +5,8 @@ CFLAGS+=-DTEST_CHANNEL=$(TEST_CHANNEL)
 
 PFLAGS += -I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I../../util
+CFLAGS += -Irf1a-tdma
+CFLAGS += -Irf1a-tdma/physical
 
 #16mhz mclk, 32 mhz dco
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
