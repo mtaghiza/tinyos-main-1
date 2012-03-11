@@ -55,35 +55,27 @@ generic module Rf1aTDMAP (){
       PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_STARTING
     
     S_RX_STARTING: setting up for cs/fs check
-      phy.currentStatus(RX) / -> S_RX_READY
+      phy.currentStatus(RX) / call FrameWaitAlarm.startAt(call FS.alarm(),
+        fwCheckLen) -> S_RX_READY
 
     S_RX_READY: radio is in receive mode, frame has not yet started.
-      FS.fired / call FrameWaitAlarm.startAt(call FS.alarm(),
-        csCheckLen) -> S_CS_CHECK
-      phy.carrierSense : treat as S_CS_CHECK (our framestart timer is a
-        little late)
-
-    S_CS_CHECK: waiting for carrier sense
-      FWA.fired / resumeIdleMode -> S_IDLE
-      phy.carrierSense / call FrameWaitAlarm.startAt(call FS.alarm(),
-        fsCheckLen) -> S_FS_CHECK
-
-    S_FS_CHECK: waiting for framestart event
-      FWA.fired / resumeIdleMode -> S_IDLE
+      phy.carrierSense / record time -> S_RX_READY
       FSCapture.captured() / signal frameStarted(call
         FSCapture.event()),  call FWA.stop() -> S_RECEIVING
-   
+      FWA.fired / resumeIdleMode -> S_IDLE
+
     S_RECEIVING: frame has started, expecting data.
-      PFS.fired: treat as S_IDLE (we got frameStart, but it didn't
-        complete)
       phy.receiveDone / post receiveTask -> S_RX_CLEANUP
+      (cases where frame starts but we don't get data: same as S_IDLE)
+      PFS.fired + !isTX / setReceiveBuffer + startReception -> S_RX_STARTING
+      PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_STARTING
     
     S_RX_CLEANUP:
       receiveTask / signal receive + buffer swap 
-        -> (phy.currentStatus)? [S_IDLE, S_RX_READY, S_TX_READY]
+        -> (phy.currentStatus)? [S_RX_READY, S_TX_READY]
 
     S_TX_STARTING:
-      phy.currentStatus(TX) / -> S_TX_READY 
+      phy.currentStatus(FSTXON) / -> S_TX_READY 
     
     S_TX_READY:
       FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
@@ -94,7 +86,7 @@ generic module Rf1aTDMAP (){
 
     S_TX_CLEANUP:
       sendDoneTask / signal send done 
-        -> (phy.currentStatus)? [S_IDLE, S_RX_READY, S_TX_READY]
+        -> (phy.currentStatus)? [S_RX_READY, S_TX_READY]
 
     S_*_CLEANUP:
       *Task + dcOffPending + !scOffPending / call Resource.release +
@@ -104,6 +96,12 @@ generic module Rf1aTDMAP (){
     
     S_INACTIVE:
       dcTimer.fired() / call resource.request -> S_STARTING
+
+    Other stuff:
+      - splitcontrol.stop: set scOffPending
+      - resource.granted: set dcTimer to turn off after last frame
+      - dcTimer.fired: toggle dcOffPending, schedule to turn on prior
+        to next period start
 
   */
   uint8_t state = S_OFF;
