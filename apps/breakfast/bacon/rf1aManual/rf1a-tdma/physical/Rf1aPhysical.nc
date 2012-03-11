@@ -67,6 +67,7 @@
  *
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
 interface Rf1aPhysical {
+
   /** Initiate transmission of a message.
    *
    * This places the radio into transmit mode.  The
@@ -97,8 +98,11 @@ interface Rf1aPhysical {
    * is still transmitting the remainder of a previous packet or if
    * clear-channel assessment fails.  EINVAL if the length is not
    * valid.  */
-  command error_t send (uint8_t* buffer, unsigned int length, 
-    bool cca_check);
+   //This has been superceded by startSend/completeSend below. fragment
+   //transmission is not supported at the moment, everything must fit
+   //into the buffer. sorry, mom. sorry, god.
+//  command error_t send (uint8_t* buffer, unsigned int length, 
+//    bool cca_check);
 
   /**
    *  Perform state-checks and switch to FSTXON, if not already there.
@@ -112,7 +116,7 @@ interface Rf1aPhysical {
    *  transmitting something else, ERETRY if cca requested but channel
    *  is busy, SUCCESS if all is cool and we are now in FSTXON.
    */
-  async command error_t startSend(bool cca_check);
+  async command error_t startSend(bool cca_check, rf1a_offmode_t txOffMode);
 
   /**
    * Send the STX strobe to complete the process.

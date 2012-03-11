@@ -247,7 +247,7 @@ generic module HplMsp430Rf1aP () @safe() {
   uint8_t tx_state;
 
   /** The success or failure value for the current transmission */
-  norace int tx_result;
+  int tx_result;
 
   /** Pointer to the current position within a send()-provided
    * outgoing message.  Null if no active transmission or the sender
@@ -568,7 +568,7 @@ generic module HplMsp430Rf1aP () @safe() {
     return rc;
   }
 
-  uint8_t tx_client;
+  norace uint8_t tx_client;
 
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
@@ -647,9 +647,6 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
 
-  task void signalSendDone(){
-    signal Rf1aPhysical.sendDone[tx_client](tx_result);
-  }
 
   async command error_t Rf1aPhysical.completeSend[uint8_t clientId](uint8_t* buffer, uint8_t length){
     /* Radio must be assigned */
@@ -700,7 +697,7 @@ generic module HplMsp430Rf1aP () @safe() {
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
           tx_result = ERETRY;
           cancelTransmit_();
-          post signalSendDone();
+          return tx_result;
         }
       }
       /* If we've started transmitting, see if we're done yet. */
@@ -839,7 +836,8 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  async command error_t Rf1aPhysical.startSend[uint8_t client](bool cca_check){
+  async command error_t Rf1aPhysical.startSend[uint8_t client](bool cca_check, 
+      rf1a_offmode_t txOffMode){
     uint8_t rc;
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
@@ -905,6 +903,10 @@ generic module HplMsp430Rf1aP () @safe() {
         return ERETRY;
       }
 
+      //Set up TX_OFF as indicated.
+      call Rf1aIf.writeRegister(MCSM1, 
+        (0xfc & call Rf1aIf.readRegister(MCSM1)) | (txOffMode));
+
       /* If we aren't in a transmit mode already, go to FSTXON, doing
        * the necessary CCA.  Beware: even if this succeeds, if we land
        * in FSTXON the radio will transition back to RX mode if it CCA
@@ -921,24 +923,27 @@ generic module HplMsp430Rf1aP () @safe() {
       return SUCCESS;
     }
   }
+  
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
-                                                     unsigned int length,
-                                                     bool cca_check)
-  {
-    uint8_t rc;
-    error_t error;
-
-    //state-checks and transition to FSTXON
-    error = call Rf1aPhysical.startSend[client](cca_check);
-
-    if (SUCCESS == error){
-      //ready to go
-      return call Rf1aPhysical.completeSend[client](buffer, length);
-    } else {
-      return error;
-    }
-  }
+//  //TODO: should remove this, actually. just use the two-phase process
+//  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
+//                                                     unsigned int length,
+//                                                     bool cca_check,
+//                                                     rf1a_offmode_t txOffMode){
+//  {
+//    uint8_t rc;
+//    error_t error;
+//
+//    //state-checks and transition to FSTXON
+//    error = call Rf1aPhysical.startSend[client](cca_check, txOffMode);
+//
+//    if (SUCCESS == error){
+//      //ready to go
+//      return call Rf1aPhysical.completeSend[client](buffer, length);
+//    } else {
+//      return error;
+//    }
+//  }
 
   default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
 

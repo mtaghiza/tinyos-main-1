@@ -29,5 +29,9 @@ configuration TestAppC{
   TestP.Resource -> Rf1aPhysicalC;
   TestP.Rf1aPhysical -> Rf1aPhysicalC;
   TestP.Rf1aStatus -> Rf1aPhysicalC;
+
+  TestP.Rf1aPacket -> Ieee154Packet;
+  TestP.Ieee154Packet -> Ieee154Packet;
+  TestP.AMPacket -> AMPacket;
   
 }

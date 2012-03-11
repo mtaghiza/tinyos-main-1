@@ -20,6 +20,10 @@ module TestP {
   uses interface Rf1aPhysical;
   uses interface Rf1aStatus;
 
+  uses interface Rf1aPacket;
+  uses interface AMPacket;
+  uses interface Ieee154Packet;
+
 } implementation {
   bool nextStateRx = TRUE;
 
@@ -87,6 +91,7 @@ module TestP {
     printf("t: TX (completeTransmit)\n\r");
     printf("n: toggle next state RX\n\r");
     printf("i: resume idle mode\n\r");
+    printf("?: print status\n\r");
     printf("========================\n\r");
     post printStatus();
   }
@@ -130,17 +135,26 @@ module TestP {
   }
 
   task void startTransmitTask(){
-    printf("%s: \n\r", __FUNCTION__);
-    //TODO: startTransmit
+    error_t error = call Rf1aPhysical.startSend(FALSE,
+      nextStateRx? RF1A_OM_RX: RF1A_OM_FSTXON);
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
+    post printStatus();
   }
 
   task void completeTransmitTask(){
-    printf("%s: \n\r", __FUNCTION__);
-    //TODO: completeTransmit
+    error_t error;
+    call Rf1aPacket.configureAsData(tx_msg);
+    call AMPacket.setSource(tx_msg, call AMPacket.address());
+    call Ieee154Packet.setPan(tx_msg, call Ieee154Packet.localPan());
+    call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
+    call AMPacket.setType(tx_msg, 0xdc);    
+    error = call Rf1aPhysical.completeSend((uint8_t*)tx_msg, sizeof(message_header_t) +
+      sizeof(rf1a_nalp_am_t));
+    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
+    post printStatus();
   }
 
   task void toggleNextStateRXTask(){
-//    printf("%s: \n\r", __FUNCTION__);
     nextStateRx = !nextStateRx;
     post printStatus();
   }
@@ -185,6 +199,9 @@ module TestP {
         printf("Toggle next state RX\n\r");
         post toggleNextStateRXTask();
         break;
+      case '?':
+        post printStatus();
+        break;
       case 'i':
         printf("Resume idle\n\r");
         post resumeIdleTask();
@@ -206,22 +223,34 @@ module TestP {
     post printStatus();
   }
 
+  async event void Rf1aPhysical.frameStarted () { 
+    printf("!fs\n\r");
+  }
+
+  async event void Rf1aPhysical.carrierSense () { 
+    printf("!cs\n\r");
+  }
+
+  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
+                                             unsigned int count,
+                                             int result) {
+    printf("!rd\n\r");
+  }
+
+  async event void Rf1aPhysical.sendDone (int result) { 
+    printf("!sd\n\r");
+  }
+
   //unused events
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf_, uint16_t len,
     error_t error ){}
 
-  async event void Rf1aPhysical.sendDone (int result) { }
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
-  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
-                                             unsigned int count,
-                                             int result) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
                                                      unsigned int count) { }
-  async event void Rf1aPhysical.frameStarted () { }
   async event void Rf1aPhysical.clearChannel () { }
-  async event void Rf1aPhysical.carrierSense () { }
   async event void Rf1aPhysical.released () { }
 
   async event bool Rf1aPhysical.idleModeRx () { 
