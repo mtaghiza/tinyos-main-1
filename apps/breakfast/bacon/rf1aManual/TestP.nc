@@ -231,9 +231,14 @@ module TestP {
     printf("!cs\n\r");
   }
 
+  task void reportRX(){
+    printf("RX from %x\n\r", call AMPacket.source(rx_msg));
+  }
+
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    post reportRX();
     printf("!rd\n\r");
   }
 
