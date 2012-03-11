@@ -97,7 +97,36 @@ interface Rf1aPhysical {
    * is still transmitting the remainder of a previous packet or if
    * clear-channel assessment fails.  EINVAL if the length is not
    * valid.  */
-  command error_t send (uint8_t* buffer, unsigned int length);
+  command error_t send (uint8_t* buffer, unsigned int length, 
+    bool cca_check);
+
+  /**
+   *  Perform state-checks and switch to FSTXON, if not already there.
+   *  
+   *  @param cca_check If true, switch to RX mode and perform CCA
+   *  check (according to radio config). If false, just switch to
+   *  FSTXON.
+   *
+   *  @return EOFF if radio not assigned, EBUSY if this client doesn't
+   *  hold the resource, EBUSY if we are currently receiving or
+   *  transmitting something else, ERETRY if cca requested but channel
+   *  is busy, SUCCESS if all is cool and we are now in FSTXON.
+   */
+  async command error_t startSend(bool cca_check);
+
+  /**
+   * Send the STX strobe to complete the process.
+   *
+   * @param buffer The data to be sent.
+   *
+   * @param length Number of bytes, including headers, to be sent.
+   *
+   * @return EOFF if radio unassigned, EBUSY if this client doesn't
+   * hold the resource. SUCCESS in all other cases (required to keep
+   * logic consistent with above basic send command).
+   */ 
+  async command error_t completeSend(uint8_t* buffer, uint8_t length);
+
 
   /* @TODO@ provide a mechanism to delay transition to STX until a
    * specific number of bytes are available in the FIFO */

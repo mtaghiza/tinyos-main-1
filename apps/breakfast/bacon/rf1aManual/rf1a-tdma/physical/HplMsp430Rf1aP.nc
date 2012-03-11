@@ -32,7 +32,6 @@
  */
 
 #include "Rf1aPacket.h"
-
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -58,6 +57,7 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Rf1aPhysical[uint8_t client];
     interface Rf1aStatus;
     interface Rf1aPhysicalMetadata;
+    interface Rf1aCoreInterrupt[uint8_t client];
   }
   uses {
     interface ArbiterInfo;
@@ -85,7 +85,8 @@ generic module HplMsp430Rf1aP () @safe() {
     IFG_clearChannel = (1 << 12),
     // IFG13 positive to detect signal presence
     IFG_carrierSense = (1 << 13),
-    IFG_INTERRUPT = IFG_rxFifoAboveThreshold | IFG_txFifoAboveThreshold
+    IFG_INTERRUPT = IFG_rxFifoAboveThreshold 
+      //| IFG_txFifoAboveThreshold
       | IFG_rxOverflow | IFG_txUnderflow
       | IFG_syncWordEvent
       | IFG_clearChannel | IFG_carrierSense,
@@ -234,6 +235,7 @@ generic module HplMsp430Rf1aP () @safe() {
      * supplied and the radio is still in FSTXON.  This is an active
      * state. */
     TX_S_preparing,
+    TX_S_loaded,
     /** A transmission is active.  This is an active state. */
     TX_S_active,
     /** All data has been queued for transmission, but has not yet
@@ -245,7 +247,7 @@ generic module HplMsp430Rf1aP () @safe() {
   uint8_t tx_state;
 
   /** The success or failure value for the current transmission */
-  int tx_result;
+  norace int tx_result;
 
   /** Pointer to the current position within a send()-provided
    * outgoing message.  Null if no active transmission or the sender
@@ -356,7 +358,6 @@ generic module HplMsp430Rf1aP () @safe() {
        * buffer is marked for single-use, affects subsequent
        * configuration of this register. */
       call Rf1aIf.writeRegister(MCSM1, (0xf0 & call Rf1aIf.readRegister(MCSM1)));
-
       /* Reset all the packet the packet-related pointers and counters */
       rx_state = RX_S_inactive;
       rx_pos = rx_pos_end = rx_start = 0;
@@ -487,8 +488,13 @@ generic module HplMsp430Rf1aP () @safe() {
   void receiveData_ ();
   
   /** Task used to do the work of transmitting a fragment of a message. */
-  task void sendFragment_task () { sendFragment_(); }
-
+//  task void sendFragment_task () { 
+//    #ifdef DEBUG_TX_P
+//    printf("sf_t\n\r");
+//    #endif
+//    sendFragment_(); 
+//  }
+//
   /** Task used to do the work of consuming a fragment of a message. */
   task void receiveData_task () { receiveData_(); }
 
@@ -562,113 +568,141 @@ generic module HplMsp430Rf1aP () @safe() {
     return rc;
   }
 
+  uint8_t tx_client;
+
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
-  void sendFragment_ ()
-  {
-    uint8_t client = call ArbiterInfo.userId();
-    int result = SUCCESS;
+  void loadFifo_(uint8_t* buffer, uint8_t length){
     bool need_to_write_length = FALSE;
-    bool wrote_data = FALSE;
-    bool send_done = FALSE;
-    bool need_repost = FALSE;
-    uint8_t rc;
-
+    const uint8_t* data;
+    unsigned int count;
+    unsigned int inuse;
+    //save tx info
     atomic {
-      do {
-        const uint8_t* data;
-        unsigned int count;
-        unsigned int inuse;
+      tx_remain = length;
+      tx_result = SUCCESS;
+      tx_state = TX_S_preparing;
+      if (buffer) {
+        tx_pos = buffer;
+        tx_end = buffer + length;
+      } else {
+        tx_pos = tx_end = 0;
+      }
+      tx_client = call ArbiterInfo.userId();
+    }
+    inuse = call Rf1aIf.readRegister(TXBYTES);
+    /* If we're using variable packet lengths, and we haven't
+     * written anything yet, we've got to reserve room for (and
+     * send) the length byte. */
+    need_to_write_length = (TX_S_preparing == tx_state) && (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
 
-        /* Did somebody cancel the transmit? */
-        if (SUCCESS != tx_result) {
-          cancelTransmit_();
-          break;
-        }
-      
-        /* If nothing left to do, exit */
-        if (0 >= tx_remain) {
-          break;
-        }
+    /* Calculate the headroom, adjust for the length byte if we
+     * need to write it, and adjust down to no more than we
+     * need */
+    count = FIFO_FILL_LIMIT - inuse;
+    if (need_to_write_length) {
+      count -= 1;
+    }
+    if (count > tx_remain) {
+      count = tx_remain;
+    }
 
-        /* How much room do we have available?  If none, give up for
-         * now. */
-        inuse = 0x7f & call Rf1aIf.readRegister(TXBYTES);
-        if (inuse >= FIFO_FILL_LIMIT) {
-          break;
-        }
-          
-        /* If we're using variable packet lengths, and we haven't
-         * written anything yet, we've got to reserve room for (and
-         * send) the length byte. */
-        need_to_write_length = (TX_S_preparing == tx_state) && (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
+    /* Is there any data ready?  If not, try again later. */
+    count = call Rf1aTransmitFragment.transmitReadyCount[tx_client](count);
+    if (0 == count) {
+      return;
+    }
 
-        /* Calculate the headroom, adjust for the length byte if we
-         * need to write it, and adjust down to no more than we
-         * need */
-        count = FIFO_FILL_LIMIT - inuse;
-        if (need_to_write_length) {
-          count -= 1;
-        }
-        if (count > tx_remain) {
-          count = tx_remain;
-        }
+    /* Get the data to be written.  If the callee returns a null
+     * pointer, the transmission is canceled; otherwise, stuff it
+     * into the transmit buffer. */
+    data = call Rf1aTransmitFragment.transmitData[tx_client](count);
+    if (0 == data) {
+      cancelTransmit_();
+      return;
+    }
 
-        /* Is there any data ready?  If not, try again later. */
-        count = call Rf1aTransmitFragment.transmitReadyCount[client](count);
-        if (0 == count) {
-          break;
-        }
+    /* We're committed to the write: tell the radio how long the
+     * packet is, if we haven't already. */
+    #ifdef DEBUG_TX_P
+    printf("WTX: %d + %d\n\r", sizeof(uint8_t), count);
+    #endif
+    //disable TXFIFO interrupt: only using it to wait for packet
+    //to clear.
+    call Rf1aIf.setIe( 
+      call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
+    if (need_to_write_length) {
+      uint8_t len8 = tx_remain;
+      call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
+    }
+    call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
+    tx_state = TX_S_loaded;
+    /* Account for what we just queued. */
+    tx_remain -= count;
+    if (tx_remain != 0){
+      #ifdef DEBUG_TX_P
+      printf("Trouble: %d bytes remain\n\r", tx_remain);
+      #endif
+    }  
+  }
 
-        /* Get the data to be written.  If the callee returns a null
-         * pointer, the transmission is canceled; otherwise, stuff it
-         * into the transmit buffer. */
-        data = call Rf1aTransmitFragment.transmitData[client](count);
-        if (0 == data) {
-          cancelTransmit_();
-          break;
-        }
 
-        /* We're committed to the write: tell the radio how long the
-         * packet is, if we haven't already. */
-        if (need_to_write_length) {
-          uint8_t len8 = tx_remain;
-          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
-        }
-        call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
-        tx_state = TX_S_active;
-        wrote_data = TRUE;
-        
-        /* Account for what we just queued. */
-        tx_remain -= count;
-      } while (0);
+  task void signalSendDone(){
+    signal Rf1aPhysical.sendDone[tx_client](tx_result);
+  }
 
-      /* Request task repost if we have more data and the fifo is not
-       * already above the threshold at which we'll be re-posted. */
-      need_repost = (0 < tx_remain) && ! (IFG_txFifoAboveThreshold & call Rf1aIf.getIn());
+  async command error_t Rf1aPhysical.completeSend[uint8_t clientId](uint8_t* buffer, uint8_t length){
+    /* Radio must be assigned */
+    if (! call ArbiterInfo.inUse()) {
+      return EOFF;
+    }
+    if(clientId != call ArbiterInfo.userId()){
+      //the wrong client tried to complete a send. shouldn't happen.
+      return EBUSY;
+    }  
+    //packet validation
+    if (0 == length || length >= FIFO_FILL_LIMIT){
+      return ESIZE;
+    }
 
+    atomic{
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
-      if (wrote_data && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
+      //DC: this should always hold, could remove it.
+      if ((RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
         register int loop_limit = RADIO_LOOP_LIMIT;
+        uint8_t rc;
         /* We're *supposed* to be in FSTXON here, so this strobe can't
          * be rejected.  In fact, it appears that if we're in FSTXON
          * and CCA fails, the radio transitions to RX mode.  In other
          * cases, it somehow ends up in IDLE.  Try anyway, and if it
          * doesn't work, fail the transmission. */
         rc = call Rf1aIf.strobe(RF_STX);
+        loadFifo_(buffer, length);
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
                && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
                && (0 <= --loop_limit)) {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
+        #ifdef CX_FLOOD_TIMING_PINS
+        P1OUT &= ~BIT1;
+        #endif
+
+        tx_state = TX_S_active;
+        #ifdef DEBUG_TX_5
+        P1OUT &= ~BIT2;
+        #endif
+        #ifdef DEBUG_TX_8
+        P1OUT &= ~BIT3;
+        #endif
+        //call IndicatorPin.clr();
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
           tx_result = ERETRY;
           cancelTransmit_();
+          post signalSendDone();
         }
       }
-
       /* If we've started transmitting, see if we're done yet. */
       if (TX_S_active <= tx_state) {
         /* If there's no more data to be transmitted, the task is
@@ -679,61 +713,20 @@ generic module HplMsp430Rf1aP () @safe() {
             tx_state = TX_S_flushing;
             tx_cached_fifothr = call Rf1aIf.readRegister(FIFOTHR);
             call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
-          }
-          if (0 == call Rf1aIf.readRegister(TXBYTES)) {
-            result = tx_result;
-            call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
-
-            /* This might be an erratum, but I think it's really that
-             * the fact the TXFIFO has flushed still doesn't mean the
-             * transmission is done: that last character still needs
-             * to be spat out the antenna.  Unfortunately, I don't
-             * know of another way to detect that the transmission has
-             * really-and-fortrue completed.
-             *
-             * Without this check, we can return to main program
-             * control and proceed to initiate a second send before
-             * the MRCSM finishes cleaning up from the previous
-             * transmit.  When this happens, the radio appears to
-             * accept the subsequent command but never actually
-             * transmits it.
-             *
-             * What this does is busy-wait until MARCSTATE gets out of
-             * TX; this appears to be sufficient (in the test
-             * configuration, it reaches TX_END).  Instrumentation
-             * indicates this loop runs about 350 times before MRCSM
-             * transitions out of TX.  I'm not going to put a limit on
-             * it, because if this ever stops working I want it to
-             * hang here, where inspection via the debugger will find
-             * it and the poor maintainer will at least have this
-             * comment to provide a clue as to what might be going on.
-             *
-             * When that happens, consider checking whether TX_OFF is
-             * set to "stay in TX", since in that case I don't know
-             * MRCSM ever transitions to TX_END.  I would expect it
-             * does, but then I'd expect the radio to work better than
-             * it does.... */
-            {
-              uint8_t ms;
-              do {
-                ms = call Rf1aIf.readRegister(MARCSTATE);
-              } while (MRCSM_TX == ms);
-            }
-
-            tx_state = TX_S_inactive;
-            send_done = TRUE;
+            //set up FIFOTHR register and enable FE interrupt so we
+            //get interrupted when the last byte is out of the FIFO
+            call Rf1aIf.setIe(call Rf1aIf.getIe() |
+              IFG_txFifoAboveThreshold);
           }
         }
       }
     } // atomic
-
-    if (need_repost) {
-      post sendFragment_task();
-    }
-    if (send_done) {
-      signal Rf1aPhysical.sendDone[client](result);
-    }
+    //all of the above code paths will result in a sendDone,
+    //eventually.
+    return SUCCESS;
   }
+
+  
 
   /** Place the radio into FSTXON or TX, with or without a
    * clear-channel-assessment gate check.
@@ -748,19 +741,28 @@ generic module HplMsp430Rf1aP () @safe() {
                           bool target_fstxon)
   {
     int rv = SUCCESS;
+    #ifdef DEBUG_TX_P
+    printf("st_\n\r");
+    #endif
     atomic {
       uint8_t strobe = RF_STX;
       uint8_t state = RF1A_S_TX;
       uint8_t rc;
       bool entered_rx = FALSE;
       register int16_t loop_limit = RADIO_LOOP_LIMIT;
-        
+      #ifdef DEBUG_TX_4
+      P1OUT |= BIT2;
+      #endif
+
       if (target_fstxon) {
         strobe = RF_SFSTXON;
         state = RF1A_S_FSTXON;
       }
 
       rc = call Rf1aIf.strobe(RF_SNOP);
+      #ifdef DEBUG_TX_1
+      P1OUT |= BIT3;
+      #endif
       if (with_cca) {
         /* CCA test is valid only if in RX mode.  If necessary, enter it. */
         if (RF1A_S_RX != (RF1A_S_MASK & rc)) {
@@ -783,6 +785,9 @@ generic module HplMsp430Rf1aP () @safe() {
           rv = ERETRY;
         }
       }
+      #ifdef DEBUG_TX_1
+      P1OUT &= ~BIT3;
+      #endif
 
       if (SUCCESS == rv) {
         /* Enter the appropriate TX mode.  When things settle, the
@@ -810,6 +815,9 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       }
     }
+    #ifdef DEBUG_TX_4
+    P1OUT &= ~BIT2;
+    #endif
     return rv;
   }
 
@@ -831,11 +839,8 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
-                                                     unsigned int length)
-  {
+  async command error_t Rf1aPhysical.startSend[uint8_t client](bool cca_check){
     uint8_t rc;
-
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
       return EOFF;
@@ -844,29 +849,23 @@ generic module HplMsp430Rf1aP () @safe() {
     if (client != call ArbiterInfo.userId()) {
       return EBUSY;
     }
-    /* And the length has to be positive */
-    if (0 == length) {
-      return EINVAL;
-    }
-    atomic {
-      bool variable_packet_length_mode;
-
+    atomic{
       /* And we can't be actively receiving anything */
       if (RX_S_listening < rx_state) {
-	rc = call Rf1aIf.strobe(RF_RXSTAT | RF_SNOP);
-	
-	/* Another special case.  If noise on the channel causes a
-	 * packet reception to begin, but doesn't last long enough for
-	 * the interpreted packet length to be received, the radio
-	 * will return to idle mode.  Detect that we're in idle mode
-	 * with data required but not available and abort the
-	 * receive. */
-	if ((RF1A_S_IDLE == (RF1A_S_MASK & rc))
-	    && (rx_received < rx_expected)
-	    && (0 == (rc & RF1A_S_FIFOMASK))) {
-	  rx_result = FAIL;
-	  post receiveData_task();
-	}
+        rc = call Rf1aIf.strobe(RF_RXSTAT | RF_SNOP);
+        
+        /* Another special case.  If noise on the channel causes a
+         * packet reception to begin, but doesn't last long enough for
+         * the interpreted packet length to be received, the radio
+         * will return to idle mode.  Detect that we're in idle mode
+         * with data required but not available and abort the
+         * receive. */
+        if ((RF1A_S_IDLE == (RF1A_S_MASK & rc))
+            && (rx_received < rx_expected)
+            && (0 == (rc & RF1A_S_FIFOMASK))) {
+          rx_result = FAIL;
+          post receiveData_task();
+        }
         return EBUSY;
       }
 
@@ -906,16 +905,6 @@ generic module HplMsp430Rf1aP () @safe() {
         return ERETRY;
       }
 
-      /* Do we need to tell the radio how long the packet is?  If so,
-       * there's a limit on the packet length. */
-      variable_packet_length_mode = (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
-      if (variable_packet_length_mode) {
-        /* Maximum length for VPL is 255 */
-        if (255 < length) {
-          return EINVAL;
-        }
-      }
-
       /* If we aren't in a transmit mode already, go to FSTXON, doing
        * the necessary CCA.  Beware: even if this succeeds, if we land
        * in FSTXON the radio will transition back to RX mode if it CCA
@@ -923,25 +912,32 @@ generic module HplMsp430Rf1aP () @safe() {
        * sendFragment_task. */
       rc = call Rf1aIf.strobe(RF_SNOP);
       if ((RF1A_S_FSTXON != (rc & RF1A_S_MASK)) && (RF1A_S_TX != (rc & RF1A_S_MASK))) {
-        int rv = startTransmission_(TRUE, TRUE);
+        int rv = startTransmission_(cca_check, TRUE);
         if (SUCCESS != rv) {
           return rv;
         }
         rc = RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP);
       }
-
-      tx_remain = length;
-      tx_result = SUCCESS;
-      tx_state = TX_S_preparing;
-      if (buffer) {
-        tx_pos = buffer;
-        tx_end = buffer + length;
-      } else {
-        tx_pos = tx_end = 0;
-      }
+      return SUCCESS;
     }
-    post sendFragment_task();
-    return SUCCESS;
+  }
+
+  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
+                                                     unsigned int length,
+                                                     bool cca_check)
+  {
+    uint8_t rc;
+    error_t error;
+
+    //state-checks and transition to FSTXON
+    error = call Rf1aPhysical.startSend[client](cca_check);
+
+    if (SUCCESS == error){
+      //ready to go
+      return call Rf1aPhysical.completeSend[client](buffer, length);
+    } else {
+      return error;
+    }
   }
 
   default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
@@ -971,13 +967,16 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
+        #ifdef DEBUG_TX_P
+        printf("rp.rim\n\r");
+        #endif
         tx_result = ECANCEL;
-        post sendFragment_task();
+        //removed call to sft
+//        post sendFragment_task();
       } else if (RX_S_listening < rx_state) {
         rx_result = ECANCEL;
         post receiveData_task();
       } else {
-        //want to *actually* go to idle.
         resumeIdleMode_(signal Rf1aPhysical.idleModeRx[client]());
       }
     }
@@ -1046,6 +1045,9 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     unsigned int avail;
     unsigned int avail2;
+    #ifdef DEBUG_RX_2
+    P1OUT|=BIT2;
+    #endif
 
     avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     avail = ~avail2;
@@ -1053,6 +1055,9 @@ generic module HplMsp430Rf1aP () @safe() {
       avail = avail2;
       avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     }
+    #ifdef DEBUG_RX_2
+    P1OUT&=~BIT2;
+    #endif
     return avail;
   }
 
@@ -1091,6 +1096,9 @@ generic module HplMsp430Rf1aP () @safe() {
     int result;
 
     atomic {
+      #ifdef DEBUG_RX
+      P1OUT |= BIT3;
+      #endif
       do {
         unsigned int need;
         unsigned int consume;
@@ -1104,6 +1112,7 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       
         /* Is there data available?  How much?  If none, stop now. */
+        //~6 uS to check
         avail = receiveCountAvailable_();
         if (0 == avail) {
           break;
@@ -1164,11 +1173,14 @@ generic module HplMsp430Rf1aP () @safe() {
         if (consume > avail) {
           consume = avail;
         }
+        //this is the only readburst we see
+        //~17 uS from start of function to this point, 11 uS of logic
+        //  in this function
+        //~33uS to read data
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, rx_pos, consume);
         rx_pos += consume;
         rx_received += consume;
         avail -= consume;
-
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
           /* If APPEND_STATUS is set, gotta clear out that data. */
@@ -1207,10 +1219,11 @@ generic module HplMsp430Rf1aP () @safe() {
           }
         }
 
+      //11 uS from readBurstRegister above to end of loop
       } while (0);
-
       /* If there's still data available, we'll have to come back,
        * even if we've finished this message. */
+      //~6 uS to check
       need_post = (0 < receiveCountAvailable_());
 
       /* Extract the start of any filled buffer (length was set above) */
@@ -1245,7 +1258,10 @@ generic module HplMsp430Rf1aP () @safe() {
     if (need_post) {
       post receiveData_task();
     }
-
+    #ifdef DEBUG_RX_4
+    P1OUT |= BIT1;
+    #endif
+    //~3 uS from need_post assignment above
     /* Announce the start of a message first, then completion of the
      * message, and finally that we need another receive buffer (if
      * any of these events happen to occur at the same time). */
@@ -1258,19 +1274,48 @@ generic module HplMsp430Rf1aP () @safe() {
     if (signal_filled) {
       signal Rf1aPhysical.receiveBufferFilled[client](start, received);
     }
+    //~7 uS from start of signal checks
+    #ifdef DEBUG_RX
+    P1OUT &= ~BIT3;
+    #endif
   }
       
   
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
                                                                        unsigned int length,
-                                                                       rf1a_offmode_t rxOffMode)
-  {
+                                                                       rf1a_offmode_t rxOffMode){
+    #ifdef DEBUG_RX_4
+    P1OUT &= ~BIT1;
+    #endif
+    #ifdef DEBUG_RX
+    P2OUT |= BIT4;
+    #endif
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT |= BIT1;
+    #endif
+
+
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT |= BIT2;
+    #endif
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
+      #ifdef DEBUG_RX
+      P2OUT &= ~BIT4;
+      #endif
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT1;
+      #endif
       return EOFF;
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
+      #ifdef DEBUG_RX
+      P2OUT &= ~BIT4;
+      #endif
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT1;
+      #endif
       return EBUSY;
     }
     /* Buffer and length must be realistic; if either bogus, clear them both
@@ -1279,10 +1324,22 @@ generic module HplMsp430Rf1aP () @safe() {
       buffer = 0;
       length = 0;
     }
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT &= ~BIT2;
+    #endif
     atomic {
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT3;
+      #endif
       /* If there's a buffer in play and we're actively receiving into
        * it, reject the attempt. */
       if (rx_pos && (RX_S_listening < rx_state)) {
+        #ifdef DEBUG_RX
+        P2OUT &= ~BIT4;
+        #endif
+        #ifdef DEBUG_SET_RX_BUFFER
+        P1OUT |= BIT1;
+        #endif
         return EBUSY;
       }
 
@@ -1290,17 +1347,21 @@ generic module HplMsp430Rf1aP () @safe() {
       rx_pos_end = buffer + length;
       rx_start = 0;
       rx_single_use = TRUE;
-      
+
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT |= BIT4;
+      #endif
+
       // Set up for post-rx transition
       call Rf1aIf.writeRegister(MCSM1, 
         (0xf3 & call Rf1aIf.readRegister(MCSM1)) | (rxOffMode << 2));
-
-      //This is the cancellation path.
       if (0 == rx_pos) {
         /* Setting a null buffer acts to cancel any in-progress
          * reception. */
         if (RX_S_listening < rx_state) {
           rx_result = ECANCEL;
+          //make sure we return to RX after this.
+          call Rf1aIf.writeRegister(MCSM1, 0xff );
           post receiveData_task();
         } else {
           rx_state = RX_S_inactive;
@@ -1309,12 +1370,23 @@ generic module HplMsp430Rf1aP () @safe() {
             resumeIdleMode_(TRUE);
           }
         }
-
-      //This is the "normal" path
       } else if (RX_S_inactive == rx_state) {
         startReception_();
+        #ifdef DEBUG_SET_RX_BUFFER
+        P2OUT &= ~BIT4;
+        #endif
       }
+      #ifdef DEBUG_SET_RX_BUFFER
+      P1OUT &= ~BIT3;
+      P1OUT &= ~BIT4;
+      #endif
     }
+    #ifdef DEBUG_RX
+    P2OUT &= ~BIT4;
+    #endif
+    #ifdef DEBUG_SET_RX_BUFFER
+    P1OUT &= ~BIT1;
+    #endif
     return SUCCESS;
   }
 
@@ -1342,6 +1414,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
   {
+    #ifdef DEBUG_RX_1
+    P1OUT |= BIT2;
+    #endif
     if (RX_S_inactive < rx_state) {
       /* If we have data, and the state doesn't reflect that we're
        * receiving, bump the state so we know to fast-exit out of
@@ -1352,6 +1427,9 @@ generic module HplMsp430Rf1aP () @safe() {
       }
       post receiveData_task();
     }
+    #ifdef DEBUG_RX_1
+    P1OUT &= ~BIT2;
+    #endif
   }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
@@ -1368,11 +1446,68 @@ generic module HplMsp430Rf1aP () @safe() {
        * wrong. No idea why we get this interrupt in that case, but
        * we're grateful nonetheless. */
       if (0x3F <= (0x7F & txbytes)) {
+        #ifdef DEBUG_TX_P
+        printf("ri.txfifo trouble\n\r");
+        #endif
         tx_result = ECANCEL;
       }
-      post sendFragment_task();
+      //we should get this interrupt when txfifo is drained. wait
+      //until the last byte is actually in the air.
+      if (0 == txbytes){
+        #ifdef DEBUG_TX_3
+        P1OUT |= BIT2;
+        #endif
+        call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
+        //disable the interrupt
+        call Rf1aIf.setIe(call Rf1aIf.getIe() &
+          ~IFG_txFifoAboveThreshold);
+
+        /* This might be an erratum, but I think it's really that
+         * the fact the TXFIFO has flushed still doesn't mean the
+         * transmission is done: that last character still needs
+         * to be spat out the antenna.  Unfortunately, I don't
+         * know of another way to detect that the transmission has
+         * really-and-fortrue completed.
+         *
+         * Without this check, we can return to main program
+         * control and proceed to initiate a second send before
+         * the MRCSM finishes cleaning up from the previous
+         * transmit.  When this happens, the radio appears to
+         * accept the subsequent command but never actually
+         * transmits it.
+         *
+         * What this does is busy-wait until MARCSTATE gets out of
+         * TX; this appears to be sufficient (in the test
+         * configuration, it reaches TX_END).  Instrumentation
+         * indicates this loop runs about 350 times before MRCSM
+         * transitions out of TX.  I'm not going to put a limit on
+         * it, because if this ever stops working I want it to
+         * hang here, where inspection via the debugger will find
+         * it and the poor maintainer will at least have this
+         * comment to provide a clue as to what might be going on.
+         *
+         * When that happens, consider checking whether TX_OFF is
+         * set to "stay in TX", since in that case I don't know
+         * MRCSM ever transitions to TX_END.  I would expect it
+         * does, but then I'd expect the radio to work better than
+         * it does.... */
+        //busy wait until it's in the air.
+        {
+          uint8_t ms;
+          do {
+            ms = call Rf1aIf.readRegister(MARCSTATE);
+          } while (MRCSM_TX == ms);
+        }
+
+        tx_state = TX_S_inactive;
+        #ifdef DEBUG_TX
+        P2OUT &= ~BIT4;
+        #endif 
+        signal Rf1aPhysical.sendDone[tx_client](SUCCESS);
+      }      
     }
   }
+
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
   {
     atomic {
@@ -1384,12 +1519,27 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     atomic {
       tx_result = FAIL;
-      post sendFragment_task();
+      #ifdef DEBUG_TX_P
+      printf("ri.txu\n\r");
+      #endif
+//      post sendFragment_task();
     }
   }
   async event void Rf1aInterrupts.syncWordEvent[uint8_t client] ()
   {
+    #ifdef DEBUG_RX
+    P1OUT |= BIT1;
+    #endif
+    #ifdef DEBUG_TX_2
+    P1OUT |= BIT3;
+    #endif
     signal Rf1aPhysical.frameStarted[call ArbiterInfo.userId()]();
+    #ifdef DEBUG_TX_2
+    P1OUT &= ~BIT3;
+    #endif
+    #ifdef DEBUG_RX
+    P1OUT &= ~BIT1;
+    #endif
   }
 
   async event void Rf1aInterrupts.clearChannel[uint8_t client] ()
@@ -1404,7 +1554,10 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.coreInterrupt[uint8_t client] (uint16_t iv)
   {
+    signal Rf1aCoreInterrupt.interrupt[call ArbiterInfo.userId()](iv);
   }
+
+  default async event void Rf1aCoreInterrupt.interrupt[uint8_t client](uint16_t iv){ }
       
   default async event void Rf1aPhysical.receiveStarted[uint8_t client] (unsigned int length) { }
 
@@ -1543,6 +1696,7 @@ generic module HplMsp430Rf1aP () @safe() {
     /* Return only the CRC check bit */
     return metadatap->lqi & 0x80;
   }
+
 
 }
 
