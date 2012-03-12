@@ -17,9 +17,14 @@
 #define DEFAULT_TDMA_FW_CHECK_LEN (10UL * 1000UL * DEFAULT_TDMA_FRAME_LEN)
 #endif
 
-#ifndef DEFAULT_TDMA_NUM_FRAMES
-#define DEFAULT_TDMA_NUM_FRAMES 256
+#ifndef DEFAULT_TDMA_ACTIVE_FRAMES
+#define DEFAULT_TDMA_ACTIVE_FRAMES 256
 #endif
+
+#ifndef DEFAULT_TDMA_INACTIVE_FRAMES
+#define DEFAULT_TDMA_INACTIVE_FRAMES 1
+#endif
+
 
 //TODO: this should be computed based on data rate.
 //125000 bps -> 8uS per bit -> 64 uS per byte -> 512 uS for preamble +

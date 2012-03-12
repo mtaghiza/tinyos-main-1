@@ -1,6 +1,5 @@
 configuration CXTDMAPhysicalC {
   provides interface SplitControl;
-  provides interface Receive;
   provides interface CXTDMA;
 
   uses interface HplMsp430Rf1aIf;
@@ -14,7 +13,6 @@ configuration CXTDMAPhysicalC {
   components CXTDMAPhysicalP;
 
   SplitControl = CXTDMAPhysicalP;
-  Receive = CXTDMAPhysicalP;
   CXTDMA = CXTDMAPhysicalP;
 
   HplMsp430Rf1aIf = CXTDMAPhysicalP;
@@ -27,6 +25,9 @@ configuration CXTDMAPhysicalC {
   //TODO: Msp430Capture
   components new AlarmMicro32C() as FrameStartAlarm;
   components new AlarmMicro32C() as PrepareFrameStartAlarm;
+  //This could be 32khz, not so important
+  components new AlarmMicro32C() as FrameWaitAlarm;
   CXTDMAPhysicalP.FrameStartAlarm -> FrameStartAlarm;
   CXTDMAPhysicalP.PrepareFrameStartAlarm -> PrepareFrameStartAlarm;
+  CXTDMAPhysicalP.FrameWaitAlarm -> FrameWaitAlarm;
 }
