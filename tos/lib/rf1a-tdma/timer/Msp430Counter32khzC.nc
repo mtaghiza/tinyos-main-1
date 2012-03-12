@@ -27,7 +27,6 @@
  *          intended use.
  */
 
-#warning "Using msp430xv2 msp430counter32khzC (Timer1_A)"
 
 configuration Msp430Counter32khzC
 {

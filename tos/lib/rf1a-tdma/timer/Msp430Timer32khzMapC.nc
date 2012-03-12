@@ -45,7 +45,6 @@ configuration Msp430Timer32khzMapC
 }
 implementation
 {
-  #warning Replaced Msp430Timer32khzMapC.
   components Msp430TimerC;
 
   Msp430Timer[0] = Msp430TimerC.Timer1_A;

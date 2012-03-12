@@ -73,7 +73,9 @@ module TestP {
     return msg;
   }
 
-  
+  async event void CXTDMA.sendDone(error_t error){
+    printf("!sd\n\r");
+  }
 
 
 

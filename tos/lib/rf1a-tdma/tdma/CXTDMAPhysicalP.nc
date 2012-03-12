@@ -71,6 +71,9 @@ module CXTDMAPhysicalP {
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_count; 
 
+  message_t* tx_msg;
+  uint8_t tx_len;
+
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
       case RF1A_S_IDLE:
@@ -137,7 +140,6 @@ module CXTDMAPhysicalP {
         captureMode = MSP430TIMER_CM_NONE;
         call SynchCapture.disable();
       }
-//      call SynchCapture.setSynchronous(TRUE);
       setState(S_STARTING);
       printStatus();
       return call Resource.request();
@@ -163,8 +165,11 @@ module CXTDMAPhysicalP {
       //  can synch on.
       if (s_frameStart == 0){
         atomic{
+          printf("get\n\r");
+          //TODO: this call never returns. why not?
           s_frameStart = (call PrepareFrameStartAlarm.getNow() +
             PFS_SLACK);
+          printf("next\n\r");
           s_frameLen = DEFAULT_TDMA_FRAME_LEN;
           s_fwCheckLen = DEFAULT_TDMA_FW_CHECK_LEN;
           s_activeFrames = DEFAULT_TDMA_ACTIVE_FRAMES;
@@ -176,7 +181,7 @@ module CXTDMAPhysicalP {
         s_frameLen);
       //TODO: any SW clock-tuning should be done here.
       call FrameStartAlarm.startAt(s_frameStart, s_frameLen - SFD_TIME);
-
+  
       signal SplitControl.startDone(SUCCESS);
     }
   }
@@ -195,48 +200,52 @@ module CXTDMAPhysicalP {
    */
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
-    if (frameNum > s_activeFrames){
-      if (SUCCESS == call Resource.release()){
-        setState(S_INACTIVE);
-      } else { 
-        setState(S_ERROR);
-      }
-    } else if (frameNum == s_activeFrames + s_inactiveFrames - 1){
-      if (SUCCESS == call Resource.request()){
-        setState(S_STARTING);
-      } else {
-        setState(S_ERROR);
-      }
-    } else {
-      if (checkState(S_IDLE)){
-        if (signal CXTDMA.isTXFrame(frameNum + 1)){
-          error = call Rf1aPhysical.startSend(FALSE, signal
-            CXTDMA.isTXFrame(frameNum + 2));
-          if (SUCCESS == error){
-            setState(S_TX_READY);
-          } else {
-            setState(S_ERROR);
-          }
-        } else {
-          error = call Rf1aPhysical.setReceiveBuffer(
-            (uint8_t*)(rx_msg->header),
-            TOSH_DATA_LENGTH + sizeof(message_header_t),
-            signal CXTDMA.isTXFrame(frameNum+2));
-          if (SUCCESS == error){
-            atomic {
-              captureMode = MSP430TIMER_CM_RISING;
-              call SynchCapture.captureRisingEdge();
-            }
-            setState(S_RX_READY);
-          } else {
-            setState(S_ERROR);
-          }
+    if (s_inactiveFrames > 0){
+      if (frameNum > s_activeFrames){
+        if (SUCCESS == call Resource.release()){
+          setState(S_INACTIVE);
+        } else { 
+          setState(S_ERROR);
         }
-        call PrepareFrameStartAlarm.startAt(
-          call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+      } else if (frameNum == s_activeFrames + s_inactiveFrames - 1){
+        if (SUCCESS == call Resource.request()){
+          setState(S_STARTING);
+        } else {
+          setState(S_ERROR);
+        }
+      } 
+    }
+    //Idle, or we are in an extra long frame-wait (e.g. trying to
+    //  synch), or we started receiving, but gave up.
+    if (checkState(S_IDLE) || checkState(S_RX_READY) 
+        || checkState(S_RECEIVING)){
+      if (signal CXTDMA.isTXFrame(frameNum + 1)){
+        error = call Rf1aPhysical.startSend(FALSE, signal
+          CXTDMA.isTXFrame(frameNum + 2));
+        if (SUCCESS == error){
+          setState(S_TX_READY);
+        } else {
+          setState(S_ERROR);
+        }
       } else {
-        setState(S_ERROR);
+        error = call Rf1aPhysical.setReceiveBuffer(
+          (uint8_t*)(rx_msg->header),
+          TOSH_DATA_LENGTH + sizeof(message_header_t),
+          signal CXTDMA.isTXFrame(frameNum+2));
+        if (SUCCESS == error){
+          atomic {
+            captureMode = MSP430TIMER_CM_RISING;
+            call SynchCapture.captureRisingEdge();
+          }
+          setState(S_RX_READY);
+        } else {
+          setState(S_ERROR);
+        }
       }
+      call PrepareFrameStartAlarm.startAt(
+        call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+    } else {
+      setState(S_ERROR);
     }
   }
 
@@ -260,10 +269,31 @@ module CXTDMAPhysicalP {
   /**
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *    FrameStartAlarm.fired / start frameWaitAlarm -> S_RX_READY
+   *
+   * S_TX_READY:
+   *    FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
+   *      -> S_TRANSMITTING
+   *
    */
   async event void FrameStartAlarm.fired(){
-    call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
-      s_fwCheckLen);
+    if (checkState(S_RX_READY)){
+      call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
+        s_fwCheckLen);
+    } else if (checkState(S_TX_READY)){
+      error_t error;
+      setState(S_TRANSMITTING);
+      if ( signal CXTDMA.getPacket(&tx_msg, &tx_len)){
+        error = call
+        Rf1aPhysical.completeSend((uint8_t*)(tx_msg->header), tx_len);
+      } else {
+        error = call Rf1aPhysical.resumeIdleMode();
+      }
+      if (SUCCESS != error){
+        signal CXTDMA.sendDone(error);
+      }
+    } else {
+      setState(S_ERROR);
+    }
     call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
       s_frameLen);
   }
@@ -313,6 +343,9 @@ module CXTDMAPhysicalP {
     }
   }
 
+  /**
+   *  Synch this layer's state with radio core.
+   */ 
   void completeCleanup(){
     switch (call Rf1aStatus.get()){
       case RF1A_S_IDLE:
@@ -351,6 +384,19 @@ module CXTDMAPhysicalP {
     }
   }
 
+  /**
+   * S_TRANSMITTING:
+   *   phy.sendDone / signal sendDone -> S_TX_CLEANUP 
+   */
+  async event void Rf1aPhysical.sendDone (int result) { 
+    if(checkState(S_TRANSMITTING)){
+      setState(S_TX_CLEANUP);
+      signal CXTDMA.sendDone(result);
+      completeCleanup();
+    } else {
+      setState(S_ERROR);
+    }
+  }
 
   //BEGIN unimplemented
   command error_t SplitControl.stop(){
@@ -364,15 +410,10 @@ module CXTDMAPhysicalP {
   }
 
   async event void Rf1aPhysical.frameStarted () { 
-    printf("!fs\n\r");
+    //ignored: we use the GDO timer capture for this.
   }
 
-  async event void Rf1aPhysical.carrierSense () { 
-//    printf("!cs\n\r");
-  }
-  async event void Rf1aPhysical.sendDone (int result) { 
-    printf("!sd\n\r");
-  }
+  async event void Rf1aPhysical.carrierSense () { }
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
                                                      unsigned int count) { }
@@ -417,8 +458,8 @@ module CXTDMAPhysicalP {
     S_TX_STARTING:
       phy.currentStatus(FSTXON) / -> S_TX_READY 
     
-    S_TX_READY:
-      FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
+    x S_TX_READY:
+    x  FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
         -> S_TRANSMITTING
     
     S_TRANSMITTING:
