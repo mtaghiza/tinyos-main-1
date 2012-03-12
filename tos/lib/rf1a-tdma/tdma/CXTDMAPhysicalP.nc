@@ -78,6 +78,11 @@ module CXTDMAPhysicalP {
   message_t* tx_msg;
   uint8_t tx_len;
 
+  //debugging
+  uint32_t lastFsa;
+  uint32_t lastFwa;
+  uint32_t nextFwa;
+
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
       case RF1A_S_IDLE:
@@ -117,6 +122,13 @@ module CXTDMAPhysicalP {
     printStatus();
   }
 
+  void stopTimers(){
+    call PrepareFrameStartAlarm.stop();
+    call FrameStartAlarm.stop();
+    call FrameWaitAlarm.stop();
+    call SynchCapture.disable();
+  }
+
   bool checkState(uint8_t s){ atomic return (state == s); }
   void setState(uint8_t s){
     atomic {
@@ -126,7 +138,10 @@ module CXTDMAPhysicalP {
       #ifdef DEBUG_CX_TDMA_P_STATE_ERROR
       if (ERROR_MASK == (s & ERROR_MASK)){
         P2OUT |= BIT4;
+        stopTimers();
         printf("[%x->%x]\n\r", state, s);
+        printf("now: %lu last fsa: %lu last fwa: %lu next fwa: %lu\r\n", 
+          call FrameWaitAlarm.getNow(), lastFsa, lastFwa, nextFwa);
       }
       #endif
       state = s;
@@ -158,6 +173,7 @@ module CXTDMAPhysicalP {
    *   resource.granted / start timers  -> S_IDLE
    */
   event void Resource.granted(){
+    P1OUT |= BIT4;
     if (checkState(S_STARTING)){
       setState(S_IDLE);
       printStatus();
@@ -210,10 +226,7 @@ module CXTDMAPhysicalP {
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
-        call PrepareFrameStartAlarm.stop();
-        call FrameStartAlarm.stop();
-        call FrameWaitAlarm.stop();
-        call SynchCapture.disable();
+        stopTimers();
         scStopPending = FALSE;
         setState(S_STOPPING);
       } else{
@@ -295,7 +308,7 @@ module CXTDMAPhysicalP {
       setState(S_ERROR_7);
     }
   }
-
+  
   /**
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *    FrameStartAlarm.fired / start frameWaitAlarm -> S_RX_READY
@@ -308,8 +321,12 @@ module CXTDMAPhysicalP {
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
     if (checkState(S_RX_READY)){
+      lastFsa = call FrameStartAlarm.getAlarm();
+      lastFwa = call FrameWaitAlarm.getAlarm();
+      call FrameWaitAlarm.stop();
       call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_fwCheckLen);
+      nextFwa = call FrameWaitAlarm.getAlarm();
     } else if (checkState(S_TX_READY)){
       error_t error;
       setState(S_TRANSMITTING);
