@@ -40,23 +40,26 @@ module TestP {
       PMAPPWD = 0x00;
     }
 
+    P1OUT &= ~(BIT1|BIT3|BIT4);
+    P2OUT &= ~(BIT4);
+
     call UartControl.start();
-    printf("\n\rCXTDMA test\n\r");
-    printf("s: start \n\r");
-    printf("S: stop \n\r");
-    printf("d: toggle duty-cycled operation\n\r");
-    printf("?: print status\n\r");
-    printf("t: test timer\n\r");
-    printf("========================\n\r");
+    printf("\r\nCXTDMA test\r\n");
+    printf("s: start \r\n");
+    printf("S: stop \r\n");
+    printf("d: toggle duty-cycled operation\r\n");
+    printf("?: print status\r\n");
+    printf("t: test timer\r\n");
+    printf("========================\r\n");
     post printStatus();
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
+    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
   event void SplitControl.stopDone(error_t error){
-    printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
+    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
 

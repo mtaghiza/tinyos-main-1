@@ -24,7 +24,7 @@ module CXTDMAPhysicalP {
 } implementation {
   enum{
     ERROR_MASK = 0x80,
-    S_ERROR = 0x81,
+    S_ERROR_1 = 0x81,
     S_ERROR_2 = 0x82,
     S_ERROR_3 = 0x83,
     S_ERROR_4 = 0x84,
@@ -44,6 +44,7 @@ module CXTDMAPhysicalP {
     S_STARTING = 0x01,
     S_INACTIVE = 0x02,
     S_IDLE = 0x03,
+    S_STOPPING = 0x04,
 
     S_RX_STARTING = 0x10,
     S_RX_READY = 0x11,
@@ -66,6 +67,9 @@ module CXTDMAPhysicalP {
   uint16_t s_activeFrames;
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
+
+  bool scStopPending;
+  error_t scStopError;
 
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
@@ -102,6 +106,7 @@ module CXTDMAPhysicalP {
   }
 
   void completeCleanup();
+  task void signalStopDone();
 
   void printStatus(){
     printf("* Core: %s\n\r", decodeStatus());
@@ -165,20 +170,21 @@ module CXTDMAPhysicalP {
       //  can synch on.
       if (s_frameStart == 0){
         atomic{
-          printf("get\n\r");
-          //TODO: this call never returns. why not?
-          s_frameStart = (call PrepareFrameStartAlarm.getNow() +
-            PFS_SLACK);
-          printf("next\n\r");
+          s_frameStart = (call PrepareFrameStartAlarm.getNow() -
+            2*PFS_SLACK);
           s_frameLen = DEFAULT_TDMA_FRAME_LEN;
           s_fwCheckLen = DEFAULT_TDMA_FW_CHECK_LEN;
           s_activeFrames = DEFAULT_TDMA_ACTIVE_FRAMES;
           s_inactiveFrames = DEFAULT_TDMA_INACTIVE_FRAMES;
         }
       }
-      
-      call PrepareFrameStartAlarm.startAt(s_frameStart - PFS_SLACK,
-        s_frameLen);
+      printf("Now: %lu s_frameStart %lu pfs %lu fs %lu\r\n",
+        call PrepareFrameStartAlarm.getNow(),
+        s_frameStart,
+        s_frameLen - PFS_SLACK - SFD_TIME,
+        s_frameLen - SFD_TIME);
+      call PrepareFrameStartAlarm.startAt(s_frameStart,
+        s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
       call FrameStartAlarm.startAt(s_frameStart, s_frameLen - SFD_TIME);
   
@@ -200,18 +206,35 @@ module CXTDMAPhysicalP {
    */
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
+    P1OUT ^= BIT1;
+    if (scStopPending){
+      scStopError = call Resource.release();
+      if (SUCCESS == scStopError){
+        call PrepareFrameStartAlarm.stop();
+        call FrameStartAlarm.stop();
+        call FrameWaitAlarm.stop();
+        call SynchCapture.disable();
+        scStopPending = FALSE;
+        setState(S_STOPPING);
+      } else{
+        setState(S_ERROR_f);
+      }
+      post signalStopDone();
+      return;
+    }
+
     if (s_inactiveFrames > 0){
       if (frameNum > s_activeFrames){
         if (SUCCESS == call Resource.release()){
           setState(S_INACTIVE);
         } else { 
-          setState(S_ERROR);
+          setState(S_ERROR_1);
         }
       } else if (frameNum == s_activeFrames + s_inactiveFrames - 1){
         if (SUCCESS == call Resource.request()){
           setState(S_STARTING);
         } else {
-          setState(S_ERROR);
+          setState(S_ERROR_2);
         }
       } 
     }
@@ -225,7 +248,7 @@ module CXTDMAPhysicalP {
         if (SUCCESS == error){
           setState(S_TX_READY);
         } else {
-          setState(S_ERROR);
+          setState(S_ERROR_3);
         }
       } else {
         error = call Rf1aPhysical.setReceiveBuffer(
@@ -239,13 +262,16 @@ module CXTDMAPhysicalP {
           }
           setState(S_RX_READY);
         } else {
-          setState(S_ERROR);
+          setState(S_ERROR_4);
         }
       }
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+    } else if (checkState(S_OFF)){
+      //sometimes see this after wdtpw reset
+      return;
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_5);
     }
   }
 
@@ -254,15 +280,19 @@ module CXTDMAPhysicalP {
    *    FWA.fired / resumeIdleMode -> S_IDLE
    */
   async event void FrameWaitAlarm.fired(){
+    P1OUT ^= BIT4;
     if (checkState(S_RX_READY)){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       if (error == SUCCESS){
         setState(S_IDLE);
       } else {
-        setState(S_ERROR);
+        setState(S_ERROR_6);
       }
+    } else if(checkState(S_OFF)){
+      //sometimes see this after wdtpw reset
+      return;
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_7);
     }
   }
 
@@ -276,6 +306,7 @@ module CXTDMAPhysicalP {
    *
    */
   async event void FrameStartAlarm.fired(){
+    P1OUT ^= BIT3;
     if (checkState(S_RX_READY)){
       call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_fwCheckLen);
@@ -291,8 +322,12 @@ module CXTDMAPhysicalP {
       if (SUCCESS != error){
         signal CXTDMA.sendDone(error);
       }
+    } else if (checkState(S_OFF)){ 
+      //peculiar. I get this if the alarm was started and then i did
+      //a reset with the watchdog timer.
+      return;
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_8);
     }
     call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
       s_frameLen);
@@ -328,7 +363,7 @@ module CXTDMAPhysicalP {
       } else if (checkState(S_TRANSMITTING)){
         //TODO: record actual start, not sure if this is needed.
       } else {
-        setState(S_ERROR);
+        setState(S_ERROR_9);
       }
     } else if (captureMode == MSP430TIMER_CM_FALLING){
       atomic{
@@ -339,7 +374,7 @@ module CXTDMAPhysicalP {
         //TODO: record packet duration? not sure if we need this.
       }
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_a);
     }
   }
 
@@ -358,7 +393,7 @@ module CXTDMAPhysicalP {
         setState(S_TX_READY);
         break;
       default:
-        setState(S_ERROR);
+        setState(S_ERROR_b);
     }
   }
 
@@ -377,10 +412,10 @@ module CXTDMAPhysicalP {
         }
         completeCleanup();
       } else {
-        setState(S_ERROR);
+        setState(S_ERROR_c);
       }
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_d);
     }
   }
 
@@ -394,16 +429,23 @@ module CXTDMAPhysicalP {
       signal CXTDMA.sendDone(result);
       completeCleanup();
     } else {
-      setState(S_ERROR);
+      setState(S_ERROR_e);
     }
   }
 
-  //BEGIN unimplemented
   command error_t SplitControl.stop(){
-    //TODO: set scOffPending flag
-    return FAIL;
+    atomic scStopPending = TRUE; 
+    return SUCCESS;
   }
 
+  task void signalStopDone(){
+    error_t error;
+    atomic error = scStopError;
+    setState(S_OFF);
+    signal SplitControl.stopDone(error);
+  }
+
+  //BEGIN unimplemented
   command error_t CXTDMA.setSchedule(uint32_t startAt, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames){
     return FAIL;

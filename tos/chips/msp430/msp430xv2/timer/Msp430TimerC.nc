@@ -160,8 +160,12 @@ implementation
 #if defined(__MSP430_HAS_T0A5__)
   #ifdef XT2_SMCLK
   //xt2 is async to cpu!
+  //BUT: the async code seems shaky: sometimes it never completes.
+  //Need to do this better: something like "read it 3 times, and as
+  //long as t2-t1 = t1-t0, assume it's cool"
+  #warning HEY! Fix handling async TA source
   components new Msp430TimerP( TA0IV_, TA0R_, TA0CTL_, TAIFG, TACLR, TAIE,
-                               TASSEL0, TASSEL1, TRUE ) as Msp430Timer0_A;
+                               TASSEL0, TASSEL1, FALSE ) as Msp430Timer0_A;
   #else
   components new Msp430TimerP( TA0IV_, TA0R_, TA0CTL_, TAIFG, TACLR, TAIE,
                                TASSEL0, TASSEL1, FALSE ) as Msp430Timer0_A;

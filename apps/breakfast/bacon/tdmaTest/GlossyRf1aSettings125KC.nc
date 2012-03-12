@@ -6,7 +6,7 @@ module GlossyRf1aSettings125KC{
   const rf1a_config_t cfg = {
     iocfg2:  0x29,   // IOCFG2    GDO2 output pin configuration.
     //iocfg1 default from Rf1aConfigure.h 
-    iocfg1:  0x2E,   //Set to RESET state.
+    iocfg1:  0x06,   // GDO1: synch rx/tx
     iocfg0:  0x06,   // IOCFG0D   GDO0 output pin configuration. Refer to SmartRF® Studio User Manual for detailed pseudo register explanation.
     fifothr: 0x07,   // FIFOTHR   RXFIFO and TXFIFO thresholds.
     //sync1 default from Rf1aConfigure.h 
