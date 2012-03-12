@@ -17,6 +17,9 @@ module TestP {
   uses interface SplitControl;
   uses interface CXTDMA;
 
+  uses interface Timer<TMilli>;
+  uses interface Leds;
+
 } implementation {
   task void printStatus(){
     printf("----\n\r");
@@ -43,6 +46,7 @@ module TestP {
     printf("S: stop \n\r");
     printf("d: toggle duty-cycled operation\n\r");
     printf("?: print status\n\r");
+    printf("t: test timer\n\r");
     printf("========================\n\r");
     post printStatus();
   }
@@ -89,6 +93,19 @@ module TestP {
     post printStatus();
   }
 
+  event void Timer.fired(){
+    call Leds.led0Toggle();
+//    printf("fired\n\r");
+  }
+
+  task void testTimer(){
+    if (! call Timer.isRunning()){
+      call Timer.startPeriodic(1024);
+    } else {
+      call Timer.stop();
+    }
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch(byte){
       case 'q':
@@ -104,6 +121,10 @@ module TestP {
         break;
       case '?':
         post printStatus();
+        break;
+      case 't':
+        printf("test timer\n\r");
+        post testTimer();
         break;
       case '\r':
         printf("\n\r");

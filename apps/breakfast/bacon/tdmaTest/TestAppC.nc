@@ -4,10 +4,14 @@ configuration TestAppC{
   components TestP;
   components SerialPrintfC;
   components PlatformSerialC;
+  components new TimerMilliC();
+  components LedsC;
 
   TestP.Boot -> MainC;
   TestP.UartStream -> PlatformSerialC;
   TestP.UartControl -> PlatformSerialC;
+  TestP.Timer -> TimerMilliC;
+  TestP.Leds -> LedsC;
 
   components GlossyRf1aSettings125KC as Rf1aSettings;
 
