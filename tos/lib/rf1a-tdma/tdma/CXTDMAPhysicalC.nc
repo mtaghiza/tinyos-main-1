@@ -27,7 +27,11 @@ configuration CXTDMAPhysicalC {
   components new AlarmMicro32C() as PrepareFrameStartAlarm;
   //This could be 32khz, not so important
   components new AlarmMicro32C() as FrameWaitAlarm;
+
+  components GDO1CaptureC;
+
   CXTDMAPhysicalP.FrameStartAlarm -> FrameStartAlarm;
   CXTDMAPhysicalP.PrepareFrameStartAlarm -> PrepareFrameStartAlarm;
   CXTDMAPhysicalP.FrameWaitAlarm -> FrameWaitAlarm;
+  CXTDMAPhysicalP.SynchCapture -> GDO1CaptureC;
 }

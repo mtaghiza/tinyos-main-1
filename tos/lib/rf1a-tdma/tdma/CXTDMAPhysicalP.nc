@@ -20,7 +20,7 @@ module CXTDMAPhysicalP {
   uses interface Alarm<TMicro, uint32_t> as PrepareFrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameWaitAlarm;
-  uses interface Msp430Capture as SynchCapture;
+  uses interface GpioCapture as SynchCapture;
 } implementation {
   enum{
     ERROR_MASK = 0x80,
@@ -135,9 +135,9 @@ module CXTDMAPhysicalP {
     if (checkState(S_OFF)){
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-        call SynchCapture.setEdge(captureMode);
+        call SynchCapture.disable();
       }
-      call SynchCapture.setSynchronous(TRUE);
+//      call SynchCapture.setSynchronous(TRUE);
       setState(S_STARTING);
       printStatus();
       return call Resource.request();
@@ -225,7 +225,7 @@ module CXTDMAPhysicalP {
           if (SUCCESS == error){
             atomic {
               captureMode = MSP430TIMER_CM_RISING;
-              call SynchCapture.setEdge(captureMode);
+              call SynchCapture.captureRisingEdge();
             }
             setState(S_RX_READY);
           } else {
@@ -247,7 +247,11 @@ module CXTDMAPhysicalP {
   async event void FrameWaitAlarm.fired(){
     if (checkState(S_RX_READY)){
       error_t error = call Rf1aPhysical.resumeIdleMode();
-      setState(S_IDLE);
+      if (error == SUCCESS){
+        setState(S_IDLE);
+      } else {
+        setState(S_ERROR);
+      }
     } else {
       setState(S_ERROR);
     }
@@ -285,7 +289,7 @@ module CXTDMAPhysicalP {
     if (captureMode == MSP430TIMER_CM_RISING){
       atomic{
         captureMode = MSP430TIMER_CM_FALLING;
-        call SynchCapture.setEdge(captureMode);
+        call SynchCapture.captureFallingEdge();
       }
       if (checkState(S_RX_READY)){
         //TODO: need to call capture.event or clear overflow manually?
@@ -299,13 +303,29 @@ module CXTDMAPhysicalP {
     } else if (captureMode == MSP430TIMER_CM_FALLING){
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-        call SynchCapture.setEdge(captureMode);
+        call SynchCapture.disable();
       }
       if (checkState(S_RECEIVING)){
         //TODO: record packet duration? not sure if we need this.
       }
     } else {
       setState(S_ERROR);
+    }
+  }
+
+  void completeCleanup(){
+    switch (call Rf1aStatus.get()){
+      case RF1A_S_IDLE:
+        setState(S_IDLE);
+        break;
+      case RF1A_S_RX:
+        setState(S_RX_READY);
+        break;
+      case RF1A_S_FSTXON:
+        setState(S_TX_READY);
+        break;
+      default:
+        setState(S_ERROR);
     }
   }
 
