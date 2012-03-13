@@ -1,15 +1,31 @@
 #ifndef CXTDMA_H
 #define CXTDMA_H
 
+#ifndef TA_DIV
+#define TA_DIV 1UL
+#endif
+
+#if TA_DIV == 1UL
+#define TA_SCALE 6UL
+#elif TA_DIV == 2UL
+#define TA_SCALE 3UL
+#elif TA_DIV == 3UL
+#define TA_SCALE 2UL
+#elif TA_DIV == 6UL
+#define TA_SCALE 1UL
+#else 
+#error Only 1 (6.5 MHz) 2, 3, and 6 (1.083 MHz) TA_DIV supported!
+#endif
+
 //Should be able to get this down to ~90 uS. 
 // 100 uS = 108.3 ticks at 26mhz/24
 #ifndef PFS_SLACK_BASE
-#define PFS_SLACK_BASE 110UL
+#define PFS_SLACK_BASE (110UL * (TA_SCALE))
 #endif
 
 //10 ms at 26mhz/24
 #ifndef DEFAULT_TDMA_FRAME_LEN_BASE
-#define DEFAULT_TDMA_FRAME_LEN_BASE 10833UL
+#define DEFAULT_TDMA_FRAME_LEN_BASE (10833UL * TA_SCALE)
 #endif
 
 //10 s at 26mhz/24

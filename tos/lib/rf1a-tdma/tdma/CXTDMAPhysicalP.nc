@@ -177,7 +177,6 @@ module CXTDMAPhysicalP {
    *   resource.granted / start timers  -> S_IDLE
    */
   event void Resource.granted(){
-    P1OUT |= BIT4;
     if (checkState(S_STARTING)){
       setState(S_IDLE);
       printStatus();
@@ -206,6 +205,7 @@ module CXTDMAPhysicalP {
 //        s_frameLen - SFD_TIME,
 //        s_frameLen,
 //        s_fwCheckLen);
+//      printf("fs %lu fl %lu\r\n", s_frameStart, s_frameLen);
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
@@ -301,7 +301,6 @@ module CXTDMAPhysicalP {
    */
   async event void FrameWaitAlarm.fired(){
     uint32_t now = call FrameWaitAlarm.getNow();
-    P1OUT &= ~BIT4;      
     printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
       now, now,
       call FrameWaitAlarm.getAlarm(),
@@ -334,6 +333,7 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
+    P1OUT |= BIT4;
     if (checkState(S_RX_READY)){
       uint32_t now = call FrameStartAlarm.getNow();
       lastFsa = call FrameStartAlarm.getAlarm();
@@ -360,6 +360,7 @@ module CXTDMAPhysicalP {
         signal CXTDMA.sendDone(error);
       }
     } else if (checkState(S_OFF)){ 
+      P1OUT &= ~BIT4;
       //sometimes see this after wdtpw reset
       return;
     } else {
@@ -370,6 +371,7 @@ module CXTDMAPhysicalP {
       call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_frameLen);
     }
+    P1OUT &= ~BIT4;
   }
 
   /**
