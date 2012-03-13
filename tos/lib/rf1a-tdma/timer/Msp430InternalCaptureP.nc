@@ -14,10 +14,11 @@ generic module Msp430InternalCaptureP(){
       call Msp430TimerControl.disableEvents();
       call Msp430TimerControl.clearPendingInterrupt();
       call Msp430Capture.clearOverflow();
-      //set CCIS and CM bits, leave the rest alone.
+      //configure CCIS and CM bits, set to capture, leave the rest alone.
       ctrl = call Msp430TimerControl.getControl();
       ctrl.ccis = call GetCCIS.getNow();
       ctrl.cm = mode;
+      ctrl.cap = 1;
       call Msp430TimerControl.setControl(ctrl);
       call Msp430TimerControl.enableEvents();
     }
