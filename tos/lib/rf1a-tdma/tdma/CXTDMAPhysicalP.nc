@@ -237,7 +237,7 @@ module CXTDMAPhysicalP {
       PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
       return;
     }
-
+    //0.5uS
     PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     if (s_inactiveFrames > 0){
       if (frameNum > s_activeFrames){
@@ -258,6 +258,7 @@ module CXTDMAPhysicalP {
     //  synch), or we started receiving, but gave up.
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
         || checkState(S_RECEIVING)){
+      //7.75 uS
       PORT_PFS_TIMING ^= PIN_PFS_TIMING;
       if (signal CXTDMA.isTXFrame(frameNum + 1)){
         error = call Rf1aPhysical.startSend(FALSE, signal
@@ -268,27 +269,33 @@ module CXTDMAPhysicalP {
           setState(S_ERROR_3);
         }
       } else {
+        //0.25 uS
         PORT_PFS_TIMING ^= PIN_PFS_TIMING;
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
           TOSH_DATA_LENGTH + sizeof(message_header_t),
           signal CXTDMA.isTXFrame(frameNum+2));
+        //11 uS
         PORT_PFS_TIMING ^= PIN_PFS_TIMING;
         if (SUCCESS == error){
           atomic {
             captureMode = MSP430TIMER_CM_RISING;
+            //0.75uS
             PORT_PFS_TIMING ^= PIN_PFS_TIMING;
             call SynchCapture.captureRisingEdge();
+            //7uS
             PORT_PFS_TIMING ^= PIN_PFS_TIMING;
           }
           setState(S_RX_READY);
         } else {
           setState(S_ERROR_4);
         }
+        //3.75 uS
         PORT_PFS_TIMING ^= PIN_PFS_TIMING;
       }
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+      //16 uS
       PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     } else if (checkState(S_OFF)){
       //sometimes see this after wdtpw reset
@@ -297,6 +304,8 @@ module CXTDMAPhysicalP {
     } else {
       setState(S_ERROR_5);
     }
+    //0.5 uS
+    PORT_PFS_TIMING |= PIN_PFS_TIMING;
     PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
   }
 
