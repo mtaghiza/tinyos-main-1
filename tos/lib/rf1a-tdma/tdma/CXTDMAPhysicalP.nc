@@ -148,6 +148,10 @@ module CXTDMAPhysicalP {
     }
   }
 
+  bool inError(){
+    atomic return (ERROR_MASK & state);
+  }
+
 
   /**
    *  S_OFF: off/not duty cycled
@@ -194,11 +198,14 @@ module CXTDMAPhysicalP {
           s_inactiveFrames = DEFAULT_TDMA_INACTIVE_FRAMES;
         }
       }
-      printf("Now: %lu s_frameStart %lu pfs %lu fs %lu\r\n",
+      printf("Now: pfs %lu fs %lu s_frameStart %lu pfs %lu fs %lu fl %lu fw %lu\r\n",
         call PrepareFrameStartAlarm.getNow(),
+        call FrameStartAlarm.getNow(),
         s_frameStart,
         s_frameLen - PFS_SLACK - SFD_TIME,
-        s_frameLen - SFD_TIME);
+        s_frameLen - SFD_TIME,
+        s_frameLen,
+        s_fwCheckLen);
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
@@ -293,7 +300,14 @@ module CXTDMAPhysicalP {
    *    FWA.fired / resumeIdleMode -> S_IDLE
    */
   async event void FrameWaitAlarm.fired(){
-    P1OUT ^= BIT4;
+    uint32_t now = call FrameWaitAlarm.getNow();
+    P1OUT &= ~BIT4;      
+    printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
+      now, now,
+      call FrameWaitAlarm.getAlarm(),
+      call FrameWaitAlarm.getAlarm());
+
+
     if (checkState(S_RX_READY)){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       if (error == SUCCESS){
@@ -321,8 +335,14 @@ module CXTDMAPhysicalP {
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
     if (checkState(S_RX_READY)){
+      uint32_t now = call FrameStartAlarm.getNow();
       lastFsa = call FrameStartAlarm.getAlarm();
       lastFwa = call FrameWaitAlarm.getAlarm();
+//      printf("At %lu (%lx) fsa.f %lu (%lx) lastFwa %lx \r\n",
+//        now, now,
+//        lastFsa, lastFsa, 
+//        lastFwa);
+//  
       call FrameWaitAlarm.stop();
       call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_fwCheckLen);
@@ -340,14 +360,16 @@ module CXTDMAPhysicalP {
         signal CXTDMA.sendDone(error);
       }
     } else if (checkState(S_OFF)){ 
-      //peculiar. I get this if the alarm was started and then i did
-      //a reset with the watchdog timer.
+      //sometimes see this after wdtpw reset
       return;
     } else {
       setState(S_ERROR_8);
     }
-    call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
-      s_frameLen);
+
+    if (! inError()){
+      call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
+        s_frameLen);
+    }
   }
 
   /**

@@ -43,6 +43,7 @@ module TestP {
     P1OUT &= ~(BIT1|BIT3|BIT4);
     P2OUT &= ~(BIT4);
 
+
     call UartControl.start();
     printf("\r\nCXTDMA test\r\n");
     printf("s: start \r\n");
