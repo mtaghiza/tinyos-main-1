@@ -20,7 +20,9 @@
 //Should be able to get this down to ~90 uS. 
 // 100 uS = 108.3 ticks at 26mhz/24
 #ifndef PFS_SLACK_BASE
-#define PFS_SLACK_BASE (110UL * (TA_SCALE))
+//this was too short at full speed.
+//#define PFS_SLACK_BASE (110UL * (TA_SCALE))
+#define PFS_SLACK_BASE (200UL * (TA_SCALE))
 #endif
 
 //10 ms at 26mhz/24
