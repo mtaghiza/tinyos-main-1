@@ -44,11 +44,22 @@
 #endif
 
 
-//TODO: this should be computed based on data rate.
+//TODO: this should be computed based on data rate. Could also maybe
+//  pick it up automatically by using carrier sense.
 //125000 bps -> 8uS per bit -> 64 uS per byte -> 512 uS for preamble +
-//  synch = 554.66 ticks
+//  synch = 512 uS = 555 ticks at 26mhz/24
+//  There's some extra time in here from the steps leading up to the
+//  actual transmission (getting it from the upper layer, for
+//  example). Which should actually be done the other way around, come
+//  to think of it. So, we have to do this experimentally. 
 #ifndef SFD_TIME
-#define SFD_TIME 555
+#if TA_DIV == 1
+#define SFD_TIME 3530UL
+#elif TA_DIV ==6
+#define SFD_TIME 588UL
+#else
+  #error SFD_TIME not defined for this TA_DIV setting. Find by experiment.
+#endif
 #endif
 
 
