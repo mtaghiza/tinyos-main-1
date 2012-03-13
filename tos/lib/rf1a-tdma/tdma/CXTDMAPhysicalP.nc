@@ -70,6 +70,7 @@ module CXTDMAPhysicalP {
 
   uint32_t lastRECapture;
   uint32_t lastFECapture;
+  uint32_t lastFsa;
 
   bool scStopPending;
   error_t scStopError;
@@ -359,6 +360,7 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
+    lastFsa = call FrameStartAlarm.getAlarm();
 
     PORT_FS_TIMING |= PIN_FS_TIMING;
     if (checkState(S_RX_READY)){
@@ -367,7 +369,7 @@ module CXTDMAPhysicalP {
       call FrameWaitAlarm.stop();
       //1.25 uS 
       PORT_FS_TIMING ^= PIN_FS_TIMING;
-      call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
+      call FrameWaitAlarm.startAt(lastFsa,
         s_fwCheckLen);
       //14.25 uS 
       PORT_FS_TIMING ^= PIN_FS_TIMING;
@@ -397,7 +399,7 @@ module CXTDMAPhysicalP {
     //0.5 uS
     PORT_FS_TIMING ^= PIN_FS_TIMING;
     if (! inError()){
-      call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
+      call FrameStartAlarm.startAt(lastFsa,
         s_frameLen);
     }
     //16 uS
@@ -445,8 +447,11 @@ module CXTDMAPhysicalP {
         call FrameWaitAlarm.stop();
         signal CXTDMA.frameStarted(lastRECapture);
       } else if (checkState(S_TRANSMITTING)){
-        //TODO: should use this to adjust SFD delay
-        printf("d %ld\r\n", lastRECapture - (call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME));
+        //TODO: revisit the self-adjustment logic here.
+        int32_t delta = lastRECapture - 
+          (lastFsa + SFD_TIME );
+//        printf("d %ld\r\n", delta);
+//        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
       } else {
         setState(S_ERROR_9);
       }

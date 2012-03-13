@@ -55,7 +55,7 @@
 //  moment. 
 #ifndef SFD_TIME
 #if TA_DIV == 1
-#define SFD_TIME 3501UL
+#define SFD_TIME 3505UL
 #elif TA_DIV ==6
 #define SFD_TIME 583UL
 #else
