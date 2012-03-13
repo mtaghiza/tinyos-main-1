@@ -68,7 +68,8 @@ module CXTDMAPhysicalP {
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
 
-  uint32_t lastCapture;
+  uint32_t lastRECapture;
+  uint32_t lastFECapture;
 
   bool scStopPending;
   error_t scStopError;
@@ -157,7 +158,7 @@ module CXTDMAPhysicalP {
     if (checkState(S_OFF)){
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-//        call SynchCapture.disable();
+        call SynchCapture.disable();
       }
       setState(S_STARTING);
       printStatus();
@@ -410,7 +411,8 @@ module CXTDMAPhysicalP {
    */
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
-//    printf("CAPTURED\r\n");
+    uint32_t capture;
+
     PORT_SC_TIMING |= PIN_SC_TIMING;
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
@@ -422,32 +424,32 @@ module CXTDMAPhysicalP {
     if (time > (fst & 0x0000ffff)){
       fst  -= 0x00010000;
     } 
-    lastCapture = (fst & 0xffff0000) | time;
+    capture = (fst & 0xffff0000) | time;
     PORT_SC_TIMING ^= PIN_SC_TIMING;
 
     if (captureMode == MSP430TIMER_CM_RISING){
+      lastRECapture = capture;
       PORT_SC_TIMING ^= PIN_SC_TIMING;
       atomic{
         captureMode = MSP430TIMER_CM_FALLING;
-//        call SynchCapture.captureFallingEdge();
+        call SynchCapture.captureFallingEdge();
       }
       PORT_SC_TIMING ^= PIN_SC_TIMING;
       if (checkState(S_RX_READY)){
-        //TODO: need to call capture.event or clear overflow manually?
         call FrameWaitAlarm.stop();
-        signal CXTDMA.frameStarted(lastCapture);
+        signal CXTDMA.frameStarted(lastRECapture);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: should use this to adjust SFD delay
-//        printf("delta %lu\r\n", 
-//          call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME);
+        printf("d %ld\r\n", lastRECapture - (call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME));
       } else {
         setState(S_ERROR_9);
       }
       PORT_SC_TIMING ^= PIN_SC_TIMING;
     } else if (captureMode == MSP430TIMER_CM_FALLING){
+      lastFECapture = capture;
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-//        call SynchCapture.disable();
+        call SynchCapture.disable();
       }
       if (checkState(S_RECEIVING)){
         //TODO: record packet duration? not sure if we need this.
