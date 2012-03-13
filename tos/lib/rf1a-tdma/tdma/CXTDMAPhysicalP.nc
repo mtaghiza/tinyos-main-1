@@ -387,7 +387,7 @@ module CXTDMAPhysicalP {
       PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_OFF)){ 
       //sometimes see this after wdtpw reset
-      PORT_FS_TIMING ^= PIN_FS_TIMING;
+      PORT_FS_TIMING &= ~PIN_FS_TIMING;
       return;
     } else {
       setState(S_ERROR_8);
@@ -410,14 +410,16 @@ module CXTDMAPhysicalP {
    */
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
-    printf("CAPTURED\r\n");
+//    printf("CAPTURED\r\n");
     PORT_SC_TIMING |= PIN_SC_TIMING;
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
     //correct for overflow: will be visible if the capture time is
-    //  larger than the current lower 16 bits of the 32-bit counter
+    //  larger than the current lower 16 bits of the 32-bit counter.
+    //  This assumes that the 16-bit synch capture timer overflows at
+    //  most once before this event runs (hopefully true, about 10 ms
+    //  at 6.5 Mhz)
     if (time > (fst & 0x0000ffff)){
-      time -= 0x0000ffff;
       fst  -= 0x00010000;
     } 
     lastCapture = (fst & 0xffff0000) | time;
@@ -436,8 +438,8 @@ module CXTDMAPhysicalP {
         signal CXTDMA.frameStarted(lastCapture);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: should use this to adjust SFD delay
-        printf("delta %lu\r\n", 
-          call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME);
+//        printf("delta %lu\r\n", 
+//          call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME);
       } else {
         setState(S_ERROR_9);
       }
@@ -450,6 +452,10 @@ module CXTDMAPhysicalP {
       if (checkState(S_RECEIVING)){
         //TODO: record packet duration? not sure if we need this.
       }
+    } else if (checkState(S_OFF)){
+      //sometimes see this after wdtpw reset
+      PORT_SC_TIMING &= ~PIN_SC_TIMING;
+      return;
     } else {
       setState(S_ERROR_a);
     }
