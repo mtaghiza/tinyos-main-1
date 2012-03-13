@@ -63,8 +63,12 @@ module GlossyRf1aSettings125KC{
     test2:   0x88,   // TEST2     Various test settings.
     test1:   0x31,   // TEST1     Various test settings.
     test0:   0x09,   // TEST0     Various test settings.
+    #ifdef LOWPOWER_TX
     //patable (just patable0 is used), default from Rf1aConfigure.h
-    patable: {0xc6},
+    patable: {0x25},
+    #else
+    patable: {0xc6}
+    #endif
   };
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){

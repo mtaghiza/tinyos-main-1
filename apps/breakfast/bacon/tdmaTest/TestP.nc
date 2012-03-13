@@ -95,20 +95,24 @@ module TestP {
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    rf1a_offmode_t r;
-    switch(frameNum %2){
-      case 1:
-        r = RF1A_OM_FSTXON;
-        break;
-      case 0:
-        r = RF1A_OM_RX;
-        break;
-      default:
-        r = RF1A_OM_IDLE;
-        break;
+    if (IS_SENDER){
+      rf1a_offmode_t r;
+      switch(frameNum %2){
+        case 1:
+          r = RF1A_OM_FSTXON;
+          break;
+        case 0:
+          r = RF1A_OM_RX;
+          break;
+        default:
+          r = RF1A_OM_IDLE;
+          break;
+      }
+  //    printf("isTX %u: %x\r\n", frameNum, r);
+      return r;
+    } else {
+      return RF1A_OM_RX;
     }
-//    printf("isTX %u: %x\r\n", frameNum, r);
-    return r;
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 

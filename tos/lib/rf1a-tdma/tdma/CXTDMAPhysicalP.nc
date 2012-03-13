@@ -131,6 +131,9 @@ module CXTDMAPhysicalP {
   bool checkState(uint8_t s){ atomic return (state == s); }
   void setState(uint8_t s){
     atomic {
+      if (state == s){
+        return;
+      }
       #ifdef DEBUG_CX_TDMA_P_STATE
       printf("[%x->%x]\n\r", state, s);
       #endif
@@ -468,6 +471,7 @@ module CXTDMAPhysicalP {
       PORT_SC_TIMING ^= PIN_SC_TIMING;
       if (checkState(S_RX_READY)){
         call FrameWaitAlarm.stop();
+        setState(S_RECEIVING);
         signal CXTDMA.frameStarted(lastRECapture);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: revisit the self-adjustment logic here.
