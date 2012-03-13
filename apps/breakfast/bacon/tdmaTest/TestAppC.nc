@@ -22,9 +22,13 @@ configuration TestAppC{
   Ieee154Packet.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
   components Ieee154AMAddressC;
 
+  components Rf1aCXPacketC;
+  Rf1aCXPacketC.SubPacket -> Ieee154Packet;
+  Rf1aCXPacketC.Ieee154Packet -> Ieee154Packet;
+
   components Rf1aAMPacketC as AMPacket;
+  AMPacket.SubPacket -> Rf1aCXPacketC;
   AMPacket.Ieee154Packet -> Ieee154Packet;
-  AMPacket.SubPacket -> Ieee154Packet;
   AMPacket.Rf1aPacket -> Ieee154Packet;
   AMPacket.ActiveMessageAddress -> Ieee154AMAddressC;
 
@@ -38,5 +42,11 @@ configuration TestAppC{
 
   TestP.SplitControl -> CXTDMAPhysicalC;
   TestP.CXTDMA -> CXTDMAPhysicalC;
+
+  TestP.AMPacket -> AMPacket;
+  TestP.CXPacket -> Rf1aCXPacketC;
+  TestP.Packet -> Rf1aCXPacketC;
+  TestP.Rf1aPacket -> Ieee154Packet;
+  TestP.Ieee154Packet -> Ieee154Packet;
   
 }

@@ -17,12 +17,43 @@ module TestP {
   uses interface SplitControl;
   uses interface CXTDMA;
 
+  uses interface AMPacket;
+  uses interface CXPacket;
+  uses interface Packet;
+  uses interface Ieee154Packet;
+  uses interface Rf1aPacket;
+
   uses interface Timer<TMilli>;
   uses interface Leds;
 
 } implementation {
+  typedef nx_struct test_pkt_t{
+    nx_uint32_t sn;
+  } test_pkt_t;
+
+  message_t tx_msg_internal;
+  message_t* tx_msg = &tx_msg_internal;
+  uint8_t tx_len;
+
+  message_t rx_msg_internal;
+  message_t* rx_msg = &rx_msg_internal;
+  
+  uint32_t mySn = 0;
   task void printStatus(){
     printf("----\n\r");
+  }
+
+  void setupPacket(){
+    test_pkt_t* pl;
+    call Rf1aPacket.configureAsData(tx_msg);
+    call AMPacket.setSource(tx_msg, call AMPacket.address());
+    call Ieee154Packet.setPan(tx_msg, call Ieee154Packet.localPan());
+    call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
+    call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
+    pl = call Packet.getPayload(tx_msg, sizeof(test_pkt_t));
+    pl -> sn = mySn;
+    mySn++;
+    tx_len = sizeof(test_pkt_t) + ((uint16_t)pl - (uint16_t)tx_msg);
   }
 
   event void Boot.booted(){
@@ -42,7 +73,7 @@ module TestP {
 
     P1OUT &= ~(BIT1|BIT3|BIT4);
     P2OUT &= ~(BIT4);
-
+    setupPacket();
 
     call UartControl.start();
     printf("\r\nCXTDMA test\r\n");
@@ -63,14 +94,18 @@ module TestP {
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
+  async event bool CXTDMA.isTXFrame(uint16_t frameNum){ 
+    return (frameNum % 2 == 0);
+  }
 
-
-
+  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 
+    *msg = tx_msg;
+    *len = tx_len;
+    return TRUE; 
+  }
 
 
   //unimplemented
-  async event bool CXTDMA.isTXFrame(uint16_t frameNum){ return FALSE; }
-  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ return FALSE; }
   async event void CXTDMA.frameStarted(uint32_t startTime){ }
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len){
     printf("!r\n\r");
@@ -78,7 +113,8 @@ module TestP {
   }
 
   async event void CXTDMA.sendDone(error_t error){
-    printf("!sd\n\r");
+    printf("!sd %x\r\n", error);
+    setupPacket();
   }
 
 

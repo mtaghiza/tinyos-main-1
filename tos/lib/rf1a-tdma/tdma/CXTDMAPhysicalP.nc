@@ -224,6 +224,7 @@ module CXTDMAPhysicalP {
     error_t error;
     P1OUT ^= BIT1;
     PORT_PFS_TIMING |= PIN_PFS_TIMING;
+    frameNum++;
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -361,15 +362,19 @@ module CXTDMAPhysicalP {
       PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_TX_READY)){
       error_t error;
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       setState(S_TRANSMITTING);
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       if ( signal CXTDMA.getPacket(&tx_msg, &tx_len)){
         error = call Rf1aPhysical.completeSend((uint8_t*)(tx_msg->header), tx_len);
       } else {
         error = call Rf1aPhysical.resumeIdleMode();
       }
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       if (SUCCESS != error){
         signal CXTDMA.sendDone(error);
       }
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_OFF)){ 
       //sometimes see this after wdtpw reset
       PORT_FS_TIMING ^= PIN_FS_TIMING;
@@ -384,6 +389,7 @@ module CXTDMAPhysicalP {
         s_frameLen);
     }
     //16 uS
+    PORT_FS_TIMING |= PIN_FS_TIMING;
     PORT_FS_TIMING &= ~PIN_FS_TIMING;
   }
 
