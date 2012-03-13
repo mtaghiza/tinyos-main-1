@@ -263,48 +263,63 @@ module CXTDMAPhysicalP {
         }
       } 
     }
+//    printf("pfs %x %s\r\n", state, decodeStatus());
     //Idle, or we are in an extra long frame-wait (e.g. trying to
     //  synch), or we started receiving, but gave up.
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
-        || checkState(S_RECEIVING)){
+        || checkState(S_TX_READY) || checkState(S_RECEIVING)){
       //7.75 uS
       PORT_PFS_TIMING ^= PIN_PFS_TIMING;
-      if (signal CXTDMA.isTXFrame(frameNum + 1)){
-        error = call Rf1aPhysical.startSend(FALSE, signal
-          CXTDMA.isTXFrame(frameNum + 2));
-        if (SUCCESS == error){
-          setState(S_TX_READY);
-        } else {
-          setState(S_ERROR_3);
-        }
-
-//        printf("TA0CTL   %x\r\n", TA0CTL);
-//        printf("TA0CCTL3 %x\r\n", TA0CCTL3);
-//        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
-      } else {
-        //0.25 uS
-        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
-        error = call Rf1aPhysical.setReceiveBuffer(
-          (uint8_t*)(rx_msg->header),
-          TOSH_DATA_LENGTH + sizeof(message_header_t),
-          signal CXTDMA.isTXFrame(frameNum+2));
-        //11 uS
-        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
-        if (SUCCESS == error){
-          atomic {
-            captureMode = MSP430TIMER_CM_RISING;
-            //0.75uS
-            PORT_PFS_TIMING ^= PIN_PFS_TIMING;
-            call SynchCapture.captureRisingEdge();
-            //7uS
-            PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+      switch(signal CXTDMA.frameType(frameNum)){
+        case RF1A_OM_FSTXON:
+          //0.75 uS
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+//          printf("TX from %s\r\n", decodeStatus());
+          error = call Rf1aPhysical.startSend(FALSE, signal
+            CXTDMA.frameType(frameNum + 1));
+          //114 uS: when coming from idle, i guess this is OK. 
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+          if (SUCCESS == error){
+            setState(S_TX_READY);
+          } else {
+            setState(S_ERROR_3);
           }
-          setState(S_RX_READY);
-        } else {
-          setState(S_ERROR_4);
-        }
-        //3.75 uS
-        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+          //2.75 uS
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+  
+  //        printf("TA0CTL   %x\r\n", TA0CTL);
+  //        printf("TA0CCTL3 %x\r\n", TA0CCTL3);
+  //        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
+          break;
+        case RF1A_OM_RX:
+          //0.25 uS
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+//          printf("RX from %s\r\n", decodeStatus());
+          error = call Rf1aPhysical.setReceiveBuffer(
+            (uint8_t*)(rx_msg->header),
+            TOSH_DATA_LENGTH + sizeof(message_header_t),
+            signal CXTDMA.frameType(frameNum+1));
+          //11 uS
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+          if (SUCCESS == error){
+            atomic {
+              captureMode = MSP430TIMER_CM_RISING;
+              //0.75uS
+              PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+              call SynchCapture.captureRisingEdge();
+              //7uS
+              PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+            }
+            setState(S_RX_READY);
+          } else {
+            setState(S_ERROR_4);
+          }
+          //3.75 uS
+          PORT_PFS_TIMING ^= PIN_PFS_TIMING;
+          break;
+        default:
+          setState(S_ERROR_1);
+          return;
       }
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
@@ -375,19 +390,24 @@ module CXTDMAPhysicalP {
       PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_TX_READY)){
       error_t error;
+      //7.5 uS 
       PORT_FS_TIMING ^= PIN_FS_TIMING;
       error = call Rf1aPhysical.completeSend();
       if (SUCCESS == error){
+        //66.25 uS: OK, this is time to load FIFO.
         PORT_FS_TIMING ^= PIN_FS_TIMING;
         setState(S_TRANSMITTING);
+        //3.75 uS
         PORT_FS_TIMING ^= PIN_FS_TIMING;
       } else {
         error = call Rf1aPhysical.resumeIdleMode();
       }
+      //0.5 uS
       PORT_FS_TIMING ^= PIN_FS_TIMING;
       if (SUCCESS != error){
         signal CXTDMA.sendDone(error);
       }
+      //0.5 uS
       PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_OFF)){ 
       //sometimes see this after wdtpw reset
@@ -420,7 +440,7 @@ module CXTDMAPhysicalP {
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
     uint32_t capture;
-
+//    printf("cm %x\r\n", captureMode);
     PORT_SC_TIMING |= PIN_SC_TIMING;
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
@@ -433,28 +453,32 @@ module CXTDMAPhysicalP {
       fst  -= 0x00010000;
     } 
     capture = (fst & 0xffff0000) | time;
+    //1 uS
     PORT_SC_TIMING ^= PIN_SC_TIMING;
 
     if (captureMode == MSP430TIMER_CM_RISING){
       lastRECapture = capture;
+      //1 uS
       PORT_SC_TIMING ^= PIN_SC_TIMING;
       atomic{
         captureMode = MSP430TIMER_CM_FALLING;
         call SynchCapture.captureFallingEdge();
       }
+      //6.5 uS
       PORT_SC_TIMING ^= PIN_SC_TIMING;
       if (checkState(S_RX_READY)){
         call FrameWaitAlarm.stop();
         signal CXTDMA.frameStarted(lastRECapture);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: revisit the self-adjustment logic here.
-        int32_t delta = lastRECapture - 
-          (lastFsa + SFD_TIME );
+//        int32_t delta = lastRECapture - 
+//          (lastFsa + SFD_TIME );
 //        printf("d %ld\r\n", delta);
 //        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
       } else {
         setState(S_ERROR_9);
       }
+      //7 uS
       PORT_SC_TIMING ^= PIN_SC_TIMING;
     } else if (captureMode == MSP430TIMER_CM_FALLING){
       lastFECapture = capture;
@@ -472,6 +496,7 @@ module CXTDMAPhysicalP {
     } else {
       setState(S_ERROR_a);
     }
+    //0.75 uS
     PORT_SC_TIMING |= PIN_SC_TIMING;
     PORT_SC_TIMING &= ~PIN_SC_TIMING;
   }
@@ -480,6 +505,9 @@ module CXTDMAPhysicalP {
    *  Synch this layer's state with radio core.
    */ 
   void completeCleanup(){
+    //we see this if we're doing an automatic switch from RX to FSTXON
+    //or from FSTXON to RX.
+    while(call Rf1aStatus.get() == RF1A_S_SETTLING){ };
     switch (call Rf1aStatus.get()){
       case RF1A_S_IDLE:
         setState(S_IDLE);
@@ -491,6 +519,7 @@ module CXTDMAPhysicalP {
         setState(S_TX_READY);
         break;
       default:
+        printf("cleanup in state %s\r\n", decodeStatus());
         setState(S_ERROR_b);
     }
   }

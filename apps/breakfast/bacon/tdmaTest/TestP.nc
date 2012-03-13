@@ -94,8 +94,21 @@ module TestP {
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
-  async event bool CXTDMA.isTXFrame(uint16_t frameNum){ 
-    return (frameNum % 2 == 0);
+  async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+    rf1a_offmode_t r;
+    switch(frameNum %2){
+      case 1:
+        r = RF1A_OM_FSTXON;
+        break;
+      case 0:
+        r = RF1A_OM_RX;
+        break;
+      default:
+        r = RF1A_OM_IDLE;
+        break;
+    }
+//    printf("isTX %u: %x\r\n", frameNum, r);
+    return r;
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 
