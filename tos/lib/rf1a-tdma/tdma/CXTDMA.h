@@ -62,4 +62,19 @@
 #define DEFAULT_TDMA_FW_CHECK_LEN (DEFAULT_TDMA_FW_CHECK_LEN_BASE * TIMING_SCALE)
 #define PFS_SLACK (PFS_SLACK_BASE * TIMING_SCALE)
 
+#ifndef PORT_FS_TIMING
+#define PORT_FS_TIMING P1OUT
+#endif
+#ifndef PIN_FS_TIMING
+#define PIN_FS_TIMING 0x00
+#endif
+
+#ifndef PORT_PFS_TIMING
+#define PORT_PFS_TIMING P1OUT
+#endif
+#ifndef PIN_PFS_TIMING
+#define PIN_PFS_TIMING 0x00
+#endif
+
+
 #endif

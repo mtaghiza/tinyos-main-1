@@ -78,11 +78,6 @@ module CXTDMAPhysicalP {
   message_t* tx_msg;
   uint8_t tx_len;
 
-  //debugging
-  uint32_t lastFsa;
-  uint32_t lastFwa;
-  uint32_t nextFwa;
-
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
       case RF1A_S_IDLE:
@@ -140,8 +135,6 @@ module CXTDMAPhysicalP {
         P2OUT |= BIT4;
         stopTimers();
         printf("[%x->%x]\n\r", state, s);
-        printf("now: %lu last fsa: %lu last fwa: %lu next fwa: %lu\r\n", 
-          call FrameWaitAlarm.getNow(), lastFsa, lastFwa, nextFwa);
       }
       #endif
       state = s;
@@ -230,6 +223,7 @@ module CXTDMAPhysicalP {
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
     P1OUT ^= BIT1;
+    PORT_PFS_TIMING |= PIN_PFS_TIMING;
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -240,9 +234,11 @@ module CXTDMAPhysicalP {
         setState(S_ERROR_f);
       }
       post signalStopDone();
+      PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
       return;
     }
 
+    PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     if (s_inactiveFrames > 0){
       if (frameNum > s_activeFrames){
         if (SUCCESS == call Resource.release()){
@@ -262,6 +258,7 @@ module CXTDMAPhysicalP {
     //  synch), or we started receiving, but gave up.
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
         || checkState(S_RECEIVING)){
+      PORT_PFS_TIMING ^= PIN_PFS_TIMING;
       if (signal CXTDMA.isTXFrame(frameNum + 1)){
         error = call Rf1aPhysical.startSend(FALSE, signal
           CXTDMA.isTXFrame(frameNum + 2));
@@ -271,28 +268,36 @@ module CXTDMAPhysicalP {
           setState(S_ERROR_3);
         }
       } else {
+        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
           TOSH_DATA_LENGTH + sizeof(message_header_t),
           signal CXTDMA.isTXFrame(frameNum+2));
+        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
         if (SUCCESS == error){
           atomic {
             captureMode = MSP430TIMER_CM_RISING;
+            PORT_PFS_TIMING ^= PIN_PFS_TIMING;
             call SynchCapture.captureRisingEdge();
+            PORT_PFS_TIMING ^= PIN_PFS_TIMING;
           }
           setState(S_RX_READY);
         } else {
           setState(S_ERROR_4);
         }
+        PORT_PFS_TIMING ^= PIN_PFS_TIMING;
       }
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+      PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     } else if (checkState(S_OFF)){
       //sometimes see this after wdtpw reset
+      PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
       return;
     } else {
       setState(S_ERROR_5);
     }
+    PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
   }
 
   /**
@@ -333,26 +338,23 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
-    P1OUT |= BIT4;
+
+    PORT_FS_TIMING |= PIN_FS_TIMING;
     if (checkState(S_RX_READY)){
-      uint32_t now = call FrameStartAlarm.getNow();
-      lastFsa = call FrameStartAlarm.getAlarm();
-      lastFwa = call FrameWaitAlarm.getAlarm();
-//      printf("At %lu (%lx) fsa.f %lu (%lx) lastFwa %lx \r\n",
-//        now, now,
-//        lastFsa, lastFsa, 
-//        lastFwa);
-//  
+      //4 uS to here
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       call FrameWaitAlarm.stop();
+      //1.25 uS 
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_fwCheckLen);
-      nextFwa = call FrameWaitAlarm.getAlarm();
+      //14.25 uS 
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_TX_READY)){
       error_t error;
       setState(S_TRANSMITTING);
       if ( signal CXTDMA.getPacket(&tx_msg, &tx_len)){
-        error = call
-        Rf1aPhysical.completeSend((uint8_t*)(tx_msg->header), tx_len);
+        error = call Rf1aPhysical.completeSend((uint8_t*)(tx_msg->header), tx_len);
       } else {
         error = call Rf1aPhysical.resumeIdleMode();
       }
@@ -360,18 +362,20 @@ module CXTDMAPhysicalP {
         signal CXTDMA.sendDone(error);
       }
     } else if (checkState(S_OFF)){ 
-      P1OUT &= ~BIT4;
       //sometimes see this after wdtpw reset
+      PORT_FS_TIMING ^= PIN_FS_TIMING;
       return;
     } else {
       setState(S_ERROR_8);
     }
-
+    //0.5 uS
+    PORT_FS_TIMING ^= PIN_FS_TIMING;
     if (! inError()){
       call FrameStartAlarm.startAt(call FrameStartAlarm.getAlarm(),
         s_frameLen);
     }
-    P1OUT &= ~BIT4;
+    //16 uS
+    PORT_FS_TIMING &= ~PIN_FS_TIMING;
   }
 
   /**
