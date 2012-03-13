@@ -114,11 +114,15 @@ module TestP {
     return msg;
   }
 
+  task void setupPacketTask(){
+    setupPacket();
+  }
+
   async event void CXTDMA.sendDone(error_t error){
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }
-    setupPacket();
+    post setupPacketTask();
   }
 
 
