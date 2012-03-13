@@ -33,7 +33,7 @@ module TestP {
 
   message_t tx_msg_internal;
   message_t* tx_msg = &tx_msg_internal;
-  uint8_t tx_len;
+  norace uint8_t tx_len;
 
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
