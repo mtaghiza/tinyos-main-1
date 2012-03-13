@@ -4,12 +4,12 @@
 //Should be able to get this down to ~90 uS. 
 // 100 uS = 108.3 ticks at 26mhz/24
 #ifndef PFS_SLACK_BASE
-#define PFS_SLACK_BASE 110
+#define PFS_SLACK_BASE 110UL
 #endif
 
 //10 ms at 26mhz/24
 #ifndef DEFAULT_TDMA_FRAME_LEN_BASE
-#define DEFAULT_TDMA_FRAME_LEN_BASE 10833U
+#define DEFAULT_TDMA_FRAME_LEN_BASE 10833UL
 #endif
 
 //10 s at 26mhz/24

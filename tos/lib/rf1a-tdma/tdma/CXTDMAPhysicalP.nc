@@ -198,14 +198,14 @@ module CXTDMAPhysicalP {
           s_inactiveFrames = DEFAULT_TDMA_INACTIVE_FRAMES;
         }
       }
-      printf("Now: pfs %lu fs %lu s_frameStart %lu pfs %lu fs %lu fl %lu fw %lu\r\n",
-        call PrepareFrameStartAlarm.getNow(),
-        call FrameStartAlarm.getNow(),
-        s_frameStart,
-        s_frameLen - PFS_SLACK - SFD_TIME,
-        s_frameLen - SFD_TIME,
-        s_frameLen,
-        s_fwCheckLen);
+//      printf("Now: pfs %lu fs %lu s_frameStart %lu pfs %lu fs %lu fl %lu fw %lu\r\n",
+//        call PrepareFrameStartAlarm.getNow(),
+//        call FrameStartAlarm.getNow(),
+//        s_frameStart,
+//        s_frameLen - PFS_SLACK - SFD_TIME,
+//        s_frameLen - SFD_TIME,
+//        s_frameLen,
+//        s_fwCheckLen);
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
