@@ -648,7 +648,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
 
 
-  async command error_t Rf1aPhysical.completeSend[uint8_t clientId](uint8_t* buffer, uint8_t length){
+  async command error_t Rf1aPhysical.completeSend[uint8_t clientId](){
+    uint8_t* buffer;
+    uint8_t length;
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
       return EOFF;
@@ -657,11 +659,6 @@ generic module HplMsp430Rf1aP () @safe() {
       //the wrong client tried to complete a send. shouldn't happen.
       return EBUSY;
     }  
-    //packet validation
-    if (0 == length || length >= FIFO_FILL_LIMIT){
-      return ESIZE;
-    }
-
     atomic{
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
@@ -675,6 +672,16 @@ generic module HplMsp430Rf1aP () @safe() {
          * cases, it somehow ends up in IDLE.  Try anyway, and if it
          * doesn't work, fail the transmission. */
         rc = call Rf1aIf.strobe(RF_STX);
+
+        //packet retrieval/validation: cancel the transmission if we
+        //the client doesn't provide a packet or if the length is
+        //valid 
+        if( ! signal Rf1aPhysical.getPacket[clientId](&buffer, &length) 
+           || 0 == length || length >= FIFO_FILL_LIMIT){
+          resumeIdleMode_(FALSE);
+          return ESIZE;
+        }
+
         loadFifo_(buffer, length);
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
@@ -946,6 +953,10 @@ generic module HplMsp430Rf1aP () @safe() {
 //  }
 
   default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
+
+  default async event bool Rf1aPhysical.getPacket[uint8_t clientId](uint8_t** buffer, uint8_t* length){
+    return FALSE;
+  }
 
   async command error_t Rf1aPhysical.startTransmission[uint8_t client] (bool with_cca)
   {

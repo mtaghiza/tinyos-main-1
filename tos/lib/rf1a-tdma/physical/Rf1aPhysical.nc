@@ -119,18 +119,26 @@ interface Rf1aPhysical {
   async command error_t startSend(bool cca_check, rf1a_offmode_t txOffMode);
 
   /**
-   * Send the STX strobe to complete the process.
+   * Send the STX strobe to complete the process. This will send the
+   * strobe, then (very quickly) request the data via the getPacket
+   * event below. 
+   *
+   * @return EOFF if radio unassigned, EBUSY if this client doesn't
+   * hold the resource. ESIZE if the data provided by getPacket is
+   * invalid. SUCCESS in all other cases 
+   */ 
+  async command error_t completeSend();
+
+  /**
+   * Request the data that is to be sent. This happens after the STX
+   * strobe has been sent, so you must respond to it MOST QUICKLY.
    *
    * @param buffer The data to be sent.
    *
    * @param length Number of bytes, including headers, to be sent.
    *
-   * @return EOFF if radio unassigned, EBUSY if this client doesn't
-   * hold the resource. SUCCESS in all other cases (required to keep
-   * logic consistent with above basic send command).
-   */ 
-  async command error_t completeSend(uint8_t* buffer, uint8_t length);
-
+   */
+  async event bool getPacket(uint8_t** buffer, uint8_t* length);
 
   /* @TODO@ provide a mechanism to delay transition to STX until a
    * specific number of bytes are available in the FIFO */

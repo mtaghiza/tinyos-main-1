@@ -374,10 +374,11 @@ module CXTDMAPhysicalP {
     } else if (checkState(S_TX_READY)){
       error_t error;
       PORT_FS_TIMING ^= PIN_FS_TIMING;
-      setState(S_TRANSMITTING);
-      PORT_FS_TIMING ^= PIN_FS_TIMING;
-      if ( signal CXTDMA.getPacket(&tx_msg, &tx_len)){
-        error = call Rf1aPhysical.completeSend((uint8_t*)(tx_msg->header), tx_len);
+      error = call Rf1aPhysical.completeSend();
+      if (SUCCESS == error){
+        PORT_FS_TIMING ^= PIN_FS_TIMING;
+        setState(S_TRANSMITTING);
+        PORT_FS_TIMING ^= PIN_FS_TIMING;
       } else {
         error = call Rf1aPhysical.resumeIdleMode();
       }
@@ -402,6 +403,11 @@ module CXTDMAPhysicalP {
     //16 uS
     PORT_FS_TIMING |= PIN_FS_TIMING;
     PORT_FS_TIMING &= ~PIN_FS_TIMING;
+  }
+
+  async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
+      uint8_t* len){
+    return signal CXTDMA.getPacket((message_t**)buffer, len);
   }
 
   /**
