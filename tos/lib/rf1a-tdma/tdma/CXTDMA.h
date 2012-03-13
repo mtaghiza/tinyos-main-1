@@ -78,5 +78,12 @@
 #define PIN_PFS_TIMING 0x00
 #endif
 
+#ifndef PORT_SC_TIMING
+#define PORT_SC_TIMING P1OUT
+#endif
+#ifndef PIN_SC_TIMING
+#define PIN_SC_TIMING 0x00
+#endif
+
 
 #endif

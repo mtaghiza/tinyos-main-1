@@ -106,14 +106,18 @@ module TestP {
 
 
   //unimplemented
-  async event void CXTDMA.frameStarted(uint32_t startTime){ }
+  async event void CXTDMA.frameStarted(uint32_t startTime){ 
+    printf("!fs\n\r");
+  }
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len){
     printf("!r\n\r");
     return msg;
   }
 
   async event void CXTDMA.sendDone(error_t error){
-    printf("!sd %x\r\n", error);
+    if (SUCCESS != error){
+      printf("!sd %x\r\n", error);
+    }
     setupPacket();
   }
 

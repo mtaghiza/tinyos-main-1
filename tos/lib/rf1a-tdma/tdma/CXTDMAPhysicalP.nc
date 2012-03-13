@@ -68,6 +68,8 @@ module CXTDMAPhysicalP {
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
 
+  uint32_t lastCapture;
+
   bool scStopPending;
   error_t scStopError;
 
@@ -155,7 +157,7 @@ module CXTDMAPhysicalP {
     if (checkState(S_OFF)){
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-        call SynchCapture.disable();
+//        call SynchCapture.disable();
       }
       setState(S_STARTING);
       printStatus();
@@ -199,6 +201,9 @@ module CXTDMAPhysicalP {
 //        s_frameLen,
 //        s_fwCheckLen);
 //      printf("fs %lu fl %lu\r\n", s_frameStart, s_frameLen);
+//      printf("TA0CTL   %x\r\n", TA0CTL);
+//      printf("TA0CCTL3 %x\r\n", TA0CCTL3);
+//      printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
@@ -225,6 +230,7 @@ module CXTDMAPhysicalP {
     P1OUT ^= BIT1;
     PORT_PFS_TIMING |= PIN_PFS_TIMING;
     frameNum++;
+
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -269,6 +275,10 @@ module CXTDMAPhysicalP {
         } else {
           setState(S_ERROR_3);
         }
+
+//        printf("TA0CTL   %x\r\n", TA0CTL);
+//        printf("TA0CCTL3 %x\r\n", TA0CCTL3);
+//        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
       } else {
         //0.25 uS
         PORT_PFS_TIMING ^= PIN_PFS_TIMING;
@@ -400,7 +410,8 @@ module CXTDMAPhysicalP {
    */
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
-    uint32_t captureTime;
+    printf("CAPTURED\r\n");
+    PORT_SC_TIMING |= PIN_SC_TIMING;
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
     //correct for overflow: will be visible if the capture time is
@@ -409,26 +420,32 @@ module CXTDMAPhysicalP {
       time -= 0x0000ffff;
       fst  -= 0x00010000;
     } 
-    captureTime = (fst & 0xffff0000) | time;
+    lastCapture = (fst & 0xffff0000) | time;
+    PORT_SC_TIMING ^= PIN_SC_TIMING;
 
     if (captureMode == MSP430TIMER_CM_RISING){
+      PORT_SC_TIMING ^= PIN_SC_TIMING;
       atomic{
         captureMode = MSP430TIMER_CM_FALLING;
-        call SynchCapture.captureFallingEdge();
+//        call SynchCapture.captureFallingEdge();
       }
+      PORT_SC_TIMING ^= PIN_SC_TIMING;
       if (checkState(S_RX_READY)){
         //TODO: need to call capture.event or clear overflow manually?
         call FrameWaitAlarm.stop();
-        signal CXTDMA.frameStarted(captureTime);
+        signal CXTDMA.frameStarted(lastCapture);
       } else if (checkState(S_TRANSMITTING)){
-        //TODO: record actual start, not sure if this is needed.
+        //TODO: should use this to adjust SFD delay
+        printf("delta %lu\r\n", 
+          call FrameStartAlarm.getAlarm() - s_frameLen + SFD_TIME);
       } else {
         setState(S_ERROR_9);
       }
+      PORT_SC_TIMING ^= PIN_SC_TIMING;
     } else if (captureMode == MSP430TIMER_CM_FALLING){
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
-        call SynchCapture.disable();
+//        call SynchCapture.disable();
       }
       if (checkState(S_RECEIVING)){
         //TODO: record packet duration? not sure if we need this.
@@ -436,6 +453,8 @@ module CXTDMAPhysicalP {
     } else {
       setState(S_ERROR_a);
     }
+    PORT_SC_TIMING |= PIN_SC_TIMING;
+    PORT_SC_TIMING &= ~PIN_SC_TIMING;
   }
 
   /**
@@ -512,6 +531,7 @@ module CXTDMAPhysicalP {
   }
 
   async event void Rf1aPhysical.frameStarted () { 
+//    printf("rp.fs\r\n");
     //ignored: we use the GDO timer capture for this.
   }
 
