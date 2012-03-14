@@ -19,8 +19,6 @@ generic module Msp430InternalCaptureP(){
       ctrl.ccis = call GetCCIS.getNow();
       ctrl.cm = mode;
       ctrl.cap = 1;
-      //let's see what this does.
-      ctrl.scs = 0;
       call Msp430TimerControl.setControl(ctrl);
       call Msp430TimerControl.enableEvents();
     }
