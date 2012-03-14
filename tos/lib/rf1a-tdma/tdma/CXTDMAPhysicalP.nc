@@ -334,14 +334,13 @@ module CXTDMAPhysicalP {
    *    FWA.fired / resumeIdleMode -> S_IDLE
    */
   async event void FrameWaitAlarm.fired(){
-    uint32_t now = call FrameWaitAlarm.getNow();
-    FW_SET_PIN;
+//    uint32_t now = call FrameWaitAlarm.getNow();
 //    printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
 //      now, now,
 //      call FrameWaitAlarm.getAlarm(),
 //      call FrameWaitAlarm.getAlarm());
 //
-
+    FW_SET_PIN;
     FW_TOGGLE_PIN;
     if (checkState(S_RX_READY)){
       error_t error;

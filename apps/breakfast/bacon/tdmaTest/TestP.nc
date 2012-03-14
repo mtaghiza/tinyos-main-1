@@ -51,23 +51,22 @@ module TestP {
   }
 
   event void Boot.booted(){
-    //timing pins
-    P1SEL &= ~(BIT1|BIT3|BIT4);
-    P1SEL |= BIT2;
-    P1DIR |= (BIT1|BIT2|BIT3|BIT4);
-    P2SEL &= ~(BIT4);
-    P2DIR |= (BIT4);
-    //set up SFD GDO on 1.2
     atomic{
+      //timing pins
+      P1SEL &= ~(BIT1|BIT3|BIT4);
+      P1SEL |= BIT2;
+      P1DIR |= (BIT1|BIT2|BIT3|BIT4);
+      P2SEL &= ~(BIT4);
+      P2DIR |= (BIT4);
+      //set up SFD GDO on 1.2
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P1MAP2 = PM_RFGDO0;
       PMAPPWD = 0x00;
+
+      P1OUT &= ~(BIT1|BIT3|BIT4);
+      P2OUT &= ~(BIT4);
     }
-
-    P1OUT &= ~(BIT1|BIT3|BIT4);
-    P2OUT &= ~(BIT4);
-
     call UartControl.start();
     printf("\r\nCXTDMA test\r\n");
     printf("s: start \r\n");
