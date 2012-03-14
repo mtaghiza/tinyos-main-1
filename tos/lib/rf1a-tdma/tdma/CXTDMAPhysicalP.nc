@@ -178,8 +178,17 @@ module CXTDMAPhysicalP {
    */
   event void Resource.granted(){
     if (checkState(S_STARTING)){
+      //TODO: state should be S_START_READY: otherwise, fs.fired will
+      //see that we're idle and error.
       setState(S_IDLE);
       printStatus();
+      //eh, just leave pfs running all the time.
+
+      //TODO: the schedule initialization should be done in the
+      //      setSchedule command. We should only start timers here if
+      //      this event came up because we were duty cycling.
+      //additionally, frameNum should be reset to 0 only when we
+      //actually wrap around (e.g. % activeFrames + inactiveFrames)
       atomic {
         frameNum = 0;
       }
@@ -187,6 +196,7 @@ module CXTDMAPhysicalP {
       //If no schedule provided, provide some defaults which will
       //  basically keep us waiting until something shows up that we
       //  can synch on.
+      //failsafe behavior is responsibility of upper layer.
       if (s_frameStart == 0){
         atomic{
           s_frameStart = (call PrepareFrameStartAlarm.getNow() -
@@ -258,6 +268,7 @@ module CXTDMAPhysicalP {
         } else { 
           setState(S_ERROR_1);
         }
+        //last inactive frame: request the resource.
       } else if (frameNum == s_activeFrames + s_inactiveFrames - 1){
         if (SUCCESS == call Resource.request()){
           setState(S_STARTING);
@@ -576,9 +587,33 @@ module CXTDMAPhysicalP {
     signal SplitControl.stopDone(error);
   }
 
-  //BEGIN unimplemented
-  command error_t CXTDMA.setSchedule(uint32_t startAt, uint32_t frameLen,
-      uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames){
+  command error_t CXTDMA.setSchedule(uint32_t startAt,
+      uint16_t atFrameNum, uint32_t frameLen,
+      uint32_t fwCheckLen, uint16_t activeFrames, 
+      uint16_t inactiveFrames){
+    if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
+      //would be nicer to buffer the new settings and apply them when
+      //it's safe.
+      return ERETRY;
+    } else if(!inError()) {
+      s_frameStart = startAt;
+      s_frameLen = frameLen;
+      s_fwCheckLen = fwCheckLen;
+      s_activeFrames = activeFrames;
+      s_inactiveFrames = inactiveFrames;
+      frameNum = atFrameNum - 1;
+      //reschedule alarms based on these settings.
+      // we want atFrameNum to come up at startAt. 
+      //so: pfs will fire at startAt. At that time, frameNum will get
+      //  incremented
+      //TODO: check for over/under flows
+      call PrepareFrameStartAlarm.startAt(s_frameStart - s_frameLen,
+        s_frameLen - PFS_SLACK - SFD_TIME);
+      //TODO: any SW clock-tuning should be done here.
+      call FrameStartAlarm.startAt(s_frameStart - s_frameLen, s_frameLen - SFD_TIME);
+     } else {
+      setState(S_ERROR_2);
+    }
     return FAIL;
   }
 
@@ -587,6 +622,7 @@ module CXTDMAPhysicalP {
     //ignored: we use the GDO timer capture for this.
   }
 
+  //BEGIN unimplemented
   async event void Rf1aPhysical.carrierSense () { }
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
