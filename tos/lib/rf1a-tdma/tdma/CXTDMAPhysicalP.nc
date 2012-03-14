@@ -256,6 +256,7 @@ module CXTDMAPhysicalP {
     //  synch), or we started receiving, but gave up.
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
         || checkState(S_TX_READY) || checkState(S_RECEIVING)){
+//      printf("PFS0  %s\r\n", decodeStatus());
       //7.75 uS
       PORT_PFS_TIMING ^= PIN_PFS_TIMING;
       switch(signal CXTDMA.frameType(frameNum)){
@@ -299,6 +300,7 @@ module CXTDMAPhysicalP {
               PORT_PFS_TIMING ^= PIN_PFS_TIMING;
             }
             setState(S_RX_READY);
+//            printf("PFS1  %s\r\n", decodeStatus());
           } else {
             setState(S_ERROR_4);
           }
@@ -341,11 +343,21 @@ module CXTDMAPhysicalP {
 
     PORT_FW_TIMING ^= PIN_FW_TIMING;
     if (checkState(S_RX_READY)){
-      error_t error = call Rf1aPhysical.resumeIdleMode();
+      error_t error;
+//      printf("fw %s\r\n", decodeStatus());
+      error = call Rf1aPhysical.resumeIdleMode();
       PORT_FW_TIMING ^= PIN_FW_TIMING;
 //      printf("T.O\r\n");
       if (error == SUCCESS){
-        setState(S_IDLE);
+        //resumeIdle alone seems to put us into a stuck state. not
+        //  sure why. Radio stays in S_IDLE when we call
+        //  setReceiveBuffer in pfs.f.
+        error = call Rf1aPhysical.setReceiveBuffer(0, 0, RF1A_OM_IDLE);
+        if (error == SUCCESS){
+          setState(S_IDLE);
+        } else {
+          setState(S_ERROR_3);
+        }
       } else {
         setState(S_ERROR_6);
       }
@@ -371,7 +383,6 @@ module CXTDMAPhysicalP {
   async event void FrameStartAlarm.fired(){
     P1OUT ^= BIT3;
     lastFsa = call FrameStartAlarm.getAlarm();
-
     PORT_FS_TIMING |= PIN_FS_TIMING;
     if (checkState(S_RX_READY)){
       //4 uS to here
@@ -381,6 +392,7 @@ module CXTDMAPhysicalP {
       PORT_FS_TIMING ^= PIN_FS_TIMING;
       call FrameWaitAlarm.startAt(lastFsa,
         s_fwCheckLen);
+//      printf("FS %s\r\n", decodeStatus());
       //14.25 uS 
       PORT_FS_TIMING ^= PIN_FS_TIMING;
     } else if (checkState(S_TX_READY)){
@@ -437,6 +449,12 @@ module CXTDMAPhysicalP {
     uint32_t capture;
 //    printf("cm %x\r\n", captureMode);
     PORT_SC_TIMING |= PIN_SC_TIMING;
+
+    //There is a ~9.25 uS delay between the SFD signal at the sender and
+    //  at the receiver. So, we need to adjust the capture time
+    //  accordingly.
+    time -= SFD_PROCESSING_DELAY;
+
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
     //correct for overflow: will be visible if the capture time is
@@ -589,22 +607,25 @@ module CXTDMAPhysicalP {
       uint32_t firstDelta;
 
       atomic{
+        PORT_SS_TIMING ^= PIN_SS_TIMING;
         firstDelta = frameLen;
         //make sure that base time is in the past.
         while(startAt > call FrameStartAlarm.getNow()){
-          printf("s");
+//          printf("s");
           startAt -= frameLen;
           firstDelta += frameLen;
         }
+        PORT_SS_TIMING ^= PIN_SS_TIMING;
 
         //if target is in the past, we need to jump ahead by some
         //  frames.
         while ( (startAt + firstDelta) < call FrameStartAlarm.getNow()){
           atFrameNum = (1+atFrameNum) % (activeFrames + inactiveFrames);
           firstDelta += frameLen;
-          printf("d");
+//          printf("d");
         }
 
+        PORT_SS_TIMING ^= PIN_SS_TIMING;
         s_frameStart = startAt;
         s_frameLen = frameLen;
         s_fwCheckLen = fwCheckLen;
@@ -614,16 +635,18 @@ module CXTDMAPhysicalP {
           atFrameNum = activeFrames + inactiveFrames;
         }
         frameNum = atFrameNum - 1;
+        PORT_SS_TIMING ^= PIN_SS_TIMING;
       }
       //reschedule alarms based on these settings.
       // we want atFrameNum to come up at startAt. 
       //so: pfs will fire at startAt. At that time, frameNum will get
       //  incremented
       //TODO: check for over/under flows
-      printf("Now %lu base %lu delta %lu at %u\r\n", 
-        call FrameStartAlarm.getNow(), s_frameStart,
-        firstDelta, frameNum);
-
+//      printf("Now %lu base %lu delta %lu at %u\r\n", 
+//        call FrameStartAlarm.getNow(), s_frameStart,
+//        firstDelta, frameNum);
+//
+      PORT_SS_TIMING ^= PIN_SS_TIMING;
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
@@ -631,6 +654,13 @@ module CXTDMAPhysicalP {
         s_frameStart, 
         firstDelta - SFD_TIME);
       PORT_SS_TIMING &= ~PIN_SS_TIMING;
+      if (frameNum % 2){
+        P1OUT |=BIT1;
+        P1OUT |=BIT3;
+      }else{
+        P1OUT &= ~BIT1;
+        P1OUT &= ~BIT3;
+      }
       return SUCCESS;
     } else {
       setState(S_ERROR_2);

@@ -56,8 +56,11 @@
 #ifndef SFD_TIME
 #if TA_DIV == 1
 #define SFD_TIME 3505UL
+#define SFD_PROCESSING_DELAY 24
 #elif TA_DIV ==6
 #define SFD_TIME 583UL
+//TODO: this is approximate
+#define SFD_PROCESSING_DELAY 4
 #else
   #error SFD_TIME not defined for this TA_DIV setting. Find by experiment.
 #endif

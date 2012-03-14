@@ -9,6 +9,7 @@
 #include "Rf1a.h"
 #include "message.h"
 #include "CXTDMA.h"
+#include "schedule.h"
 
 module TestP {
   uses interface Boot;
@@ -28,16 +29,18 @@ module TestP {
   uses interface Leds;
 
 } implementation {
-  typedef nx_struct test_pkt_t{
-    nx_uint32_t sn;
-  } test_pkt_t;
-
+  
   message_t tx_msg_internal;
   message_t* tx_msg = &tx_msg_internal;
   norace uint8_t tx_len;
 
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
+  uint8_t rx_len;
+  
+  //schedule info
+  uint32_t lastFs;
+  uint16_t framesPerSlot;
   
   uint32_t mySn = 0;
   norace bool isRoot = FALSE;
@@ -48,16 +51,21 @@ module TestP {
   }
 
   void setupPacket(){
-    test_pkt_t* pl;
+    cx_schedule_t* pl;
     call Rf1aPacket.configureAsData(tx_msg);
     call AMPacket.setSource(tx_msg, call AMPacket.address());
     call Ieee154Packet.setPan(tx_msg, call Ieee154Packet.localPan());
     call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
-    pl = call Packet.getPayload(tx_msg, sizeof(test_pkt_t));
-    pl -> sn = mySn;
-    mySn++;
-    tx_len = sizeof(test_pkt_t) + ((uint16_t)pl - (uint16_t)tx_msg);
+    call CXPacket.setCount(tx_msg, 0);
+    pl = (cx_schedule_t*)call Packet.getPayload(tx_msg, sizeof(cx_schedule_t));
+    pl -> rootStart = 1;
+    pl -> originalFrame = 0;
+    pl -> frameLen = DEFAULT_TDMA_FRAME_LEN;
+    pl -> activeFrames = 8;
+    pl -> inactiveFrames = 8;
+    pl -> framesPerSlot = 2;
+    tx_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)tx_msg);
   }
 
   event void Boot.booted(){
@@ -101,14 +109,24 @@ module TestP {
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     if (isRoot){
-      switch(frameNum % 4){
-        case 0:
-          return RF1A_OM_FSTXON;
-        default:
-          return RF1A_OM_RX;
+      if (frameNum == 0){
+        return RF1A_OM_FSTXON;
+      } else {
+        return RF1A_OM_RX;
       }
     } else {
       return RF1A_OM_RX;
+//      if (! isSynched){
+//        return RF1A_OM_RX;
+//      } else {
+//        if (frameNum == TOS_NODE_ID * cxs.framesPerSlot){
+//          return RF1A_OM_FSTXON;
+//        } else if (! forwardNext){
+//          return RF1A_OM_RX;
+//        } else{
+//          return RF1A_OM_FSTXON;
+//        }
+//      }
     }
   }
 
@@ -121,12 +139,33 @@ module TestP {
 
   //unimplemented
   async event void CXTDMA.frameStarted(uint32_t startTime){ 
-    printf("!fs\n\r");
+    lastFs = startTime;
+//    printf("!fs\n\r");
+  }
+
+  task void processReceive(){
+    error_t error;
+    cx_schedule_t* pl = call Packet.getPayload(rx_msg, rx_len);
+    framesPerSlot = pl->framesPerSlot;
+    //increment number of hops
+    call CXPacket.setCount(rx_msg, call CXPacket.count(rx_msg)+1);
+
+    error = call CXTDMA.setSchedule(lastFs, 
+      call CXPacket.count(rx_msg) + pl->originalFrame,
+      pl->frameLen,
+      DEFAULT_TDMA_FW_CHECK_LEN,
+      pl->activeFrames,
+      pl->inactiveFrames);
+
+//    printf("PR SS: %s\r\n", decodeError(error));
   }
 
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len){
-    printf("!r\n\r");
-    return msg;
+    message_t* swp = rx_msg;
+    rx_msg = msg;
+    rx_len = len;
+    post processReceive();
+    return swp;
   }
 
   task void setupPacketTask(){
@@ -136,11 +175,10 @@ module TestP {
   async event void CXTDMA.sendDone(error_t error){
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
+    }else{
+//      printf("sd\r\n");
     }
-    post setupPacketTask();
   }
-
-
 
   task void startTask(){
     error_t error = call SplitControl.start();
@@ -173,14 +211,19 @@ module TestP {
 
   task void becomeRoot(){
     error_t error;
-    uint32_t ss = call CXTDMA.getNow(); 
+    uint32_t ss;
+    cx_schedule_t* pl = call Packet.getPayload(tx_msg, sizeof(cx_schedule_t)); 
     isRoot = TRUE;
+    setupPacket();
+    ss = call CXTDMA.getNow();
+    
     error = call CXTDMA.setSchedule(
       ss, 
       0,
       DEFAULT_TDMA_FRAME_LEN, 
       DEFAULT_TDMA_FW_CHECK_LEN,
-      2, 2);
+      pl->activeFrames, 
+      pl->inactiveFrames);
     printf("BR: setSchedule: %lu %s\r\n", ss, decodeError(error));
   }
 
