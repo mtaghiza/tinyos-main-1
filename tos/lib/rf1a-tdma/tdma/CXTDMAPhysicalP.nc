@@ -453,7 +453,9 @@ module CXTDMAPhysicalP {
     //There is a ~9.25 uS delay between the SFD signal at the sender and
     //  at the receiver. So, we need to adjust the capture time
     //  accordingly.
-    time -= SFD_PROCESSING_DELAY;
+    //This is bizarre to me: it should be *subtracting* from time, but
+    //  that had the opposite effect. 
+    time += SFD_PROCESSING_DELAY;
 
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
