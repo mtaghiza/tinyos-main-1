@@ -8,6 +8,7 @@ configuration CXTDMAPhysicalC {
   uses interface Rf1aPhysicalMetadata;
   uses interface Rf1aStatus;
   uses interface Rf1aPacket;
+  uses interface CXPacket;
 
 } implementation {
   components CXTDMAPhysicalP;
@@ -21,6 +22,7 @@ configuration CXTDMAPhysicalC {
   Rf1aPhysicalMetadata = CXTDMAPhysicalP;
   Rf1aStatus = CXTDMAPhysicalP;
   Rf1aPacket = CXTDMAPhysicalP;
+  CXPacket = CXTDMAPhysicalP;
 
   //TODO: Msp430Capture
   components new AlarmMicro32C() as FrameStartAlarm;

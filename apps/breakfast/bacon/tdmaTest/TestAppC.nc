@@ -36,6 +36,7 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aPhysical -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aStatus -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
+  CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
 
   components TDMASchedulerC;
   TDMASchedulerC.SubSplitControl -> CXTDMAPhysicalC;

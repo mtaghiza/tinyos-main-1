@@ -32,6 +32,7 @@
  */
 
 #include "Rf1aPacket.h"
+#include "CXTDMADebug.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -663,7 +664,7 @@ generic module HplMsp430Rf1aP () @safe() {
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
       //DC: this should always hold, could remove it.
-      if ((RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
+//      if ((RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
         register int loop_limit = RADIO_LOOP_LIMIT;
         uint8_t rc;
         /* We're *supposed* to be in FSTXON here, so this strobe can't
@@ -671,7 +672,9 @@ generic module HplMsp430Rf1aP () @safe() {
          * and CCA fails, the radio transitions to RX mode.  In other
          * cases, it somehow ends up in IDLE.  Try anyway, and if it
          * doesn't work, fail the transmission. */
+        TX_TOGGLE_PIN;
         rc = call Rf1aIf.strobe(RF_STX);
+        TX_TOGGLE_PIN;
 
         //packet retrieval/validation: cancel the transmission if we
         //the client doesn't provide a packet or if the length is
@@ -682,31 +685,25 @@ generic module HplMsp430Rf1aP () @safe() {
           return ESIZE;
         }
 
+        TX_TOGGLE_PIN;
         loadFifo_(tx_buffer, tx_length);
+        TX_TOGGLE_PIN;
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
                && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
                && (0 <= --loop_limit)) {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
-        #ifdef CX_FLOOD_TIMING_PINS
-        P1OUT &= ~BIT1;
-        #endif
-
+        TX_TOGGLE_PIN;
         tx_state = TX_S_active;
-        #ifdef DEBUG_TX_5
-        P1OUT &= ~BIT2;
-        #endif
-        #ifdef DEBUG_TX_8
-        P1OUT &= ~BIT3;
-        #endif
+
         //call IndicatorPin.clr();
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
           tx_result = ERETRY;
           cancelTransmit_();
           return tx_result;
         }
-      }
+//      }
       /* If we've started transmitting, see if we're done yet. */
       if (TX_S_active <= tx_state) {
         /* If there's no more data to be transmitted, the task is

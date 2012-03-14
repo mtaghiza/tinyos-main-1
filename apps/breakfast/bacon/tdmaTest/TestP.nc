@@ -121,7 +121,7 @@ module TestP {
   }
 
   task void processReceive(){
-    printf("RX %p\r\n", rx_msg);
+//    printf("RX %p\r\n", rx_msg);
   }
   
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,

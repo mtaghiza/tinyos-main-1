@@ -17,6 +17,7 @@ module CXTDMAPhysicalP {
   uses interface Rf1aStatus;
 
   uses interface Rf1aPacket;
+  uses interface CXPacket;
 
   uses interface Alarm<TMicro, uint32_t> as PrepareFrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameStartAlarm;
@@ -303,6 +304,7 @@ module CXTDMAPhysicalP {
             setState(S_RX_READY);
 //            printf("PFS1  %s\r\n", decodeStatus());
           } else {
+            printf("Error %s\r\n", decodeError(error));
             setState(S_ERROR_4);
           }
           //3.75 uS
@@ -381,25 +383,18 @@ module CXTDMAPhysicalP {
    *
    */
   async event void FrameStartAlarm.fired(){
+    error_t error;
     P1OUT ^= BIT3;
-    lastFsa = call FrameStartAlarm.getAlarm();
+    TX_SET_PIN;
     FS_SET_PIN;
-    if (checkState(S_RX_READY)){
-      //4 uS to here
+    if (checkState(S_TX_READY)){
       FS_TOGGLE_PIN;
-      call FrameWaitAlarm.stop();
-      //1.25 uS 
-      FS_TOGGLE_PIN;
-      call FrameWaitAlarm.startAt(lastFsa,
-        s_fwCheckLen);
-//      printf("FS %s\r\n", decodeStatus());
-      //14.25 uS 
-      FS_TOGGLE_PIN;
-    } else if (checkState(S_TX_READY)){
-      error_t error;
-      //7.5 uS 
-      FS_TOGGLE_PIN;
+      TX_TOGGLE_PIN;
       error = call Rf1aPhysical.completeSend();
+      TX_TOGGLE_PIN;
+      TX_CLEAR_PIN;
+      TX_SET_PIN;
+      TX_CLEAR_PIN;
       if (SUCCESS == error){
         //66.25 uS: OK, this is time to load FIFO.
         FS_TOGGLE_PIN;
@@ -416,13 +411,26 @@ module CXTDMAPhysicalP {
       }
       //0.5 uS
       FS_TOGGLE_PIN;
+    } else if (checkState(S_RX_READY)){
+      //4 uS to here
+      FS_TOGGLE_PIN;
+      call FrameWaitAlarm.stop();
+      //1.25 uS 
+      FS_TOGGLE_PIN;
+      call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(),
+        s_fwCheckLen);
+//      printf("FS %s\r\n", decodeStatus());
+      //14.25 uS 
+      FS_TOGGLE_PIN;
     } else if (checkState(S_OFF)){ 
       //sometimes see this after wdtpw reset
       FS_CLEAR_PIN;
+      TX_CLEAR_PIN;
       return;
     } else {
       setState(S_ERROR_8);
     }
+    lastFsa = call FrameStartAlarm.getAlarm();
     //0.5 uS
     FS_TOGGLE_PIN;
     if (! inError()){
@@ -432,6 +440,7 @@ module CXTDMAPhysicalP {
     //16 uS
     FS_SET_PIN;
     FS_CLEAR_PIN;
+    TX_CLEAR_PIN;
   }
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
@@ -552,8 +561,10 @@ module CXTDMAPhysicalP {
       if (SUCCESS == result){
         setState(S_RX_CLEANUP);
         atomic{
+          call CXPacket.setCount((message_t*)buffer, 
+            call CXPacket.count((message_t*)buffer) +1);
           rx_msg = signal CXTDMA.receive((message_t*)buffer, count,
-          frameNum);
+            frameNum);
         }
         completeCleanup();
       } else {

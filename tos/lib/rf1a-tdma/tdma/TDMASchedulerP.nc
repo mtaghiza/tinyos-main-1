@@ -56,6 +56,7 @@ module TDMASchedulerP{
     call AMPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setCount(schedule_msg, 0);
+    call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
     pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
     pl -> rootStart = 0;
     pl -> originalFrame = 0;
@@ -65,6 +66,7 @@ module TDMASchedulerP{
     pl -> framesPerSlot = framesPerSlot;
     pl -> maxRetransmit = maxRetransmit;
     schedule_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)schedule_msg);
+    printf("s_len: %u\r\n", schedule_len);
   }
 
   command error_t SplitControl.start(){
@@ -182,18 +184,22 @@ module TDMASchedulerP{
   cx_schedule_t lastSchedule;
 
   task void processReceive(){
-    error_t error = call CXTDMA.setSchedule(lastFs, 
+    error_t error = call SubCXTDMA.setSchedule(lastFs, 
       lastSchedule.originalFrame,
       lastSchedule.frameLen, 
       DEFAULT_TDMA_FW_CHECK_LEN,
       lastSchedule.activeFrames,
       lastSchedule.inactiveFrames);
     if (SUCCESS != error){
+      printf("Error %s\r\n", decodeError(error));
       state = S_ERROR_3;
     } else {
       if (state == S_NR_UNSCHEDULED){
+//        printf("scheduled\r\n");
         state = S_NR_RUNNING;
         signal SplitControl.startDone(SUCCESS);
+      } else {
+//        printf("updated\r\n");
       }
     }
   }
@@ -203,11 +209,14 @@ module TDMASchedulerP{
     //if we're in need of a schedule, grab it now before signalling
     //this up to the upper layers (which may lay claim to this
     //buffer).
+//    printf("s %x f %u t %x\r\n", state, frameNum, 
+//      call CXPacket.type(msg));
     if ((state == S_NR_UNSCHEDULED) || 
-         ((state == S_R_RUNNING) 
+         ((state == S_NR_RUNNING) 
            && (frameNum == 0) 
            && (call CXPacket.type(msg) == CX_TYPE_SCHEDULE))){
       cx_schedule_t* pl = (cx_schedule_t*)call Packet.getPayload(msg, len);
+//      printf("RX schedule\r\n");
 //      lastSchedule.rootStart = pl->rootStart;
       lastSchedule.originalFrame = 
         call CXPacket.count(msg) + pl->originalFrame;
@@ -217,6 +226,8 @@ module TDMASchedulerP{
 //      lastSchedule.framesPerSlot = pl->framesPerSlot;
 //      lastSchedule.maxRetransmit = pl->maxRetransmit;
       post processReceive();
+    }else{
+      printf("Ignore\r\n");
     }
     return signal CXTDMA.receive(msg, len, frameNum);
   }

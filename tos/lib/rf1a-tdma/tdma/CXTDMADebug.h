@@ -63,5 +63,14 @@
 #define SS_SET_PIN 
 #endif
 
+#if defined PORT_TX_TIMING && defined PIN_TX_TIMING 
+#define TX_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_TX_TIMING, PIN_TX_TIMING)
+#define TX_CLEAR_PIN TDMA_CLEAR_PIN(PORT_TX_TIMING, PIN_TX_TIMING)
+#define TX_SET_PIN TDMA_SET_PIN(PORT_TX_TIMING, PIN_TX_TIMING)
+#else 
+#define TX_TOGGLE_PIN 
+#define TX_CLEAR_PIN 
+#define TX_SET_PIN 
+#endif
 
 #endif

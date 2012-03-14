@@ -1,7 +1,7 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
-#define CX_TYPE_SCHEDULE 0x00
+#define CX_TYPE_SCHEDULE 0x69
 
 typedef nx_struct cx_schedule_t {
   nx_uint16_t originalFrame;
