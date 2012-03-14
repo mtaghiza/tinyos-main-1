@@ -165,14 +165,15 @@ module TestP {
 
   task void becomeRoot(){
     error_t error;
+    uint32_t ss = call CXTDMA.getNow(); 
     isRoot = TRUE;
     error = call CXTDMA.setSchedule(
-      call CXTDMA.getNow() + DEFAULT_TDMA_FRAME_LEN, 
+      ss, 
       0,
       DEFAULT_TDMA_FRAME_LEN, 
       DEFAULT_TDMA_FW_CHECK_LEN,
       2, 2);
-    printf("BR: setSchedule: %s\r\n", decodeError(error));
+    printf("BR: setSchedule: %lu %s\r\n", ss, decodeError(error));
   }
 
   task void becomeForwarder(){

@@ -97,5 +97,18 @@
 #define PIN_SC_TIMING 0x00
 #endif
 
+#ifndef PORT_FW_TIMING
+#define PORT_FW_TIMING P1OUT
+#endif
+#ifndef PIN_FW_TIMING
+#define PIN_FW_TIMING 0x00
+#endif
+
+#ifndef PORT_SS_TIMING
+#define PORT_SS_TIMING P1OUT
+#endif
+#ifndef PIN_SS_TIMING
+#define PIN_SS_TIMING 0x00
+#endif
 
 #endif

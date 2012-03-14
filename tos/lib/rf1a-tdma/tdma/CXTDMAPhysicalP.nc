@@ -207,9 +207,9 @@ module CXTDMAPhysicalP {
     P1OUT ^= BIT1;
     PORT_PFS_TIMING |= PIN_PFS_TIMING;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
-    printf("PFS %u %lu (%lu)\r\n", frameNum, 
-      call FrameStartAlarm.getNow(), 
-      call PrepareFrameStartAlarm.getAlarm());
+//    printf("PFS %u %lu (%lu)\r\n", frameNum, 
+//      call FrameStartAlarm.getNow(), 
+//      call PrepareFrameStartAlarm.getAlarm());
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -229,7 +229,7 @@ module CXTDMAPhysicalP {
       //if there are n active frames, then frameNum n-1 is the last to
       //have data in it. so, we go to sleep at this point.
       if (frameNum == s_activeFrames){
-        printf("sleep\r\n");
+//        printf("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           setState(S_INACTIVE);
@@ -239,9 +239,9 @@ module CXTDMAPhysicalP {
 
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-        printf("wakeup\r\n");
+//        printf("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
+//          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
           call FrameStartAlarm.startAt(
             call PrepareFrameStartAlarm.getAlarm(), 
             PFS_SLACK);
@@ -343,7 +343,7 @@ module CXTDMAPhysicalP {
     if (checkState(S_RX_READY)){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       PORT_FW_TIMING ^= PIN_FW_TIMING;
-      printf("T.O\r\n");
+//      printf("T.O\r\n");
       if (error == SUCCESS){
         setState(S_IDLE);
       } else {
@@ -576,14 +576,35 @@ module CXTDMAPhysicalP {
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames){
+    PORT_SS_TIMING |= PIN_SS_TIMING;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
+      PORT_SS_TIMING &= ~PIN_SS_TIMING;
       //would be nicer to buffer the new settings and apply them when
       //it's safe.
       return ERETRY;
     } else if(checkState(S_OFF)){
+      PORT_SS_TIMING &= ~PIN_SS_TIMING;
       return EOFF;
     } else if(!inError()) {
+      uint32_t firstDelta;
+
       atomic{
+        firstDelta = frameLen;
+        //make sure that base time is in the past.
+        while(startAt > call FrameStartAlarm.getNow()){
+          printf("s");
+          startAt -= frameLen;
+          firstDelta += frameLen;
+        }
+
+        //if target is in the past, we need to jump ahead by some
+        //  frames.
+        while ( (startAt + firstDelta) < call FrameStartAlarm.getNow()){
+          atFrameNum = (1+atFrameNum) % (activeFrames + inactiveFrames);
+          firstDelta += frameLen;
+          printf("d");
+        }
+
         s_frameStart = startAt;
         s_frameLen = frameLen;
         s_fwCheckLen = fwCheckLen;
@@ -599,17 +620,21 @@ module CXTDMAPhysicalP {
       //so: pfs will fire at startAt. At that time, frameNum will get
       //  incremented
       //TODO: check for over/under flows
-      printf("Now %lu base %lu delta %lu\r\n", 
-        call FrameStartAlarm.getNow(), 
-        s_frameStart - s_frameLen, 
-        s_frameLen - PFS_SLACK - SFD_TIME);
-      call PrepareFrameStartAlarm.startAt(s_frameStart - s_frameLen,
-        s_frameLen - PFS_SLACK - SFD_TIME);
+      printf("Now %lu base %lu delta %lu at %u\r\n", 
+        call FrameStartAlarm.getNow(), s_frameStart,
+        firstDelta, frameNum);
+
+      call PrepareFrameStartAlarm.startAt(s_frameStart,
+        firstDelta - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
-      call FrameStartAlarm.startAt(s_frameStart - s_frameLen, s_frameLen - SFD_TIME);
+      call FrameStartAlarm.startAt(
+        s_frameStart, 
+        firstDelta - SFD_TIME);
+      PORT_SS_TIMING &= ~PIN_SS_TIMING;
       return SUCCESS;
     } else {
       setState(S_ERROR_2);
+      PORT_SS_TIMING &= ~PIN_SS_TIMING;
       return FAIL;
     }
   }
