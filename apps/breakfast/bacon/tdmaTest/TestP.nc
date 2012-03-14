@@ -100,8 +100,16 @@ module TestP {
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-//    printf("!ft %u\r\n", frameNum);
-    return RF1A_OM_RX;
+    if (isRoot){
+      switch(frameNum % 4){
+        case 0:
+          return RF1A_OM_FSTXON;
+        default:
+          return RF1A_OM_RX;
+      }
+    } else {
+      return RF1A_OM_RX;
+    }
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 
@@ -177,6 +185,16 @@ module TestP {
   }
 
   task void becomeForwarder(){
+    error_t error;
+    uint32_t ss = call CXTDMA.getNow(); 
+    isRoot = FALSE;
+    error = call CXTDMA.setSchedule(
+      ss, 
+      0,
+      DEFAULT_TDMA_FRAME_LEN, 
+      2*DEFAULT_TDMA_FRAME_LEN,
+      1, 0);
+    printf("BF: setSchedule: %lu %s\r\n", ss, decodeError(error));  
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
