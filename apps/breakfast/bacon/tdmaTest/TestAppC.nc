@@ -39,14 +39,23 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aStatus -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
 
+  components TDMASchedulerC;
+  TDMASchedulerC.SubSplitControl -> CXTDMAPhysicalC;
+  TDMASchedulerC.SubCXTDMA -> CXTDMAPhysicalC;
+  TDMASchedulerC.AMPacket -> AMPacket;
+  TDMASchedulerC.CXPacket -> Rf1aCXPacketC;
+  TDMASchedulerC.Packet -> Rf1aCXPacketC;
+  TDMASchedulerC.Rf1aPacket -> Ieee154Packet;
+  TDMASchedulerC.Ieee154Packet -> Ieee154Packet;
 
-  TestP.SplitControl -> CXTDMAPhysicalC;
-  TestP.CXTDMA -> CXTDMAPhysicalC;
 
+  TestP.CXTDMA -> TDMASchedulerC.CXTDMA;
+  TestP.SplitControl -> TDMASchedulerC.SplitControl;
   TestP.AMPacket -> AMPacket;
   TestP.CXPacket -> Rf1aCXPacketC;
   TestP.Packet -> Rf1aCXPacketC;
   TestP.Rf1aPacket -> Ieee154Packet;
   TestP.Ieee154Packet -> Ieee154Packet;
+
   
 }

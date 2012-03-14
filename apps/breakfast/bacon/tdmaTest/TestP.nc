@@ -22,8 +22,8 @@ module TestP {
   uses interface AMPacket;
   uses interface CXPacket;
   uses interface Packet;
-  uses interface Ieee154Packet;
   uses interface Rf1aPacket;
+  uses interface Ieee154Packet;
 
   uses interface Timer<TMilli>;
   uses interface Leds;
