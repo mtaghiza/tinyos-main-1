@@ -1,6 +1,7 @@
 #ifndef CXTDMA_H
 #define CXTDMA_H
 
+
 #ifndef TA_DIV
 #define TA_DIV 1UL
 #endif
@@ -78,40 +79,5 @@
 #define DEFAULT_TDMA_FRAME_LEN (DEFAULT_TDMA_FRAME_LEN_BASE * TIMING_SCALE)
 #define DEFAULT_TDMA_FW_CHECK_LEN (DEFAULT_TDMA_FW_CHECK_LEN_BASE * TIMING_SCALE)
 #define PFS_SLACK (PFS_SLACK_BASE * TIMING_SCALE)
-
-#ifndef PORT_FS_TIMING
-#define PORT_FS_TIMING P1OUT
-#endif
-#ifndef PIN_FS_TIMING
-#define PIN_FS_TIMING 0x00
-#endif
-
-#ifndef PORT_PFS_TIMING
-#define PORT_PFS_TIMING P1OUT
-#endif
-#ifndef PIN_PFS_TIMING
-#define PIN_PFS_TIMING 0x00
-#endif
-
-#ifndef PORT_SC_TIMING
-#define PORT_SC_TIMING P1OUT
-#endif
-#ifndef PIN_SC_TIMING
-#define PIN_SC_TIMING 0x00
-#endif
-
-#ifndef PORT_FW_TIMING
-#define PORT_FW_TIMING P1OUT
-#endif
-#ifndef PIN_FW_TIMING
-#define PIN_FW_TIMING 0x00
-#endif
-
-#ifndef PORT_SS_TIMING
-#define PORT_SS_TIMING P1OUT
-#endif
-#ifndef PIN_SS_TIMING
-#define PIN_SS_TIMING 0x00
-#endif
 
 #endif
