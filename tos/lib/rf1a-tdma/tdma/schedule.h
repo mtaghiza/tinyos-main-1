@@ -1,0 +1,17 @@
+#ifndef SCHEDULE_H
+#define SCHEDULE_H
+
+#define CX_TYPE_SCHEDULE 0x00
+
+typedef nx_struct cx_schedule_t {
+  nx_uint32_t rootStart;
+  nx_uint16_t originalFrame;
+  nx_uint32_t frameLen;
+  nx_uint16_t activeFrames;
+  nx_uint16_t inactiveFrames;
+  nx_uint16_t framesPerSlot;
+} cx_schedule_t;
+
+
+
+#endif
