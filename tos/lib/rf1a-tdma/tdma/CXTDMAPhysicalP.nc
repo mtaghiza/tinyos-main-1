@@ -436,7 +436,7 @@ module CXTDMAPhysicalP {
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
-    return signal CXTDMA.getPacket((message_t**)buffer, len);
+    return signal CXTDMA.getPacket((message_t**)buffer, len, frameNum);
   }
 
   /**

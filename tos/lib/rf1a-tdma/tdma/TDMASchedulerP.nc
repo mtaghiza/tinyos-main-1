@@ -43,6 +43,11 @@ module TDMASchedulerP{
 
   uint8_t state = S_OFF;
 
+  message_t schedule_msg_internal;
+  message_t* schedule_msg = &schedule_msg_internal;
+  uint8_t schedule_len;
+  uint32_t lastFs;
+
   void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
     cx_schedule_t* pl;
     call Rf1aPacket.configureAsData(schedule_msg);
@@ -59,7 +64,7 @@ module TDMASchedulerP{
     pl -> inactiveFrames = inactiveFrames;
     pl -> framesPerSlot = framesPerSlot;
     pl -> maxRetransmit = maxRetransmit;
-    schedule_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)tx_msg);
+    schedule_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)schedule_msg);
   }
 
   command error_t SplitControl.start(){
@@ -130,8 +135,8 @@ module TDMASchedulerP{
         state = S_R_RUNNING;
       } else {
         state = S_ERROR_4;
-        return error;
       }
+      return error;
     } else{
       return FAIL;
     }
@@ -147,7 +152,7 @@ module TDMASchedulerP{
    *
    */
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
-    if ((state == S_RUNNING) && (frameNum == 0)){
+    if ((state == S_R_RUNNING) && (frameNum == 0)){
       return RF1A_OM_FSTXON;
     } else if (state == S_NR_UNSCHEDULED){
       return RF1A_OM_RX;
@@ -160,7 +165,7 @@ module TDMASchedulerP{
       uint16_t frameNum){
     //root broadcasts during frame 0. Everything else is up to higher
     //  levels (including retransmitting this, etc.)
-    if ((state == S_RUNNING) && (frameNum == 0)){
+    if ((state == S_R_RUNNING) && (frameNum == 0)){
       *msg = schedule_msg;
       *len = schedule_len;
       return TRUE;
@@ -171,7 +176,7 @@ module TDMASchedulerP{
 
   async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    signal CXTDMA.sendDone(msg, len, error);
+    signal CXTDMA.sendDone(msg, len, frameNum, error);
   }
  
   cx_schedule_t lastSchedule;
@@ -183,7 +188,7 @@ module TDMASchedulerP{
       DEFAULT_TDMA_FW_CHECK_LEN,
       lastSchedule.activeFrames,
       lastSchedule.inactiveFrames);
-    if (SUCCESS != ERROR){
+    if (SUCCESS != error){
       state = S_ERROR_3;
     } else {
       if (state == S_NR_UNSCHEDULED){

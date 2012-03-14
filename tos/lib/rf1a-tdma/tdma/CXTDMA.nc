@@ -10,7 +10,8 @@ interface CXTDMA{
   async event void sendDone(message_t* msg, uint8_t len, 
     uint16_t frameNum, error_t error);
 
-  async event message_t* receive(message_t* msg, uint8_t len);
+  async event message_t* receive(message_t* msg, uint8_t len, 
+    uint16_t frameNum);
 
   async event void frameStarted(uint32_t startTime);
 

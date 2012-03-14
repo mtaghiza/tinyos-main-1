@@ -18,6 +18,7 @@ module TestP {
 
   uses interface SplitControl;
   uses interface CXTDMA;
+  uses interface TDMAScheduler;
 
   uses interface AMPacket;
   uses interface CXPacket;
@@ -25,7 +26,6 @@ module TestP {
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
 
-  uses interface Timer<TMilli>;
   uses interface Leds;
 
 } implementation {
@@ -40,7 +40,7 @@ module TestP {
   
   //schedule info
   uint32_t lastFs;
-  uint16_t framesPerSlot;
+  uint16_t _framesPerSlot;
   
   uint32_t mySn = 0;
   norace bool isRoot = FALSE;
@@ -48,24 +48,6 @@ module TestP {
   task void printStatus(){
     printf("----\r\n");
     printf("is root: %x\r\n", isRoot);
-  }
-
-  void setupPacket(){
-    cx_schedule_t* pl;
-    call Rf1aPacket.configureAsData(tx_msg);
-    call AMPacket.setSource(tx_msg, call AMPacket.address());
-    call Ieee154Packet.setPan(tx_msg, call Ieee154Packet.localPan());
-    call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
-    call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
-    call CXPacket.setCount(tx_msg, 0);
-    pl = (cx_schedule_t*)call Packet.getPayload(tx_msg, sizeof(cx_schedule_t));
-    pl -> rootStart = 1;
-    pl -> originalFrame = 0;
-    pl -> frameLen = DEFAULT_TDMA_FRAME_LEN;
-    pl -> activeFrames = 8;
-    pl -> inactiveFrames = 8;
-    pl -> framesPerSlot = 2;
-    tx_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)tx_msg);
   }
 
   event void Boot.booted(){
@@ -85,7 +67,6 @@ module TestP {
 
     P1OUT &= ~(BIT1|BIT3|BIT4);
     P2OUT &= ~(BIT4);
-    setupPacket();
 
     call UartControl.start();
     printf("\r\nCXTDMA test\r\n");
@@ -94,13 +75,20 @@ module TestP {
     printf("r: root \r\n");
     printf("f: forwarder \r\n");
     printf("?: print status\r\n");
-    printf("t: test timer\r\n");
     printf("========================\r\n");
     post printStatus();
   }
 
+  task void setScheduleTask(){
+    call TDMAScheduler.setSchedule(DEFAULT_TDMA_FRAME_LEN,
+        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 1);
+  }
+
   event void SplitControl.startDone(error_t error){
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    if (isRoot){
+      post setScheduleTask();
+    }
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -116,17 +104,6 @@ module TestP {
       }
     } else {
       return RF1A_OM_RX;
-//      if (! isSynched){
-//        return RF1A_OM_RX;
-//      } else {
-//        if (frameNum == TOS_NODE_ID * cxs.framesPerSlot){
-//          return RF1A_OM_FSTXON;
-//        } else if (! forwardNext){
-//          return RF1A_OM_RX;
-//        } else{
-//          return RF1A_OM_FSTXON;
-//        }
-//      }
     }
   }
 
@@ -145,22 +122,9 @@ module TestP {
   }
 
   task void processReceive(){
-    error_t error;
-    cx_schedule_t* pl = call Packet.getPayload(rx_msg, rx_len);
-    framesPerSlot = pl->framesPerSlot;
-    //increment number of hops
-    call CXPacket.setCount(rx_msg, call CXPacket.count(rx_msg)+1);
-
-    error = call CXTDMA.setSchedule(lastFs, 
-      call CXPacket.count(rx_msg) + pl->originalFrame,
-      pl->frameLen,
-      DEFAULT_TDMA_FW_CHECK_LEN,
-      pl->activeFrames,
-      pl->inactiveFrames);
-
-//    printf("PR SS: %s\r\n", decodeError(error));
+    printf("RX %p\r\n", rx_msg);
   }
-
+  
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum){
     message_t* swp = rx_msg;
@@ -168,10 +132,6 @@ module TestP {
     rx_len = len;
     post processReceive();
     return swp;
-  }
-
-  task void setupPacketTask(){
-    setupPacket();
   }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
@@ -199,39 +159,14 @@ module TestP {
     post printStatus();
   }
 
-  event void Timer.fired(){
-    call Leds.led0Toggle();
-//    printf("fired\n\r");
-  }
-
-  task void testTimer(){
-    if (! call Timer.isRunning()){
-      call Timer.startPeriodic(1024);
-    } else {
-      call Timer.stop();
-    }
-  }
-
   task void becomeRoot(){
-    error_t error;
-    uint32_t ss;
-    cx_schedule_t* pl = call Packet.getPayload(tx_msg, sizeof(cx_schedule_t)); 
     isRoot = TRUE;
-    setupPacket();
-    ss = call CXTDMA.getNow();
-    
-    error = call CXTDMA.setSchedule(
-      ss, 
-      0,
-      DEFAULT_TDMA_FRAME_LEN, 
-      DEFAULT_TDMA_FW_CHECK_LEN,
-      pl->activeFrames, 
-      pl->inactiveFrames);
-    printf("BR: setSchedule: %lu %s\r\n", ss, decodeError(error));
+    post printStatus();
   }
 
   task void becomeForwarder(){
     isRoot = FALSE;
+    post printStatus();
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
@@ -240,11 +175,11 @@ module TestP {
         WDTCTL=0;
         break;
       case 's':
-        printf("Starting\n\r");
+        printf("Starting\r\n");
         post startTask();
         break;
       case 'S':
-        printf("Stopping\n\r");
+        printf("Stopping\r\n");
         post stopTask();
         break;
       case '?':
@@ -259,12 +194,22 @@ module TestP {
         post becomeForwarder();
         break;
       case '\r':
-        printf("\n\r");
+        printf("\r\n");
         break;
      default:
         printf("%c", byte);
         break;
     }
+  }
+
+  event bool TDMAScheduler.isRoot(){
+    return isRoot;
+  }
+
+  event void TDMAScheduler.scheduleReceived(uint16_t activeFrames, 
+      uint16_t inactiveFrames, uint16_t framesPerSlot, 
+      uint16_t maxRetransmit){
+    printf("SR\r\n");
   }
 
    //unused events

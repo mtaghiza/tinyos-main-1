@@ -153,7 +153,7 @@ interface Rf1aPhysical {
    * until the previous transmission completes.
    *
    * @param result An indication of the success or failure of the send.  */
-  async event void sendDone (int result);
+  async event void sendDone (uint8_t* buffer, uint8_t len, int result);
 
   /** Place the radio into transmit mode.
    *

@@ -677,7 +677,7 @@ generic module HplMsp430Rf1aP () @safe() {
         //the client doesn't provide a packet or if the length is
         //valid 
         if( ! signal Rf1aPhysical.getPacket[clientId](&tx_buffer, &tx_length) 
-           || 0 == length || length >= FIFO_FILL_LIMIT){
+           || 0 == tx_length || tx_length >= FIFO_FILL_LIMIT){
           resumeIdleMode_(FALSE);
           return ESIZE;
         }
@@ -952,7 +952,8 @@ generic module HplMsp430Rf1aP () @safe() {
 //    }
 //  }
 
-  default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
+  default async event void Rf1aPhysical.sendDone[uint8_t client]
+  (uint8_t* buffer, uint8_t len, int result) { }
 
   default async event bool Rf1aPhysical.getPacket[uint8_t clientId](uint8_t** buffer, uint8_t* length){
     return FALSE;
@@ -1519,7 +1520,7 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_TX
         P2OUT &= ~BIT4;
         #endif 
-        signal Rf1aPhysical.sendDone[tx_client](tx_buffer, tx_len, SUCCESS);
+        signal Rf1aPhysical.sendDone[tx_client](tx_buffer, tx_length, SUCCESS);
       }      
     }
   }
