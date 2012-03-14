@@ -184,45 +184,7 @@ module CXTDMAPhysicalP {
       printStatus();
       //eh, just leave pfs running all the time.
 
-      //TODO: the schedule initialization should be done in the
-      //      setSchedule command. We should only start timers here if
-      //      this event came up because we were duty cycling.
-      //additionally, frameNum should be reset to 0 only when we
-      //actually wrap around (e.g. % activeFrames + inactiveFrames)
-      atomic {
-        frameNum = 0;
-      }
 
-      //If no schedule provided, provide some defaults which will
-      //  basically keep us waiting until something shows up that we
-      //  can synch on.
-      //failsafe behavior is responsibility of upper layer.
-      if (s_frameStart == 0){
-        atomic{
-          s_frameStart = (call PrepareFrameStartAlarm.getNow() -
-            2*PFS_SLACK);
-          s_frameLen = DEFAULT_TDMA_FRAME_LEN;
-          s_fwCheckLen = DEFAULT_TDMA_FW_CHECK_LEN;
-          s_activeFrames = DEFAULT_TDMA_ACTIVE_FRAMES;
-          s_inactiveFrames = DEFAULT_TDMA_INACTIVE_FRAMES;
-        }
-      }
-//      printf("Now: pfs %lu fs %lu s_frameStart %lu pfs %lu fs %lu fl %lu fw %lu\r\n",
-//        call PrepareFrameStartAlarm.getNow(),
-//        call FrameStartAlarm.getNow(),
-//        s_frameStart,
-//        s_frameLen - PFS_SLACK - SFD_TIME,
-//        s_frameLen - SFD_TIME,
-//        s_frameLen,
-//        s_fwCheckLen);
-//      printf("fs %lu fl %lu\r\n", s_frameStart, s_frameLen);
-//      printf("TA0CTL   %x\r\n", TA0CTL);
-//      printf("TA0CCTL3 %x\r\n", TA0CCTL3);
-//      printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
-      call PrepareFrameStartAlarm.startAt(s_frameStart,
-        s_frameLen - PFS_SLACK - SFD_TIME);
-      //TODO: any SW clock-tuning should be done here.
-      call FrameStartAlarm.startAt(s_frameStart, s_frameLen - SFD_TIME);
   
       signal SplitControl.startDone(SUCCESS);
     }
@@ -244,8 +206,10 @@ module CXTDMAPhysicalP {
     error_t error;
     P1OUT ^= BIT1;
     PORT_PFS_TIMING |= PIN_PFS_TIMING;
-    frameNum++;
-
+    frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
+    printf("PFS %u %lu (%lu)\r\n", frameNum, 
+      call FrameStartAlarm.getNow(), 
+      call PrepareFrameStartAlarm.getAlarm());
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -262,16 +226,26 @@ module CXTDMAPhysicalP {
     //0.5uS
     PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     if (s_inactiveFrames > 0){
-      if (frameNum > s_activeFrames){
-        if (SUCCESS == call Resource.release()){
+      //if there are n active frames, then frameNum n-1 is the last to
+      //have data in it. so, we go to sleep at this point.
+      if (frameNum == s_activeFrames){
+        printf("sleep\r\n");
+        if (SUCCESS == call Rf1aPhysical.sleep()){
+          call FrameStartAlarm.stop();
           setState(S_INACTIVE);
-        } else { 
+        } else {
           setState(S_ERROR_1);
         }
-        //last inactive frame: request the resource.
-      } else if (frameNum == s_activeFrames + s_inactiveFrames - 1){
-        if (SUCCESS == call Resource.request()){
-          setState(S_STARTING);
+
+      //wake up radio when we come around the bend.
+      } else if (frameNum == 0 ){
+        printf("wakeup\r\n");
+        if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
+          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
+          call FrameStartAlarm.startAt(
+            call PrepareFrameStartAlarm.getAlarm(), 
+            PFS_SLACK);
+          setState(S_IDLE);
         } else {
           setState(S_ERROR_2);
         }
@@ -335,18 +309,19 @@ module CXTDMAPhysicalP {
           setState(S_ERROR_1);
           return;
       }
-      call PrepareFrameStartAlarm.startAt(
-        call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
-      //16 uS
-      PORT_PFS_TIMING ^= PIN_PFS_TIMING;
     } else if (checkState(S_OFF)){
       //sometimes see this after wdtpw reset
       PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
       return;
+    } else if (checkState(S_INACTIVE)){
+      //nothing else to do, just reschedule alarm.
     } else {
       setState(S_ERROR_5);
+      return;
     }
-    //0.5 uS
+    call PrepareFrameStartAlarm.startAt(
+      call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+    //16 uS
     PORT_PFS_TIMING |= PIN_PFS_TIMING;
     PORT_PFS_TIMING &= ~PIN_PFS_TIMING;
   }
@@ -357,20 +332,26 @@ module CXTDMAPhysicalP {
    */
   async event void FrameWaitAlarm.fired(){
     uint32_t now = call FrameWaitAlarm.getNow();
-    printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
-      now, now,
-      call FrameWaitAlarm.getAlarm(),
-      call FrameWaitAlarm.getAlarm());
+    PORT_FW_TIMING |= PIN_FW_TIMING;
+//    printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
+//      now, now,
+//      call FrameWaitAlarm.getAlarm(),
+//      call FrameWaitAlarm.getAlarm());
+//
 
-
+    PORT_FW_TIMING ^= PIN_FW_TIMING;
     if (checkState(S_RX_READY)){
       error_t error = call Rf1aPhysical.resumeIdleMode();
+      PORT_FW_TIMING ^= PIN_FW_TIMING;
+      printf("T.O\r\n");
       if (error == SUCCESS){
         setState(S_IDLE);
       } else {
         setState(S_ERROR_6);
       }
+      PORT_FW_TIMING ^= PIN_FW_TIMING;
     } else if(checkState(S_OFF)){
+      PORT_FW_TIMING &= ~PIN_FW_TIMING;
       //sometimes see this after wdtpw reset
       return;
     } else {
@@ -587,6 +568,10 @@ module CXTDMAPhysicalP {
     signal SplitControl.stopDone(error);
   }
 
+  async command uint32_t CXTDMA.getNow(){
+    return call FrameStartAlarm.getNow();
+  }
+
   command error_t CXTDMA.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
@@ -595,26 +580,38 @@ module CXTDMAPhysicalP {
       //would be nicer to buffer the new settings and apply them when
       //it's safe.
       return ERETRY;
+    } else if(checkState(S_OFF)){
+      return EOFF;
     } else if(!inError()) {
-      s_frameStart = startAt;
-      s_frameLen = frameLen;
-      s_fwCheckLen = fwCheckLen;
-      s_activeFrames = activeFrames;
-      s_inactiveFrames = inactiveFrames;
-      frameNum = atFrameNum - 1;
+      atomic{
+        s_frameStart = startAt;
+        s_frameLen = frameLen;
+        s_fwCheckLen = fwCheckLen;
+        s_activeFrames = activeFrames;
+        s_inactiveFrames = inactiveFrames;
+        if (atFrameNum == 0){
+          atFrameNum = activeFrames + inactiveFrames;
+        }
+        frameNum = atFrameNum - 1;
+      }
       //reschedule alarms based on these settings.
       // we want atFrameNum to come up at startAt. 
       //so: pfs will fire at startAt. At that time, frameNum will get
       //  incremented
       //TODO: check for over/under flows
+      printf("Now %lu base %lu delta %lu\r\n", 
+        call FrameStartAlarm.getNow(), 
+        s_frameStart - s_frameLen, 
+        s_frameLen - PFS_SLACK - SFD_TIME);
       call PrepareFrameStartAlarm.startAt(s_frameStart - s_frameLen,
         s_frameLen - PFS_SLACK - SFD_TIME);
       //TODO: any SW clock-tuning should be done here.
       call FrameStartAlarm.startAt(s_frameStart - s_frameLen, s_frameLen - SFD_TIME);
-     } else {
+      return SUCCESS;
+    } else {
       setState(S_ERROR_2);
+      return FAIL;
     }
-    return FAIL;
   }
 
   async event void Rf1aPhysical.frameStarted () { 

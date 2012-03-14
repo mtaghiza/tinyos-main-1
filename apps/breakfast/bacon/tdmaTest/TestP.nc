@@ -8,6 +8,7 @@
 #include "decodeError.h"
 #include "Rf1a.h"
 #include "message.h"
+#include "CXTDMA.h"
 
 module TestP {
   uses interface Boot;
@@ -39,8 +40,11 @@ module TestP {
   message_t* rx_msg = &rx_msg_internal;
   
   uint32_t mySn = 0;
+  norace bool isRoot = FALSE;
+
   task void printStatus(){
-    printf("----\n\r");
+    printf("----\r\n");
+    printf("is root: %x\r\n", isRoot);
   }
 
   void setupPacket(){
@@ -79,7 +83,8 @@ module TestP {
     printf("\r\nCXTDMA test\r\n");
     printf("s: start \r\n");
     printf("S: stop \r\n");
-    printf("d: toggle duty-cycled operation\r\n");
+    printf("r: root \r\n");
+    printf("f: forwarder \r\n");
     printf("?: print status\r\n");
     printf("t: test timer\r\n");
     printf("========================\r\n");
@@ -95,24 +100,8 @@ module TestP {
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    if (IS_SENDER){
-      rf1a_offmode_t r;
-      switch(frameNum %2){
-        case 1:
-          r = RF1A_OM_FSTXON;
-          break;
-        case 0:
-          r = RF1A_OM_RX;
-          break;
-        default:
-          r = RF1A_OM_IDLE;
-          break;
-      }
-  //    printf("isTX %u: %x\r\n", frameNum, r);
-      return r;
-    } else {
-      return RF1A_OM_RX;
-    }
+//    printf("!ft %u\r\n", frameNum);
+    return RF1A_OM_RX;
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 
@@ -174,6 +163,21 @@ module TestP {
     }
   }
 
+  task void becomeRoot(){
+    error_t error;
+    isRoot = TRUE;
+    error = call CXTDMA.setSchedule(
+      call CXTDMA.getNow() + DEFAULT_TDMA_FRAME_LEN, 
+      0,
+      DEFAULT_TDMA_FRAME_LEN, 
+      DEFAULT_TDMA_FW_CHECK_LEN,
+      2, 2);
+    printf("BR: setSchedule: %s\r\n", decodeError(error));
+  }
+
+  task void becomeForwarder(){
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch(byte){
       case 'q':
@@ -190,9 +194,13 @@ module TestP {
       case '?':
         post printStatus();
         break;
-      case 't':
-        printf("test timer\n\r");
-        post testTimer();
+      case 'r':
+        printf("Become Root\r\n");
+        post becomeRoot();
+        break;
+      case 'f':
+        printf("Become Forwarder\r\n");
+        post becomeForwarder();
         break;
       case '\r':
         printf("\n\r");
