@@ -195,10 +195,10 @@ module Msp430XV2ClockControlP @safe() {
 
       /* DIVPA routes ACLK to external pin, undivided
        * DIVA uses ACLK at 2^15 Hz, undivided
-       * DIVS (SMCLK) uses XT2CLK / 2 N to produce 13 MHz
+       * DIVS (SMCLK) uses XT2CLK / 4 N to produce ~6.5 MHz
        * DIVM (MCLK) uses DCOCLKDIV to produce DCO/2, undivided
        */
-      UCSCTL5 = DIVPA__1 | DIVA__1 | DIVS__2 | DIVM__1;
+      UCSCTL5 = DIVPA__1 | DIVA__1 | DIVS__4 | DIVM__1;
       #else
       UCSCTL4 = SELA__XT1CLK | SELS__DCOCLKDIV | SELM__DCOCLKDIV;;
 
@@ -219,7 +219,7 @@ module Msp430XV2ClockControlP @safe() {
       TA1CTL = TASSEL__ACLK | TACLR | MC__STOP | TAIE;
       TA1R = 0;
       #ifdef XT2_SMCLK
-      //26mhz / 2/1 = 13 mhz
+      //26mhz / 4/1 = 6.5 mhz
       TA0CTL = TASSEL__SMCLK | ID__1 | TACLR | MC__STOP | TAIE;
       #ifdef TA_DIV
         #warning Dividing TA

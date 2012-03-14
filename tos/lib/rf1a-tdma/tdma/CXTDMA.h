@@ -22,17 +22,17 @@
 #ifndef PFS_SLACK_BASE
 //this was too short at full speed.
 //#define PFS_SLACK_BASE (110UL * (TA_SCALE))
-#define PFS_SLACK_BASE (400UL * (TA_SCALE))
+#define PFS_SLACK_BASE (200UL * (TA_SCALE))
 #endif
 
 //10 ms at 26mhz/24
 #ifndef DEFAULT_TDMA_FRAME_LEN_BASE
-#define DEFAULT_TDMA_FRAME_LEN_BASE (21666UL * TA_SCALE)
+#define DEFAULT_TDMA_FRAME_LEN_BASE (10833UL * TA_SCALE)
 #endif
 
 //1 ms at 26mhz/24
 #ifndef DEFAULT_TDMA_FW_CHECK_LEN_BASE
-#define DEFAULT_TDMA_FW_CHECK_LEN_BASE (2166UL *TA_SCALE)
+#define DEFAULT_TDMA_FW_CHECK_LEN_BASE (1083UL *TA_SCALE)
 #endif
 
 #ifndef DEFAULT_TDMA_ACTIVE_FRAMES
@@ -55,10 +55,10 @@
 //  moment. 
 #ifndef SFD_TIME
 #if TA_DIV == 1
-#define SFD_TIME 7010UL
+#define SFD_TIME 3505UL
 #define SFD_PROCESSING_DELAY 24
 #elif TA_DIV ==6
-#define SFD_TIME 1166UL
+#define SFD_TIME 583UL
 //TODO: this is approximate
 #define SFD_PROCESSING_DELAY 4
 #else
