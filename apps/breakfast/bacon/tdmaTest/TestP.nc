@@ -68,6 +68,12 @@ module TestP {
     tx_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)tx_msg);
   }
 
+  task void loop(){
+    while(1){
+      P1OUT ^= BIT4;
+    }
+  }
+
   event void Boot.booted(){
     //timing pins
     P1SEL &= ~(BIT1|BIT3|BIT4);
@@ -80,9 +86,12 @@ module TestP {
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P1MAP2 = PM_RFGDO0;
+      P1MAP1 = PM_MCLK;
+      P1MAP3 = PM_SMCLK;
       PMAPPWD = 0x00;
+      P1SEL |= (BIT1|BIT3);
     }
-
+    post loop();
     P1OUT &= ~(BIT1|BIT3|BIT4);
     P2OUT &= ~(BIT4);
     setupPacket();
@@ -96,6 +105,8 @@ module TestP {
     printf("?: print status\r\n");
     printf("t: test timer\r\n");
     printf("========================\r\n");
+    printf("UCSCTL4 %x\r\n", UCSCTL4);
+    printf("UCSCTL5 %x\r\n", UCSCTL5);
     post printStatus();
   }
 
