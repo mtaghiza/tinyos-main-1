@@ -49,7 +49,7 @@ typedef struct msp430_usci_config_t {
     ctl0 : 0,
     ctl1: UCSSEL__SMCLK,
     br1 : 0,
-    br0 : 3,
+    br0 : 6,
     mctl : UCBRF_8 + UCBRS_4 + UCOS16
   };
 #else
