@@ -647,10 +647,10 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
 
+  uint8_t* tx_buffer;
+  uint8_t tx_length;
 
   async command error_t Rf1aPhysical.completeSend[uint8_t clientId](){
-    uint8_t* buffer;
-    uint8_t length;
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
       return EOFF;
@@ -676,13 +676,13 @@ generic module HplMsp430Rf1aP () @safe() {
         //packet retrieval/validation: cancel the transmission if we
         //the client doesn't provide a packet or if the length is
         //valid 
-        if( ! signal Rf1aPhysical.getPacket[clientId](&buffer, &length) 
+        if( ! signal Rf1aPhysical.getPacket[clientId](&tx_buffer, &tx_length) 
            || 0 == length || length >= FIFO_FILL_LIMIT){
           resumeIdleMode_(FALSE);
           return ESIZE;
         }
 
-        loadFifo_(buffer, length);
+        loadFifo_(tx_buffer, tx_length);
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
                && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
@@ -1519,7 +1519,7 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_TX
         P2OUT &= ~BIT4;
         #endif 
-        signal Rf1aPhysical.sendDone[tx_client](SUCCESS);
+        signal Rf1aPhysical.sendDone[tx_client](tx_buffer, tx_len, SUCCESS);
       }      
     }
   }

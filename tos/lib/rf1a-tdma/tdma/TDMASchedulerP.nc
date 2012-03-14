@@ -1,6 +1,7 @@
 module TDMASchedulerP{
   provides interface SplitControl;
   provides interface CXTDMA;
+  provides interface TDMAScheduler;
 
   uses interface SplitControl as SubSplitControl;
   uses interface CXTDMA as SubCXTDMA;
@@ -11,7 +12,58 @@ module TDMASchedulerP{
   uses interface Rf1aPacket; 
   uses interface Ieee154Packet;
 } implementation {
+  enum{
+    ERROR_MASK = 0x80,
+    S_ERROR_1 = 0x81,
+    S_ERROR_2 = 0x82,
+    S_ERROR_3 = 0x83,
+    S_ERROR_4 = 0x84,
+    S_ERROR_5 = 0x85,
+    S_ERROR_6 = 0x86,
+    S_ERROR_7 = 0x87,
+    S_ERROR_8 = 0x88,
+    S_ERROR_9 = 0x89,
+    S_ERROR_a = 0x8a,
+    S_ERROR_b = 0x8b,
+    S_ERROR_c = 0x8c,
+    S_ERROR_d = 0x8d,
+    S_ERROR_e = 0x8e,
+    S_ERROR_f = 0x8f,
+
+    S_OFF = 0x00,
+    S_STARTING = 0x01,
+    S_STOPPING = 0x02,
+
+    S_R_UNSCHEDULED = 0x10,
+    S_R_RUNNING = 0x11,
+
+    S_NR_UNSCHEDULED = 0x20,
+    S_NR_RUNNING     = 0x21,
+  };
+
+  uint8_t state = S_OFF;
+
+  void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
+    cx_schedule_t* pl;
+    call Rf1aPacket.configureAsData(schedule_msg);
+    call AMPacket.setSource(schedule_msg, call AMPacket.address());
+    call Ieee154Packet.setPan(schedule_msg, call Ieee154Packet.localPan());
+    call AMPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
+    call CXPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
+    call CXPacket.setCount(schedule_msg, 0);
+    pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
+    pl -> rootStart = 0;
+    pl -> originalFrame = 0;
+    pl -> frameLen = frameLen;
+    pl -> activeFrames = activeFrames;
+    pl -> inactiveFrames = inactiveFrames;
+    pl -> framesPerSlot = framesPerSlot;
+    pl -> maxRetransmit = maxRetransmit;
+    schedule_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)tx_msg);
+  }
+
   command error_t SplitControl.start(){
+    state = S_STARTING;
     return call SubSplitControl.start();
   }
 
@@ -19,47 +71,162 @@ module TDMASchedulerP{
     return call SubSplitControl.stop();
   }
 
+  task void nrSetup(){
+    error_t error = call SubCXTDMA.setSchedule(
+      call SubCXTDMA.getNow(), 
+      0,
+      DEFAULT_TDMA_FRAME_LEN,
+      2*DEFAULT_TDMA_FRAME_LEN,
+      1, 0);
+    if (error == SUCCESS){
+      state = S_NR_UNSCHEDULED;
+    }else{
+      state = S_ERROR_2;
+    }
+  }
+
   event void SubSplitControl.startDone(error_t error){
-    signal SplitControl.startDone(error);
+    if (SUCCESS == error){
+      if (signal TDMAScheduler.isRoot()){
+        state = S_R_UNSCHEDULED;
+        signal SplitControl.startDone(SUCCESS);
+      } else {
+        post nrSetup();
+      }
+    }else{
+      state = S_ERROR_1;
+      signal SplitControl.startDone(error);
+    }
   }
 
   event void SubSplitControl.stopDone(error_t error){
+    if (SUCCESS == error){
+      state = S_OFF;
+    } else {
+      state = S_ERROR_5;
+    }
     signal SplitControl.stopDone(error);
   }
 
+  //calls should go through the TDMAScheduler interface.
   command error_t CXTDMA.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames){
-    return call SubCXTDMA.setSchedule(startAt, atFrameNum, frameLen,
-      fwCheckLen, activeFrames, inactiveFrames);
+    return FAIL;
+  }
+
+  command error_t TDMAScheduler.setSchedule(uint32_t frameLen, 
+      uint32_t fwCheckLen, uint16_t activeFrames, 
+      uint16_t inactiveFrames, uint16_t framesPerSlot, 
+      uint16_t maxRetransmit){
+    if (state == S_R_UNSCHEDULED || state == S_R_RUNNING){
+      error_t error = call SubCXTDMA.setSchedule(
+        call SubCXTDMA.getNow(), 0, frameLen, fwCheckLen, activeFrames, inactiveFrames);
+
+      if (SUCCESS == error){
+        setupPacket(frameLen, fwCheckLen, activeFrames,
+          inactiveFrames, framesPerSlot, maxRetransmit);
+        state = S_R_RUNNING;
+      } else {
+        state = S_ERROR_4;
+        return error;
+      }
+    } else{
+      return FAIL;
+    }
   }
 
   async command uint32_t CXTDMA.getNow(){
     return call SubCXTDMA.getNow();
   }
 
+  /**
+   *  Root broadcasts during frame 0. All other behavior is up to
+   *  higher levels.
+   *
+   */
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
-    return signal CXTDMA.frameType(frameNum);
+    if ((state == S_RUNNING) && (frameNum == 0)){
+      return RF1A_OM_FSTXON;
+    } else if (state == S_NR_UNSCHEDULED){
+      return RF1A_OM_RX;
+    } else {
+      return signal CXTDMA.frameType(frameNum);
+    }
   }
 
-  async event bool SubCXTDMA.getPacket(message_t** msg, uint8_t* len){
-    return signal CXTDMA.getPacket(msg, len);
+  async event bool SubCXTDMA.getPacket(message_t** msg, uint8_t* len,
+      uint16_t frameNum){
+    //root broadcasts during frame 0. Everything else is up to higher
+    //  levels (including retransmitting this, etc.)
+    if ((state == S_RUNNING) && (frameNum == 0)){
+      *msg = schedule_msg;
+      *len = schedule_len;
+      return TRUE;
+    } else {
+      return signal CXTDMA.getPacket(msg, len, frameNum);
+    }
   }
 
-  async event void SubCXTDMA.sendDone(error_t error){
-    signal CXTDMA.sendDone(error);
+  async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
+      uint16_t frameNum, error_t error){
+    signal CXTDMA.sendDone(msg, len, error);
+  }
+ 
+  cx_schedule_t lastSchedule;
+
+  task void processReceive(){
+    error_t error = call CXTDMA.setSchedule(lastFs, 
+      lastSchedule.originalFrame,
+      lastSchedule.frameLen, 
+      DEFAULT_TDMA_FW_CHECK_LEN,
+      lastSchedule.activeFrames,
+      lastSchedule.inactiveFrames);
+    if (SUCCESS != ERROR){
+      state = S_ERROR_3;
+    } else {
+      if (state == S_NR_UNSCHEDULED){
+        state = S_NR_RUNNING;
+        signal SplitControl.startDone(SUCCESS);
+      }
+    }
   }
 
   async event message_t* SubCXTDMA.receive(message_t* msg, 
-      uint8_t len){
-    return signal CXTDMA.receive(msg, len);
+      uint8_t len, uint16_t frameNum){
+    //if we're in need of a schedule, grab it now before signalling
+    //this up to the upper layers (which may lay claim to this
+    //buffer).
+    if ((state == S_NR_UNSCHEDULED) || 
+         ((state == S_R_RUNNING) 
+           && (frameNum == 0) 
+           && (call CXPacket.type(msg) == CX_TYPE_SCHEDULE))){
+      cx_schedule_t* pl = (cx_schedule_t*)call Packet.getPayload(msg, len);
+//      lastSchedule.rootStart = pl->rootStart;
+      lastSchedule.originalFrame = 
+        call CXPacket.count(msg) + pl->originalFrame;
+      lastSchedule.frameLen = pl->frameLen;
+      lastSchedule.activeFrames = pl->activeFrames;
+      lastSchedule.inactiveFrames = pl->inactiveFrames;
+//      lastSchedule.framesPerSlot = pl->framesPerSlot;
+//      lastSchedule.maxRetransmit = pl->maxRetransmit;
+      post processReceive();
+    }
+    return signal CXTDMA.receive(msg, len, frameNum);
   }
 
   async event void SubCXTDMA.frameStarted(uint32_t startTime){
+////If the physical layer was actually fully interrupt-driven, then we could
+////fill in the SFD time of the transmitter at the end of the packet.
+////But, it's not, so it's already in the TXFIFO. boo.
+//    if ( state == S_R_RUNNING  && frameNum == 0){
+//      cx_schedule_t* pl = 
+//        (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
+//     pl -> rootTime = startTime
+//    }
+    lastFs = startTime;
     signal CXTDMA.frameStarted(startTime);
   }
-
-
 
 }

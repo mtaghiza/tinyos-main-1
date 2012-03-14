@@ -412,7 +412,7 @@ module CXTDMAPhysicalP {
       //0.5 uS
       PORT_FS_TIMING ^= PIN_FS_TIMING;
       if (SUCCESS != error){
-        signal CXTDMA.sendDone(error);
+        signal CXTDMA.sendDone(0,0, frameNum, error);
       }
       //0.5 uS
       PORT_FS_TIMING ^= PIN_FS_TIMING;
@@ -491,6 +491,7 @@ module CXTDMAPhysicalP {
 //          (lastFsa + SFD_TIME );
 //        printf("d %ld\r\n", delta);
 //        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
+        signal CXTDMA.frameStarted(lastRECapture);
       } else {
         setState(S_ERROR_9);
       }
@@ -551,7 +552,8 @@ module CXTDMAPhysicalP {
       if (SUCCESS == result){
         setState(S_RX_CLEANUP);
         atomic{
-          rx_msg = signal CXTDMA.receive((message_t*)buffer, count);
+          rx_msg = signal CXTDMA.receive((message_t*)buffer, count,
+          frameNum);
         }
         completeCleanup();
       } else {
@@ -566,10 +568,11 @@ module CXTDMAPhysicalP {
    * S_TRANSMITTING:
    *   phy.sendDone / signal sendDone -> S_TX_CLEANUP 
    */
-  async event void Rf1aPhysical.sendDone (int result) { 
+  async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
+      uint8_t len, int result) { 
     if(checkState(S_TRANSMITTING)){
       setState(S_TX_CLEANUP);
-      signal CXTDMA.sendDone(result);
+      signal CXTDMA.sendDone((message_t*)buffer, len, frameNum, result);
       completeCleanup();
     } else {
       setState(S_ERROR_e);

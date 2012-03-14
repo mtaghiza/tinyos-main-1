@@ -130,7 +130,8 @@ module TestP {
     }
   }
 
-  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len){ 
+  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
+      uint16_t frameNum){ 
     *msg = tx_msg;
     *len = tx_len;
     return TRUE; 
@@ -160,7 +161,8 @@ module TestP {
 //    printf("PR SS: %s\r\n", decodeError(error));
   }
 
-  async event message_t* CXTDMA.receive(message_t* msg, uint8_t len){
+  async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
+      uint16_t frameNum){
     message_t* swp = rx_msg;
     rx_msg = msg;
     rx_len = len;
@@ -172,7 +174,8 @@ module TestP {
     setupPacket();
   }
 
-  async event void CXTDMA.sendDone(error_t error){
+  async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+      uint16_t frameNum, error_t error){
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
@@ -228,16 +231,7 @@ module TestP {
   }
 
   task void becomeForwarder(){
-    error_t error;
-    uint32_t ss = call CXTDMA.getNow(); 
     isRoot = FALSE;
-    error = call CXTDMA.setSchedule(
-      ss, 
-      0,
-      DEFAULT_TDMA_FRAME_LEN, 
-      2*DEFAULT_TDMA_FRAME_LEN,
-      1, 0);
-    printf("BF: setSchedule: %lu %s\r\n", ss, decodeError(error));  
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
