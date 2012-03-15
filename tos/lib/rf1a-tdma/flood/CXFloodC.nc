@@ -1,6 +1,6 @@
 configuration CXFloodC{
-  provides interface Send;
-  provides interface Receive;
+  provides interface Send[am_id_t type];
+  provides interface Receive[am_id_t type];
 
   uses interface CXPacket;
   uses interface Packet as LayerPacket;

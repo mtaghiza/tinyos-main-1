@@ -54,14 +54,21 @@ configuration TestAppC{
   CXFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
+  
+  #if TDMA_ROOT 
+  components TDMARootC as RootC;
+  #else
+  components TDMANonRootC as RootC;
+  #endif
+  RootC.SubSplitControl -> TDMASchedulerC.SplitControl;
+  RootC.Send -> CXFloodC.Send[CX_TYPE_SCHEDULE];
+  RootC.TDMARootControl -> TDMASchedulerC.TDMARootControl;
 
-
-  TestP.SplitControl -> TDMASchedulerC.SplitControl;
-  TestP.TDMARootControl -> TDMASchedulerC.TDMARootControl;
+  TestP.SplitControl -> RootC.SplitControl;
   TestP.AMPacket -> AMPacket;
   TestP.Packet -> Rf1aCXPacketC;
 
-  TestP.Send -> CXFloodC.Send;
-  TestP.Receive -> CXFloodC.Receive;
+  TestP.Send -> CXFloodC.Send[CX_TYPE_DATA];
+  TestP.Receive -> CXFloodC.Receive[CX_TYPE_DATA];
   
 }

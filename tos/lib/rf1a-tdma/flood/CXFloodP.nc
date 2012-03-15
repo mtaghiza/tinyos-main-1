@@ -2,8 +2,8 @@
  #include "Rf1a.h"
  #include "CXFlood.h"
 module CXFloodP{
-  provides interface Send;
-  provides interface Receive;
+  provides interface Send[am_id_t type];
+  provides interface Receive[am_id_t type];
 
   uses interface CXPacket;
   //Payload: body of CXPacket
@@ -68,15 +68,15 @@ module CXFloodP{
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_len;
 
-  command error_t Send.send(message_t* msg, uint8_t len){
+  command error_t Send.send[am_id_t type](message_t* msg, uint8_t len){
     atomic{
       if (!txPending){
         tx_msg = msg;
         tx_len = len;
         txPending = TRUE;
-        //TODO: prepare packet
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, CX_TYPE_FLOOD);
+        call CXPacket.setType(msg, type);
+        call CXPacket.setRoutingMethod(msg, CX_RM_FLOOD);
 
         return SUCCESS;
       }else{
@@ -138,14 +138,14 @@ module CXFloodP{
   }
 
   task void txSuccessTask(){
-    signal Send.sendDone(tx_msg, SUCCESS);
+    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void reportReceive(){
     atomic{
       if (rxOutstanding){
         rxOutstanding = FALSE;
-        rx_msg = signal Receive.receive(rx_msg, 
+        rx_msg = signal Receive.receive[call CXPacket.type(rx_msg)](rx_msg, 
           call LayerPacket.getPayload(rx_msg, rx_len- sizeof(cx_header_t)),
           rx_len - sizeof(cx_header_t));
       }

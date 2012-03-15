@@ -49,10 +49,6 @@ module TDMASchedulerP{
   //macro for state-safety
   SET_STATE_DEF
 
-  message_t schedule_msg_internal;
-  message_t* schedule_msg = &schedule_msg_internal;
-  cx_schedule_t* schedule_pl;
-
   //this should be constant once written the first time.
   norace uint8_t schedule_len;
 
@@ -61,7 +57,7 @@ module TDMASchedulerP{
   norace uint32_t lastFs;
   norace cx_schedule_t lastSchedule;
 
-  void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
+  void setupPacket(message_t* schedule_msg, uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
     call CXPacket.init(schedule_msg);
 
     call AMPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
@@ -80,6 +76,7 @@ module TDMASchedulerP{
     schedule_pl -> maxRetransmit = maxRetransmit;
     printf("s_len: %u\r\n", schedule_len);
   }
+
 
   command error_t SplitControl.start(){
     error_t error;
@@ -151,21 +148,23 @@ module TDMASchedulerP{
     return FAIL;
   }
   
-
-  //TODO: also give it a packet to fill in.
   command error_t TDMARootControl.setSchedule(uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
-      uint16_t maxRetransmit){
+      uint16_t maxRetransmit, message_t* announcement){
     TMP_STATE;
     CACHE_STATE;
     if (CHECK_STATE(S_R_UNSCHEDULED) || CHECK_STATE(S_R_RUNNING)){
       error_t error = call SubCXTDMA.setSchedule(
         call SubCXTDMA.getNow(), 0, frameLen, fwCheckLen, activeFrames, inactiveFrames);
-
       if (SUCCESS == error){
-        setupPacket(frameLen, fwCheckLen, activeFrames,
+        _activeFrames = activeFrames;
+        _inactiveFrames = inactiveFrames;
+        _framesPerSlot = framesPerSlot;
+        _maxRetransmit = maxRetransmit;
+        setupPacket(announcement, frameLen, fwCheckLen, activeFrames,
           inactiveFrames, framesPerSlot, maxRetransmit);
+        post signalScheduled();
         SET_STATE(S_R_RUNNING, S_ERROR_5);
       } else {
         SET_ESTATE(S_ERROR_5);
@@ -195,43 +194,22 @@ module TDMASchedulerP{
     }
   }
   
-
-  //TODO: always signal this up.
+  //root is responsible for providing the packet itself (via some
+  //routing layer)
   async event bool SubCXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){
-    //root broadcasts during frame 0. Everything else is up to higher
-    //  levels (including retransmitting this, etc.)
-    if ((state == S_R_RUNNING) && (frameNum == 0)){
-      *msg = schedule_msg;
-      *len = schedule_len;
-      return TRUE;
-    } else {
-      return signal CXTDMA.getPacket(msg, len, frameNum);
-    }
+    return signal CXTDMA.getPacket(msg, len, frameNum);
   }
 
   task void signalScheduled(){
-    TMP_STATE;
-    CACHE_STATE;
-    if (CHECK_STATE(S_R_RUNNING)){
-      call CXPacket.newSn(schedule_msg);
-    }
-    if (schedule_pl != NULL){
-      signal TDMAScheduler.scheduleReceived(schedule_pl->activeFrames,
-        schedule_pl->inactiveFrames, schedule_pl->framesPerSlot,
-        schedule_pl->maxRetransmit);
-    } else {
-      SET_ESTATE(S_ERROR_8);
-    }
+    signal TDMAScheduler.scheduleReceived(_activeFrames,
+      _inactiveFrames, _framesPerSlot,
+      _maxRetransmit);
   }
 
   async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    if ((state == S_R_RUNNING) && (frameNum == 0)){
-      post signalScheduled();
-    } else {
-      signal CXTDMA.sendDone(msg, len, frameNum, error);
-    }
+    signal CXTDMA.sendDone(msg, len, frameNum, error);
   }
  
 
@@ -302,7 +280,6 @@ module TDMASchedulerP{
       //this layer doesn't care what it is.
 //      return msg;
     }
-    //TODO: only signal up if we are in a synched state?
     return signal CXTDMA.receive(msg, len, frameNum);
   }
 

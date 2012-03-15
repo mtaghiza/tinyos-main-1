@@ -98,5 +98,14 @@ module Rf1aCXPacketP{
     getHeader(amsg)->type = t;
   }
 
+  command cx_routing_method_t CXPacket.routingMethod(message_t* amsg){
+    return getHeader(amsg)->routingMethod;
+  }
+  command void CXPacket.setroutingMethod(message_t* amsg,
+      cx_routing_method_t t){
+    getHeader(amsg)->routingMethod = t;
+  }
+
+
   async event void ActiveMessageAddress.changed(){ }
 }

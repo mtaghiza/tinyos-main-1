@@ -1,3 +1,4 @@
+#include "CX.h"
 //TODO: switch to cx_addr, cx_id 
 interface CXPacket{
 //  command am_addr_t address();
@@ -13,4 +14,6 @@ interface CXPacket{
   command bool isForMe(message_t* amsg);
   command am_id_t type(message_t* amsg);
   command void setType(message_t* amsg, am_id_t t);
+  command void setRoutingMethod(message_t* amsg, cx_routing_method_t t);
+  command cx_routing_method_t getRoutingMethod(message_t* amsg);
 }
