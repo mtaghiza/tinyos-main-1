@@ -98,11 +98,11 @@ module Rf1aCXPacketP{
     getHeader(amsg)->type = t;
   }
 
-  command cx_routing_method_t CXPacket.routingMethod(message_t* amsg){
+  command uint8_t CXPacket.getRoutingMethod(message_t* amsg){
     return getHeader(amsg)->routingMethod;
   }
-  command void CXPacket.setroutingMethod(message_t* amsg,
-      cx_routing_method_t t){
+  command void CXPacket.setRoutingMethod(message_t* amsg,
+      uint8_t t){
     getHeader(amsg)->routingMethod = t;
   }
 

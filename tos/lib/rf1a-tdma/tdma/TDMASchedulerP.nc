@@ -49,24 +49,24 @@ module TDMASchedulerP{
   //macro for state-safety
   SET_STATE_DEF
 
-  //this should be constant once written the first time.
-  norace uint8_t schedule_len;
-
   bool updatePending = FALSE;
   //protected by updatePending
   norace uint32_t lastFs;
   norace cx_schedule_t lastSchedule;
 
+  uint16_t _activeFrames;
+  uint16_t _inactiveFrames;
+  uint16_t _framesPerSlot;
+  uint16_t _maxRetransmit; 
+
   void setupPacket(message_t* schedule_msg, uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
+    cx_schedule_t* schedule_pl;
     call CXPacket.init(schedule_msg);
 
     call AMPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
-    if (schedule_pl == NULL){
-      schedule_pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
-      schedule_len = sizeof(cx_schedule_t) + ((uint16_t)schedule_pl - (uint16_t)schedule_msg);
-    }
+    schedule_pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
     schedule_pl -> rootStart = 0;
     schedule_pl -> originalFrame = 0;
     schedule_pl -> frameLen = frameLen;
@@ -74,7 +74,6 @@ module TDMASchedulerP{
     schedule_pl -> inactiveFrames = inactiveFrames;
     schedule_pl -> framesPerSlot = framesPerSlot;
     schedule_pl -> maxRetransmit = maxRetransmit;
-    printf("s_len: %u\r\n", schedule_len);
   }
 
 
@@ -147,6 +146,12 @@ module TDMASchedulerP{
       uint16_t inactiveFrames){
     return FAIL;
   }
+
+  task void signalScheduled(){
+    signal TDMAScheduler.scheduleReceived(_activeFrames,
+      _inactiveFrames, _framesPerSlot,
+      _maxRetransmit);
+  }
   
   command error_t TDMARootControl.setSchedule(uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
@@ -201,11 +206,6 @@ module TDMASchedulerP{
     return signal CXTDMA.getPacket(msg, len, frameNum);
   }
 
-  task void signalScheduled(){
-    signal TDMAScheduler.scheduleReceived(_activeFrames,
-      _inactiveFrames, _framesPerSlot,
-      _maxRetransmit);
-  }
 
   async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){

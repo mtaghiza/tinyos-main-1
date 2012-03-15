@@ -14,6 +14,6 @@ interface CXPacket{
   command bool isForMe(message_t* amsg);
   command am_id_t type(message_t* amsg);
   command void setType(message_t* amsg, am_id_t t);
-  command void setRoutingMethod(message_t* amsg, cx_routing_method_t t);
-  command cx_routing_method_t getRoutingMethod(message_t* amsg);
+  command void setRoutingMethod(message_t* amsg, uint8_t t);
+  command uint8_t getRoutingMethod(message_t* amsg);
 }

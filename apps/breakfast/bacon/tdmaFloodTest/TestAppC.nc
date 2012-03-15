@@ -1,3 +1,6 @@
+#include "CX.h"
+#include "schedule.h"
+
 configuration TestAppC{
 } implementation {
   components MainC;
@@ -54,7 +57,7 @@ configuration TestAppC{
   CXFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
-  
+
   #if TDMA_ROOT 
   components TDMARootC as RootC;
   #else

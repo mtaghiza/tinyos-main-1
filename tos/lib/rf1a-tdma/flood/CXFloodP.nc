@@ -2,8 +2,8 @@
  #include "Rf1a.h"
  #include "CXFlood.h"
 module CXFloodP{
-  provides interface Send[am_id_t type];
-  provides interface Receive[am_id_t type];
+  provides interface Send[am_id_t t];
+  provides interface Receive[am_id_t t];
 
   uses interface CXPacket;
   //Payload: body of CXPacket
@@ -68,14 +68,14 @@ module CXFloodP{
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_len;
 
-  command error_t Send.send[am_id_t type](message_t* msg, uint8_t len){
+  command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
     atomic{
       if (!txPending){
         tx_msg = msg;
         tx_len = len;
         txPending = TRUE;
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, type);
+        call CXPacket.setType(msg, t);
         call CXPacket.setRoutingMethod(msg, CX_RM_FLOOD);
 
         return SUCCESS;
@@ -85,7 +85,7 @@ module CXFloodP{
     }
   }
   
-  command error_t Send.cancel(message_t* msg){
+  command error_t Send.cancel[am_id_t t](message_t* msg){
     atomic{
       if (!txPending){
         return EINVAL;
@@ -94,9 +94,13 @@ module CXFloodP{
         //too late!
         return  FAIL;
       } else {
-        //ok.
-        txPending = FALSE;
-        return SUCCESS;
+        if (msg == tx_msg){
+          //ok.
+          txPending = FALSE;
+          return SUCCESS;
+        } else {
+          return FAIL;
+        }
       }
     }
   }
@@ -225,7 +229,9 @@ module CXFloodP{
   async event void CXTDMA.frameStarted(uint32_t startTime){ }
 
 
-  command void* Send.getPayload(message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
-  command uint8_t Send.maxPayloadLength(){ return call LayerPacket.maxPayloadLength(); }
+  command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
+  command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
+  default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
+  default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
 
 }

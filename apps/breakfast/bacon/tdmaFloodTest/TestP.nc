@@ -14,8 +14,6 @@ module TestP {
   uses interface StdControl as UartControl;
   uses interface UartStream;
 
-  uses interface TDMARootControl;
-
   uses interface SplitControl;
   uses interface AMPacket;
   uses interface Packet;
@@ -42,12 +40,11 @@ module TestP {
   //schedule info
   uint16_t _framesPerSlot;
   
-  norace bool isRoot = FALSE;
   norace bool isTransmitting = FALSE;
 
   task void printStatus(){
     printf("----\r\n");
-    printf("is root: %x\r\n", isRoot);
+    printf("is root: %x\r\n", TDMA_ROOT);
     printf("is transmitting: %x\r\n", isTransmitting);
   }
 
@@ -72,7 +69,6 @@ module TestP {
     printf("\r\nCXTDMA Flood test\r\n");
     printf("s: start \r\n");
     printf("S: stop \r\n");
-    printf("r: root \r\n");
     printf("f: forwarder \r\n");
     printf("t: toggle is-transmitting \r\n");
     printf("?: print status\r\n");
@@ -80,16 +76,9 @@ module TestP {
     post printStatus();
   }
 
-  task void setRootSchedule(){
-    call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
-        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 2);
-  }
 
   event void SplitControl.startDone(error_t error){
-//    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
-    if (isRoot){
-      post setRootSchedule();
-    }
+    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -132,16 +121,6 @@ module TestP {
     post printStatus();
   }
 
-  task void becomeRoot(){
-    isRoot = TRUE;
-    post printStatus();
-  }
-
-  task void becomeForwarder(){
-    isRoot = FALSE;
-    post printStatus();
-  }
-
   task void toggleTX(){
     isTransmitting = !isTransmitting;
     if (isTransmitting){
@@ -165,14 +144,6 @@ module TestP {
       case '?':
         post printStatus();
         break;
-      case 'r':
-        printf("Become Root\r\n");
-        post becomeRoot();
-        break;
-      case 'f':
-        printf("Become Forwarder\r\n");
-        post becomeForwarder();
-        break;
       case 't':
         printf("Toggle TX\r\n");
         post toggleTX();
@@ -184,10 +155,6 @@ module TestP {
         printf("%c", byte);
         break;
     }
-  }
-
-  event bool TDMARootControl.isRoot(){
-    return isRoot;
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
