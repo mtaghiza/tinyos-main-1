@@ -41,8 +41,7 @@ module CXFloodP{
   };
 
   bool txPending;
-  bool txSending;
-  bool fwdPending;
+  uint16_t transmitsLeft;
   
   uint8_t state;
   SET_STATE_DEF
@@ -87,23 +86,7 @@ module CXFloodP{
   }
   
   command error_t Send.cancel[am_id_t t](message_t* msg){
-    atomic{
-      if (!txPending){
-        return EINVAL;
-      } else if ((curFrame >= myStart) || 
-          (curFrame < (myStart + maxRetransmit))){
-        //too late!
-        return  FAIL;
-      } else {
-        if (msg == tx_msg){
-          //ok.
-          txPending = FALSE;
-          return SUCCESS;
-        } else {
-          return FAIL;
-        }
-      }
-    }
+    return FAIL;
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
@@ -112,37 +95,25 @@ module CXFloodP{
     //schedule, but may want another slot for its own data.
     printf("ft %u %u\r\n", frameNum, myStart);
     if (txPending && (frameNum == myStart)){
-      printf(" fstxon0\r\n");
       return RF1A_OM_FSTXON;
-    } else if (fwdPending){
-//      printf("ft %u: lf %u ", frameNum, lastFwd);
-      if (frameNum <= lastFwd){
-        printf(" fstxon1\r\n");
-        return RF1A_OM_FSTXON;
-      } else {
-        printf(" rx0\r\n");
-        //done forwarding, get ready for next packet.
-        return RF1A_OM_RX;
-      }
+    } else if (frameNum < (lastSent + txLeft)){
+      return RF1A_OM_FSTXON;
     } else {
-      printf(" rx1\r\n");
-      //not involved in forwarding or originating
       return RF1A_OM_RX;
     }
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-    if (fwdPending){
-      *msg = fwd_msg;
-      *len = fwd_len;
-      return TRUE;
-    } else if (txPending){
-      txSending = TRUE;
+    if (txPending && (frameNum == myStart)){
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
-    } 
+    } else if (txLeft){
+      *msg = fwd_msg;
+      *len = fwd_len;
+      return TRUE;
+    }
     return FALSE;
   }
 
@@ -169,19 +140,20 @@ module CXFloodP{
       SET_ESTATE(S_ERROR_1);
     }
 
-    if (txSending){
-//      printf("sdt\r\n");
-      txSending = FALSE;
-      fwdPending = TRUE;
+    //we just sent an origin frame.
+    if (txPending && (frameNum == myStart)){
+      lastSrc = call CXPacket.source(msg);
+      lastSn = call CXPacket.sn(msg);
+      txPending = FALSE;
+      txSent = TRUE;
+      txLeft = maxRetransmits;
       fwd_msg = tx_msg;
       fwd_len = tx_len;
     }
-
-    if (frameNum == lastFwd){
-      printf("sdd\r\n");
-      fwdPending = FALSE;
-      if (txPending){
-        txPending = FALSE;
+    txLeft --;
+    lastSent = frameNum;
+    if (txLeft == 0){
+      if (txSent){
         post txSuccessTask();
       } else {
         post reportReceive();
@@ -197,9 +169,9 @@ module CXFloodP{
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
       lastSn = thisSn;
       lastSrc = thisSrc;
-      fwdPending = TRUE;
-      printf("lfa 0\r\n");
-      lastFwd = frameNum + maxRetransmit;
+      txLeft = maxRetransmit;
+      //we are going to send it next frame.
+      lastSent = frameNum + 1;
       fwd_msg = msg;
       fwd_len = len;
       if (! rxOutstanding){

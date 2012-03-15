@@ -83,6 +83,9 @@ module Rf1aCXPacketP{
   command void CXPacket.setCount(message_t* amsg, uint8_t cxcount){
     getHeader(amsg)->count = cxcount;
   }
+  command void CXPacket.incCount(message_t* amsg){
+    getHeader(amsg)->count++;
+  }
 
 
   command bool CXPacket.isForMe(message_t* amsg){

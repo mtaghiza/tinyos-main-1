@@ -451,7 +451,14 @@ module CXTDMAPhysicalP {
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
-    return signal CXTDMA.getPacket((message_t**)buffer, len, frameNum);
+    bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum); 
+    //TODO: if we were going to modify part of the packet, this is the
+    //  last possible time. it should be
+    //  possible to stuff in the last RE capture here, as long as it's
+    //  in a well-defined place. Should be enough time while
+    //  preamble/synch are starting, I hope (?)
+    call CXPacket.incCount((message_t*)*buffer);
+    return ret;
   }
 
   /**
