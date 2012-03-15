@@ -113,13 +113,16 @@ module TDMASchedulerP{
     TMP_STATE;
     CACHE_STATE;
     if (SUCCESS == error){
+      printf("Fixin' to ask about rootness\r\n");
       if (signal TDMARootControl.isRoot()){
+        printf("YUP\r\n");
         if ( SET_STATE(S_R_UNSCHEDULED, S_ERROR_3)){
           signal SplitControl.startDone(SUCCESS);
         } else {
           signal SplitControl.startDone(FAIL);
         }
       } else {
+        printf("NOPE\r\n");
         post nrSetup();
       }
     }else{

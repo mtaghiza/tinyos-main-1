@@ -10,31 +10,34 @@ module TDMARootC{
   cx_schedule_t* schedule_pl;
 
   command error_t SplitControl.start(){
-    return SubSplitControl.start();
+    printf("tdmaRoot: sc.start\r\n");
+    return call SubSplitControl.start();
   }
 
   command error_t SplitControl.stop(){
-    return SubSplitControl.stop();
+    return call SubSplitControl.stop();
   }
 
   task void announceSchedule(){
     error_t error;
-    call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
-    error = call Send.send(schedule_msg);
+    printf("as t\r\n");
+    error = call Send.send(schedule_msg, sizeof(cx_schedule_t));
     if (SUCCESS != error){
       printf("announce schedule: %s\r\n", decodeError(error));
     }
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
+    printf("s.sd\r\n");
     if (SUCCESS == error){
       post announceSchedule();
     } else {
-      printf("send done: %s \r\n", decodeError);
+      printf("send done: %s \r\n", decodeError(error));
     }
   }
 
   event void SubSplitControl.startDone(error_t error){
+    printf("ssc.sd\r\n");
     if (SUCCESS == error){
       error = call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
         DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 2, schedule_msg);
@@ -45,7 +48,12 @@ module TDMARootC{
     signal SplitControl.startDone(error);
   }
 
+  event void SubSplitControl.stopDone(error_t error){
+    signal SubSplitControl.stopDone(error);
+  }
+
   event bool TDMARootControl.isRoot(){
+    printf("trc.isRoot\r\n");
     return TRUE;
   }
 

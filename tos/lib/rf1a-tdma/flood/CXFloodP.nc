@@ -72,7 +72,8 @@ module CXFloodP{
     atomic{
       if (!txPending){
         tx_msg = msg;
-        tx_len = len;
+        tx_len = len + sizeof(cx_header_t);
+        //TODO: where do we account for 15.4 header len?
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);

@@ -58,7 +58,7 @@ configuration TestAppC{
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
 
-  #if TDMA_ROOT 
+  #if TDMA_ROOT == TRUE
   components TDMARootC as RootC;
   #else
   components TDMANonRootC as RootC;
