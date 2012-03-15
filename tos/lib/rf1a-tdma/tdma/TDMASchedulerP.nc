@@ -150,7 +150,9 @@ module TDMASchedulerP{
       uint16_t inactiveFrames){
     return FAIL;
   }
+  
 
+  //TODO: also give it a packet to fill in.
   command error_t TDMARootControl.setSchedule(uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
@@ -192,7 +194,9 @@ module TDMASchedulerP{
       return signal CXTDMA.frameType(frameNum);
     }
   }
+  
 
+  //TODO: always signal this up.
   async event bool SubCXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){
     //root broadcasts during frame 0. Everything else is up to higher

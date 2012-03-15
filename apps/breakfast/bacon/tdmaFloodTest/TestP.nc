@@ -82,7 +82,7 @@ module TestP {
 
   task void setRootSchedule(){
     call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
-        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 1);
+        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 2);
   }
 
   event void SplitControl.startDone(error_t error){

@@ -102,6 +102,9 @@ module CXFloodP{
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+    //TODO: might want to make this a little more flexible: for
+    //instance, root is going to want to claim slot 0 for the
+    //schedule, but may want another slot for its own data.
     if (txPending && (frameNum == myStart)){
       return RF1A_OM_FSTXON;
     } else if (fwdPending){
@@ -151,7 +154,7 @@ module CXFloodP{
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    printf("sd %u lf %u\r\n", frameNum, lastFwd);
+    printf("sd %u lf %u %s\r\n", frameNum, lastFwd, decodeError(error));
     if (error != SUCCESS){
       printf("sd!\r\n");
       SET_ESTATE(S_ERROR_1);
