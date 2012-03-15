@@ -50,6 +50,7 @@ configuration TestAppC{
 
   TestP.CXTDMA -> TDMASchedulerC.CXTDMA;
   TestP.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
+  TestP.TDMARootControl -> TDMASchedulerC.TDMARootControl;
   TestP.SplitControl -> TDMASchedulerC.SplitControl;
   TestP.AMPacket -> AMPacket;
   TestP.CXPacket -> Rf1aCXPacketC;

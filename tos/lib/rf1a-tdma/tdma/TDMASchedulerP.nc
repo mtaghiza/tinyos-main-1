@@ -2,6 +2,7 @@ module TDMASchedulerP{
   provides interface SplitControl;
   provides interface CXTDMA;
   provides interface TDMAScheduler;
+  provides interface TDMARootControl;
 
   uses interface SplitControl as SubSplitControl;
   uses interface CXTDMA as SubCXTDMA;
@@ -94,7 +95,7 @@ module TDMASchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (SUCCESS == error){
-      if (signal TDMAScheduler.isRoot()){
+      if (signal TDMARootControl.isRoot()){
         state = S_R_UNSCHEDULED;
         signal SplitControl.startDone(SUCCESS);
       } else {
@@ -123,7 +124,7 @@ module TDMASchedulerP{
     return FAIL;
   }
 
-  command error_t TDMAScheduler.setSchedule(uint32_t frameLen, 
+  command error_t TDMARootControl.setSchedule(uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
       uint16_t maxRetransmit){

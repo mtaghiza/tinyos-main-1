@@ -19,6 +19,7 @@ module TestP {
   uses interface SplitControl;
   uses interface CXTDMA;
   uses interface TDMAScheduler;
+  uses interface TDMARootControl;
 
   uses interface AMPacket;
   uses interface CXPacket;
@@ -79,7 +80,7 @@ module TestP {
   }
 
   task void setScheduleTask(){
-    call TDMAScheduler.setSchedule(DEFAULT_TDMA_FRAME_LEN,
+    call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
         DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 1);
   }
 
@@ -201,7 +202,7 @@ module TestP {
     }
   }
 
-  event bool TDMAScheduler.isRoot(){
+  event bool TDMARootControl.isRoot(){
     return isRoot;
   }
 

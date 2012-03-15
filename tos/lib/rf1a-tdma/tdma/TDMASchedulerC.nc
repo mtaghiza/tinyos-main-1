@@ -2,6 +2,7 @@ configuration TDMASchedulerC{
   provides interface SplitControl;
   provides interface CXTDMA;
   provides interface TDMAScheduler;
+  provides interface TDMARootControl;
 
   uses interface SplitControl as SubSplitControl;
   uses interface CXTDMA as SubCXTDMA;
@@ -17,6 +18,7 @@ configuration TDMASchedulerC{
   TDMASchedulerP.SplitControl = SplitControl;
   TDMASchedulerP.CXTDMA = CXTDMA;
   TDMASchedulerP.TDMAScheduler = TDMAScheduler;
+  TDMASchedulerP.TDMARootControl = TDMARootControl;
 
   TDMASchedulerP.SubSplitControl = SubSplitControl;
   TDMASchedulerP.SubCXTDMA = SubCXTDMA;
