@@ -234,6 +234,8 @@ module CXTDMAPhysicalP {
 //        printf("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
+          //TODO: post task to indicate that we are done with the
+          //active phase
           setState(S_INACTIVE);
         } else {
           setState(S_ERROR_1);
@@ -458,11 +460,11 @@ module CXTDMAPhysicalP {
    *     FSCapture.event()),  call FWA.stop() -> S_RECEIVING
    */
   async event void SynchCapture.captured(uint16_t time){
-    uint32_t fst = call FrameStartAlarm.getNow();
+    uint32_t fst; 
     uint32_t capture;
 //    printf("cm %x\r\n", captureMode);
     SC_SET_PIN;
-
+    fst = call FrameStartAlarm.getNow();
     //There is a ~9.25 uS delay between the SFD signal at the sender and
     //  at the receiver. So, we need to adjust the capture time
     //  accordingly.

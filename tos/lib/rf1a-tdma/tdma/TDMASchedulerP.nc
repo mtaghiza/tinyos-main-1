@@ -314,6 +314,7 @@ module TDMASchedulerP{
       SET_ESTATE(S_ERROR_8);
     }
     signal CXTDMA.frameStarted(startTime);
+    //TODO: add another event that indicates "we're inactive now"?
   }
 
 }

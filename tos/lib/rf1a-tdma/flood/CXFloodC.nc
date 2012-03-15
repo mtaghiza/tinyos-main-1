@@ -3,6 +3,7 @@ configuration CXFloodC{
   provides interface Receive;
 
   uses interface CXPacket;
+  uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMAScheduler;
 } implementation {
@@ -13,4 +14,5 @@ configuration CXFloodC{
   CXPacket = CXFloodP.CXPacket;
   CXTDMA = CXFloodP.CXTDMA;
   TDMAScheduler = CXFloodP.TDMAScheduler;
+  LayerPacket = CXFloodP.LayerPacket;
 }

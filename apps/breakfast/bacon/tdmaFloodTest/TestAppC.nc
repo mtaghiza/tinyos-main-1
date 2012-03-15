@@ -51,6 +51,7 @@ configuration TestAppC{
   CXFloodC.CXTDMA -> TDMASchedulerC.CXTDMA;
   CXFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
   CXFloodC.CXPacket -> Rf1aCXPacketC;
+  CXFloodC.LayerPacket -> Rf1aCXPacketC;
 
 
   TestP.SplitControl -> TDMASchedulerC.SplitControl;

@@ -209,7 +209,7 @@ module TestP {
   event void TDMAScheduler.scheduleReceived(uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
       uint16_t maxRetransmit){
-    printf("SR\r\n");
+//    printf("SR\r\n");
   }
 
    //unused events
