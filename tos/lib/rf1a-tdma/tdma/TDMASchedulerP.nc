@@ -1,5 +1,6 @@
 
  #include "schedule.h"
+ #include "stateSafety.h"
 module TDMASchedulerP{
   provides interface SplitControl;
   provides interface CXTDMA;
@@ -45,11 +46,16 @@ module TDMASchedulerP{
   };
 
   uint8_t state = S_OFF;
+  bool updatePending = FALSE;
+  //macro for state-safety
+  SET_STATE_DEF
 
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
-  uint8_t schedule_len;
-  uint32_t lastFs;
+  //this should be constant once written the first time.
+  norace uint8_t schedule_len;
+  //protected by updatePending
+  norace uint32_t lastFs;
 
   void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
     cx_schedule_t* pl;
@@ -73,8 +79,16 @@ module TDMASchedulerP{
   }
 
   command error_t SplitControl.start(){
-    state = S_STARTING;
-    return call SubSplitControl.start();
+    error_t error;
+    TMP_STATE;
+    CACHE_STATE;
+    error = call SubSplitControl.start();
+    if (SUCCESS == error){
+      SET_STATE(S_STARTING, S_ERROR_1);
+    } else {
+      SET_ESTATE(S_ERROR_1);
+    }
+    return error;
   }
 
   command error_t SplitControl.stop(){
@@ -82,38 +96,46 @@ module TDMASchedulerP{
   }
 
   task void nrSetup(){
-    error_t error = call SubCXTDMA.setSchedule(
+    error_t error;
+    TMP_STATE;
+    CACHE_STATE;
+    error = call SubCXTDMA.setSchedule(
       call SubCXTDMA.getNow(), 
       0,
       DEFAULT_TDMA_FRAME_LEN,
       2*DEFAULT_TDMA_FRAME_LEN,
       1, 0);
-    if (error == SUCCESS){
-      state = S_NR_UNSCHEDULED;
-    }else{
-      state = S_ERROR_2;
+    if (SUCCESS == error){
+      SET_STATE(S_NR_UNSCHEDULED, S_ERROR_2);
     }
   }
 
   event void SubSplitControl.startDone(error_t error){
+    TMP_STATE;
+    CACHE_STATE;
     if (SUCCESS == error){
       if (signal TDMARootControl.isRoot()){
-        state = S_R_UNSCHEDULED;
-        signal SplitControl.startDone(SUCCESS);
+        if ( SET_STATE(S_R_UNSCHEDULED, S_ERROR_3)){
+          signal SplitControl.startDone(SUCCESS);
+        } else {
+          signal SplitControl.startDone(FAIL);
+        }
       } else {
         post nrSetup();
       }
     }else{
-      state = S_ERROR_1;
+      SET_ESTATE(S_ERROR_3);
       signal SplitControl.startDone(error);
     }
   }
 
   event void SubSplitControl.stopDone(error_t error){
+    TMP_STATE;
+    CACHE_STATE;
     if (SUCCESS == error){
-      state = S_OFF;
+      SET_STATE(S_OFF, S_ERROR_4);
     } else {
-      state = S_ERROR_5;
+      SET_ESTATE(S_ERROR_4);
     }
     signal SplitControl.stopDone(error);
   }
@@ -130,16 +152,18 @@ module TDMASchedulerP{
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
       uint16_t maxRetransmit){
-    if (state == S_R_UNSCHEDULED || state == S_R_RUNNING){
+    TMP_STATE;
+    CACHE_STATE;
+    if (CHECK_STATE(S_R_UNSCHEDULED) || CHECK_STATE(S_R_RUNNING)){
       error_t error = call SubCXTDMA.setSchedule(
         call SubCXTDMA.getNow(), 0, frameLen, fwCheckLen, activeFrames, inactiveFrames);
 
       if (SUCCESS == error){
         setupPacket(frameLen, fwCheckLen, activeFrames,
           inactiveFrames, framesPerSlot, maxRetransmit);
-        state = S_R_RUNNING;
+        SET_STATE(S_R_RUNNING, S_ERROR_5);
       } else {
-        state = S_ERROR_4;
+        SET_ESTATE(S_ERROR_5);
       }
       return error;
     } else{
@@ -157,9 +181,11 @@ module TDMASchedulerP{
    *
    */
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
-    if ((state == S_R_RUNNING) && (frameNum == 0)){
+    TMP_STATE;
+    CACHE_STATE;
+    if (CHECK_STATE(S_R_RUNNING) && (frameNum == 0)){
       return RF1A_OM_FSTXON;
-    } else if (state == S_NR_UNSCHEDULED){
+    } else if (CHECK_STATE(S_NR_UNSCHEDULED)){
       return RF1A_OM_RX;
     } else {
       return signal CXTDMA.frameType(frameNum);
@@ -184,22 +210,26 @@ module TDMASchedulerP{
     signal CXTDMA.sendDone(msg, len, frameNum, error);
   }
  
-  cx_schedule_t lastSchedule;
+  norace cx_schedule_t lastSchedule;
 
   task void processReceive(){
-    error_t error = call SubCXTDMA.setSchedule(lastFs, 
+    TMP_STATE;
+    error_t error;
+    CACHE_STATE;
+    error = call SubCXTDMA.setSchedule(lastFs, 
       lastSchedule.originalFrame,
       lastSchedule.frameLen, 
       DEFAULT_TDMA_FW_CHECK_LEN,
       lastSchedule.activeFrames,
       lastSchedule.inactiveFrames);
+    atomic updatePending = FALSE;
     if (SUCCESS != error){
       printf("Error %s\r\n", decodeError(error));
-      state = S_ERROR_3;
+      SET_ESTATE(S_ERROR_6);
     } else {
-      if (state == S_NR_UNSCHEDULED){
+      if (CHECK_STATE(S_NR_UNSCHEDULED)){
 //        printf("scheduled\r\n");
-        state = S_NR_RUNNING;
+        SET_STATE(S_NR_RUNNING, S_ERROR_6);
         signal SplitControl.startDone(SUCCESS);
       } else {
 //        printf("updated\r\n");
@@ -218,18 +248,32 @@ module TDMASchedulerP{
          ((state == S_NR_RUNNING) 
            && (frameNum == 0) 
            && (call CXPacket.type(msg) == CX_TYPE_SCHEDULE))){
-      cx_schedule_t* pl = (cx_schedule_t*)call Packet.getPayload(msg, len);
-//      printf("RX schedule\r\n");
-//      lastSchedule.rootStart = pl->rootStart;
-      lastSchedule.originalFrame = 
-        call CXPacket.count(msg) + pl->originalFrame;
-      lastSchedule.frameLen = pl->frameLen;
-      lastSchedule.activeFrames = pl->activeFrames;
-      lastSchedule.inactiveFrames = pl->inactiveFrames;
-//      lastSchedule.framesPerSlot = pl->framesPerSlot;
-//      lastSchedule.maxRetransmit = pl->maxRetransmit;
-      post processReceive();
+      cx_schedule_t* pl;
+      bool okToProceed = TRUE;
+
+      atomic {
+        if (!updatePending){
+          updatePending = TRUE;
+        //still haven't handled previous update.
+        } else{
+          okToProceed = FALSE;
+        }
+      }
+      if (okToProceed){
+        pl = (cx_schedule_t*)call Packet.getPayload(msg, len);
+  //      printf("RX schedule\r\n");
+  //      lastSchedule.rootStart = pl->rootStart;
+        lastSchedule.originalFrame = 
+          call CXPacket.count(msg) + pl->originalFrame;
+        lastSchedule.frameLen = pl->frameLen;
+        lastSchedule.activeFrames = pl->activeFrames;
+        lastSchedule.inactiveFrames = pl->inactiveFrames;
+  //      lastSchedule.framesPerSlot = pl->framesPerSlot;
+  //      lastSchedule.maxRetransmit = pl->maxRetransmit;
+        post processReceive();
+      }
     }else{
+      atomic updatePending = FALSE;
       printf("Ignore\r\n");
     }
     return signal CXTDMA.receive(msg, len, frameNum);
@@ -244,7 +288,11 @@ module TDMASchedulerP{
 //        (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
 //     pl -> rootTime = startTime
 //    }
-    lastFs = startTime;
+    if (!updatePending){
+      lastFs = startTime;
+    } else {
+      SET_ESTATE(S_ERROR_8);
+    }
     signal CXTDMA.frameStarted(startTime);
   }
 
