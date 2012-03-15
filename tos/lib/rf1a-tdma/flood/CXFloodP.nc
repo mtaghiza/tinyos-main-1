@@ -110,17 +110,22 @@ module CXFloodP{
     //TODO: might want to make this a little more flexible: for
     //instance, root is going to want to claim slot 0 for the
     //schedule, but may want another slot for its own data.
+    printf("ft %u %u\r\n", frameNum, myStart);
     if (txPending && (frameNum == myStart)){
+      printf(" fstxon0\r\n");
       return RF1A_OM_FSTXON;
     } else if (fwdPending){
 //      printf("ft %u: lf %u ", frameNum, lastFwd);
       if (frameNum <= lastFwd){
+        printf(" fstxon1\r\n");
         return RF1A_OM_FSTXON;
       } else {
+        printf(" rx0\r\n");
         //done forwarding, get ready for next packet.
         return RF1A_OM_RX;
       }
     } else {
+      printf(" rx1\r\n");
       //not involved in forwarding or originating
       return RF1A_OM_RX;
     }
@@ -134,7 +139,6 @@ module CXFloodP{
       return TRUE;
     } else if (txPending){
       txSending = TRUE;
-      lastFwd = frameNum + maxRetransmit;
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
@@ -166,7 +170,7 @@ module CXFloodP{
     }
 
     if (txSending){
-      printf("sdt\r\n");
+//      printf("sdt\r\n");
       txSending = FALSE;
       fwdPending = TRUE;
       fwd_msg = tx_msg;
@@ -177,6 +181,7 @@ module CXFloodP{
       printf("sdd\r\n");
       fwdPending = FALSE;
       if (txPending){
+        txPending = FALSE;
         post txSuccessTask();
       } else {
         post reportReceive();
@@ -193,6 +198,7 @@ module CXFloodP{
       lastSn = thisSn;
       lastSrc = thisSrc;
       fwdPending = TRUE;
+      printf("lfa 0\r\n");
       lastFwd = frameNum + maxRetransmit;
       fwd_msg = msg;
       fwd_len = len;
@@ -223,8 +229,8 @@ module CXFloodP{
       maxRetransmit = maxRetransmit_;
       myStart = (framesPerSlot * TOS_NODE_ID);
     }
-//    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
-//      maxRetransmit, myStart);
+    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
+      maxRetransmit, myStart);
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime){ }

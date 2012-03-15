@@ -113,16 +113,13 @@ module TDMASchedulerP{
     TMP_STATE;
     CACHE_STATE;
     if (SUCCESS == error){
-      printf("Fixin' to ask about rootness\r\n");
       if (signal TDMARootControl.isRoot()){
-        printf("YUP\r\n");
         if ( SET_STATE(S_R_UNSCHEDULED, S_ERROR_3)){
           signal SplitControl.startDone(SUCCESS);
         } else {
           signal SplitControl.startDone(FAIL);
         }
       } else {
-        printf("NOPE\r\n");
         post nrSetup();
       }
     }else{
@@ -193,9 +190,7 @@ module TDMASchedulerP{
    *
    */
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
-    if ((state == S_R_RUNNING) && (frameNum == 0)){
-      return RF1A_OM_FSTXON;
-    } else if (state == S_NR_UNSCHEDULED){
+    if (state == S_NR_UNSCHEDULED){
       return RF1A_OM_RX;
     } else {
       return signal CXTDMA.frameType(frameNum);

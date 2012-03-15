@@ -20,7 +20,6 @@ module TDMARootC{
 
   task void announceSchedule(){
     error_t error;
-    printf("as t\r\n");
     error = call Send.send(schedule_msg, sizeof(cx_schedule_t));
     if (SUCCESS != error){
       printf("announce schedule: %s\r\n", decodeError(error));
@@ -28,7 +27,6 @@ module TDMARootC{
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
-    printf("s.sd\r\n");
     if (SUCCESS == error){
       post announceSchedule();
     } else {
@@ -37,7 +35,6 @@ module TDMARootC{
   }
 
   event void SubSplitControl.startDone(error_t error){
-    printf("ssc.sd\r\n");
     if (SUCCESS == error){
       error = call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
         DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 2, schedule_msg);
@@ -53,7 +50,6 @@ module TDMARootC{
   }
 
   event bool TDMARootControl.isRoot(){
-    printf("trc.isRoot\r\n");
     return TRUE;
   }
 
