@@ -672,8 +672,11 @@ generic module HplMsp430Rf1aP () @safe() {
          * and CCA fails, the radio transitions to RX mode.  In other
          * cases, it somehow ends up in IDLE.  Try anyway, and if it
          * doesn't work, fail the transmission. */
+        //4.25 uS
         TX_TOGGLE_PIN;
+        TXCP_CLEAR_PIN;
         rc = call Rf1aIf.strobe(RF_STX);
+        //5.75 uS
         TX_TOGGLE_PIN;
 
         //packet retrieval/validation: cancel the transmission if we
@@ -684,9 +687,10 @@ generic module HplMsp430Rf1aP () @safe() {
           resumeIdleMode_(FALSE);
           return ESIZE;
         }
-
+        //2.25 uS
         TX_TOGGLE_PIN;
         loadFifo_(tx_buffer, tx_length);
+        //48.5 uS
         TX_TOGGLE_PIN;
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))
                && (RF1A_S_RX != (RF1A_S_MASK & rc))
@@ -694,6 +698,7 @@ generic module HplMsp430Rf1aP () @safe() {
                && (0 <= --loop_limit)) {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
+        //7.5 uS
         TX_TOGGLE_PIN;
         tx_state = TX_S_active;
 

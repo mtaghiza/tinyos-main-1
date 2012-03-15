@@ -385,12 +385,16 @@ module CXTDMAPhysicalP {
   async event void FrameStartAlarm.fired(){
     error_t error;
     P1OUT ^= BIT3;
+    //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
     if (checkState(S_TX_READY)){
+      TXCP_SET_PIN;
       FS_TOGGLE_PIN;
+      //4 uS
       TX_TOGGLE_PIN;
       error = call Rf1aPhysical.completeSend();
+      //6.25 uS (+ 68.25 uS)
       TX_TOGGLE_PIN;
       TX_CLEAR_PIN;
       TX_SET_PIN;
