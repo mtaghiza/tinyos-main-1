@@ -46,19 +46,22 @@ module TDMASchedulerP{
   };
 
   uint8_t state = S_OFF;
-  bool updatePending = FALSE;
   //macro for state-safety
   SET_STATE_DEF
 
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
+  cx_schedule_t* schedule_pl;
+
   //this should be constant once written the first time.
   norace uint8_t schedule_len;
+
+  bool updatePending = FALSE;
   //protected by updatePending
   norace uint32_t lastFs;
+  norace cx_schedule_t lastSchedule;
 
   void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
-    cx_schedule_t* pl;
     call Rf1aPacket.configureAsData(schedule_msg);
     call AMPacket.setSource(schedule_msg, call AMPacket.address());
     call Ieee154Packet.setPan(schedule_msg, call Ieee154Packet.localPan());
@@ -66,15 +69,17 @@ module TDMASchedulerP{
     call CXPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setCount(schedule_msg, 0);
     call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
-    pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
-    pl -> rootStart = 0;
-    pl -> originalFrame = 0;
-    pl -> frameLen = frameLen;
-    pl -> activeFrames = activeFrames;
-    pl -> inactiveFrames = inactiveFrames;
-    pl -> framesPerSlot = framesPerSlot;
-    pl -> maxRetransmit = maxRetransmit;
-    schedule_len = sizeof(cx_schedule_t) + ((uint16_t)pl - (uint16_t)schedule_msg);
+    if (schedule_pl == NULL){
+      schedule_pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
+      schedule_len = sizeof(cx_schedule_t) + ((uint16_t)schedule_pl - (uint16_t)schedule_msg);
+    }
+    schedule_pl -> rootStart = 0;
+    schedule_pl -> originalFrame = 0;
+    schedule_pl -> frameLen = frameLen;
+    schedule_pl -> activeFrames = activeFrames;
+    schedule_pl -> inactiveFrames = inactiveFrames;
+    schedule_pl -> framesPerSlot = framesPerSlot;
+    schedule_pl -> maxRetransmit = maxRetransmit;
     printf("s_len: %u\r\n", schedule_len);
   }
 
@@ -181,11 +186,9 @@ module TDMASchedulerP{
    *
    */
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
-    TMP_STATE;
-    CACHE_STATE;
-    if (CHECK_STATE(S_R_RUNNING) && (frameNum == 0)){
+    if ((state == S_R_RUNNING) && (frameNum == 0)){
       return RF1A_OM_FSTXON;
-    } else if (CHECK_STATE(S_NR_UNSCHEDULED)){
+    } else if (state == S_NR_UNSCHEDULED){
       return RF1A_OM_RX;
     } else {
       return signal CXTDMA.frameType(frameNum);
@@ -205,12 +208,25 @@ module TDMASchedulerP{
     }
   }
 
+  task void signalScheduled(){
+    if (schedule_pl != NULL){
+      signal TDMAScheduler.scheduleReceived(schedule_pl->activeFrames,
+        schedule_pl->inactiveFrames, schedule_pl->framesPerSlot,
+        schedule_pl->maxRetransmit);
+    } else {
+      SET_ESTATE(S_ERROR_8);
+    }
+  }
+
   async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    signal CXTDMA.sendDone(msg, len, frameNum, error);
+    if ((state == S_R_RUNNING) && (frameNum == 0)){
+      post signalScheduled();
+    } else {
+      signal CXTDMA.sendDone(msg, len, frameNum, error);
+    }
   }
  
-  norace cx_schedule_t lastSchedule;
 
   task void processReceive(){
     TMP_STATE;
@@ -234,6 +250,9 @@ module TDMASchedulerP{
       } else {
 //        printf("updated\r\n");
       }
+      signal TDMAScheduler.scheduleReceived(lastSchedule.activeFrames,
+        lastSchedule.inactiveFrames, lastSchedule.framesPerSlot,
+        lastSchedule.maxRetransmit);
     }
   }
 
@@ -276,6 +295,7 @@ module TDMASchedulerP{
       atomic updatePending = FALSE;
       printf("Ignore\r\n");
     }
+    //TODO: only signal up if we are in a synched state?
     return signal CXTDMA.receive(msg, len, frameNum);
   }
 
