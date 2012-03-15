@@ -23,12 +23,14 @@ configuration TestAppC{
   components Rf1aCXPacketC;
   Rf1aCXPacketC.SubPacket -> Ieee154Packet;
   Rf1aCXPacketC.Ieee154Packet -> Ieee154Packet;
+  Rf1aCXPacketC.Rf1aPacket -> Ieee154Packet;
 
   components Rf1aAMPacketC as AMPacket;
   AMPacket.SubPacket -> Rf1aCXPacketC;
   AMPacket.Ieee154Packet -> Ieee154Packet;
   AMPacket.Rf1aPacket -> Ieee154Packet;
   AMPacket.ActiveMessageAddress -> Ieee154AMAddressC;
+  Rf1aCXPacketC.AMPacket -> AMPacket;
 
   components CXTDMAPhysicalC;
   CXTDMAPhysicalC.HplMsp430Rf1aIf -> Rf1aPhysicalC;

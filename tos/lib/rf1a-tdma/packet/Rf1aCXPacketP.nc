@@ -3,13 +3,25 @@
 module Rf1aCXPacketP{
   provides interface CXPacket;
   provides interface Packet;
+  uses interface AMPacket as AMPacket;
   uses interface Packet as SubPacket;
+  uses interface Rf1aPacket; 
   uses interface Ieee154Packet;
   uses interface ActiveMessageAddress;
 } implementation {
+  //this should probably be longer, right?
+  uint8_t cxSN = 0;
 
   cx_header_t* getHeader(message_t* msg){
     return (cx_header_t*)(call SubPacket.getPayload(msg, sizeof(cx_header_t)));
+  }
+
+  command void CXPacket.init(message_t* msg){
+    call Rf1aPacket.configureAsData(msg);
+    call AMPacket.setSource(msg, call AMPacket.address());
+    call Ieee154Packet.setPan(msg, call Ieee154Packet.localPan());
+    call CXPacket.setCount(msg, 0);
+    call CXPacket.newSn(msg);
   }
 
   command void Packet.clear(message_t* msg) {
@@ -58,8 +70,10 @@ module Rf1aCXPacketP{
     return getHeader(amsg)->sn;
   }
 
-  command void CXPacket.setSn(message_t* amsg, uint8_t cxsn){
-    getHeader(amsg)->sn = cxsn;
+  async command void CXPacket.newSn(message_t* amsg){
+    atomic{
+      getHeader(amsg)->sn = cxSN ++;
+    }
   }
 
   command uint8_t CXPacket.count(message_t* amsg){

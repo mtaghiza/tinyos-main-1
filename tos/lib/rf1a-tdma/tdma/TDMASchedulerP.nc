@@ -62,12 +62,10 @@ module TDMASchedulerP{
   norace cx_schedule_t lastSchedule;
 
   void setupPacket(uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
-    call Rf1aPacket.configureAsData(schedule_msg);
-    call AMPacket.setSource(schedule_msg, call AMPacket.address());
-    call Ieee154Packet.setPan(schedule_msg, call Ieee154Packet.localPan());
+    call CXPacket.init(schedule_msg);
+
     call AMPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(schedule_msg, AM_BROADCAST_ADDR);
-    call CXPacket.setCount(schedule_msg, 0);
     call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
     if (schedule_pl == NULL){
       schedule_pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
@@ -209,6 +207,11 @@ module TDMASchedulerP{
   }
 
   task void signalScheduled(){
+    TMP_STATE;
+    CACHE_STATE;
+    if (CHECK_STATE(S_R_RUNNING)){
+      call CXPacket.newSn(schedule_msg);
+    }
     if (schedule_pl != NULL){
       signal TDMAScheduler.scheduleReceived(schedule_pl->activeFrames,
         schedule_pl->inactiveFrames, schedule_pl->framesPerSlot,
@@ -287,13 +290,13 @@ module TDMASchedulerP{
         lastSchedule.frameLen = pl->frameLen;
         lastSchedule.activeFrames = pl->activeFrames;
         lastSchedule.inactiveFrames = pl->inactiveFrames;
-  //      lastSchedule.framesPerSlot = pl->framesPerSlot;
-  //      lastSchedule.maxRetransmit = pl->maxRetransmit;
+        lastSchedule.framesPerSlot = pl->framesPerSlot;
+        lastSchedule.maxRetransmit = pl->maxRetransmit;
         post processReceive();
       }
     }else{
-      atomic updatePending = FALSE;
-      printf("Ignore\r\n");
+      //this layer doesn't care what it is.
+//      return msg;
     }
     //TODO: only signal up if we are in a synched state?
     return signal CXTDMA.receive(msg, len, frameNum);

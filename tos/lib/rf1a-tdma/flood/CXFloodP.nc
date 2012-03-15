@@ -1,5 +1,6 @@
 
  #include "Rf1a.h"
+ #include "CXFlood.h"
 module CXFloodP{
   provides interface Send;
   provides interface Receive;
@@ -13,7 +14,7 @@ module CXFloodP{
   message_t* tx_msg;
   uint8_t tx_len; 
 
-  am_addr_t lastSrc;
+  am_addr_t lastSrc = 0x00;
   uint8_t lastSn;
 
   enum{
@@ -68,6 +69,10 @@ module CXFloodP{
         tx_msg = msg;
         tx_len = len;
         txPending = TRUE;
+        //TODO: prepare packet
+        call CXPacket.init(msg);
+        call CXPacket.setType(msg, CX_TYPE_FLOOD);
+
         return SUCCESS;
       }else{
         return EBUSY;
@@ -95,7 +100,8 @@ module CXFloodP{
     if (txPending && (frameNum == myStart)){
       return RF1A_OM_FSTXON;
     } else if (fwdPending){
-      if (frameNum < lastFwd){
+//      printf("ft %u: lf %u ", frameNum, lastFwd);
+      if (frameNum <= lastFwd){
         return RF1A_OM_FSTXON;
       } else {
         //done forwarding, get ready for next packet.
@@ -168,8 +174,9 @@ module CXFloodP{
       uint16_t frameNum){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
-    
-    if ((thisSn != lastSn) && (thisSrc != lastSrc)){
+//    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
+    if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+      fwdPending = TRUE;
       lastFwd = frameNum + maxRetransmit;
       fwd_msg = msg;
       fwd_len = len;
@@ -200,6 +207,8 @@ module CXFloodP{
       maxRetransmit = maxRetransmit_;
       myStart = (framesPerSlot * TOS_NODE_ID);
     }
+//    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
+//      maxRetransmit, myStart);
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime){ }
