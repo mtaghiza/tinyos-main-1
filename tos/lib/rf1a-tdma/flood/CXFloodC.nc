@@ -1,4 +1,4 @@
-configuration FloodC{
+configuration CXFloodC{
   provides interface Send;
   provides interface Receive;
 
@@ -6,11 +6,11 @@ configuration FloodC{
   uses interface CXTDMA;
   uses interface TDMAScheduler;
 } implementation {
-  components FloodP;
+  components CXFloodP;
   
-  Send = FloodP.Send;
-  Receive = FloodP.Receive;
-  CXPacket = FloodP.CXPacket;
-  CXTDMA = FloodP.CXTDMA;
-  TDMAScheduler = FloodP.TDMAScheduler;
+  Send = CXFloodP.Send;
+  Receive = CXFloodP.Receive;
+  CXPacket = CXFloodP.CXPacket;
+  CXTDMA = CXFloodP.CXTDMA;
+  TDMAScheduler = CXFloodP.TDMAScheduler;
 }

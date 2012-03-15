@@ -1,3 +1,5 @@
+
+ #include "schedule.h"
 module TDMASchedulerP{
   provides interface SplitControl;
   provides interface CXTDMA;

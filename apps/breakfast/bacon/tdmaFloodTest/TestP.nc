@@ -1,24 +1,22 @@
 /**
- * Test CXTDMA logic
+ * Test CXTDMA flood component
  * 
  * @author Doug Carlson <carlson@cs.jhu.edu>
  */
 
 #include <stdio.h>
 #include "decodeError.h"
-#include "Rf1a.h"
 #include "message.h"
 #include "CXTDMA.h"
-#include "schedule.h"
 
 module TestP {
   uses interface Boot;
   uses interface StdControl as UartControl;
   uses interface UartStream;
 
-  uses interface SplitControl;
-  uses interface CXTDMA;
+  uses interface TDMARootControl;
 
+  uses interface SplitControl;
   uses interface AMPacket;
 
   uses interface Send;
@@ -77,16 +75,23 @@ module TestP {
     post printStatus();
   }
 
+  task void setRootSchedule(){
+    call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
+        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 1);
+  }
+
   event void SplitControl.startDone(error_t error){
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
-
+    if (isRoot){
+      post setRootSchedule();
+    }
   }
 
   event void SplitControl.stopDone(error_t error){
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
-  event void Send.sendDone(message_t* msg, uint8_t len, error_t error){
+  event void Send.sendDone(message_t* msg, error_t error){
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
@@ -153,17 +158,16 @@ module TestP {
     }
   }
 
-  event bool TDMAScheduler.isRoot(){
+  event bool TDMARootControl.isRoot(){
     return isRoot;
   }
 
-  event void TDMAScheduler.scheduleReceived(uint16_t activeFrames, 
-      uint16_t inactiveFrames, uint16_t framesPerSlot, 
-      uint16_t maxRetransmit){
-    printf("SR\r\n");
+  event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
+    printf("RX\r\n");
+    return msg;
   }
 
-   //unused events
+  //unused events
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf_, uint16_t len,

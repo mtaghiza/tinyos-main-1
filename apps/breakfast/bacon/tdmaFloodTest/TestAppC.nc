@@ -47,15 +47,16 @@ configuration TestAppC{
   TDMASchedulerC.Rf1aPacket -> Ieee154Packet;
   TDMASchedulerC.Ieee154Packet -> Ieee154Packet;
 
-  components FloodC;
-  FloodC.CXTDMA -> TDMASchedulerC.CXTDMA;
-  FloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
-  FloodC.CXPacket -> Rf1aCXPacketC;
+  components CXFloodC;
+  CXFloodC.CXTDMA -> TDMASchedulerC.CXTDMA;
+  CXFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
+  CXFloodC.CXPacket -> Rf1aCXPacketC;
 
 
   TestP.SplitControl -> TDMASchedulerC.SplitControl;
+  TestP.TDMARootControl -> TDMASchedulerC.TDMARootControl;
   TestP.AMPacket -> AMPacket;
-  TestP.Send -> FloodC.Send;
-  TestP.Receive -> FloodC.Receive;
+  TestP.Send -> CXFloodC.Send;
+  TestP.Receive -> CXFloodC.Receive;
   
 }
