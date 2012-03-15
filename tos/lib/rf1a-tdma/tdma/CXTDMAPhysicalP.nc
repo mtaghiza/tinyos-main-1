@@ -260,7 +260,7 @@ module CXTDMAPhysicalP {
     //  synch), or we started receiving, but gave up.
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
         || checkState(S_TX_READY) || checkState(S_RECEIVING)){
-//      printf("PFS0  %s\r\n", decodeStatus());
+//      printf("PFS %s\r\n", decodeStatus());
       //7.75 uS
       PFS_TOGGLE_PIN;
       switch(signal CXTDMA.frameType(frameNum)){

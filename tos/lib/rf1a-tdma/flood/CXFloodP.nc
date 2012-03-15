@@ -50,7 +50,12 @@ module CXFloodP{
   uint16_t framesPerSlot;
   uint16_t curFrame;
   uint16_t activeFrames;
-  uint16_t maxRetransmit;
+
+  //initialize this to 1: when we receive the very first schedule, we
+  //get notified of its reception before we get the new schedule. by
+  //setting this to 1 initially, we can get faster startup across the
+  //network.
+  uint16_t maxRetransmit = 1;
 
   uint16_t myStart;
   uint16_t lastFwd;
@@ -146,6 +151,7 @@ module CXFloodP{
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
+    printf("sd %u lf %u\r\n", frameNum, lastFwd);
     if (error != SUCCESS){
       printf("sd!\r\n");
       SET_ESTATE(S_ERROR_1);
@@ -174,8 +180,10 @@ module CXFloodP{
       uint16_t frameNum){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
-//    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
+    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+      lastSn = thisSn;
+      lastSrc = thisSrc;
       fwdPending = TRUE;
       lastFwd = frameNum + maxRetransmit;
       fwd_msg = msg;

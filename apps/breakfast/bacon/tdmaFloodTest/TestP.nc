@@ -86,7 +86,7 @@ module TestP {
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+//    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
     if (isRoot){
       post setRootSchedule();
     }
