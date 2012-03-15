@@ -56,6 +56,8 @@ configuration TestAppC{
   TestP.SplitControl -> TDMASchedulerC.SplitControl;
   TestP.TDMARootControl -> TDMASchedulerC.TDMARootControl;
   TestP.AMPacket -> AMPacket;
+  TestP.Packet -> Rf1aCXPacketC;
+
   TestP.Send -> CXFloodC.Send;
   TestP.Receive -> CXFloodC.Receive;
   

@@ -18,6 +18,7 @@ module TestP {
 
   uses interface SplitControl;
   uses interface AMPacket;
+  uses interface Packet;
 
   uses interface Send;
   uses interface Receive;
@@ -33,6 +34,10 @@ module TestP {
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_len;
+
+  typedef nx_struct test_packet_t{
+    nx_uint32_t sn;
+  } test_packet_t;
   
   //schedule info
   uint16_t _framesPerSlot;
@@ -91,11 +96,23 @@ module TestP {
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
+  task void txTask(){
+    error_t error;
+    test_packet_t* pl = call Packet.getPayload(tx_msg,
+      sizeof(test_packet_t));
+    pl -> sn += TOS_NODE_ID;
+    error = call Send.send(tx_msg, sizeof(test_packet_t));
+    printf("Send.Send: %s\r\n", decodeError(error));
+  }
+
   event void Send.sendDone(message_t* msg, error_t error){
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
 //      printf("sd\r\n");
+    }
+    if (isTransmitting){
+      post txTask();
     }
   }
 
@@ -125,6 +142,13 @@ module TestP {
     post printStatus();
   }
 
+  task void toggleTX(){
+    isTransmitting = !isTransmitting;
+    if (isTransmitting){
+      post txTask();
+    }
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch(byte){
       case 'q':
@@ -148,6 +172,10 @@ module TestP {
       case 'f':
         printf("Become Forwarder\r\n");
         post becomeForwarder();
+        break;
+      case 't':
+        printf("Toggle TX\r\n");
+        post toggleTX();
         break;
       case '\r':
         printf("\r\n");
