@@ -62,7 +62,6 @@ configuration TestAppC{
   #warning TDMA: IS ROOT
   components TDMARootC as RootC;
   #else
-  #warning TDMA: NONROOT
   components TDMANonRootC as RootC;
   #endif
   RootC.SubSplitControl -> TDMASchedulerC.SplitControl;

@@ -16,6 +16,17 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
 TDMA_ROOT?=0
 CFLAGS+=-DTDMA_ROOT=$(TDMA_ROOT)
 
+#width of "ring"
+TDMA_MAX_RETRANSMIT?=2
+#determines length of frame (along with ring width)
+TDMA_MAX_DEPTH?=4
+#determines total number of slots
+TDMA_MAX_NODES?=3
+
+CFLAGS+= -DTDMA_MAX_DEPTH=$(TDMA_MAX_DEPTH)
+CFLAGS+= -DTDMA_MAX_NODES=$(TDMA_MAX_NODES)
+CFLAGS+= -DTDMA_MAX_RETRANSMIT=$(TDMA_MAX_RETRANSMIT)
+
 #CFLAGS += -DDEBUG_CX_TDMA_P_STATE
 CFLAGS += -DDEBUG_CX_TDMA_P_STATE_ERROR
 

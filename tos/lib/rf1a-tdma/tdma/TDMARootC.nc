@@ -33,11 +33,26 @@ module TDMARootC{
       printf("send done: %s \r\n", decodeError(error));
     }
   }
+  
+  #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
+  #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
+  #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
+  #define TDMA_ROOT_INACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT) 
+  #else
+  #error Must define TDMA_MAX_NODES, TDMA_MAX_DEPTH, and TDMA_MAX_RETRANSMIT
+  #endif
+  
 
   event void SubSplitControl.startDone(error_t error){
     if (SUCCESS == error){
       error = call TDMARootControl.setSchedule(DEFAULT_TDMA_FRAME_LEN,
-        DEFAULT_TDMA_FW_CHECK_LEN, 8, 8, 2, 2, 2*TOS_NODE_ID, schedule_msg);
+        DEFAULT_TDMA_FW_CHECK_LEN, 
+        TDMA_ROOT_ACTIVE_FRAMES, 
+        TDMA_ROOT_INACTIVE_FRAMES, 
+        TDMA_ROOT_FRAMES_PER_SLOT, 
+        TDMA_MAX_RETRANSMIT, 
+        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID, 
+        schedule_msg);
       if (SUCCESS == error){
         post announceSchedule();
       }
