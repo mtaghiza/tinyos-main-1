@@ -460,6 +460,7 @@ module CXTDMAPhysicalP {
     //  in a well-defined place. Should be enough time while
     //  preamble/synch are starting, I hope (?)
     call CXPacket.incCount((message_t*)*buffer);
+    *len += sizeof(rf1a_ieee154_t);
     return ret;
   }
 

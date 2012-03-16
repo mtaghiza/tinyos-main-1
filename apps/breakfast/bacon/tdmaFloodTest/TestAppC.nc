@@ -58,9 +58,11 @@ configuration TestAppC{
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
 
-  #if TDMA_ROOT == TRUE
+  #if TDMA_ROOT == 1
+  #warning TDMA: IS ROOT
   components TDMARootC as RootC;
   #else
+  #warning TDMA: NONROOT
   components TDMANonRootC as RootC;
   #endif
   RootC.SubSplitControl -> TDMASchedulerC.SplitControl;

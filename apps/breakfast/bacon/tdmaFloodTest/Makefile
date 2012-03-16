@@ -13,7 +13,7 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/flood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
 
-TDMA_ROOT?=FALSE
+TDMA_ROOT?=0
 CFLAGS+=-DTDMA_ROOT=$(TDMA_ROOT)
 
 #CFLAGS += -DDEBUG_CX_TDMA_P_STATE

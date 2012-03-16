@@ -266,7 +266,7 @@ module TDMASchedulerP{
   //      printf("RX schedule\r\n");
   //      lastSchedule.rootStart = pl->rootStart;
         lastSchedule.originalFrame = 
-          call CXPacket.count(msg) + pl->originalFrame;
+          call CXPacket.count(msg) + pl->originalFrame - 1;
         lastSchedule.frameLen = pl->frameLen;
         lastSchedule.activeFrames = pl->activeFrames;
         lastSchedule.inactiveFrames = pl->inactiveFrames;

@@ -15,7 +15,7 @@ typedef nx_struct cx_schedule_t {
 } cx_schedule_t;
 
 #ifndef TDMA_ROOT
-#define TDMA_ROOT FALSE
+#define TDMA_ROOT 0
 #endif
 
 #endif

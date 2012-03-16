@@ -69,10 +69,11 @@ module CXFloodP{
   uint8_t rx_len;
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+//    printf("Somebody called send\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
-        tx_len = len + sizeof(cx_header_t);
+        tx_len = len + sizeof(cx_header_t) ;
         //TODO: where do we account for 15.4 header len?
         txPending = TRUE;
         call CXPacket.init(msg);
@@ -94,17 +95,17 @@ module CXFloodP{
     //TODO: might want to make this a little more flexible: for
     //instance, root is going to want to claim slot 0 for the
     //schedule, but may want another slot for its own data.
-    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
+//    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
     if (txPending 
         && (frameNum >= myStart) 
         && (frameNum < (myStart + maxRetransmit))){
-      printf("txo\r\n");
+//      printf("txo\r\n");
       return RF1A_OM_FSTXON;
     } else if (frameNum < (thisStart + txLeft)){
-      printf("txf\r\n");
+//      printf("txf\r\n");
       return RF1A_OM_FSTXON;
     } else {
-      printf("r\r\n");
+//      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -168,7 +169,7 @@ module CXFloodP{
       uint16_t frameNum){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
-    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
+//    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
       lastSn = thisSn;
       lastSrc = thisSrc;
@@ -178,13 +179,13 @@ module CXFloodP{
       fwd_len = len;
       if (! rxOutstanding){
         message_t* swap = rx_msg;
-        printf("rx.\r\n");
+//        printf("rx.\r\n");
         rxOutstanding = TRUE;
         rx_msg = msg;
         rx_len = len;
         return swap;
       } else {
-        printf("rx!\r\n");
+//        printf("rx!\r\n");
         SET_ESTATE(S_ERROR_2);
         return msg;
       }
@@ -203,15 +204,13 @@ module CXFloodP{
       maxRetransmit = maxRetransmit_;
       myStart = (framesPerSlot * TOS_NODE_ID);
     }
-    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
-      maxRetransmit, myStart);
+//    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
+//      maxRetransmit, myStart);
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ 
     if (txPending && (frameNum == myStart)){
-//      fwd_msg = tx_msg;
-//      fwd_len = tx_len;
       thisStart = frameNum;
       txLeft = maxRetransmit;
       txSent = TRUE;
