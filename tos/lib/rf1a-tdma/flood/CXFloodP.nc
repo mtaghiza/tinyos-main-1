@@ -97,9 +97,9 @@ module CXFloodP{
 //    printf("ft %x %u %u %u %u:", txPending, maxRetransmit, frameNum, myStart,
 //      txLeft);
 
-    if (txPending 
-        && (frameNum >= myStart) 
-        && (frameNum < (myStart + maxRetransmit))){
+    if (txPending && (frameNum == myStart)){
+//        && (frameNum >= myStart) 
+//        && (frameNum < (myStart + maxRetransmit))){
 //      printf("txo\r\n");
       return RF1A_OM_FSTXON;
     } else if (txLeft){
@@ -141,12 +141,13 @@ module CXFloodP{
 
   task void txSuccessTask(){
     txPending = FALSE;
-    printf("TXS %u\r\n", call CXPacket.sn(tx_msg));
+    txSent = FALSE;
+//    printf("TXS %u\r\n", call CXPacket.sn(tx_msg));
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void reportReceive(){
-    printf("RX %u\r\n", call CXPacket.sn(rx_msg));
+//    printf("RX %u\r\n", call CXPacket.sn(rx_msg));
     atomic{
       if (rxOutstanding){
         rxOutstanding = FALSE;
@@ -186,7 +187,6 @@ module CXFloodP{
       uint16_t frameNum){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
-//    printf("rx %p %x %u\r\n", msg, thisSrc, thisSn);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
       lastSn = thisSn;
       lastSrc = thisSrc;
@@ -207,6 +207,7 @@ module CXFloodP{
         return msg;
       }
     } else {
+//      printf("rxd %p %x %u\r\n", msg, thisSrc, thisSn);
 //      printf("rxd\r\n");
       return msg;
     }

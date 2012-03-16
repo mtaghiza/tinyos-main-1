@@ -71,6 +71,7 @@ module TestP {
     printf("S: stop \r\n");
     printf("f: forwarder \r\n");
     printf("t: toggle is-transmitting \r\n");
+    printf("x: send once \r\n");
     printf("?: print status\r\n");
     printf("========================\r\n");
     post printStatus();
@@ -89,7 +90,7 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    pl -> sn += TOS_NODE_ID;
+    pl -> sn += (1+TOS_NODE_ID);
     error = call Send.send(tx_msg, sizeof(test_packet_t));
     printf("Send.Send: %s\r\n", decodeError(error));
   }
@@ -98,7 +99,7 @@ module TestP {
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
-//      printf("sd\r\n");
+      printf("DSD %x\r\n", error);
     }
     if (isTransmitting){
       post txTask();
@@ -148,6 +149,9 @@ module TestP {
         printf("Toggle TX\r\n");
         post toggleTX();
         break;
+      case 'x':
+        post txTask();
+        break;
       case '\r':
         printf("\r\n");
         break;
@@ -158,7 +162,7 @@ module TestP {
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("RX\r\n");
+    printf("RXD\r\n");
     return msg;
   }
 
