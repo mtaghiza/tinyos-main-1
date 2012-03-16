@@ -1,5 +1,4 @@
 module CXTDMADispatchP{
-  provides interface CXTDMAReceive[uint8_t routingMethod];
   provides interface CXTDMA[uint8_t clientId];
 
   uses interface CXTDMA as SubCXTDMA;
