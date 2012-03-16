@@ -43,7 +43,6 @@ module CXFloodP{
   bool txPending;
   bool txSent;
   uint16_t txLeft;
-  uint16_t thisStart;
   
   uint8_t state;
   SET_STATE_DEF
@@ -95,17 +94,19 @@ module CXFloodP{
     //TODO: might want to make this a little more flexible: for
     //instance, root is going to want to claim slot 0 for the
     //schedule, but may want another slot for its own data.
-    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
+//    printf("ft %x %u %u %u %u:", txPending, maxRetransmit, frameNum, myStart,
+//      txLeft);
+
     if (txPending 
         && (frameNum >= myStart) 
         && (frameNum < (myStart + maxRetransmit))){
-      printf("txo\r\n");
+//      printf("txo\r\n");
       return RF1A_OM_FSTXON;
-    } else if (frameNum < (thisStart + txLeft)){
-      printf("txf\r\n");
+    } else if (txLeft){
+//      printf("txf\r\n");
       return RF1A_OM_FSTXON;
     } else {
-      printf("r\r\n");
+//      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -140,10 +141,12 @@ module CXFloodP{
 
   task void txSuccessTask(){
     txPending = FALSE;
+    printf("TXS %u\r\n", call CXPacket.sn(tx_msg));
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void reportReceive(){
+    printf("RX %u\r\n", call CXPacket.sn(rx_msg));
     atomic{
       if (rxOutstanding){
         rxOutstanding = FALSE;
@@ -164,16 +167,16 @@ module CXFloodP{
     lastSn = call CXPacket.sn(msg);
     if (txLeft > 0){
       txLeft --;
+//      printf("dtl %u @ %u\r\n", txLeft, frameNum);
     }else{
       printf("sent extra?\r\n");
     }
     if (txLeft == 0){
-      thisStart = 0;
       if (txSent){
-        printf("Odone\r\n");
+//        printf("Odone\r\n");
         post txSuccessTask();
       } else {
-        printf("Rdone\r\n");
+//        printf("Rdone\r\n");
         post reportReceive();
       }
     }
@@ -188,7 +191,7 @@ module CXFloodP{
       lastSn = thisSn;
       lastSrc = thisSrc;
       txLeft = maxRetransmit;
-      thisStart = frameNum + 1;
+//      printf("rtl %u @ %u\r\n", txLeft, frameNum);
       fwd_msg = msg;
       fwd_len = len;
       if (! rxOutstanding){
@@ -204,7 +207,7 @@ module CXFloodP{
         return msg;
       }
     } else {
-      printf("rxd\r\n");
+//      printf("rxd\r\n");
       return msg;
     }
   }
@@ -225,7 +228,6 @@ module CXFloodP{
   async event void CXTDMA.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ 
     if (txPending && (frameNum == myStart)){
-      thisStart = frameNum;
       txLeft = maxRetransmit;
       txSent = TRUE;
     }
