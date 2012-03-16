@@ -137,8 +137,10 @@ module CXFloodP{
   }
 
   task void txSuccessTask(){
-    txPending = FALSE;
-    txSent = FALSE;
+    atomic {
+      txPending = FALSE;
+      txSent = FALSE;
+    }
 //    printf("TXS %u\r\n", call CXPacket.sn(tx_msg));
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
