@@ -281,21 +281,14 @@ module TDMASchedulerP{
     return signal CXTDMA.receive(msg, len, frameNum);
   }
 
-  async event void SubCXTDMA.frameStarted(uint32_t startTime){
-////If the physical layer was actually fully interrupt-driven, then we could
-////fill in the SFD time of the transmitter at the end of the packet.
-////But, it's not, so it's already in the TXFIFO. boo.
-//    if ( state == S_R_RUNNING  && frameNum == 0){
-//      cx_schedule_t* pl = 
-//        (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
-//     pl -> rootTime = startTime
-//    }
+  async event void SubCXTDMA.frameStarted(uint32_t startTime, 
+      uint16_t frameNum){
     if (!updatePending){
       lastFs = startTime;
     } else {
       SET_ESTATE(S_ERROR_8);
     }
-    signal CXTDMA.frameStarted(startTime);
+    signal CXTDMA.frameStarted(startTime, frameNum);
     //TODO: add another event that indicates "we're inactive now"?
   }
 

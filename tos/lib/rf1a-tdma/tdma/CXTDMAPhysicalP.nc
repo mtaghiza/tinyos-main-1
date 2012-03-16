@@ -280,6 +280,8 @@ module CXTDMAPhysicalP {
           //2.75 uS
           PFS_TOGGLE_PIN;
   
+          captureMode = MSP430TIMER_CM_RISING;
+          call SynchCapture.captureRisingEdge();
   //        printf("TA0CTL   %x\r\n", TA0CTL);
   //        printf("TA0CCTL3 %x\r\n", TA0CCTL3);
   //        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
@@ -506,14 +508,14 @@ module CXTDMAPhysicalP {
       if (checkState(S_RX_READY)){
         call FrameWaitAlarm.stop();
         setState(S_RECEIVING);
-        signal CXTDMA.frameStarted(lastRECapture);
+        signal CXTDMA.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: revisit the self-adjustment logic here.
 //        int32_t delta = lastRECapture - 
 //          (lastFsa + SFD_TIME );
 //        printf("d %ld\r\n", delta);
 //        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
-        signal CXTDMA.frameStarted(lastRECapture);
+        signal CXTDMA.frameStarted(lastRECapture, frameNum);
       } else {
         setState(S_ERROR_9);
       }

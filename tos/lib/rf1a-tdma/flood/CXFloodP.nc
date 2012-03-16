@@ -41,7 +41,9 @@ module CXFloodP{
   };
 
   bool txPending;
-  uint16_t transmitsLeft;
+  bool txSent;
+  uint16_t txLeft;
+  uint16_t thisStart;
   
   uint8_t state;
   SET_STATE_DEF
@@ -57,7 +59,6 @@ module CXFloodP{
   uint16_t maxRetransmit = 1;
 
   uint16_t myStart;
-  uint16_t lastFwd;
 
   message_t* fwd_msg;
   uint8_t fwd_len;
@@ -93,19 +94,26 @@ module CXFloodP{
     //TODO: might want to make this a little more flexible: for
     //instance, root is going to want to claim slot 0 for the
     //schedule, but may want another slot for its own data.
-    printf("ft %u %u\r\n", frameNum, myStart);
-    if (txPending && (frameNum == myStart)){
+    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
+    if (txPending 
+        && (frameNum >= myStart) 
+        && (frameNum < (myStart + maxRetransmit))){
+      printf("txo\r\n");
       return RF1A_OM_FSTXON;
-    } else if (frameNum < (lastSent + txLeft)){
+    } else if (frameNum < (thisStart + txLeft)){
+      printf("txf\r\n");
       return RF1A_OM_FSTXON;
     } else {
+      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-    if (txPending && (frameNum == myStart)){
+    if (txPending 
+        && (frameNum >= myStart) 
+        && (frameNum < (myStart + maxRetransmit))){
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
@@ -118,6 +126,7 @@ module CXFloodP{
   }
 
   task void txSuccessTask(){
+    txPending = FALSE;
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
 
@@ -134,28 +143,22 @@ module CXFloodP{
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    printf("sd %u lf %u %s\r\n", frameNum, lastFwd, decodeError(error));
     if (error != SUCCESS){
       printf("sd!\r\n");
       SET_ESTATE(S_ERROR_1);
     }
-
-    //we just sent an origin frame.
-    if (txPending && (frameNum == myStart)){
-      lastSrc = call CXPacket.source(msg);
-      lastSn = call CXPacket.sn(msg);
-      txPending = FALSE;
-      txSent = TRUE;
-      txLeft = maxRetransmits;
-      fwd_msg = tx_msg;
-      fwd_len = tx_len;
+    if (txLeft > 0){
+      txLeft --;
+    }else{
+      printf("sent extra?\r\n");
     }
-    txLeft --;
-    lastSent = frameNum;
     if (txLeft == 0){
+      thisStart = 0;
       if (txSent){
+        printf("Odone\r\n");
         post txSuccessTask();
       } else {
+        printf("Rdone\r\n");
         post reportReceive();
       }
     }
@@ -170,8 +173,7 @@ module CXFloodP{
       lastSn = thisSn;
       lastSrc = thisSrc;
       txLeft = maxRetransmit;
-      //we are going to send it next frame.
-      lastSent = frameNum + 1;
+      thisStart = frameNum + 1;
       fwd_msg = msg;
       fwd_len = len;
       if (! rxOutstanding){
@@ -205,7 +207,16 @@ module CXFloodP{
       maxRetransmit, myStart);
   }
 
-  async event void CXTDMA.frameStarted(uint32_t startTime){ }
+  async event void CXTDMA.frameStarted(uint32_t startTime, 
+      uint16_t frameNum){ 
+    if (txPending && (frameNum == myStart)){
+//      fwd_msg = tx_msg;
+//      fwd_len = tx_len;
+      thisStart = frameNum;
+      txLeft = maxRetransmit;
+      txSent = TRUE;
+    }
+  }
 
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
