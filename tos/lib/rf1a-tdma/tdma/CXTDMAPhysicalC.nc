@@ -24,7 +24,6 @@ configuration CXTDMAPhysicalC {
   Rf1aPacket = CXTDMAPhysicalP;
   CXPacket = CXTDMAPhysicalP;
 
-  //TODO: Msp430Capture
   components new AlarmMicro32C() as FrameStartAlarm;
   components new AlarmMicro32C() as PrepareFrameStartAlarm;
   //This could be 32khz, not so important

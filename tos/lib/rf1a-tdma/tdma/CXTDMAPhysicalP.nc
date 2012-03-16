@@ -180,14 +180,8 @@ module CXTDMAPhysicalP {
    */
   event void Resource.granted(){
     if (checkState(S_STARTING)){
-      //TODO: state should be S_START_READY: otherwise, fs.fired will
-      //see that we're idle and error.
       setState(S_IDLE);
-      printStatus();
-      //eh, just leave pfs running all the time.
-
-
-  
+//      printStatus();
       signal SplitControl.startDone(SUCCESS);
     }
   }
@@ -235,7 +229,7 @@ module CXTDMAPhysicalP {
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           //TODO: post task to indicate that we are done with the
-          //active phase
+          //active phase?
           setState(S_INACTIVE);
         } else {
           setState(S_ERROR_1);
@@ -459,11 +453,13 @@ module CXTDMAPhysicalP {
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
     bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum); 
-    //increment hop-count, set the tx timestamp if we are the origin.
-    call CXPacket.incCount((message_t*)*buffer);
-    if (call CXPacket.source((message_t*)*buffer) == TOS_NODE_ID){
+    //increment hop-count, set the tx timestamp if we are the origin
+    //  and this is the first transmission.
+    if ((call CXPacket.source((message_t*)*buffer) == TOS_NODE_ID) 
+        && (call CXPacket.sn((message_t*)buffer)) == 0 ){
       call CXPacket.setTimestamp((message_t*)*buffer, lastRECapture);
     }
+    call CXPacket.incCount((message_t*)*buffer);
     *len += sizeof(rf1a_ieee154_t);
     return ret;
   }
