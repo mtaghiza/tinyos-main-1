@@ -59,7 +59,9 @@ module TDMASchedulerP{
   uint16_t _framesPerSlot;
   uint16_t _maxRetransmit; 
 
-  void setupPacket(message_t* schedule_msg, uint32_t frameLen, uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames, uint16_t framesPerSlot, uint8_t maxRetransmit){
+  void setupPacket(message_t* schedule_msg, uint32_t frameLen,
+  uint32_t fwCheckLen, uint16_t activeFrames, uint16_t inactiveFrames,
+  uint16_t framesPerSlot, uint8_t maxRetransmit, uint16_t originalFrame){
     cx_schedule_t* schedule_pl;
     call CXPacket.init(schedule_msg);
 
@@ -68,7 +70,7 @@ module TDMASchedulerP{
     call CXPacket.setType(schedule_msg, CX_TYPE_SCHEDULE);
     schedule_pl = (cx_schedule_t*)call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
     schedule_pl -> rootStart = 0;
-    schedule_pl -> originalFrame = 0;
+    schedule_pl -> originalFrame = originalFrame;
     schedule_pl -> frameLen = frameLen;
     schedule_pl -> activeFrames = activeFrames;
     schedule_pl -> inactiveFrames = inactiveFrames;
@@ -156,19 +158,20 @@ module TDMASchedulerP{
   command error_t TDMARootControl.setSchedule(uint32_t frameLen, 
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint16_t framesPerSlot, 
-      uint16_t maxRetransmit, message_t* announcement){
+      uint16_t maxRetransmit, uint16_t originalFrame, 
+      message_t* announcement){
     TMP_STATE;
     CACHE_STATE;
     if (CHECK_STATE(S_R_UNSCHEDULED) || CHECK_STATE(S_R_RUNNING)){
       error_t error = call SubCXTDMA.setSchedule(
-        call SubCXTDMA.getNow(), 0, frameLen, fwCheckLen, activeFrames, inactiveFrames);
+        call SubCXTDMA.getNow(), originalFrame, frameLen, fwCheckLen, activeFrames, inactiveFrames);
       if (SUCCESS == error){
         _activeFrames = activeFrames;
         _inactiveFrames = inactiveFrames;
         _framesPerSlot = framesPerSlot;
         _maxRetransmit = maxRetransmit;
         setupPacket(announcement, frameLen, fwCheckLen, activeFrames,
-          inactiveFrames, framesPerSlot, maxRetransmit);
+          inactiveFrames, framesPerSlot, maxRetransmit, originalFrame);
         post signalScheduled();
         SET_STATE(S_R_RUNNING, S_ERROR_5);
       } else {

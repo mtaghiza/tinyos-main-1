@@ -206,7 +206,7 @@ module CXTDMAPhysicalP {
    */
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
-    P1OUT ^= BIT1;
+    PFS_CYCLE_TOGGLE_PIN;
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
 //    printf("PFS %u %lu (%lu)\r\n", frameNum, 
@@ -388,7 +388,7 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
-    P1OUT ^= BIT3;
+    FS_CYCLE_TOGGLE_PIN;
     //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
@@ -688,11 +688,11 @@ module CXTDMAPhysicalP {
       SS_CLEAR_PIN;
       atomic{
         if (frameNum % 2){
-          P1OUT |=BIT1;
-          P1OUT |=BIT3;
+          PFS_CYCLE_SET_PIN;
+          FS_CYCLE_SET_PIN;
         }else{
-          P1OUT &= ~BIT1;
-          P1OUT &= ~BIT3;
+          PFS_CYCLE_CLEAR_PIN;
+          FS_CYCLE_CLEAR_PIN;
         }
       }
       return SUCCESS;

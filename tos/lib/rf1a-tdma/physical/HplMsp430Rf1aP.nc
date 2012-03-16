@@ -756,9 +756,6 @@ generic module HplMsp430Rf1aP () @safe() {
       uint8_t rc;
       bool entered_rx = FALSE;
       register int16_t loop_limit = RADIO_LOOP_LIMIT;
-      #ifdef DEBUG_TX_4
-      P1OUT |= BIT2;
-      #endif
 
       if (target_fstxon) {
         strobe = RF_SFSTXON;
@@ -766,9 +763,6 @@ generic module HplMsp430Rf1aP () @safe() {
       }
 
       rc = call Rf1aIf.strobe(RF_SNOP);
-      #ifdef DEBUG_TX_1
-      P1OUT |= BIT3;
-      #endif
       if (with_cca) {
         /* CCA test is valid only if in RX mode.  If necessary, enter it. */
         if (RF1A_S_RX != (RF1A_S_MASK & rc)) {
@@ -791,9 +785,6 @@ generic module HplMsp430Rf1aP () @safe() {
           rv = ERETRY;
         }
       }
-      #ifdef DEBUG_TX_1
-      P1OUT &= ~BIT3;
-      #endif
 
       if (SUCCESS == rv) {
         /* Enter the appropriate TX mode.  When things settle, the
@@ -821,9 +812,6 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       }
     }
-    #ifdef DEBUG_TX_4
-    P1OUT &= ~BIT2;
-    #endif
     return rv;
   }
 
@@ -1064,9 +1052,6 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     unsigned int avail;
     unsigned int avail2;
-    #ifdef DEBUG_RX_2
-    P1OUT|=BIT2;
-    #endif
 
     avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     avail = ~avail2;
@@ -1074,9 +1059,6 @@ generic module HplMsp430Rf1aP () @safe() {
       avail = avail2;
       avail2 = 0x7f & call Rf1aIf.readRegister(RXBYTES);
     }
-    #ifdef DEBUG_RX_2
-    P1OUT&=~BIT2;
-    #endif
     return avail;
   }
 
@@ -1115,9 +1097,6 @@ generic module HplMsp430Rf1aP () @safe() {
     int result;
 
     atomic {
-      #ifdef DEBUG_RX
-      P1OUT |= BIT3;
-      #endif
       do {
         unsigned int need;
         unsigned int consume;
@@ -1277,9 +1256,6 @@ generic module HplMsp430Rf1aP () @safe() {
     if (need_post) {
       post receiveData_task();
     }
-    #ifdef DEBUG_RX_4
-    P1OUT |= BIT1;
-    #endif
     //~3 uS from need_post assignment above
     /* Announce the start of a message first, then completion of the
      * message, and finally that we need another receive buffer (if
@@ -1294,47 +1270,20 @@ generic module HplMsp430Rf1aP () @safe() {
       signal Rf1aPhysical.receiveBufferFilled[client](start, received);
     }
     //~7 uS from start of signal checks
-    #ifdef DEBUG_RX
-    P1OUT &= ~BIT3;
-    #endif
   }
       
   
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
                                                                        unsigned int length,
                                                                        rf1a_offmode_t rxOffMode){
-    #ifdef DEBUG_RX_4
-    P1OUT &= ~BIT1;
-    #endif
-    #ifdef DEBUG_RX
-    P2OUT |= BIT4;
-    #endif
-    #ifdef DEBUG_SET_RX_BUFFER
-    P1OUT |= BIT1;
-    #endif
 
 
-    #ifdef DEBUG_SET_RX_BUFFER
-    P1OUT |= BIT2;
-    #endif
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
-      #ifdef DEBUG_RX
-      P2OUT &= ~BIT4;
-      #endif
-      #ifdef DEBUG_SET_RX_BUFFER
-      P1OUT |= BIT1;
-      #endif
       return EOFF;
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
-      #ifdef DEBUG_RX
-      P2OUT &= ~BIT4;
-      #endif
-      #ifdef DEBUG_SET_RX_BUFFER
-      P1OUT |= BIT1;
-      #endif
       return EBUSY;
     }
     /* Buffer and length must be realistic; if either bogus, clear them both
@@ -1343,13 +1292,7 @@ generic module HplMsp430Rf1aP () @safe() {
       buffer = 0;
       length = 0;
     }
-    #ifdef DEBUG_SET_RX_BUFFER
-    P1OUT &= ~BIT2;
-    #endif
     atomic {
-      #ifdef DEBUG_SET_RX_BUFFER
-      P1OUT |= BIT3;
-      #endif
       /* If there's a buffer in play and we're actively receiving into
        * it, reject the attempt. */
       if (rx_pos && (RX_S_listening < rx_state)) {
@@ -1367,9 +1310,6 @@ generic module HplMsp430Rf1aP () @safe() {
       rx_start = 0;
       rx_single_use = TRUE;
 
-      #ifdef DEBUG_SET_RX_BUFFER
-      P1OUT |= BIT4;
-      #endif
 
       // Set up for post-rx transition
       call Rf1aIf.writeRegister(MCSM1, 
@@ -1391,21 +1331,8 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       } else if (RX_S_inactive == rx_state) {
         startReception_();
-        #ifdef DEBUG_SET_RX_BUFFER
-        P2OUT &= ~BIT4;
-        #endif
       }
-      #ifdef DEBUG_SET_RX_BUFFER
-      P1OUT &= ~BIT3;
-      P1OUT &= ~BIT4;
-      #endif
     }
-    #ifdef DEBUG_RX
-    P2OUT &= ~BIT4;
-    #endif
-    #ifdef DEBUG_SET_RX_BUFFER
-    P1OUT &= ~BIT1;
-    #endif
     return SUCCESS;
   }
 
@@ -1433,9 +1360,6 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
   {
-    #ifdef DEBUG_RX_1
-    P1OUT |= BIT2;
-    #endif
     if (RX_S_inactive < rx_state) {
       /* If we have data, and the state doesn't reflect that we're
        * receiving, bump the state so we know to fast-exit out of
@@ -1446,9 +1370,6 @@ generic module HplMsp430Rf1aP () @safe() {
       }
       post receiveData_task();
     }
-    #ifdef DEBUG_RX_1
-    P1OUT &= ~BIT2;
-    #endif
   }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
@@ -1473,9 +1394,6 @@ generic module HplMsp430Rf1aP () @safe() {
       //we should get this interrupt when txfifo is drained. wait
       //until the last byte is actually in the air.
       if (0 == txbytes){
-        #ifdef DEBUG_TX_3
-        P1OUT |= BIT2;
-        #endif
         call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
         //disable the interrupt
         call Rf1aIf.setIe(call Rf1aIf.getIe() &
@@ -1519,9 +1437,6 @@ generic module HplMsp430Rf1aP () @safe() {
         }
 
         tx_state = TX_S_inactive;
-        #ifdef DEBUG_TX
-        P2OUT &= ~BIT4;
-        #endif 
         signal Rf1aPhysical.sendDone[tx_client](tx_buffer, tx_length, SUCCESS);
       }      
     }
@@ -1546,19 +1461,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
   async event void Rf1aInterrupts.syncWordEvent[uint8_t client] ()
   {
-    #ifdef DEBUG_RX
-    P1OUT |= BIT1;
-    #endif
-    #ifdef DEBUG_TX_2
-    P1OUT |= BIT3;
-    #endif
     signal Rf1aPhysical.frameStarted[call ArbiterInfo.userId()]();
-    #ifdef DEBUG_TX_2
-    P1OUT &= ~BIT3;
-    #endif
-    #ifdef DEBUG_RX
-    P1OUT &= ~BIT1;
-    #endif
   }
 
   async event void Rf1aInterrupts.clearChannel[uint8_t client] ()

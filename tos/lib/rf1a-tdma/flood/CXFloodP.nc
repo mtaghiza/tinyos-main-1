@@ -112,17 +112,29 @@ module CXFloodP{
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
+    GP_SET_PIN;
     if (txPending 
         && (frameNum >= myStart) 
         && (frameNum < (myStart + maxRetransmit))){
+      GP_CLEAR_PIN;
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
     } else if (txLeft){
       *msg = fwd_msg;
       *len = fwd_len;
+//      GP_CLEAR_PIN;
+//      GP_SET_PIN;
+      GP_CLEAR_PIN;
       return TRUE;
     }
+//    printf("c");
+//    GP_SET_PIN;
+//    GP_CLEAR_PIN;
+//    GP_SET_PIN;
+//    GP_CLEAR_PIN;
+//    GP_SET_PIN;
+    GP_CLEAR_PIN;
     return FALSE;
   }
 
