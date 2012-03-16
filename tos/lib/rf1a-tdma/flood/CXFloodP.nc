@@ -98,8 +98,6 @@ module CXFloodP{
 //      txLeft);
 
     if (txPending && (frameNum == myStart)){
-//        && (frameNum >= myStart) 
-//        && (frameNum < (myStart + maxRetransmit))){
 //      printf("txo\r\n");
       return RF1A_OM_FSTXON;
     } else if (txLeft){
