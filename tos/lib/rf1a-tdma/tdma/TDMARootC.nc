@@ -27,9 +27,11 @@ module TDMARootC{
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
-    printf("RC_SD: %x \r\n", error);
+//    printf("RC_SD: %x \r\n", error);
     if (SUCCESS == error){
       post announceSchedule();
+    }else {
+      printf("RC_SD: %x \r\n", error);
     }
   }
   

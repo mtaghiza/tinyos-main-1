@@ -99,7 +99,7 @@ module TestP {
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
-      printf("DSD %x\r\n", error);
+//      printf("DSD %x\r\n", error);
     }
     if (isTransmitting){
       post txTask();

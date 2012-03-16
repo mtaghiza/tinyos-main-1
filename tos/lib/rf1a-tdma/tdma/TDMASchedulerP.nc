@@ -103,8 +103,8 @@ module TDMASchedulerP{
     error = call SubCXTDMA.setSchedule(
       call SubCXTDMA.getNow(), 
       0,
-      DEFAULT_TDMA_FRAME_LEN,
-      2*DEFAULT_TDMA_FRAME_LEN,
+      10*DEFAULT_TDMA_FRAME_LEN,
+      2*10*DEFAULT_TDMA_FRAME_LEN,
       1, 0);
     if (SUCCESS == error){
       SET_STATE(S_NR_UNSCHEDULED, S_ERROR_2);
@@ -286,6 +286,15 @@ module TDMASchedulerP{
 
   async event void SubCXTDMA.frameStarted(uint32_t startTime, 
       uint16_t frameNum){
+    //TODO: if we're not root and too much time has elapsed since last
+    //  synch, post nrSetup()
+    //TODO: if this frameNum > 2*framesPerSlot, then we should assume
+    //  that we've missed the schedule for this round and should
+    //  maintain our duty cycling (as we are probably not too far
+    //  off). However, we should not allow transmissions to take
+    //  place, since we don't know how far off we are from the rest of
+    //  the network.
+
     if (!updatePending){
       lastFs = startTime;
     } else {
