@@ -18,8 +18,11 @@ module TestP {
   uses interface AMPacket;
   uses interface Packet;
 
-  uses interface Send;
-  uses interface Receive;
+  uses interface Send as FloodSend;
+  uses interface Receive as FloodReceive;
+
+  uses interface Send as ScopedFloodSend;
+  uses interface Receive as ScopedFloodReceive;
 
   uses interface Leds;
 
@@ -66,12 +69,13 @@ module TestP {
       P2OUT &= ~(BIT4);
     }
     call UartControl.start();
-    printf("\r\nCXTDMA Flood test\r\n");
+    printf("\r\nCXTDMA Scoped Flood test\r\n");
     printf("s: start \r\n");
     printf("S: stop \r\n");
     printf("f: forwarder \r\n");
-    printf("t: toggle is-transmitting \r\n");
-    printf("x: send once \r\n");
+    printf("t: toggle is-transmitting scoped flood\r\n");
+    printf("x: send one scoped flood \r\n");
+    printf("X: send one standard flood \r\n");
     printf("?: print status\r\n");
     printf("========================\r\n");
     post printStatus();
@@ -86,24 +90,41 @@ module TestP {
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
-  task void txTask(){
+  task void txFloodTask(){
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
     pl -> sn += (1+TOS_NODE_ID);
-    error = call Send.send(tx_msg, sizeof(test_packet_t));
-    printf("Send.Send: %s\r\n", decodeError(error));
+    error = call FloodSend.send(tx_msg, sizeof(test_packet_t));
+    printf("FloodSend.Send: %s\r\n", decodeError(error));
   }
 
-  event void Send.sendDone(message_t* msg, error_t error){
+  event void FloodSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS != error){
-      printf("!sd %x\r\n", error);
+      printf("!fsd %x\r\n", error);
     }else{
 //      printf("DSD %x\r\n", error);
     }
-    if (isTransmitting){
-      post txTask();
+  }
+
+  task void txScopedFloodTask(){
+    error_t error;
+    test_packet_t* pl = call Packet.getPayload(tx_msg,
+      sizeof(test_packet_t));
+    pl -> sn += (1+TOS_NODE_ID);
+    error = call ScopedFloodSend.send(tx_msg, sizeof(test_packet_t));
+    printf("ScopedFloodSend.Send: %s\r\n", decodeError(error));
+  }
+
+  event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
+    if (SUCCESS != error){
+      printf("!sfsd %x\r\n", error);
+    }else{
+      if (isTransmitting){
+        post txScopedFloodTask();
+      }
     }
+//      printf("DSD %x\r\n", error);
   }
 
   task void startTask(){
@@ -125,7 +146,7 @@ module TestP {
   task void toggleTX(){
     isTransmitting = !isTransmitting;
     if (isTransmitting){
-      post txTask();
+      post txScopedFloodTask();
     }
   }
 
@@ -150,7 +171,10 @@ module TestP {
         post toggleTX();
         break;
       case 'x':
-        post txTask();
+        post txScopedFloodTask();
+        break;
+      case 'X':
+        post txFloodTask();
         break;
       case '\r':
         printf("\r\n");
@@ -161,8 +185,13 @@ module TestP {
     }
   }
 
-  event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("RXD\r\n");
+  event message_t* FloodReceive.receive(message_t* msg, void* payload, uint8_t len){
+    printf("FRXD\r\n");
+    return msg;
+  }
+
+  event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
+    printf("SFRXD\r\n");
     return msg;
   }
 

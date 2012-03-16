@@ -10,6 +10,7 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/flood
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/scopedFlood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical

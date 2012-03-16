@@ -58,8 +58,9 @@ configuration TestAppC{
   
   //this is just used to keep the enumerated arbiter happy
   enum{
-    CX_RM_UC = unique(CXTDMA_RM_RESOURCE),
+    CX_RM_FLOOD_UC = unique(CXTDMA_RM_RESOURCE),
   };
+
   components CXFloodC;
   CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_FLOOD];
   CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_FLOOD];
@@ -67,6 +68,19 @@ configuration TestAppC{
   CXFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
+
+  //this is just used to keep the enumerated arbiter happy
+  enum{
+    CX_RM_SCOPEDFLOOD_UC = unique(CXTDMA_RM_RESOURCE),
+  };
+
+  components CXScopedFloodC;
+  CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_SCOPEDFLOOD];
+  CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_SCOPEDFLOOD];
+  CXScopedFloodC.TDMAScheduler -> TDMASchedulerC.TDMAScheduler;
+  CXScopedFloodC.CXPacket -> Rf1aCXPacketC;
+  CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
+
 
   #if TDMA_ROOT == 1
   #warning TDMA: IS ROOT
@@ -82,7 +96,10 @@ configuration TestAppC{
   TestP.AMPacket -> AMPacket;
   TestP.Packet -> Rf1aCXPacketC;
 
-  TestP.Send -> CXFloodC.Send[CX_TYPE_DATA];
-  TestP.Receive -> CXFloodC.Receive[CX_TYPE_DATA];
+  TestP.FloodSend -> CXFloodC.Send[CX_TYPE_DATA];
+  TestP.FloodReceive -> CXFloodC.Receive[CX_TYPE_DATA];
+
+  TestP.ScopedFloodSend -> CXScopedFloodC.Send[CX_TYPE_DATA];
+  TestP.ScopedFloodReceive -> CXScopedFloodC.Receive[CX_TYPE_DATA];
   
 }
