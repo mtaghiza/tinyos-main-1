@@ -268,8 +268,7 @@ module CXTDMAPhysicalP {
           //0.75 uS
           PFS_TOGGLE_PIN;
 //          printf("TX from %s\r\n", decodeStatus());
-          error = call Rf1aPhysical.startSend(FALSE, signal
-            CXTDMA.frameType(frameNum + 1));
+          error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
           //114 uS: when coming from idle, i guess this is OK. 
           PFS_TOGGLE_PIN;
           if (SUCCESS == error){
@@ -293,7 +292,7 @@ module CXTDMAPhysicalP {
           error = call Rf1aPhysical.setReceiveBuffer(
             (uint8_t*)(rx_msg->header),
             TOSH_DATA_LENGTH + sizeof(message_header_t),
-            signal CXTDMA.frameType(frameNum+1));
+            RF1A_OM_IDLE);
           //11 uS
           PFS_TOGGLE_PIN;
           if (SUCCESS == error){
