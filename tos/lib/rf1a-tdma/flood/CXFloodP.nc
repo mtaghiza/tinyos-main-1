@@ -95,17 +95,17 @@ module CXFloodP{
     //TODO: might want to make this a little more flexible: for
     //instance, root is going to want to claim slot 0 for the
     //schedule, but may want another slot for its own data.
-//    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
+    printf("ft %x %u %u %u:", txPending, frameNum, myStart, maxRetransmit);
     if (txPending 
         && (frameNum >= myStart) 
         && (frameNum < (myStart + maxRetransmit))){
-//      printf("txo\r\n");
+      printf("txo\r\n");
       return RF1A_OM_FSTXON;
     } else if (frameNum < (thisStart + txLeft)){
-//      printf("txf\r\n");
+      printf("txf\r\n");
       return RF1A_OM_FSTXON;
     } else {
-//      printf("r\r\n");
+      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -160,6 +160,8 @@ module CXFloodP{
       printf("sd!\r\n");
       SET_ESTATE(S_ERROR_1);
     }
+    lastSrc = call CXPacket.source(msg);
+    lastSn = call CXPacket.sn(msg);
     if (txLeft > 0){
       txLeft --;
     }else{

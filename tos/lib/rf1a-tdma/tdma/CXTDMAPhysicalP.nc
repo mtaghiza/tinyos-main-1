@@ -434,6 +434,12 @@ module CXTDMAPhysicalP {
       FS_CLEAR_PIN;
       TX_CLEAR_PIN;
       return;
+    } else if(checkState(S_RECEIVING)){
+      //This happens when trying to latch on to the schedule
+      //sometimes. Basically, frameStartAlarm is not lined up with the
+      //true schedule so it can fire in the middle of a packet
+      //reception. In this case, just ignore it, we should get a good
+      //schedule soon.
     } else {
       setState(S_ERROR_8);
     }
