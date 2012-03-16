@@ -10,6 +10,7 @@ module CXFloodP{
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMAScheduler;
+  uses interface Resource;
 } implementation {
   message_t* tx_msg;
   uint8_t tx_len; 
@@ -97,8 +98,12 @@ module CXFloodP{
 //      txLeft);
 
     if (txPending && (frameNum == myStart)){
-//      printf("txo\r\n");
-      return RF1A_OM_FSTXON;
+      if (SUCCESS == call Resource.immediateRequest()){
+  //      printf("txo\r\n");
+        return RF1A_OM_FSTXON;
+      } else {
+        return RF1A_OM_RX;
+      }
     } else if (txLeft){
 //      printf("txf\r\n");
       return RF1A_OM_FSTXON;
@@ -172,6 +177,7 @@ module CXFloodP{
       printf("sent extra?\r\n");
     }
     if (txLeft == 0){
+      call Resource.release();
       if (txSent){
 //        printf("Odone\r\n");
         post txSuccessTask();
@@ -187,22 +193,27 @@ module CXFloodP{
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
-      lastSn = thisSn;
-      lastSrc = thisSrc;
-      txLeft = maxRetransmit;
-//      printf("rtl %u @ %u\r\n", txLeft, frameNum);
-      fwd_msg = msg;
-      fwd_len = len;
-      if (! rxOutstanding){
-        message_t* swap = rx_msg;
-//        printf("rx.\r\n");
-        rxOutstanding = TRUE;
-        rx_msg = msg;
-        rx_len = len;
-        return swap;
+      if (SUCCESS == call Resource.immediateRequest()){
+        lastSn = thisSn;
+        lastSrc = thisSrc;
+        txLeft = maxRetransmit;
+  //      printf("rtl %u @ %u\r\n", txLeft, frameNum);
+        fwd_msg = msg;
+        fwd_len = len;
+        if (! rxOutstanding){
+          message_t* swap = rx_msg;
+  //        printf("rx.\r\n");
+          rxOutstanding = TRUE;
+          rx_msg = msg;
+          rx_len = len;
+          return swap;
+        } else {
+  //        printf("rx!\r\n");
+          SET_ESTATE(S_ERROR_2);
+          return msg;
+        }
       } else {
-//        printf("rx!\r\n");
-        SET_ESTATE(S_ERROR_2);
+        //if we couldn't get the resource, ignore this packet.
         return msg;
       }
     } else {
@@ -233,6 +244,7 @@ module CXFloodP{
     }
   }
 
+  event void Resource.granted(){}
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }

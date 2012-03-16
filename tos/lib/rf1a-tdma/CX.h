@@ -21,5 +21,6 @@ enum{
 };
 
 #define CX_TYPE_DATA 0xaa
+#define CXTDMA_RM_RESOURCE "CXTDMA.RM.Resource"
 
 #endif
