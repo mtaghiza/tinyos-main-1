@@ -1,4 +1,4 @@
-#include "CX.h"
+ #include "CX.h"
 
 module Rf1aCXPacketP{
   provides interface CXPacket;
@@ -108,6 +108,15 @@ module Rf1aCXPacketP{
       uint8_t t){
     getHeader(amsg)->routingMethod = t;
   }
+
+  command uint32_t CXPacket.getTimestamp(message_t* amsg){
+    return getHeader(amsg)->timestamp;
+  }
+  command void CXPacket.setTimestamp(message_t* amsg,
+      uint32_t ts){
+    getHeader(amsg)->timestamp = ts;
+  }
+
 
 
   async event void ActiveMessageAddress.changed(){ }

@@ -459,12 +459,11 @@ module CXTDMAPhysicalP {
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
     bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum); 
-    //TODO: if we were going to modify part of the packet, this is the
-    //  last possible time. it should be
-    //  possible to stuff in the last RE capture here, as long as it's
-    //  in a well-defined place. Should be enough time while
-    //  preamble/synch are starting, I hope (?)
+    //increment hop-count, set the tx timestamp if we are the origin.
     call CXPacket.incCount((message_t*)*buffer);
+    if (call CXPacket.source((message_t*)*buffer) == TOS_NODE_ID){
+      call CXPacket.setTimestamp((message_t*)*buffer, lastRECapture);
+    }
     *len += sizeof(rf1a_ieee154_t);
     return ret;
   }
@@ -585,7 +584,7 @@ module CXTDMAPhysicalP {
           call CXPacket.setCount((message_t*)buffer, 
             call CXPacket.count((message_t*)buffer) +1);
           rx_msg = signal CXTDMA.receive((message_t*)buffer, count,
-            frameNum);
+            frameNum, lastRECapture);
         }
         completeCleanup();
       } else {

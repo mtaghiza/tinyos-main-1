@@ -182,7 +182,7 @@ module CXFloodP{
   }
 
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
-      uint16_t frameNum){
+      uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){

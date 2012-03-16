@@ -243,7 +243,7 @@ module TDMASchedulerP{
   }
 
   async event message_t* SubCXTDMA.receive(message_t* msg, 
-      uint8_t len, uint16_t frameNum){
+      uint8_t len, uint16_t frameNum, uint32_t timestamp){
     //if we're in need of a schedule, grab it now before signalling
     //this up to the upper layers (which may lay claim to this
     //buffer).
@@ -275,13 +275,15 @@ module TDMASchedulerP{
         lastSchedule.inactiveFrames = pl->inactiveFrames;
         lastSchedule.framesPerSlot = pl->framesPerSlot;
         lastSchedule.maxRetransmit = pl->maxRetransmit;
+        //TODO: store the time that this frame started as well. Need
+        //that for drift correction.
         post processReceive();
       }
     }else{
       //this layer doesn't care what it is.
 //      return msg;
     }
-    return signal CXTDMA.receive(msg, len, frameNum);
+    return signal CXTDMA.receive(msg, len, frameNum, timestamp);
   }
 
   async event void SubCXTDMA.frameStarted(uint32_t startTime, 

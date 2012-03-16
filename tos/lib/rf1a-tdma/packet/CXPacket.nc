@@ -17,4 +17,6 @@ interface CXPacket{
   command void setType(message_t* amsg, am_id_t t);
   command void setRoutingMethod(message_t* amsg, uint8_t t);
   command uint8_t getRoutingMethod(message_t* amsg);
+  command void setTimestamp(message_t* amsg, uint32_t ts);
+  command uint32_t getTimestamp(message_t* amsg);
 }

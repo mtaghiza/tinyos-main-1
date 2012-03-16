@@ -11,6 +11,7 @@ typedef nx_struct cx_header_t {
   nx_uint16_t count;
   nx_uint8_t routingMethod;
   nx_am_id_t type;
+  nx_uint32_t timestamp;
 } cx_header_t;
 
 enum{
