@@ -20,6 +20,14 @@ enum{
   CX_RM_AODV = 0x03,
 };
 
+typedef nx_struct cx_ack_t{
+  //DATA source id/sn
+  nx_am_addr_t src;
+  nx_uint8_t sn;
+  //how far away the dest is from the source.
+  nx_uint8_t depth;
+}
+
 #define CX_TYPE_DATA 0xaa
 #define CX_TYPE_ACK  0xab
 #define CXTDMA_RM_RESOURCE "CXTDMA.RM.Resource"
