@@ -70,7 +70,7 @@ module CXScopedFloodP{
   uint16_t ackedDataSrc;
   uint8_t  ackedDataSn;
 
-  uint16_t framesPerSlot;
+  norace uint16_t framesPerSlot;
 
   bool isDataFrame(uint16_t frameNum){
     uint16_t slotStart = frameNum % framesPerSlot;
@@ -154,8 +154,10 @@ module CXScopedFloodP{
   }
 
   task void signalSendDone(){
-    originPending = FALSE;
-    signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, SUCCESS);
+    atomic{
+      originPending = FALSE;
+      signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, SUCCESS);
+    }
   }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
@@ -362,8 +364,10 @@ module CXScopedFloodP{
   event void TDMAScheduler.scheduleReceived(uint16_t activeFrames_, 
       uint16_t inactiveFrames, uint16_t framesPerSlot_, 
       uint16_t maxRetransmit_){
-    framesPerSlot = framesPerSlot_;
-    maxRetransmit = maxRetransmit_;
+    atomic{
+      framesPerSlot = framesPerSlot_;
+      maxRetransmit = maxRetransmit_;
+    }
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime, 
