@@ -81,6 +81,9 @@ configuration TestAppC{
   CXScopedFloodC.CXPacket -> Rf1aCXPacketC;
   CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
 
+  components CXRoutingTableC;
+  CXScopdedFloodC.CXRoutingTable -> CXRoutingTableC;
+
 
   #if TDMA_ROOT == 1
   #warning TDMA: IS ROOT

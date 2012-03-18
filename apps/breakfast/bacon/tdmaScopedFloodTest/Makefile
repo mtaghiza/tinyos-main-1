@@ -14,6 +14,7 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/scopedFlood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/routing
 
 TDMA_ROOT?=0
 CFLAGS+=-DTDMA_ROOT=$(TDMA_ROOT)
