@@ -16,44 +16,45 @@ module CXScopedFloodP{
 } implementation {
   enum{
     S_IDLE = 0x00,
-    S_ORIGIN        = 0x11,
-    S_ORIGIN_START  = 0x13,
-    S_FWD  = 0x14,
 
-    ACTIVE = 0x10,
+    S_DATA = 0x01,
+    S_ACK_WAIT = 0x02,
+    S_ACK = 0x03,
+
   };
-  message_t rx_msg_internal;
-  message_t* rx_msg = &rx_msg_internal;
-  uint8_t rx_len;
-
-  uint8_t dataState = S_IDLE;
-  message_t* origin_data_msg;
-  uint8_t origin_data_len;
+  uint8_t state = S_IDLE;
+  //for dtermining whether to use origin_xxx or fwd_msg
+  bool isOrigin;
+  bool originDataPending;
+  bool originDataSent;
   
-  //TODO: these should be consolidated into a single message_t,
-  //fwd_msg_internal and fwd_msg.
-  message_t data_msg_internal;
-  message_t* data_msg = & data_msg_internal;
-  message_t ack_internal;
-  message_t* ack_msg = &ack_internal;
-
-  uint8_t data_len;
-  uint8_t dataTXLeft;
-  uint8_t maxRetransmit;
-
-  bool originPending;
-  bool routeUpdatePending;
-  bool rxOutstanding;
-
-  uint8_t ackState = S_IDLE;
-  message_t* ack_msg;
-  uint8_t ack_len;
-  uint8_t ackTXLeft;
-
+  //acks which we generate in this layer
   message_t origin_ack_internal;
   message_t* origin_ack_msg = &origin_ack_internal;
   uint8_t origin_ack_len;
 
+  //local buffer for swapping with lower layer
+  message_t rx_msg_internal;
+  message_t* rx_msg = &rx_msg_internal;
+  uint8_t rx_len;
+  
+  //provided by Send interface. 
+  message_t* origin_data_msg;
+  uint8_t origin_data_len;
+  
+  //shared by forwarded data and forwarded acks.
+  message_t fwd_msg_internal;
+  message_t* fwd_msg = &fwd_msg_internal;
+  uint8_t fwd_len;
+  
+  //for determining when to transition states
+  uint8_t TXLeft;
+  uint8_t maxRetransmit;
+
+  //race condition guard variables
+  bool routeUpdatePending;
+  bool rxOutstanding;
+  
 
   uint16_t lastDataSrc;
   uint8_t lastDataSn;
@@ -107,11 +108,19 @@ module CXScopedFloodP{
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
 //    printf("ft %u ", frameNum);
+    //TODO: check for end-of-slot and release resource/return-to-idle
+    //      if held.
     if (originPending && isOriginFrame(frameNum)){
-      if (!(dataState & ACTIVE)){
+      if (state == S_IDLE){
+        //TODO: should move request/release of this resource into
+        //functions that perform any necessary book-keeping.
         call Resource.immediateRequest();
         dataTXLeft = maxRetransmit;
-        dataState = S_ORIGIN_START;
+        lastDataSrc = TOS_NODE_ID;
+        lastDataSn = call CXPacket.sn(msg);
+        originDataPending = TRUE;
+        state = S_DATA;
+        isOrigin = TRUE;
 //        printf("o\r\n");
         return RF1A_OM_FSTXON;
       }else{
@@ -120,17 +129,29 @@ module CXScopedFloodP{
       }
     }
 
-    if (isDataFrame(frameNum) 
-        && (dataState & ACTIVE )){
-//      printf("d\r\n");
-      return RF1A_OM_FSTXON;  
-    } else if (isAckFrame(frameNum)
-        && (ackState & ACTIVE )){
-      printf("fta\r\n");
-      return RF1A_OM_FSTXON;
+    switch (state){
+      case S_DATA:
+        if (isDataFrame(frameNum)){
+          return RF1A_OM_FSTXON;
+        } else {
+          return RF1A_OM_RX;
+        }
+        break;
+      case S_ACK:
+        if (isAckFrame(frameNum)){
+          return RF1A_OM_FSTXON;
+        } else {
+          return RF1A_OM_RX;
+        }
+        break;
+      case S_IDLE:
+        //fall-through
+      case S_ACK_WAIT:
+        return RF1A_OM_RX;
+        break;
+      default:
+        return RF1A_OM_RX;
     }
-//      printf("rx\r\n");
-    return RF1A_OM_RX;
   }
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
@@ -138,8 +159,9 @@ module CXScopedFloodP{
     printf("gp");
     if (isDataFrame(frameNum)){
       printf("d");
-      if ((dataState & S_ORIGIN) == S_ORIGIN ){
+      if (isOrigin ){
         printf("o");
+        originDataSent = TRUE;
         *msg = origin_data_msg;
         *len = origin_data_len;
       } else{
@@ -151,7 +173,7 @@ module CXScopedFloodP{
       return TRUE;
     } else if (isAckFrame(frameNum)){
       printf("a");
-      if ((ackState & S_ORIGIN) == S_ORIGIN){
+      if (isOrigin){
         printf("o");
         *msg = origin_ack_msg;
         *len = origin_ack_len;
@@ -170,51 +192,25 @@ module CXScopedFloodP{
   task void signalSendDone(){
     atomic{
       originPending = FALSE;
+      originDataPending = FALSE;
+      originDataSent = FALSE;
       signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, SUCCESS);
     }
   }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
-    printf("sd");
-    if (isDataFrame(frameNum)){
-      printf("d");
-      if (dataState == S_ORIGIN_START){
-        printf("OS");
-        lastDataSrc = TOS_NODE_ID;
-        lastDataSn = call CXPacket.sn(msg);
-        dataTXLeft = maxRetransmit;
-        dataState = S_ORIGIN;
-      }
-      dataTXLeft--;
-      if (dataTXLeft == 0){
-        printf("done");
-        if((dataState & S_ORIGIN) == S_ORIGIN){
-          printf("ssd");
+    TXLeft --;
+    if (txLeft == 0){
+      if (state == S_DATA){
+        state = S_ACK_WAIT;
+      }else if (state == S_ACK){
+        call Resource.release();
+        if (originDataSent){
           post signalSendDone();
         }
-        dataState = S_IDLE;
+        state = S_IDLE;
       }
-      printf("\r\n");
-    }else if (isAckFrame(frameNum)){
-      printf("a");
-      if (ackState == S_ORIGIN_START){
-        printf("OS");
-        ackState = S_ORIGIN;
-        ackTXLeft = maxRetransmit;
-      }
-      ackTXLeft--;
-      if (ackTXLeft == 0){
-        printf("done");
-        ackState = S_IDLE;
-      }
-    }
-    printf("\r\n");
-    //TODO: this isn't quite right: possible to be done forwarding
-    //data but not yet done acking. We should release when we're
-    //either done acking or when we cross a slot boundary.
-    if ( (dataState == S_IDLE) && (ackState == S_IDLE)){
-      call Resource.release();
     }
   }
 
@@ -275,6 +271,9 @@ module CXScopedFloodP{
     //PacketAcknowledgements?
   }
 
+
+  //TODO: update state name references in this method, then retest
+  //that we're still cool.
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_id_t pType = call CXPacket.type(msg);
