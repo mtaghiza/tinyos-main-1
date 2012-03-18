@@ -119,6 +119,7 @@ module TestP {
   }
 
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
+    printf("SF.SD\r\n");
     if (SUCCESS != error){
       printf("!sfsd %x\r\n", error);
     }else{
