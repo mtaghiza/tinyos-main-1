@@ -17,6 +17,7 @@ module TestP {
   uses interface SplitControl;
   uses interface AMPacket;
   uses interface Packet;
+  uses interface CXPacket;
 
   uses interface Send as FloodSend;
   uses interface Receive as FloodReceive;
@@ -111,6 +112,7 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
+    call CXPacket.setDestination(tx_msg, 0);
     pl -> sn += (1+TOS_NODE_ID);
     error = call ScopedFloodSend.send(tx_msg, sizeof(test_packet_t));
     printf("ScopedFloodSend.Send: %s\r\n", decodeError(error));

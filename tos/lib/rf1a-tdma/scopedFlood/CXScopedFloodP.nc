@@ -73,9 +73,8 @@ module CXScopedFloodP{
   norace uint16_t framesPerSlot;
 
   bool isDataFrame(uint16_t frameNum){
-    uint16_t slotStart = frameNum % framesPerSlot;
-    uint16_t offset = frameNum - slotStart;
-    return ((offset % 3) == 0);
+    uint16_t localF = frameNum % framesPerSlot;
+    return ((localF%3) == 0);
   }
 
   bool isOriginFrame(uint16_t frameNum){
@@ -107,11 +106,13 @@ module CXScopedFloodP{
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+    printf("ft %u ", frameNum);
     if (originPending && isOriginFrame(frameNum)){
       if (!(dataState & ACTIVE)){
         call Resource.immediateRequest();
         dataTXLeft = maxRetransmit;
         dataState = S_ORIGIN_START;
+        printf("o\r\n");
         return RF1A_OM_FSTXON;
       }else{
         //busy already, so leave it. This shouldn't happen if all the
@@ -121,11 +122,14 @@ module CXScopedFloodP{
 
     if (isDataFrame(frameNum) 
         && (dataState & ACTIVE )){
+      printf("d\r\n");
       return RF1A_OM_FSTXON;  
     } else if (isAckFrame(frameNum)
         && (ackState & ACTIVE )){
+      printf("a\r\n");
       return RF1A_OM_FSTXON;
     }
+      printf("rx\r\n");
     return RF1A_OM_RX;
   }
 
@@ -188,6 +192,7 @@ module CXScopedFloodP{
 
 
   task void routeUpdate(){
+    printf("ru\r\n");
     atomic{
       if (routeUpdatePending){
         //up to the routing table to do what it wants with it.
@@ -207,6 +212,7 @@ module CXScopedFloodP{
 
   //generate an ack, get a new RX buffer, and ready for sending acks.
   task void processReceive(){
+    printf("pr\r\n");
     atomic{
       if (rxOutstanding){
         cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(origin_ack_msg, sizeof(cx_ack_t)));
@@ -244,7 +250,7 @@ module CXScopedFloodP{
     uint8_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
-
+    printf("rx %x %x\r\n", dataState, ackState);
     //Type == Data
     if (pType == CX_TYPE_DATA){
       //duplicate data? -> return it. no change.
@@ -368,6 +374,7 @@ module CXScopedFloodP{
       framesPerSlot = framesPerSlot_;
       maxRetransmit = maxRetransmit_;
     }
+    printf("sr: fps %u mr %u\r\n", framesPerSlot, maxRetransmit);
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime, 

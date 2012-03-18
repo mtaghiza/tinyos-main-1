@@ -97,6 +97,7 @@ configuration TestAppC{
 
   TestP.SplitControl -> RootC.SplitControl;
   TestP.AMPacket -> AMPacket;
+  TestP.CXPacket -> Rf1aCXPacketC;
   TestP.Packet -> Rf1aCXPacketC;
 
   TestP.FloodSend -> CXFloodC.Send[CX_TYPE_DATA];
