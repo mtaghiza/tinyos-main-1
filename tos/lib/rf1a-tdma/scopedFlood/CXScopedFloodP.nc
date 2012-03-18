@@ -30,8 +30,12 @@ module CXScopedFloodP{
   message_t* origin_data_msg;
   uint8_t origin_data_len;
   
+  //TODO: these should be consolidated into a single message_t,
+  //fwd_msg_internal and fwd_msg.
   message_t data_msg_internal;
   message_t* data_msg = & data_msg_internal;
+  message_t ack_internal;
+  message_t* ack_msg = &ack_internal;
 
   uint8_t data_len;
   uint8_t dataTXLeft;
@@ -50,8 +54,6 @@ module CXScopedFloodP{
   message_t* origin_ack_msg = &origin_ack_internal;
   uint8_t origin_ack_len;
 
-  message_t ack_internal;
-  message_t* ack_msg = &ack_internal;
 
   uint16_t lastDataSrc;
   uint8_t lastDataSn;
@@ -67,11 +69,6 @@ module CXScopedFloodP{
 
   uint16_t ackedDataSrc;
   uint8_t  ackedDataSn;
-
-  //receive(d)   -> swap to data_msg
-  //receive(a)   -> swap to ack_msg
-  //generate-ack -> swap ownAck with ack_msg
-  //send-data    -> store separately
 
   uint16_t framesPerSlot;
 
@@ -90,16 +87,18 @@ module CXScopedFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-    if (!originPending){
-      origin_data_msg = msg;
-      origin_data_len = len + sizeof(cx_header_t);
-      call CXPacket.init(msg);
-      call CXPacket.setType(msg, t);
-      call CXPacket.setRoutingMethod(msg, CX_RM_SCOPEDFLOOD);
-      originPending = TRUE;
-      return SUCCESS;
-    } else {
-      return EBUSY;
+    atomic{
+      if (!originPending){
+        origin_data_msg = msg;
+        origin_data_len = len + sizeof(cx_header_t);
+        call CXPacket.init(msg);
+        call CXPacket.setType(msg, t);
+        call CXPacket.setRoutingMethod(msg, CX_RM_SCOPEDFLOOD);
+        originPending = TRUE;
+        return SUCCESS;
+      } else {
+        return EBUSY;
+      }
     }
   }
   
