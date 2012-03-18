@@ -82,7 +82,7 @@ configuration TestAppC{
   CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
 
   components CXRoutingTableC;
-  CXScopdedFloodC.CXRoutingTable -> CXRoutingTableC;
+  CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;
 
 
   #if TDMA_ROOT == 1

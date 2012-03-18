@@ -7,6 +7,7 @@ configuration CXScopedFloodC{
   uses interface CXTDMA;
   uses interface TDMAScheduler;
   uses interface Resource;
+  uses interface CXRoutingTable;
 } implementation {
   components CXScopedFloodP;
   
@@ -17,5 +18,6 @@ configuration CXScopedFloodC{
   TDMAScheduler = CXScopedFloodP.TDMAScheduler;
   LayerPacket = CXScopedFloodP.LayerPacket;
   CXScopedFloodP.Resource = Resource;
+  CXScopedFloodP.CXRoutingTable = CXRoutingTable;
 }
 
