@@ -22,27 +22,51 @@ module CXScopedFloodP{
 
     ACTIVE = 0x10,
   };
+  message_t rx_msg_internal;
+  message_t* rx_msg = &rx_msg_internal;
+  uint8_t rx_len;
 
   uint8_t dataState = S_IDLE;
-  message_t* origin_msg;
-  uint8_t origin_len;
+  message_t* origin_data_msg;
+  uint8_t origin_data_len;
   
   message_t data_msg_internal;
   message_t* data_msg = & data_msg_internal;
 
   uint8_t data_len;
+  uint8_t dataTXLeft;
+  uint8_t maxRetransmit;
 
   bool originPending;
+  bool routeUpdatePending;
+  bool rxOutstanding;
 
   uint8_t ackState = S_IDLE;
   message_t* ack_msg;
   uint8_t ack_len;
+  uint8_t ackTXLeft;
 
-  message_t own_ack_internal;
-  message_t* own_ack_msg = &own_ack_internal;
+  message_t origin_ack_internal;
+  message_t* origin_ack_msg = &origin_ack_internal;
+  uint8_t origin_ack_len;
 
   message_t ack_internal;
   message_t* ack_msg = &ack_internal;
+
+  uint16_t lastDataSrc;
+  uint8_t lastDataSn;
+
+  uint8_t lastDataDepth;
+  uint8_t lastAckDepth;
+  uint8_t lastAckDistance;
+
+  bool acked;
+  bool ackHeard;
+  uint16_t lastAckSrc;
+  uint8_t lastAckSn;
+
+  uint16_t ackedDataSrc;
+  uint8_t  ackedDataSn;
 
   //receive(d)   -> swap to data_msg
   //receive(a)   -> swap to ack_msg
@@ -67,11 +91,11 @@ module CXScopedFloodP{
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
     if (!originPending){
-      origin_msg = msg;
-      origin_len = len + sizeof(cx_header_t);
+      origin_data_msg = msg;
+      origin_data_len = len + sizeof(cx_header_t);
       call CXPacket.init(msg);
       call CXPacket.setType(msg, t);
-      call CXPacket.setRoutingMethod(msg, CX_RM_SCOPED_FLOOD);
+      call CXPacket.setRoutingMethod(msg, CX_RM_SCOPEDFLOOD);
       originPending = TRUE;
       return SUCCESS;
     } else {
@@ -118,7 +142,7 @@ module CXScopedFloodP{
       }
       return TRUE;
     } else if (isAckFrame(frameNum)){
-      if ((ackState & S_ORIGIN) === S_ORIGIN){
+      if ((ackState & S_ORIGIN) == S_ORIGIN){
         *msg = origin_ack_msg;
         *len = origin_ack_len;
       } else {
@@ -132,7 +156,7 @@ module CXScopedFloodP{
 
   task void signalSendDone(){
     originPending = FALSE;
-    signal Send.sendDone[call CXPacket.type(origin_msg)](origin_msg, SUCCESS);
+    signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, SUCCESS);
   }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
@@ -162,17 +186,6 @@ module CXScopedFloodP{
   }
 
 
-  uint16_t lastDataSrc;
-  uint8_t lastDataSn;
-
-  uint8_t lastDataDepth;
-  uint8_t lastAckDepth;
-  uint8_t lastAckDistance;
-
-  bool acked;
-  uint16_t lastAckSrc;
-  uint8_t lastAckSn;
-
   task void routeUpdate(){
     atomic{
       if (routeUpdatePending){
@@ -195,20 +208,18 @@ module CXScopedFloodP{
   task void processReceive(){
     atomic{
       if (rxOutstanding){
-        cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(ownAck,
-          sizeof(cx_ack_t)));
+        cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(origin_ack_msg, sizeof(cx_ack_t)));
 
-        call CXPacket.init(ownAck);
-        call CXPacket.setType(ownAck, CX_TYPE_ACK);
-        call CXPacket.setRoutingMethod(ownAck, CX_RM_SCOPED_FLOOD);
+        call CXPacket.init(origin_ack_msg);
+        call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
+        call CXPacket.setRoutingMethod(origin_ack_msg, CX_RM_SCOPEDFLOOD);
         ack -> src = call CXPacket.source(rx_msg);
         ack -> sn  = call CXPacket.sn(rx_msg);
         ack -> depth = call CXPacket.count(rx_msg);
         //we sent it.
         lastAckDistance = 0;
 
-        ack_msg = ownAck;
-        ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
+        origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
 
         rx_msg = signal Receive.receive[call CXPacket.type(rx_msg)](
           rx_msg, 
@@ -219,6 +230,11 @@ module CXScopedFloodP{
         rxOutstanding = FALSE;
       }
     }
+  }
+
+  task void wasAcked(){
+    //TODO: signal some yet un-written interface that this happened.
+    //PacketAcknowledgements?
   }
 
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
@@ -281,7 +297,7 @@ module CXScopedFloodP{
 
           return swap;
         }else{
-          printf("RX mid-update!\r\n")
+          printf("RX mid-update!\r\n");
           return msg;
         }
       }

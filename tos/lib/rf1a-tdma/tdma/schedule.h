@@ -1,7 +1,9 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
-#define CX_TYPE_SCHEDULE 0xab
+#include "message.h"
+
+#define CX_TYPE_SCHEDULE 0xac
 
 typedef nx_struct cx_schedule_t {
   nx_uint16_t originalFrame;
