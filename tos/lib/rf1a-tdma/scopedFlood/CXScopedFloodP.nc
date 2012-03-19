@@ -14,6 +14,7 @@ module CXScopedFloodP{
   uses interface Resource;
 
   uses interface CXRoutingTable;
+  uses interface CXSendScheduler;
 } implementation {
   enum{
     S_IDLE = 0x00,
@@ -100,12 +101,6 @@ module CXScopedFloodP{
     return ((localF%3) == 0);
   }
 
-  bool isOriginFrame(uint16_t frameNum){
-    //TODO: this could be more flexible: e.g. to allow a node to say
-    //"yeah, pack multiple transmits into our slot"
-    return (frameNum == (framesPerSlot* TOS_NODE_ID));
-  }
-
   bool isAckFrame(uint16_t frameNum){
     return ! isDataFrame(frameNum);
   }
@@ -152,7 +147,7 @@ module CXScopedFloodP{
       }
     }
 
-    if (originDataPending && isOriginFrame(frameNum)){
+    if (originDataPending && call CXSendScheduler.isOrigin(frameNum)){
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
@@ -449,5 +444,9 @@ module CXScopedFloodP{
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
+
+  default command bool CXSendScheduler.isOrigin(uint16_t frameNum){
+    return frameNum == (TOS_NODE_ID * framesPerSlot);
+  }
 
 }
