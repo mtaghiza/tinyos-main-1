@@ -18,6 +18,7 @@ enum{
   CX_RM_FLOOD = 0x01,
   CX_RM_SCOPEDFLOOD = 0x02,
   CX_RM_AODV = 0x03,
+  CX_RM_PREROUTED = 0x10,
 };
 
 typedef nx_struct cx_ack_t{

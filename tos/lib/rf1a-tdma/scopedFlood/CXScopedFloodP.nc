@@ -112,7 +112,10 @@ module CXScopedFloodP{
         origin_data_len = len + sizeof(cx_header_t);
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
-        call CXPacket.setRoutingMethod(msg, CX_RM_SCOPEDFLOOD);
+        //preserve pre-routed bit
+        call CXPacket.setRoutingMethod(msg, 
+          ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)
+          | CX_RM_SCOPEDFLOOD);
         originDataPending = TRUE;
         return SUCCESS;
       } else {
@@ -314,6 +317,17 @@ module CXScopedFloodP{
 
     if (state == S_IDLE){
       printf_SF_RX("i");
+      //drop pre-routed packets for which we aren't on a route.
+      if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
+        bool isBetween;
+        printf_SF_RX("p");
+        if ((SUCCESS == call CXRoutingTable.isBetween(src, 
+            call CXPacket.destination(msg), &isBetween)) && isBetween){
+          printf_SF_RX("x*\r\n");
+          return msg;
+        }
+      }
+
       //New data
       if (pType == CX_TYPE_DATA){
         message_t* ret;

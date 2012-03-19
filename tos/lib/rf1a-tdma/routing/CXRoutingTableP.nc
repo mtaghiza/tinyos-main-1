@@ -61,7 +61,11 @@ generic module CXRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool* result){
-    cx_route_entry_t* re;
+    cx_route_entry_t* re = NULL;
+    if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR){
+      *result = TRUE;
+      return SUCCESS;
+    }
     if (getEntry(re, n0, TOS_NODE_ID)){
       uint8_t sm = re->distance;
       if (getEntry(re, n1, TOS_NODE_ID)){

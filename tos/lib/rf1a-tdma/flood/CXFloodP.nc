@@ -82,7 +82,9 @@ module CXFloodP{
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
-        call CXPacket.setRoutingMethod(msg, CX_RM_FLOOD);
+        //preserve pre-routed flag
+        call CXPacket.setRoutingMethod(msg, 
+          (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
 
         return SUCCESS;
       }else{
@@ -200,8 +202,17 @@ module CXFloodP{
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
-        //TODO: check for routed flag: ignore it if the routed flag is
+
+        //check for routed flag: ignore it if the routed flag is
         //set, but we are not on the path.
+        if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
+          bool isBetween;
+          if ((SUCCESS == call CXRoutingTable.isBetween(thisSrc, 
+              call CXPacket.destination(msg), &isBetween)) && isBetween ){
+            return msg;
+          }
+        }
+
         if (SUCCESS == call Resource.immediateRequest()){
           message_t* ret = fwd_msg;
           lastSn = thisSn;

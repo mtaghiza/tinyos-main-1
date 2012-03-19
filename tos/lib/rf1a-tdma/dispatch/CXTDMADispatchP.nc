@@ -56,7 +56,7 @@ module CXTDMADispatchP{
 
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    return signal CXTDMA.receive[call CXPacket.getRoutingMethod(msg)](msg, len, frameNum, timestamp);
+    return signal CXTDMA.receive[ call CXPacket.getRoutingMethod(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
   }
 
   async event void SubCXTDMA.frameStarted(uint32_t startTime, 
