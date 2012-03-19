@@ -26,6 +26,8 @@ module CXScopedFloodP{
 
   };
   uint8_t state = S_IDLE;
+  //TODO: might be easier to make this isAckOrigin and isDataOrigin
+  //      or: clear it when switching to ACK if you're not the origin
   //for determining whether to use origin_xxx or fwd_msg
   bool isOrigin;
 
@@ -136,6 +138,7 @@ module CXScopedFloodP{
         routeUpdatePending = FALSE;
         lastDataSrc = 0xffff;
         lastDataSn = 0;
+        printf("SF.rel\r\n");
         call Resource.release();
         //no ack by the end of the slot, done.
         if (originDataSent){
@@ -151,6 +154,7 @@ module CXScopedFloodP{
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
+        printf("SF.req\r\n");
         call Resource.immediateRequest();
         TXLeft = maxRetransmit;
         lastDataSrc = TOS_NODE_ID;
@@ -241,6 +245,7 @@ module CXScopedFloodP{
         waitLeft = nextSlotStart(frameNum) - frameNum;
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
+        printf("SF.rel\r\n");
         call Resource.release();
         if (originDataSent){
           post signalSendDone();
@@ -287,6 +292,7 @@ module CXScopedFloodP{
         ack -> depth = call CXPacket.count(rx_msg);
         origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
         isOrigin = TRUE;
+        TXLeft = maxRetransmit;
 
         //route update goodness
         ruSrcDepth = call CXPacket.count(rx_msg);
@@ -305,8 +311,6 @@ module CXScopedFloodP{
   }
 
 
-  //TODO: update state name references in this method, then retest
-  //that we're still cool.
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_id_t pType = call CXPacket.type(msg);
@@ -316,15 +320,17 @@ module CXScopedFloodP{
     printf("rx %x ", state);
 
     if (state == S_IDLE){
-      //coming from idle: we are always going to need the resource.
-      if ( SUCCESS != call Resource.immediateRequest()){
-        printf("d RESOURCE BUSY!\r\n");
-        return msg;
-      }
-
+      printf("i");
       //New data
       if (pType == CX_TYPE_DATA){
         message_t* ret;
+
+        printf("d");
+        //coming from idle: we are always going to need the resource.
+        if ( SUCCESS != call Resource.immediateRequest()){
+          printf("d RESOURCE BUSY!\r\n");
+          return msg;
+        }
 
         //record src/sn so we can match it to ack
         lastDataSrc = src;
@@ -335,6 +341,7 @@ module CXScopedFloodP{
 
         //for me: save it for RX and prepare to send ack.
         if (dest == TOS_NODE_ID){
+          printf("M");
           ret = rx_msg;
           rx_msg = msg;
           rx_len = len;
@@ -342,17 +349,21 @@ module CXScopedFloodP{
           setState(S_ACK_PREPARE);
         //not for me: forward it.
         }else {
+          printf("f");
           ret = fwd_msg;
           fwd_msg = msg;
           fwd_len = len;
           TXLeft = maxRetransmit;
+          isOrigin = FALSE;
           setState(S_DATA);
         }
+        printf("\r\n");
         return ret;
 
       //ignore acks for which we have seen no data: this happens at
       //the edge of the flood.
       } else if (pType == CX_TYPE_ACK){
+        printf("a*\r\n");
         return msg;
            
       } else {
@@ -360,8 +371,10 @@ module CXScopedFloodP{
         return msg;
       }
     } else if ((state == S_DATA) || (state == S_ACK_WAIT)){
+      printf("d");
       //ignore data receptions
       if (pType == CX_TYPE_DATA){
+        printf("d*\r\n");
         return msg;
 
       //ack: verify that it matches the data, handle according to
@@ -369,8 +382,10 @@ module CXScopedFloodP{
       } else if (pType == CX_TYPE_ACK){
         cx_ack_t* ack = (cx_ack_t*) (call LayerPacket.getPayload(msg,
           sizeof(cx_ack_t)));
+        printf("a");
         if ( (ack->src == lastDataSrc) && (ack->sn == lastDataSn) ){
           message_t* ret = fwd_msg;
+          printf("m");
           fwd_msg = msg;
           fwd_len = len;
           TXLeft = maxRetransmit;
@@ -385,13 +400,16 @@ module CXScopedFloodP{
 
           //we got an ack to data we sent. hooray!
           if (dest == TOS_NODE_ID){
+            printf("M");
             sendDoneError = SUCCESS;
             post signalSendDone();
           }
+          isOrigin = FALSE;
           setState(S_ACK);
+          printf("\r\n");
           return ret;
         }else{
-          printf("orphan ack.\r\n");
+          printf("o*\r\n");
           return msg;
         }
 
@@ -401,6 +419,7 @@ module CXScopedFloodP{
       }
       
     } else if (state == S_ACK){
+      printf("a*\r\n");
       //already in the ack stage, so we will just keep on ignoring
       //these.
       return msg;

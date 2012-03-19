@@ -98,6 +98,7 @@ module CXFloodP{
 //      txLeft);
 
     if (txPending && (frameNum == myStart)){
+//      printf("F.req\r\n");
       if (SUCCESS == call Resource.immediateRequest()){
   //      printf("txo\r\n");
         return RF1A_OM_FSTXON;
@@ -177,6 +178,7 @@ module CXFloodP{
       printf("sent extra?\r\n");
     }
     if (txLeft == 0){
+//      printf("F.rel\r\n");
       call Resource.release();
       if (txSent){
 //        printf("Odone\r\n");
@@ -193,6 +195,7 @@ module CXFloodP{
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
     if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+//      printf("F.req\r\n");
       if (SUCCESS == call Resource.immediateRequest()){
         lastSn = thisSn;
         lastSrc = thisSrc;
