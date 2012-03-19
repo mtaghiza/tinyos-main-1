@@ -321,8 +321,8 @@ module CXScopedFloodP{
       if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
         bool isBetween;
         printf_SF_RX("p");
-        if ((SUCCESS == call CXRoutingTable.isBetween(src, 
-            call CXPacket.destination(msg), &isBetween)) && isBetween){
+        if ((SUCCESS != call CXRoutingTable.isBetween(src, 
+            call CXPacket.destination(msg), &isBetween)) || !isBetween){
           printf_SF_RX("x*\r\n");
           return msg;
         }

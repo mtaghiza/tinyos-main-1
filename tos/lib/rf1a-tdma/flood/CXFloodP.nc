@@ -1,6 +1,7 @@
 
  #include "Rf1a.h"
  #include "CXFlood.h"
+ #include "FDebug.h"
 module CXFloodP{
   provides interface Send[am_id_t t];
   provides interface Receive[am_id_t t];
@@ -53,7 +54,6 @@ module CXFloodP{
   uint8_t lastDepth;
   
   uint8_t state;
-  SET_STATE_DEF
 
   uint16_t framesPerSlot;
   uint16_t curFrame;
@@ -73,6 +73,11 @@ module CXFloodP{
 
   //distinguish between tx_msg and fwd_msg
   bool isOrigin;
+
+  void setState(uint8_t s){
+    printf_F_STATE("(%x->%x)\r\n", state, s);
+    state = s;
+  }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
     atomic{
@@ -109,7 +114,7 @@ module CXFloodP{
         lastSrc = TOS_NODE_ID;
         txSent = TRUE;
         isOrigin = TRUE;
-        state = S_FWD;
+        setState(S_FWD);
         return RF1A_OM_FSTXON;
       } else {
         return RF1A_OM_RX;
@@ -176,7 +181,7 @@ module CXFloodP{
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
       printf("sd!\r\n");
-      SET_ESTATE(S_ERROR_1);
+      setState(S_ERROR_1);
     }
     if (txLeft > 0){
       txLeft --;
@@ -184,7 +189,7 @@ module CXFloodP{
       printf("sent extra?\r\n");
     }
     if (txLeft == 0){
-      state = S_IDLE;
+      setState(S_IDLE);
       isOrigin = FALSE;
       call Resource.release();
       if (txSent){
@@ -207,8 +212,9 @@ module CXFloodP{
         //set, but we are not on the path.
         if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
           bool isBetween;
-          if ((SUCCESS == call CXRoutingTable.isBetween(thisSrc, 
-              call CXPacket.destination(msg), &isBetween)) && isBetween ){
+          printf_F_RX("Prerouted\r\n");
+          if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
+              call CXPacket.destination(msg), &isBetween)) || !isBetween ){
             return msg;
           }
         }
@@ -222,7 +228,7 @@ module CXFloodP{
           fwd_msg = msg;
           fwd_len = len;
           rxOutstanding = TRUE;
-          state = S_FWD;
+          setState(S_FWD);
           return ret;
 
         //couldn't get the resource, ignore this packet.
