@@ -22,6 +22,8 @@ module CXScopedFloodP{
     S_ACK = 0x03,
     S_ACK_PREPARE = 0x04,
 
+    S_ERROR = 0x10,
+
   };
   uint8_t state = S_IDLE;
   //for determining whether to use origin_xxx or fwd_msg
@@ -82,6 +84,10 @@ module CXScopedFloodP{
   task void signalSendDone();
   task void routeUpdate();
   
+  void setState(uint8_t s){
+    printf("{%x->%x}\r\n", state, s);
+    state = s;
+  }
   uint16_t nextSlotStart(uint16_t frameNum){
     return (frameNum + framesPerSlot)/framesPerSlot;
   }
@@ -137,7 +143,7 @@ module CXScopedFloodP{
           post signalSendDone();
         }
         //get ready for next slot
-        state = S_IDLE;
+        setState(S_IDLE);
       }
     }
 
@@ -149,7 +155,7 @@ module CXScopedFloodP{
         TXLeft = maxRetransmit;
         lastDataSrc = TOS_NODE_ID;
         lastDataSn = call CXPacket.sn(origin_data_msg);
-        state = S_DATA;
+        setState(S_DATA);
         isOrigin = TRUE;
 //        printf("o\r\n");
         return RF1A_OM_FSTXON;
@@ -233,14 +239,14 @@ module CXScopedFloodP{
     if (TXLeft == 0){
       if (state == S_DATA){
         waitLeft = nextSlotStart(frameNum) - frameNum;
-        state = S_ACK_WAIT;
+        setState(S_ACK_WAIT);
       }else if (state == S_ACK){
         call Resource.release();
         if (originDataSent){
           post signalSendDone();
         }
         post routeUpdate();
-        state = S_IDLE;
+        setState(S_IDLE);
       }
     }
   }
@@ -293,7 +299,7 @@ module CXScopedFloodP{
           rx_msg, 
           call LayerPacket.getPayload(rx_msg, rx_len- sizeof(cx_header_t)),
           rx_len - sizeof(cx_header_t));
-        state = S_ACK;
+        setState(S_ACK);
       }
     }
   }
@@ -333,14 +339,14 @@ module CXScopedFloodP{
           rx_msg = msg;
           rx_len = len;
           post processReceive();
-          state = S_ACK_PREPARE;
+          setState(S_ACK_PREPARE);
         //not for me: forward it.
         }else {
           ret = fwd_msg;
           fwd_msg = msg;
           fwd_len = len;
           TXLeft = maxRetransmit;
-          state = S_DATA;
+          setState(S_DATA);
         }
         return ret;
 
@@ -382,7 +388,7 @@ module CXScopedFloodP{
             sendDoneError = SUCCESS;
             post signalSendDone();
           }
-          state = S_ACK;
+          setState(S_ACK);
           return ret;
         }else{
           printf("orphan ack.\r\n");
