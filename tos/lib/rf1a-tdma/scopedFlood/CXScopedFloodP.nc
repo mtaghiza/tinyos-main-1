@@ -101,6 +101,8 @@ module CXScopedFloodP{
   }
 
   bool isOriginFrame(uint16_t frameNum){
+    //TODO: this could be more flexible: e.g. to allow a node to say
+    //"yeah, pack multiple transmits into our slot"
     return (frameNum == (framesPerSlot* TOS_NODE_ID));
   }
 

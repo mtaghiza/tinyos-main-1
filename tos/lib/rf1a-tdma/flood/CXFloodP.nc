@@ -4,6 +4,7 @@
 module CXFloodP{
   provides interface Send[am_id_t t];
   provides interface Receive[am_id_t t];
+  provides interface Receive as Snoop[am_id_t t];
 
   uses interface CXPacket;
   //Payload: body of CXPacket
@@ -11,12 +12,11 @@ module CXFloodP{
   uses interface CXTDMA;
   uses interface TDMAScheduler;
   uses interface Resource;
-} implementation {
-  message_t* tx_msg;
-  uint8_t tx_len; 
+  
+  uses interface CXRoutingTable;
+  uses interface CXSendScheduler;
 
-  am_addr_t lastSrc = 0x00;
-  uint8_t lastSn;
+} implementation {
 
   enum{
     ERROR_MASK = 0x80,
@@ -37,13 +37,20 @@ module CXFloodP{
     S_ERROR_f = 0x8f,
 
     S_IDLE = 0x00,
-    S_TX_NEXT = 0x02,
-    S_TX = 0x03,
+    S_FWD  = 0x01,
   };
+
+  //provided by Send
+  message_t* tx_msg;
+  uint8_t tx_len; 
 
   bool txPending;
   bool txSent;
   uint16_t txLeft;
+
+  am_addr_t lastSrc = 0x00;
+  uint8_t lastSn;
+  uint8_t lastDepth;
   
   uint8_t state;
   SET_STATE_DEF
@@ -58,18 +65,16 @@ module CXFloodP{
   //network.
   uint16_t maxRetransmit = 1;
 
-  uint16_t myStart;
-
-  message_t* fwd_msg;
+  message_t fwd_msg_internal;
+  message_t* fwd_msg = &fwd_msg_internal;
   uint8_t fwd_len;
   
   bool rxOutstanding;
-  message_t rx_msg_internal;
-  message_t* rx_msg = &rx_msg_internal;
-  uint8_t rx_len;
+
+  //distinguish between tx_msg and fwd_msg
+  bool isOrigin;
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-//    printf("Somebody called send\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
@@ -91,25 +96,27 @@ module CXFloodP{
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    //TODO: might want to make this a little more flexible: for
-    //instance, root is going to want to claim slot 0 for the
-    //schedule, but may want another slot for its own data.
-//    printf("ft %x %u %u %u %u:", txPending, maxRetransmit, frameNum, myStart,
-//      txLeft);
+    //should be an isOrigin command provided by some other component
+    //(RootC / NonRootC? For AODV, will want to send as many packets
+    //in a frame as it can.)
 
-    if (txPending && (frameNum == myStart)){
-//      printf("F.req\r\n");
+    if (txPending && (call CXSendScheduler.isOrigin(frameNum))){
       if (SUCCESS == call Resource.immediateRequest()){
-  //      printf("txo\r\n");
+        txLeft = maxRetransmit;
+        lastSn = call CXPacket.sn(tx_msg);
+        lastSrc = TOS_NODE_ID;
+        txSent = TRUE;
+        isOrigin = TRUE;
+        state = S_FWD;
         return RF1A_OM_FSTXON;
       } else {
         return RF1A_OM_RX;
       }
-    } else if (txLeft){
-//      printf("txf\r\n");
+    }
+
+    if (txLeft){
       return RF1A_OM_FSTXON;
     } else {
-//      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -117,27 +124,17 @@ module CXFloodP{
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
     GP_SET_PIN;
-    if (txPending 
-        && (frameNum >= myStart) 
-        && (frameNum < (myStart + maxRetransmit))){
+    if (isOrigin){
       GP_CLEAR_PIN;
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
-    } else if (txLeft){
+    } else {
       *msg = fwd_msg;
       *len = fwd_len;
-//      GP_CLEAR_PIN;
-//      GP_SET_PIN;
       GP_CLEAR_PIN;
       return TRUE;
     }
-//    printf("c");
-//    GP_SET_PIN;
-//    GP_CLEAR_PIN;
-//    GP_SET_PIN;
-//    GP_CLEAR_PIN;
-//    GP_SET_PIN;
     GP_CLEAR_PIN;
     return FALSE;
   }
@@ -147,18 +144,28 @@ module CXFloodP{
       txPending = FALSE;
       txSent = FALSE;
     }
-//    printf("TXS %u\r\n", call CXPacket.sn(tx_msg));
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void reportReceive(){
-//    printf("RX %u\r\n", call CXPacket.sn(rx_msg));
     atomic{
       if (rxOutstanding){
         rxOutstanding = FALSE;
-        rx_msg = signal Receive.receive[call CXPacket.type(rx_msg)](rx_msg, 
-          call LayerPacket.getPayload(rx_msg, rx_len- sizeof(cx_header_t)),
-          rx_len - sizeof(cx_header_t));
+        //TODO: should we update the routing table? or should we
+        //reserve that space for scoped floods, which may request
+        //future routing explicitly?
+        if ( (call CXPacket.destination(fwd_msg) == TOS_NODE_ID) ||
+            (call CXPacket.destination(fwd_msg) == AM_BROADCAST_ADDR)){
+          fwd_msg = signal Receive.receive[call CXPacket.type(fwd_msg)](
+            fwd_msg, 
+            call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
+            fwd_len - sizeof(cx_header_t));
+        }else {
+          fwd_msg = signal Snoop.receive[call CXPacket.type(fwd_msg)](
+            fwd_msg, 
+            call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
+            fwd_len - sizeof(cx_header_t));
+        }
       }
     }
   }
@@ -169,22 +176,18 @@ module CXFloodP{
       printf("sd!\r\n");
       SET_ESTATE(S_ERROR_1);
     }
-    lastSrc = call CXPacket.source(msg);
-    lastSn = call CXPacket.sn(msg);
     if (txLeft > 0){
       txLeft --;
-//      printf("dtl %u @ %u\r\n", txLeft, frameNum);
     }else{
       printf("sent extra?\r\n");
     }
     if (txLeft == 0){
-//      printf("F.rel\r\n");
+      state = S_IDLE;
+      isOrigin = FALSE;
       call Resource.release();
       if (txSent){
-//        printf("Odone\r\n");
         post txSuccessTask();
       } else {
-//        printf("Rdone\r\n");
         post reportReceive();
       }
     }
@@ -194,34 +197,34 @@ module CXFloodP{
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
-    if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
-//      printf("F.req\r\n");
-      if (SUCCESS == call Resource.immediateRequest()){
-        lastSn = thisSn;
-        lastSrc = thisSrc;
-        txLeft = maxRetransmit;
-  //      printf("rtl %u @ %u\r\n", txLeft, frameNum);
-        fwd_msg = msg;
-        fwd_len = len;
-        if (! rxOutstanding){
-          message_t* swap = rx_msg;
-  //        printf("rx.\r\n");
+    if (state == S_IDLE){
+      //new packet
+      if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+        //TODO: check for routed flag: ignore it if the routed flag is
+        //set, but we are not on the path.
+        if (SUCCESS == call Resource.immediateRequest()){
+          message_t* ret = fwd_msg;
+          lastSn = thisSn;
+          lastSrc = thisSrc;
+          lastDepth = call CXPacket.count(msg);
+          txLeft = maxRetransmit;
+          fwd_msg = msg;
+          fwd_len = len;
           rxOutstanding = TRUE;
-          rx_msg = msg;
-          rx_len = len;
-          return swap;
+          state = S_FWD;
+          return ret;
+
+        //couldn't get the resource, ignore this packet.
         } else {
-  //        printf("rx!\r\n");
-          SET_ESTATE(S_ERROR_2);
           return msg;
         }
+      //duplicate, ignore
       } else {
-        //if we couldn't get the resource, ignore this packet.
         return msg;
       }
+
+    //busy forwarding, ignore it.
     } else {
-//      printf("rxd %p %x %u\r\n", msg, thisSrc, thisSn);
-//      printf("rxd\r\n");
       return msg;
     }
   }
@@ -233,18 +236,11 @@ module CXFloodP{
       framesPerSlot = framesPerSlot_;
       activeFrames  = activeFrames_;
       maxRetransmit = maxRetransmit_;
-      myStart = (framesPerSlot * TOS_NODE_ID);
     }
-//    printf("sched: %u %u %u %u\r\n", framesPerSlot, activeFrames,
-//      maxRetransmit, myStart);
   }
 
   async event void CXTDMA.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ 
-    if (txPending && (frameNum == myStart)){
-      txLeft = maxRetransmit;
-      txSent = TRUE;
-    }
   }
 
   event void Resource.granted(){}
@@ -253,5 +249,10 @@ module CXFloodP{
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
+  default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
+
+  default command bool CXSendScheduler.isOrigin(uint16_t frameNum){
+    return frameNum == (TOS_NODE_ID*framesPerSlot);
+  }
 
 }
