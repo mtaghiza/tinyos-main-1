@@ -954,7 +954,7 @@ class BootStrapLoader(BSL):
 
     def actionStartBSL(self):
         "fire up BSL"
-        for i in xrange(5):
+        for i in xrange(self.bslRetries):
             debug(1, "try #%d"%i)
             if i:
                 debug(1, "standard reset")
@@ -965,6 +965,9 @@ class BootStrapLoader(BSL):
                 self._actionStartBSL()
             except BSLTimeout:
                 debug(4, "BSLTimeout, try again")
+                #port = self.serialport.port
+                #self.close()
+                #self.comInit(port)
                 pass
             else:
                 return
@@ -1067,6 +1070,8 @@ General options:
                         It puts a breakpoint right before the BSL
                         entry, step through it slowly and it seems to
                         work it out sometimes.
+  --bslRetries=n        Attempt entering the BSL n times before 
+                        closing/re-opening the serial port. Default 1
 
 Program Flow Specifiers:
   -e, --masserase       Mass Erase (clear all flash memory)
@@ -1116,6 +1121,7 @@ def main():
     bsl.invertReset = False
     bsl.invertTest = False
     bsl.invertTCK = False
+    bsl.bslRetries = 1
     # bsl.maxData
     # bsl.fastrx
     # bsl.speed
@@ -1135,7 +1141,8 @@ def main():
              "bslversion", "wipe-info=", "infoerase", "upload=", "size=", "hex", "bin",
              "noadg715", "errataJTAG20Resolved", "dedicatedJTAG",
              "pauseBSLEntry", "go=","reset", "wait", "enterbsl",
-             "nospeed", "invert-reset", "invert-TCK", "invert-test"]
+             "nospeed", "invert-reset", "invert-TCK",
+             "invert-test", "bslRetries="]
         )
     except getopt.GetoptError:
         # print help information and exit:
@@ -1243,6 +1250,8 @@ def main():
             bsl.invertTest = True
         elif o in ("--nospeed"):
             bsl.speed = None
+        elif o in ("--bslRetries"):
+            bsl.bslRetries = int(a)
         else:
             raise RuntimeError, "bugs in the taters"
 
