@@ -19,6 +19,8 @@ configuration TDMASchedulerC{
   uses interface Packet;
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
+  uses interface CXRoutingTable;
+  uses interface FrameStarted;
 } implementation {
   #if TDMA_ROOT == 1
   #warning compiling as TDMA root.
@@ -38,13 +40,15 @@ configuration TDMASchedulerC{
   TDMASchedulerP.Packet = Packet;
   TDMASchedulerP.CXPacket = CXPacket;
   TDMASchedulerP.AMPacket = AMPacket;
+  TDMASchedulerP.FrameStarted = FrameStarted;
 
   components AODVSchedulerC;
   Send = AODVSchedulerC.Send;
   Receive = AODVSchedulerC.Receive;
-  TDMARoutingSchedule = TDMASchedulerP.TDMARoutingSchedule;
-  TDMASchedulerP.SubTDMARoutingSchedule ->
-    AODVSchedulerC.TDMARoutingSchedule;
+  TDMARoutingSchedule = AODVSchedulerC.TDMARoutingSchedule;
+  AODVSchedulerC.SubTDMARoutingSchedule ->
+    TDMASchedulerP.TDMARoutingSchedule;
+  AODVSchedulerC.FrameStarted = FrameStarted;
 
   AODVSchedulerC.FloodSend = FloodSend[CX_TYPE_DATA];
   AODVSchedulerC.FloodReceive = FloodReceive[CX_TYPE_DATA];
@@ -56,4 +60,6 @@ configuration TDMASchedulerC{
   AODVSchedulerC.Packet = Packet;
   AODVSchedulerC.Rf1aPacket = Rf1aPacket;
   AODVSchedulerC.Ieee154Packet = Ieee154Packet;
+
+  AODVSchedulerC.CXRoutingTable = CXRoutingTable;
 }

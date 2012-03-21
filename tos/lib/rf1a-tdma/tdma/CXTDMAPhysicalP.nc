@@ -10,6 +10,7 @@ module CXTDMAPhysicalP {
   provides interface SplitControl;
   provides interface CXTDMA;
   provides interface TDMAPhySchedule;
+  provides interface FrameStarted;
 
   uses interface HplMsp430Rf1aIf;
   uses interface Resource;
@@ -220,6 +221,7 @@ module CXTDMAPhysicalP {
       PFS_CLEAR_PIN;
       return;
     }
+    signal FrameStarted.frameStarted(frameNum);
     //0.5uS
     PFS_TOGGLE_PIN;
     if (s_inactiveFrames > 0){

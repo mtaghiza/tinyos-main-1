@@ -2,6 +2,7 @@ configuration CXTDMAPhysicalC {
   provides interface SplitControl;
   provides interface CXTDMA;
   provides interface TDMAPhySchedule;
+  provides interface FrameStarted;
 
   uses interface HplMsp430Rf1aIf;
   uses interface Resource;
@@ -25,6 +26,7 @@ configuration CXTDMAPhysicalC {
   Rf1aStatus = CXTDMAPhysicalP;
   Rf1aPacket = CXTDMAPhysicalP;
   CXPacket = CXTDMAPhysicalP;
+  FrameStarted = CXTDMAPhysicalP;
 
   components new AlarmMicro32C() as FrameStartAlarm;
   components new AlarmMicro32C() as PrepareFrameStartAlarm;

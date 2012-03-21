@@ -91,6 +91,8 @@ module CXFloodP{
     }
   }
   
+  //TODO: yeah, we're going to have to implement this. should be just
+  //clear txPending flag and go to IDLE?
   command error_t Send.cancel[am_id_t t](message_t* msg){
     return FAIL;
   }

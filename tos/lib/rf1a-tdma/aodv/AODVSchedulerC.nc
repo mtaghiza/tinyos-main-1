@@ -1,5 +1,7 @@
 configuration AODVSchedulerC{
   provides interface TDMARoutingSchedule[uint8_t rm];
+  uses interface TDMARoutingSchedule as SubTDMARoutingSchedule[uint8_t rm];
+  uses interface FrameStarted;
 
   provides interface Send;
   provides interface Receive;
@@ -16,12 +18,15 @@ configuration AODVSchedulerC{
   uses interface Packet;
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
+
+  uses interface CXRoutingTable;
 } implementation {
   components AODVSchedulerP;
 
   TDMARoutingSchedule = AODVSchedulerP.TDMARoutingSchedule;
   Send = AODVSchedulerP.Send;
   Receive = AODVSchedulerP.Receive;
+  AODVSchedulerP.SubTDMARoutingSchedule = SubTDMARoutingSchedule;
   AODVSchedulerP.FloodSend = FloodSend;
   AODVSchedulerP.FloodReceive = FloodReceive;
   AODVSchedulerP.ScopedFloodSend = ScopedFloodSend;
@@ -31,4 +36,7 @@ configuration AODVSchedulerC{
   AODVSchedulerP.Packet = Packet;
   AODVSchedulerP.Rf1aPacket = Rf1aPacket;
   AODVSchedulerP.Ieee154Packet = Ieee154Packet;
+
+  AODVSchedulerP.CXRoutingTable = CXRoutingTable;
+  AODVSchedulerP.FrameStarted = FrameStarted;
 }

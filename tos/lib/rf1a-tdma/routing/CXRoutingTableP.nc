@@ -27,6 +27,15 @@ generic module CXRoutingTableP(uint8_t numEntries){
     return FALSE;
   }
 
+  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to){
+    cx_route_entry_t* re;
+    if (getEntry(re, from, to)){
+      return re->distance;
+    }else{
+      return 0xff;
+    }
+  }
+
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
       uint8_t distance){
     uint8_t i;

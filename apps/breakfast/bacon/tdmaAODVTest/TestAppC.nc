@@ -90,8 +90,10 @@ configuration TestAppC{
   TDMASchedulerC.Rf1aPacket -> Ieee154Packet;
   TDMASchedulerC.CXPacket -> Rf1aCXPacketC;
   TDMASchedulerC.Packet -> Rf1aCXPacketC;
+  TDMASchedulerC.CXRoutingTable -> CXRoutingTableC;
 
   TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
+  TDMASchedulerC.FrameStarted -> CXTDMAPhysicalC;
 
   CXFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule[CX_RM_FLOOD];
   CXScopedFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule[CX_RM_SCOPEDFLOOD];

@@ -2,10 +2,10 @@
 module RootSchedulerP{
   provides interface SplitControl;
   provides interface TDMARoutingSchedule[uint8_t rm];
+  uses interface FrameStarted;
 
   uses interface SplitControl as SubSplitControl;
   uses interface TDMAPhySchedule;
-  uses interface TDMARoutingSchedule as SubTDMARoutingSchedule[uint8_t rm];
 
   uses interface Send as AnnounceSend;
   uses interface Receive as AnnounceReceive;
@@ -117,6 +117,10 @@ module RootSchedulerP{
     //TODO: record timing info for clock skew correction
   }
 
+  async event void FrameStarted.frameStarted(uint16_t frameNum){
+    //TODO: if this is the end of the inactive period, have work to do
+  }
+
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
     //TODO: use clock skew results to dish this out.
     return 0;
@@ -131,13 +135,13 @@ module RootSchedulerP{
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
     if (frameNum == 0 && rm == CX_RM_FLOOD){
       return TRUE;
-    } else {
-      return call SubTDMARoutingSchedule.isOrigin[rm](frameNum);
+    }else {
+      return FALSE;
     }
   }
   
   //always in synch, so ok to forward.
-  async command bool TDMARoutingSchedule.isForwardOK[uint8_t rm](uint16_t frameNum){
+  async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
     return TRUE;
   }
 
