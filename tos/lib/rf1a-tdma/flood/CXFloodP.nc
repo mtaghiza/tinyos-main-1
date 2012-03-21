@@ -58,12 +58,6 @@ module CXFloodP{
   uint16_t curFrame;
   uint16_t activeFrames;
 
-  //initialize this to 1: when we receive the very first schedule, we
-  //get notified of its reception before we get the new schedule. by
-  //setting this to 1 initially, we can get faster startup across the
-  //network.
-  uint16_t maxRetransmit = 1;
-
   message_t fwd_msg_internal;
   message_t* fwd_msg = &fwd_msg_internal;
   uint8_t fwd_len;
@@ -108,7 +102,7 @@ module CXFloodP{
 
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
       if (SUCCESS == call Resource.immediateRequest()){
-        txLeft = maxRetransmit;
+        txLeft = call TDMARoutingSchedule.maxRetransmit();
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
         txSent = TRUE;
@@ -223,7 +217,7 @@ module CXFloodP{
           lastSn = thisSn;
           lastSrc = thisSrc;
           lastDepth = call CXPacket.count(msg);
-          txLeft = maxRetransmit;
+          txLeft = call TDMARoutingSchedule.maxRetransmit();
           fwd_msg = msg;
           fwd_len = len;
           rxOutstanding = TRUE;

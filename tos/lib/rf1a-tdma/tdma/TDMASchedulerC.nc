@@ -36,6 +36,8 @@ configuration TDMASchedulerC{
   TDMASchedulerP.ReplyReceive = FloodReceive[CX_TYPE_SCHEDULE_REPLY];
   TDMASchedulerP.TDMAPhySchedule = TDMAPhySchedule;
   TDMASchedulerP.Packet = Packet;
+  TDMASchedulerP.CXPacket = CXPacket;
+  TDMASchedulerP.AMPacket = AMPacket;
 
   components AODVSchedulerC;
   Send = AODVSchedulerC.Send;

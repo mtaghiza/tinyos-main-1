@@ -10,11 +10,10 @@ module CXScopedFloodP{
   //Payload: body of CXPacket
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
-  uses interface TDMAScheduler;
+  uses interface TDMARoutingSchedule;
   uses interface Resource;
 
   uses interface CXRoutingTable;
-  uses interface CXSendScheduler;
 } implementation {
   enum{
     S_IDLE = 0x00,
@@ -63,7 +62,6 @@ module CXScopedFloodP{
   //for determining when to transition states
   uint8_t TXLeft;
   uint8_t waitLeft;
-  uint8_t maxRetransmit;
 
   //race condition guard variables
   bool routeUpdatePending;
@@ -150,12 +148,12 @@ module CXScopedFloodP{
       }
     }
 
-    if (originDataPending && call CXSendScheduler.isOrigin(frameNum)){
+    if (originDataPending && call TDMARoutingSchedule.isOrigin(frameNum)){
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
         call Resource.immediateRequest();
-        TXLeft = maxRetransmit;
+        TXLeft = call TDMARoutingSchedule.maxRetransmit();
         lastDataSrc = TOS_NODE_ID;
         lastDataSn = call CXPacket.sn(origin_data_msg);
         setState(S_DATA);
@@ -288,7 +286,7 @@ module CXScopedFloodP{
         ack -> depth = call CXPacket.count(rx_msg);
         origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
         isOrigin = TRUE;
-        TXLeft = maxRetransmit;
+        TXLeft = call TDMARoutingSchedule.maxRetransmit();
 
         //route update goodness
         ruSrcDepth = call CXPacket.count(rx_msg);
@@ -360,7 +358,7 @@ module CXScopedFloodP{
           ret = fwd_msg;
           fwd_msg = msg;
           fwd_len = len;
-          TXLeft = maxRetransmit;
+          TXLeft = call TDMARoutingSchedule.maxRetransmit();
           isOrigin = FALSE;
           setState(S_DATA);
         }
@@ -395,7 +393,7 @@ module CXScopedFloodP{
           printf_SF_RX("m");
           fwd_msg = msg;
           fwd_len = len;
-          TXLeft = maxRetransmit;
+          TXLeft = call TDMARoutingSchedule.maxRetransmit();
           
           //record routing information (our distance from the ack
           //  origin, src->dest distance)
@@ -437,25 +435,11 @@ module CXScopedFloodP{
 
   }
 
-  event void TDMAScheduler.scheduleReceived(uint16_t activeFrames_, 
-      uint16_t inactiveFrames, uint16_t framesPerSlot_, 
-      uint16_t maxRetransmit_){
-    atomic{
-      framesPerSlot = framesPerSlot_;
-      maxRetransmit = maxRetransmit_;
-    }
-//    printf("sr: fps %u mr %u\r\n", framesPerSlot, maxRetransmit);
-  }
-
   event void Resource.granted(){}
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
-
-  default command bool CXSendScheduler.isOrigin(uint16_t frameNum){
-    return frameNum == (TOS_NODE_ID * framesPerSlot);
-  }
 
 }

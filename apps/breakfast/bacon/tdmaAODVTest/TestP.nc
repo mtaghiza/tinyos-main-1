@@ -70,11 +70,9 @@ module TestP {
     printf("\r\nCXTDMA AODV test\r\n");
     printf("s: start \r\n");
     printf("S: stop \r\n");
-    printf("f: forwarder \r\n");
-    printf("t: toggle is-transmitting pre-routed\r\n");
-    printf("r: transmit single pre-routed\r\n");
-    printf("x: send one scoped flood \r\n");
-    printf("X: send one standard flood \r\n");
+    printf("t: toggle is-transmitting unicast\r\n");
+    printf("X: send one broadcast\r\n");
+    printf("x: send one unicast\r\n");
     printf("?: print status\r\n");
     printf("========================\r\n");
     post printStatus();
@@ -89,54 +87,33 @@ module TestP {
     printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
-  task void txFloodTask(){
+  task void broadcastTask(){
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call CXPacket.setRoutingMethod(tx_msg, ~CX_RM_PREROUTED);
+    call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
     pl -> sn += (1+TOS_NODE_ID);
-    error = call FloodSend.send(tx_msg, sizeof(test_packet_t));
-    printf("FloodSend.Send: %s\r\n", decodeError(error));
+    error = call Send.send(tx_msg, sizeof(test_packet_t));
+    printf("Send.Send (broadcast): %s\r\n", decodeError(error));
   }
 
-  event void FloodSend.sendDone(message_t* msg, error_t error){
+  task void unicastTask(){
+    error_t error;
+    test_packet_t* pl = call Packet.getPayload(tx_msg,
+      sizeof(test_packet_t));
+    call AMPacket.setDestination(tx_msg, 0);
+    pl -> sn += (1+TOS_NODE_ID);
+    error = call Send.send(tx_msg, sizeof(test_packet_t));
+    printf("Send.Send (unicast): %s\r\n", decodeError(error));
+  }
+
+  event void Send.sendDone(message_t* msg, error_t error){
+    printf("SD\r\n");
     if (SUCCESS != error){
-      printf("!fsd %x\r\n", error);
-    }else{
-//      printf("DSD %x\r\n", error);
-    }
-  }
-
-  task void txScopedFloodTask(){
-    error_t error;
-    test_packet_t* pl = call Packet.getPayload(tx_msg,
-      sizeof(test_packet_t));
-    call CXPacket.setDestination(tx_msg, DESTINATION_ID);
-    call CXPacket.setRoutingMethod(tx_msg, ~CX_RM_PREROUTED);
-    pl -> sn += (1+TOS_NODE_ID);
-    error = call ScopedFloodSend.send(tx_msg, sizeof(test_packet_t));
-    printf("ScopedFloodSend.Send: %s\r\n", decodeError(error));
-  }
-
-  task void txRoutedTask(){
-    error_t error;
-    test_packet_t* pl = call Packet.getPayload(tx_msg,
-      sizeof(test_packet_t));
-    call CXPacket.setRoutingMethod(tx_msg, CX_RM_PREROUTED);
-    call CXPacket.setDestination(tx_msg, DESTINATION_ID);
-    pl -> sn += (1+TOS_NODE_ID);
-    error = call FloodSend.send(tx_msg, sizeof(test_packet_t));
-    printf("(routed)FloodSend.Send: %s\r\n", decodeError(error));
-  }
-
-
-  event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
-    printf("SF.SD\r\n");
-    if (SUCCESS != error){
-      printf("!sfsd %x\r\n", error);
+      printf("!sd %x\r\n", error);
     }else{
       if (isTransmitting){
-        post txScopedFloodTask();
+        post unicastTask();
       }
     }
 //      printf("DSD %x\r\n", error);
@@ -161,7 +138,7 @@ module TestP {
   task void toggleTX(){
     isTransmitting = !isTransmitting;
     if (isTransmitting){
-      post txRoutedTask();
+      post unicastTask();
     }
   }
 
@@ -186,13 +163,10 @@ module TestP {
         post toggleTX();
         break;
       case 'x':
-        post txScopedFloodTask();
+        post unicastTask();
         break;
       case 'X':
-        post txFloodTask();
-        break;
-      case 'r':
-        post txRoutedTask();
+        post broadcastTask();
         break;
       case '\r':
         printf("\r\n");
@@ -203,13 +177,8 @@ module TestP {
     }
   }
 
-  event message_t* FloodReceive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("FRXD\r\n");
-    return msg;
-  }
-
-  event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("SFRXD\r\n");
+  event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
+    printf("RX\r\n");
     return msg;
   }
 

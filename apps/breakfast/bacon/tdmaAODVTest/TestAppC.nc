@@ -87,6 +87,9 @@ configuration TestAppC{
   TDMASchedulerC.ScopedFloodSend -> CXScopedFloodC.Send;
   TDMASchedulerC.ScopedFloodReceive -> CXScopedFloodC.Receive;
   TDMASchedulerC.AMPacket -> AMPacket;
+  TDMASchedulerC.Rf1aPacket -> Ieee154Packet;
+  TDMASchedulerC.CXPacket -> Rf1aCXPacketC;
+  TDMASchedulerC.Packet -> Rf1aCXPacketC;
 
   TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
 
