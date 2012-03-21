@@ -83,6 +83,7 @@ configuration TestAppC{
 
   components CXRoutingTableC;
   CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;
+  CXFloodC.CXRoutingTable -> CXRoutingTableC;
 
 
   #if TDMA_ROOT == 1
