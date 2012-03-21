@@ -619,7 +619,7 @@ module CXTDMAPhysicalP {
     signal SplitControl.stopDone(error);
   }
 
-  async command uint32_t CXTDMA.getNow(){
+  async command uint32_t TDMAPhySchedule.getNow(){
     return call FrameStartAlarm.getNow();
   }
   

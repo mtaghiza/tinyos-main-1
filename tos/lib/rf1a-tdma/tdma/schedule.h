@@ -4,6 +4,7 @@
 #include "message.h"
 
 #define CX_TYPE_SCHEDULE 0xac
+#define CX_TYPE_SCHEDULE_REPLY 0xad
 
 typedef nx_struct cx_schedule_t {
   nx_uint16_t originalFrame;
@@ -13,6 +14,7 @@ typedef nx_struct cx_schedule_t {
   nx_uint16_t inactiveFrames;
   nx_uint16_t framesPerSlot;
   nx_uint8_t  maxRetransmit;
+  nx_uint8_t symbolRate;
   nx_uint32_t rootStart;
 } cx_schedule_t;
 

@@ -8,5 +8,4 @@ interface CXTDMA{
   async event message_t* receive(message_t* msg, uint8_t len, 
     uint16_t frameNum, uint32_t timestamp);
 
-  async command uint32_t getNow();
 }

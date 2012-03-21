@@ -6,10 +6,6 @@ module CXTDMADispatchP{
   uses interface CXPacket;
 } implementation {
 
-  async command uint32_t CXTDMA.getNow[uint8_t routingMethod](){
-    return call SubCXTDMA.getNow();
-  }
-  
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
     if ( call ArbiterInfo.inUse()){
       return signal CXTDMA.frameType[call ArbiterInfo.userId()](frameNum);

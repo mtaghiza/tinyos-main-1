@@ -1,6 +1,7 @@
 configuration CXTDMAPhysicalC {
   provides interface SplitControl;
   provides interface CXTDMA;
+  provides interface TDMAPhySchedule;
 
   uses interface HplMsp430Rf1aIf;
   uses interface Resource;
@@ -15,6 +16,7 @@ configuration CXTDMAPhysicalC {
 
   SplitControl = CXTDMAPhysicalP;
   CXTDMA = CXTDMAPhysicalP;
+  TDMAPhySchedule = CXTDMAPhysicalP;
 
   HplMsp430Rf1aIf = CXTDMAPhysicalP;
   Resource = CXTDMAPhysicalP;

@@ -11,11 +11,10 @@ module CXFloodP{
   //Payload: body of CXPacket
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
-  uses interface TDMAScheduler;
+  uses interface TDMARoutingSchedule;
   uses interface Resource;
   
   uses interface CXRoutingTable;
-  uses interface CXSendScheduler;
 
 } implementation {
 
@@ -107,7 +106,7 @@ module CXFloodP{
     //(RootC / NonRootC? For AODV, will want to send as many packets
     //in a frame as it can.)
 
-    if (txPending && (call CXSendScheduler.isOrigin(frameNum))){
+    if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
       if (SUCCESS == call Resource.immediateRequest()){
         txLeft = maxRetransmit;
         lastSn = call CXPacket.sn(tx_msg);
@@ -246,16 +245,6 @@ module CXFloodP{
     }
   }
 
-  event void TDMAScheduler.scheduleReceived(uint16_t activeFrames_, 
-      uint16_t inactiveFrames, uint16_t framesPerSlot_, 
-      uint16_t maxRetransmit_){
-    atomic{
-      framesPerSlot = framesPerSlot_;
-      activeFrames  = activeFrames_;
-      maxRetransmit = maxRetransmit_;
-    }
-  }
-
   event void Resource.granted(){}
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
@@ -263,9 +252,4 @@ module CXFloodP{
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
   default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
-
-  default command bool CXSendScheduler.isOrigin(uint16_t frameNum){
-    return frameNum == (TOS_NODE_ID*framesPerSlot);
-  }
-
 }

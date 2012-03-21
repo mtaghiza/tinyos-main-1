@@ -19,11 +19,8 @@ module TestP {
   uses interface Packet;
   uses interface CXPacket;
 
-  uses interface Send as FloodSend;
-  uses interface Receive as FloodReceive;
-
-  uses interface Send as ScopedFloodSend;
-  uses interface Receive as ScopedFloodReceive;
+  uses interface Send;
+  uses interface Receive;
 
   uses interface Leds;
 

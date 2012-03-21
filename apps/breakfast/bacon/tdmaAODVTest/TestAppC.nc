@@ -82,16 +82,17 @@ configuration TestAppC{
   //   send.
   components TDMASchedulerC;
   TDMASchedulerC.SubSplitControl -> CXTDMAPhysicalC;
-  TDMASchedulerC.AnnounceSend -> CXFloodC.Send[CX_TYPE_SCHEDULE];
-  TDMASchedulerC.AnnounceReceive -> CXFloodC.Receive[CX_TYPE_SCHEDULE];
-  TDMASchedulerC.ReplySend -> CXFloodC.Send[CX_TYPE_SCHEDULE_REPLY];
-  TDMASchedulerC.ReplyReceive -> CXFloodC.Receive[CX_TYPE_SCHEDULE_REPLY];
+  TDMASchedulerC.FloodSend -> CXFloodC.Send;
+  TDMASchedulerC.FloodReceive -> CXFloodC.Receive;
+  TDMASchedulerC.ScopedFloodSend -> CXScopedFloodC.Send;
+  TDMASchedulerC.ScopedFloodReceive -> CXScopedFloodC.Receive;
+  TDMASchedulerC.AMPacket -> AMPacket;
 
   TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
 
   CXFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule[CX_RM_FLOOD];
   CXScopedFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule[CX_RM_SCOPEDFLOOD];
-
+  
 
   TestP.SplitControl -> TDMASchedulerC.SplitControl;
 
@@ -99,10 +100,7 @@ configuration TestAppC{
   TestP.CXPacket -> Rf1aCXPacketC;
   TestP.Packet -> Rf1aCXPacketC;
 
-  TestP.FloodSend -> CXFloodC.Send[CX_TYPE_DATA];
-  TestP.FloodReceive -> CXFloodC.Receive[CX_TYPE_DATA];
-
-  TestP.ScopedFloodSend -> CXScopedFloodC.Send[CX_TYPE_DATA];
-  TestP.ScopedFloodReceive -> CXScopedFloodC.Receive[CX_TYPE_DATA];
-   
+  TestP.Send -> TDMASchedulerC.Send;
+  TestP.Receive -> TDMASchedulerC.Receive;
+  
 }
