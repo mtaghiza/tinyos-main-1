@@ -256,10 +256,6 @@ module CXFloodP{
     }
   }
 
-  async event void CXTDMA.frameStarted(uint32_t startTime, 
-      uint16_t frameNum){ 
-  }
-
   event void Resource.granted(){}
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }

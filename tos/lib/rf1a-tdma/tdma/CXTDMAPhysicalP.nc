@@ -9,6 +9,7 @@
 module CXTDMAPhysicalP {
   provides interface SplitControl;
   provides interface CXTDMA;
+  provides interface TDMAPhySchedule;
 
   uses interface HplMsp430Rf1aIf;
   uses interface Resource;
@@ -509,14 +510,14 @@ module CXTDMAPhysicalP {
       if (checkState(S_RX_READY)){
         call FrameWaitAlarm.stop();
         setState(S_RECEIVING);
-        signal CXTDMA.frameStarted(lastRECapture, frameNum);
+        signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
         //TODO: revisit the self-adjustment logic here.
 //        int32_t delta = lastRECapture - 
 //          (lastFsa + SFD_TIME );
 //        printf("d %ld\r\n", delta);
 //        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
-        signal CXTDMA.frameStarted(lastRECapture, frameNum);
+        signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else {
         setState(S_ERROR_9);
       }
@@ -621,11 +622,13 @@ module CXTDMAPhysicalP {
   async command uint32_t CXTDMA.getNow(){
     return call FrameStartAlarm.getNow();
   }
-
-  command error_t CXTDMA.setSchedule(uint32_t startAt,
+  
+  //TODO: IMPORTANT. This needs to defer schedule modification until
+  //the next cycle. Otherwise, we get into all kinds of trouble.
+  command error_t TDMAPhySchedule.setNextSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
-      uint16_t inactiveFrames){
+      uint16_t inactiveFrames, uint8_t symbolRate){
     SS_SET_PIN;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
       SS_CLEAR_PIN;
