@@ -11,6 +11,7 @@ configuration CXTDMAPhysicalC {
   uses interface Rf1aStatus;
   uses interface Rf1aPacket;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 
 } implementation {
   components CXTDMAPhysicalP;
@@ -26,6 +27,7 @@ configuration CXTDMAPhysicalC {
   Rf1aStatus = CXTDMAPhysicalP;
   Rf1aPacket = CXTDMAPhysicalP;
   CXPacket = CXTDMAPhysicalP;
+  CXPacketMetadata = CXTDMAPhysicalP;
   FrameStarted = CXTDMAPhysicalP;
 
   components new AlarmMicro32C() as FrameStartAlarm;

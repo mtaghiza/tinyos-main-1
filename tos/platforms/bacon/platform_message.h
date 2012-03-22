@@ -18,7 +18,7 @@ typedef union message_header {
 typedef union TOSRadioFooter {
 } message_footer_t;
 
-typedef union TOSRadioMetadata {
+typedef struct TOSRadioMetadata {
   rf1a_metadata_t rf1a;
   cx_metadata_t cx;
 } message_metadata_t;

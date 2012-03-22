@@ -18,7 +18,7 @@ module Rf1aCXPacketP{
   }
 
   cx_metadata_t* getMetadata(message_t* msg){
-    return msg->metadata->cx;
+    return &(((message_metadata_t*)(msg->metadata))->cx);
   }
 
   command void CXPacket.init(message_t* msg){
@@ -123,16 +123,16 @@ module Rf1aCXPacketP{
   }
 
   command void CXPacketMetadata.setReceivedAt(message_t* amsg, uint32_t ts){
-    getMetadata(msg)->receivedAt = ts;
+    getMetadata(amsg)->receivedAt = ts;
   }
   command uint32_t CXPacketMetadata.getReceivedAt(message_t* amsg){
-    return getMetadata(msg)->receivedAt;
+    return getMetadata(amsg)->receivedAt;
   }
   command void CXPacketMetadata.setFrameNum(message_t* amsg, uint16_t frameNum){
-    getMetadata(msg)->frameNum = frameNum;
+    getMetadata(amsg)->frameNum = frameNum;
   }
   command uint16_t CXPacketMetadata.getFrameNum(message_t* amsg){
-    return getMetadata(msg)->frameNum;
+    return getMetadata(amsg)->frameNum;
   }
 
   async event void ActiveMessageAddress.changed(){ }

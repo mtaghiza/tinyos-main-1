@@ -42,6 +42,7 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aStatus -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
   CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
+  CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
 
   components CXTDMADispatchC;
   CXTDMADispatchC.SubCXTDMA -> CXTDMAPhysicalC;
@@ -89,6 +90,7 @@ configuration TestAppC{
   TDMASchedulerC.AMPacket -> AMPacket;
   TDMASchedulerC.Rf1aPacket -> Ieee154Packet;
   TDMASchedulerC.CXPacket -> Rf1aCXPacketC;
+  TDMASchedulerC.CXPacketMetadata -> Rf1aCXPacketC;
   TDMASchedulerC.Packet -> Rf1aCXPacketC;
   TDMASchedulerC.CXRoutingTable -> CXRoutingTableC;
 

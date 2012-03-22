@@ -20,6 +20,7 @@ module CXTDMAPhysicalP {
 
   uses interface Rf1aPacket;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 
   uses interface Alarm<TMicro, uint32_t> as PrepareFrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameStartAlarm;

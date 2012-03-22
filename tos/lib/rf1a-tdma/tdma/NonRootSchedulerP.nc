@@ -14,6 +14,7 @@ module NonRootSchedulerP{
 
   uses interface Packet;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   //maybe this should be done by Flood send.
   uses interface AMPacket;
 
@@ -98,8 +99,8 @@ module NonRootSchedulerP{
     //may buffer it, though)
     //maybe we should add some metadata for receivedAt? or
     //something? dang it.
-    rxFrameNum = call CXPacketMetadata.frameNum(msg);  
-    rxTS = call CXPacketMetadata.receivedAt(msg);
+    rxFrameNum = call CXPacketMetadata.getFrameNum(msg);  
+    rxTS = call CXPacketMetadata.getReceivedAt(msg);
     //TODO: this should only be done if the schedule is the same for
     //both this cycle and the last.
     if(lastRxTS != 0){
@@ -108,7 +109,7 @@ module NonRootSchedulerP{
       int32_t d;
       int32_t framesElapsed = 
         curSched->activeFrames+curSched->inactiveFrames;
-      rootTicks = pl->rootStart - lastRootStart;
+      rootTicks = call CXPacket.getTimestamp(msg) - lastRootStart;
       myTicks = rxTS - lastRxTS;
       d = myTicks - rootTicks;
       delta[cycleNum++] = d;
@@ -137,7 +138,7 @@ module NonRootSchedulerP{
 
     lastRxTS = rxTS;
     lastRxFrameNum = rxFrameNum;
-    lastRootStart = pl->rootStart;
+    lastRootStart = call CXPacket.getTimestamp(msg);
     if (pl->scheduleNum != curSched->scheduleNum){
       message_t* swp = nextMsg;
       changePending = TRUE;
@@ -166,10 +167,9 @@ module NonRootSchedulerP{
     if (changePending && (frameNum ==
         (curSched->activeFrames+curSched->inactiveFrames))){
       error_t error;
-      cx_schedule_reply_t* reply;
       message_t* swp = curMsg;
       curMsg = nextMsg;
-      nextMsg = curMsg;
+      nextMsg = swp;
       curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
        sizeof(cx_schedule_t));
       error = call TDMAPhySchedule.setSchedule(lastRxTS, 
@@ -241,7 +241,7 @@ module NonRootSchedulerP{
   
   //unused
   event void AnnounceSend.sendDone(message_t* msg, error_t error){}
-  event message_t* ReplyReceive.receive(message_t* msg, void* payload, uint8_t len){}
+  event message_t* ReplyReceive.receive(message_t* msg, void* payload, uint8_t len){ return msg;}
 
   
 }

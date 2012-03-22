@@ -16,6 +16,7 @@ configuration TDMASchedulerC{
 
   uses interface AMPacket;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   uses interface Packet;
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
@@ -39,6 +40,7 @@ configuration TDMASchedulerC{
   TDMASchedulerP.TDMAPhySchedule = TDMAPhySchedule;
   TDMASchedulerP.Packet = Packet;
   TDMASchedulerP.CXPacket = CXPacket;
+  TDMASchedulerP.CXPacketMetadata = CXPacketMetadata;
   TDMASchedulerP.AMPacket = AMPacket;
   TDMASchedulerP.FrameStarted = FrameStarted;
 
