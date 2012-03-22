@@ -646,6 +646,10 @@ module CXTDMAPhysicalP {
       return EOFF;
     } else if(!inError()) {
       uint32_t firstDelta;
+      printf("@%lu: %lu %u %lu %lu %u %u %x\r\n", 
+        call FrameStartAlarm.getNow(), 
+        startAt, atFrameNum,
+        frameLen, fwCheckLen, activeFrames, inactiveFrames, symbolRate);
 
       atomic{
         SS_TOGGLE_PIN;

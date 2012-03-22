@@ -107,7 +107,7 @@ module CXFloodP{
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
       printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
-        printf(" tx\r\n");
+        printf_F_SCHED(" tx\r\n");
         txLeft = call TDMARoutingSchedule.maxRetransmit();
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
@@ -124,10 +124,10 @@ module CXFloodP{
     }
 
     if (txLeft){
-      printf("f\r\n");
+      printf_F_SCHED("f\r\n");
       return RF1A_OM_FSTXON;
     } else {
-      printf("r\r\n");
+      printf_F_SCHED("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -181,18 +181,7 @@ module CXFloodP{
       }
     }
   }
-
-  async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
-      uint16_t frameNum, error_t error){
-    if (error != SUCCESS){
-      printf("sd!\r\n");
-      setState(S_ERROR_1);
-    }
-    if (txLeft > 0){
-      txLeft --;
-    }else{
-      printf("sent extra?\r\n");
-    }
+  void checkAndCleanup(){
     if (txLeft == 0){
       setState(S_IDLE);
       isOrigin = FALSE;
@@ -205,27 +194,50 @@ module CXFloodP{
     }
   }
 
+  async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+      uint16_t frameNum, error_t error){
+    if (error != SUCCESS){
+      printf("sd!\r\n");
+      setState(S_ERROR_1);
+    }
+    if (txLeft > 0){
+      txLeft --;
+    }else{
+      printf("sent extra?\r\n");
+    }
+    checkAndCleanup();
+  }
+
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint8_t thisSn = call CXPacket.sn(msg);
+    printf_F_RX("rx ");
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+        //TODO: add to routing table.
+        call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
+          call CXPacket.count(msg));
+        printf_F_RX("n");
 
         //check for routed flag: ignore it if the routed flag is
         //set, but we are not on the path.
         if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
           bool isBetween;
-          printf_F_RX("Prerouted\r\n");
+          printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+            printf_F_RX("~b\r\n");
             return msg;
+          }else{
+            printf_F_RX("b");
           }
         }
 
         if (SUCCESS == call Resource.immediateRequest()){
           message_t* ret = fwd_msg;
+          printf_F_RX("f\r\n");
           lastSn = thisSn;
           lastSrc = thisSrc;
           lastDepth = call CXPacket.count(msg);
@@ -234,19 +246,24 @@ module CXFloodP{
           fwd_len = len;
           rxOutstanding = TRUE;
           setState(S_FWD);
+          //to handle the case where retx = 0
+          checkAndCleanup();
           return ret;
 
         //couldn't get the resource, ignore this packet.
         } else {
+          printf_F_RX("!R\r\n");
           return msg;
         }
       //duplicate, ignore
       } else {
+        printf("d\r\n");
         return msg;
       }
 
     //busy forwarding, ignore it.
     } else {
+      printf("b\r\n");
       return msg;
     }
   }

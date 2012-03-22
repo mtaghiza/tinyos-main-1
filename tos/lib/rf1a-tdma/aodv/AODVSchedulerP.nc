@@ -250,6 +250,7 @@ module AODVSchedulerP{
   }
 
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
+//    printf_SCHED("aodv.mr\r\n");
     return call SubTDMARoutingSchedule.maxRetransmit[rm]();
   }
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){

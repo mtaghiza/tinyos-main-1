@@ -92,30 +92,44 @@ module NonRootSchedulerP{
     }
   }
 
+  task void printNext(){
+    cx_schedule_t* pl = (cx_schedule_t*) call
+    Packet.getPayload(nextMsg, sizeof(cx_schedule_t));
+    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u\r\n", 
+      pl->scheduleNum, pl->originalFrame, pl->frameLen,
+      pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
+      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
+  }
+
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;
     uint32_t rxTS;
     uint16_t rxFrameNum;
-    printf_SCHED("AR.r\r\n");
+    printf_SCHED("AR.r ");
     //update clock skew figures 
     framesSinceLastSchedule = 0;
-    rxFrameNum = call CXPacketMetadata.getFrameNum(msg);  
+    //we want to know when we received it *in the root's timeframe*
+    rxFrameNum = pl->originalFrame 
+      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID);  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
 
     if (pl->scheduleNum == curSched->scheduleNum){
+      printf_SCHED("s");
       if(lastRxTS != 0){
         uint32_t rootTicks;
         uint32_t myTicks;
         int32_t d;
         int32_t framesElapsed = 
           curSched->activeFrames+curSched->inactiveFrames;
+        printf_SCHED("v");
         rootTicks = call CXPacket.getTimestamp(msg) - lastRootStart;
         myTicks = rxTS - lastRxTS;
         d = myTicks - rootTicks;
         delta[cycleNum++] = d;
         //TODO: double check this logic. 
         if ( d > framesElapsed ){
+          printf_SCHED("+");
           //evenly distribute as much as possible
           ticksPerFrame = d/framesElapsed;
           //distribute leftovers over the rest of the frames as evenly
@@ -128,6 +142,7 @@ module NonRootSchedulerP{
           //frame.
           endOfCycle = (framesElapsed % extraFrames)?1:0;
         }else if ( d < -1*framesElapsed){
+          printf_SCHED("-");
           //same but for negative ticks
           ticksPerFrame = -1* (d/framesElapsed);
           d -= (ticksPerFrame*framesElapsed);
@@ -135,22 +150,28 @@ module NonRootSchedulerP{
           extraFrameOffset = -1;
           endOfCycle = (framesElapsed % extraFrames)?-1:0;
         }
+      }else{
+        printf_SCHED("~v");
       }
       lastRxTS = rxTS;
       lastRxFrameNum = rxFrameNum;
       lastRootStart = call CXPacket.getTimestamp(msg);
+      return msg; 
     } else {
       message_t* swp = nextMsg;
+      printf_SCHED("n\r\n");
       changePending = TRUE;
-      lastRxTS = 0;
+      lastRxTS = rxTS;
+      lastRxFrameNum = rxFrameNum;
+      lastRootStart = call CXPacket.getTimestamp(msg);
       extraFrames = 1;
       extraFrameOffset = 0;
       endOfCycle = 0;
       //TODO: other values to reset?
       nextMsg = msg;
+      post printNext();
       return swp;
     }
-    return msg; 
   }
 
   task void replyTask(){
@@ -170,11 +191,13 @@ module NonRootSchedulerP{
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
+    printf_SCHED("fs.f %u ", frameNum);
     //may be off by one
-    if (changePending && (frameNum ==
+    if (changePending && (frameNum + 1 ==
         (curSched->activeFrames+curSched->inactiveFrames))){
       error_t error;
       message_t* swp = curMsg;
+      printf_SCHED("c");
       curMsg = nextMsg;
       nextMsg = swp;
       curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
@@ -187,12 +210,13 @@ module NonRootSchedulerP{
         curSched->inactiveFrames, 
         curSched->symbolRate);
       if (SUCCESS == error){
-        printf_SCHED("SetSchedule OK\r\n");
+        printf_SCHED(" OK\r\n");
         post replyTask();
       }else{
-        printf("setSchedule: %s\r\n", decodeError(error));
+        printf("!%s", decodeError(error));
       }
     }
+    printf_SCHED("\r\n");
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
@@ -216,25 +240,26 @@ module NonRootSchedulerP{
   //if we're on an extraFrames boundary, add or subtract another one
   //if this is the last frame of the cycle, add in whatever's left.
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
-    //TODO: div/0
-    return ticksPerFrame 
-      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
-      + ((frameNum == 
-          (curSched->activeFrames + curSched->inactiveFrames -1))
-          ? endOfCycle
-          : 0);
+    return 0;
+//    //TODO: div/0
+//    return ticksPerFrame 
+//      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
+//      + ((frameNum == 
+//          (curSched->activeFrames + curSched->inactiveFrames -1))
+//          ? endOfCycle
+//          : 0);
   }
 
   //we are origin if reply needed and this is the start of our slot.
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-    printf_SCHED("io: ");
+    printf_SCHED_IO("io: ");
     if ((rm == CX_RM_FLOOD) 
         && replyPending 
         && (frameNum == (TOS_NODE_ID * (curSched->framesPerSlot)))){
-      printf_SCHED("T\r\n");
+      printf_SCHED_IO("T\r\n");
       return TRUE;
     }else{
-      printf_SCHED("F\r\n");
+      printf_SCHED_IO("F\r\n");
       return FALSE;
     }
   }
@@ -243,6 +268,7 @@ module NonRootSchedulerP{
     return (framesSinceLastSchedule <= curSched->activeFrames+curSched->inactiveFrames);
   }
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
+//    printf_SCHED("nrs.mr\r\n");
     return curSched->maxRetransmit;
   }
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){

@@ -16,11 +16,11 @@ generic module CXRoutingTableP(uint8_t numEntries){
   }
 
   //TODO: bidirectionality?
-  bool getEntry(cx_route_entry_t* re, am_addr_t n0, am_addr_t n1){
+  bool getEntry(cx_route_entry_t** re, am_addr_t n0, am_addr_t n1){
     uint8_t i = 0;
     for (i = 0; i < numEntries; i++){
-      re = &rt[i];
-      if ((re->n0 == n0) && (re->n1 == n1)){
+      *re = &rt[i];
+      if (((*re)->n0 == n0) && ((*re)->n1 == n1)){
         return TRUE;
       }
     }
@@ -29,7 +29,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
 
   command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to){
     cx_route_entry_t* re;
-    if (getEntry(re, from, to)){
+    if (getEntry(&re, from, to)){
       return re->distance;
     }else{
       return 0xff;
@@ -41,7 +41,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
     uint8_t i;
     cx_route_entry_t* re;
     //update and mark used-recently if it's already in the table.
-    if (getEntry(re, n0, n1)){
+    if (getEntry(&re, n0, n1)){
       re->distance = distance;
       re->used = TRUE;
       return SUCCESS;
@@ -75,11 +75,11 @@ generic module CXRoutingTableP(uint8_t numEntries){
       *result = TRUE;
       return SUCCESS;
     }
-    if (getEntry(re, n0, TOS_NODE_ID)){
+    if (getEntry(&re, n0, TOS_NODE_ID)){
       uint8_t sm = re->distance;
-      if (getEntry(re, n1, TOS_NODE_ID)){
+      if (getEntry(&re, n1, TOS_NODE_ID)){
         uint8_t md = re->distance;
-        if (getEntry(re, n0, n1)){
+        if (getEntry(&re, n0, n1)){
           *result = sm + md <= re->distance;
           return SUCCESS;
         }

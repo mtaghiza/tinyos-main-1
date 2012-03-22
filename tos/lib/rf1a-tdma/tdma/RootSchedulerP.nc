@@ -65,6 +65,7 @@ module RootSchedulerP{
     schedule_pl = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
     schedule_pl -> originalFrame = originalFrame;
     schedule_pl -> frameLen = frameLen;
+    schedule_pl -> fwCheckLen = fwCheckLen;
     schedule_pl -> activeFrames = activeFrames;
     schedule_pl -> inactiveFrames = inactiveFrames;
     schedule_pl -> framesPerSlot = framesPerSlot;
@@ -73,6 +74,14 @@ module RootSchedulerP{
     schedule_pl -> scheduleNum++;
   }
   task void announceSchedule();
+
+  task void printSchedule(){
+    cx_schedule_t* pl = (cx_schedule_t*) call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
+    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u\r\n", 
+      pl->scheduleNum, pl->originalFrame, pl->frameLen,
+      pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
+      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
+  }
 
   event void SubSplitControl.startDone(error_t error){
     printf_SCHED("SSC.sd\r\n");
@@ -91,6 +100,7 @@ module RootSchedulerP{
         //state: fixin' to announce.
         //set flag to indicate that we are waiting for replies.
 //        post announceSchedule();
+        post printSchedule();
         printf_SCHED("setSchedule OK\r\n");
       }else{
         printf("set next schedule: %s\r\n", decodeError(error));
