@@ -156,6 +156,7 @@ module NonRootSchedulerP{
       lastRxTS = rxTS;
       lastRxFrameNum = rxFrameNum;
       lastRootStart = call CXPacket.getTimestamp(msg);
+      printf("\r\n");
       return msg; 
     } else {
       message_t* swp = nextMsg;
@@ -191,7 +192,8 @@ module NonRootSchedulerP{
 
   task void updateScheduleTask(){
     error_t error;
-    printf("UST");
+    printf_SCHED("UST");
+    printf_SCHED("...");
     error = call TDMAPhySchedule.setSchedule(lastRxTS, 
       lastRxFrameNum,
       curSched->frameLen,
@@ -199,6 +201,7 @@ module NonRootSchedulerP{
       curSched->activeFrames,
       curSched->inactiveFrames, 
       curSched->symbolRate);
+    printf_SCHED("...");
     if (SUCCESS == error){
       printf_SCHED(" OK\r\n");
       post replyTask();
@@ -208,20 +211,20 @@ module NonRootSchedulerP{
   }
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
-    printf_SCHED("fs.f %u ", frameNum);
+//    printf_SCHED("fs.f %u ", frameNum);
     //may be off by one
     if (changePending && (frameNum + 1 ==
         (curSched->activeFrames+curSched->inactiveFrames))){
       error_t error;
       message_t* swp = curMsg;
-      printf_SCHED("c");
+//      printf_SCHED("c");
       curMsg = nextMsg;
       nextMsg = swp;
       curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
        sizeof(cx_schedule_t));
       post updateScheduleTask();
     }
-    printf_SCHED("\r\n");
+//    printf_SCHED("\r\n");
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){

@@ -116,7 +116,7 @@ module CXFloodP{
         setState(S_FWD);
         return RF1A_OM_FSTXON;
       } else {
-        printf("! rx\r\n");
+        printf_F_SCHED("! rx\r\n");
         return RF1A_OM_RX;
       }
     }else{
@@ -197,13 +197,13 @@ module CXFloodP{
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
-      printf("sd!\r\n");
+      printf("CXFloodP sd!\r\n");
       setState(S_ERROR_1);
     }
     if (txLeft > 0){
       txLeft --;
     }else{
-      printf("sent extra?\r\n");
+      printf("CXFloodP sent extra?\r\n");
     }
     checkAndCleanup();
   }
@@ -257,13 +257,13 @@ module CXFloodP{
         }
       //duplicate, ignore
       } else {
-        printf("d\r\n");
+        printf_F_RX("d\r\n");
         return msg;
       }
 
     //busy forwarding, ignore it.
     } else {
-      printf("b\r\n");
+      printf_F_RX("b\r\n");
       return msg;
     }
   }
