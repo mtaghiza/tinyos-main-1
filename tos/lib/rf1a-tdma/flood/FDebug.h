@@ -13,4 +13,11 @@
 #define printf_F_RX(...) 
 #endif
 
+#ifdef DEBUG_F_SCHED
+#define printf_F_SCHED(...) printf(__VA_ARGS__)
+#else
+#define printf_F_SCHED(...) 
+#endif
+
+
 #endif

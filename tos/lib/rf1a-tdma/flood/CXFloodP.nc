@@ -73,6 +73,7 @@ module CXFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+    printf_F_SCHED("fs.s %x\r\n", t);
     atomic{
       if (!txPending){
         tx_msg = msg;
@@ -102,8 +103,11 @@ module CXFloodP{
     //(RootC / NonRootC? For AODV, will want to send as many packets
     //in a frame as it can.)
 
+    printf_F_SCHED("f.ft %u", frameNum);
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
+      printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
+        printf(" tx\r\n");
         txLeft = call TDMARoutingSchedule.maxRetransmit();
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
@@ -112,13 +116,18 @@ module CXFloodP{
         setState(S_FWD);
         return RF1A_OM_FSTXON;
       } else {
+        printf("! rx\r\n");
         return RF1A_OM_RX;
       }
+    }else{
+      printf_F_SCHED("n");
     }
 
     if (txLeft){
+      printf("f\r\n");
       return RF1A_OM_FSTXON;
     } else {
+      printf("r\r\n");
       return RF1A_OM_RX;
     }
   }
@@ -126,19 +135,20 @@ module CXFloodP{
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
     GP_SET_PIN;
+    printf_F_SCHED("f.gp");
     if (isOrigin){
+      printf_F_SCHED("o\r\n");
       GP_CLEAR_PIN;
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
     } else {
+      printf_F_SCHED("f\r\n");
       *msg = fwd_msg;
       *len = fwd_len;
       GP_CLEAR_PIN;
       return TRUE;
     }
-    GP_CLEAR_PIN;
-    return FALSE;
   }
 
   task void txSuccessTask(){

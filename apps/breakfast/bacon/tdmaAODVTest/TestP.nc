@@ -62,9 +62,14 @@ module TestP {
       PMAPCTL = PMAPRECFG;
       P1MAP2 = PM_RFGDO0;
       PMAPPWD = 0x00;
-
+      
       P1OUT &= ~(BIT1|BIT3|BIT4);
       P2OUT &= ~(BIT4);
+      
+      //odd behavior: flash chip seems to drive the SPI lines to gnd
+      //when it's powered off.
+      P2SEL &=~BIT1;
+      P2OUT |=BIT1;
     }
     call UartControl.start();
     printf("\r\nCXTDMA AODV test\r\n");

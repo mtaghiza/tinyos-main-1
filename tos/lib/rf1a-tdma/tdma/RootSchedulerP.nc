@@ -133,7 +133,7 @@ module RootSchedulerP{
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     //may be off-by-one
-    if (frameNum == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+    if ((1+frameNum)%(activeFrames+inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
       printf_SCHED("post announce @%d\r\n", frameNum);
       post announceSchedule();
     }
