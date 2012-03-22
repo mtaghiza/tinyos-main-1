@@ -207,7 +207,7 @@ module CXTDMAPhysicalP {
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
 //    printf("PFS %u %lu (%lu)\r\n", frameNum, 
-//      call FrameStartAlarm.getNow(), 
+//      call PrepareFrameStartAlarm.getNow(), 
 //      call PrepareFrameStartAlarm.getAlarm());
     if (scStopPending){
       scStopError = call Resource.release();
@@ -325,6 +325,7 @@ module CXTDMAPhysicalP {
       setState(S_ERROR_5);
       return;
     }
+    printf_TDMA_SS("pfs1\r\n");
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
     //16 uS
@@ -389,6 +390,9 @@ module CXTDMAPhysicalP {
     //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
+//    printf("FS %u %lu (%lu)\r\n", frameNum, 
+//      call FrameStartAlarm.getNow(), 
+//      call FrameStartAlarm.getAlarm());
     if (checkState(S_TX_READY)){
       TXCP_SET_PIN;
       FS_TOGGLE_PIN;
@@ -646,7 +650,9 @@ module CXTDMAPhysicalP {
       return EOFF;
     } else if(!inError()) {
       uint32_t firstDelta;
-      printf("@%lu: %lu %u %lu %lu %u %u %x\r\n", 
+      call PrepareFrameStartAlarm.stop();
+      call FrameStartAlarm.stop();
+      printf_TDMA_SS("SS@%lu: %lu %u %lu %lu %u %u %x\r\n", 
         call FrameStartAlarm.getNow(), 
         startAt, atFrameNum,
         frameLen, fwCheckLen, activeFrames, inactiveFrames, symbolRate);
@@ -656,7 +662,7 @@ module CXTDMAPhysicalP {
         firstDelta = frameLen;
         //make sure that base time is in the past.
         while(startAt > call FrameStartAlarm.getNow()){
-//          printf("s");
+          printf_TDMA_SS("s");
           startAt -= frameLen;
           firstDelta += frameLen;
         }
@@ -669,7 +675,7 @@ module CXTDMAPhysicalP {
           firstDelta += frameLen;
           //also apply corrections to the fast-forward.
           firstDelta += signal TDMAPhySchedule.getFrameAdjustment(atFrameNum);
-//          printf("d");
+          printf_TDMA_SS("d");
         }
 
         SS_TOGGLE_PIN;
@@ -679,6 +685,7 @@ module CXTDMAPhysicalP {
         s_activeFrames = activeFrames;
         s_inactiveFrames = inactiveFrames;
         if (atFrameNum == 0){
+          printf_TDMA_SS("w");
           atFrameNum = activeFrames + inactiveFrames;
         }
         frameNum = atFrameNum - 1;
@@ -689,13 +696,21 @@ module CXTDMAPhysicalP {
       //so: pfs will fire at startAt. At that time, frameNum will get
       //  incremented
       //TODO: check for over/under flows
-//      printf("Now %lu base %lu delta %lu at %u\r\n", 
-//        call FrameStartAlarm.getNow(), s_frameStart,
-//        firstDelta, frameNum);
-//
+      printf_TDMA_SS("Now %lu base %lu delta %lu (%lu %lu) at %u\r\n", 
+        call PrepareFrameStartAlarm.getNow(), s_frameStart,
+        firstDelta, 
+        firstDelta-PFS_SLACK-SFD_TIME, 
+        firstDelta - SFD_TIME, 
+        frameNum);
+
       SS_TOGGLE_PIN;
+
+      call PrepareFrameStartAlarm.stop();
+      call FrameStartAlarm.stop();
+      printf_TDMA_SS("pfs0\r\n");
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
+      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
       call FrameStartAlarm.startAt(
         s_frameStart, 
         firstDelta - SFD_TIME);

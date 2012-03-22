@@ -113,5 +113,11 @@
 #define GP_SET_PIN 
 #endif
 
+#ifdef DEBUG_TDMA_SS
+#define printf_TDMA_SS(...) printf(__VA_ARGS__)
+#else
+#define printf_TDMA_SS(...) 
+#endif
+
 
 #endif

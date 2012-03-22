@@ -189,6 +189,23 @@ module NonRootSchedulerP{
     }
   }
 
+  task void updateScheduleTask(){
+    error_t error;
+    printf("UST");
+    error = call TDMAPhySchedule.setSchedule(lastRxTS, 
+      lastRxFrameNum,
+      curSched->frameLen,
+      curSched->fwCheckLen, 
+      curSched->activeFrames,
+      curSched->inactiveFrames, 
+      curSched->symbolRate);
+    if (SUCCESS == error){
+      printf_SCHED(" OK\r\n");
+      post replyTask();
+    }else{
+      printf("!%s", decodeError(error));
+    }
+  }
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
     printf_SCHED("fs.f %u ", frameNum);
@@ -202,19 +219,7 @@ module NonRootSchedulerP{
       nextMsg = swp;
       curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
        sizeof(cx_schedule_t));
-      error = call TDMAPhySchedule.setSchedule(lastRxTS, 
-        lastRxFrameNum,
-        curSched->frameLen,
-        curSched->fwCheckLen, 
-        curSched->activeFrames,
-        curSched->inactiveFrames, 
-        curSched->symbolRate);
-      if (SUCCESS == error){
-        printf_SCHED(" OK\r\n");
-        post replyTask();
-      }else{
-        printf("!%s", decodeError(error));
-      }
+      post updateScheduleTask();
     }
     printf_SCHED("\r\n");
   }
