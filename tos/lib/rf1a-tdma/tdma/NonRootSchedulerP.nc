@@ -111,8 +111,10 @@ module NonRootSchedulerP{
     //update clock skew figures 
     framesSinceLastSchedule = 0;
     //we want to know when we received it *in the root's timeframe*
+    //have to subtract 1 because distance is 1 if we receive it during
+    //original frame.
     rxFrameNum = pl->originalFrame 
-      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID);  
+      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID) - 1;  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
     curRootStart = call CXPacket.getTimestamp(msg);
 
