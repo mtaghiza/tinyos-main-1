@@ -327,7 +327,8 @@ module CXTDMAPhysicalP {
     }
     printf_TDMA_SS("pfs1\r\n");
     call PrepareFrameStartAlarm.startAt(
-      call PrepareFrameStartAlarm.getAlarm(), s_frameLen);
+      call PrepareFrameStartAlarm.getAlarm(), 
+      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
     //16 uS
     PFS_SET_PIN;
     PFS_CLEAR_PIN;
@@ -710,10 +711,10 @@ module CXTDMAPhysicalP {
 
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
-      printf_TDMA_SS("pfs0\r\n");
+//      printf_TDMA_SS("pfs0\r\n");
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
-      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
+//      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
       call FrameStartAlarm.startAt(
         s_frameStart, 
         firstDelta - SFD_TIME);

@@ -143,19 +143,30 @@ module NonRootSchedulerP{
           //distribute leftovers over the rest of the frames as evenly
           //as possible. 
           d -= (ticksPerFrame*framesElapsed);
-          extraFrames = framesElapsed/d;
-          //TODO: div/0
-          extraFrameOffset = 1;
-          //If frameNum %extraFrames != 0, add another tick to the last
-          //frame.
-          endOfCycle = (framesElapsed % extraFrames)?1:0;
+          if (d){
+            extraFrames = framesElapsed/d;
+            extraFrameOffset = 1;
+            //If frameNum %extraFrames != 0, add another tick to the last
+            //frame.
+            endOfCycle = (framesElapsed % extraFrames)?1:0;
+          }else{
+            extraFrames = framesElapsed;
+            extraFrameOffset = 0;
+            endOfCycle = 0;
+          }
         }else if ( d < -1*framesElapsed){
           //same but for negative ticks
           ticksPerFrame = -1* (d/framesElapsed);
           d -= (ticksPerFrame*framesElapsed);
-          extraFrames = -1*(framesElapsed/d);
-          extraFrameOffset = -1;
-          endOfCycle = (framesElapsed % extraFrames)?-1:0;
+          if (d){
+            extraFrames = -1*(framesElapsed/d);
+            extraFrameOffset = -1;
+            endOfCycle = (framesElapsed % extraFrames)?-1:0;
+          }else{
+            extraFrames = framesElapsed;
+            extraFrameOffset = 0;
+            endOfCycle = 0;
+          }
         }
       }else{
         printf_SCHED("~v");
@@ -255,14 +266,12 @@ module NonRootSchedulerP{
   //if we're on an extraFrames boundary, add or subtract another one
   //if this is the last frame of the cycle, add in whatever's left.
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
-    return 0;
-//    //TODO: div/0
-//    return ticksPerFrame 
-//      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
-//      + ((frameNum == 
-//          (curSched->activeFrames + curSched->inactiveFrames -1))
-//          ? endOfCycle
-//          : 0);
+//    return 0;
+    return -1*(ticksPerFrame 
+      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
+      + ((frameNum == 
+          (curSched->activeFrames + curSched->inactiveFrames -1))
+          ? endOfCycle: 0));
   }
 
   //we are origin if reply needed and this is the start of our slot.
