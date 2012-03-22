@@ -1,6 +1,7 @@
 configuration Rf1aCXPacketC{
   provides interface Packet;
   provides interface CXPacket;
+  provides interface CXPacketMetadata;
   uses interface Packet as SubPacket;
   uses interface Ieee154Packet;
   uses interface AMPacket;
@@ -13,4 +14,5 @@ configuration Rf1aCXPacketC{
   Ieee154Packet = PacketP;
   Rf1aPacket = PacketP;
   AMPacket = PacketP;
+  CXPacketMetadata = PacketP;
 }

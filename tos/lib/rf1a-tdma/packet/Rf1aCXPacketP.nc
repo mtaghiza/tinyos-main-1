@@ -3,6 +3,7 @@
 module Rf1aCXPacketP{
   provides interface CXPacket;
   provides interface Packet;
+  provides interface CXPacketMetadata;
   uses interface AMPacket as AMPacket;
   uses interface Packet as SubPacket;
   uses interface Rf1aPacket; 
@@ -14,6 +15,10 @@ module Rf1aCXPacketP{
 
   cx_header_t* getHeader(message_t* msg){
     return (cx_header_t*)(call SubPacket.getPayload(msg, sizeof(cx_header_t)));
+  }
+
+  cx_metadata_t* getMetadata(message_t* msg){
+    return msg->metadata->cx;
   }
 
   command void CXPacket.init(message_t* msg){
@@ -117,7 +122,18 @@ module Rf1aCXPacketP{
     getHeader(amsg)->timestamp = ts;
   }
 
-
+  command void CXPacketMetadata.setReceivedAt(message_t* amsg, uint32_t ts){
+    getMetadata(msg)->receivedAt = ts;
+  }
+  command uint32_t CXPacketMetadata.getReceivedAt(message_t* amsg){
+    return getMetadata(msg)->receivedAt;
+  }
+  command void CXPacketMetadata.setFrameNum(message_t* amsg, uint16_t frameNum){
+    getMetadata(msg)->frameNum = frameNum;
+  }
+  command uint16_t CXPacketMetadata.getFrameNum(message_t* amsg){
+    return getMetadata(msg)->frameNum;
+  }
 
   async event void ActiveMessageAddress.changed(){ }
 }

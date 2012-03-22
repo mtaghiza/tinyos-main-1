@@ -1,5 +1,5 @@
 interface TDMAPhySchedule{
-  command error_t setNextSchedule(uint32_t startAt,
+  command error_t setSchedule(uint32_t startAt,
     uint16_t atFrameNum, uint32_t frameLen, 
     uint32_t fwCheckLen, uint16_t activeFrames, 
     uint16_t inactiveFrames, uint8_t symbolRate);

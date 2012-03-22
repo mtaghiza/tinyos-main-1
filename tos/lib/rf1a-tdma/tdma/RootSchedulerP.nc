@@ -17,6 +17,14 @@ module RootSchedulerP{
   //maybe this should be done by Flood send.
   uses interface AMPacket;
 } implementation {
+
+  enum{
+    S_IDLE,
+    S_ANNOUNCING
+  };
+  uint8_t state;
+  bool repliesPending;
+
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
@@ -118,11 +126,14 @@ module RootSchedulerP{
   }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
-    //TODO: if this is the end of the inactive period, have work to do
+    //may be off-by-one
+    if (frameNum == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+      post announceSchedule();
+    }
   }
 
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
-    //TODO: use clock skew results to dish this out.
+    //as root, we let the rest of the network adjust around us.
     return 0;
   }
 

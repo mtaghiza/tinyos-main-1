@@ -30,6 +30,11 @@ typedef nx_struct cx_ack_t{
   nx_uint8_t depth;
 } cx_ack_t;
 
+typedef cx_metadata_t{
+  uint32_t receivedAt;
+  uint16_t frameNum;
+} cx_metadata_t;
+
 #define CX_TYPE_DATA 0xaa
 #define CX_TYPE_ACK  0xab
 #define CXTDMA_RM_RESOURCE "CXTDMA.RM.Resource"

@@ -445,7 +445,8 @@ module CXTDMAPhysicalP {
     FS_TOGGLE_PIN;
     if (! inError()){
       call FrameStartAlarm.startAt(lastFsa,
-        s_frameLen);
+        s_frameLen 
+        + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
     }
     //16 uS
     FS_SET_PIN;
@@ -582,6 +583,10 @@ module CXTDMAPhysicalP {
         atomic{
           call CXPacket.setCount((message_t*)buffer, 
             call CXPacket.count((message_t*)buffer) +1);
+          call CXPacketMetadata.setReceivedAt((message_t*)buffer,
+            lastRECapture);
+          call CXPacketMetadata.setFrameNum((message_t*)buffer,
+            frameNum);
           rx_msg = signal CXTDMA.receive((message_t*)buffer, count,
             frameNum, lastRECapture);
         }
@@ -625,9 +630,7 @@ module CXTDMAPhysicalP {
     return call FrameStartAlarm.getNow();
   }
   
-  //TODO: IMPORTANT. This needs to defer schedule modification until
-  //the next cycle. Otherwise, we get into all kinds of trouble.
-  command error_t TDMAPhySchedule.setNextSchedule(uint32_t startAt,
+  command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint8_t symbolRate){
@@ -659,6 +662,8 @@ module CXTDMAPhysicalP {
         while ( (startAt + firstDelta) < call FrameStartAlarm.getNow()){
           atFrameNum = (1+atFrameNum) % (activeFrames + inactiveFrames);
           firstDelta += frameLen;
+          //also apply corrections to the fast-forward.
+          firstDelta += signal TDMAPhySchedule.getFrameAdjustment(atFrameNum);
 //          printf("d");
         }
 
@@ -686,7 +691,6 @@ module CXTDMAPhysicalP {
       SS_TOGGLE_PIN;
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
-      //TODO: any SW clock-tuning should be done here.
       call FrameStartAlarm.startAt(
         s_frameStart, 
         firstDelta - SFD_TIME);

@@ -7,6 +7,7 @@
 #define CX_TYPE_SCHEDULE_REPLY 0xad
 
 typedef nx_struct cx_schedule_t {
+  nx_uint8_t scheduleNum;
   nx_uint16_t originalFrame;
   nx_uint32_t frameLen;
   nx_uint32_t fwCheckLen;
@@ -15,8 +16,11 @@ typedef nx_struct cx_schedule_t {
   nx_uint16_t framesPerSlot;
   nx_uint8_t  maxRetransmit;
   nx_uint8_t symbolRate;
-  nx_uint32_t rootStart;
 } cx_schedule_t;
+
+typedef nx_struct cx_schedule_reply_t{
+  nx_uint8_t scheduleNum;
+} cx_schedule_reply_t;
 
 #ifndef TDMA_ROOT
 #define TDMA_ROOT 0
