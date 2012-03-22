@@ -14,6 +14,7 @@ module RootSchedulerP{
 
   uses interface Packet;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   //maybe this should be done by Flood send.
   uses interface AMPacket;
 } implementation {
@@ -59,7 +60,6 @@ module RootSchedulerP{
     call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
     schedule_pl = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
-    schedule_pl -> rootStart = 0;
     schedule_pl -> originalFrame = originalFrame;
     schedule_pl -> frameLen = frameLen;
     schedule_pl -> activeFrames = activeFrames;
@@ -72,7 +72,7 @@ module RootSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (SUCCESS == error){
-      error = call TDMAPhySchedule.setNextSchedule(
+      error = call TDMAPhySchedule.setSchedule(
         call TDMAPhySchedule.getNow(), 
         TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
         DEFAULT_TDMA_FRAME_LEN,
