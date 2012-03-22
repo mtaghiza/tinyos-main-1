@@ -1,4 +1,5 @@
  #include "schedule.h"
+ #include "SchedulerDebug.h"
 module RootSchedulerP{
   provides interface SplitControl;
   provides interface TDMARoutingSchedule[uint8_t rm];
@@ -50,6 +51,7 @@ module RootSchedulerP{
   
   command error_t SplitControl.start(){
     error_t error;
+    printf_SCHED("SC.s\r\n");
     error = call SubSplitControl.start();
     return error;
   }
@@ -73,6 +75,7 @@ module RootSchedulerP{
   task void announceSchedule();
 
   event void SubSplitControl.startDone(error_t error){
+    printf_SCHED("SSC.sd\r\n");
     if (SUCCESS == error){
       error = call TDMAPhySchedule.setSchedule(
         call TDMAPhySchedule.getNow(), 
@@ -87,7 +90,8 @@ module RootSchedulerP{
           TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID);
         //state: fixin' to announce.
         //set flag to indicate that we are waiting for replies.
-        post announceSchedule();
+//        post announceSchedule();
+        printf_SCHED("setSchedule OK\r\n");
       }else{
         printf("set next schedule: %s\r\n", decodeError(error));
       }
@@ -102,14 +106,16 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("announce schedule: %s\r\n", decodeError(error));
     }else{
+      printf_SCHED("announcing\r\n");
       //state: announcing
     }
   }
 
   event void AnnounceSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS != error){
-      printf("send done: %s\r\n", decodeError(error));
+      printf("AS.send done: %s\r\n", decodeError(error));
     } else {
+      printf_SCHED("AS.sd\r\n");
       //state: either idle or reply-wait (depending on flag)
     }
   }
@@ -128,6 +134,7 @@ module RootSchedulerP{
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     //may be off-by-one
     if (frameNum == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+      printf_SCHED("post announce @%d\r\n", frameNum);
       post announceSchedule();
     }
   }
@@ -162,7 +169,7 @@ module RootSchedulerP{
 
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    printf("reply.rx: %x %d\r\n", call CXPacket.source(msg), 
+    printf_SCHED("reply.rx: %x %d\r\n", call CXPacket.source(msg), 
       call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID));
     //TODO: logic for making sure we didnt' disconnect the network,
     //counting up max depth, etc.

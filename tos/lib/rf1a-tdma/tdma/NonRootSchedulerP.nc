@@ -1,3 +1,4 @@
+ #include "SchedulerDebug.h"
  #include "schedule.h"
 module NonRootSchedulerP{
   provides interface SplitControl;
@@ -86,6 +87,8 @@ module NonRootSchedulerP{
       curSched->symbolRate);
     if (SUCCESS != error){
       printf("setSchedule: %s\r\n", decodeError(error));
+    }else{
+      printf_SCHED("ssc.sd setSchedule OK\r\n");
     }
   }
 
@@ -94,6 +97,7 @@ module NonRootSchedulerP{
     cx_schedule_t* pl = (cx_schedule_t*) payload;
     uint32_t rxTS;
     uint16_t rxFrameNum;
+    printf_SCHED("AR.r\r\n");
     //update clock skew figures 
     framesSinceLastSchedule = 0;
     rxFrameNum = call CXPacketMetadata.getFrameNum(msg);  
@@ -156,6 +160,7 @@ module NonRootSchedulerP{
     reply->scheduleNum = curSched->scheduleNum;
     error = call ReplySend.send(replyMsg, sizeof(replyMsg));
     if (SUCCESS == error){
+      printf_SCHED("ReplySend.send OK\r\n");
       changePending = FALSE;
       replyPending = TRUE;
     }else{
@@ -182,6 +187,7 @@ module NonRootSchedulerP{
         curSched->inactiveFrames, 
         curSched->symbolRate);
       if (SUCCESS == error){
+        printf_SCHED("SetSchedule OK\r\n");
         post replyTask();
       }else{
         printf("setSchedule: %s\r\n", decodeError(error));
@@ -221,11 +227,14 @@ module NonRootSchedulerP{
 
   //we are origin if reply needed and this is the start of our slot.
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
+    printf_SCHED("io: ");
     if ((rm == CX_RM_FLOOD) 
         && replyPending 
         && (frameNum == (TOS_NODE_ID * (curSched->framesPerSlot)))){
+      printf_SCHED("T\r\n");
       return TRUE;
     }else{
+      printf_SCHED("F\r\n");
       return FALSE;
     }
   }
