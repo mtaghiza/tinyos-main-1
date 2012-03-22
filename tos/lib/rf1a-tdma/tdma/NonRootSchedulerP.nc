@@ -105,6 +105,7 @@ module NonRootSchedulerP{
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;
     uint32_t rxTS;
+    uint32_t curRootStart;
     uint16_t rxFrameNum;
     printf_SCHED("AR.r ");
     //update clock skew figures 
@@ -113,6 +114,7 @@ module NonRootSchedulerP{
     rxFrameNum = pl->originalFrame 
       + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID);  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
+    curRootStart = call CXPacket.getTimestamp(msg);
 
     if (pl->scheduleNum == curSched->scheduleNum){
       printf_SCHED("s");
@@ -123,13 +125,17 @@ module NonRootSchedulerP{
         int32_t framesElapsed = 
           curSched->activeFrames+curSched->inactiveFrames;
         printf_SCHED("v");
-        rootTicks = call CXPacket.getTimestamp(msg) - lastRootStart;
+        printf_SCHED("(%lu, %lu) -> (%lu, %lu) over %ld\r\n", 
+          lastRxTS, lastRootStart, 
+          rxTS, curRootStart,
+          framesElapsed);
+        rootTicks = curRootStart - lastRootStart;
         myTicks = rxTS - lastRxTS;
         d = myTicks - rootTicks;
         delta[cycleNum++] = d;
+        printf_SCHED(" %ld ", d);
         //TODO: double check this logic. 
         if ( d > framesElapsed ){
-          printf_SCHED("+");
           //evenly distribute as much as possible
           ticksPerFrame = d/framesElapsed;
           //distribute leftovers over the rest of the frames as evenly
@@ -142,7 +148,6 @@ module NonRootSchedulerP{
           //frame.
           endOfCycle = (framesElapsed % extraFrames)?1:0;
         }else if ( d < -1*framesElapsed){
-          printf_SCHED("-");
           //same but for negative ticks
           ticksPerFrame = -1* (d/framesElapsed);
           d -= (ticksPerFrame*framesElapsed);
@@ -183,7 +188,6 @@ module NonRootSchedulerP{
     error = call ReplySend.send(replyMsg, sizeof(replyMsg));
     if (SUCCESS == error){
       printf_SCHED("ReplySend.send OK\r\n");
-      changePending = FALSE;
       replyPending = TRUE;
     }else{
       printf("ReplySend: %s\r\n", decodeError(error));
@@ -193,7 +197,6 @@ module NonRootSchedulerP{
   task void updateScheduleTask(){
     error_t error;
     printf_SCHED("UST");
-    printf_SCHED("...");
     error = call TDMAPhySchedule.setSchedule(lastRxTS, 
       lastRxFrameNum,
       curSched->frameLen,
@@ -201,12 +204,14 @@ module NonRootSchedulerP{
       curSched->activeFrames,
       curSched->inactiveFrames, 
       curSched->symbolRate);
-    printf_SCHED("...");
+    lastRxTS = 0;
+    lastRxFrameNum = 0;
+    changePending = FALSE;
     if (SUCCESS == error){
       printf_SCHED(" OK\r\n");
       post replyTask();
     }else{
-      printf("!%s", decodeError(error));
+      printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }
   }
   async event void FrameStarted.frameStarted(uint16_t frameNum){

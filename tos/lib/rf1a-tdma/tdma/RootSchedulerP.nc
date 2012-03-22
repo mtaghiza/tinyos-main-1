@@ -116,7 +116,7 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("announce schedule: %s\r\n", decodeError(error));
     }else{
-      printf_SCHED("announcing\r\n");
+//      printf_SCHED("announcing\r\n");
       //state: announcing
     }
   }
@@ -125,7 +125,7 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      printf_SCHED("AS.sd\r\n");
+      printf_SCHED("AS.sd: %lu\r\n", call CXPacket.getTimestamp(msg));
       //state: either idle or reply-wait (depending on flag)
     }
   }
@@ -144,7 +144,7 @@ module RootSchedulerP{
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     //may be off-by-one
     if ((1+frameNum)%(activeFrames+inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
-      printf_SCHED("post announce @%d\r\n", frameNum);
+//      printf_SCHED("post announce @%d\r\n", frameNum);
       post announceSchedule();
     }
   }

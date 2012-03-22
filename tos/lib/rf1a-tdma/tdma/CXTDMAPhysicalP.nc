@@ -465,7 +465,7 @@ module CXTDMAPhysicalP {
     //increment hop-count, set the tx timestamp if we are the origin
     //  and this is the first transmission.
     if ((call CXPacket.source((message_t*)*buffer) == TOS_NODE_ID) 
-        && (call CXPacket.sn((message_t*)buffer)) == 0 ){
+        && (call CXPacket.count((message_t*)buffer)) == 0 ){
       call CXPacket.setTimestamp((message_t*)*buffer, lastRECapture);
     }
     call CXPacket.incCount((message_t*)*buffer);
