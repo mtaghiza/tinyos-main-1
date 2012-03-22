@@ -42,6 +42,7 @@ module NonRootSchedulerP{
   message_t reply_msg_internal;
   message_t* replyMsg = &reply_msg_internal;
 
+  uint16_t framesSinceLastSchedule = 2;
   uint16_t lastRxFrameNum;
   uint16_t lastFrameNum;
   uint32_t lastRxTS;
@@ -94,54 +95,54 @@ module NonRootSchedulerP{
     uint32_t rxTS;
     uint16_t rxFrameNum;
     //update clock skew figures 
-    //This isn't quite right: we are still assuming that we get this
-    //event during the frame in which we first receive it (sub layers
-    //may buffer it, though)
-    //maybe we should add some metadata for receivedAt? or
-    //something? dang it.
+    framesSinceLastSchedule = 0;
     rxFrameNum = call CXPacketMetadata.getFrameNum(msg);  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
-    //TODO: this should only be done if the schedule is the same for
-    //both this cycle and the last.
-    if(lastRxTS != 0){
-      uint32_t rootTicks;
-      uint32_t myTicks;
-      int32_t d;
-      int32_t framesElapsed = 
-        curSched->activeFrames+curSched->inactiveFrames;
-      rootTicks = call CXPacket.getTimestamp(msg) - lastRootStart;
-      myTicks = rxTS - lastRxTS;
-      d = myTicks - rootTicks;
-      delta[cycleNum++] = d;
-      //TODO: double check this logic. 
-      if ( d > framesElapsed ){
-        //evenly distribute as much as possible
-        ticksPerFrame = d/framesElapsed;
-        //distribute leftovers over the rest of the frames as evenly
-        //as possible. 
-        d -= (ticksPerFrame*framesElapsed);
-        extraFrames = framesElapsed/d;
-        //TODO: div/0
-        extraFrameOffset = 1;
-        //If frameNum %extraFrames != 0, add another tick to the last
-        //frame.
-        endOfCycle = (framesElapsed % extraFrames)?1:0;
-      }else if ( d < -1*framesElapsed){
-        //same but for negative ticks
-        ticksPerFrame = -1* (d/framesElapsed);
-        d -= (ticksPerFrame*framesElapsed);
-        extraFrames = -1*(framesElapsed/d);
-        extraFrameOffset = -1;
-        endOfCycle = (framesElapsed % extraFrames)?-1:0;
-      }
-    }
 
-    lastRxTS = rxTS;
-    lastRxFrameNum = rxFrameNum;
-    lastRootStart = call CXPacket.getTimestamp(msg);
-    if (pl->scheduleNum != curSched->scheduleNum){
+    if (pl->scheduleNum == curSched->scheduleNum){
+      if(lastRxTS != 0){
+        uint32_t rootTicks;
+        uint32_t myTicks;
+        int32_t d;
+        int32_t framesElapsed = 
+          curSched->activeFrames+curSched->inactiveFrames;
+        rootTicks = call CXPacket.getTimestamp(msg) - lastRootStart;
+        myTicks = rxTS - lastRxTS;
+        d = myTicks - rootTicks;
+        delta[cycleNum++] = d;
+        //TODO: double check this logic. 
+        if ( d > framesElapsed ){
+          //evenly distribute as much as possible
+          ticksPerFrame = d/framesElapsed;
+          //distribute leftovers over the rest of the frames as evenly
+          //as possible. 
+          d -= (ticksPerFrame*framesElapsed);
+          extraFrames = framesElapsed/d;
+          //TODO: div/0
+          extraFrameOffset = 1;
+          //If frameNum %extraFrames != 0, add another tick to the last
+          //frame.
+          endOfCycle = (framesElapsed % extraFrames)?1:0;
+        }else if ( d < -1*framesElapsed){
+          //same but for negative ticks
+          ticksPerFrame = -1* (d/framesElapsed);
+          d -= (ticksPerFrame*framesElapsed);
+          extraFrames = -1*(framesElapsed/d);
+          extraFrameOffset = -1;
+          endOfCycle = (framesElapsed % extraFrames)?-1:0;
+        }
+      }
+      lastRxTS = rxTS;
+      lastRxFrameNum = rxFrameNum;
+      lastRootStart = call CXPacket.getTimestamp(msg);
+    } else {
       message_t* swp = nextMsg;
       changePending = TRUE;
+      lastRxTS = 0;
+      extraFrames = 1;
+      extraFrameOffset = 0;
+      endOfCycle = 0;
+      //TODO: other values to reset?
       nextMsg = msg;
       return swp;
     }
@@ -163,6 +164,7 @@ module NonRootSchedulerP{
   }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
+    framesSinceLastSchedule++;
     //may be off by one
     if (changePending && (frameNum ==
         (curSched->activeFrames+curSched->inactiveFrames))){
@@ -229,8 +231,7 @@ module NonRootSchedulerP{
   }
 
   async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
-    //TODO: TRUE iff we got the last schedule packet.
-    return TRUE;
+    return (framesSinceLastSchedule <= curSched->activeFrames+curSched->inactiveFrames);
   }
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
     return curSched->maxRetransmit;

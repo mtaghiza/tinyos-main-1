@@ -40,6 +40,7 @@ configuration TDMASchedulerC{
   TDMASchedulerP.TDMAPhySchedule = TDMAPhySchedule;
   TDMASchedulerP.Packet = Packet;
   TDMASchedulerP.CXPacket = CXPacket;
+  TDMASchedulerP.CXRoutingTable = CXRoutingTable;
   TDMASchedulerP.CXPacketMetadata = CXPacketMetadata;
   TDMASchedulerP.AMPacket = AMPacket;
   TDMASchedulerP.FrameStarted = FrameStarted;

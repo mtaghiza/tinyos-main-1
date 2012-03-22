@@ -14,6 +14,7 @@ module RootSchedulerP{
 
   uses interface Packet;
   uses interface CXPacket;
+  uses interface CXRoutingTable;
   uses interface CXPacketMetadata;
   //maybe this should be done by Flood send.
   uses interface AMPacket;
@@ -67,6 +68,7 @@ module RootSchedulerP{
     schedule_pl -> framesPerSlot = framesPerSlot;
     schedule_pl -> maxRetransmit = maxRetransmit;
     schedule_pl -> symbolRate = symbolRate;
+    schedule_pl -> scheduleNum++;
   }
   task void announceSchedule();
 
@@ -121,9 +123,7 @@ module RootSchedulerP{
   }
 
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
-      uint16_t frameNum){
-    //TODO: record timing info for clock skew correction
-  }
+      uint16_t frameNum){ }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     //may be off-by-one
@@ -162,6 +162,8 @@ module RootSchedulerP{
 
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
+    printf("reply.rx: %x %d\r\n", call CXPacket.source(msg), 
+      call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID));
     //TODO: logic for making sure we didnt' disconnect the network,
     //counting up max depth, etc.
     return msg;
