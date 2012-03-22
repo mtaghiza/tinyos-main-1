@@ -231,6 +231,7 @@ module CXTDMAPhysicalP {
 //        printf("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
+          call FrameWaitAlarm.stop();
           //TODO: post task to indicate that we are done with the
           //active phase?
           setState(S_INACTIVE);
