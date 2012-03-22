@@ -84,6 +84,7 @@ module CXFloodP{
         //preserve pre-routed flag
         call CXPacket.setRoutingMethod(msg, 
           (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
+        printf("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
 
         return SUCCESS;
       }else{
@@ -205,6 +206,7 @@ module CXFloodP{
     }else{
       printf("CXFloodP sent extra?\r\n");
     }
+//    printf("sd %p %u %lu \r\n", msg, call CXPacket.count(msg), call CXPacket.getTimestamp(msg));
     checkAndCleanup();
   }
 

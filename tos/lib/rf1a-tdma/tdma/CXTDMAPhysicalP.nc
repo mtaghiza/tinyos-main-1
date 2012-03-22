@@ -85,7 +85,6 @@ module CXTDMAPhysicalP {
   uint8_t rx_count; 
 
   message_t* tx_msg;
-  uint8_t tx_len;
 
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
@@ -461,14 +460,10 @@ module CXTDMAPhysicalP {
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
-    bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum); 
-    //increment hop-count, set the tx timestamp if we are the origin
-    //  and this is the first transmission.
-    if ((call CXPacket.source((message_t*)*buffer) == TOS_NODE_ID) 
-        && (call CXPacket.count((message_t*)buffer)) == 0 ){
-      call CXPacket.setTimestamp((message_t*)*buffer, lastRECapture);
-    }
-    call CXPacket.incCount((message_t*)*buffer);
+    bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum);    
+    tx_msg = (message_t*)(*buffer);
+
+    call CXPacket.incCount(tx_msg);
     *len += sizeof(rf1a_ieee154_t);
     return ret;
   }
@@ -506,8 +501,14 @@ module CXTDMAPhysicalP {
     SC_TOGGLE_PIN;
 
     if (captureMode == MSP430TIMER_CM_RISING){
-      lastRECapture = capture;
+      //set the tx timestamp if we are the origin
+      //  and this is the first transmission.
+      if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
+          && (call CXPacket.count(tx_msg)) == 1 ){
+        call CXPacket.setTimestamp(tx_msg, capture);
+      }      
       //1 uS
+      lastRECapture = capture;
       SC_TOGGLE_PIN;
       atomic{
         captureMode = MSP430TIMER_CM_FALLING;
@@ -610,6 +611,7 @@ module CXTDMAPhysicalP {
    */
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
+    tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
       setState(S_TX_CLEANUP);
       signal CXTDMA.sendDone((message_t*)buffer, len, frameNum, result);
