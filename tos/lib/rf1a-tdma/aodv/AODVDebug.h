@@ -19,5 +19,12 @@
 #define printf_AODV_IO(...) 
 #endif
 
+#ifdef DEBUG_AODV_STATE
+#define printf_AODV_STATE(...) printf(__VA_ARGS__)
+#else
+#define printf_AODV_STATE(...) 
+#endif
+
+
 #endif
 
