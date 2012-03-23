@@ -67,7 +67,6 @@ module AODVSchedulerP{
     CACHE_STATE;
     destination = call CXPacket.destination(msg);
     printf_AODV_S("S %p to %x ", msg, destination);
-    printf("aodv %u\r\n", len);
     //broadcast: flood
     if (destination == AM_BROADCAST_ADDR){
       printf_AODV_S("F");
@@ -282,10 +281,14 @@ module AODVSchedulerP{
       //  leftover state
       if (clearTime + frameNum 
           >= (1+TOS_NODE_ID)*(call SubTDMARoutingSchedule.framesPerSlot[0]())){
-        printf_AODV("to idle (%u >= %u)\r\n", 
+        printf_AODV("delay to next cycle (%u >= %u)\r\n", 
           clearTime+frameNum,
           (1+TOS_NODE_ID)*(call SubTDMARoutingSchedule.framesPerSlot[0]()));
-        state = S_IDLE;
+        if (state == S_AO_PENDING){
+          state = S_AO_SETUP;
+        } else {
+          state = S_IDLE;
+        }
         lastSF = 0;
         lastDestination = AM_BROADCAST_ADDR;
         sfDepth = 0xff;

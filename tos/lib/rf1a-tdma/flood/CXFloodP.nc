@@ -78,7 +78,7 @@ module CXFloodP{
       if (!txPending){
         tx_msg = msg;
         tx_len = len + sizeof(cx_header_t) ;
-        printf("flood %u -> %u\r\n", len, tx_len);
+//        printf("flood %u -> %u\r\n", len, tx_len);
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
