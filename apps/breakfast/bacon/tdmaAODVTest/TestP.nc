@@ -18,6 +18,7 @@ module TestP {
   uses interface AMPacket;
   uses interface Packet;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 
   uses interface Send;
   uses interface Receive;
@@ -113,7 +114,10 @@ module TestP {
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
-    printf("SD\r\n");
+    printf("SD %x %lu @%lu\r\n",
+      TOS_NODE_ID,
+      ((test_packet_t*)call Packet.getPayload(msg, sizeof(test_packet_t)))->sn,
+      call CXPacket.getTimestamp(msg));
     if (SUCCESS != error){
       printf("!sd %x\r\n", error);
     }else{
@@ -183,7 +187,10 @@ module TestP {
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("RX\r\n");
+    printf("RX %x sn %lu @%lu\r\n", 
+      call CXPacket.source(msg),
+      ((test_packet_t*)payload)->sn,
+      call CXPacketMetadata.getReceivedAt(msg));
     return msg;
   }
 

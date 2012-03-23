@@ -105,6 +105,7 @@ configuration TestAppC{
 
   TestP.AMPacket -> AMPacket;
   TestP.CXPacket -> Rf1aCXPacketC;
+  TestP.CXPacketMetadata -> Rf1aCXPacketC;
   TestP.Packet -> Rf1aCXPacketC;
 
   TestP.Send -> TDMASchedulerC.Send;
