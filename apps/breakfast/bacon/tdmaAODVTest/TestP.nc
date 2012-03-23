@@ -99,7 +99,9 @@ module TestP {
       sizeof(test_packet_t));
     call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
     pl -> sn += (1+TOS_NODE_ID);
-    error = call Send.send(tx_msg, sizeof(test_packet_t));
+    //TODO: where should am header be accounted for?
+    error = call Send.send(tx_msg, sizeof(test_packet_t) +
+      sizeof(rf1a_nalp_am_t));
     printf("Send.Send (broadcast): %s\r\n", decodeError(error));
   }
 
@@ -109,7 +111,8 @@ module TestP {
       sizeof(test_packet_t));
     call CXPacket.setDestination(tx_msg, 0);
     pl -> sn += (1+TOS_NODE_ID);
-    error = call Send.send(tx_msg, sizeof(test_packet_t));
+    error = call Send.send(tx_msg, sizeof(test_packet_t) +
+      sizeof(rf1a_nalp_am_t));
     printf("Send.Send (unicast): %s\r\n", decodeError(error));
   }
 

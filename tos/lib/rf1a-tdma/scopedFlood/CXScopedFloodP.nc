@@ -42,7 +42,7 @@ module CXScopedFloodP{
   //acks which we generate in this layer
   message_t origin_ack_internal;
   message_t* origin_ack_msg = &origin_ack_internal;
-  uint8_t origin_ack_len;
+  uint8_t origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
 
   //local buffer for swapping with packets received from lower layer
   message_t rx_msg_internal;
@@ -79,8 +79,6 @@ module CXScopedFloodP{
   uint16_t ruDest;
   bool routeUpdatePending;
   
-  //scheduling
-  norace uint16_t framesPerSlot;
 
   //forward declarations
   task void signalSendDone();
@@ -91,11 +89,11 @@ module CXScopedFloodP{
     state = s;
   }
   uint16_t nextSlotStart(uint16_t frameNum){
-    return (frameNum + framesPerSlot)/framesPerSlot;
+    return (frameNum + call TDMARoutingSchedule.framesPerSlot())/(call TDMARoutingSchedule.framesPerSlot());
   }
 
   bool isDataFrame(uint16_t frameNum){
-    uint16_t localF = frameNum % framesPerSlot;
+    uint16_t localF = frameNum % (call TDMARoutingSchedule.framesPerSlot());
     return ((localF%3) == 0);
   }
 
@@ -149,6 +147,9 @@ module CXScopedFloodP{
     }
 
     if (originDataPending && call TDMARoutingSchedule.isOrigin(frameNum)){
+      if (!isDataFrame(frameNum)){
+        printf("!origin but non-data frame %u\r\n", frameNum);
+      }
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
@@ -192,6 +193,11 @@ module CXScopedFloodP{
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
+    //TODO: it looks like maybe the origin is requesting the resource and
+    //indicating that we want to TX, but is doing so during an
+    //ackFrame, which messes things up (isOrigin and isAckFrame
+    //indicate that we are going to send an ack, but in reality we
+    //shouldn't be sending anything at all).
     printf_SF_GP("gp");
     if (isDataFrame(frameNum)){
       printf_SF_GP("d");
@@ -284,9 +290,10 @@ module CXScopedFloodP{
         ack -> src = call CXPacket.source(rx_msg);
         ack -> sn  = call CXPacket.sn(rx_msg);
         ack -> depth = call CXPacket.count(rx_msg);
-        origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
         isOrigin = TRUE;
         TXLeft = call TDMARoutingSchedule.maxRetransmit();
+        //TODO: I am worried that this isn't running before getPacket
+        //tries to get the origin ack.
 
         //route update goodness
         ruSrcDepth = call CXPacket.count(rx_msg);

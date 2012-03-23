@@ -19,5 +19,11 @@
 #define printf_F_SCHED(...) 
 #endif
 
+#ifdef DEBUG_F_GP
+#define printf_F_GP(...) printf(__VA_ARGS__)
+#else
+#define printf_F_GP(...) 
+#endif
+
 
 #endif

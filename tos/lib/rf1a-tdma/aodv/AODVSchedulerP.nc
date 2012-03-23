@@ -67,6 +67,7 @@ module AODVSchedulerP{
     CACHE_STATE;
     destination = call CXPacket.destination(msg);
     printf_AODV_S("S %p to %x ", msg, destination);
+    printf("aodv %u\r\n", len);
     //broadcast: flood
     if (destination == AM_BROADCAST_ADDR){
       printf_AODV_S("F");

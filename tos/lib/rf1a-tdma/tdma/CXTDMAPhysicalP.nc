@@ -495,7 +495,9 @@ module CXTDMAPhysicalP {
     tx_msg = (message_t*)(*buffer);
 
     call CXPacket.incCount(tx_msg);
+    printf("phy %u -> ", *len);
     *len += sizeof(rf1a_ieee154_t);
+    printf("%u\r\n", *len);
     return ret;
   }
 
@@ -625,7 +627,9 @@ module CXTDMAPhysicalP {
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
             frameNum);
-          rx_msg = signal CXTDMA.receive((message_t*)buffer, count,
+          printf("RX %u\r\n", count);
+          rx_msg = signal CXTDMA.receive((message_t*)buffer, 
+            count - sizeof(rf1a_ieee154_t),
             frameNum, lastRECapture);
         }
         completeCleanup();

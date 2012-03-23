@@ -78,6 +78,7 @@ module CXFloodP{
       if (!txPending){
         tx_msg = msg;
         tx_len = len + sizeof(cx_header_t) ;
+        printf("flood %u -> %u\r\n", len, tx_len);
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
@@ -136,15 +137,15 @@ module CXFloodP{
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
     GP_SET_PIN;
-    printf_F_SCHED("f.gp");
+    printf_F_GP("f.gp");
     if (isOrigin){
-      printf_F_SCHED("o\r\n");
+      printf_F_GP("o\r\n");
       GP_CLEAR_PIN;
       *msg = tx_msg;
       *len = tx_len;
       return TRUE;
     } else {
-      printf_F_SCHED("f\r\n");
+      printf_F_GP("f\r\n");
       *msg = fwd_msg;
       *len = fwd_len;
       GP_CLEAR_PIN;
