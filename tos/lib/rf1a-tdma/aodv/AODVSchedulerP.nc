@@ -114,7 +114,7 @@ module AODVSchedulerP{
         return EBUSY;
       }
 
-      printf(" %x %s\r\n", state, decodeError(error));
+      printf_AODV(" %x %s\r\n", state, decodeError(error));
       return error;
     }
   }
@@ -252,7 +252,7 @@ module AODVSchedulerP{
       lastSF = frameNum;
       return TRUE;
     }
-    printf("IOX %u\r\n", frameNum);
+//    printf_AODV("IOX %u\r\n", frameNum);
     return FALSE;
   }
   
@@ -265,14 +265,17 @@ module AODVSchedulerP{
 
       //last packet is clear, ready to go again.
       if (clearTime + lastSF < frameNum){
-        printf_AODV("cleared\r\n");
         //AO_WAIT->AO_READY
         //AO_PENDING->AO_SENDING
         if (state == S_AO_WAIT){
+          printf_AODV("cleared->r\r\n");
           state = S_AO_READY;
         }else if (state == S_AO_WAIT_PENDING){
+          printf_AODV("cleared->p\r\n");
           state = S_AO_PENDING;
-        }else{
+        }else if (state == S_AO_READY){
+          //OK, no change.
+        } else {
           printf_AODV("fs?\r\n");
         }
       }
@@ -305,7 +308,7 @@ module AODVSchedulerP{
   //  - AODV internal logic figures "OK, it's cool to send a new data
   //    frame now."
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-//    printf("io %x %u\r\n", rm, frameNum);
+//    printf_AODV("io %x %u\r\n", rm, frameNum);
     return (call SubTDMARoutingSchedule.isSynched[rm](frameNum)) &&
       (call SubTDMARoutingSchedule.isOrigin[rm](frameNum) ||
         isOrigin(rm, frameNum) );
