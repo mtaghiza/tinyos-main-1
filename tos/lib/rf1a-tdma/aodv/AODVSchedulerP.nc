@@ -83,8 +83,14 @@ module AODVSchedulerP{
     // accept if we're IDLE, AO_READY, or AO_WAIT.
     } else {
       printf_AODV("U");
-      if (CHECK_STATE(S_IDLE) || CHECK_STATE(S_AO_READY) 
-          || CHECK_STATE(S_AO_WAIT)){
+      if (CHECK_STATE(S_IDLE)){ 
+        printf_AODV("S");
+        call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
+        error = call ScopedFloodSend.send(msg, len);
+        if (error == SUCCESS){
+          SET_STATE(S_AO_SETUP, S_ERROR_2);
+        }      
+      } else if( CHECK_STATE(S_AO_READY) || CHECK_STATE(S_AO_WAIT)){
         if (destination == lastDestination){
           printf_AODV("P");
           call CXPacket.setRoutingMethod(msg, CX_RM_PREROUTED);
@@ -94,19 +100,15 @@ module AODVSchedulerP{
             SET_STATE(S_AO_SENDING, S_ERROR_4);
           }
         }else {
-          printf_AODV("S");
-          call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
-          error = call ScopedFloodSend.send(msg, len);
-          if (error == SUCCESS){
-            SET_STATE(S_AO_SETUP, S_ERROR_2);
-          }
+          printf_AODV("mismatch");
         }
-        printf("%s\r\n", decodeError(error));
-        return error;
       } else {
         printf_AODV("busy\r\n");
         return EBUSY;
       }
+
+      printf("%s\r\n", decodeError(error));
+      return error;
     }
   }
 
@@ -225,15 +227,15 @@ module AODVSchedulerP{
     return FALSE;
   }
   
-  //ugh
   async event void FrameStarted.frameStarted(uint16_t frameNum){
-    if (state == S_AO_WAIT){
+    if (state == S_AO_WAIT || state == S_AO_READY){
       uint16_t clearTime =  sfDepth + 
         call SubTDMARoutingSchedule.maxRetransmit[0]();
       //no time to send any more, so go back to idle. Also clear out
       //  leftover state
       if (clearTime + frameNum 
           >= (1+TOS_NODE_ID)*(call SubTDMARoutingSchedule.framesPerSlot[0]())){
+        printf_AODV("to idle\r\n");
         state = S_IDLE;
         lastSF = 0;
         lastDestination = AM_BROADCAST_ADDR;
@@ -241,6 +243,7 @@ module AODVSchedulerP{
 
       //last packet is clear, ready to go again.
       } else if (clearTime + lastSF < frameNum){
+        printf_AODV("cleared\r\n");
         state = S_AO_READY;
       }
     }
