@@ -193,11 +193,7 @@ module CXScopedFloodP{
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-    //TODO: it looks like maybe the origin is requesting the resource and
-    //indicating that we want to TX, but is doing so during an
-    //ackFrame, which messes things up (isOrigin and isAckFrame
-    //indicate that we are going to send an ack, but in reality we
-    //shouldn't be sending anything at all).
+
     printf_SF_GP("gp");
     if (isDataFrame(frameNum)){
       printf_SF_GP("d");
@@ -414,8 +410,10 @@ module CXScopedFloodP{
           if (dest == TOS_NODE_ID){
             printf_SF_RX("M");
             sendDoneError = SUCCESS;
-            post routeUpdate();
-            post signalSendDone();
+            //This should be taken care of when we finish forwarding
+            //these acks. Better to signal it at that point anyway.
+//            post routeUpdate();
+//            post signalSendDone();
           }
           isOrigin = FALSE;
           setState(S_ACK);
