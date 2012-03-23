@@ -233,10 +233,7 @@ module NonRootSchedulerP{
     }
     if (SUCCESS == error){
       printf_SCHED(" OK\r\n");
-      if (startPending){
-        startPending = FALSE;
-        signal SplitControl.startDone(SUCCESS);
-      }
+
     }else{
       printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }
@@ -260,6 +257,10 @@ module NonRootSchedulerP{
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
+    if (startPending){
+      startPending = FALSE;
+      signal SplitControl.startDone(SUCCESS);
+    }    
     replyPending = FALSE;
   }
 

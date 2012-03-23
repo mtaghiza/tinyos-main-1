@@ -96,7 +96,7 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call AMPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
+    call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
     pl -> sn += (1+TOS_NODE_ID);
     error = call Send.send(tx_msg, sizeof(test_packet_t));
     printf("Send.Send (broadcast): %s\r\n", decodeError(error));
@@ -106,7 +106,7 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call AMPacket.setDestination(tx_msg, 0);
+    call CXPacket.setDestination(tx_msg, 0);
     pl -> sn += (1+TOS_NODE_ID);
     error = call Send.send(tx_msg, sizeof(test_packet_t));
     printf("Send.Send (unicast): %s\r\n", decodeError(error));

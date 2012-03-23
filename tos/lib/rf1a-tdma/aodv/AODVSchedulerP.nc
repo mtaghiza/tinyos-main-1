@@ -1,4 +1,5 @@
  #include "stateSafety.h"
+ #include "AODVDebug.h"
 module AODVSchedulerP{
   provides interface TDMARoutingSchedule[uint8_t rm];
   uses interface TDMARoutingSchedule as SubTDMARoutingSchedule[uint8_t rm];
@@ -44,7 +45,7 @@ module AODVSchedulerP{
   
   //book-keeping for AODV
   message_t* lastMsg;
-  am_addr_t lastDestination;
+  am_addr_t lastDestination = AM_BROADCAST_ADDR;
   uint16_t lastSF;
   uint8_t sfDepth;
 
@@ -62,8 +63,10 @@ module AODVSchedulerP{
     TMP_STATE;
     CACHE_STATE;
     destination = call CXPacket.destination(msg);
+    printf_AODV("S %p to %x ", msg, destination);
     //broadcast: flood
     if (destination == AM_BROADCAST_ADDR){
+      printf_AODV("F");
       call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
@@ -71,6 +74,7 @@ module AODVSchedulerP{
       }else{
         SET_ESTATE(S_ERROR_1);
       }
+      printf_AODV("%s\r\n", decodeError(error));
       return error;
 
     //unicast:
@@ -78,9 +82,11 @@ module AODVSchedulerP{
     // - new: scoped flood
     // accept if we're IDLE, AO_READY, or AO_WAIT.
     } else {
+      printf_AODV("U");
       if (CHECK_STATE(S_IDLE) || CHECK_STATE(S_AO_READY) 
           || CHECK_STATE(S_AO_WAIT)){
         if (destination == lastDestination){
+          printf_AODV("P");
           call CXPacket.setRoutingMethod(msg, CX_RM_PREROUTED);
           error = call FloodSend.send(msg, len);
           if (error == SUCCESS){
@@ -88,14 +94,17 @@ module AODVSchedulerP{
             SET_STATE(S_AO_SENDING, S_ERROR_4);
           }
         }else {
+          printf_AODV("S");
           call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
           error = call ScopedFloodSend.send(msg, len);
           if (error == SUCCESS){
             SET_STATE(S_AO_SETUP, S_ERROR_2);
           }
         }
+        printf("%s\r\n", decodeError(error));
         return error;
       } else {
+        printf_AODV("busy\r\n");
         return EBUSY;
       }
     }
@@ -151,6 +160,7 @@ module AODVSchedulerP{
     TMP_STATE;
     CACHE_STATE;
     if (ENOACK == error){
+      lastDestination = AM_BROADCAST_ADDR;
       SET_STATE(S_IDLE, S_ERROR_3);
     } else {
       SET_STATE(S_AO_READY, S_ERROR_3);
@@ -164,8 +174,12 @@ module AODVSchedulerP{
   event void FloodSend.sendDone(message_t* msg, error_t error){
     TMP_STATE;
     CACHE_STATE;
+    printf_AODV("FS.sd\r\n");
     if (CHECK_STATE(S_AO_SENDING)){
       SET_STATE(S_AO_WAIT, S_ERROR_6);
+    }else if (CHECK_STATE(S_FLOODING)){
+      SET_STATE(S_IDLE, S_ERROR_6);
+      signal Send.sendDone(msg, error);
     }
   }
 
