@@ -58,12 +58,17 @@ module NonRootSchedulerP{
 
   bool changePending;
   bool replyPending;
+  bool startPending;
 
   #define DELTA_BUF_LEN 8
   int32_t delta[DELTA_BUF_LEN];
 
   command error_t SplitControl.start(){
-    return call SubSplitControl.start();
+    error_t error = call SubSplitControl.start();
+    if (SUCCESS == error){
+      startPending = TRUE;
+    }
+    return error;
   }
 
   //initialize curSched to try to catch a new schedule announcement.
@@ -228,6 +233,10 @@ module NonRootSchedulerP{
     }
     if (SUCCESS == error){
       printf_SCHED(" OK\r\n");
+      if (startPending){
+        startPending = FALSE;
+        signal SplitControl.startDone(SUCCESS);
+      }
     }else{
       printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }
