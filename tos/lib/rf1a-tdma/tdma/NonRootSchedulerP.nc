@@ -101,6 +101,8 @@ module NonRootSchedulerP{
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
   }
 
+  task void updateScheduleTask();
+  //TODO: do we need to reset schedule more often?
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;
@@ -174,7 +176,8 @@ module NonRootSchedulerP{
       lastRxTS = rxTS;
       lastRxFrameNum = rxFrameNum;
       lastRootStart = call CXPacket.getTimestamp(msg);
-      printf("\r\n");
+      printf_SCHED("\r\n");
+      post updateScheduleTask();
       return msg; 
     } else {
       message_t* swp = nextMsg;
@@ -201,7 +204,6 @@ module NonRootSchedulerP{
     error = call ReplySend.send(replyMsg, sizeof(replyMsg));
     if (SUCCESS == error){
       printf_SCHED("ReplySend.send OK\r\n");
-      replyPending = TRUE;
     }else{
       printf("ReplySend: %s\r\n", decodeError(error));
     }
@@ -217,12 +219,15 @@ module NonRootSchedulerP{
       curSched->activeFrames,
       curSched->inactiveFrames, 
       curSched->symbolRate);
-    lastRxTS = 0;
-    lastRxFrameNum = 0;
-    changePending = FALSE;
+    if (changePending){
+      lastRxTS = 0;
+      lastRxFrameNum = 0;
+      changePending = FALSE;
+      replyPending = TRUE;
+      post replyTask();
+    }
     if (SUCCESS == error){
       printf_SCHED(" OK\r\n");
-      post replyTask();
     }else{
       printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }

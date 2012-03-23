@@ -73,7 +73,6 @@ module CXFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-    printf_F_SCHED("fs.s %x\r\n", t);
     atomic{
       if (!txPending){
         tx_msg = msg;
@@ -84,7 +83,7 @@ module CXFloodP{
         //preserve pre-routed flag
         call CXPacket.setRoutingMethod(msg, 
           (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
-        printf("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
+        printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
 
         return SUCCESS;
       }else{

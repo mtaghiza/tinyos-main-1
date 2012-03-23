@@ -119,5 +119,17 @@
 #define printf_TDMA_SS(...) 
 #endif
 
+#ifdef DEBUG_PFS
+#define printf_PFS(...) printf(__VA_ARGS__)
+#else
+#define printf_PFS(...) 
+#endif
+
+#ifdef DEBUG_PFS_FREAKOUT
+#define printf_PFS_FREAKOUT(...) printf(__VA_ARGS__)
+#else
+#define printf_PFS_FREAKOUT(...) 
+#endif
+
 
 #endif

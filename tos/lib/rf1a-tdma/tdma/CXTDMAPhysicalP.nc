@@ -117,8 +117,8 @@ module CXTDMAPhysicalP {
   task void signalStopDone();
 
   void printStatus(){
-    printf("* Core: %s\n\r", decodeStatus());
-    printf("--------\n\r");
+    printf("* Core: %s\r\n", decodeStatus());
+    printf("--------\r\n");
   }
 
   task void printStatusTask(){
@@ -139,13 +139,13 @@ module CXTDMAPhysicalP {
         return;
       }
       #ifdef DEBUG_CX_TDMA_P_STATE
-      printf("[%x->%x]\n\r", state, s);
+      printf("[%x->%x]\r\n", state, s);
       #endif
       #ifdef DEBUG_CX_TDMA_P_STATE_ERROR
       if (ERROR_MASK == (s & ERROR_MASK)){
         P2OUT |= BIT4;
         stopTimers();
-        printf("[%x->%x]\n\r", state, s);
+        printf("[%x->%x]\r\n", state, s);
       }
       #endif
       state = s;
@@ -202,12 +202,19 @@ module CXTDMAPhysicalP {
    */
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
+    if(call PrepareFrameStartAlarm.getNow() < call PrepareFrameStartAlarm.getAlarm()){
+      printf_PFS_FREAKOUT("PFS EARLY");
+      call PrepareFrameStartAlarm.startAt(
+        call PrepareFrameStartAlarm.getAlarm() - s_frameLen, 
+        s_frameLen);
+      return;
+    }
     PFS_CYCLE_TOGGLE_PIN;
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
-//    printf("PFS %u %lu (%lu)\r\n", frameNum, 
-//      call PrepareFrameStartAlarm.getNow(), 
-//      call PrepareFrameStartAlarm.getAlarm());
+    printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
+      call PrepareFrameStartAlarm.getNow(), 
+      call PrepareFrameStartAlarm.getAlarm());
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -234,6 +241,7 @@ module CXTDMAPhysicalP {
           call FrameWaitAlarm.stop();
           //TODO: post task to indicate that we are done with the
           //active phase?
+//          printf_PFS_FREAKOUT("Inactive: %u\r\n", frameNum);
           setState(S_INACTIVE);
         } else {
           setState(S_ERROR_1);
@@ -302,6 +310,8 @@ module CXTDMAPhysicalP {
               //7uS
               PFS_TOGGLE_PIN;
             }
+//            //TODO: YOU CANNOT LEAVE THIS IN
+//            printf("1");
             setState(S_RX_READY);
 //            printf("PFS1  %s\r\n", decodeStatus());
           } else {
@@ -326,9 +336,14 @@ module CXTDMAPhysicalP {
       return;
     }
     printf_TDMA_SS("pfs1\r\n");
+    printf_PFS("pfs1 %lu %lu: ", 
+      call PrepareFrameStartAlarm.getAlarm(), 
+      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), 
       s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
+    printf_PFS("%lu\r\n",
+      call PrepareFrameStartAlarm.getAlarm());
     //16 uS
     PFS_SET_PIN;
     PFS_CLEAR_PIN;
@@ -345,6 +360,13 @@ module CXTDMAPhysicalP {
 //      call FrameWaitAlarm.getAlarm(),
 //      call FrameWaitAlarm.getAlarm());
 //
+    if (call FrameWaitAlarm.getNow() < call FrameWaitAlarm.getAlarm()){
+      printf_PFS_FREAKOUT("FW EARLY");
+      call FrameWaitAlarm.startAt(
+        call FrameWaitAlarm.getAlarm() - s_frameLen, 
+        s_frameLen);
+      return;
+    }
     FW_SET_PIN;
     FW_TOGGLE_PIN;
     if (checkState(S_RX_READY)){
@@ -387,6 +409,13 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
+    if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
+      printf_PFS_FREAKOUT("FS EARLY");
+      call FrameStartAlarm.startAt(
+        call FrameStartAlarm.getAlarm() - s_frameLen, 
+        s_frameLen);
+      return;
+    }    
     FS_CYCLE_TOGGLE_PIN;
     //0.25 uS
     TX_SET_PIN;
@@ -567,6 +596,7 @@ module CXTDMAPhysicalP {
         setState(S_IDLE);
         break;
       case RF1A_S_RX:
+//        printf("0");
         setState(S_RX_READY);
         break;
       case RF1A_S_FSTXON:
@@ -711,10 +741,13 @@ module CXTDMAPhysicalP {
 
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
-//      printf_TDMA_SS("pfs0\r\n");
+      printf_TDMA_SS("pfs0\r\n");
+      printf_PFS("pfs0 %lu %lu:", s_frameStart, firstDelta - PFS_SLACK
+      - SFD_TIME);
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
-//      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
+      printf_PFS("%lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
       call FrameStartAlarm.startAt(
         s_frameStart, 
         firstDelta - SFD_TIME);
