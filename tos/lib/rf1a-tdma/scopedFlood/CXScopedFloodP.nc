@@ -407,6 +407,7 @@ module CXScopedFloodP{
           if (dest == TOS_NODE_ID){
             printf_SF_RX("M");
             sendDoneError = SUCCESS;
+            post routeUpdate();
             post signalSendDone();
           }
           isOrigin = FALSE;
