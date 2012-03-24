@@ -214,6 +214,8 @@ implementation {
   components RF212ActiveMessageC as PlatformActiveMessageC;
 #elif defined(PLATFORM_UCMINI)
   components RFA1ActiveMessageC as PlatformActiveMessageC;
+#elif defined(PLATFORM_BACON)
+  components Rf1aActiveMessageC as PlatformActiveMessageC;
 #else
   components DummyActiveMessageP as PlatformActiveMessageC;
 #endif

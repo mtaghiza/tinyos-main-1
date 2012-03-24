@@ -60,6 +60,7 @@ configuration Rf1aActiveMessageC {
     interface Rf1aPacket;
     interface Rf1aPhysical;
     interface Rf1aStatus;
+    interface LinkPacketMetadata;
   }
   uses interface Rf1aConfigure;
 }
@@ -77,6 +78,7 @@ implementation {
   PacketC.SubPacket -> PhyPacketC;
   PacketC.Rf1aPacket -> PhyPacketC;
   Rf1aPacket = PhyPacketC;
+  LinkPacketMetadata = PhyPacketC;
 
   /* Get support for identifying the node's address.  Implementation
    * derives from underlying 802.15.4 address. */

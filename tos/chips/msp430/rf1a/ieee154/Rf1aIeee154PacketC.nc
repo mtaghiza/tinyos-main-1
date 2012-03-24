@@ -41,6 +41,7 @@ generic configuration Rf1aIeee154PacketC () {
     interface Rf1aPacket;
     interface MessageLqi;
     interface MessageRssi;
+    interface LinkPacketMetadata;    
   }
   uses {
     interface Rf1aPhysicalMetadata;
@@ -53,6 +54,7 @@ generic configuration Rf1aIeee154PacketC () {
   Rf1aPhysicalMetadata = PacketP;
   MessageLqi = PacketP;
   MessageRssi = PacketP;
+  LinkPacketMetadata = PacketP;
 
   components Ieee154AddressC;
   PacketP.Ieee154Address -> Ieee154AddressC;

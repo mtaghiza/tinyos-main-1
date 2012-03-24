@@ -44,6 +44,7 @@ generic module Rf1aIeee154PacketP () {
     interface Rf1aPacket;
     interface MessageLqi;
     interface MessageRssi;
+    interface LinkPacketMetadata;    
   }
   uses {
     interface Random;
@@ -119,6 +120,12 @@ generic module Rf1aIeee154PacketP () {
   async command int Rf1aPacket.lqi (const message_t* msg) { return call Rf1aPhysicalMetadata.lqi(cmetadata_(msg)); }
   command int MessageLqi.lqi (const message_t* msg) { return call Rf1aPhysicalMetadata.lqi(cmetadata_(msg)); }
   async command bool Rf1aPacket.crcPassed (const message_t* msg) { return call Rf1aPhysicalMetadata.crcPassed(cmetadata_(msg)); }
+
+#warning Rf1aIeee154PacketP.Rf1aPacket.lqi needs valid threshold
+  async command bool LinkPacketMetadata.highChannelQuality(message_t* msg) {
+    return call Rf1aPacket.lqi(msg) < 10;
+  }
+
 
   command ieee154_saddr_t Ieee154Packet.address() { return call Ieee154Address.shortAddress(); }
   command ieee154_saddr_t Ieee154Packet.destination(message_t* msg) { return header(msg)->dest; }
