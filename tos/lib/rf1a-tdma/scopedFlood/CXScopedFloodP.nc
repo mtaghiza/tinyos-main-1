@@ -253,10 +253,10 @@ module CXScopedFloodP{
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
         call Resource.release();
+        post routeUpdate();
         if (originDataSent){
           post signalSendDone();
         }
-        post routeUpdate();
         setState(S_IDLE);
       }
     }

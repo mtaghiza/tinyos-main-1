@@ -220,6 +220,7 @@ module CXFloodP{
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+//        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
         call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
           call CXPacket.count(msg));
         printf_F_RX("n");
@@ -231,6 +232,8 @@ module CXFloodP{
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+            lastSn = thisSn;
+            lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
             return msg;
           }else{
