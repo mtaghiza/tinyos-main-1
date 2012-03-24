@@ -76,6 +76,8 @@ typedef nx_struct rf1a_metadata_t {
   nxle_uint8_t rssi;
   /** Raw LQI+CRC value from radio APPEND_STATUS */
   nxle_uint8_t lqi;
+  /** expected receiver LPL interval */
+  nxle_uint16_t rxInterval;
 } rf1a_metadata_t;
 
 #ifndef TOSH_DATA_LENGTH

@@ -57,7 +57,7 @@ configuration ActiveMessageC {
     interface PacketAcknowledgements;
 //    interface PacketTimeStamp<T32khz, uint32_t> as PacketTimeStamp32khz;
 //    interface PacketTimeStamp<TMilli, uint32_t> as PacketTimeStampMilli;
-//    interface LowPowerListening;
+    interface LowPowerListening;
   }
 }
 implementation {
@@ -71,7 +71,7 @@ implementation {
   Packet       = AM;
   AMPacket     = AM;
   PacketAcknowledgements = AM;
-//  LowPowerListening = AM;
+  LowPowerListening = AM;
 
 //  components Rf1aPacketC;
 //  PacketTimeStamp32khz = CC2420PacketC;

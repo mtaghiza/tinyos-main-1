@@ -54,7 +54,8 @@ configuration Rf1aActiveMessageC {
     interface AMPacket;
     interface Resource;
     interface PacketAcknowledgements;
-
+    interface LowPowerListening;
+    
     interface HplMsp430Rf1aIf;
     interface Rf1aPacket;
     interface Rf1aPhysical;
@@ -63,6 +64,7 @@ configuration Rf1aActiveMessageC {
   uses interface Rf1aConfigure;
 }
 implementation {
+
   /* Packet architecture: The Rf1aIeee154PacketC component provides
    * the core packet layout.  Active message support is inserted into
    * the payload of that structure. */
@@ -97,7 +99,6 @@ implementation {
   PhyPacketC.Rf1aPhysicalMetadata -> PhysicalC;
 
   components new Rf1aTinyOsPhysicalC() as TinyOsPhysicalC;
-  SplitControl = TinyOsPhysicalC;
   TinyOsPhysicalC.Resource -> PhysicalC;
   TinyOsPhysicalC.Rf1aPhysical -> PhysicalC;
   TinyOsPhysicalC.Rf1aPhysicalMetadata -> PhysicalC;
@@ -125,9 +126,25 @@ implementation {
   AM.Ieee154Packet -> PhyPacketC;
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
-  AM.SubSend -> AckC.Send;
-  AM.SubReceive -> UniqueReceiveC.Receive;
 
+
+#if defined(LOW_POWER_LISTENING) || defined(ACK_LOW_POWER_LISTENING)
+  components DefaultLplC as LplC;
+#else
+  components DummyLplC as LplC;
+#endif
+  LowPowerListening = LplC;
+  SplitControl = LplC;
+  LplC.SubControl -> TinyOsPhysicalC;
+
+  AM.SubSend -> LplC.Send;
+  LplC.SubSend -> AckC.Send;
+
+  AM.SubReceive -> LplC;
+  LplC.SubReceive -> UniqueReceiveC.Receive;
+
+  LplC.PacketAcknowledgements -> AckC;
+  LplC.Rf1aPhysical -> PhysicalC;
 }
 
 /* 

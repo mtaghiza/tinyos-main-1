@@ -143,12 +143,13 @@ generic module Rf1aAckP () {
     /** The number of 32KHz ticks to wait, after completion of
      * sendDone, before assuming the remote has failed to acknowledge
      * the transmission. */
-    CFG_macAckWaitDuration_32k = 3277, // 100ms
+//    CFG_macAckWaitDuration_32k = 3277, // 100ms
+    CFG_macAckWaitDuration_32k = 7*32, // 10ms
 
     /** The number of retransmissions allowed.  Note that a value of 0
      * is legitimate, and requires acknowledgment on the first
      * transmission. */
-    CFG_macMaxFrameRetries = 4,
+    CFG_macMaxFrameRetries = 0,
   };
   
   /** Signal the upper layer that the send has completed, and reset
@@ -262,7 +263,7 @@ generic module Rf1aAckP () {
       if ((IEEE154_TYPE_DATA == fcfp->frame_type)
           && fcfp->ack_request
           && (IEEE154_BROADCAST_ADDR != hp->dest)) {
-        /* Need an ack, but we can only wait for one at a time. */
+        /* Need an ack, but we can only wait for one at a time. */                
         need_ack = TRUE;
         tx_state = TX_S_sending;
       }
@@ -404,6 +405,7 @@ generic module Rf1aAckP () {
                       && (hp->dest == ap->src)
                       && (hp->dsn == ap->dsn));
         if (acked) {
+                  
           /* Set the flag indicating the ack was received
            * successfully.  If we're waiting, short the alarm;
            * otherwise the signal will be handled at the point where
