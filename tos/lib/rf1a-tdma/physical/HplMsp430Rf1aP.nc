@@ -170,7 +170,6 @@ generic module HplMsp430Rf1aP () @safe() {
   };
   /** Current state of the reception automaton. */
   uint8_t rx_state;
-
   /** Where the next data should be written.  Null if there is no
    * available reception buffer.  Set to null in receiveData_ when
    * last byte filled; set to non-null in setReceiveBuffer(). */
@@ -1176,6 +1175,7 @@ generic module HplMsp430Rf1aP () @safe() {
         //~17 uS from start of function to this point, 11 uS of logic
         //  in this function
         //~33uS to read data
+//        printf_BF("rx %p %u\r\n", rx_pos, consume);
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, rx_pos, consume);
         rx_pos += consume;
         rx_received += consume;
@@ -1272,13 +1272,33 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     //~7 uS from start of signal checks
   }
-      
-  
+   
+  #define STEPSIZE 1
+  #define NUMSTEPS 16 
+  bool hasPrintedAddrs = FALSE;
+  task void reportSRB(){
+    uint8_t i;
+    if (!hasPrintedAddrs){
+      hasPrintedAddrs = TRUE;
+      printf_BF("%p ", &rx_state);
+      for(i=STEPSIZE*NUMSTEPS; i > 0; i-=STEPSIZE){
+        printf_BF("%p ", (&rx_state)-i);
+      }
+      printf_BF("\r\n");
+    }
+
+    for(i=STEPSIZE*NUMSTEPS; i > 0; i-=STEPSIZE){
+      printf_BF("%x ", *((uint8_t*)&rx_state-i));
+    }
+    printf_BF("\r\n");
+  }
+
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
                                                                        unsigned int length,
                                                                        rf1a_offmode_t rxOffMode){
 
-
+//    printf_BF("srb %p\r\n", buffer);
+//    post reportSRB();
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
       return EOFF;

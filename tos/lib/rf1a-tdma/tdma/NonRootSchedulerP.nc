@@ -34,6 +34,8 @@ module NonRootSchedulerP{
   //This layer needs to have two message_t's then. When we receive a
   //  an announcement with a new schedule, we swap it with nextSched.
   //When we switch to a new schedule, we swap nextSched and curSched.
+//  uint8_t scheduleCount = 0;
+
   message_t sched_1;
   message_t sched_2;
   message_t* curMsg = &sched_1;
@@ -115,8 +117,23 @@ module NonRootSchedulerP{
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
   }
 
+  void debugTrap(){
+    printf_BF("DEBUG BREAK \r\n");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+    __asm__ __volatile__ ("nop");
+  }
+
   task void updateScheduleTask();
   //TODO: do we need to reset schedule more often?
+  #define DEBUG_BREAK 51
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;
@@ -124,6 +141,11 @@ module NonRootSchedulerP{
     uint32_t curRootStart;
     uint16_t rxFrameNum;
     printf_SCHED("AR.r ");
+//    scheduleCount++;
+//    printf_BF("sched %u\r\n", scheduleCount);
+//    if (scheduleCount == DEBUG_BREAK ){
+//      debugTrap();
+//    }
     //update clock skew figures 
     framesSinceLastSchedule = 0;
     //we want to know when we received it *in the root's timeframe*
@@ -150,7 +172,9 @@ module NonRootSchedulerP{
         rootTicks = curRootStart - lastRootStart;
         myTicks = rxTS - lastRxTS;
         d = myTicks - rootTicks;
-        delta[cycleNum++] = d;
+        cycleNum++;
+        cycleNum = (cycleNum)%DELTA_BUF_LEN;
+        delta[cycleNum] = d;
         printf_SCHED(" %ld ", d);
         //TODO: double check this logic. 
         if ( d > framesElapsed ){
