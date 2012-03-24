@@ -3,6 +3,7 @@
  #include "CXFlood.h"
  #include "FDebug.h"
  #include "AODVDebug.h"
+ #include "BreakfastDebug.h"
 module CXFloodP{
   provides interface Send[am_id_t t];
   provides interface Receive[am_id_t t];
@@ -86,7 +87,6 @@ module CXFloodP{
         call CXPacket.setRoutingMethod(msg, 
           (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
         printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
-
         return SUCCESS;
       }else{
         return EBUSY;
@@ -136,19 +136,20 @@ module CXFloodP{
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-    GP_SET_PIN;
     printf_F_GP("f.gp");
     if (isOrigin){
       printf_F_GP("o\r\n");
-      GP_CLEAR_PIN;
+      F_GPO_SET_PIN;
       *msg = tx_msg;
       *len = tx_len;
+      F_GPO_CLEAR_PIN;
       return TRUE;
     } else {
+      F_GPF_SET_PIN;
       printf_F_GP("f\r\n");
       *msg = fwd_msg;
       *len = fwd_len;
-      GP_CLEAR_PIN;
+      F_GPF_CLEAR_PIN;
       return TRUE;
     }
   }
@@ -219,7 +220,6 @@ module CXFloodP{
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
-        //TODO: add to routing table.
         call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
           call CXPacket.count(msg));
         printf_F_RX("n");

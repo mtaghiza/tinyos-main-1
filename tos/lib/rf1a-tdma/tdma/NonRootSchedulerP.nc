@@ -117,20 +117,6 @@ module NonRootSchedulerP{
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
   }
 
-  void debugTrap(){
-    printf_BF("DEBUG BREAK \r\n");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-    __asm__ __volatile__ ("nop");
-  }
-
   task void updateScheduleTask();
   //TODO: do we need to reset schedule more often?
   #define DEBUG_BREAK 51
@@ -141,18 +127,12 @@ module NonRootSchedulerP{
     uint32_t curRootStart;
     uint16_t rxFrameNum;
     printf_SCHED("AR.r ");
-//    scheduleCount++;
-//    printf_BF("sched %u\r\n", scheduleCount);
-//    if (scheduleCount == DEBUG_BREAK ){
-//      debugTrap();
-//    }
+
     //update clock skew figures 
     framesSinceLastSchedule = 0;
-    //we want to know when we received it *in the root's timeframe*
-    //have to subtract 1 because distance is 1 if we receive it during
-    //original frame.
+
     rxFrameNum = pl->originalFrame 
-      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID) - 1;  
+      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID);  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
     curRootStart = call CXPacket.getTimestamp(msg);
 
@@ -271,6 +251,7 @@ module NonRootSchedulerP{
       printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }
   }
+
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
 //    printf_SCHED("fs.f %u ", frameNum);

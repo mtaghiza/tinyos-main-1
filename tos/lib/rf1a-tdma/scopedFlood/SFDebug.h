@@ -19,4 +19,25 @@
 #define printf_SF_RX(...)
 #endif
 
+#if defined PORT_SF_GPO && defined PIN_SF_GPO
+#define SF_GPO_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_SF_GPO, PIN_SF_GPO)
+#define SF_GPO_CLEAR_PIN TDMA_CLEAR_PIN(PORT_SF_GPO, PIN_SF_GPO)
+#define SF_GPO_SET_PIN TDMA_SET_PIN(PORT_SF_GPO, PIN_SF_GPO)
+#else 
+#define SF_GPO_TOGGLE_PIN 
+#define SF_GPO_CLEAR_PIN 
+#define SF_GPO_SET_PIN 
+#endif
+
+#if defined PORT_SF_GPF && defined PIN_SF_GPF
+#define SF_GPF_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_SF_GPF, PIN_SF_GPF)
+#define SF_GPF_CLEAR_PIN TDMA_CLEAR_PIN(PORT_SF_GPF, PIN_SF_GPF)
+#define SF_GPF_SET_PIN TDMA_SET_PIN(PORT_SF_GPF, PIN_SF_GPF)
+#else 
+#define SF_GPF_TOGGLE_PIN 
+#define SF_GPF_CLEAR_PIN 
+#define SF_GPF_SET_PIN 
+#endif
+
+
 #endif

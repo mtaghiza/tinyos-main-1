@@ -209,7 +209,11 @@ module CXTDMAPhysicalP {
         s_frameLen);
       return;
     }
-    PFS_CYCLE_TOGGLE_PIN;
+    if(frameNum & BIT0){
+      PFS_CYCLE_CLEAR_PIN;
+    }else{
+      PFS_CYCLE_SET_PIN;
+    }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
     printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
@@ -242,6 +246,8 @@ module CXTDMAPhysicalP {
           //TODO: post task to indicate that we are done with the
           //active phase?
 //          printf_PFS_FREAKOUT("Inactive: %u\r\n", frameNum);
+          FS_CYCLE_CLEAR_PIN;
+//          PFS_CYCLE_CLEAR_PIN;
           setState(S_INACTIVE);
         } else {
           setState(S_ERROR_1);
@@ -422,7 +428,11 @@ module CXTDMAPhysicalP {
         s_frameLen);
       return;
     }    
-    FS_CYCLE_TOGGLE_PIN;
+    if (frameNum & BIT0){
+      FS_CYCLE_CLEAR_PIN;
+    }else{
+      FS_CYCLE_SET_PIN;
+    }
     //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
@@ -627,8 +637,9 @@ module CXTDMAPhysicalP {
       if (SUCCESS == result){
         setState(S_RX_CLEANUP);
         atomic{
-          call CXPacket.setCount((message_t*)buffer, 
-            call CXPacket.count((message_t*)buffer) +1);
+          //Nope, this is done during the TX process.
+//          call CXPacket.setCount((message_t*)buffer, 
+//            call CXPacket.count((message_t*)buffer) +1);
           call CXPacketMetadata.setReceivedAt((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
@@ -761,15 +772,6 @@ module CXTDMAPhysicalP {
         s_frameStart, 
         firstDelta - SFD_TIME);
       SS_CLEAR_PIN;
-      atomic{
-        if (frameNum % 2){
-          PFS_CYCLE_SET_PIN;
-          FS_CYCLE_SET_PIN;
-        }else{
-          PFS_CYCLE_CLEAR_PIN;
-          FS_CYCLE_CLEAR_PIN;
-        }
-      }
       return SUCCESS;
     } else {
       setState(S_ERROR_2);

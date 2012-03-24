@@ -42,7 +42,8 @@ module CXScopedFloodP{
   //acks which we generate in this layer
   message_t origin_ack_internal;
   message_t* origin_ack_msg = &origin_ack_internal;
-  uint8_t origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t);
+  uint8_t origin_ack_len = sizeof(cx_header_t) + sizeof(cx_ack_t) +
+    sizeof(rf1a_nalp_am_t);
 
   //local buffer for swapping with packets received from lower layer
   message_t rx_msg_internal;
@@ -198,27 +199,35 @@ module CXScopedFloodP{
     if (isDataFrame(frameNum)){
       printf_SF_GP("d");
       if (isOrigin ){
+        SF_GPO_SET_PIN;
         printf_SF_GP("o");
         originDataSent = TRUE;
         *msg = origin_data_msg;
         *len = origin_data_len;
+        SF_GPO_CLEAR_PIN;
       } else{
+        SF_GPF_SET_PIN;
         printf_SF_GP("f");
         *msg = fwd_msg;
         *len = fwd_len;
+        SF_GPF_CLEAR_PIN;
       }
       printf_SF_GP("\r\n");
       return TRUE;
     } else if (isAckFrame(frameNum)){
       printf_SF_GP("a");
       if (isOrigin){
+        SF_GPO_SET_PIN;
         printf_SF_GP("o");
         *msg = origin_ack_msg;
         *len = origin_ack_len;
+        SF_GPO_CLEAR_PIN;
       } else {
+        SF_GPF_SET_PIN;
         printf_SF_GP("f");
         *msg = fwd_msg;
         *len = fwd_len;
+        SF_GPF_CLEAR_PIN;
       }
       printf_SF_GP("\r\n");
       return TRUE;
@@ -261,10 +270,13 @@ module CXScopedFloodP{
         // for AODV, all we really care about is whether we are
         // between the two: 
         //  src->me + me->dest  <= src->dest
+//        printf_BF("them\r\n");
         call CXRoutingTable.update(ruSrc, ruDest,
           ruDistance);
+//        printf_BF("src->me\r\n");
         call CXRoutingTable.update(ruSrc, TOS_NODE_ID, 
           ruSrcDepth);
+//        printf_BF("dest->me\r\n");
         call CXRoutingTable.update(ruDest, TOS_NODE_ID,
           ruAckDepth);
         routeUpdatePending = FALSE;
@@ -286,6 +298,7 @@ module CXScopedFloodP{
         ack -> src = call CXPacket.source(rx_msg);
         ack -> sn  = call CXPacket.sn(rx_msg);
         ack -> depth = call CXPacket.count(rx_msg);
+//        printf_BF("su ack: %x %u %u\r\n", ack->src, ack->sn, ack->depth);
         isOrigin = TRUE;
         TXLeft = call TDMARoutingSchedule.maxRetransmit();
         //TODO: I am worried that this isn't running before getPacket
@@ -403,6 +416,7 @@ module CXScopedFloodP{
           ruSrc = ack->src;
           ruDest = src;
           ruAckDepth = call CXPacket.count(msg);
+//          printf_BF("rx ack: %x %u %u\r\n", ack->src, ack->sn, ack->depth);
           ruDistance = ack->depth;
           routeUpdatePending = TRUE;
 

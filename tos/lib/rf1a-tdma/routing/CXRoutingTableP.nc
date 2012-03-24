@@ -5,7 +5,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
   provides interface Init;
 } implementation {
   cx_route_entry_t rt[numEntries];
-  uint8_t lastEvicted = 0;
+  uint8_t lastEvicted = numEntries-1;
 
   command error_t Init.init(){
     uint8_t i;
@@ -48,7 +48,10 @@ generic module CXRoutingTableP(uint8_t numEntries){
 //    printf_BF("Update\r\n");
     //update and mark used-recently if it's already in the table.
     if (getEntry(&re, n0, n1)){
-      printf_BF("w %p\r\n", re);
+      //TODO: debug only, remove
+      if (re->distance != distance){
+        printf_BF("w %p %x %x %u\r\n", re, n0, n1, distance);
+      }
       re->distance = distance;
       re->used = TRUE;
       return SUCCESS;
@@ -65,7 +68,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
       i = (i+1)%numEntries;
     }
     //save it
-    printf_BF("wn %p\r\n", &rt[i]);
+    printf_BF("wn %p %x %x %u\r\n", &rt[i], n0, n1, distance);
     rt[i].n0 = n0;
     rt[i].n1 = n1;
     rt[i].distance = distance;
