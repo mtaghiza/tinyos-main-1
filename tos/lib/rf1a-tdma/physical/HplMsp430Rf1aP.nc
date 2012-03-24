@@ -33,6 +33,7 @@
 
 #include "Rf1aPacket.h"
 #include "CXTDMADebug.h"
+#include "BreakfastDebug.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -155,17 +156,17 @@ generic module HplMsp430Rf1aP () @safe() {
   enum {
     /** Disabled when there is no receive buffer and no message
      * actively being received. */
-    RX_S_inactive,
+    RX_S_inactive = 0x00,
     /** Waiting for start of a new message.  This is not an active
      * state, as there is no commitment to do anything yet.  */
-    RX_S_listening,
+    RX_S_listening = 0x01,
     /** The first data associated with an incoming message has been
      * received.  At this point we assume there is an active
      * reception.  However, the task that manages the reception has
      * not yet been queued. */
-    RX_S_synchronized,
+    RX_S_synchronized = 0x02,
     /** Actively receiving a message. */
-    RX_S_active,
+    RX_S_active = 0x03,
   };
   /** Current state of the reception automaton. */
   uint8_t rx_state;
@@ -1284,7 +1285,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
-      printf("wrong client\r\n");
+      printf_BF("wrong client\r\n");
       return EBUSY;
     }
     /* Buffer and length must be realistic; if either bogus, clear them both
@@ -1303,7 +1304,7 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_SET_RX_BUFFER
         P1OUT |= BIT1;
         #endif
-        printf("receiving\r\n");
+        printf_BF("receiving: %x\r\n", rx_state);
         return EBUSY;
       }
 

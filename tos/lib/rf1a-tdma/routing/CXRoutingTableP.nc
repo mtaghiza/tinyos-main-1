@@ -19,6 +19,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
   bool getEntry(cx_route_entry_t** re, am_addr_t n0, am_addr_t n1){
     uint8_t i = 0;
     for (i = 0; i < numEntries; i++){
+//      printf_BF("check %u at %p\r\n", i, &rt[i]);
       *re = &rt[i];
       if (((*re)->n0 == n0) && ((*re)->n1 == n1)){
         return TRUE;

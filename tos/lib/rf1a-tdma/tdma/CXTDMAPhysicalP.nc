@@ -388,7 +388,7 @@ module CXTDMAPhysicalP {
         if (error == SUCCESS){
           setState(S_IDLE);
         } else {
-          printf("Error: %s\r\n", decodeError(error));
+          printf("fwa.srb Error: %s\r\n", decodeError(error));
           setState(S_ERROR_3);
         }
       } else {

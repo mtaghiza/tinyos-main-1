@@ -74,6 +74,15 @@ module NonRootSchedulerP{
   //initialize curSched to try to catch a new schedule announcement.
   event void SubSplitControl.startDone(error_t error){
     curSched = (cx_schedule_t*)(call Packet.getPayload(curMsg, sizeof(cx_schedule_t)));
+//    curSched -> frameLen = DEFAULT_TDMA_FRAME_LEN;
+//    curSched -> fwCheckLen = DEFAULT_TDMA_FW_CHECK_LEN;
+//    curSched -> activeFrames = TDMA_ROOT_ACTIVE_FRAMES;
+//    curSched -> inactiveFrames = TDMA_ROOT_INACTIVE_FRAMES;
+//    curSched -> symbolRate = TDMA_INIT_SYMBOLRATE;
+//    curSched -> scheduleNum = 0xff;
+//    curSched -> framesPerSlot = TDMA_ROOT_FRAMES_PER_SLOT;
+//    curSched -> maxRetransmit = TDMA_MAX_RETRANSMIT;
+
     curSched -> frameLen = 10*DEFAULT_TDMA_FRAME_LEN;
     curSched -> fwCheckLen = 2*10*DEFAULT_TDMA_FRAME_LEN;
     curSched -> activeFrames = 1;
@@ -253,6 +262,10 @@ module NonRootSchedulerP{
        sizeof(cx_schedule_t));
       post updateScheduleTask();
     }
+//    //TODO: remove after done testing
+//    if (frameNum == 3){
+//      post updateScheduleTask();
+//    }
 //    printf_SCHED("\r\n");
   }
 
