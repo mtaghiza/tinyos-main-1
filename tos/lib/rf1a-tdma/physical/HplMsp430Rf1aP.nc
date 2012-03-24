@@ -1284,6 +1284,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
+      printf("wrong client\r\n");
       return EBUSY;
     }
     /* Buffer and length must be realistic; if either bogus, clear them both
@@ -1302,6 +1303,7 @@ generic module HplMsp430Rf1aP () @safe() {
         #ifdef DEBUG_SET_RX_BUFFER
         P1OUT |= BIT1;
         #endif
+        printf("receiving\r\n");
         return EBUSY;
       }
 
@@ -1513,7 +1515,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+      return EBUSY;
     }
     return call Rf1aIf.readRegister(CHANNR);
   }
@@ -1526,7 +1528,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+      return EBUSY;
     }
     atomic {
       bool radio_online;

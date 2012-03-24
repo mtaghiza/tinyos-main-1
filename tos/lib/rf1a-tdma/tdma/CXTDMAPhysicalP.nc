@@ -222,7 +222,7 @@ module CXTDMAPhysicalP {
         scStopPending = FALSE;
         setState(S_STOPPING);
       } else{
-        setState(S_ERROR_f);
+        setState(S_ERROR_1);
       }
       post signalStopDone();
       PFS_CLEAR_PIN;
@@ -280,7 +280,8 @@ module CXTDMAPhysicalP {
           if (SUCCESS == error){
             setState(S_TX_READY);
           } else {
-            setState(S_ERROR_3);
+            printf("Error: %s\r\n", decodeError(error));
+            setState(S_ERROR_f);
           }
           //2.75 uS
           PFS_TOGGLE_PIN;
@@ -379,10 +380,15 @@ module CXTDMAPhysicalP {
         //resumeIdle alone seems to put us into a stuck state. not
         //  sure why. Radio stays in S_IDLE when we call
         //  setReceiveBuffer in pfs.f.
+        //looks like this is firing when we are in the middle of a
+        //receive sometimes: if this returns EBUSY, then we can assume
+        //that and pretend it never happened (except that we called
+        //resumeIdleMode above?
         error = call Rf1aPhysical.setReceiveBuffer(0, 0, RF1A_OM_IDLE);
         if (error == SUCCESS){
           setState(S_IDLE);
         } else {
+          printf("Error: %s\r\n", decodeError(error));
           setState(S_ERROR_3);
         }
       } else {
