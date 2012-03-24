@@ -18,18 +18,22 @@ generic module CXRoutingTableP(uint8_t numEntries){
   //TODO: bidirectionality?
   bool getEntry(cx_route_entry_t** re, am_addr_t n0, am_addr_t n1){
     uint8_t i = 0;
+//    printf_BF("ge %p %x %x\r\n", re, n0, n1);
     for (i = 0; i < numEntries; i++){
-//      printf_BF("check %u at %p\r\n", i, &rt[i]);
-      *re = &rt[i];
-      if (((*re)->n0 == n0) && ((*re)->n1 == n1)){
+//      printf_BF("%u (%p): %x %x\r\n", i, &rt[i], rt[i].n0, rt[i].n1);
+      if ((rt[i].n0 == n0) && (rt[i].n1 == n1)){
+//        printf_BF("match\r\n");
+        *re = &rt[i];
         return TRUE;
       }
     }
+//    printf_BF("no match\r\n");
     return FALSE;
   }
 
   command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to){
     cx_route_entry_t* re;
+//    printf_BF("Distance\r\n");
     if (getEntry(&re, from, to)){
       return re->distance;
     }else{
@@ -41,29 +45,31 @@ generic module CXRoutingTableP(uint8_t numEntries){
       uint8_t distance){
     uint8_t i;
     cx_route_entry_t* re;
+//    printf_BF("Update\r\n");
     //update and mark used-recently if it's already in the table.
     if (getEntry(&re, n0, n1)){
+      printf_BF("w %p\r\n", re);
       re->distance = distance;
       re->used = TRUE;
       return SUCCESS;
     }
-
+//    printf_BF("New\r\n");
     //start at lastEvicted+1
     i = (lastEvicted + 1)%numEntries;
-    re = &rt[i];
+
     //look for one that hasn't been used recently, clearing LRU flag
     //as you go. Eventually we'll either find an unused slot or we'll
     //wrap around.
-    while (re->used){
-      re->used = FALSE;
+    while (rt[i].used){
+      rt[i].used = FALSE;
       i = (i+1)%numEntries;
-      re = &rt[i];
     }
     //save it
-    re->n0 = n0;
-    re->n1 = n1;
-    re->distance = distance;
-    re->used = TRUE;
+    printf_BF("wn %p\r\n", &rt[i]);
+    rt[i].n0 = n0;
+    rt[i].n1 = n1;
+    rt[i].distance = distance;
+    rt[i].used = TRUE;
     //update for next time.
     lastEvicted = i;
     return SUCCESS;
@@ -71,7 +77,8 @@ generic module CXRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool* result){
-    cx_route_entry_t* re = NULL;
+    cx_route_entry_t* re; 
+    printf_BF("between\r\n");
     if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR){
       *result = TRUE;
       return SUCCESS;
