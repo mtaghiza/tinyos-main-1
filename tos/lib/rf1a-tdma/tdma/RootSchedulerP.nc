@@ -28,6 +28,19 @@ module RootSchedulerP{
   uint8_t state;
   bool repliesPending;
 
+  uint8_t symbolRates[10] = {
+    1,
+    2,
+    5,
+    10,
+    39,
+    77,
+    100,
+    125,
+    175,
+    250
+  };
+
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)

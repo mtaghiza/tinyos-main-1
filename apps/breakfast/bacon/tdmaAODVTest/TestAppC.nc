@@ -42,18 +42,27 @@ configuration TestAppC{
   CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
   CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
 
-  components CXRf1aSettings1P2KC;
-  components CXRf1aSettings4P8KC;
-  components CXRf1aSettings10KC;
-  components CXRf1aSettings100KC;
-  components CXRf1aSettings125KC;
-  components CXRf1aSettings250KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[0] -> CXRf1aSettings1P2KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[1] -> CXRf1aSettings4P8KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[2] -> CXRf1aSettings10KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[3] -> CXRf1aSettings100KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[4] -> CXRf1aSettings125KC;
-  CXTDMAPhysicalC.SubRf1aConfigure[5] -> CXRf1aSettings250KC;
+  components SRFS7_915_GFSK_1P2K_SENS_HC;
+  components SRFS7_915_GFSK_2P4K_SENS_HC;
+  components SRFS7_915_GFSK_4P8K_SENS_HC;
+  components SRFS7_915_GFSK_10K_SENS_HC;
+  components SRFS7_915_GFSK_38P4K_SENS_HC;
+  components SRFS7_915_GFSK_76P8K_SENS_HC;
+  components SRFS7_915_GFSK_100K_SENS_HC;
+  components SRFS7_915_GFSK_125K_SENS_HC;
+  components SRFS7_915_GFSK_175K_SENS_HC;
+  components SRFS7_915_GFSK_250K_SENS_HC;
+
+  CXTDMAPhysicalC.SubRf1aConfigure[1]   -> SRFS7_915_GFSK_1P2K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[2]   -> SRFS7_915_GFSK_2P4K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[5]   -> SRFS7_915_GFSK_4P8K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[10]  -> SRFS7_915_GFSK_10K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[39]  -> SRFS7_915_GFSK_38P4K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[77]  -> SRFS7_915_GFSK_76P8K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[100] -> SRFS7_915_GFSK_100K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[125] -> SRFS7_915_GFSK_125K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[175] -> SRFS7_915_GFSK_175K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[250] -> SRFS7_915_GFSK_250K_SENS_HC;
 
   Rf1aPhysicalC.Rf1aConfigure -> CXTDMAPhysicalC.Rf1aConfigure;
 

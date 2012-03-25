@@ -1,6 +1,6 @@
 #include "Rf1aConfigure.h"
 
-module CXRf1aSettings10KC{
+module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
 } implementation{
   const rf1a_config_t cfg = {
@@ -36,8 +36,7 @@ module CXRf1aSettings10KC{
     mcsm2:   0x07,
     //mcsm1 default from Rf1aConfigure.h
     mcsm1:   0x00,
-    //mcsm0: no auto-calibration
-    mcsm0:   0x00,   // MCSM0     Main Radio Control State Machine configuration.
+    mcsm0:   0x10,   // MCSM0     Main Radio Control State Machine configuration.
     foccfg:  0x1D,   // FOCCFG    Frequency Offset Compensation Configuration.
     bscfg:   0x1C,   // BSCFG     Bit synchronization Configuration.
     agcctrl2:0xC7,   // AGCCTRL2  AGC control.
@@ -63,12 +62,8 @@ module CXRf1aSettings10KC{
     test2:   0x88,   // TEST2     Various test settings.
     test1:   0x31,   // TEST1     Various test settings.
     test0:   0x09,   // TEST0     Various test settings.
-    #ifdef LOWPOWER_TX
     //patable (just patable0 is used), default from Rf1aConfigure.h
-    patable: {0x25},
-    #else
-    patable: {0xc6}
-    #endif
+    patable: {0xc6},
   };
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
