@@ -24,7 +24,7 @@
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_DEVIATN      0x62 // modem deviation setting
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_MCSM2        0x07 // main radio control state machine configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_MCSM1        0x30 // main radio control state machine configuration
-#define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_MCSM0        0x10 // main radio control state machine configuration
+#define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_MCSM0        0x00 // main radio control state machine configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_FOCCFG       0x1D // frequency offset compensation configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_BSCFG        0x1C // bit synchronization configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_AGCCTRL2     0xC7 // agc control

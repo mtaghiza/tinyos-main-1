@@ -760,7 +760,7 @@ module CXTDMAPhysicalP {
         //  radio.
         if (s_sr != symbolRate || s_channel != channel){
           s_sr = symbolRate;
-//          call Rf1aPhysical.reconfigure();
+          call Rf1aPhysical.reconfigure();
         }
         if (atFrameNum == 0){
           printf_TDMA_SS("w");

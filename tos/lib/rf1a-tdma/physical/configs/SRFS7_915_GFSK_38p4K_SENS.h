@@ -30,7 +30,7 @@
 
 #define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_MCSM2        0x07 // main radio control state machine configuration
 #define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_MCSM1        0x30 // main radio control state machine configuration
-#define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_MCSM0        0x10 // main radio control state machine configuration
+#define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_MCSM0        0x00 // main radio control state machine configuration
 #define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_FOCCFG       0x16 // frequency offset compensation configuration
 #define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_BSCFG        0x6C // bit synchronization configuration
 #define SRFS7_915_GFSK_38P4K_SENS_H_SMARTRF_SETTING_AGCCTRL2     0x43 // agc control
