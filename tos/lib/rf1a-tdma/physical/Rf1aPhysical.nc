@@ -418,7 +418,8 @@ interface Rf1aPhysical {
    */
   async command void readConfiguration (rf1a_config_t* config);
 
-  async command error_t reconfigure();
+  async command void reconfigure();
+  async event uint8_t getChannelToUse();
 }
 
 /* 

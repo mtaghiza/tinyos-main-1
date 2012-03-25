@@ -93,6 +93,7 @@ module NonRootSchedulerP{
     curSched -> scheduleNum = 0xff;
     curSched -> framesPerSlot = 0;
     curSched -> maxRetransmit = 0;
+    curSched -> channel = 0;
     error = call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
@@ -100,7 +101,8 @@ module NonRootSchedulerP{
       curSched->fwCheckLen, 
       curSched->activeFrames,
       curSched->inactiveFrames, 
-      curSched->symbolRate);
+      curSched->symbolRate,
+      curSched->channel);
     if (SUCCESS != error){
       printf("setSchedule: %s\r\n", decodeError(error));
     }else{
@@ -236,7 +238,8 @@ module NonRootSchedulerP{
       curSched->fwCheckLen, 
       curSched->activeFrames,
       curSched->inactiveFrames, 
-      curSched->symbolRate);
+      curSched->symbolRate,
+      curSched->channel);
     if (changePending){
       lastRxTS = 0;
       lastRxFrameNum = 0;

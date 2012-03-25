@@ -20,7 +20,7 @@ module CXRf1aSettings125KC{
     //TODO: this does get set in sw, right?
     addr:    0x00,   // ADDR      Device address.
     //TODO: this does get set in sw, right?
-    0x00,   // CHANNR    Channel number.
+    channr:  0x00,   // CHANNR    Channel number.
     fsctrl1: 0x0C,   // FSCTRL1   Frequency synthesizer control.
     fsctrl0: 0x00,   // FSCTRL0   Frequency synthesizer control.
     freq2:   0x23,   // FREQ2     Frequency control word, high byte.

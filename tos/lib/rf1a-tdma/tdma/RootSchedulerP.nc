@@ -43,6 +43,7 @@ module RootSchedulerP{
   uint16_t framesPerSlot = TDMA_ROOT_FRAMES_PER_SLOT;
   uint8_t maxRetransmit = TDMA_MAX_RETRANSMIT;
   uint8_t symbolRate = TDMA_INIT_SYMBOLRATE;
+  uint8_t channel = TEST_CHANNEL;
 
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
@@ -77,10 +78,11 @@ module RootSchedulerP{
 
   task void printSchedule(){
     cx_schedule_t* pl = (cx_schedule_t*) call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
-    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u\r\n", 
+    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
-      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
+      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
+      pl->channel);
   }
 
   event void SubSplitControl.startDone(error_t error){
@@ -93,7 +95,8 @@ module RootSchedulerP{
         DEFAULT_TDMA_FW_CHECK_LEN, 
         TDMA_ROOT_ACTIVE_FRAMES, 
         TDMA_ROOT_INACTIVE_FRAMES, 
-        TDMA_INIT_SYMBOLRATE);
+        TDMA_INIT_SYMBOLRATE,
+        TEST_CHANNEL);
       if (SUCCESS == error){
         setupPacket(schedule_msg, 
           TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID);

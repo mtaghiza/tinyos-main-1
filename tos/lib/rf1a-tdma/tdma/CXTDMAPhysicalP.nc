@@ -76,6 +76,7 @@ module CXTDMAPhysicalP {
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
   uint8_t s_sr;
+  uint8_t s_channel;
 
   uint32_t lastRECapture;
   uint32_t lastFECapture;
@@ -695,7 +696,8 @@ module CXTDMAPhysicalP {
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
-      uint16_t inactiveFrames, uint8_t symbolRate){
+      uint16_t inactiveFrames, uint8_t symbolRate, 
+      uint8_t channel){
     SS_SET_PIN;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
       SS_CLEAR_PIN;
@@ -741,9 +743,11 @@ module CXTDMAPhysicalP {
         s_fwCheckLen = fwCheckLen;
         s_activeFrames = activeFrames;
         s_inactiveFrames = inactiveFrames;
+        s_channel = channel;
 
-        //update the symbol rate config
-        if (s_sr != symbolRate){
+        //If channel or symbol rate changes, need to reconfigure
+        //  radio.
+        if (s_sr != symbolRate || s_channel != channel){
           s_sr = symbolRate;
           call Rf1aPhysical.reconfigure();
         }
@@ -789,16 +793,20 @@ module CXTDMAPhysicalP {
     }
   }
 
+  async event uint8_t Rf1aPhysical.getChannelToUse(){
+    return s_channel;
+  }
+
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
     return call SubRf1aConfigure.getConfiguration[s_sr]();
   }
 
-  async command void Rf1aConfigure.preConfigure (){}
-  async command void Rf1aConfigure.postConfigure (){}
+  async command void Rf1aConfigure.preConfigure (){ }
+  async command void Rf1aConfigure.postConfigure (){ }
   async command void Rf1aConfigure.preUnconfigure (){}
   async command void Rf1aConfigure.postUnconfigure (){}
 
-  default async command void SubRf1aConfigure.preConfigure [uint8_t client](){}
+  default async command void SubRf1aConfigure.preConfigure [uint8_t client](){ }
   default async command void SubRf1aConfigure.postConfigure [uint8_t client](){}
   default async command void SubRf1aConfigure.preUnconfigure [uint8_t client](){}
   default async command void SubRf1aConfigure.postUnconfigure [uint8_t client](){}

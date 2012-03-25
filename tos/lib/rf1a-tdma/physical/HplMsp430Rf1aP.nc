@@ -341,8 +341,10 @@ generic module HplMsp430Rf1aP () @safe() {
        * that the subsequent non-PATABLE instruction resets the table
        * index. */
       call Rf1aIf.writeBurstRegister(PATABLE, config->patable, sizeof(config->patable));
+
       call Rf1aIf.writeBurstRegister(0, cp, RF1A_CONFIG_BURST_WRITE_LENGTH);
 
+      call Rf1aIf.writeRegister(CHANNR, signal Rf1aPhysical.getChannelToUse[call ArbiterInfo.userId()]());
       /* Regardless of the configuration, the core functionality here
        * requires that the interrupts be configured a certain way.
        * IFG signals 4, 5, 7, 8, 9, and 12 are all used.  All but 5
@@ -941,6 +943,10 @@ generic module HplMsp430Rf1aP () @safe() {
 //      return error;
 //    }
 //  }
+  default async event uint8_t Rf1aPhysical.getChannelToUse[uint8_t
+  client](){
+    return 0;
+  }
 
   default async event void Rf1aPhysical.sendDone[uint8_t client]
   (uint8_t* buffer, uint8_t len, int result) { }
@@ -1579,7 +1585,7 @@ generic module HplMsp430Rf1aP () @safe() {
     return SUCCESS;
   }
 
-  async command error_t Rf1aPhysical.reconfigure[uint8_t client](){
+  async command void Rf1aPhysical.reconfigure[uint8_t client](){
     call ResourceConfigure.unconfigure[client]();
     call ResourceConfigure.configure[client]();
   }

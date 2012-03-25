@@ -16,6 +16,7 @@ typedef nx_struct cx_schedule_t {
   nx_uint16_t framesPerSlot;
   nx_uint8_t  maxRetransmit;
   nx_uint8_t symbolRate;
+  nx_uint8_t channel;
 } cx_schedule_t;
 
 typedef nx_struct cx_schedule_reply_t{
