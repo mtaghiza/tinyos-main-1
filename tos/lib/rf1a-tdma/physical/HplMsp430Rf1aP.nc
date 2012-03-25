@@ -1545,7 +1545,7 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     /* Radio must be assigned */
     if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
+      return EOFF;
     }
     /* This must be the right client */
     if (client != call ArbiterInfo.userId()) {
@@ -1560,7 +1560,7 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RX_S_listening < rx_state)
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
-        return -ERETRY;
+        return ERETRY;
       }
 
       /* If radio is not asleep, make sure it transitions to IDLE then
@@ -1577,6 +1577,11 @@ generic module HplMsp430Rf1aP () @safe() {
       }
     }
     return SUCCESS;
+  }
+
+  async command error_t Rf1aPhysical.reconfigure[uint8_t client](){
+    call ResourceConfigure.unconfigure[client]();
+    call ResourceConfigure.configure[client]();
   }
 
   enum {

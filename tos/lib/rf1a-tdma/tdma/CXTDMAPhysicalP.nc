@@ -12,6 +12,9 @@ module CXTDMAPhysicalP {
   provides interface TDMAPhySchedule;
   provides interface FrameStarted;
 
+  provides interface Rf1aConfigure;
+  uses interface Rf1aConfigure as SubRf1aConfigure[uint8_t sr];
+
   uses interface HplMsp430Rf1aIf;
   uses interface Resource;
   uses interface Rf1aPhysical;
@@ -72,6 +75,7 @@ module CXTDMAPhysicalP {
   uint16_t s_activeFrames;
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
+  uint8_t s_sr;
 
   uint32_t lastRECapture;
   uint32_t lastFECapture;
@@ -317,8 +321,6 @@ module CXTDMAPhysicalP {
               //7uS
               PFS_TOGGLE_PIN;
             }
-//            //TODO: YOU CANNOT LEAVE THIS IN
-//            printf("1");
             setState(S_RX_READY);
 //            printf("PFS1  %s\r\n", decodeStatus());
           } else {
@@ -423,6 +425,7 @@ module CXTDMAPhysicalP {
     error_t error;
     if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
       printf_PFS_FREAKOUT("FS EARLY");
+
       call FrameStartAlarm.startAt(
         call FrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
@@ -738,6 +741,12 @@ module CXTDMAPhysicalP {
         s_fwCheckLen = fwCheckLen;
         s_activeFrames = activeFrames;
         s_inactiveFrames = inactiveFrames;
+
+        //update the symbol rate config
+        if (s_sr != symbolRate){
+          s_sr = symbolRate;
+          call Rf1aPhysical.reconfigure();
+        }
         if (atFrameNum == 0){
           printf_TDMA_SS("w");
           atFrameNum = activeFrames + inactiveFrames;
@@ -779,6 +788,28 @@ module CXTDMAPhysicalP {
       return FAIL;
     }
   }
+
+  async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
+    return call SubRf1aConfigure.getConfiguration[s_sr]();
+  }
+
+  async command void Rf1aConfigure.preConfigure (){}
+  async command void Rf1aConfigure.postConfigure (){}
+  async command void Rf1aConfigure.preUnconfigure (){}
+  async command void Rf1aConfigure.postUnconfigure (){}
+
+  default async command void SubRf1aConfigure.preConfigure [uint8_t client](){}
+  default async command void SubRf1aConfigure.postConfigure [uint8_t client](){}
+  default async command void SubRf1aConfigure.preUnconfigure [uint8_t client](){}
+  default async command void SubRf1aConfigure.postUnconfigure [uint8_t client](){}
+
+
+  default async command const rf1a_config_t* SubRf1aConfigure.getConfiguration[uint8_t client] ()
+  {
+    printf("CXTDMAPhysicalP: Unknown sr requested\r\n");
+    return call SubRf1aConfigure.getConfiguration[0]();
+  }
+
 
   async event void Rf1aPhysical.frameStarted () { 
 //    printf("rp.fs\r\n");

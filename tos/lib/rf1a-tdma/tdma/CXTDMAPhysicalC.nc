@@ -13,6 +13,9 @@ configuration CXTDMAPhysicalC {
   uses interface CXPacket;
   uses interface CXPacketMetadata;
 
+  provides interface Rf1aConfigure;
+  uses interface Rf1aConfigure as SubRf1aConfigure[uint8_t sr];
+
 } implementation {
   components CXTDMAPhysicalP;
 
@@ -29,6 +32,9 @@ configuration CXTDMAPhysicalC {
   CXPacket = CXTDMAPhysicalP;
   CXPacketMetadata = CXTDMAPhysicalP;
   FrameStarted = CXTDMAPhysicalP;
+
+  CXTDMAPhysicalP.SubRf1aConfigure = SubRf1aConfigure;
+  Rf1aConfigure = CXTDMAPhysicalP.Rf1aConfigure;
 
   components new AlarmMicro32C() as FrameStartAlarm;
   components new AlarmMicro32C() as PrepareFrameStartAlarm;

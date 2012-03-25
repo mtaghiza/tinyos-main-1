@@ -417,6 +417,8 @@ interface Rf1aPhysical {
    * @param config where the configuration should be stored.
    */
   async command void readConfiguration (rf1a_config_t* config);
+
+  async command error_t reconfigure();
 }
 
 /* 

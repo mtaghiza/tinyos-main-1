@@ -13,11 +13,9 @@ configuration TestAppC{
   TestP.UartStream -> PlatformSerialC;
   TestP.UartControl -> PlatformSerialC;
   TestP.Leds -> LedsC;
-
-  components GlossyRf1aSettings125KC as Rf1aSettings;
+  
 
   components new Rf1aPhysicalC();
-  Rf1aPhysicalC.Rf1aConfigure -> Rf1aSettings;
 
   components new Rf1aIeee154PacketC() as Ieee154Packet; 
   Ieee154Packet.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
@@ -43,6 +41,21 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
   CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
   CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
+
+  components CXRf1aSettings1P2KC;
+  components CXRf1aSettings4P8KC;
+  components CXRf1aSettings10KC;
+  components CXRf1aSettings100KC;
+  components CXRf1aSettings125KC;
+  components CXRf1aSettings250KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[0] -> CXRf1aSettings1P2KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[1] -> CXRf1aSettings4P8KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[2] -> CXRf1aSettings10KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[3] -> CXRf1aSettings100KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[4] -> CXRf1aSettings125KC;
+  CXTDMAPhysicalC.SubRf1aConfigure[5] -> CXRf1aSettings250KC;
+
+  Rf1aPhysicalC.Rf1aConfigure -> CXTDMAPhysicalC.Rf1aConfigure;
 
   components CXTDMADispatchC;
   CXTDMADispatchC.SubCXTDMA -> CXTDMAPhysicalC;
