@@ -5,6 +5,7 @@
  */
  #include "CXTDMA.h"
  #include "CXTDMADebug.h"
+ #include "SchedulerDebug.h"
 
 module CXTDMAPhysicalP {
   provides interface SplitControl;
@@ -29,6 +30,8 @@ module CXTDMAPhysicalP {
   uses interface Alarm<TMicro, uint32_t> as FrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameWaitAlarm;
   uses interface GpioCapture as SynchCapture;
+
+  uses interface Rf1aDumpConfig;
 } implementation {
   enum{
     ERROR_MASK = 0x80,
@@ -75,8 +78,8 @@ module CXTDMAPhysicalP {
   uint16_t s_activeFrames;
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
-  uint8_t s_sr;
-  uint8_t s_channel;
+  uint8_t s_sr = TDMA_INIT_SYMBOLRATE;
+  uint8_t s_channel = TEST_CHANNEL;
 
   uint32_t lastRECapture;
   uint32_t lastFECapture;
@@ -692,12 +695,19 @@ module CXTDMAPhysicalP {
   async command uint32_t TDMAPhySchedule.getNow(){
     return call FrameStartAlarm.getNow();
   }
+
+  task void debugConfig(){
+    rf1a_config_t config;
+    call Rf1aPhysical.readConfiguration(&config);
+    call Rf1aDumpConfig.display(&config);
+  }
   
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint8_t symbolRate, 
       uint8_t channel){
+//    post debugConfig();
     SS_SET_PIN;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
       SS_CLEAR_PIN;
@@ -711,10 +721,11 @@ module CXTDMAPhysicalP {
       uint32_t firstDelta;
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
-      printf_TDMA_SS("SS@%lu: %lu %u %lu %lu %u %u %x\r\n", 
+      printf_SCHED_SR("SS@%lu: %lu %u %lu %lu %u %u %u %u\r\n", 
         call FrameStartAlarm.getNow(), 
         startAt, atFrameNum,
-        frameLen, fwCheckLen, activeFrames, inactiveFrames, symbolRate);
+        frameLen, fwCheckLen, activeFrames, inactiveFrames,
+        symbolRate, channel);
 
       atomic{
         SS_TOGGLE_PIN;
@@ -749,7 +760,7 @@ module CXTDMAPhysicalP {
         //  radio.
         if (s_sr != symbolRate || s_channel != channel){
           s_sr = symbolRate;
-          call Rf1aPhysical.reconfigure();
+//          call Rf1aPhysical.reconfigure();
         }
         if (atFrameNum == 0){
           printf_TDMA_SS("w");
@@ -798,6 +809,7 @@ module CXTDMAPhysicalP {
   }
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
+    printf_SCHED_SR("Get configuration: %u\r\n", s_sr);
     return call SubRf1aConfigure.getConfiguration[s_sr]();
   }
 
@@ -814,8 +826,8 @@ module CXTDMAPhysicalP {
 
   default async command const rf1a_config_t* SubRf1aConfigure.getConfiguration[uint8_t client] ()
   {
-    printf("CXTDMAPhysicalP: Unknown sr requested\r\n");
-    return call SubRf1aConfigure.getConfiguration[0]();
+    printf("CXTDMAPhysicalP: Unknown sr requested: %u\r\n", client);
+    return call SubRf1aConfigure.getConfiguration[1]();
   }
 
 

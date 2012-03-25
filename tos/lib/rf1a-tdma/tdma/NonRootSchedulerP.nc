@@ -89,11 +89,11 @@ module NonRootSchedulerP{
     curSched -> fwCheckLen = 2*10*DEFAULT_TDMA_FRAME_LEN;
     curSched -> activeFrames = 1;
     curSched -> inactiveFrames = 0;
-    curSched -> symbolRate = 0;
+    curSched -> symbolRate = TDMA_INIT_SYMBOLRATE;
     curSched -> scheduleNum = 0xff;
     curSched -> framesPerSlot = 0;
     curSched -> maxRetransmit = 0;
-    curSched -> channel = 0;
+    curSched -> channel = TEST_CHANNEL;
     error = call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
@@ -113,15 +113,15 @@ module NonRootSchedulerP{
   task void printNext(){
     cx_schedule_t* pl = (cx_schedule_t*) call
     Packet.getPayload(nextMsg, sizeof(cx_schedule_t));
-    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u\r\n", 
+    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
-      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate);
+      pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
+      pl->channel);
   }
 
   task void updateScheduleTask();
-  //TODO: do we need to reset schedule more often?
-  #define DEBUG_BREAK 51
+
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;

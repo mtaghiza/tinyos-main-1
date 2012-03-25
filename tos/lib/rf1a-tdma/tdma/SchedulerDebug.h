@@ -13,5 +13,12 @@
 #define printf_SCHED_IO(...)
 #endif
 
+#ifdef DEBUG_SCHED_SR
+#define printf_SCHED_SR(...) printf(__VA_ARGS__)
+#else
+#define printf_SCHED_SR(...)
+#endif
+
+
 
 #endif

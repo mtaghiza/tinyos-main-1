@@ -94,13 +94,12 @@ rf1a_config_t this_config = {
   test2: SRFS7_915_GFSK_2P4K_SENS_H_SMARTRF_SETTING_TEST2,
   test1: SRFS7_915_GFSK_2P4K_SENS_H_SMARTRF_SETTING_TEST1,
   test0: SRFS7_915_GFSK_2P4K_SENS_H_SMARTRF_SETTING_TEST0,
-  /* NB: This declaration only specifies the first power level.  You
-   * want to use ASK, you write your own. */
-#if defined(SRFS7_915_GFSK_2P4K_SENS_H_SMARTRF_SETTING_PATABLE0)
-  patable: { SRFS7_915_GFSK_2P4K_SENS_H_SMARTRF_SETTING_PATABLE0 },
-#else
-  patable: { 0xc6 }
-#endif
+    //patable (just patable0 is used), default from Rf1aConfigure.h
+    #ifndef PATABLE0_SETTING
+    patable: {0xc6},
+    #else
+    patable: {PATABLE0_SETTING},
+    #endif
 }; 
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){

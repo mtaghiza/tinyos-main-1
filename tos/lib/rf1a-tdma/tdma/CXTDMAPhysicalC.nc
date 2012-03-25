@@ -43,6 +43,9 @@ configuration CXTDMAPhysicalC {
 
   components GDO1CaptureC;
 
+  components Rf1aDumpConfigC;
+  CXTDMAPhysicalP.Rf1aDumpConfig -> Rf1aDumpConfigC;
+
   CXTDMAPhysicalP.FrameStartAlarm -> FrameStartAlarm;
   CXTDMAPhysicalP.PrepareFrameStartAlarm -> PrepareFrameStartAlarm;
   CXTDMAPhysicalP.FrameWaitAlarm -> FrameWaitAlarm;

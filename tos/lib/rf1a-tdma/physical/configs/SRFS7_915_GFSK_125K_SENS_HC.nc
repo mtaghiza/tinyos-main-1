@@ -63,10 +63,15 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     test1:   0x31,   // TEST1     Various test settings.
     test0:   0x09,   // TEST0     Various test settings.
     //patable (just patable0 is used), default from Rf1aConfigure.h
+    #ifndef PATABLE0_SETTING
     patable: {0xc6},
-  };
+    #else
+    patable: {PATABLE0_SETTING},
+    #endif
+};
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
+    printf("125K Config!!!\r\n");
     return &cfg;
   }
 

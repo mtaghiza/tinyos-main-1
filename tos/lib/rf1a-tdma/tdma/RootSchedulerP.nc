@@ -85,13 +85,14 @@ module RootSchedulerP{
     schedule_pl -> framesPerSlot = framesPerSlot;
     schedule_pl -> maxRetransmit = maxRetransmit;
     schedule_pl -> symbolRate = symbolRate;
+    schedule_pl -> channel = channel;
     schedule_pl -> scheduleNum++;
   }
   task void announceSchedule();
 
   task void printSchedule(){
     cx_schedule_t* pl = (cx_schedule_t*) call Packet.getPayload(schedule_msg, sizeof(cx_schedule_t));
-    printf_SCHED("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
