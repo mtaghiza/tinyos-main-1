@@ -36,7 +36,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     mcsm2:   0x07,
     //mcsm1 default from Rf1aConfigure.h
     mcsm1:   0x00,
-    mcsm0:   0x10,   // MCSM0     Main Radio Control State Machine configuration.
+    mcsm0:   0x00,   // MCSM0     Main Radio Control State Machine configuration.
     foccfg:  0x1D,   // FOCCFG    Frequency Offset Compensation Configuration.
     bscfg:   0x1C,   // BSCFG     Bit synchronization Configuration.
     agcctrl2:0xC7,   // AGCCTRL2  AGC control.
