@@ -22,31 +22,31 @@ module RootSchedulerP{
 } implementation {
 
   enum {
-    S_BASELINE,
-    S_ADJUSTING,
-    S_CHECKING,
-    S_FINALIZING,
-    S_FINAL_CHECKING,
-    S_ESTABLISHED,
+    S_BASELINE       = 0x01,
+    S_ADJUSTING      = 0x02,
+    S_CHECKING       = 0x03,
+    S_FINALIZING     = 0x04,
+    S_FINAL_CHECKING = 0x05,
+    S_ESTABLISHED    = 0x06,
   };
 
   enum {
-    S_NOT_SENT,
-    S_SENDING,
-    S_WAITING,
+    S_NOT_SENT = 0x00,
+    S_SENDING  = 0x01,
+    S_WAITING  = 0x02,
   };
 
   enum {
-    S_UNKNOWN,
-    S_DISCOVERED,
+    S_UNKNOWN    = 0x00,
+    S_DISCOVERED = 0x01,
   };
 
   enum{
-    S_SET,
-    S_SWITCH_PENDING,
+    S_SET            = 0x00,
+    S_SWITCH_PENDING = 0x01,
   };
 
-  uint8_t totalNodes = TDMA_MAX_NODES;
+  uint8_t totalNodes = TDMA_MAX_NODES - 1;
 
   enum {
     NUM_SRS= uniqueCount(SR_COUNT_KEY),
@@ -60,6 +60,8 @@ module RootSchedulerP{
   uint8_t curSR = 0;
   uint8_t nextSR = 0;
   uint8_t maxSR = 0;
+  uint8_t nextBLSN = 0;
+  bool blPending = FALSE;
 
   uint8_t symbolRates[10] = {
     1,
@@ -74,7 +76,7 @@ module RootSchedulerP{
     250
   };
 
-  uint16_t frameLens[10] = {
+  uint32_t frameLens[10] = {
     (DEFAULT_TDMA_FRAME_LEN*125)/1,
     (DEFAULT_TDMA_FRAME_LEN*125)/2,
     (DEFAULT_TDMA_FRAME_LEN*125)/5,
@@ -87,7 +89,7 @@ module RootSchedulerP{
     (DEFAULT_TDMA_FRAME_LEN*125)/250, 
   };
 
-  uint16_t fwCheckLens[10] = {
+  uint32_t fwCheckLens[10] = {
     (DEFAULT_TDMA_FW_CHECK_LEN*125)/1,
     (DEFAULT_TDMA_FW_CHECK_LEN*125)/2,
     (DEFAULT_TDMA_FW_CHECK_LEN*125)/5,
@@ -184,7 +186,7 @@ module RootSchedulerP{
     error_t error;
     state = S_BASELINE;
     txState = S_NOT_SENT;
-    //set up current schedule and next schedule identically at first.
+    //set up current schedule and next schedule identically 
     setupPacket(cur_schedule_msg, scheduleNum,
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
       TDMA_ROOT_ACTIVE_FRAMES, 
@@ -241,8 +243,11 @@ module RootSchedulerP{
 
     if (state == S_BASELINE){
       toSend = cur_schedule_msg; 
+    } else if (state == S_ADJUSTING || state == S_FINALIZING){
+      toSend = next_schedule_msg;
     } else {
-      printf("Unexpected announce schedule state %x\r\n", state);
+      printf("Unexpected announce schedule state %x %x %x %x\r\n",
+        state, txState, srState, psState);
     }
     error = call AnnounceSend.send(toSend,
       sizeof(cx_schedule_t));
@@ -342,6 +347,7 @@ module RootSchedulerP{
 
   task void updateScheduleTask(){
     error_t error;
+    printf_SCHED_SR("UST\r\n");
     error = call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNextFrameStart(),
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
       curSchedule->frameLen,
@@ -354,13 +360,14 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("Unable to update schedule: %s\r\n", decodeError(error));
     } else {
+      printf_SCHED_SR("UST OK\r\n");
       curSR = curSchedule->symbolRate;
       psState = S_SET;
     }
   }
 
   bool disconnected(){
-    return nodesReachable[srIndex(curSchedule->symbolRate)] == totalNodes;
+    return nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
   }
 
   bool nextSRKnown(){
@@ -383,11 +390,31 @@ module RootSchedulerP{
     post updateScheduleTask();
   }
 
+  task void baselineTask(){
+    error_t error = baseline(nextBLSN);
+    if (SUCCESS == error){
+      blPending = FALSE;
+    }else{
+      printf("Baseline failed: %s\r\n", decodeError(error));
+    }
+  }
+
+  bool postBaseline(){
+    if (blPending){
+      return FALSE;
+    }else{
+      nextBLSN = (curSchedule->scheduleNum +1)%0xff;
+      blPending = TRUE;
+      post baselineTask();
+      return TRUE;
+    }
+  }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     txState = S_NOT_SENT;
 
     if ((1+frameNum)%(curSchedule->activeFrames + curSchedule->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+      printf_SCHED_SR("fs");
       //BASELINE: 
       // - disconnected: stay in baseline until everybody shows up
       //   (BASELINE)
@@ -395,19 +422,25 @@ module RootSchedulerP{
       //   - sr discovered: announce it (FINALIZING)
       //   - sr unknown: baseline +1 and announce (ADJUSTING)
       if (state == S_BASELINE){
+        printf_SCHED_SR("b");
         if (!disconnected()){
           if (srState == S_UNKNOWN){
             if (increaseNextSR()){
+              printf_SCHED_SR("i");
               state = S_ADJUSTING;
             } else {
               printf("error: couldn't increase SR from baseline state?!\r\n");
             }
           } else {
+            printf_SCHED_SR("f");
             state = S_FINALIZING;
             finalizeNextSR();
           }
         } else {
-          baseline((curSchedule->scheduleNum +1)%0xff);
+          printf_SCHED_SR("d");
+          if (!postBaseline()){
+            printf("BL->BL: Busy!\r\n");
+          }
         }
 
       //ADJUSTING:
@@ -425,7 +458,9 @@ module RootSchedulerP{
         if (disconnected()){
           maxSR = lastSR;
           srState = S_DISCOVERED;
-          baseline((curSchedule->scheduleNum+1)%0xff);
+          if (!postBaseline()){
+            printf("CHECK->BL: Busy!\r\n");
+          }
 
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
@@ -467,10 +502,12 @@ module RootSchedulerP{
         //Disconnected, so try it again from the top :( (BASELINE)
         } else {
           reset();
-          baseline((curSchedule->scheduleNum + 1)%0xff);
+          if (! postBaseline()){
+            printf("FINALCHECK->BL: Busy!\r\n");
+          }
         }
       }
-
+      printf("\r\n");
       post announceSchedule();
     }
   }

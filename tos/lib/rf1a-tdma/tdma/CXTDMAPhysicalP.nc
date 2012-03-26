@@ -211,7 +211,9 @@ module CXTDMAPhysicalP {
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
     if(call PrepareFrameStartAlarm.getNow() < call PrepareFrameStartAlarm.getAlarm()){
-      printf_PFS_FREAKOUT("PFS EARLY");
+      printf_PFS_FREAKOUT("PFS EARLY (%lu < %lu)\r\n", call
+      PrepareFrameStartAlarm.getNow(), call
+      PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
@@ -613,9 +615,13 @@ module CXTDMAPhysicalP {
    *  Synch this layer's state with radio core.
    */ 
   void completeCleanup(){
-    //we see this if we're doing an automatic switch from RX to FSTXON
+    //we see a state of RF1A_S_SETTLING if we're doing an automatic switch from RX to FSTXON
     //or from FSTXON to RX.
-    while(call Rf1aStatus.get() == RF1A_S_SETTLING){ };
+    //we see a state of RF1A_S_TX if we are transmitting at a low
+    //symbol rate (last byte clears the fifo and we get the sendDone
+    //  etc. before it has actually finished transmitting it).
+    while(call Rf1aStatus.get() == RF1A_S_SETTLING 
+      || call Rf1aStatus.get() == RF1A_S_TX){ };
     switch (call Rf1aStatus.get()){
       case RF1A_S_IDLE:
         setState(S_IDLE);
@@ -675,8 +681,8 @@ module CXTDMAPhysicalP {
     tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
       setState(S_TX_CLEANUP);
-      signal CXTDMA.sendDone((message_t*)buffer, len, frameNum, result);
       completeCleanup();
+      signal CXTDMA.sendDone((message_t*)buffer, len, frameNum, result);
     } else {
       setState(S_ERROR_e);
     }
