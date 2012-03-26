@@ -1,6 +1,5 @@
 /* RF settings SoC: CC430 */
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_IOCFG2       0x29 // gdo2 output configuration
-#define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_IOCFG1       0x2E // gdo1 output configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_IOCFG0       0x06 // gdo0 output configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_IOCFG1       0x06 // gdo0 output configuration
 #define SRFS7_915_GFSK_250K_SENS_H_SMARTRF_SETTING_FIFOTHR      0x07 // rx fifo and tx fifo thresholds
