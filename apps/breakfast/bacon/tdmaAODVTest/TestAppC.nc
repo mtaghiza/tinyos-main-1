@@ -41,7 +41,7 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
   CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
   CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
-
+  
   components SRFS7_915_GFSK_1P2K_SENS_HC;
   components SRFS7_915_GFSK_2P4K_SENS_HC;
   components SRFS7_915_GFSK_4P8K_SENS_HC;
