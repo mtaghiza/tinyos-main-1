@@ -55,9 +55,11 @@ module RootSchedulerP{
   uint8_t state = S_BASELINE;
   uint8_t txState = S_NOT_SENT;
   uint8_t srState = S_UNKNOWN;
-  uint8_t psState = S_SET;
-
-  bool repliesPending;
+  uint8_t psState = S_SWITCH_PENDING;
+  uint8_t lastSR = 0;
+  uint8_t curSR = 0;
+  uint8_t nextSR = 0;
+  uint8_t maxSR = 0;
 
   uint8_t symbolRates[10] = {
     1,
@@ -100,7 +102,6 @@ module RootSchedulerP{
 
   uint16_t nodesReachable[10]; 
   uint8_t maxDepth[10]; 
-  uint8_t scheduleNum = 0;
 
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
@@ -118,27 +119,29 @@ module RootSchedulerP{
   message_t* next_schedule_msg = &next_schedule_msg_internal;
   cx_schedule_t* nextSchedule;
 
+  void reset();
+  uint8_t srIndex(uint8_t sr);
+
   command error_t SplitControl.start(){
     error_t error;
-    uint8_t i;
     error = call SubSplitControl.start();
     if (SUCCESS == error){
-      for(i = 0 ; i<NUM_SRS; i++){
-        maxDepth[i] = 0;
-        nodesReachable[i] = 0;
-      }
       printf_SCHED("SSC.sd\r\n");
-      scheduleNum = 0;
-
+      reset();
     }
     printf_SCHED("SC.s\r\n");
     return error;
   }
 
-  void setupPacket(message_t* msg, uint8_t sn, uint16_t originalFrame, 
+  void setupPacket(message_t* msg, 
+      uint8_t sn, 
+      uint16_t originalFrame, 
       uint16_t activeFrames, 
-      uint16_t inactiveFrames, uint16_t framesPerSlot, 
-      uint8_t maxRetransmit, uint8_t symbolRate, uint8_t channel){
+      uint16_t inactiveFrames, 
+      uint16_t framesPerSlot, 
+      uint8_t maxRetransmit, 
+      uint8_t symbolRate, 
+      uint8_t channel){
     cx_schedule_t* schedule; 
     call CXPacket.init(msg);
 
@@ -160,7 +163,7 @@ module RootSchedulerP{
 
   task void printSchedule(){
     printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
-      curSchedule->curScheduleNum, curSchedule->originalFrame, curSchedule->frameLen,
+      curSchedule->scheduleNum, curSchedule->originalFrame, curSchedule->frameLen,
       curSchedule->fwCheckLen, curSchedule->activeFrames, 
       curSchedule->inactiveFrames, curSchedule->framesPerSlot, 
       curSchedule->maxRetransmit, curSchedule->symbolRate,
@@ -168,10 +171,17 @@ module RootSchedulerP{
   }
 
   void reset(){
+    uint8_t i;
+    for(i = 0 ; i<NUM_SRS; i++){
+      maxDepth[i] = 0xff;
+      nodesReachable[i] = 0;
+    }
     srState = S_UNKNOWN;
+    maxSR = 0;
   }
 
-  error_t baseline(){ 
+  error_t baseline(uint8_t scheduleNum){ 
+    error_t error;
     state = S_BASELINE;
     txState = S_NOT_SENT;
     //set up current schedule and next schedule identically at first.
@@ -191,7 +201,7 @@ module RootSchedulerP{
       TDMA_MAX_RETRANSMIT,
       TDMA_INIT_SYMBOLRATE,
       TEST_CHANNEL);
-    curSchedule = (cx_schedule_t*)(call Packet.getPayload(msg,
+    curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
       sizeof(cx_schedule_t)));
     error = call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
@@ -202,13 +212,15 @@ module RootSchedulerP{
       curSchedule->inactiveFrames,
       curSchedule->symbolRate,
       curSchedule->channel);
-
+    if (SUCCESS == error){
+      psState = S_SET;
+    }
     return error;
   }
 
   event void SubSplitControl.startDone(error_t error){
     if (SUCCESS == error){
-      error = baseline();
+      error = baseline(0);
       if (SUCCESS == error){
         post announceSchedule();
         post printSchedule();
@@ -261,21 +273,26 @@ module RootSchedulerP{
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ }
 
-  bool increaseSymbolRate(){
+  
+
+  bool increaseNextSR(){
+    uint8_t curSRI = srIndex(curSchedule->symbolRate);
     //OK to increase if we will not exceed maximum-established symbol
     //rate.
-    if (curSRI < maxSRI  && curSRI < NUM_SRS - 1 ){
+    if ( curSRI < NUM_SRS - 1 ){
       setupPacket(next_schedule_msg,
-        curSchedule->scheduleNum+1,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+        (curSchedule->scheduleNum+1)%0xff,
         TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
         TDMA_ROOT_ACTIVE_FRAMES, 
         TDMA_ROOT_INACTIVE_FRAMES,
         TDMA_ROOT_FRAMES_PER_SLOT,
         TDMA_MAX_RETRANSMIT,
-        symbolRates[srIndex(curSchedule->symbolRate)+1],
+        symbolRates[curSRI + 1],
         curSchedule->channel
       );
+      nextSR = ((cx_schedule_t*)
+        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+        )->symbolRate;
       return TRUE;
     }else{
       //already at the maximum symbol rate.
@@ -283,79 +300,50 @@ module RootSchedulerP{
     }
   }
 
-  bool decreaseSymbolRate(){
-    if (curSchedule->symbolRate != symbolRates[0]){
+  void finalizeNextSR(){
+    setupPacket(next_schedule_msg,
+      (curSchedule->scheduleNum+1)%0xff,
+      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+      TDMA_ROOT_ACTIVE_FRAMES, 
+      TDMA_ROOT_INACTIVE_FRAMES,
+      TDMA_ROOT_FRAMES_PER_SLOT,
+      TDMA_MAX_RETRANSMIT,
+      maxSR,
+      curSchedule->channel
+    );
+    nextSR = ((cx_schedule_t*)
+      (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+      )->symbolRate;
+  }
+
+  bool decreaseNextSR(){
+    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    //OK to decrease if we are not already at min 
+    if ( curSRI > 0 ){
       setupPacket(next_schedule_msg,
-        curSchedule->scheduleNum+1,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+        (curSchedule->scheduleNum+1)%0xff,
         TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
         TDMA_ROOT_ACTIVE_FRAMES, 
         TDMA_ROOT_INACTIVE_FRAMES,
         TDMA_ROOT_FRAMES_PER_SLOT,
         TDMA_MAX_RETRANSMIT,
-        symbolRates[srIndex(curSchedule->symbolRate)-1],
+        symbolRates[curSRI - 1],
         curSchedule->channel
       );
+      nextSR = ((cx_schedule_t*)
+        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+        )->symbolRate;
       return TRUE;
-    } else {
+    }else{
       //already at the minimum symbol rate.
       return FALSE;
     }
   }
 
-  //bootstrapping-then-stable version:
-  //start at baseline, increase until either the network is
-  //disconnected or efficiency drops. 
-  // - in the case of network disconnection, go back to baseline and
-  //   wait until all are reconnected, then switch to fastest safe symbol
-  //   rate.
-  // - non-root: if you go n cycles without getting a schedule, go
-  //   back to the baseline symbol rate.
-  //TODO: would be nice to have this track with the network as time
-  //goes on. Or failing that, periodically re-bootstrap the network.
-  bool adjustSymbolRate(){
-    //always increase from the first setting.
-    if (firstSR){
-      firstSR = FALSE;
-      increaseSymbolRate();
-      return TRUE;
-    }
-    //if we dropped down last round, then we're done.
-    if (hasDecreased){
-      return FALSE;
-    }
-
-    //last increase led to disconnection. Reset symbol rate to
-    //baseline.
-    if (nodesReachable[lastSRI] > nodesReachable[curSRI]){
-      maxSRI = lastSRI;
-      resetSymbolRate();
-      return TRUE;
-    }
-
-    //check for efficiency change.
-    //lastDepth/lastSR < curDepth/curSR
-    if (maxDepth[lastSRI]*symbolRates[curSRI] <
-        maxDepth[curSRI]*symbolRates[lastSRI]){
-      //last step was less efficient than this one, so increase the
-      //symbol rate.
-      return increaseSymbolRate();
-    } else {
-      //this sr is less efficient, so go back a step.
-      decreaseSymbolRate();
-      return TRUE;
-    }
-    
-    return FALSE;
-  }
-
   task void updateScheduleTask(){
     error_t error;
-    //TODO: what is startTS exactly? may have to get this from the
-    //TDMAPhySchedule (something like, nextScheduledFS command)
-    error = call TDMAPhySchedule.setSchedule(startTS,
+    error = call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNextFrameStart(),
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      curSchedule->frameLen,
       curSchedule->frameLen,
       curSchedule->fwCheckLen, 
       curSchedule->activeFrames,
@@ -363,17 +351,38 @@ module RootSchedulerP{
       curSchedule->symbolRate,
       curSchedule->channel
     );
-    curSRI = srIndex(curSchedule->symbolRate);
     if (SUCCESS != error){
       printf("Unable to update schedule: %s\r\n", decodeError(error));
     } else {
-      if (state == S_ADJUST_WAIT){
-        state = S_COLLECT_NEXT;
-      } else if (state == S_COLLECT_WAIT){
-        state = S_RECONNECT_NEXT;
-      }
+      curSR = curSchedule->symbolRate;
+      psState = S_SET;
     }
   }
+
+  bool disconnected(){
+    return nodesReachable[srIndex(curSchedule->symbolRate)] == totalNodes;
+  }
+
+  bool nextSRKnown(){
+    return (maxDepth[srIndex(nextSR)] != 0xff);
+  }
+
+  bool lastMoreEfficient(){
+    //TRUE: lastDepth/lastSR < curDepth/curSR
+    return lastSR * maxDepth[srIndex(lastSR)] < curSR *
+      maxDepth[srIndex(curSR)];
+  }
+
+  void useNextSchedule(){
+    message_t* swp = cur_schedule_msg;
+    lastSR = curSchedule->symbolRate;
+    cur_schedule_msg = next_schedule_msg;
+    curSchedule = (cx_schedule_t*) call Packet.getPayload(cur_schedule_msg, sizeof(cx_schedule_t));
+    next_schedule_msg = swp;
+    psState = S_SWITCH_PENDING;
+    post updateScheduleTask();
+  }
+
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     txState = S_NOT_SENT;
@@ -388,15 +397,17 @@ module RootSchedulerP{
       if (state == S_BASELINE){
         if (!disconnected()){
           if (srState == S_UNKNOWN){
-            state = S_ADJUSTING;
-            increaseNextSR();
+            if (increaseNextSR()){
+              state = S_ADJUSTING;
+            } else {
+              printf("error: couldn't increase SR from baseline state?!\r\n");
+            }
           } else {
             state = S_FINALIZING;
             finalizeNextSR();
           }
         } else {
-          scheduleNum ++;
-          baseline();
+          baseline((curSchedule->scheduleNum +1)%0xff);
         }
 
       //ADJUSTING:
@@ -409,13 +420,12 @@ module RootSchedulerP{
       //CHECKING: look at replies from last round and adjust, reset,
       //or stand pat depending on result.
       } else if (state == S_CHECKING){
-        scheduleNum++;
         // - disconnected: last used is max SR, sr discovered, go back
         //   to baseline and wait for everybody. (BASELINE)
         if (disconnected()){
           maxSR = lastSR;
           srState = S_DISCOVERED;
-          baseline();
+          baseline((curSchedule->scheduleNum+1)%0xff);
 
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
@@ -429,12 +439,12 @@ module RootSchedulerP{
         //   (ESTABLISHED)
         } else if (nextSRKnown()){
           srState = S_DISCOVERED;
-          maxSR = currentSR;
+          maxSR = curSR;
           state = S_ESTABLISHED;
 
         // - next sr up may be more efficient, so try it (ADJUSTING)
         } else {
-          increaseNextSr();
+          increaseNextSR();
           state = S_ADJUSTING;
         }
 
@@ -456,9 +466,8 @@ module RootSchedulerP{
 
         //Disconnected, so try it again from the top :( (BASELINE)
         } else {
-          scheduleNum++;
           reset();
-          baseline();
+          baseline((curSchedule->scheduleNum + 1)%0xff);
         }
       }
 
@@ -496,7 +505,8 @@ module RootSchedulerP{
   
   //argh i don't see a way around doing this.
   uint8_t srIndex(uint8_t symbolRate){
-    for (uint8_t i; i < NUM_SRS; i++){
+    uint8_t i;
+    for (i = 0; i < NUM_SRS; i++){
       if (symbolRates[i] == symbolRate){
         return i;
       }
@@ -506,8 +516,8 @@ module RootSchedulerP{
 
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    uint8_t sri;
-    uint8_t receivedCount = call CXPacketMetadata.receivedCount(msg);
+    uint8_t curSRI = srIndex(curSchedule->scheduleNum);
+    uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)msg;
     printf_SCHED("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
       call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID),
@@ -517,7 +527,7 @@ module RootSchedulerP{
         && (reply->scheduleNum == curSchedule->scheduleNum)){
       nodesReachable[curSRI]++;
       maxDepth[curSRI] = 
-        (maxDepth[curSRI] > receivedCount)? maxDepth[curSRI] : receivedCount;
+        (maxDepth[curSRI] != 0xff && maxDepth[curSRI] > receivedCount)? maxDepth[curSRI] : receivedCount;
     } else {
       printf("Unexpected reply.rx: state: %x src %x (sn: %u) cur sched: %u\r\n", 
         state, call CXPacket.source(msg), reply->scheduleNum, 

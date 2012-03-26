@@ -134,6 +134,14 @@ module Rf1aCXPacketP{
   command uint16_t CXPacketMetadata.getFrameNum(message_t* amsg){
     return getMetadata(amsg)->frameNum;
   }
+  command void CXPacketMetadata.setReceivedCount(message_t* amsg,
+      uint8_t receivedCount){
+    getMetadata(amsg)->receivedCount = receivedCount;
+  }
+  command uint8_t CXPacketMetadata.getReceivedCount(message_t* amsg){
+    return getMetadata(amsg)->receivedCount;
+  }
+
 
   async event void ActiveMessageAddress.changed(){ }
 }

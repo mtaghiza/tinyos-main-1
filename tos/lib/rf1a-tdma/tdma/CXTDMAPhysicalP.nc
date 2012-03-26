@@ -651,6 +651,8 @@ module CXTDMAPhysicalP {
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
             frameNum);
+          call CXPacketMetadata.setReceivedCount((message_t*)buffer,
+            call CXPacket.count((message_t*)buffer));
           rx_msg = signal CXTDMA.receive((message_t*)buffer, 
             count - sizeof(rf1a_ieee154_t),
             frameNum, lastRECapture);
@@ -702,6 +704,9 @@ module CXTDMAPhysicalP {
     call Rf1aDumpConfig.display(&config);
   }
   
+  async command uint32_t TDMAPhySchedule.getNextFrameStart(){
+    return call PrepareFrameStartAlarm.getAlarm()+ PFS_SLACK;
+  }
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
