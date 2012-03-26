@@ -1,8 +1,10 @@
 #include "Rf1aConfigure.h"
+#include "CXConfig.h"
 
 module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
 } implementation{
+  enum{ SR_COUNT = unique(SR_COUNT_KEY)};
   const rf1a_config_t cfg = {
     iocfg2:  0x29,   // IOCFG2    GDO2 output pin configuration.
     //iocfg1 default from Rf1aConfigure.h 

@@ -1,4 +1,5 @@
 #include "SRFS7_915_GFSK_100K_SENS.h"
+#include "CXConfig.h"
 
 /*
  * Find-replaceable config. working around the lack of namespace in
@@ -8,6 +9,7 @@ module SRFS7_915_GFSK_100K_SENS_HC {
   provides interface Rf1aConfigure;
   provides interface Get<uint16_t>;
 } implementation {
+  enum{ SR_COUNT = unique(SR_COUNT_KEY)};
   command uint16_t Get.get(){
     return SRFS7_915_GFSK_100K_SENS_H_GLOBAL_ID;
   }
