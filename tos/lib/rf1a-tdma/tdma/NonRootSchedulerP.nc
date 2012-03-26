@@ -73,8 +73,7 @@ module NonRootSchedulerP{
     return error;
   }
 
-  //initialize curSched to try to catch a new schedule announcement.
-  event void SubSplitControl.startDone(error_t error){
+  error_t initSchedule(){
     curSched = (cx_schedule_t*)(call Packet.getPayload(curMsg, sizeof(cx_schedule_t)));
 //    curSched -> frameLen = DEFAULT_TDMA_FRAME_LEN;
 //    curSched -> fwCheckLen = DEFAULT_TDMA_FW_CHECK_LEN;
@@ -94,7 +93,7 @@ module NonRootSchedulerP{
     curSched -> framesPerSlot = 0;
     curSched -> maxRetransmit = 0;
     curSched -> channel = TEST_CHANNEL;
-    error = call TDMAPhySchedule.setSchedule(
+    return call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
       curSched->frameLen,
@@ -103,10 +102,26 @@ module NonRootSchedulerP{
       curSched->inactiveFrames, 
       curSched->symbolRate,
       curSched->channel);
+  }
+
+  task void initScheduleTask(){
+    error_t error = initSchedule();
+    if (SUCCESS != error){
+      printf("initSchedule: %s\r\n", decodeError(error));
+    }
+  }
+
+  //initialize curSched to try to catch a new schedule announcement.
+  event void SubSplitControl.startDone(error_t error){
+
     if (SUCCESS != error){
       printf("setSchedule: %s\r\n", decodeError(error));
     }else{
       printf_SCHED("ssc.sd setSchedule OK\r\n");
+      error = initSchedule();
+      if (SUCCESS != error){
+        printf("initSchedule error: %s\r\n", decodeError(error));
+      }
     }
   }
 
@@ -269,6 +284,9 @@ module NonRootSchedulerP{
       curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
        sizeof(cx_schedule_t));
       post updateScheduleTask();
+    }else if (framesSinceLastSchedule > SCHEDULE_TIMEOUT){
+      framesSinceLastSchedule = 0;
+      post initScheduleTask();
     }
 //    //TODO: remove after done testing
 //    if (frameNum == 3){

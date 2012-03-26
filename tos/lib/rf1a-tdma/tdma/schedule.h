@@ -27,4 +27,9 @@ typedef nx_struct cx_schedule_reply_t{
 #define TDMA_ROOT 0
 #endif
 
+//in units of frames, maybe that's dumb
+#ifndef SCHEDULE_TIMEOUT
+#define SCHEDULE_TIMEOUT 1024
+#endif
+
 #endif
