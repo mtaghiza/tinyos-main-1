@@ -226,9 +226,11 @@ module CXTDMAPhysicalP {
     }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
-    printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
-      call PrepareFrameStartAlarm.getNow(), 
-      call PrepareFrameStartAlarm.getAlarm());
+    if (frameNum % 8 == 0){
+      printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
+        call PrepareFrameStartAlarm.getNow(), 
+        call PrepareFrameStartAlarm.getAlarm());
+    }
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -350,15 +352,15 @@ module CXTDMAPhysicalP {
       setState(S_ERROR_5);
       return;
     }
-    printf_TDMA_SS("pfs1\r\n");
-    printf_PFS("pfs1 %lu %lu: ", 
-      call PrepareFrameStartAlarm.getAlarm(), 
-      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
+//    printf_TDMA_SS("pfs1\r\n");
+//    printf_PFS("pfs1 %lu %lu: ", 
+//      call PrepareFrameStartAlarm.getAlarm(), 
+//      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), 
       s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
-    printf_PFS("%lu\r\n",
-      call PrepareFrameStartAlarm.getAlarm());
+//    printf_PFS("%lu\r\n",
+//      call PrepareFrameStartAlarm.getAlarm());
     //16 uS
     PFS_SET_PIN;
     PFS_CLEAR_PIN;
@@ -563,6 +565,9 @@ module CXTDMAPhysicalP {
       //  and this is the first transmission.
       if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
           && (call CXPacket.count(tx_msg)) == 1 ){
+        //we load the entire packet into the tx fifo before hitting
+        //the strobe command, so this is only going to be visible to
+        //the sender (not the receiver).
         call CXPacket.setTimestamp(tx_msg, capture);
       }      
       //1 uS
@@ -710,9 +715,6 @@ module CXTDMAPhysicalP {
     call Rf1aDumpConfig.display(&config);
   }
   
-  async command uint32_t TDMAPhySchedule.getNextFrameStart(){
-    return call PrepareFrameStartAlarm.getAlarm()+ PFS_SLACK;
-  }
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
@@ -785,24 +787,25 @@ module CXTDMAPhysicalP {
       //so: pfs will fire at startAt. At that time, frameNum will get
       //  incremented
       //TODO: check for over/under flows
-      printf_TDMA_SS("Now %lu base %lu delta %lu (%lu %lu) at %u\r\n", 
-        call PrepareFrameStartAlarm.getNow(), s_frameStart,
-        firstDelta, 
-        firstDelta-PFS_SLACK-SFD_TIME, 
-        firstDelta - SFD_TIME, 
-        frameNum);
-
+//      printf_TDMA_SS("Now %lu base %lu delta %lu (%lu %lu) at %u\r\n", 
+//        call PrepareFrameStartAlarm.getNow(), s_frameStart,
+//        firstDelta, 
+//        firstDelta-PFS_SLACK-SFD_TIME, 
+//        firstDelta - SFD_TIME, 
+//        frameNum);
+//
       SS_TOGGLE_PIN;
 
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
-      printf_TDMA_SS("pfs0\r\n");
+//      printf_TDMA_SS("pfs0\r\n");
       printf_PFS("pfs0 %lu %lu:", s_frameStart, firstDelta - PFS_SLACK
       - SFD_TIME);
       call PrepareFrameStartAlarm.startAt(s_frameStart,
         firstDelta - PFS_SLACK - SFD_TIME);
       printf_PFS("%lu\r\n", call PrepareFrameStartAlarm.getAlarm());
-      printf_TDMA_SS("GA: %lu \r\n", call PrepareFrameStartAlarm.getAlarm());
+      printf_TDMA_SS("GA: %lu (%u)\r\n", 
+        call PrepareFrameStartAlarm.getAlarm(), frameNum);
       call FrameStartAlarm.startAt(
         s_frameStart, 
         firstDelta - SFD_TIME);

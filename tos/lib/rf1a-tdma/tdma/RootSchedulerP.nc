@@ -359,8 +359,9 @@ module RootSchedulerP{
   task void updateScheduleTask(){
     error_t error;
     printf_SCHED_SR("UST\r\n");
-    error = call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNextFrameStart(),
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+    error = call TDMAPhySchedule.setSchedule(
+      call CXPacket.getTimestamp(cur_schedule_msg), 
+      curSchedule->originalFrame,
       curSchedule->frameLen,
       curSchedule->fwCheckLen, 
       curSchedule->activeFrames,
@@ -434,7 +435,9 @@ module RootSchedulerP{
       //   - sr unknown: baseline +1 and announce (ADJUSTING)
       if (state == S_BASELINE){
         printf_SCHED_SR("b");
-        if (!disconnected()){
+        //TODO: REMOVE DEBUG CODE: stay in baseline
+//        if (!disconnected()){
+        if (FALSE){
           if (srState == S_UNKNOWN){
             if (increaseNextSR()){
               printf_SCHED_SR("i");

@@ -148,7 +148,8 @@ module NonRootSchedulerP{
     framesSinceLastSchedule = 0;
 
     rxFrameNum = pl->originalFrame 
-      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID);  
+      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID) 
+      - 1;  
     rxTS = call CXPacketMetadata.getReceivedAt(msg);
     curRootStart = call CXPacket.getTimestamp(msg);
 
@@ -241,7 +242,7 @@ module NonRootSchedulerP{
     error = call ReplySend.send(replyMsg, sizeof(replyMsg) +
       sizeof(rf1a_nalp_am_t));
     if (SUCCESS == error){
-      printf_SCHED("ReplySend.send OK\r\n");
+      printf_SCHED_SR("ReplySend.send OK\r\n");
     }else{
       printf("ReplySend: %s\r\n", decodeError(error));
     }
@@ -259,6 +260,7 @@ module NonRootSchedulerP{
       curSched->inactiveFrames, 
       curSched->symbolRate,
       curSched->channel);
+    //TODO: shift scheduled frame start to root timeframe for debug
     if (changePending){
       lastRxTS = 0;
       lastRxFrameNum = 0;

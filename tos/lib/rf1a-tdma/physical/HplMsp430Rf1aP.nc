@@ -691,6 +691,12 @@ generic module HplMsp430Rf1aP () @safe() {
         }
         //2.25 uS
         TX_TOGGLE_PIN;
+        //TODO: would be cool to put timestamp in at the right point.
+        // how to do this? getPacket should return the packet, total
+        // length, and an optional pause index. When loadfifo hits the
+        // pause index, it stops.
+        // at synchCapture.captured, we set the timestamp and then hit
+        // unpause, which lets loadFifo finish..
         loadFifo_(tx_buffer, tx_length);
         //48.5 uS
         TX_TOGGLE_PIN;
