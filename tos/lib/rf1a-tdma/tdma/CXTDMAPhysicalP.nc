@@ -226,11 +226,9 @@ module CXTDMAPhysicalP {
     }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
-    if (frameNum == 3){
-      printf_SCHED_SR("*%u %lu (%lu)\r\n", frameNum, 
-        call PrepareFrameStartAlarm.getNow(), 
-        call PrepareFrameStartAlarm.getAlarm());
-    }
+    printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
+      call PrepareFrameStartAlarm.getNow(), 
+      call PrepareFrameStartAlarm.getAlarm());
     if (scStopPending){
       scStopError = call Resource.release();
       if (SUCCESS == scStopError){
@@ -267,7 +265,7 @@ module CXTDMAPhysicalP {
 
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-        printf_SCHED_SR("wakeup\r\n");
+        printf_PFS("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
 //          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
           call FrameStartAlarm.startAt(
@@ -562,7 +560,7 @@ module CXTDMAPhysicalP {
 
     if (captureMode == MSP430TIMER_CM_RISING){
       if (tx_msg != NULL && call CXPacket.source(tx_msg) == TOS_NODE_ID){
-        printf_SCHED_SR("T@ %lu %u\r\n", capture, frameNum);
+        printf_PHY_TIME("T@ %lu %u\r\n", capture, frameNum);
       }
       //set the tx timestamp if we are the origin
       //  and this is the first transmission.
@@ -661,7 +659,7 @@ module CXTDMAPhysicalP {
           //Nope, this is done during the TX process.
 //          call CXPacket.setCount((message_t*)buffer, 
 //            call CXPacket.count((message_t*)buffer) +1);
-          printf_SCHED_SR("R@ %lu %u\r\n", lastRECapture, frameNum);
+          printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
           call CXPacketMetadata.setReceivedAt((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,

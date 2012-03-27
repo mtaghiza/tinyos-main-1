@@ -434,7 +434,9 @@ module RootSchedulerP{
     txState = S_NOT_SENT;
 
     if ((1+frameNum)%(curSchedule->activeFrames + curSchedule->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
-      printf_SCHED_SR("fs");
+      if (state != S_ESTABLISHED){
+        printf_SCHED_SR("fs");
+      }
       //BASELINE: 
       // - disconnected: stay in baseline until everybody shows up
       //   (BASELINE)
@@ -496,7 +498,7 @@ module RootSchedulerP{
         // - higher sr is also connected, but not as efficient
         //   (ESTABLISHED)
         } else if (higherSRKnown()){
-          printf("=");
+          printf("=\r\n");
           srState = S_DISCOVERED;
           maxSR = curSR;
           state = S_ESTABLISHED;
@@ -523,7 +525,7 @@ module RootSchedulerP{
         // - got all the replies we expected, so call it quits.
         //   (ESTABLISHED)
         if (!disconnected()){
-          printf("=");
+          printf("=\r\n");
           state = S_ESTABLISHED;
 
         //Disconnected, so try it again from the top :( (BASELINE)
@@ -535,7 +537,9 @@ module RootSchedulerP{
           }
         }
       }
-      printf("\r\n");
+      if (state != S_ESTABLISHED){
+        printf_SCHED_SR("\r\n");
+      }
       post announceSchedule();
     }
   }

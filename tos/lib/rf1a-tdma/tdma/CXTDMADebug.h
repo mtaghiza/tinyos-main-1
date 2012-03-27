@@ -131,5 +131,12 @@
 #define printf_PFS_FREAKOUT(...) 
 #endif
 
+#ifdef DEBUG_PHY_TIME
+#define printf_PHY_TIME(...) printf(__VA_ARGS__)
+#else
+#define printf_PHY_TIME(...) 
+#endif
+
+
 
 #endif
