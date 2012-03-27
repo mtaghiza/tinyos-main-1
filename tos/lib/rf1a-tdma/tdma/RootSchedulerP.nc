@@ -46,6 +46,23 @@ module RootSchedulerP{
     S_SWITCH_PENDING = 0x01,
   };
 
+  //transition test functions
+  bool disconnected();
+  bool higherSRChecked();
+  bool lowerMoreEfficient();
+  bool maxSRKnown();
+
+  //schedule announcement modification functions
+  void resetNextSR();
+  bool increaseNextSR();
+  bool decreaseNextSR();
+  void finalizeNextSR();
+  void keepNextSR(bool increaseSN);
+
+  //schedule modification functions
+  task void updateScheduleTask();
+  void useNextSchedule();
+
   uint8_t totalNodes = TDMA_MAX_NODES - 1;
 
   enum {
@@ -293,122 +310,6 @@ module RootSchedulerP{
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ }
 
-  
-
-  bool increaseNextSR(){
-    uint8_t curSRI = srIndex(curSchedule->symbolRate);
-    //OK to increase if we will not exceed maximum-established symbol
-    //rate.
-    if ( curSRI < NUM_SRS - 1 ){
-      setupPacket(next_schedule_msg,
-        (curSchedule->scheduleNum+1)%0xff,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-        TDMA_ROOT_ACTIVE_FRAMES, 
-        TDMA_ROOT_INACTIVE_FRAMES,
-        TDMA_ROOT_FRAMES_PER_SLOT,
-        TDMA_MAX_RETRANSMIT,
-        symbolRates[curSRI + 1],
-        curSchedule->channel
-      );
-      nextSR = ((cx_schedule_t*)
-        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
-        )->symbolRate;
-      return TRUE;
-    }else{
-      //already at the maximum symbol rate.
-      return FALSE;
-    }
-  }
-
-  void finalizeNextSR(){
-    setupPacket(next_schedule_msg,
-      (curSchedule->scheduleNum+1)%0xff,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
-      maxSR,
-      curSchedule->channel
-    );
-    nextSR = ((cx_schedule_t*)
-      (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
-      )->symbolRate;
-  }
-
-  bool decreaseNextSR(){
-    uint8_t curSRI = srIndex(curSchedule->symbolRate);
-    //OK to decrease if we are not already at min 
-    if ( curSRI > 0 ){
-      setupPacket(next_schedule_msg,
-        (curSchedule->scheduleNum+1)%0xff,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-        TDMA_ROOT_ACTIVE_FRAMES, 
-        TDMA_ROOT_INACTIVE_FRAMES,
-        TDMA_ROOT_FRAMES_PER_SLOT,
-        TDMA_MAX_RETRANSMIT,
-        symbolRates[curSRI - 1],
-        curSchedule->channel
-      );
-      nextSR = ((cx_schedule_t*)
-        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
-        )->symbolRate;
-      return TRUE;
-    }else{
-      //already at the minimum symbol rate.
-      return FALSE;
-    }
-  }
-
-  task void updateScheduleTask(){
-    error_t error;
-    printf_SCHED_SR("UST\r\n");
-    error = call TDMAPhySchedule.setSchedule(
-      call CXPacket.getTimestamp(cur_schedule_msg), 
-      curSchedule->originalFrame,
-      curSchedule->frameLen,
-      curSchedule->fwCheckLen, 
-      curSchedule->activeFrames,
-      curSchedule->inactiveFrames, 
-      curSchedule->symbolRate,
-      curSchedule->channel
-    );
-    if (SUCCESS != error){
-      printf("Unable to update schedule: %s\r\n", decodeError(error));
-    } else {
-      printf_SCHED_SR("UST OK\r\n");
-      curSR = curSchedule->symbolRate;
-      psState = S_SET;
-    }
-  }
-
-  bool disconnected(){
-    return nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
-  }
-
-  bool higherSRKnown(){
-    return (maxDepth[srIndex(curSR)+1] != 0xff);
-  }
-
-  bool lastMoreEfficient(){
-    uint8_t lastDepth = maxDepth[srIndex(lastSR)];
-    uint8_t curDepth = maxDepth[srIndex(curSR)];
-//    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
-//      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
-    //TRUE: lastDepth/lastSR < curDepth/curSR
-    return curSR * lastDepth < lastSR * curDepth;
-  }
-
-  void useNextSchedule(){
-    message_t* swp = cur_schedule_msg;
-    lastSR = curSchedule->symbolRate;
-    cur_schedule_msg = next_schedule_msg;
-    curSchedule = (cx_schedule_t*) call Packet.getPayload(cur_schedule_msg, sizeof(cx_schedule_t));
-    next_schedule_msg = swp;
-    psState = S_SWITCH_PENDING;
-    post updateScheduleTask();
-  }
-
   task void baselineTask(){
     error_t error = baseline(nextBLSN, resetBL);
     if (SUCCESS == error){
@@ -488,7 +389,7 @@ module RootSchedulerP{
 
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
-        } else if (lastMoreEfficient()){
+        } else if (lowerMoreEfficient()){
           printf_SCHED_SR("V");
           decreaseNextSR();
           maxSR = nextSR;
@@ -497,7 +398,7 @@ module RootSchedulerP{
 
         // - higher sr is also connected, but not as efficient
         //   (ESTABLISHED)
-        } else if (higherSRKnown()){
+        } else if (higherSRChecked()){
           printf("=\r\n");
           srState = S_DISCOVERED;
           maxSR = curSR;
@@ -609,6 +510,161 @@ module RootSchedulerP{
     }
     return msg;
   }
+
+  //Schedule modification functions
+  task void updateScheduleTask(){
+    error_t error;
+    printf_SCHED_SR("UST\r\n");
+    error = call TDMAPhySchedule.setSchedule(
+      call CXPacket.getTimestamp(cur_schedule_msg), 
+      curSchedule->originalFrame,
+      curSchedule->frameLen,
+      curSchedule->fwCheckLen, 
+      curSchedule->activeFrames,
+      curSchedule->inactiveFrames, 
+      curSchedule->symbolRate,
+      curSchedule->channel
+    );
+    if (SUCCESS != error){
+      printf("Unable to update schedule: %s\r\n", decodeError(error));
+    } else {
+      printf_SCHED_SR("UST OK\r\n");
+      curSR = curSchedule->symbolRate;
+      psState = S_SET;
+    }
+  }
+
+  void useNextSchedule(){
+    message_t* swp = cur_schedule_msg;
+    lastSR = curSchedule->symbolRate;
+    cur_schedule_msg = next_schedule_msg;
+    curSchedule = (cx_schedule_t*) call Packet.getPayload(cur_schedule_msg, sizeof(cx_schedule_t));
+    next_schedule_msg = swp;
+    psState = S_SWITCH_PENDING;
+    post updateScheduleTask();
+  }
+
+  //Tests
+  bool disconnected(){
+    return nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
+  }
+
+  bool higherSRChecked(){
+    return (maxDepth[srIndex(curSR)+1] != 0xff);
+  }
+
+  bool lowerMoreEfficient(){
+    uint8_t lastDepth = maxDepth[srIndex(lastSR)];
+    uint8_t curDepth = maxDepth[srIndex(curSR)];
+//    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
+//      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
+    //TRUE: lastDepth/lastSR < curDepth/curSR
+    return curSR * lastDepth < lastSR * curDepth;
+  }
+  
+  bool maxSRKnown(){
+    #error fill me in
+  }
+
+
+  //Schedule announcement modification functions
+  void resetNextSR(){
+    setupPacket(next_schedule_msg,
+      (curSchedule->scheduleNum+1)%0xff,
+      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+      TDMA_ROOT_ACTIVE_FRAMES, 
+      TDMA_ROOT_INACTIVE_FRAMES,
+      TDMA_ROOT_FRAMES_PER_SLOT,
+      TDMA_MAX_RETRANSMIT,
+      TDMA_INIT_SYMBOLRATE,
+      curSchedule->channel
+    );
+  }
+
+  bool increaseNextSR(){
+    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    //OK to increase if we will not exceed maximum-established symbol
+    //rate.
+    if ( curSRI < NUM_SRS - 1 ){
+      setupPacket(next_schedule_msg,
+        (curSchedule->scheduleNum+1)%0xff,
+        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+        TDMA_ROOT_ACTIVE_FRAMES, 
+        TDMA_ROOT_INACTIVE_FRAMES,
+        TDMA_ROOT_FRAMES_PER_SLOT,
+        TDMA_MAX_RETRANSMIT,
+        symbolRates[curSRI + 1],
+        curSchedule->channel
+      );
+      nextSR = ((cx_schedule_t*)
+        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+        )->symbolRate;
+      return TRUE;
+    }else{
+      //already at the maximum symbol rate.
+      return FALSE;
+    }
+  }
+
+  bool decreaseNextSR(){
+    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    //OK to decrease if we are not already at min 
+    if ( curSRI > 0 ){
+      setupPacket(next_schedule_msg,
+        (curSchedule->scheduleNum+1)%0xff,
+        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+        TDMA_ROOT_ACTIVE_FRAMES, 
+        TDMA_ROOT_INACTIVE_FRAMES,
+        TDMA_ROOT_FRAMES_PER_SLOT,
+        TDMA_MAX_RETRANSMIT,
+        symbolRates[curSRI - 1],
+        curSchedule->channel
+      );
+      nextSR = ((cx_schedule_t*)
+        (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+        )->symbolRate;
+      return TRUE;
+    }else{
+      //already at the minimum symbol rate.
+      return FALSE;
+    }
+  }
+
+  void finalizeNextSR(){
+    setupPacket(next_schedule_msg,
+      (curSchedule->scheduleNum+1)%0xff,
+      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+      TDMA_ROOT_ACTIVE_FRAMES, 
+      TDMA_ROOT_INACTIVE_FRAMES,
+      TDMA_ROOT_FRAMES_PER_SLOT,
+      TDMA_MAX_RETRANSMIT,
+      maxSR,
+      curSchedule->channel
+    );
+    nextSR = ((cx_schedule_t*)
+      (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
+      )->symbolRate;
+  }
+
+  void keepNextSR(bool increaseSN){
+    uint8_t nextSN;
+    if (increaseSN){
+      nextSN = (curSchedule->scheduleNum+1)%0xff;
+    } else {
+      nextSN = curSchedule->scheduleNum;
+    }
+    setupPacket(next_schedule_msg,
+      nextSN,
+      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
+      TDMA_ROOT_ACTIVE_FRAMES, 
+      TDMA_ROOT_INACTIVE_FRAMES,
+      TDMA_ROOT_FRAMES_PER_SLOT,
+      TDMA_MAX_RETRANSMIT,
+      curSchedule->symbolRate,
+      curSchedule->channel
+    );
+  }
+
 
   //unused
   event void ReplySend.sendDone(message_t* msg, error_t error){}
