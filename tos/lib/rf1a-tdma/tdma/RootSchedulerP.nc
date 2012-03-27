@@ -61,6 +61,7 @@ module RootSchedulerP{
   uint8_t nextSR = 0;
   uint8_t maxSR = 0;
   uint8_t nextBLSN = 0;
+  bool resetBL = TRUE;
   bool blPending = FALSE;
 
   uint8_t symbolRates[10] = {
@@ -183,10 +184,11 @@ module RootSchedulerP{
     maxSR = 0;
   }
 
-  error_t baseline(uint8_t scheduleNum){ 
-    error_t error;
+  error_t baseline(uint8_t scheduleNum, bool resetSchedule){ 
+    error_t error = SUCCESS;
     state = S_BASELINE;
     txState = S_NOT_SENT;
+    printf_SCHED_SR("Baseline\r\n");
     //set up current schedule and next schedule identically 
     setupPacket(cur_schedule_msg, scheduleNum,
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
@@ -206,15 +208,17 @@ module RootSchedulerP{
       TEST_CHANNEL);
     curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
       sizeof(cx_schedule_t)));
-    error = call TDMAPhySchedule.setSchedule(
-      call TDMAPhySchedule.getNow(), 
-      curSchedule->originalFrame,
-      curSchedule->frameLen,
-      curSchedule->fwCheckLen,
-      curSchedule->activeFrames,
-      curSchedule->inactiveFrames,
-      curSchedule->symbolRate,
-      curSchedule->channel);
+    if (resetSchedule){
+      error = call TDMAPhySchedule.setSchedule(
+        call TDMAPhySchedule.getNow(), 
+        curSchedule->originalFrame,
+        curSchedule->frameLen,
+        curSchedule->fwCheckLen,
+        curSchedule->activeFrames,
+        curSchedule->inactiveFrames,
+        curSchedule->symbolRate,
+        curSchedule->channel);
+    }
     if (SUCCESS == error){
       psState = S_SET;
     }
@@ -223,7 +227,7 @@ module RootSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (SUCCESS == error){
-      error = baseline(0);
+      error = baseline(0, TRUE);
       if (SUCCESS == error){
         post announceSchedule();
         post printSchedule();
@@ -403,7 +407,7 @@ module RootSchedulerP{
   }
 
   task void baselineTask(){
-    error_t error = baseline(nextBLSN);
+    error_t error = baseline(nextBLSN, resetBL);
     if (SUCCESS == error){
       blPending = FALSE;
     }else{
@@ -411,11 +415,12 @@ module RootSchedulerP{
     }
   }
 
-  bool postBaseline(){
+  bool postBaseline(bool resetSchedule){
     if (blPending){
       return FALSE;
     }else{
       nextBLSN = (curSchedule->scheduleNum +1)%0xff;
+      resetBL = resetSchedule;
       blPending = TRUE;
       post baselineTask();
       return TRUE;
@@ -452,7 +457,7 @@ module RootSchedulerP{
           }
         } else {
           printf_SCHED_SR("d");
-          if (!postBaseline()){
+          if (!postBaseline(FALSE)){
             printf("BL->BL: Busy!\r\n");
           }
         }
@@ -474,7 +479,7 @@ module RootSchedulerP{
           printf_SCHED_SR("d");
           maxSR = lastSR;
           srState = S_DISCOVERED;
-          if (!postBaseline()){
+          if (!postBaseline(TRUE)){
             printf("CHECK->BL: Busy!\r\n");
           }
 
@@ -524,7 +529,7 @@ module RootSchedulerP{
         } else {
           printf("d!");
           reset();
-          if (! postBaseline()){
+          if (! postBaseline(TRUE)){
             printf("FINALCHECK->BL: Busy!\r\n");
           }
         }

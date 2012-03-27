@@ -226,8 +226,8 @@ module CXTDMAPhysicalP {
     }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
-    if (frameNum % 8 == 0){
-      printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
+    if (frameNum == 3){
+      printf_SCHED_SR("*%u %lu (%lu)\r\n", frameNum, 
         call PrepareFrameStartAlarm.getNow(), 
         call PrepareFrameStartAlarm.getAlarm());
     }
@@ -267,7 +267,7 @@ module CXTDMAPhysicalP {
 
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-//        printf("wakeup\r\n");
+        printf_SCHED_SR("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
 //          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
           call FrameStartAlarm.startAt(
@@ -561,6 +561,9 @@ module CXTDMAPhysicalP {
     SC_TOGGLE_PIN;
 
     if (captureMode == MSP430TIMER_CM_RISING){
+      if (tx_msg != NULL && call CXPacket.source(tx_msg) == TOS_NODE_ID){
+        printf_SCHED_SR("T@ %lu %u\r\n", capture, frameNum);
+      }
       //set the tx timestamp if we are the origin
       //  and this is the first transmission.
       if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
@@ -658,6 +661,7 @@ module CXTDMAPhysicalP {
           //Nope, this is done during the TX process.
 //          call CXPacket.setCount((message_t*)buffer, 
 //            call CXPacket.count((message_t*)buffer) +1);
+          printf_SCHED_SR("R@ %lu %u\r\n", lastRECapture, frameNum);
           call CXPacketMetadata.setReceivedAt((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
@@ -731,61 +735,54 @@ module CXTDMAPhysicalP {
       SS_CLEAR_PIN;
       return EOFF;
     } else if(!inError()) {
-      uint32_t firstDelta;
+      uint32_t pfsStartAt;
+      uint32_t delta;
+
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
-      printf_SCHED_SR("SS@%lu: %lu %u %lu %lu %u %u %u %u\r\n", 
+      printf_TDMA_SS("SS@ %lu: %lu %u %lu %lu %u %u %u %u\r\n", 
         call FrameStartAlarm.getNow(), 
         startAt, atFrameNum,
         frameLen, fwCheckLen, activeFrames, inactiveFrames,
         symbolRate, channel);
-
       atomic{
-        SS_TOGGLE_PIN;
-        firstDelta = frameLen;
-        //make sure that base time is in the past.
-        while(startAt > call FrameStartAlarm.getNow()){
-          printf_TDMA_SS("s");
-          startAt -= frameLen;
-          firstDelta += frameLen;
+        //while target frameStart is in the past
+        // - add 1 to target frameNum, add framelen to target frameStart
+        pfsStartAt = startAt - PFS_SLACK - SFD_TIME;
+        while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
+          pfsStartAt += frameLen;
+          atFrameNum = (atFrameNum + 1)%(activeFrames + inactiveFrames);
         }
-        SS_TOGGLE_PIN;
-
-        //if target is in the past, we need to jump ahead by some
-        //  frames.
-        while ( (startAt + firstDelta) < call FrameStartAlarm.getNow()){
-          atFrameNum = (1+atFrameNum) % (activeFrames + inactiveFrames);
-          firstDelta += frameLen;
-          //also apply corrections to the fast-forward.
-          firstDelta += signal TDMAPhySchedule.getFrameAdjustment(atFrameNum);
-          printf_TDMA_SS("d");
+        //now that target is in the future: 
+        //  - set frameNum to target framenum - 1 (so that pfs counts to
+        //    correct frame num when it fires).
+        if (atFrameNum == 0){
+          frameNum = activeFrames + inactiveFrames;
+        }else{
+          frameNum = atFrameNum - 1;
         }
-
-        SS_TOGGLE_PIN;
+        //  - set base and delta to arbitrary values s.t. base +delta =
+        //    target frame start
+        delta = call PrepareFrameStartAlarm.getNow();
+        call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
+          delta);
+        call FrameStartAlarm.startAt(pfsStartAt-delta,
+          delta + PFS_SLACK);
+  
         s_frameStart = startAt;
         s_frameLen = frameLen;
         s_fwCheckLen = fwCheckLen;
         s_activeFrames = activeFrames;
         s_inactiveFrames = inactiveFrames;
         s_channel = channel;
-
-        //If channel or symbol rate changes, need to reconfigure
-        //  radio.
-        if (s_sr != symbolRate || s_channel != channel){
-          s_sr = symbolRate;
-          call Rf1aPhysical.reconfigure();
-        }
-        if (atFrameNum == 0){
-          printf_TDMA_SS("w");
-          atFrameNum = activeFrames + inactiveFrames;
-        }
-        frameNum = atFrameNum - 1;
-        SS_TOGGLE_PIN;
       }
-      //reschedule alarms based on these settings.
-      // we want atFrameNum to come up at startAt. 
-      //so: pfs will fire at startAt. At that time, frameNum will get
-      //  incremented
+      //If channel or symbol rate changes, need to reconfigure
+      //  radio.
+      if (s_sr != symbolRate || s_channel != channel){
+        s_sr = symbolRate;
+        call Rf1aPhysical.reconfigure();
+      }
+ 
       //TODO: check for over/under flows
 //      printf_TDMA_SS("Now %lu base %lu delta %lu (%lu %lu) at %u\r\n", 
 //        call PrepareFrameStartAlarm.getNow(), s_frameStart,
@@ -794,22 +791,9 @@ module CXTDMAPhysicalP {
 //        firstDelta - SFD_TIME, 
 //        frameNum);
 //
-      SS_TOGGLE_PIN;
-
-      call PrepareFrameStartAlarm.stop();
-      call FrameStartAlarm.stop();
-//      printf_TDMA_SS("pfs0\r\n");
-      printf_PFS("pfs0 %lu %lu:", s_frameStart, firstDelta - PFS_SLACK
-      - SFD_TIME);
-      call PrepareFrameStartAlarm.startAt(s_frameStart,
-        firstDelta - PFS_SLACK - SFD_TIME);
-      printf_PFS("%lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+  
       printf_TDMA_SS("GA: %lu (%u)\r\n", 
         call PrepareFrameStartAlarm.getAlarm(), frameNum);
-      call FrameStartAlarm.startAt(
-        s_frameStart, 
-        firstDelta - SFD_TIME);
-      SS_CLEAR_PIN;
       return SUCCESS;
     } else {
       setState(S_ERROR_2);
