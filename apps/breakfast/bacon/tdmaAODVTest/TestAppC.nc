@@ -69,6 +69,7 @@ configuration TestAppC{
   components CXTDMADispatchC;
   CXTDMADispatchC.SubCXTDMA -> CXTDMAPhysicalC;
   CXTDMADispatchC.CXPacket -> Rf1aCXPacketC;
+  CXTDMADispatchC.CXPacketMetadata -> Rf1aCXPacketC;
 
   //this is just used to keep the enumerated arbiter happy
   enum{

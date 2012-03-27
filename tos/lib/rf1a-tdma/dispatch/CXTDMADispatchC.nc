@@ -4,6 +4,7 @@ configuration CXTDMADispatchC{
 
   uses interface CXTDMA as SubCXTDMA;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 } implementation {
   components CXTDMADispatchP;
   components new FcfsArbiterC(CXTDMA_RM_RESOURCE);
@@ -15,5 +16,6 @@ configuration CXTDMADispatchC{
   CXTDMADispatchP.ArbiterInfo -> FcfsArbiterC;
   CXTDMADispatchP.SubCXTDMA = SubCXTDMA;
   CXTDMADispatchP.CXPacket = CXPacket;
+  CXTDMADispatchP.CXPacketMetadata = CXPacketMetadata;
 
 }

@@ -34,6 +34,7 @@ typedef struct cx_metadata_t{
   uint8_t receivedCount;
   uint32_t receivedAt;
   uint16_t frameNum;
+  uint8_t symbolRate;
 } cx_metadata_t;
 
 #define CX_TYPE_DATA 0xaa

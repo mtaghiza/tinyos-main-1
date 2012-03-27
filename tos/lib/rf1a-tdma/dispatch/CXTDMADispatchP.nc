@@ -4,6 +4,7 @@ module CXTDMADispatchP{
   uses interface CXTDMA as SubCXTDMA;
   uses interface ArbiterInfo;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 } implementation {
 
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
@@ -44,9 +45,26 @@ module CXTDMADispatchP{
     }
   }
 
+  bool deliverMsg(message_t* msg){
+    #ifdef DISCONNECTED_SR
+    bool result = (call CXPacketMetadata.getSymbolRate(msg) < DISCONNECTED_SR);
+    printf("sr: %u dsr: %u\r\n", 
+      call CXPacketMetadata.getSymbolRate(msg), 
+      DISCONNECTED_SR);
+    return result;
+    #else
+    return TRUE;
+    #endif
+  }
+
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    return signal CXTDMA.receive[ call CXPacket.getRoutingMethod(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
+    if (deliverMsg(msg)){
+      return signal CXTDMA.receive[ call CXPacket.getRoutingMethod(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
+    } else {
+      printf_BF("DROP\r\n");
+      return msg;
+    }
   }
 
   default async event rf1a_offmode_t CXTDMA.frameType[uint8_t routingMethod](uint16_t frameNum){

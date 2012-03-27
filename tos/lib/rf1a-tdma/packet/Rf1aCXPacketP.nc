@@ -142,6 +142,15 @@ module Rf1aCXPacketP{
     return getMetadata(amsg)->receivedCount;
   }
 
+  command void CXPacketMetadata.setSymbolRate(message_t* amsg,
+      uint8_t symbolRate){
+    getMetadata(amsg)->symbolRate = symbolRate;
+  }
+  command uint8_t CXPacketMetadata.getSymbolRate(message_t* amsg){
+    return getMetadata(amsg)->symbolRate;
+  }
+
+
 
   async event void ActiveMessageAddress.changed(){ }
 }

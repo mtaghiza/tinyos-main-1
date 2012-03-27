@@ -660,6 +660,8 @@ module CXTDMAPhysicalP {
 //          call CXPacket.setCount((message_t*)buffer, 
 //            call CXPacket.count((message_t*)buffer) +1);
           printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
+          call CXPacketMetadata.setSymbolRate((message_t*)buffer,
+            s_sr);
           call CXPacketMetadata.setReceivedAt((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,

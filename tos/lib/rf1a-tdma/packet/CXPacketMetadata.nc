@@ -5,5 +5,7 @@ interface CXPacketMetadata{
   command uint16_t getFrameNum(message_t* amsg);
   command void setReceivedCount(message_t* amsg, uint8_t rc);
   command uint8_t getReceivedCount(message_t* amsg);
+  command void setSymbolRate(message_t* amsg, uint8_t symbolRate);
+  command uint8_t getSymbolRate(message_t* amsg);
 
 }
