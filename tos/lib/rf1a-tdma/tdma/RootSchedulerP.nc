@@ -22,12 +22,20 @@ module RootSchedulerP{
 } implementation {
 
   enum {
-    S_BASELINE       = 0x01,
-    S_ADJUSTING      = 0x02,
-    S_CHECKING       = 0x03,
-    S_FINALIZING     = 0x04,
-    S_FINAL_CHECKING = 0x05,
-    S_ESTABLISHED    = 0x06,
+    S_OFF ,
+    S_SC_STARTING ,
+
+    S_BASELINE ,
+    S_ADJUSTING      ,
+    S_CHECKING       ,
+    S_FINALIZING     ,
+    S_FINAL_CHECKING ,
+    S_ESTABLISHED    ,
+
+    S_RESET_STOPPING,
+    S_RESET_STOPPED,
+    S_RESET_STARTING,
+
   };
 
   enum {
@@ -69,7 +77,7 @@ module RootSchedulerP{
     NUM_SRS= uniqueCount(SR_COUNT_KEY),
   };
 
-  uint8_t state = S_BASELINE;
+  uint8_t state = S_OFF;
   uint8_t txState = S_NOT_SENT;
   uint8_t srState = S_UNKNOWN;
   uint8_t psState = S_SWITCH_PENDING;
