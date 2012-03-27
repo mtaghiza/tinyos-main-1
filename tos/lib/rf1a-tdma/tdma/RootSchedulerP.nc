@@ -32,9 +32,10 @@ module RootSchedulerP{
     S_FINAL_CHECKING ,
     S_ESTABLISHED    ,
 
-    S_RESET_STOPPING,
-    S_RESET_STOPPED,
-    S_RESET_STARTING,
+//    S_RESET_STOPPING,
+//    S_RESET_STOPPED,
+//    S_RESET_STARTING,
+    S_RESETTING,
 
   };
 
@@ -53,6 +54,9 @@ module RootSchedulerP{
     S_SET            = 0x00,
     S_SWITCH_PENDING = 0x01,
   };
+  
+  //TODO:other stuff
+  task void announceSchedule();
 
   //transition test functions
   bool disconnected();
@@ -61,11 +65,20 @@ module RootSchedulerP{
   bool maxSRKnown();
 
   //schedule announcement modification functions
-  void resetNextSR();
+  void resetNextSR(bool resetVars);
   bool increaseNextSR();
   bool decreaseNextSR();
   void finalizeNextSR();
   void keepNextSR(bool increaseSN);
+  void setupPacket(message_t* msg, 
+      uint8_t sn, 
+      uint16_t originalFrame, 
+      uint16_t activeFrames, 
+      uint16_t inactiveFrames, 
+      uint16_t framesPerSlot, 
+      uint8_t maxRetransmit, 
+      uint8_t symbolRate, 
+      uint8_t channel);
 
   //schedule modification functions
   task void updateScheduleTask();
@@ -153,139 +166,47 @@ module RootSchedulerP{
 
   command error_t SplitControl.start(){
     error_t error;
-    error = call SubSplitControl.start();
-    if (SUCCESS == error){
-      printf_SCHED("SSC.sd\r\n");
-      reset();
+    if (state == S_OFF){
+      error = call SubSplitControl.start();
+      if (SUCCESS == error){
+        printf_SCHED("SSC.sd\r\n");
+        state = S_SC_STARTING;
+      }
     }
     printf_SCHED("SC.s\r\n");
     return error;
   }
 
-  void setupPacket(message_t* msg, 
-      uint8_t sn, 
-      uint16_t originalFrame, 
-      uint16_t activeFrames, 
-      uint16_t inactiveFrames, 
-      uint16_t framesPerSlot, 
-      uint8_t maxRetransmit, 
-      uint8_t symbolRate, 
-      uint8_t channel){
-    cx_schedule_t* schedule; 
-    call CXPacket.init(msg);
-
-    call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
-    call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
-    schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
-    schedule -> originalFrame = originalFrame;
-    schedule -> frameLen = frameLens[srIndex(symbolRate)];
-    schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
-    schedule -> activeFrames = activeFrames;
-    schedule -> inactiveFrames = inactiveFrames;
-    schedule -> framesPerSlot = framesPerSlot;
-    schedule -> maxRetransmit = maxRetransmit;
-    schedule -> symbolRate = symbolRate;
-    schedule -> channel = channel;
-    schedule -> scheduleNum = sn;
-  }
-  task void announceSchedule();
-
-  task void printSchedule(){
-    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
-      curSchedule->scheduleNum, curSchedule->originalFrame, curSchedule->frameLen,
-      curSchedule->fwCheckLen, curSchedule->activeFrames, 
-      curSchedule->inactiveFrames, curSchedule->framesPerSlot, 
-      curSchedule->maxRetransmit, curSchedule->symbolRate,
-      curSchedule->channel);
-  }
-
-  void reset(){
-    uint8_t i;
-    for(i = 0 ; i<NUM_SRS; i++){
-      maxDepth[i] = 0xff;
-      nodesReachable[i] = 0;
-    }
-    srState = S_UNKNOWN;
-    maxSR = 0;
-  }
-
-  error_t baseline(uint8_t scheduleNum, bool resetSchedule){ 
-    error_t error = SUCCESS;
-    state = S_BASELINE;
-    txState = S_NOT_SENT;
-    printf_SCHED_SR("Baseline\r\n");
-    //set up current schedule and next schedule identically 
-    setupPacket(cur_schedule_msg, scheduleNum,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
-      TDMA_INIT_SYMBOLRATE,
-      TEST_CHANNEL);
-    setupPacket(next_schedule_msg, scheduleNum,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
-      TDMA_INIT_SYMBOLRATE,
-      TEST_CHANNEL);
-    curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
-      sizeof(cx_schedule_t)));
-    if (resetSchedule){
-      error = call TDMAPhySchedule.setSchedule(
-        call TDMAPhySchedule.getNow(), 
-        curSchedule->originalFrame,
-        curSchedule->frameLen,
-        curSchedule->fwCheckLen,
-        curSchedule->activeFrames,
-        curSchedule->inactiveFrames,
-        curSchedule->symbolRate,
-        curSchedule->channel);
-    }
-    if (SUCCESS == error){
-      psState = S_SET;
-    }
-    return error;
-  }
-
   event void SubSplitControl.startDone(error_t error){
-    if (SUCCESS == error){
-      error = baseline(0, TRUE);
+    if (state == S_SC_STARTING){
       if (SUCCESS == error){
+        resetNextSR(TRUE);
+        state = S_BASELINE;
         post announceSchedule();
-        post printSchedule();
-        printf_SCHED("setSchedule OK\r\n");
-      }else{
-        printf("set next schedule: %s\r\n", decodeError(error));
       }
+      signal SplitControl.startDone(error);
+    } else {
+      printf("unexpected state %x at ssc.startdone\r\n", state);
     }
-    signal SplitControl.startDone(error);
   }
-  
 
   //we always announce the *next* schedule. In the steady-state, next
   //and current have the same contents.
   task void announceSchedule(){
     error_t error;
     message_t* toSend;
-
-    if (state == S_BASELINE || state == S_ESTABLISHED){
-      toSend = cur_schedule_msg; 
-    } else if (state == S_ADJUSTING || state == S_FINALIZING){
-      toSend = next_schedule_msg;
+    if (state == S_BASELINE || state == S_ADJUST 
+        || state == S_FINALIZING || state == S_RESETTING 
+        || state == S_ESTABLISHED){
+      //TODO: size, come on. the worst.
+      if (SUCCESS == call AnnounceSend.send(next_schedule_msg,
+          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t))){
+        txState = S_SENDING;
+      }else{
+        printf("announce schedule: %s\r\n", decodeError(error));
+      }
     } else {
-      printf("Unexpected announce schedule state %x %x %x %x\r\n",
-        state, txState, srState, psState);
-    }
-    //TODO: size, come on
-    error = call AnnounceSend.send(toSend,
-      sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
-    if (SUCCESS != error){
-      printf("announce schedule: %s\r\n", decodeError(error));
-    }else{
-      txState = S_SENDING;
+      printf("unexpected state %x in announceSchedule\r\n");
     }
   }
 
@@ -293,59 +214,38 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      txState = S_WAITING;
-      if (state == S_ADJUSTING){
-        state = S_CHECKING;
-        psState = S_SWITCH_PENDING;
-        useNextSchedule();
-      } else if (state == S_FINALIZING){
-        state = S_FINAL_CHECKING;
-        psState = S_SWITCH_PENDING;
-        useNextSchedule();
+      if (state == S_BASELINE || state == S_ADJUST 
+          || state == S_FINALIZING || state == S_RESETTING
+          || state == S_ESTABLISHED){
+        txState = S_WAITING;
+        //BASELINE: no change.
+        if (state == S_ADJUST){
+          state = S_CHECKING;
+          useNextSchedule();
+        } else if (state == S_FINALIZING){
+          state = S_FINAL_CHECKING;
+          useNextSchedule();
+        } else if (state == S_RESETTING){
+          state = S_BASELINE;
+          useNextSchedule();
+        }
+        //ESTABLISHED: no change.
+        printf_SCHED("AS.sd: %lu\r\n", call CXPacket.getTimestamp(msg));
+      } else {
+        printf("Unexpected state %x in as.sendDone\r\n", state);
       }
-      printf_SCHED("AS.sd: %lu\r\n", call CXPacket.getTimestamp(msg));
-    }
-  }
-
-  command error_t SplitControl.stop(){
-    return call SubSplitControl.stop();
-  }
-
-  event void SubSplitControl.stopDone(error_t error){
-    signal SplitControl.stopDone(error);
-  }
-
-  async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
-      uint16_t frameNum){ }
-
-  task void baselineTask(){
-    error_t error = baseline(nextBLSN, resetBL);
-    if (SUCCESS == error){
-      blPending = FALSE;
-    }else{
-      printf("Baseline failed: %s\r\n", decodeError(error));
-    }
-  }
-
-  bool postBaseline(bool resetSchedule){
-    if (blPending){
-      return FALSE;
-    }else{
-      nextBLSN = (curSchedule->scheduleNum +1)%0xff;
-      resetBL = resetSchedule;
-      blPending = TRUE;
-      post baselineTask();
-      return TRUE;
     }
   }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
-    txState = S_NOT_SENT;
 
     if ((1+frameNum)%(curSchedule->activeFrames + curSchedule->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+      txState = S_NOT_SENT;
+
       if (state != S_ESTABLISHED){
         printf_SCHED_SR("fs");
       }
+
       //BASELINE: 
       // - disconnected: stay in baseline until everybody shows up
       //   (BASELINE)
@@ -354,33 +254,25 @@ module RootSchedulerP{
       //   - sr unknown: baseline +1 and announce (ADJUSTING)
       if (state == S_BASELINE){
         printf_SCHED_SR("b");
-        if (!disconnected()){
-          if (srState == S_UNKNOWN){
-            if (increaseNextSR()){
-              printf_SCHED_SR("i");
-              state = S_ADJUSTING;
-            } else {
-              printf("error: couldn't increase SR from baseline state?!\r\n");
-            }
-          } else {
+        if (disconnected()){
+          keepNextSR(TRUE);
+        }else {
+          if (maxSRKnown()){
             printf_SCHED_SR("f");
             state = S_FINALIZING;
             finalizeNextSR();
-          }
-        } else {
-          printf_SCHED_SR("d");
-          if (!postBaseline(FALSE)){
-            printf("BL->BL: Busy!\r\n");
+          } else {
+            if (increaseNextSR()){
+              printf_SCHED_SR("^");
+              state = S_ADJUSTING;
+            } else {
+              printf_SCHED_SR("=");
+              state = S_ESTABLISHED;
+              keepNextSR(FALSE);
+            }
           }
         }
 
-//      //ADJUSTING:
-//      // - update phy schedule, wait for responses (CHECKING)
-//      } else if (state == S_ADJUSTING){
-//        state = S_CHECKING;
-//        psState = S_SWITCH_PENDING;
-//        useNextSchedule();
-//
       //CHECKING: look at replies from last round and adjust, reset,
       //or stand pat depending on result.
       } else if (state == S_CHECKING){
@@ -391,9 +283,8 @@ module RootSchedulerP{
           printf_SCHED_SR("d");
           maxSR = lastSR;
           srState = S_DISCOVERED;
-          if (!postBaseline(TRUE)){
-            printf("CHECK->BL: Busy!\r\n");
-          }
+          state = S_RESETTING;
+          resetNextSR(FALSE);
 
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
@@ -407,9 +298,10 @@ module RootSchedulerP{
         // - higher sr is also connected, but not as efficient
         //   (ESTABLISHED)
         } else if (higherSRChecked()){
-          printf("=\r\n");
+          printf_SCHED_SR("=");
           srState = S_DISCOVERED;
           maxSR = curSR;
+          keepNextSR(FALSE);
           state = S_ESTABLISHED;
 
         // - next sr up may be more efficient, so try it (ADJUSTING)
@@ -419,36 +311,30 @@ module RootSchedulerP{
           state = S_ADJUSTING;
         }
 
-//      //FINALIZING: we think we're good to go, but we did just
-//      //announce a new symbol rate. So, let's listen for replies
-//      //(FINAL_CHECKING)
-//      } else if (state == S_FINALIZING){
-//        state = S_FINAL_CHECKING;
-//        psState = S_SWITCH_PENDING;
-//        useNextSchedule();
-//
       //FINAL_CHECKING: we were all synched up, then announced a new
       //symbol rate (which we intend to keep as the final SR). 
       } else if (state == S_FINAL_CHECKING){
-        printf("C");
+        printf_SCHED_SR("C");
         // - got all the replies we expected, so call it quits.
         //   (ESTABLISHED)
         if (!disconnected()){
-          printf("=\r\n");
+          printf_SCHED_SR("=");
           state = S_ESTABLISHED;
 
         //Disconnected, so try it again from the top :( (BASELINE)
         } else {
-          printf("d!");
-          reset();
-          if (! postBaseline(TRUE)){
-            printf("FINALCHECK->BL: Busy!\r\n");
-          }
+          printf_SCHED_SR("d!");
+          state = S_RESETTING;
+          resetNextSR(TRUE);
         }
+
+      //ESTABLISHED: keep same symbol rate, don't change schedule
+      //  number.
+      } else if (state == S_ESTABLISHED){
+        printf_SCHED_SR("=");
+        keepNextSR(FALSE);
       }
-      if (state != S_ESTABLISHED){
-        printf_SCHED_SR("\r\n");
-      }
+      printf_SCHED_SR("\r\n");
       post announceSchedule();
     }
   }
@@ -576,7 +462,17 @@ module RootSchedulerP{
 
 
   //Schedule announcement modification functions
-  void resetNextSR(){
+  void resetVariables(){
+    uint8_t i;
+    for(i = 0 ; i<NUM_SRS; i++){
+      maxDepth[i] = 0xff;
+      nodesReachable[i] = 0;
+    }
+    srState = S_UNKNOWN;
+    maxSR = 0;
+  }
+
+  void resetNextSR(bool resetVars){
     setupPacket(next_schedule_msg,
       (curSchedule->scheduleNum+1)%0xff,
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
@@ -587,6 +483,9 @@ module RootSchedulerP{
       TDMA_INIT_SYMBOLRATE,
       curSchedule->channel
     );
+    if (resetVars){
+      resetVariables();
+    }
   }
 
   bool increaseNextSR(){
@@ -673,6 +572,51 @@ module RootSchedulerP{
     );
   }
 
+  //general packet setup
+  void setupPacket(message_t* msg, 
+      uint8_t sn, 
+      uint16_t originalFrame, 
+      uint16_t activeFrames, 
+      uint16_t inactiveFrames, 
+      uint16_t framesPerSlot, 
+      uint8_t maxRetransmit, 
+      uint8_t symbolRate, 
+      uint8_t channel){
+    cx_schedule_t* schedule; 
+    call CXPacket.init(msg);
+
+    call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
+    call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
+    schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
+    schedule -> originalFrame = originalFrame;
+    schedule -> frameLen = frameLens[srIndex(symbolRate)];
+    schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
+    schedule -> activeFrames = activeFrames;
+    schedule -> inactiveFrames = inactiveFrames;
+    schedule -> framesPerSlot = framesPerSlot;
+    schedule -> maxRetransmit = maxRetransmit;
+    schedule -> symbolRate = symbolRate;
+    schedule -> channel = channel;
+    schedule -> scheduleNum = sn;
+  }
+
+  //utilities
+  task void printSchedule(){
+    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+      curSchedule->scheduleNum, curSchedule->originalFrame, curSchedule->frameLen,
+      curSchedule->fwCheckLen, curSchedule->activeFrames, 
+      curSchedule->inactiveFrames, curSchedule->framesPerSlot, 
+      curSchedule->maxRetransmit, curSchedule->symbolRate,
+      curSchedule->channel);
+  }
+  
+  //TODO: split control
+  command error_t SplitControl.stop(){
+    return call SubSplitControl.stop();
+  }
+  event void SubSplitControl.stopDone(error_t error){
+    signal SplitControl.stopDone(error);
+  }
 
   //unused
   event void ReplySend.sendDone(message_t* msg, error_t error){}
@@ -680,4 +624,7 @@ module RootSchedulerP{
       void* payload, uint8_t len){
     return msg; 
   }
+  async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
+      uint16_t frameNum){ }
+
 }
