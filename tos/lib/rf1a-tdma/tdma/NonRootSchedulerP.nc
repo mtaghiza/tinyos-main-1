@@ -128,7 +128,8 @@ module NonRootSchedulerP{
   task void printNext(){
     cx_schedule_t* pl = (cx_schedule_t*) call
     Packet.getPayload(nextMsg, sizeof(cx_schedule_t));
-    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+    printf_SCHED_SR("sn %p (%p) %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+      nextMsg, pl,
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
@@ -236,7 +237,8 @@ module NonRootSchedulerP{
     cx_schedule_reply_t* reply = 
       (cx_schedule_reply_t*)call ReplySend.getPayload(replyMsg, sizeof(cx_schedule_reply_t));
     reply->scheduleNum = curSched->scheduleNum;
-    error = call ReplySend.send(replyMsg, sizeof(replyMsg));
+    error = call ReplySend.send(replyMsg, sizeof(replyMsg) +
+      sizeof(rf1a_nalp_am_t));
     if (SUCCESS == error){
       printf_SCHED("ReplySend.send OK\r\n");
     }else{
@@ -247,6 +249,7 @@ module NonRootSchedulerP{
   task void updateScheduleTask(){
     error_t error;
     printf_SCHED("UST");
+//    printf_SCHED_SR("UST from %p\r\n", curSched);
     error = call TDMAPhySchedule.setSchedule(lastRxTS, 
       lastRxFrameNum,
       curSched->frameLen,

@@ -249,8 +249,9 @@ module RootSchedulerP{
       printf("Unexpected announce schedule state %x %x %x %x\r\n",
         state, txState, srState, psState);
     }
+    //TODO: size, come on
     error = call AnnounceSend.send(toSend,
-      sizeof(cx_schedule_t));
+      sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
     if (SUCCESS != error){
       printf("announce schedule: %s\r\n", decodeError(error));
     }else{
@@ -555,16 +556,20 @@ module RootSchedulerP{
       uint8_t len){
     uint8_t curSRI = srIndex(curSchedule->scheduleNum);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
-    cx_schedule_reply_t* reply = (cx_schedule_reply_t*)msg;
-    printf_SCHED("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
+    cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
+    printf_SCHED_SR("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
       call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID),
       reply->scheduleNum);
 
-    if ((state == S_BASELINE)
+    if ((state == S_BASELINE || state == S_CHECKING 
+      || state == S_FINAL_CHECKING)
         && (reply->scheduleNum == curSchedule->scheduleNum)){
       nodesReachable[curSRI]++;
       maxDepth[curSRI] = 
         (maxDepth[curSRI] != 0xff && maxDepth[curSRI] > receivedCount)? maxDepth[curSRI] : receivedCount;
+      printf_SCHED_SR("sr %u nr %u md %u\r\n",
+        curSchedule->scheduleNum, nodesReachable[curSRI],
+        maxDepth[curSRI]);
     } else {
       printf("Unexpected reply.rx: state: %x src %x (sn: %u) cur sched: %u\r\n", 
         state, call CXPacket.source(msg), reply->scheduleNum, 
