@@ -295,11 +295,6 @@ module NonRootSchedulerP{
       framesSinceLastSchedule = 0;
       post initScheduleTask();
     }
-//    //TODO: remove after done testing
-//    if (frameNum == 3){
-//      post updateScheduleTask();
-//    }
-//    printf_SCHED("\r\n");
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
@@ -327,13 +322,12 @@ module NonRootSchedulerP{
   //if we're on an extraFrames boundary, add or subtract another one
   //if this is the last frame of the cycle, add in whatever's left.
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
-    return 0;
-    //TODO: REMOVE DEBUG CODE
-//    return -1*(ticksPerFrame 
-//      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
-//      + ((frameNum == 
-//          (curSched->activeFrames + curSched->inactiveFrames -1))
-//          ? endOfCycle: 0));
+//    return 0;
+    return -1*(ticksPerFrame 
+      + ((frameNum %extraFrames == 0)?extraFrameOffset:0)
+      + ((frameNum == 
+          (curSched->activeFrames + curSched->inactiveFrames -1))
+          ? endOfCycle: 0));
   }
 
   //we are origin if reply needed and this is the start of our slot.

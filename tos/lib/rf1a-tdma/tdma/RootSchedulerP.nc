@@ -246,7 +246,7 @@ module RootSchedulerP{
     error_t error;
     message_t* toSend;
 
-    if (state == S_BASELINE){
+    if (state == S_BASELINE || state == S_ESTABLISHED){
       toSend = cur_schedule_msg; 
     } else if (state == S_ADJUSTING || state == S_FINALIZING){
       toSend = next_schedule_msg;
@@ -386,14 +386,17 @@ module RootSchedulerP{
     return nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
   }
 
-  bool nextSRKnown(){
-    return (maxDepth[srIndex(nextSR)] != 0xff);
+  bool higherSRKnown(){
+    return (maxDepth[srIndex(curSR)+1] != 0xff);
   }
 
   bool lastMoreEfficient(){
+    uint8_t lastDepth = maxDepth[srIndex(lastSR)];
+    uint8_t curDepth = maxDepth[srIndex(curSR)];
+    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
+      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
     //TRUE: lastDepth/lastSR < curDepth/curSR
-    return lastSR * maxDepth[srIndex(lastSR)] < curSR *
-      maxDepth[srIndex(curSR)];
+    return curSR * lastDepth < lastSR * curDepth;
   }
 
   void useNextSchedule(){
@@ -440,9 +443,7 @@ module RootSchedulerP{
       //   - sr unknown: baseline +1 and announce (ADJUSTING)
       if (state == S_BASELINE){
         printf_SCHED_SR("b");
-        //TODO: REMOVE DEBUG CODE: stay in baseline
-//        if (!disconnected()){
-        if (FALSE){
+        if (!disconnected()){
           if (srState == S_UNKNOWN){
             if (increaseNextSR()){
               printf_SCHED_SR("i");
@@ -492,9 +493,9 @@ module RootSchedulerP{
           srState = S_DISCOVERED;
           state = S_FINALIZING;
 
-        // - next sr up is also connected, but not as efficient
+        // - higher sr is also connected, but not as efficient
         //   (ESTABLISHED)
-        } else if (nextSRKnown()){
+        } else if (higherSRKnown()){
           printf("=");
           srState = S_DISCOVERED;
           maxSR = curSR;
@@ -575,6 +576,7 @@ module RootSchedulerP{
         return i;
       }
     }
+    printf("Unknown sr: %u\r\n", symbolRate);
     return 0xff;
   }
 
