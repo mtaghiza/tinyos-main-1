@@ -464,9 +464,11 @@ module RootSchedulerP{
       //CHECKING: look at replies from last round and adjust, reset,
       //or stand pat depending on result.
       } else if (state == S_CHECKING){
+        printf_SCHED_SR("c");
         // - disconnected: last used is max SR, sr discovered, go back
         //   to baseline and wait for everybody. (BASELINE)
         if (disconnected()){
+          printf_SCHED_SR("d");
           maxSR = lastSR;
           srState = S_DISCOVERED;
           if (!postBaseline()){
@@ -476,6 +478,7 @@ module RootSchedulerP{
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
         } else if (lastMoreEfficient()){
+          printf_SCHED_SR("V");
           decreaseNextSR();
           maxSR = nextSR;
           srState = S_DISCOVERED;
@@ -484,12 +487,14 @@ module RootSchedulerP{
         // - next sr up is also connected, but not as efficient
         //   (ESTABLISHED)
         } else if (nextSRKnown()){
+          printf("=");
           srState = S_DISCOVERED;
           maxSR = curSR;
           state = S_ESTABLISHED;
 
         // - next sr up may be more efficient, so try it (ADJUSTING)
         } else {
+          printf_SCHED_SR("^");
           increaseNextSR();
           state = S_ADJUSTING;
         }
@@ -505,13 +510,16 @@ module RootSchedulerP{
       //FINAL_CHECKING: we were all synched up, then announced a new
       //symbol rate (which we intend to keep as the final SR). 
       } else if (state == S_FINAL_CHECKING){
+        printf("C");
         // - got all the replies we expected, so call it quits.
         //   (ESTABLISHED)
         if (!disconnected()){
+          printf("=");
           state = S_ESTABLISHED;
 
         //Disconnected, so try it again from the top :( (BASELINE)
         } else {
+          printf("d!");
           reset();
           if (! postBaseline()){
             printf("FINALCHECK->BL: Busy!\r\n");
@@ -564,7 +572,7 @@ module RootSchedulerP{
 
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    uint8_t curSRI = srIndex(curSchedule->scheduleNum);
+    uint8_t curSRI = srIndex(curSchedule->symbolRate);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
     printf_SCHED_SR("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
@@ -577,8 +585,8 @@ module RootSchedulerP{
       nodesReachable[curSRI]++;
       maxDepth[curSRI] = 
         (maxDepth[curSRI] != 0xff && maxDepth[curSRI] > receivedCount)? maxDepth[curSRI] : receivedCount;
-      printf_SCHED_SR("sr %u nr %u md %u\r\n",
-        curSchedule->scheduleNum, nodesReachable[curSRI],
+      printf_SCHED_SR("sr %u (%u = %u) nr %u md %u\r\n",
+        curSchedule->scheduleNum, curSchedule->scheduleNum, curSRI, nodesReachable[curSRI],
         maxDepth[curSRI]);
     } else {
       printf("Unexpected reply.rx: state: %x src %x (sn: %u) cur sched: %u\r\n", 
