@@ -184,6 +184,7 @@ module CXFloodP{
       }
     }
   }
+
   void checkAndCleanup(){
     if (txLeft == 0){
       setState(S_IDLE);

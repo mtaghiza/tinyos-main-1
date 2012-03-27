@@ -123,6 +123,7 @@ module RootSchedulerP{
 
   void reset();
   uint8_t srIndex(uint8_t sr);
+  void useNextSchedule();
 
   command error_t SplitControl.start(){
     error_t error;
@@ -264,6 +265,15 @@ module RootSchedulerP{
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
       txState = S_WAITING;
+      if (state == S_ADJUSTING){
+        state = S_CHECKING;
+        psState = S_SWITCH_PENDING;
+        useNextSchedule();
+      } else if (state == S_FINALIZING){
+        state = S_FINAL_CHECKING;
+        psState = S_SWITCH_PENDING;
+        useNextSchedule();
+      }
       printf_SCHED("AS.sd: %lu\r\n", call CXPacket.getTimestamp(msg));
     }
   }
@@ -444,13 +454,13 @@ module RootSchedulerP{
           }
         }
 
-      //ADJUSTING:
-      // - update phy schedule, wait for responses (CHECKING)
-      } else if (state == S_ADJUSTING){
-        state = S_CHECKING;
-        psState = S_SWITCH_PENDING;
-        useNextSchedule();
-
+//      //ADJUSTING:
+//      // - update phy schedule, wait for responses (CHECKING)
+//      } else if (state == S_ADJUSTING){
+//        state = S_CHECKING;
+//        psState = S_SWITCH_PENDING;
+//        useNextSchedule();
+//
       //CHECKING: look at replies from last round and adjust, reset,
       //or stand pat depending on result.
       } else if (state == S_CHECKING){
@@ -484,14 +494,14 @@ module RootSchedulerP{
           state = S_ADJUSTING;
         }
 
-      //FINALIZING: we think we're good to go, but we did just
-      //announce a new symbol rate. So, let's listen for replies
-      //(FINAL_CHECKING)
-      } else if (state == S_FINALIZING){
-        state = S_FINAL_CHECKING;
-        psState = S_SWITCH_PENDING;
-        useNextSchedule();
-
+//      //FINALIZING: we think we're good to go, but we did just
+//      //announce a new symbol rate. So, let's listen for replies
+//      //(FINAL_CHECKING)
+//      } else if (state == S_FINALIZING){
+//        state = S_FINAL_CHECKING;
+//        psState = S_SWITCH_PENDING;
+//        useNextSchedule();
+//
       //FINAL_CHECKING: we were all synched up, then announced a new
       //symbol rate (which we intend to keep as the final SR). 
       } else if (state == S_FINAL_CHECKING){

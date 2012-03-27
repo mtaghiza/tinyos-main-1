@@ -37,9 +37,7 @@ module NonRootSchedulerP{
 //  uint8_t scheduleCount = 0;
 
   message_t sched_1;
-  message_t sched_2;
   message_t* curMsg = &sched_1;
-  message_t* nextMsg = &sched_2;
   cx_schedule_t* curSched;
 
   message_t reply_msg_internal;
@@ -125,11 +123,11 @@ module NonRootSchedulerP{
     }
   }
 
-  task void printNext(){
+  task void printCur(){
     cx_schedule_t* pl = (cx_schedule_t*) call
-    Packet.getPayload(nextMsg, sizeof(cx_schedule_t));
-    printf_SCHED_SR("sn %p (%p) %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
-      nextMsg, pl,
+    Packet.getPayload(curMsg, sizeof(cx_schedule_t));
+    printf_SCHED_SR("ps %p (%p) sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+      curMsg, pl,
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
@@ -216,7 +214,7 @@ module NonRootSchedulerP{
       post updateScheduleTask();
       return msg; 
     } else {
-      message_t* swp = nextMsg;
+      message_t* swp = curMsg;
       printf_SCHED("n\r\n");
       changePending = TRUE;
       lastRxTS = rxTS;
@@ -225,9 +223,12 @@ module NonRootSchedulerP{
       extraFrames = 1;
       extraFrameOffset = 0;
       endOfCycle = 0;
-      //TODO: other values to reset?
-      nextMsg = msg;
-      post printNext();
+
+      curMsg = msg;
+      curSched = (cx_schedule_t*)payload;
+      printf_SCHED_SR("RX new: %p\r\n", curMsg);
+      post updateScheduleTask();
+      post printCur();
       return swp;
     }
   }
@@ -277,17 +278,18 @@ module NonRootSchedulerP{
     framesSinceLastSchedule++;
 //    printf_SCHED("fs.f %u ", frameNum);
     //may be off by one
-    if (changePending && (frameNum + 1 ==
-        (curSched->activeFrames+curSched->inactiveFrames))){
-      error_t error;
-      message_t* swp = curMsg;
-//      printf_SCHED("c");
-      curMsg = nextMsg;
-      nextMsg = swp;
-      curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
-       sizeof(cx_schedule_t));
-      post updateScheduleTask();
-    }else if (framesSinceLastSchedule > SCHEDULE_TIMEOUT){
+//    if (changePending && (frameNum + 1 ==
+//        (curSched->activeFrames+curSched->inactiveFrames))){
+//      error_t error;
+//      message_t* swp = curMsg;
+////      printf_SCHED("c");
+//      curMsg = nextMsg;
+//      nextMsg = swp;
+//      curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
+//       sizeof(cx_schedule_t));
+//      post updateScheduleTask();
+//    }else 
+    if (framesSinceLastSchedule > SCHEDULE_TIMEOUT){
       framesSinceLastSchedule = 0;
       post initScheduleTask();
     }
