@@ -77,29 +77,29 @@ module RootSchedulerP{
   };
 
   uint32_t frameLens[10] = {
-    (DEFAULT_TDMA_FRAME_LEN*125)/1,
-    (DEFAULT_TDMA_FRAME_LEN*125)/2,
-    (DEFAULT_TDMA_FRAME_LEN*125)/5,
-    (DEFAULT_TDMA_FRAME_LEN*125)/10,
-    (DEFAULT_TDMA_FRAME_LEN*125)/39,
-    (DEFAULT_TDMA_FRAME_LEN*125)/77,
-    (DEFAULT_TDMA_FRAME_LEN*125)/100,
-    (DEFAULT_TDMA_FRAME_LEN*125)/125,
-    (DEFAULT_TDMA_FRAME_LEN*125)/175,
-    (DEFAULT_TDMA_FRAME_LEN*125)/250, 
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/1UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/2UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/5UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/10UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/39UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/77UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/100UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/125UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/175UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/250UL, 
   };
 
   uint32_t fwCheckLens[10] = {
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/1,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/2,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/5,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/10,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/39,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/77,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/100,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/125,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/175,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125)/250, 
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/1UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/2UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/5UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/10UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/39UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/77UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/100UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/125UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/175UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/250UL, 
   };
 
   uint16_t nodesReachable[10]; 
@@ -151,8 +151,8 @@ module RootSchedulerP{
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
     schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
     schedule -> originalFrame = originalFrame;
-    schedule -> frameLen = frameLens[symbolRate];
-    schedule -> fwCheckLen = fwCheckLens[symbolRate];
+    schedule -> frameLen = frameLens[srIndex(symbolRate)];
+    schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
     schedule -> activeFrames = activeFrames;
     schedule -> inactiveFrames = inactiveFrames;
     schedule -> framesPerSlot = framesPerSlot;
