@@ -249,7 +249,7 @@ module CXTDMAPhysicalP {
       //if there are n active frames, then frameNum n-1 is the last to
       //have data in it. so, we go to sleep at this point.
       if (frameNum == s_activeFrames){
-//        printf("sleep\r\n");
+        printf_BF("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           call FrameWaitAlarm.stop();
@@ -265,9 +265,10 @@ module CXTDMAPhysicalP {
 
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-        printf_PFS("wakeup\r\n");
+        printf_BF("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
 //          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
+          printf_BF("fs0\r\n");
           call FrameStartAlarm.startAt(
             call PrepareFrameStartAlarm.getAlarm(), 
             PFS_SLACK);
@@ -431,7 +432,7 @@ module CXTDMAPhysicalP {
     error_t error;
     if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
       printf_PFS_FREAKOUT("FS EARLY");
-
+      printf_BF("fs1\r\n");
       call FrameStartAlarm.startAt(
         call FrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
@@ -498,12 +499,14 @@ module CXTDMAPhysicalP {
       //reception. In this case, just ignore it, we should get a good
       //schedule soon.
     } else {
+      printf_BF("Error @fn %u\r\n", frameNum);
       setState(S_ERROR_8);
     }
     lastFsa = call FrameStartAlarm.getAlarm();
     //0.5 uS
     FS_TOGGLE_PIN;
     if (! inError()){
+//      printf_BF("fs2\r\n");
       call FrameStartAlarm.startAt(lastFsa,
         s_frameLen 
         + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
@@ -740,6 +743,7 @@ module CXTDMAPhysicalP {
 
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
+      call SynchCapture.disable();
       printf_TDMA_SS("SS@ %lu: %lu %u %lu %lu %u %u %u %u\r\n", 
         call FrameStartAlarm.getNow(), 
         startAt, atFrameNum,
@@ -766,6 +770,7 @@ module CXTDMAPhysicalP {
         delta = call PrepareFrameStartAlarm.getNow();
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
+        printf_BF("fs3\r\n");
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
   

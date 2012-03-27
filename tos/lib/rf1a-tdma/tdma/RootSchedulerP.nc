@@ -393,8 +393,8 @@ module RootSchedulerP{
   bool lastMoreEfficient(){
     uint8_t lastDepth = maxDepth[srIndex(lastSR)];
     uint8_t curDepth = maxDepth[srIndex(curSR)];
-    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
-      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
+//    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
+//      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
     //TRUE: lastDepth/lastSR < curDepth/curSR
     return curSR * lastDepth < lastSR * curDepth;
   }

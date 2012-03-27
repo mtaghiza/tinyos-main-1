@@ -48,9 +48,9 @@ module CXTDMADispatchP{
   bool deliverMsg(message_t* msg){
     #ifdef DISCONNECTED_SR
     bool result = (call CXPacketMetadata.getSymbolRate(msg) < DISCONNECTED_SR);
-    printf("sr: %u dsr: %u\r\n", 
-      call CXPacketMetadata.getSymbolRate(msg), 
-      DISCONNECTED_SR);
+//    printf("sr: %u dsr: %u\r\n", 
+//      call CXPacketMetadata.getSymbolRate(msg), 
+//      DISCONNECTED_SR);
     return result;
     #else
     return TRUE;
