@@ -125,6 +125,7 @@ module AODVSchedulerP{
             SET_STATE(S_AO_CLEARING_PENDING, S_ERROR_2);
           }
         }else{
+          error = FAIL;
           printf_AODV_S("mismatch");
         }
       } else {

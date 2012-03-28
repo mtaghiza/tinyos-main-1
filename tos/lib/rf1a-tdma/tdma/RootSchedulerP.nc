@@ -81,6 +81,7 @@ module RootSchedulerP{
       uint8_t channel);
 
   //schedule modification functions
+  void initializeSchedule();
   task void updateScheduleTask();
   void useNextSchedule();
 
@@ -169,20 +170,22 @@ module RootSchedulerP{
     if (state == S_OFF){
       error = call SubSplitControl.start();
       if (SUCCESS == error){
-        printf_SCHED("SSC.sd\r\n");
+        printf_SCHED("SSC.s\r\n");
         state = S_SC_STARTING;
       }
     }
-    printf_SCHED("SC.s\r\n");
     return error;
   }
 
   event void SubSplitControl.startDone(error_t error){
+    printf_SCHED("ssc.sd\r\n");
     if (state == S_SC_STARTING){
       if (SUCCESS == error){
-        resetNextSR(TRUE);
+        initializeSchedule();
         state = S_BASELINE;
         post announceSchedule();
+      } else {
+        printf("SSC.sd error %s\r\n", decodeError(error));
       }
       signal SplitControl.startDone(error);
     } else {
@@ -194,32 +197,35 @@ module RootSchedulerP{
   //and current have the same contents.
   task void announceSchedule(){
     error_t error;
-    message_t* toSend;
-    if (state == S_BASELINE || state == S_ADJUST 
+    if (state == S_BASELINE || state == S_ADJUSTING 
         || state == S_FINALIZING || state == S_RESETTING 
         || state == S_ESTABLISHED){
       //TODO: size, come on. the worst.
       if (SUCCESS == call AnnounceSend.send(next_schedule_msg,
           sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t))){
+        printf_SCHED("Announce Sending %p %u\r\n", 
+          next_schedule_msg,
+          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
         txState = S_SENDING;
       }else{
         printf("announce schedule: %s\r\n", decodeError(error));
       }
     } else {
-      printf("unexpected state %x in announceSchedule\r\n");
+      printf("unexpected state %x in announceSchedule\r\n", state);
     }
   }
 
   event void AnnounceSend.sendDone(message_t* msg, error_t error){
+    printf_SCHED("AS.sendDone\r\n");
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      if (state == S_BASELINE || state == S_ADJUST 
+      if (state == S_BASELINE || state == S_ADJUSTING 
           || state == S_FINALIZING || state == S_RESETTING
           || state == S_ESTABLISHED){
         txState = S_WAITING;
         //BASELINE: no change.
-        if (state == S_ADJUST){
+        if (state == S_ADJUSTING){
           state = S_CHECKING;
           useNextSchedule();
         } else if (state == S_FINALIZING){
@@ -255,6 +261,7 @@ module RootSchedulerP{
       if (state == S_BASELINE){
         printf_SCHED_SR("b");
         if (disconnected()){
+          printf_SCHED_SR("d");
           keepNextSR(TRUE);
         }else {
           if (maxSRKnown()){
@@ -406,6 +413,23 @@ module RootSchedulerP{
   }
 
   //Schedule modification functions
+  void initializeSchedule(){
+    //configure the uninitialized fields in curSchedule
+    curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
+      sizeof(cx_schedule_t)));
+    curSchedule->scheduleNum = 0;
+    curSchedule->channel = TEST_CHANNEL;
+    //initialize nextSchedule
+    resetNextSR(TRUE);
+    //this timestamp will be fed to the phy scheduler.
+    call CXPacket.setTimestamp(next_schedule_msg, 
+      call TDMAPhySchedule.getNow());
+    //post task to start lower layer and swap cur with next
+    useNextSchedule();
+    //set up next identical to this one 
+    keepNextSR(FALSE);
+  }
+
   task void updateScheduleTask(){
     error_t error;
     printf_SCHED_SR("UST\r\n");
@@ -457,7 +481,7 @@ module RootSchedulerP{
   }
   
   bool maxSRKnown(){
-    #error fill me in
+    return srState == S_DISCOVERED;
   }
 
 
