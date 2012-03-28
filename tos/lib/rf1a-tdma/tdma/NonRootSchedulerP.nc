@@ -290,8 +290,15 @@ module NonRootSchedulerP{
 //      curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
 //       sizeof(cx_schedule_t));
 //      post updateScheduleTask();
-//    }else 
-    if (framesSinceLastSchedule > SCHEDULE_TIMEOUT){
+//    }else
+
+    //reinitialize the schedule if we have gone too long without
+    //hearing it.
+    //also: try to do this not-so-close to the very beginning of the
+    //cycle, where we can get into all kinds of trouble/edge cases.
+    if (framesSinceLastSchedule > 4*(curSched->activeFrames) +
+        curSched->activeFrames / 2){
+      printf_SCHED_SR("ABANDON SHIP\r\n");
       framesSinceLastSchedule = 0;
       post initScheduleTask();
     }
