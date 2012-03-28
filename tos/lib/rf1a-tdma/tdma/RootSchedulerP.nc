@@ -22,20 +22,20 @@ module RootSchedulerP{
 } implementation {
 
   enum {
-    S_OFF ,
-    S_SC_STARTING ,
+    S_OFF            = 0x00,
+    S_SC_STARTING    = 0x01,
 
-    S_BASELINE ,
-    S_ADJUSTING      ,
-    S_CHECKING       ,
-    S_FINALIZING     ,
-    S_FINAL_CHECKING ,
-    S_ESTABLISHED    ,
+    S_BASELINE       = 0x02,
+    S_ADJUSTING      = 0x03,
+    S_CHECKING       = 0x04,
+    S_FINALIZING     = 0x05,
+    S_FINAL_CHECKING = 0x06,
+    S_ESTABLISHED    = 0x07,
 
 //    S_RESET_STOPPING,
 //    S_RESET_STOPPED,
 //    S_RESET_STARTING,
-    S_RESETTING,
+    S_RESETTING      = 0x08,
 
   };
 
@@ -65,7 +65,7 @@ module RootSchedulerP{
   bool maxSRKnown();
 
   //schedule announcement modification functions
-  void resetNextSR(bool resetVars);
+  void resetNextSR(bool resetC, bool resetM);
   bool increaseNextSR();
   bool decreaseNextSR();
   void finalizeNextSR();
@@ -224,8 +224,10 @@ module RootSchedulerP{
           || state == S_FINALIZING || state == S_RESETTING
           || state == S_ESTABLISHED){
         txState = S_WAITING;
-        //BASELINE: no change.
-        if (state == S_ADJUSTING){
+        if (state == S_BASELINE){
+          //no change, but need to update schedule num.
+          useNextSchedule();
+        } else if (state == S_ADJUSTING){
           state = S_CHECKING;
           useNextSchedule();
         } else if (state == S_FINALIZING){
@@ -291,7 +293,7 @@ module RootSchedulerP{
           maxSR = lastSR;
           srState = S_DISCOVERED;
           state = S_RESETTING;
-          resetNextSR(FALSE);
+          resetNextSR(TRUE, FALSE);
 
         // - connected, but last setting was more efficient: adjust
         //   next schedule and announce it (FINALIZING) 
@@ -332,7 +334,7 @@ module RootSchedulerP{
         } else {
           printf_SCHED_SR("d!");
           state = S_RESETTING;
-          resetNextSR(TRUE);
+          resetNextSR(TRUE, TRUE);
         }
 
       //ESTABLISHED: keep same symbol rate, don't change schedule
@@ -420,7 +422,7 @@ module RootSchedulerP{
     curSchedule->scheduleNum = 0;
     curSchedule->channel = TEST_CHANNEL;
     //initialize nextSchedule
-    resetNextSR(TRUE);
+    resetNextSR(TRUE, TRUE);
     //this timestamp will be fed to the phy scheduler.
     call CXPacket.setTimestamp(next_schedule_msg, 
       call TDMAPhySchedule.getNow());
@@ -486,17 +488,20 @@ module RootSchedulerP{
 
 
   //Schedule announcement modification functions
-  void resetVariables(){
+  void resetCounts(){
     uint8_t i;
     for(i = 0 ; i<NUM_SRS; i++){
       maxDepth[i] = 0xff;
       nodesReachable[i] = 0;
     }
+  }
+
+  void resetMaxSR(){
     srState = S_UNKNOWN;
     maxSR = 0;
   }
 
-  void resetNextSR(bool resetVars){
+  void resetNextSR(bool resetC, bool resetM){
     setupPacket(next_schedule_msg,
       (curSchedule->scheduleNum+1)%0xff,
       TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
@@ -507,8 +512,11 @@ module RootSchedulerP{
       TDMA_INIT_SYMBOLRATE,
       curSchedule->channel
     );
-    if (resetVars){
-      resetVariables();
+    if (resetC){
+      resetCounts();
+    }
+    if (resetM){
+      resetMaxSR();
     }
   }
 
