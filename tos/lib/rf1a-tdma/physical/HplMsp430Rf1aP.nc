@@ -580,6 +580,7 @@ generic module HplMsp430Rf1aP () @safe() {
     const uint8_t* data;
     unsigned int count;
     unsigned int inuse;
+    TXCP_SET_PIN;
     //save tx info
     atomic {
       tx_remain = length;
@@ -638,6 +639,7 @@ generic module HplMsp430Rf1aP () @safe() {
       uint8_t len8 = tx_remain;
       call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
     }
+    TXCP_CLEAR_PIN;
     call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
     tx_state = TX_S_loaded;
     /* Account for what we just queued. */
@@ -677,10 +679,14 @@ generic module HplMsp430Rf1aP () @safe() {
         //4.25 uS
         TX_TOGGLE_PIN;
         TXCP_CLEAR_PIN;
+        FS_STROBE_CLEAR_PIN;
+        STROBE_SET_PIN;
         rc = call Rf1aIf.strobe(RF_STX);
+        STROBE_CLEAR_PIN;
+        TXCP_SET_PIN;
         //5.75 uS
         TX_TOGGLE_PIN;
-
+        GETPACKET_SET_PIN;
         //packet retrieval/validation: cancel the transmission if we
         //the client doesn't provide a packet or if the length is
         //valid 
@@ -689,6 +695,7 @@ generic module HplMsp430Rf1aP () @safe() {
           resumeIdleMode_(FALSE);
           return ESIZE;
         }
+        GETPACKET_CLEAR_PIN;
         //2.25 uS
         TX_TOGGLE_PIN;
         //TODO: would be cool to put timestamp in at the right point.
@@ -697,7 +704,9 @@ generic module HplMsp430Rf1aP () @safe() {
         // pause index, it stops.
         // at synchCapture.captured, we set the timestamp and then hit
         // unpause, which lets loadFifo finish..
+        LOADFIFO_SET_PIN;
         loadFifo_(tx_buffer, tx_length);
+        LOADFIFO_CLEAR_PIN;
         //48.5 uS
         TX_TOGGLE_PIN;
         while ((RF1A_S_TX != (RF1A_S_MASK & rc))

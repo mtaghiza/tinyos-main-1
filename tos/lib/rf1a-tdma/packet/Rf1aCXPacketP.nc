@@ -122,11 +122,17 @@ module Rf1aCXPacketP{
     getHeader(amsg)->timestamp = ts;
   }
 
-  command void CXPacketMetadata.setReceivedAt(message_t* amsg, uint32_t ts){
-    getMetadata(amsg)->receivedAt = ts;
+  command void CXPacketMetadata.setAlarmTimestamp(message_t* amsg, uint32_t ts){
+    getMetadata(amsg)->alarmTimestamp = ts;
   }
-  command uint32_t CXPacketMetadata.getReceivedAt(message_t* amsg){
-    return getMetadata(amsg)->receivedAt;
+  command uint32_t CXPacketMetadata.getAlarmTimestamp(message_t* amsg){
+    return getMetadata(amsg)->alarmTimestamp;
+  }
+  command void CXPacketMetadata.setPhyTimestamp(message_t* amsg, uint32_t ts){
+    getMetadata(amsg)->phyTimestamp = ts;
+  }
+  command uint32_t CXPacketMetadata.getPhyTimestamp(message_t* amsg){
+    return getMetadata(amsg)->phyTimestamp;
   }
   command void CXPacketMetadata.setFrameNum(message_t* amsg, uint16_t frameNum){
     getMetadata(amsg)->frameNum = frameNum;

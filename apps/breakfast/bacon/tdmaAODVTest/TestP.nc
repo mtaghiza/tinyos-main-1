@@ -193,7 +193,7 @@ module TestP {
     printf("RX %x sn %lu @%lu\r\n", 
       call CXPacket.source(msg),
       ((test_packet_t*)payload)->sn,
-      call CXPacketMetadata.getReceivedAt(msg));
+      call CXPacketMetadata.getPhyTimestamp(msg));
     return msg;
   }
 

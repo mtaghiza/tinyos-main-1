@@ -32,7 +32,8 @@ typedef nx_struct cx_ack_t{
 
 typedef struct cx_metadata_t{
   uint8_t receivedCount;
-  uint32_t receivedAt;
+  uint32_t phyTimestamp;
+  uint32_t alarmTimestamp;
   uint16_t frameNum;
   uint8_t symbolRate;
 } cx_metadata_t;

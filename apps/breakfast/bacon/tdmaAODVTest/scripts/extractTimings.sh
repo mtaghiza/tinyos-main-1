@@ -15,7 +15,7 @@ fi
 while [ $# -gt 0 ]
 do
   f=$1
-  d=../processed/$(basename $f)
+  d=$(dirname $0)/../processed/$(basename $f)
   mkdir -p $d
   python pulseWidth.py $f 0 1 > $d/packet.csv
   python pulseWidth.py $f 2 1 > $d/fs-strobe.csv
@@ -27,13 +27,16 @@ do
     python edgeCompare.py $f 4 0 1 > $d/strobe-gdo.csv
     python edgeCompare.py $f 6 0 1 > $d/fifo-gdo.csv
     python edgeCompare.py $f 2 0 1 > $d/fs-gdo.csv
+  else 
+    python edgeCompare.py $f 0 1 1 | awk '($2 > 0){print $0}' > $d/r_gdo-f_gdo.csv
+    python edgeCompare.py $f 1 0 1 | awk '($2 > 0){print $0}' > $d/f_gdo-r_gdo.csv
   fi
-  echo "SR,Event,min,q5,median,q95,max,mean,sd" > ../processed/agg_$(basename $f)
+  echo "SR,Event,min,q5,median,q95,max,mean,sd" > $(dirname $0)/../processed/agg_$(basename $f)
   for sf in $d/*.csv
   do
     echo -n "$(basename $d | cut -d '_' -f 1) $(basename $sf | cut -d '.' -f 1) "
     R --slave --no-save --args dataFile=$sf < stats.R \
       | cut -d ' ' -f 1 --complement 
-  done  | tr ' ' ',' >> ../processed/agg_$(basename $f)
+  done  | tr ' ' ',' >> $(dirname $0)/../processed/agg_$(basename $f)
   shift 1
 done

@@ -196,13 +196,13 @@ module RootSchedulerP{
   //we always announce the *next* schedule. In the steady-state, next
   //and current have the same contents.
   task void announceSchedule(){
-    error_t error;
     if (state == S_BASELINE || state == S_ADJUSTING 
         || state == S_FINALIZING || state == S_RESETTING 
         || state == S_ESTABLISHED){
       //TODO: size, come on. the worst.
-      if (SUCCESS == call AnnounceSend.send(next_schedule_msg,
-          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t))){
+      error_t error = call AnnounceSend.send(next_schedule_msg,
+          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
+      if (SUCCESS == error){
         cx_schedule_t* ns = (cx_schedule_t*)(call
           Packet.getPayload(next_schedule_msg,
           sizeof(cx_schedule_t)));
@@ -220,7 +220,6 @@ module RootSchedulerP{
   }
 
   event void AnnounceSend.sendDone(message_t* msg, error_t error){
-    printf_SCHED("AS.sendDone\r\n");
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
@@ -242,9 +241,16 @@ module RootSchedulerP{
           useNextSchedule();
         }
         //ESTABLISHED: no change.
-        printf_SCHED("AS.sd: %lu\r\n", call CXPacket.getTimestamp(msg));
+        printf_TIMING("sched %lu sfd %lu handled %lu sfd-sched %lu sched-handled %lu sfd-handled %lu\r\n", 
+          call CXPacket.getTimestamp(msg), 
+          call CXPacketMetadata.getPhyTimestamp(msg), 
+          call CXPacketMetadata.getAlarmTimestamp(msg),
+          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacket.getTimestamp(msg),
+          call CXPacketMetadata.getAlarmTimestamp(msg) - call CXPacket.getTimestamp(msg),
+          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacketMetadata.getAlarmTimestamp(msg)
+        );
       } else {
-        printf("Unexpected state %x in as.sendDone\r\n", state);
+        printf_SCHED("Unexpected state %x in as.sendDone\r\n", state);
       }
     }
   }

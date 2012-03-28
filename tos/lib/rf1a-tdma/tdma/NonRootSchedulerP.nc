@@ -150,7 +150,7 @@ module NonRootSchedulerP{
     rxFrameNum = pl->originalFrame 
       + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID) 
       - 1;  
-    rxTS = call CXPacketMetadata.getReceivedAt(msg);
+    rxTS = call CXPacketMetadata.getPhyTimestamp(msg);
     curRootStart = call CXPacket.getTimestamp(msg);
 
     if (pl->scheduleNum == curSched->scheduleNum){

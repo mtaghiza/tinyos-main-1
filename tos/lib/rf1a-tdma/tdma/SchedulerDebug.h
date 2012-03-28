@@ -19,6 +19,12 @@
 #define printf_SCHED_SR(...)
 #endif
 
+#ifdef DEBUG_TIMING
+#define printf_TIMING(...) printf(__VA_ARGS__)
+#else
+#define printf_TIMING(...)
+#endif
+
 
 
 #endif

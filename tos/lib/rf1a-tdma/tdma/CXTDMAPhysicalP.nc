@@ -195,7 +195,7 @@ module CXTDMAPhysicalP {
       signal SplitControl.startDone(SUCCESS);
     }
   }
-
+  uint32_t lastFsHandled; 
   /**
    *  S_IDLE: in the part of a frame where no data is expected.
    *    frameNum > activeFrames / call resource.release()
@@ -418,7 +418,8 @@ module CXTDMAPhysicalP {
       setState(S_ERROR_7);
     }
   }
-  
+
+  uint32_t lastFsaHandled;
   /**
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *    FrameStartAlarm.fired / start frameWaitAlarm -> S_RX_READY
@@ -430,7 +431,9 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
-    if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
+    lastFsaHandled = call FrameStartAlarm.getNow();
+    //TODO: record how long it takes to service this alarm
+    if(lastFsaHandled < call FrameStartAlarm.getAlarm()){
       printf_PFS_FREAKOUT("FS EARLY");
       printf_BF("fs1\r\n");
       call FrameStartAlarm.startAt(
@@ -450,6 +453,7 @@ module CXTDMAPhysicalP {
 //      call FrameStartAlarm.getNow(), 
 //      call FrameStartAlarm.getAlarm());
     if (checkState(S_TX_READY)){
+      FS_STROBE_SET_PIN;
       TXCP_SET_PIN;
       FS_TOGGLE_PIN;
       //4 uS
@@ -521,10 +525,22 @@ module CXTDMAPhysicalP {
       uint8_t* len){
     bool ret = signal CXTDMA.getPacket((message_t**)buffer, len, frameNum);    
     tx_msg = (message_t*)(*buffer);
+    *len += sizeof(rf1a_ieee154_t);
 
     call CXPacket.incCount(tx_msg);
-//    printf("phy %u -> ", *len);
-    *len += sizeof(rf1a_ieee154_t);
+    //set the tx timestamp if we are the origin
+    //  and this is the first transmission.
+    if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
+        && (call CXPacket.count(tx_msg)) == 1 ){
+      //the best we can do is record the FrameStartAlarm.fired time.
+      //This will at least give us something that we can use for skew,
+      //  subject to the assumption that there is a constant delay
+      //  between the frame start alarm firing and the packet going on
+      //  the air.
+      call CXPacket.setTimestamp(tx_msg, 
+        call FrameStartAlarm.getAlarm());
+    }
+    //    printf("phy %u -> ", *len);
 //    printf("%u\r\n", *len);
     return ret;
   }
@@ -565,15 +581,7 @@ module CXTDMAPhysicalP {
       if (tx_msg != NULL && call CXPacket.source(tx_msg) == TOS_NODE_ID){
         printf_PHY_TIME("T@ %lu %u\r\n", capture, frameNum);
       }
-      //set the tx timestamp if we are the origin
-      //  and this is the first transmission.
-      if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
-          && (call CXPacket.count(tx_msg)) == 1 ){
-        //we load the entire packet into the tx fifo before hitting
-        //the strobe command, so this is only going to be visible to
-        //the sender (not the receiver).
-        call CXPacket.setTimestamp(tx_msg, capture);
-      }      
+      
       //1 uS
       lastRECapture = capture;
       SC_TOGGLE_PIN;
@@ -665,7 +673,8 @@ module CXTDMAPhysicalP {
           printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
           call CXPacketMetadata.setSymbolRate((message_t*)buffer,
             s_sr);
-          call CXPacketMetadata.setReceivedAt((message_t*)buffer,
+          printf_BF("set phy\r\n");
+          call CXPacketMetadata.setPhyTimestamp((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
             frameNum);
@@ -692,9 +701,20 @@ module CXTDMAPhysicalP {
       uint8_t len, int result) { 
     tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
+      message_t* msg = (message_t*)buffer;
       setState(S_TX_CLEANUP);
       completeCleanup();
-      signal CXTDMA.sendDone((message_t*)buffer, len, frameNum, result);
+      //set the phy timestamp if we are the source and this is the
+      //first time we've sent it.
+      if ( call CXPacket.source(msg) == TOS_NODE_ID 
+          && call CXPacket.count(msg) == 1){
+        printf_BF("set phy\r\n");
+        call CXPacketMetadata.setPhyTimestamp(msg,
+          lastRECapture);
+        call CXPacketMetadata.setAlarmTimestamp(msg, 
+          lastFsaHandled);
+      }
+      signal CXTDMA.sendDone(msg, len, frameNum, result);
     } else {
       setState(S_ERROR_e);
     }
