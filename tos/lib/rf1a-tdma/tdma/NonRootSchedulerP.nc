@@ -227,7 +227,8 @@ module NonRootSchedulerP{
 
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
-      printf_SCHED_SR("RX new: %p\r\n", curMsg);
+      printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
+        curSched->scheduleNum, curSched->symbolRate);
       post updateScheduleTask();
       post printCur();
       return swp;

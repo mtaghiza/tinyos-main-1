@@ -203,9 +203,13 @@ module RootSchedulerP{
       //TODO: size, come on. the worst.
       if (SUCCESS == call AnnounceSend.send(next_schedule_msg,
           sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t))){
-        printf_SCHED("Announce Sending %p %u\r\n", 
+        cx_schedule_t* ns = (cx_schedule_t*)(call
+          Packet.getPayload(next_schedule_msg,
+          sizeof(cx_schedule_t)));
+        printf_SCHED("Announce Sending %p sn %u sr %u\r\n", 
           next_schedule_msg,
-          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
+          ns->scheduleNum,
+          ns->symbolRate);
         txState = S_SENDING;
       }else{
         printf("announce schedule: %s\r\n", decodeError(error));
@@ -328,6 +332,7 @@ module RootSchedulerP{
         //   (ESTABLISHED)
         if (!disconnected()){
           printf_SCHED_SR("=");
+          keepNextSR(FALSE);
           state = S_ESTABLISHED;
 
         //Disconnected, so try it again from the top :( (BASELINE)
@@ -602,6 +607,9 @@ module RootSchedulerP{
       curSchedule->symbolRate,
       curSchedule->channel
     );
+    printf_SCHED_SR("KN %p sr %u\r\n", next_schedule_msg,
+      ((cx_schedule_t*)(call Packet.getPayload(next_schedule_msg,
+      sizeof(cx_schedule_t))))->symbolRate);
   }
 
   //general packet setup
