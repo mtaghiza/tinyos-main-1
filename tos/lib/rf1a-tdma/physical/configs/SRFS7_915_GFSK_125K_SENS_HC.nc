@@ -73,7 +73,6 @@ module SRFS7_915_GFSK_125K_SENS_HC{
 };
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
-    printf("125K Config!!!\r\n");
     return &cfg;
   }
 

@@ -253,7 +253,9 @@ module RootSchedulerP{
 
     if ((1+frameNum)%(curSchedule->activeFrames + curSchedule->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
       txState = S_NOT_SENT;
-
+      #if CX_ADAPTIVE_SR != 1
+      state = S_ESTABLISHED;
+      #endif
       if (state != S_ESTABLISHED){
         printf_SCHED_SR("fs");
       }

@@ -32,4 +32,8 @@ typedef nx_struct cx_schedule_reply_t{
 #define SCHEDULE_TIMEOUT 1024
 #endif
 
+#ifndef CX_ADAPTIVE_SR
+#define CX_ADAPTIVE_SR 1
+#endif
+
 #endif
