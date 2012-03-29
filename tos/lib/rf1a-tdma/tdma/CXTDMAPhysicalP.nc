@@ -6,6 +6,7 @@
  #include "CXTDMA.h"
  #include "CXTDMADebug.h"
  #include "SchedulerDebug.h"
+ #include "TimingConstants.h"
 
 module CXTDMAPhysicalP {
   provides interface SplitControl;
@@ -79,6 +80,7 @@ module CXTDMAPhysicalP {
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
   uint8_t s_sr = TDMA_INIT_SYMBOLRATE;
+  uint8_t s_sri;
   uint8_t s_channel = TEST_CHANNEL;
 
   uint32_t lastRECapture;
@@ -249,7 +251,7 @@ module CXTDMAPhysicalP {
       //if there are n active frames, then frameNum n-1 is the last to
       //have data in it. so, we go to sleep at this point.
       if (frameNum == s_activeFrames){
-        printf_BF("sleep\r\n");
+//        printf_BF("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           call FrameWaitAlarm.stop();
@@ -265,10 +267,10 @@ module CXTDMAPhysicalP {
 
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-        printf_BF("wakeup\r\n");
+//        printf_BF("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
 //          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
-          printf_BF("fs0\r\n");
+//          printf_BF("fs0\r\n");
           call FrameStartAlarm.startAt(
             call PrepareFrameStartAlarm.getAlarm(), 
             PFS_SLACK);
@@ -569,12 +571,13 @@ module CXTDMAPhysicalP {
 //    printf("cm %x\r\n", captureMode);
     SC_SET_PIN;
     fst = call FrameStartAlarm.getNow();
-    //There is a ~9.25 uS delay between the SFD signal at the sender and
-    //  at the receiver. So, we need to adjust the capture time
-    //  accordingly.
-    //This is bizarre to me: it should be *subtracting* from time, but
-    //  that had the opposite effect. 
+//    //There is a ~9.25 uS delay between the SFD signal at the sender and
+//    //  at the receiver. So, we need to adjust the capture time
+//    //  accordingly.
+//    //This is bizarre to me: it should be *subtracting* from time, but
+//    //  that had the opposite effect. 
     time += SFD_PROCESSING_DELAY;
+//  This is corrected elsewhere, don't touch it.
 
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
@@ -605,6 +608,10 @@ module CXTDMAPhysicalP {
       //6.5 uS
       SC_TOGGLE_PIN;
       if (checkState(S_RX_READY)){
+        //just received a packet. let's adjust our alarms!
+        uint32_t thisFrameStart = capture - sfdDelays[s_sri] -
+          fsDelays[s_sri];
+//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameWaitAlarm.stop();
         setState(S_RECEIVING);
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
@@ -686,7 +693,7 @@ module CXTDMAPhysicalP {
           printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
           call CXPacketMetadata.setSymbolRate((message_t*)buffer,
             s_sr);
-          printf_BF("set phy\r\n");
+          printf_PHY_TIME("set phy\r\n");
           call CXPacketMetadata.setPhyTimestamp((message_t*)buffer,
             lastRECapture);
           call CXPacketMetadata.setFrameNum((message_t*)buffer,
@@ -731,7 +738,7 @@ module CXTDMAPhysicalP {
       //first time we've sent it.
       if ( call CXPacket.source(msg) == TOS_NODE_ID 
           && call CXPacket.count(msg) == 1){
-        printf_BF("set phy\r\n");
+        printf_PHY_TIME("set phy\r\n");
         call CXPacketMetadata.setPhyTimestamp(msg,
           lastRECapture);
 //        call CXPacketMetadata.setAlarmTimestamp(msg, 
@@ -813,7 +820,7 @@ module CXTDMAPhysicalP {
         delta = call PrepareFrameStartAlarm.getNow();
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
-        printf_BF("fs3\r\n");
+//        printf_BF("fs3\r\n");
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
   
@@ -828,6 +835,7 @@ module CXTDMAPhysicalP {
       //  radio.
       if (s_sr != symbolRate || s_channel != channel){
         s_sr = symbolRate;
+        s_sri = srIndex(s_sr);
         call Rf1aPhysical.reconfigure();
       }
  
