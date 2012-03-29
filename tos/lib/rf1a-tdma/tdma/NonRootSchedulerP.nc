@@ -160,6 +160,7 @@ module NonRootSchedulerP{
     if (pl->scheduleNum == curSched->scheduleNum){
       printf_SCHED("s");
       if(lastRxTS != 0){
+        uint8_t i;
         uint32_t rootTicks;
         uint32_t myTicks;
         int32_t d;
@@ -173,10 +174,13 @@ module NonRootSchedulerP{
         rootTicks = curRootStart - lastRootStart;
         myTicks = rxTS - lastRxTS;
         d = myTicks - rootTicks;
+        delta[(cycleNum)%DELTA_BUF_LEN] = d;
         cycleNum++;
-        cycleNum = (cycleNum)%DELTA_BUF_LEN;
-        delta[cycleNum] = d;
         printf_SCHED(" %ld ", d);
+        for (i = 0; i < DELTA_BUF_LEN; i++){
+          d+=delta[i];
+        }
+        d = d/(cycleNum > DELTA_BUF_LEN ? DELTA_BUF_LEN : cycleNum);
         //TODO: double check this logic. 
         if ( d > framesElapsed ){
           //evenly distribute as much as possible
@@ -261,7 +265,10 @@ module NonRootSchedulerP{
 //    printf_SCHED_SR("UST from %p\r\n", curSched);
     //account for propagation delays here.
     error = call TDMAPhySchedule.setSchedule(
-      lastRxTS - sfdDelays[lastSRI] - fsDelays[lastSRI], 
+      lastRxTS 
+        - sfdDelays[lastSRI] 
+        - fsDelays[lastSRI] 
+        - tuningDelays[lastSRI], 
       lastRxFrameNum,
       curSched->frameLen,
       curSched->fwCheckLen, 
@@ -338,7 +345,7 @@ module NonRootSchedulerP{
   //if we're on an extraFrames boundary, add or subtract another one
   //if this is the last frame of the cycle, add in whatever's left.
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){
-    #if DISABLE_SKEW_CORRECTION == 1
+    #if ENABLE_SKEW_CORRECTION == 0
     #warning Disabling skew correction
     return 0;
     #else

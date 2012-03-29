@@ -8,7 +8,7 @@ do
   [ -e $d ] && rm $d/* && rmdir $d
   [ -e $aggF ] && rm $aggF
   mkdir -p $d
-  mkdir -p $(basename $aggF)
+  mkdir -p $(dirname $aggF)
 
   python filteredEdgeCompare.py $f 0 1 1 1 2 1 3 1 > $d/synch.csv
   echo "SR,Event,min,q5,median,q95,max,mean,sd" > $aggF
@@ -19,7 +19,7 @@ do
       | cut -d ' ' -f 1 --complement 
   done  | tr ' ' ',' >> $aggF
   echo "$f output to $aggF"
-  grep "synch" $aggF | cut -d ',' -f 1,8
+  grep "synch" $aggF | cut -d ',' -f 1,8,9
   python sToTicks.py $(grep "synch" $aggF | cut -d ',' -f 8)
 
   shift 1

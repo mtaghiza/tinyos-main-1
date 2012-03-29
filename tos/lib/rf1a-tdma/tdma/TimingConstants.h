@@ -100,7 +100,28 @@
     //250 1781    0.000274057315233786
     1781,
   };
-
+  const int32_t tuningDelays[NUM_SRS] = {
+    //1.2
+    0,
+    //2.4
+    0,
+    //4.8
+    0,
+    //10
+    0,
+    //39  
+    0,
+    //77  
+    19,
+    //100 
+    11,
+    //125 
+    5,
+    //175 This one seems less stable for some reason.
+    -19,
+    //250 also seems less stable.
+    -8,
+  };
   //argh i don't see a way around doing this.
   uint8_t srIndex(uint8_t symbolRate){
     uint8_t i;

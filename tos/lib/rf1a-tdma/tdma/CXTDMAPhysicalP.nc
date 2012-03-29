@@ -708,6 +708,9 @@ module CXTDMAPhysicalP {
         printf("Phy.receiveDone: %s\r\n", decodeError(result));
         setState(S_ERROR_c);
       }
+    }else if (checkState(S_RX_READY)){
+      //ignore it, we got a packet but didn't get the SFD event so we
+      //can't timestamp it.
     } else {
       setState(S_ERROR_d);
     }
