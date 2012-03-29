@@ -1,5 +1,6 @@
  #include "SchedulerDebug.h"
  #include "schedule.h"
+ #include "TimingConstants.h"
 module NonRootSchedulerP{
   provides interface SplitControl;
   provides interface TDMARoutingSchedule[uint8_t rm];
@@ -48,6 +49,7 @@ module NonRootSchedulerP{
   uint16_t lastFrameNum;
   uint32_t lastRxTS;
   uint32_t lastRootStart;
+  uint32_t lastSR;
 
   int32_t ticksPerFrame;
   uint16_t extraFrames = 0;
@@ -91,6 +93,8 @@ module NonRootSchedulerP{
     curSched -> framesPerSlot = 0;
     curSched -> maxRetransmit = 0;
     curSched -> channel = TEST_CHANNEL;
+
+    lastSR = curSched -> symbolRate;
     return call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
@@ -224,6 +228,7 @@ module NonRootSchedulerP{
       extraFrames = 1;
       extraFrameOffset = 0;
       endOfCycle = 0;
+      lastSR = curSched->symbolRate;
 
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
@@ -251,9 +256,12 @@ module NonRootSchedulerP{
 
   task void updateScheduleTask(){
     error_t error;
+    uint8_t lastSRI = srIndex(lastSR);
     printf_SCHED("UST");
 //    printf_SCHED_SR("UST from %p\r\n", curSched);
-    error = call TDMAPhySchedule.setSchedule(lastRxTS, 
+    //account for propagation delays here.
+    error = call TDMAPhySchedule.setSchedule(
+      lastRxTS - sfdDelays[lastSRI] - fsDelays[lastSRI], 
       lastRxFrameNum,
       curSched->frameLen,
       curSched->fwCheckLen, 
@@ -261,7 +269,7 @@ module NonRootSchedulerP{
       curSched->inactiveFrames, 
       curSched->symbolRate,
       curSched->channel);
-    //TODO: shift scheduled frame start to root timeframe for debug
+
     if (changePending){
       lastRxTS = 0;
       lastRxFrameNum = 0;

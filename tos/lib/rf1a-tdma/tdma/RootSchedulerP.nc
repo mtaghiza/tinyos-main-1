@@ -1,5 +1,7 @@
  #include "schedule.h"
  #include "SchedulerDebug.h"
+ #include "TimingConstants.h"
+
 module RootSchedulerP{
   provides interface SplitControl;
   provides interface TDMARoutingSchedule[uint8_t rm];
@@ -87,10 +89,6 @@ module RootSchedulerP{
 
   uint8_t totalNodes = TDMA_MAX_NODES - 1;
 
-  enum {
-    NUM_SRS= uniqueCount(SR_COUNT_KEY),
-  };
-
   uint8_t state = S_OFF;
   uint8_t txState = S_NOT_SENT;
   uint8_t srState = S_UNKNOWN;
@@ -103,47 +101,8 @@ module RootSchedulerP{
   bool resetBL = TRUE;
   bool blPending = FALSE;
 
-  uint8_t symbolRates[10] = {
-    1,
-    2,
-    5,
-    10,
-    39,
-    77,
-    100,
-    125,
-    175,
-    250
-  };
-
-  uint32_t frameLens[10] = {
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/1UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/2UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/5UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/10UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/39UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/77UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/100UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/125UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/175UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/250UL, 
-  };
-
-  uint32_t fwCheckLens[10] = {
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/1UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/2UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/5UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/10UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/39UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/77UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/100UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/125UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/175UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/250UL, 
-  };
-
-  uint16_t nodesReachable[10]; 
-  uint8_t maxDepth[10]; 
+  uint16_t nodesReachable[NUM_SRS]; 
+  uint8_t maxDepth[NUM_SRS]; 
 
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
@@ -162,7 +121,6 @@ module RootSchedulerP{
   cx_schedule_t* nextSchedule;
 
   void reset();
-  uint8_t srIndex(uint8_t sr);
   void useNextSchedule();
 
   command error_t SplitControl.start(){
@@ -241,14 +199,19 @@ module RootSchedulerP{
           useNextSchedule();
         }
         //ESTABLISHED: no change.
-        printf_TIMING("sched %lu sfd %lu handled %lu sfd-sched %lu sched-handled %lu sfd-handled %lu\r\n", 
+        printf_TIMING("sched %lu sfd %lu sfd-sched %lu \r\n", 
           call CXPacket.getTimestamp(msg), 
           call CXPacketMetadata.getPhyTimestamp(msg), 
-          call CXPacketMetadata.getAlarmTimestamp(msg),
-          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacket.getTimestamp(msg),
-          call CXPacketMetadata.getAlarmTimestamp(msg) - call CXPacket.getTimestamp(msg),
-          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacketMetadata.getAlarmTimestamp(msg)
+          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacket.getTimestamp(msg)
         );
+//        printf_TIMING("sched %lu sfd %lu handled %lu sfd-sched %lu sched-handled %lu sfd-handled %lu\r\n", 
+//          call CXPacket.getTimestamp(msg), 
+//          call CXPacketMetadata.getPhyTimestamp(msg), 
+//          call CXPacketMetadata.getAlarmTimestamp(msg),
+//          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacket.getTimestamp(msg),
+//          call CXPacketMetadata.getAlarmTimestamp(msg) - call CXPacket.getTimestamp(msg),
+//          call CXPacketMetadata.getPhyTimestamp(msg) - call CXPacketMetadata.getAlarmTimestamp(msg)
+//        );
       } else {
         printf_SCHED("Unexpected state %x in as.sendDone\r\n", state);
       }
@@ -389,18 +352,6 @@ module RootSchedulerP{
     return curSchedule->maxRetransmit;
   }
   
-  //argh i don't see a way around doing this.
-  uint8_t srIndex(uint8_t symbolRate){
-    uint8_t i;
-    for (i = 0; i < NUM_SRS; i++){
-      if (symbolRates[i] == symbolRate){
-        return i;
-      }
-    }
-    printf("Unknown sr: %u\r\n", symbolRate);
-    return 0xff;
-  }
-
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
     uint8_t curSRI = srIndex(curSchedule->symbolRate);

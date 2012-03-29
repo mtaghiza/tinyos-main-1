@@ -419,7 +419,7 @@ module CXTDMAPhysicalP {
     }
   }
 
-  uint32_t lastFsaHandled;
+//  uint32_t lastFsaHandled;
   /**
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *    FrameStartAlarm.fired / start frameWaitAlarm -> S_RX_READY
@@ -431,16 +431,15 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
-    lastFsaHandled = call FrameStartAlarm.getNow();
-    //TODO: record how long it takes to service this alarm
-    if(lastFsaHandled < call FrameStartAlarm.getAlarm()){
-      printf_PFS_FREAKOUT("FS EARLY");
-      printf_BF("fs1\r\n");
-      call FrameStartAlarm.startAt(
-        call FrameStartAlarm.getAlarm() - s_frameLen, 
-        s_frameLen);
-      return;
-    }    
+//    lastFsaHandled = call FrameStartAlarm.getNow();
+//    if(lastFsaHandled < call FrameStartAlarm.getAlarm()){
+//      printf_PFS_FREAKOUT("FS EARLY");
+//      printf_BF("fs1\r\n");
+//      call FrameStartAlarm.startAt(
+//        call FrameStartAlarm.getAlarm() - s_frameLen, 
+//        s_frameLen);
+//      return;
+//    }    
     if (frameNum & BIT0){
       FS_CYCLE_CLEAR_PIN;
     }else{
@@ -503,8 +502,19 @@ module CXTDMAPhysicalP {
       //reception. In this case, just ignore it, we should get a good
       //schedule soon.
     } else {
-      printf_BF("Error @fn %u\r\n", frameNum);
-      setState(S_ERROR_8);
+      //would rather do this up top, but getNow introduces a TON of
+      //jitter.
+      if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
+        printf_PFS_FREAKOUT("FS EARLY");
+        printf_BF("fs1\r\n");
+        call FrameStartAlarm.startAt(
+          call FrameStartAlarm.getAlarm() - s_frameLen, 
+          s_frameLen);
+        return;
+      }else{
+        printf_BF("Error @fn %u\r\n", frameNum);
+        setState(S_ERROR_8);
+      }
     }
     lastFsa = call FrameStartAlarm.getAlarm();
     //0.5 uS
@@ -685,7 +695,14 @@ module CXTDMAPhysicalP {
             frameNum, lastRECapture);
         }
         completeCleanup();
+      } else if (ENOMEM == result){
+        //this gives ENOMEM if we don't receive the entire packet, I
+        //guess due to interference or something? 
+        //anyway, nothing to be done about it so just clean up.
+        setState(S_RX_CLEANUP);
+        completeCleanup();
       } else {
+        printf("Phy.receiveDone: %s\r\n", decodeError(result));
         setState(S_ERROR_c);
       }
     } else {
@@ -711,8 +728,8 @@ module CXTDMAPhysicalP {
         printf_BF("set phy\r\n");
         call CXPacketMetadata.setPhyTimestamp(msg,
           lastRECapture);
-        call CXPacketMetadata.setAlarmTimestamp(msg, 
-          lastFsaHandled);
+//        call CXPacketMetadata.setAlarmTimestamp(msg, 
+//          lastFsaHandled);
       }
       signal CXTDMA.sendDone(msg, len, frameNum, result);
     } else {
@@ -772,7 +789,7 @@ module CXTDMAPhysicalP {
       atomic{
         //while target frameStart is in the past
         // - add 1 to target frameNum, add framelen to target frameStart
-        pfsStartAt = startAt - PFS_SLACK - SFD_TIME;
+        pfsStartAt = startAt - PFS_SLACK ;
         while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
           pfsStartAt += frameLen;
           atFrameNum = (atFrameNum + 1)%(activeFrames + inactiveFrames);
