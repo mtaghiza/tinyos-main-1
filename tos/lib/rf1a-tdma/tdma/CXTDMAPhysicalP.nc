@@ -576,7 +576,7 @@ module CXTDMAPhysicalP {
 //    //  accordingly.
 //    //This is bizarre to me: it should be *subtracting* from time, but
 //    //  that had the opposite effect. 
-    time += SFD_PROCESSING_DELAY;
+//    time += SFD_PROCESSING_DELAY;
 //  This is corrected elsewhere, don't touch it.
 
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
@@ -609,13 +609,20 @@ module CXTDMAPhysicalP {
       SC_TOGGLE_PIN;
       if (checkState(S_RX_READY)){
         //just received a packet. let's adjust our alarms!
-        uint32_t thisFrameStart = capture - sfdDelays[s_sri] -
-          fsDelays[s_sri];
-//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
+        uint32_t thisFrameStart = capture 
+          - sfdDelays[s_sri] 
+          - fsDelays[s_sri]
+          - tuningDelays[s_sri];
+        printf_BF("%lu ( %lu )\r\n", thisFrameStart, 
+          call FrameStartAlarm.getAlarm() - s_frameLen);
+        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameWaitAlarm.stop();
         setState(S_RECEIVING);
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
+        //Just transmitted: we could try to fix jitter here (i.e. to
+        //"fix" the last frame start alarm to match what a receiver
+        //would have computed.
         //TODO: revisit the self-adjustment logic here.
 //        int32_t delta = lastRECapture - 
 //          (lastFsa + SFD_TIME );
