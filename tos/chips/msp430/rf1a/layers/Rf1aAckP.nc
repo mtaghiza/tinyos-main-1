@@ -10,6 +10,7 @@ generic module Rf1aAckP () {
     interface Receive as SubReceive;
     interface Send as AckSend;
     interface Receive as AckReceive;
+    interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Rf1aPacket;
   }
@@ -377,8 +378,14 @@ generic module Rf1aAckP () {
         }
       }
       if (invoke_send) {
-        error_t rv = call AckSend.send((message_t*)&ack_message, 0);
+        error_t rv;
+
+        call Rf1aPhysical.disableCca();
+        rv = call AckSend.send((message_t*)&ack_message, 0);
+
         if (SUCCESS != rv) {
+          call Rf1aPhysical.enableCca();
+
           /* If the transmission didn't succeed, reset the state so we
            * don't wait for PhySend.sendDone(). */
           atomic {
@@ -427,6 +434,8 @@ generic module Rf1aAckP () {
 
   event void AckSend.sendDone (message_t* msg, error_t error)
   {
+    call Rf1aPhysical.enableCca();
+
     atomic {
       /* Completed sending the acknowledgment; reset the state.  Note
        * that it doesn't matter whether the send was successful, at
@@ -458,6 +467,17 @@ generic module Rf1aAckP () {
     atomic return !!tx_acked;
   }
   
+  async event void Rf1aPhysical.sendDone (int result) { }
+  async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
+  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
+                                             unsigned int count,
+                                             int result) { }
+  async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
+                                                     unsigned int count) { }
+  async event void Rf1aPhysical.frameStarted () { }
+  async event void Rf1aPhysical.clearChannel () { }
+  async event void Rf1aPhysical.carrierSense () { }
+  async event void Rf1aPhysical.released () { }
 }
 
 /* 

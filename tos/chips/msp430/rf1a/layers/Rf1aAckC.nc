@@ -39,6 +39,7 @@ generic configuration Rf1aAckC () {
     interface Send as AckSend;
     interface Receive as AckReceive;
     interface Rf1aPacket;
+    interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
   }
 } implementation {
@@ -51,6 +52,7 @@ generic configuration Rf1aAckC () {
   AckSend = Rf1aAckP.AckSend;
   AckReceive = Rf1aAckP.AckReceive;
   Rf1aPacket = Rf1aAckP;
+  Rf1aPhysical = Rf1aAckP;
   Rf1aPhysicalMetadata = Rf1aAckP;
 
   /* NB: Can't use AlarmMultiplexC here until it's been made robust in

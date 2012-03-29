@@ -654,6 +654,8 @@ generic module HplMsp430Rf1aP () @safe() {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
+
+//        printf ("%s\n\r",__FUNCTION__);
           tx_result = ERETRY;
           cancelTransmit_();
         }
@@ -770,6 +772,7 @@ generic module HplMsp430Rf1aP () @safe() {
         /* If we didn't successfully stay in RX mode through all that,
          * something went wrong. */
         if (RF1A_S_RX != (RF1A_S_MASK & rc)) {
+//        printf ("%s: 1\n\r",__FUNCTION__);
           rv = ERETRY;
         }
       }
@@ -796,6 +799,9 @@ generic module HplMsp430Rf1aP () @safe() {
                  && (state != (RF1A_S_MASK & rc))
                  && (0 <= --loop_limit));
         if (state != (RF1A_S_MASK & rc)) {
+
+//        printf ("%s: 2\n\r",__FUNCTION__);
+//printf("state: %x, mask: %x, rc: %x, loop: %x\n\r", state, RF1A_S_MASK, rc, loop_limit);
           rv = ERETRY;
         }
       }
@@ -893,6 +899,7 @@ generic module HplMsp430Rf1aP () @safe() {
       /* Even if it's being transmitted from the radio, wait until
        * it's gone. */
       if (! transmitIsInactive_atomic_()) {
+//        printf ("%s\n\r",__FUNCTION__);
         return ERETRY;
       }
 
@@ -1009,6 +1016,8 @@ generic module HplMsp430Rf1aP () @safe() {
        * queued or going out */
       if ((RX_S_listening < rx_state)
           || (! transmitIsInactive_atomic_())) {
+
+//        printf ("%s\n\r",__FUNCTION__);
         return ERETRY;
       }
 
@@ -1421,6 +1430,74 @@ generic module HplMsp430Rf1aP () @safe() {
     return (rf1a_status_e)(RF1A_S_MASK & rc);
   }
 
+
+  async command int Rf1aPhysical.enableCca[uint8_t client] ()
+  {
+    uint8_t mcsm1;
+
+    /* Radio must be assigned */
+    if (! call ArbiterInfo.inUse()) {
+      return -EOFF;
+    }
+    /* This must be the right client */
+    if (client != call ArbiterInfo.userId()) {
+      return -EBUSY;
+    }
+
+    atomic {
+      uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
+
+      /* The radio must not be actively receiving or transmitting. */
+      if ((TX_S_inactive != tx_state)
+          || (RX_S_listening < rx_state)
+          || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
+          || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
+//        printf ("%s\n\r",__FUNCTION__);
+        return -ERETRY;
+      }
+
+      mcsm1 = call Rf1aIf.readRegister(MCSM1);
+      call Rf1aIf.writeRegister(MCSM1, 0x30 | (0x0f & mcsm1));
+    }
+
+    return SUCCESS;
+  }
+
+  async command int Rf1aPhysical.disableCca[uint8_t client] ()
+  {
+    uint8_t mcsm1;
+
+    /* Radio must be assigned */
+    if (! call ArbiterInfo.inUse()) {
+      return -EOFF;
+    }
+    /* This must be the right client */
+    if (client != call ArbiterInfo.userId()) {
+      return -EBUSY;
+    }
+
+    atomic {
+      uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
+
+      /* The radio must not be actively receiving or transmitting. */
+      if ((TX_S_inactive != tx_state)
+          || (RX_S_listening < rx_state)
+          || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
+          || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
+//        printf ("%s\n\r",__FUNCTION__);
+        return -ERETRY;
+      }
+
+      mcsm1 = call Rf1aIf.readRegister(MCSM1);
+      call Rf1aIf.writeRegister(MCSM1, (0x0f & mcsm1));
+    }
+    return SUCCESS;
+  }
+
+
+
+
+
   async command int Rf1aPhysical.getChannel[uint8_t client] ()
   {
     /* Radio must be assigned */
@@ -1453,6 +1530,7 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RX_S_listening < rx_state)
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
+//        printf ("%s\n\r",__FUNCTION__);
         return -ERETRY;
       }
 
