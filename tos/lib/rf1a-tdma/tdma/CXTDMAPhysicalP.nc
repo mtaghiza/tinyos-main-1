@@ -286,8 +286,11 @@ module CXTDMAPhysicalP {
 //      printf("PFS %s\r\n", decodeStatus());
       //7.75 uS
       PFS_TOGGLE_PIN;
+
+      IS_TX_CLEAR_PIN;
       switch(signal CXTDMA.frameType(frameNum)){
         case RF1A_OM_FSTXON:
+          IS_TX_SET_PIN;
           //0.75 uS
           PFS_TOGGLE_PIN;
 //          printf("TX from %s\r\n", decodeStatus());

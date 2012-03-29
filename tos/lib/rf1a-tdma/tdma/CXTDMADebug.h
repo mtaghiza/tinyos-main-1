@@ -178,4 +178,15 @@
 #define LOADFIFO_SET_PIN 
 #endif
 
+#if defined PORT_IS_TX && defined PIN_IS_TX 
+#define IS_TX_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_IS_TX, PIN_IS_TX)
+#define IS_TX_CLEAR_PIN TDMA_CLEAR_PIN(PORT_IS_TX, PIN_IS_TX)
+#define IS_TX_SET_PIN TDMA_SET_PIN(PORT_IS_TX, PIN_IS_TX)
+#else 
+#define IS_TX_TOGGLE_PIN 
+#define IS_TX_CLEAR_PIN 
+#define IS_TX_SET_PIN 
+#endif
+
+
 #endif
