@@ -56,19 +56,20 @@
 configuration RadioCountToLedsAppC {}
 implementation {
   components MainC, RadioCountToLedsC as App, LedsC;
-  components new DelayedAMSenderC(AM_RADIO_COUNT_MSG) as AMSenderC;
+  components new AMSenderC(AM_RADIO_COUNT_MSG);// as AMSenderC;
   components new AMReceiverC(AM_RADIO_COUNT_MSG);
   components new TimerMilliC();
   components ActiveMessageC;
 
   components Rf1aActiveMessageC;
-  components GlossyRf1aSettings125KC as Rf1aSettings;
-  Rf1aActiveMessageC.Rf1aConfigure -> Rf1aSettings;
+//  components GlossyRf1aSettings125KC as Rf1aSettings;
+//  Rf1aActiveMessageC.Rf1aConfigure -> Rf1aSettings;
   
   components new TimerMilliC() as DelayTimer;
 
   components SerialPrintfC;
   components PlatformSerialC;
+  components RandomC;
 
   App.Boot -> MainC.Boot;
   
@@ -78,18 +79,21 @@ implementation {
   App.Leds -> LedsC;
   App.MilliTimer -> TimerMilliC;
   App.Packet -> AMSenderC;
+  App.AMPacket -> AMSenderC;
+  App.Random -> RandomC;
 
-  App.DelayedSend -> AMSenderC;
-  App.DelayTimer -> DelayTimer;
+//  App.DelayedSend -> AMSenderC;
+//  App.DelayTimer -> DelayTimer;
   App.SerialControl -> PlatformSerialC;
   App.UartStream -> PlatformSerialC;
 
-  components Rf1aDumpConfigC;
-  App.Rf1aConfigure -> Rf1aSettings;
-  App.Rf1aDumpConfig -> Rf1aDumpConfigC;
+//  components Rf1aDumpConfigC;
+//  App.Rf1aConfigure -> Rf1aSettings;
+//  App.Rf1aDumpConfig -> Rf1aDumpConfigC;
   App.Rf1aPhysical -> Rf1aActiveMessageC;
+  App.Rf1aPacket -> Rf1aActiveMessageC;
   App.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
-  App.Rf1aConfigure -> Rf1aSettings;
+//  App.Rf1aConfigure -> Rf1aSettings;
 }
 
 

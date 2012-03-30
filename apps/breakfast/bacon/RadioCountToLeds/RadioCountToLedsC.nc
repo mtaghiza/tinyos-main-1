@@ -63,15 +63,18 @@ module RadioCountToLedsC @safe() {
     interface Timer<TMilli> as MilliTimer;
     interface SplitControl as AMControl;
     interface Packet;
-    interface DelayedSend;
-    interface Timer<TMilli> as DelayTimer;
+    interface AMPacket;
+    interface Random;
+//    interface DelayedSend;
+//    interface Timer<TMilli> as DelayTimer;
   }
   uses interface StdControl as SerialControl;
   uses interface UartStream;
-  uses interface Rf1aDumpConfig;
+//  uses interface Rf1aDumpConfig;
   uses interface Rf1aPhysical;
+  uses interface Rf1aPacket;
   uses interface HplMsp430Rf1aIf;
-  uses interface Rf1aConfigure;
+//  uses interface Rf1aConfigure;
 }
 implementation {
 
@@ -89,16 +92,19 @@ implementation {
     P2DIR |= BIT4;
     call AMControl.start();
     call SerialControl.start();
-    printf("Booted\n\r");
+    printf("Booted\n");
   }
 
   event void AMControl.startDone(error_t err) {
-    call Rf1aDumpConfig.display(call Rf1aConfigure.getConfiguration());
-    call Rf1aPhysical.setChannel(64);
-    call HplMsp430Rf1aIf.writeSinglePATable(0x25);
+//    call Rf1aDumpConfig.display(call Rf1aConfigure.getConfiguration());
+    call Rf1aPhysical.setChannel(TEST_CHANNEL);
+    call HplMsp430Rf1aIf.writeSinglePATable(TEST_POWER);
     if (err == SUCCESS) {
-      printf("Starting\n\r");
-      call MilliTimer.startPeriodic(1024);
+      printf("Starting\n");
+      #if IS_SENDER == 1
+      call MilliTimer.startOneShot(10*TEST_IPI + 
+        call Random.rand16()%(10*TEST_IPI_RAND));
+      #endif
     }
     else {
       call AMControl.start();
@@ -130,7 +136,7 @@ implementation {
         dbg("RadioCountToLedsC", "RadioCountToLedsC: packet sent.\n", counter);	
         locked = TRUE;
       }
-      printf("Send: %x\n\r", error);
+//      printf("TX %u\r\n", TOS_NODE_ID);
     }
   }
 
@@ -140,6 +146,12 @@ implementation {
     if (len != sizeof(radio_count_msg_t)) {return bufPtr;}
     else {
       radio_count_msg_t* rcm = (radio_count_msg_t*)payload;
+      printf("RX %u %u %d %d %u\n", 
+        call AMPacket.source(bufPtr),
+        TOS_NODE_ID,
+        call Rf1aPacket.rssi(bufPtr),
+        call Rf1aPacket.lqi(bufPtr),
+        rcm->counter);
       if (rcm->counter & 0x1) {
 	call Leds.led0On();
       }
@@ -166,46 +178,49 @@ implementation {
     if (&packet == bufPtr) {
       locked = FALSE;
     }
+    #if IS_SENDER==1
+      call MilliTimer.startOneShot(TEST_IPI + call Random.rand16()%TEST_IPI_RAND);
+    #endif
 //    printf("+");
-    printf("Send Done: %x\n\r", error);
-    printf("\n\r\n\r");
+//    printf("Send Done: %x\n\r", error);
+//    printf("\n\r\n\r");
   }
 
-  async event void DelayedSend.sendReady(){
-//    printf("-");
-    if (DELAY){
-      call DelayTimer.startOneShot(10);
-    } else {
-      signal DelayTimer.fired();
-    }
-  }
-
-  event void DelayTimer.fired(){
-    printf("Completing\n\r");
-    call DelayedSend.completeSend();
-  }
-
+//  async event void DelayedSend.sendReady(){
+////    printf("-");
+////    if (DELAY){
+////      call DelayTimer.startOneShot(10);
+////    } else {
+//      signal DelayTimer.fired();
+////    }
+//  }
+//
+//  event void DelayTimer.fired(){
+////    printf("Completing\n\r");
+//    call DelayedSend.completeSend();
+//  }
+//
   async event void UartStream.receivedByte(uint8_t byte){
-    switch(byte){
-      case 'q':
-        WDTCTL=0;
-        break;
-      case 't':
-        if (call MilliTimer.isRunning()){
-          call MilliTimer.stop();
-          printf("STOP\n\r");
-        }else{
-          call MilliTimer.startPeriodic(1024);
-          printf("START\n\r");
-        }
-        break;
-      case '\r':
-        printf("\n\r");
-        break;
-      default:
-        printf("%c", byte);
-        break;
-    }
+//    switch(byte){
+//      case 'q':
+//        WDTCTL=0;
+//        break;
+//      case 't':
+//        if (call MilliTimer.isRunning()){
+//          call MilliTimer.stop();
+//          printf("STOP\n\r");
+//        }else{
+//          call MilliTimer.startPeriodic(1024);
+//          printf("START\n\r");
+//        }
+//        break;
+//      case '\r':
+//        printf("\n\r");
+//        break;
+//      default:
+//        printf("%c", byte);
+//        break;
+//    }
   }
 
   //unused events

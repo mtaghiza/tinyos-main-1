@@ -2,59 +2,29 @@ COMPONENT=RadioCountToLedsAppC
 BUILD_EXTRA_DEPS = RadioCountMsg.py RadioCountMsg.class
 CLEAN_EXTRA = RadioCountMsg.py RadioCountMsg.class RadioCountMsg.java
 
+#dbm patable0
+# -30 0x03
+# -12 0x25
+#  -6 0x2D
+#   0 0x8D
+#  10 0xC3
+# max 0xC0
 PAYLOAD_LEN?=20
-DELAY?=TRUE
+TEST_POWER?=0xC3
+TEST_CHANNEL?=0
+TEST_IPI?=256
+TEST_IPI_RAND?=64
+IS_SENDER?=1
 
 CFLAGS+=-DTOSH_DATA_LENGTH=60
 CFLAGS+=-DPAYLOAD_LEN=$(PAYLOAD_LEN)
-CFLAGS+=-DDELAY=$(DELAY)
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
-CFLAGS+=-I$(TOSDIR)/lib/rf1a-cx
-CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
-CFLAGS+=-DDEBUG_TXFIFO_P
-
-#CFLAGS+=-DDEBUG_RX
-
-#CFLAGS+=-DDEBUG_RX
-#CFLAGS+=-DDEBUG_RX_1
-#CFLAGS+=-DDEBUG_RX_2
-#CFLAGS+=-DDEBUG_RX_3
-#CFLAGS+=-DDEBUG_SET_RX_BUFFER
-#CFLAGS+=-DDEBUG_RX_4
-
-CFLAGS+=-DDEBUG_TX_P
-
-##1.1: Rf1aPhysical.send
-##1.4: sendFragment_
-##2.4: DelayedSend.completeSend
-CFLAGS+=-DDEBUG_TX
-
-#CFLAGS+=-DDEBUG_CCA
-
-##P1.3
-##spinforvalid
-#CFLAGS+=-DDEBUG_TX_1
-##SFD
-CFLAGS+=-DDEBUG_TX_2
-##Scheduler.run_task
-#CFLAGS+=-DDEBUG_TASK
-
-##P1.2
-##completeSend.wait
-#CFLAGS+=-DDEBUG_TX_3
-##startTransmission_
-#CFLAGS+=-DDEBUG_TX_4
-##completeSend.STX
-#CFLAGS+=-DDEBUG_TX_5
-##writeBurstRegister
-#CFLAGS+=-DDEBUG_TX_6
-##need_repost_ds
-#CFLAGS+=-DDEBUG_TX_7
-##need_signal_ds
-#CFLAGS+=-DDEBUG_TX_8
-##auto-complete (strobe issued)
-CFLAGS+=-DDEBUG_TX_9
+CFLAGS+=-DTEST_CHANNEL=$(TEST_CHANNEL)
+CFLAGS+=-DTEST_POWER=$(TEST_POWER)
+CFLAGS+=-DIS_SENDER=$(IS_SENDER)
+CFLAGS+=-DTEST_IPI=$(TEST_IPI)
+CFLAGS+=-DTEST_IPI_RAND=$(TEST_IPI_RAND)
 
 RadioCountMsg.py: RadioCountToLeds.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=RadioCountMsg RadioCountToLeds.h radio_count_msg -o $@
