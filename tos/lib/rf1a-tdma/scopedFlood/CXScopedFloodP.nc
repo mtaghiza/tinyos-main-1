@@ -1,6 +1,7 @@
 
  #include "Rf1a.h"
  #include "CXFlood.h"
+ #include "SchedulerDebug.h"
  #include "SFDebug.h"
 module CXScopedFloodP{
   provides interface Send[am_id_t t];
@@ -103,6 +104,7 @@ module CXScopedFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+    printf_TESTBED("ScopedFloodSend\r\n");
     atomic{
       if (!originDataPending){
         origin_data_msg = msg;

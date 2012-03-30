@@ -155,7 +155,7 @@ module CXTDMAPhysicalP {
       if (ERROR_MASK == (s & ERROR_MASK)){
         P2OUT |= BIT4;
         stopTimers();
-        printf("[%x->%x]\r\n", state, s);
+        printf("ERR[%x->%x]\r\n", state, s);
       }
       #endif
       state = s;
@@ -179,7 +179,7 @@ module CXTDMAPhysicalP {
         call SynchCapture.disable();
       }
       setState(S_STARTING);
-      printStatus();
+//      printStatus();
       return call Resource.request();
     } else {
       return EALREADY;
@@ -696,23 +696,27 @@ module CXTDMAPhysicalP {
     if (checkState(S_RECEIVING)){
       if (SUCCESS == result){
         setState(S_RX_CLEANUP);
-        atomic{
-          //Nope, this is done during the TX process.
-//          call CXPacket.setCount((message_t*)buffer, 
-//            call CXPacket.count((message_t*)buffer) +1);
-          printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
-          call CXPacketMetadata.setSymbolRate((message_t*)buffer,
-            s_sr);
-          printf_PHY_TIME("set phy\r\n");
-          call CXPacketMetadata.setPhyTimestamp((message_t*)buffer,
-            lastRECapture);
-          call CXPacketMetadata.setFrameNum((message_t*)buffer,
-            frameNum);
-          call CXPacketMetadata.setReceivedCount((message_t*)buffer,
-            call CXPacket.count((message_t*)buffer));
-          rx_msg = signal CXTDMA.receive((message_t*)buffer, 
-            count - sizeof(rf1a_ieee154_t),
-            frameNum, lastRECapture);
+        if (call Rf1aPacket.crcPassed((message_t*)buffer)){
+          atomic{
+            //Nope, this is done during the TX process.
+  //          call CXPacket.setCount((message_t*)buffer, 
+  //            call CXPacket.count((message_t*)buffer) +1);
+            printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
+            call CXPacketMetadata.setSymbolRate((message_t*)buffer,
+              s_sr);
+            printf_PHY_TIME("set phy\r\n");
+            call CXPacketMetadata.setPhyTimestamp((message_t*)buffer,
+              lastRECapture);
+            call CXPacketMetadata.setFrameNum((message_t*)buffer,
+              frameNum);
+            call CXPacketMetadata.setReceivedCount((message_t*)buffer,
+              call CXPacket.count((message_t*)buffer));
+            rx_msg = signal CXTDMA.receive((message_t*)buffer, 
+              count - sizeof(rf1a_ieee154_t),
+              frameNum, lastRECapture);
+          }
+        } else {
+          printf_TESTBED("CRC Fail\r\n");
         }
         completeCleanup();
       } else if (ENOMEM == result){

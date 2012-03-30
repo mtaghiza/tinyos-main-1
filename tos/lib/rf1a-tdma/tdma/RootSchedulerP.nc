@@ -107,7 +107,7 @@ module RootSchedulerP{
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
-  #define TDMA_ROOT_INACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT) 
+  #define TDMA_ROOT_INACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)/2 
   #else
   #error Must define TDMA_MAX_NODES, TDMA_MAX_DEPTH, and TDMA_MAX_RETRANSMIT
   #endif
@@ -357,6 +357,9 @@ module RootSchedulerP{
     uint8_t curSRI = srIndex(curSchedule->symbolRate);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
+    printf_TESTBED("AnnounceReply: %u %u \r\n", 
+      call CXPacket.source(msg), 
+      call CXPacketMetadata.getReceivedCount(msg));
     printf_SCHED_SR("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
       call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID),
       reply->scheduleNum);
@@ -371,7 +374,7 @@ module RootSchedulerP{
         curSchedule->scheduleNum, curSchedule->scheduleNum, curSRI, nodesReachable[curSRI],
         maxDepth[curSRI]);
     } else {
-      printf("Unexpected reply.rx: state: %x src %x (sn: %u) cur sched: %u\r\n", 
+      printf("Unexpected reply.rx: state: %x src %u (sn: %u) cur sched: %u\r\n", 
         state, call CXPacket.source(msg), reply->scheduleNum, 
         curSchedule->scheduleNum);
     }

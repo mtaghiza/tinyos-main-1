@@ -3,6 +3,7 @@
  #include "CXFlood.h"
  #include "FDebug.h"
  #include "AODVDebug.h"
+ #include "SchedulerDebug.h"
  #include "BreakfastDebug.h"
 module CXFloodP{
   provides interface Send[am_id_t t];
@@ -75,6 +76,7 @@ module CXFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+    printf_TESTBED("FloodSend\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;

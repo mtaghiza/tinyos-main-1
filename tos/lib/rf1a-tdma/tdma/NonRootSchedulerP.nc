@@ -236,6 +236,8 @@ module NonRootSchedulerP{
 
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
+      printf_TESTBED("Schedule RX, count %u\r\n", 
+        call CXPacketMetadata.getReceivedCount(msg));
       printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
         curSched->scheduleNum, curSched->symbolRate);
       post updateScheduleTask();
