@@ -34,6 +34,7 @@
 #include "Rf1aPacket.h"
 #include "CXTDMADebug.h"
 #include "BreakfastDebug.h"
+#include "CXTDMADispatchDebug.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -1002,6 +1003,7 @@ generic module HplMsp430Rf1aP () @safe() {
         //removed call to sft
 //        post sendFragment_task();
       } else if (RX_S_listening < rx_state) {
+        printf_SW_TOPO("RIM\r\n");
         rx_result = ECANCEL;
         post receiveData_task();
       } else {
@@ -1362,6 +1364,7 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Setting a null buffer acts to cancel any in-progress
          * reception. */
         if (RX_S_listening < rx_state) {
+          printf_SW_TOPO("SRB\r\n");
           rx_result = ECANCEL;
           //make sure we return to RX after this.
           call Rf1aIf.writeRegister(MCSM1, 0xff );
@@ -1489,6 +1492,7 @@ generic module HplMsp430Rf1aP () @safe() {
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
   {
     atomic {
+      printf_SW_TOPO("RXO\r\n");
       rx_result = ECANCEL;
       post receiveData_task();
     }

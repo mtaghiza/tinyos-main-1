@@ -29,7 +29,8 @@ CREATE TABLE RX (
 );
 .separator ' '
 .import $ssv RX
-SELECT src, dest, avg(rssi), avg(lqi),
-(1.0*count(*))/(max(sn)-min(sn)+1.0), count(*) from RX group by src,
+DROP TABLE IF EXISTS AGG;
+CREATE TABLE AGG AS SELECT src, dest, avg(rssi) as rssi, avg(lqi) as lqi,
+(1.0*count(*))/(max(sn)-min(sn)+1.0) as prr, count(*) as cnt from RX group by src,
 dest order by count(*);
 EOF

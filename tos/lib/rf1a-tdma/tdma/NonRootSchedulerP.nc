@@ -50,6 +50,7 @@ module NonRootSchedulerP{
   uint32_t lastRxTS;
   uint32_t lastRootStart;
   uint32_t lastSR;
+  bool isSynched = FALSE;
 
   int32_t ticksPerFrame;
   uint16_t extraFrames = 0;
@@ -95,6 +96,7 @@ module NonRootSchedulerP{
     curSched -> channel = TEST_CHANNEL;
 
     lastSR = curSched -> symbolRate;
+    isSynched = FALSE;
     return call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
@@ -103,7 +105,8 @@ module NonRootSchedulerP{
       curSched->activeFrames,
       curSched->inactiveFrames, 
       curSched->symbolRate,
-      curSched->channel);
+      curSched->channel,
+      FALSE);
   }
 
   task void initScheduleTask(){
@@ -220,6 +223,8 @@ module NonRootSchedulerP{
       lastRxFrameNum = rxFrameNum;
       lastRootStart = call CXPacket.getTimestamp(msg);
       printf_SCHED("\r\n");
+      printf_TESTBED_SCHED_ALL("s %u\r\n", 
+        call CXPacketMetadata.getReceivedCount(msg));
 //      post updateScheduleTask();
       return msg; 
     } else {
@@ -236,7 +241,7 @@ module NonRootSchedulerP{
 
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
-      printf_TESTBED("Schedule RX, count %u\r\n", 
+      printf_TESTBED_SCHED_NEW("S %u\r\n", 
         call CXPacketMetadata.getReceivedCount(msg));
       printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
         curSched->scheduleNum, curSched->symbolRate);
@@ -266,18 +271,20 @@ module NonRootSchedulerP{
     printf_SCHED("UST");
 //    printf_SCHED_SR("UST from %p\r\n", curSched);
     //account for propagation delays here.
+    isSynched = TRUE;
     error = call TDMAPhySchedule.setSchedule(
       lastRxTS 
         - sfdDelays[lastSRI] 
-        - fsDelays[lastSRI] 
-        - tuningDelays[lastSRI], 
+        - fsDelays[lastSRI],
+//        - tuningDelays[lastSRI], 
       lastRxFrameNum,
       curSched->frameLen,
       curSched->fwCheckLen, 
       curSched->activeFrames,
       curSched->inactiveFrames, 
       curSched->symbolRate,
-      curSched->channel);
+      curSched->channel,
+      TRUE);
 
     if (changePending){
       lastRxTS = 0;
@@ -314,9 +321,11 @@ module NonRootSchedulerP{
     //hearing it.
     //also: try to do this not-so-close to the very beginning of the
     //cycle, where we can get into all kinds of trouble/edge cases.
-    if (framesSinceLastSchedule > 4*(curSched->activeFrames) +
+    if (isSynched && framesSinceLastSchedule > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
         curSched->activeFrames / 2){
-      printf_SCHED_SR("ABANDON SHIP\r\n");
+      isSynched = FALSE;
+      printf_TESTBED("SYNCH LOST\r\n");
+      printf_SCHED_SR("LOST SYNC\r\n");
       framesSinceLastSchedule = 0;
       post initScheduleTask();
     }

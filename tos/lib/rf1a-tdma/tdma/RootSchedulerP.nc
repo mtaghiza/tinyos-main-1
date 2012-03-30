@@ -410,7 +410,8 @@ module RootSchedulerP{
       curSchedule->activeFrames,
       curSchedule->inactiveFrames, 
       curSchedule->symbolRate,
-      curSchedule->channel
+      curSchedule->channel,
+      TRUE
     );
     if (SUCCESS != error){
       printf("Unable to update schedule: %s\r\n", decodeError(error));

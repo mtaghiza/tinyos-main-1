@@ -1,6 +1,18 @@
 #ifndef SF_DEBUG_H
 #define SF_DEBUG_H
 
+#ifdef DEBUG_SF_TESTBED_AW
+#define printf_SF_TESTBED_AW(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_TESTBED_AW(...)
+#endif
+
+#ifdef DEBUG_SF_TESTBED
+#define printf_SF_TESTBED(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_TESTBED(...)
+#endif
+
 #ifdef DEBUG_SF_STATE
 #define printf_SF_STATE(...) printf(__VA_ARGS__)
 #else

@@ -8,11 +8,15 @@ configuration TestAppC{
   components SerialPrintfC;
   components PlatformSerialC;
   components LedsC;
+  components new TimerMilliC();
 
   TestP.Boot -> MainC;
   TestP.UartStream -> PlatformSerialC;
   TestP.UartControl -> PlatformSerialC;
   TestP.Leds -> LedsC;
+
+  TestP.Timer -> TimerMilliC;
+
   
 
   components new Rf1aPhysicalC();

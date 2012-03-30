@@ -281,6 +281,9 @@ module AODVSchedulerP{
       printf_AODV_IO("IO ASU %u\r\n", frameNum);
       return TRUE;
     } 
+    //TODO: if the pending message is being sent with acks
+    //(scoped-flood) then we should only return true if it's a data
+    //frame  (localFrame%3==0)
     if (CHECK_STATE(S_AO_PENDING)){
       printf_AODV_IO("IO AP %u\r\n", frameNum);
       SET_STATE(S_AO_SENDING, S_ERROR_a);

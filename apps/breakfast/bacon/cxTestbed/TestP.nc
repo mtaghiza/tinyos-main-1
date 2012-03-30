@@ -8,6 +8,7 @@
 #include "decodeError.h"
 #include "message.h"
 #include "CXTDMA.h"
+#include "SchedulerDebug.h"
 
 module TestP {
   uses interface Boot;
@@ -24,6 +25,7 @@ module TestP {
   uses interface Receive;
 
   uses interface Leds;
+  uses interface Timer<TMilli>;
 
 } implementation {
   
@@ -39,18 +41,9 @@ module TestP {
     nx_uint32_t sn;
   } test_packet_t;
   
-  //schedule info
-  uint16_t _framesPerSlot;
-  
-  norace bool isTransmitting = FALSE;
-  norace bool broadcasting = FALSE;
-
-  task void printStatus(){
-    printf("----\r\n");
-    printf("ID: %u\r\n", TOS_NODE_ID);
-    printf("is root: %x\r\n", TDMA_ROOT);
-    printf("is transmitting: %x\r\n", isTransmitting);
-  }
+  task void unicastTask();
+  task void broadcastTask();
+  task void startTask();
 
   event void Boot.booted(){
     atomic{
@@ -75,22 +68,28 @@ module TestP {
       P2OUT |=BIT1;
     }
     call UartControl.start();
-    printf("\r\nCXTDMA AODV test\r\n");
-    printf("s: start \r\n");
-    printf("S: stop \r\n");
-    printf("t: toggle is-transmitting unicast\r\n");
-    printf("T: toggle is-transmitting broadcast\r\n");
-    printf("X: send one broadcast\r\n");
-    printf("x: send one unicast\r\n");
-    printf("?: print status\r\n");
-    printf("========================\r\n");
-    post printStatus();
-    call SplitControl.start();
+    printf("Booted.\r\n");
+    post startTask();
   }
 
+  event void Timer.fired(){
+    printf_TESTBED("Begin transmissions\r\n");
+    #if FLOOD_TEST == 1
+    post broadcastTask();
+    #else 
+    post unicastTask();
+    #endif
+  }
 
   event void SplitControl.startDone(error_t error){
-    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+//    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    printf("Started.\r\n");
+    call Leds.led0On();
+    if (TOS_NODE_ID != 0){
+      #if IS_SENDER == 1
+        call Timer.startOneShot(TESTBED_START_TIME);
+      #endif
+    }
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -106,7 +105,7 @@ module TestP {
     //TODO: where should am header be accounted for?
     error = call Send.send(tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
-    printf("Send.Send (broadcast): %s\r\n", decodeError(error));
+//    printf("Send.Send (broadcast): %s\r\n", decodeError(error));
   }
 
   task void unicastTask(){
@@ -117,26 +116,28 @@ module TestP {
     pl -> sn ++;//= (1+TOS_NODE_ID);
     error = call Send.send(tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
-    printf("Send.Send (unicast): %s\r\n", decodeError(error));
+//    printf("Send.Send (unicast): %s\r\n", decodeError(error));
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
-    printf("SD %x %lu @%lu\r\n",
+    call Leds.led1Toggle();
+    printf("TX s: %u d: %u sn: %lu \r\n",
       TOS_NODE_ID,
-      ((test_packet_t*)call Packet.getPayload(msg, sizeof(test_packet_t)))->sn,
-      call CXPacket.getTimestamp(msg));
+      call CXPacket.destination(msg),
+      ((test_packet_t*)call Packet.getPayload(msg,
+      sizeof(test_packet_t)))->sn);
     if (SUCCESS != error){
-      printf("!sd %x\r\n", error);
-    }else{
-      if (isTransmitting){
-        if (broadcasting){
-          post broadcastTask();
-        }else {
-          post unicastTask();
-        }
-      }
+      printf("!sd %s\r\n", decodeError(error));
     }
-//      printf("DSD %x\r\n", error);
+    if (error == ENOACK || error == SUCCESS){
+      #if IS_SENDER == 1
+        #if FLOOD_TEST == 1
+        post broadcastTask();
+        #else 
+        post unicastTask();
+        #endif
+      #endif
+    }
   }
 
   task void startTask(){
@@ -144,78 +145,18 @@ module TestP {
     if (error != SUCCESS){
       printf("%s: %s\n\r", __FUNCTION__, decodeError(error)); 
     }
-    post printStatus();
-  }
-
-  task void stopTask(){
-    error_t error = call SplitControl.stop();
-    if (error != SUCCESS){
-      printf("%s: %s\n\r", __FUNCTION__, decodeError(error)); 
-    }
-    post printStatus();
-  }
-
-  task void toggleTX(){
-    isTransmitting = !isTransmitting;
-    if (isTransmitting){
-      if (broadcasting){
-        post broadcastTask();
-      } else {
-        post unicastTask();
-      }
-    }
-  }
-
-  async event void UartStream.receivedByte(uint8_t byte){
-    switch(byte){
-      case 'q':
-        WDTCTL=0;
-        break;
-      case 's':
-        printf("Starting\r\n");
-        post startTask();
-        break;
-      case 'S':
-        printf("Stopping\r\n");
-        post stopTask();
-        break;
-      case '?':
-        post printStatus();
-        break;
-      case 't':
-        broadcasting = FALSE;
-        printf("Toggle TX\r\n");
-        post toggleTX();
-        break;
-      case 'T':
-        broadcasting = TRUE;
-        printf("Toggle TX\r\n");
-        post toggleTX();
-        break;
-      case 'x':
-        post unicastTask();
-        break;
-      case 'X':
-        post broadcastTask();
-        break;
-      case '\r':
-        printf("\r\n");
-        break;
-     default:
-        printf("%c", byte);
-        break;
-    }
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
-    printf("RX %x sn %lu rc %u @%lu\r\n", 
+    call Leds.led2Toggle();
+    printf("RX s: %u d: %u sn: %lu c: %u\r\n", 
       call CXPacket.source(msg),
+      call CXPacket.destination(msg),
       ((test_packet_t*)payload)->sn,
-      call CXPacketMetadata.getReceivedCount(msg),
-      call CXPacketMetadata.getPhyTimestamp(msg));
+      call CXPacketMetadata.getReceivedCount(msg));
     return msg;
   }
-
+  async event void UartStream.receivedByte(uint8_t byte){ }
   //unused events
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
     error_t error ){}

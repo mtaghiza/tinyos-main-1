@@ -24,6 +24,8 @@ module CXScopedFloodP{
     S_ACK = 0x03,
     S_ACK_PREPARE = 0x04,
 
+    S_CLEAR_WAIT = 0x05,
+
     S_ERROR = 0x10,
 
   };
@@ -63,15 +65,20 @@ module CXScopedFloodP{
   
   //for determining when to transition states
   uint8_t TXLeft;
-  uint8_t waitLeft;
+  uint16_t waitLeft;
 
   //race condition guard variables
   bool routeUpdatePending;
   bool rxOutstanding;
   
-  //for matching up acks with data
+  //for matching up acks with data and suppressing duplicate data
+  //receptions
   uint16_t lastDataSrc;
   uint8_t lastDataSn;
+  
+  //for suppressing duplicate ack receptions.
+  uint16_t lastAckSrc;
+  uint16_t lastAckSn;
 
   //route update variables
   uint8_t ruSrcDepth;
@@ -80,6 +87,9 @@ module CXScopedFloodP{
   uint16_t ruSrc;
   uint16_t ruDest;
   bool routeUpdatePending;
+
+  uint16_t originFrame;
+  uint16_t ackFrame;
   
 
   //forward declarations
@@ -90,8 +100,10 @@ module CXScopedFloodP{
     printf_SF_STATE("{%x->%x}\r\n", state, s);
     state = s;
   }
-  uint16_t nextSlotStart(uint16_t frameNum){
-    return (frameNum + call TDMARoutingSchedule.framesPerSlot())/(call TDMARoutingSchedule.framesPerSlot());
+  uint16_t leftInSlot(uint16_t frameNum){
+    uint16_t fps = call TDMARoutingSchedule.framesPerSlot();
+    //left-in-slot: call TDMARoutingSchedule.framesPerSlot() - frameNum%(call TDMARoutingSchedule.framesPerSlot())
+    return fps - frameNum%fps;
   }
 
   bool isDataFrame(uint16_t frameNum){
@@ -104,7 +116,7 @@ module CXScopedFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-    printf_TESTBED("ScopedFloodSend\r\n");
+//    printf_TESTBED("ScopedFloodSend\r\n");
     atomic{
       if (!originDataPending){
         origin_data_msg = msg;
@@ -129,10 +141,19 @@ module CXScopedFloodP{
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
 //    printf("ft %u ", frameNum);
-
+    //see notes in CXTDMA.sendDone. At this point, we have allowed
+    //enough time to elapse for the frame to clear.
+    if (state == S_CLEAR_WAIT){
+      if (frameNum - ackFrame > (ackFrame - originFrame) + 1){
+        post signalSendDone();
+      }
+    }
     //check for end of ACK_WAIT and clean up 
     if (state == S_ACK_WAIT){
       waitLeft --;
+      printf_SF_TESTBED_AW("WL %u %u %u\r\n", frameNum, 
+        call TDMARoutingSchedule.framesPerSlot(), 
+        waitLeft);
       if (waitLeft == 0){
         isOrigin = FALSE;
         routeUpdatePending = FALSE;
@@ -156,13 +177,18 @@ module CXScopedFloodP{
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
-        call Resource.immediateRequest();
-        TXLeft = call TDMARoutingSchedule.maxRetransmit();
-        lastDataSrc = TOS_NODE_ID;
-        lastDataSn = call CXPacket.sn(origin_data_msg);
-        setState(S_DATA);
-        isOrigin = TRUE;
-        return RF1A_OM_FSTXON;
+        if (SUCCESS == call Resource.immediateRequest()){
+          TXLeft = call TDMARoutingSchedule.maxRetransmit();
+          lastDataSrc = TOS_NODE_ID;
+          lastDataSn = call CXPacket.sn(origin_data_msg);
+          setState(S_DATA);
+          isOrigin = TRUE;
+          originFrame = frameNum;
+          return RF1A_OM_FSTXON;
+        } else {
+          printf("!SF.ft.RIR\r\n");
+          return RF1A_OM_RX;
+        }
       }else{
         //busy already, so leave it. This shouldn't happen if all the
         //nodes are scheduled properly.
@@ -176,19 +202,20 @@ module CXScopedFloodP{
         } else {
           return RF1A_OM_RX;
         }
-        break;
       case S_ACK:
         if (isAckFrame(frameNum)){
           return RF1A_OM_FSTXON;
         } else {
           return RF1A_OM_RX;
         }
-        break;
+      case S_CLEAR_WAIT:
+        //TODO: can we actually be idle during this time? Should be
+        //OK.
+        return RF1A_OM_RX;
       case S_IDLE:
-        //fall-through
+        return RF1A_OM_RX;
       case S_ACK_WAIT:
         return RF1A_OM_RX;
-        break;
       default:
         return RF1A_OM_RX;
     }
@@ -243,6 +270,8 @@ module CXScopedFloodP{
       originDataPending = FALSE;
       originDataSent = FALSE;
       signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, sendDoneError);
+      call Resource.release();
+      setState(S_IDLE);
     }
   }
 
@@ -251,15 +280,42 @@ module CXScopedFloodP{
     TXLeft --;
     if (TXLeft == 0){
       if (state == S_DATA){
-        waitLeft = nextSlotStart(frameNum) - frameNum;
+        waitLeft = leftInSlot(frameNum);
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
-        call Resource.release();
         post routeUpdate();
         if (originDataSent){
-          post signalSendDone();
+          //if the data we sent was pre-routed, we're done right
+          //now.
+          if ( call CXPacket.getRoutingMethod(origin_data_msg) & CX_RM_PREROUTED){
+            post signalSendDone();
+          } else { 
+            //otherwise, we have to wait for the air to clear.
+            //if we got the ack n frames after our tx, then there are n
+            //frames in the worst case for our forwarded ack to suppress
+            //the edges of the flood. 
+            //
+            //      6 5 4 3 2 1 0 1 2 
+            //  0               d
+            //  1          
+            //  2                
+            //  3             d   d
+            //  4                   a
+            // *5                 a
+            //  6           d
+            //  7               a
+            //  8             a
+            //  9         d
+            // 10           a
+  
+            setState(S_CLEAR_WAIT);
+          }
+        } else {
+          call Resource.release();
+          setState(S_IDLE);
         }
-        setState(S_IDLE);
+      }else{
+        printf("!Unexpected state %x at sf.cxtdma.sendDone\r\n", state);
       }
     }
   }
@@ -330,7 +386,15 @@ module CXScopedFloodP{
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
     printf_SF_RX("rx %x ", state);
-
+    if ( (pType == CX_TYPE_DATA && 
+           (src == lastDataSrc && sn == lastDataSn))
+       ||(pType == CX_TYPE_ACK &&
+           (src == lastAckSrc && sn == lastAckSn)) 
+       || (!call TDMARoutingSchedule.isSynched(frameNum))){
+      //duplicate, or non-synched, drop it.
+      return msg;
+    }
+           
     if (state == S_IDLE){
       printf_SF_RX("i");
       //drop pre-routed packets for which we aren't on a route.
@@ -339,11 +403,15 @@ module CXScopedFloodP{
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
             call CXPacket.destination(msg), &isBetween)) || !isBetween){
+          printf_SF_TESTBED("PRD\r\n");
           printf_SF_RX("x*\r\n");
           return msg;
+        }else{
+          printf_SF_TESTBED("PRK\r\n");
         }
       }
-
+      //OK: the state guards us from overwriting rx_msg. the only time
+      //that we write to it is when we are in idle.
       //New data
       if (pType == CX_TYPE_DATA){
         message_t* ret;
@@ -351,7 +419,7 @@ module CXScopedFloodP{
         printf_SF_RX("d");
         //coming from idle: we are always going to need the resource.
         if ( SUCCESS != call Resource.immediateRequest()){
-          printf_SF_RX("d RESOURCE BUSY!\r\n");
+          printf("!SF.r.RIR\r\n");
           return msg;
         }
 
@@ -408,6 +476,8 @@ module CXScopedFloodP{
         printf_SF_RX("a");
         if ( (ack->src == lastDataSrc) && (ack->sn == lastDataSn) ){
           message_t* ret = fwd_msg;
+          lastAckSrc = src;
+          lastAckSn = sn;
           printf_SF_RX("m");
           fwd_msg = msg;
           fwd_len = len;
@@ -424,6 +494,7 @@ module CXScopedFloodP{
 
           //we got an ack to data we sent. hooray!
           if (dest == TOS_NODE_ID){
+            ackFrame = frameNum;
             printf_SF_RX("M");
             sendDoneError = SUCCESS;
             //This should be taken care of when we finish forwarding
@@ -449,6 +520,9 @@ module CXScopedFloodP{
       printf_SF_RX("a*\r\n");
       //already in the ack stage, so we will just keep on ignoring
       //these.
+      return msg;
+    } else if (state == S_CLEAR_WAIT){
+      //ignore this if we're waiting for the air to clear.
       return msg;
     } else {
       printf("SF unhandled state %x!\r\n", state);

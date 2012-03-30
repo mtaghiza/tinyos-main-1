@@ -42,10 +42,14 @@ generic module CXRoutingTableP(uint8_t numEntries){
     cx_route_entry_t* re;
     //update and mark used-recently if it's already in the table.
     if (getEntry(&re, n0, n1)){
-      //TODO: debug only, remove
+      #ifdef DEBUG_SF_TESTBED
       if (re->distance != distance){
-        printf_BF("w %p %x %x %u\r\n", re, n0, n1, distance);
+        printf_SF_TESTBED("UR %u->%u %u \r\n", 
+          n0,
+          n1,
+          distance);
       }
+      #endif
       re->distance = distance;
       re->used = TRUE;
       return SUCCESS;
@@ -61,7 +65,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
       i = (i+1)%numEntries;
     }
     //save it
-    printf_BF("wn %p %x %x %u\r\n", &rt[i], n0, n1, distance);
+    printf_SF_TESTBED("NR %u->%u %u\r\n", n0, n1, distance);
     rt[i].n0 = n0;
     rt[i].n1 = n1;
     rt[i].distance = distance;
@@ -84,6 +88,15 @@ generic module CXRoutingTableP(uint8_t numEntries){
         uint8_t md = re->distance;
         if (getEntry(&re, n0, n1)){
           *result = sm + md <= re->distance;
+          if (! *result){
+            printf_SF_TESTBED("~");
+          }
+          printf_SF_TESTBED("IB %u->%u %u %u %u\r\n", 
+            n0,
+            n1,
+            sm,
+            md,
+            re->distance);
           return SUCCESS;
         }
       }

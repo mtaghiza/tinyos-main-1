@@ -5,6 +5,7 @@
  */
  #include "CXTDMA.h"
  #include "CXTDMADebug.h"
+ #include "CXTDMADispatchDebug.h"
  #include "SchedulerDebug.h"
  #include "TimingConstants.h"
 
@@ -82,10 +83,12 @@ module CXTDMAPhysicalP {
   uint8_t s_sr = TDMA_INIT_SYMBOLRATE;
   uint8_t s_sri = 0xff;
   uint8_t s_channel = TEST_CHANNEL;
+  uint8_t s_isSynched = FALSE;
 
   uint32_t lastRECapture;
   uint32_t lastFECapture;
   uint32_t lastFsa;
+  bool lastSentOrigin;
 
   bool scStopPending;
   error_t scStopError;
@@ -148,6 +151,11 @@ module CXTDMAPhysicalP {
       if (state == s){
         return;
       }
+      #ifdef DEBUG_CX_TDMA_P_STATE_IDLE
+      if (s == S_IDLE){
+        printf("[%x->%x]\r\n", state, s);
+      }
+      #endif
       #ifdef DEBUG_CX_TDMA_P_STATE
       printf("[%x->%x]\r\n", state, s);
       #endif
@@ -155,7 +163,7 @@ module CXTDMAPhysicalP {
       if (ERROR_MASK == (s & ERROR_MASK)){
         P2OUT |= BIT4;
         stopTimers();
-        printf("ERR[%x->%x]\r\n", state, s);
+        printf("!ERR [%x->%x]\r\n", state, s);
       }
       #endif
       state = s;
@@ -293,6 +301,7 @@ module CXTDMAPhysicalP {
       IS_TX_CLEAR_PIN;
       switch(signal CXTDMA.frameType(frameNum)){
         case RF1A_OM_FSTXON:
+          printf_SW_TOPO("F %u\r\n", frameNum);
           IS_TX_SET_PIN;
           //0.75 uS
           PFS_TOGGLE_PIN;
@@ -316,6 +325,7 @@ module CXTDMAPhysicalP {
   //        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
           break;
         case RF1A_OM_RX:
+//          printf_SW_TOPO("R %u\r\n", frameNum);
           //0.25 uS
           PFS_TOGGLE_PIN;
 //          printf("RX from %s\r\n", decodeStatus());
@@ -323,6 +333,7 @@ module CXTDMAPhysicalP {
             (uint8_t*)(rx_msg->header),
             TOSH_DATA_LENGTH + sizeof(message_header_t),
             RF1A_OM_IDLE);
+//            s_isSynched?RF1A_OM_IDLE: RF1A_OM_RX);
           //11 uS
           PFS_TOGGLE_PIN;
           if (SUCCESS == error){
@@ -335,6 +346,7 @@ module CXTDMAPhysicalP {
               PFS_TOGGLE_PIN;
             }
             setState(S_RX_READY);
+            RX_READY_SET_PIN;
 //            printf("PFS1  %s\r\n", decodeStatus());
           } else {
             printf("Error %s\r\n", decodeError(error));
@@ -394,6 +406,7 @@ module CXTDMAPhysicalP {
     if (checkState(S_RX_READY)){
       error_t error;
 //      printf("fw %s\r\n", decodeStatus());
+      RX_READY_CLEAR_PIN;
       error = call Rf1aPhysical.resumeIdleMode();
       FW_TOGGLE_PIN;
 //      printf("T.O\r\n");
@@ -405,7 +418,9 @@ module CXTDMAPhysicalP {
         //receive sometimes: if this returns EBUSY, then we can assume
         //that and pretend it never happened (except that we called
         //resumeIdleMode above?
-        error = call Rf1aPhysical.setReceiveBuffer(0, 0, RF1A_OM_IDLE);
+        error = call Rf1aPhysical.setReceiveBuffer(0, 0,
+          RF1A_OM_IDLE);
+//          s_isSynched?RF1A_OM_IDLE: RF1A_OM_RX);
         if (error == SUCCESS){
           setState(S_IDLE);
         } else {
@@ -507,7 +522,7 @@ module CXTDMAPhysicalP {
       //true schedule so it can fire in the middle of a packet
       //reception. In this case, just ignore it, we should get a good
       //schedule soon.
-    } else {
+    }  else {
       //would rather do this up top, but getNow introduces a TON of
       //jitter.
       if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
@@ -517,8 +532,19 @@ module CXTDMAPhysicalP {
           call FrameStartAlarm.getAlarm() - s_frameLen, 
           s_frameLen);
         return;
+      } else if (checkState(S_IDLE)){
+      //It seems like the framewait alarm can fire before framestart
+      //alarm and that puts us into idle-- don't know how this can
+      //happen. I guess it could also be possible that, due to atomic
+      //blocks or something, PFS and FS are both in a state where they
+      //are trying to fire, and we sometimes handle FS first. 
+
+      //either way, let's just ignore it and hope that it resolves
+      //itself.
+      printf_TESTBED("!FSA.F\r\n");
+
       }else{
-        printf_BF("Error @fn %u\r\n", frameNum);
+        printf("Error @fn %u\r\n", frameNum);
         setState(S_ERROR_8);
       }
     }
@@ -546,16 +572,29 @@ module CXTDMAPhysicalP {
     call CXPacket.incCount(tx_msg);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.
-    if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
-        && (call CXPacket.count(tx_msg)) == 1 ){
-      //the best we can do is record the FrameStartAlarm.fired time.
-      //This will at least give us something that we can use for skew,
-      //  subject to the assumption that there is a constant delay
-      //  between the frame start alarm firing and the packet going on
-      //  the air.
+    //This looks a little funny, but we're trying to make sure that
+    //the same instructions are executed whether we write a new
+    //timestamp or not, so that we can maintain synchronization
+    //between the origin and the forwarder.
+    if (tx_msg != NULL){
+      bool amSource = call CXPacket.source(tx_msg) == TOS_NODE_ID;
+      bool isFirst = call CXPacket.count(tx_msg) == 1;
+      uint32_t lastAlarm = call FrameStartAlarm.getAlarm();
+      uint32_t curTimestamp = call CXPacket.getTimestamp(tx_msg);
+      lastSentOrigin = amSource && isFirst;
       call CXPacket.setTimestamp(tx_msg, 
-        call FrameStartAlarm.getAlarm());
+        lastSentOrigin? lastAlarm : curTimestamp);
     }
+//    if (tx_msg != NULL && (call CXPacket.source(tx_msg) == TOS_NODE_ID) 
+//        && (call CXPacket.count(tx_msg)) == 1 ){
+//      //the best we can do is record the FrameStartAlarm.fired time.
+//      //This will at least give us something that we can use for skew,
+//      //  subject to the assumption that there is a constant delay
+//      //  between the frame start alarm firing and the packet going on
+//      //  the air.
+//      call CXPacket.setTimestamp(tx_msg, 
+//        call FrameStartAlarm.getAlarm());
+//    }
     //    printf("phy %u -> ", *len);
 //    printf("%u\r\n", *len);
     return ret;
@@ -612,8 +651,8 @@ module CXTDMAPhysicalP {
         //just received a packet. let's adjust our alarms!
         uint32_t thisFrameStart = capture 
           - sfdDelays[s_sri] 
-          - fsDelays[s_sri]
-          - tuningDelays[s_sri];
+          - fsDelays[s_sri];
+//          - tuningDelays[s_sri];
         printf_BF("delta: %ld \r\n", 
           thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen)
           );
@@ -626,11 +665,27 @@ module CXTDMAPhysicalP {
         //Just transmitted: we could try to fix jitter here (i.e. to
         //"fix" the last frame start alarm to match what a receiver
         //would have computed.
-        //TODO: revisit the self-adjustment logic here.
-//        int32_t delta = lastRECapture - 
-//          (lastFsa + SFD_TIME );
-//        printf("d %ld\r\n", delta);
-//        call FrameStartAlarm.startAt(lastFsa + delta, s_frameLen);
+        //adjust self to compensate for jitter introduced by
+        //interrupt handling.
+        uint32_t thisFrameStart = capture 
+          - fsDelays[s_sri];
+//          - tuningDelays[s_sri];
+        if (lastSentOrigin){
+          //TODO: see if this holds constant across different nodes.
+          //   300 -> 301 -> 302 , originDelay = 0 retx2_noadjust.csv
+          //     1.0e-6  -1.7e-7
+          //   300 -> 301 -> 302 , originDelay = 7 retx2.csv
+          //     1.3e-7  7.3e-7
+          //   301 -> 300 -> 302 , originDelay = 7 retx2_swap.csv
+          //    -2.1e-7  1.0e-6
+          //   301 -> 300 -> 302 , originDelay = 0 retx2_swap_noadjust.csv
+          //    1.1e-6   1.2e-6
+          thisFrameStart += originDelays[s_sri];
+        }
+        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
+        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
+        call FrameWaitAlarm.stop();
+
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else {
         setState(S_ERROR_9);
@@ -671,7 +726,18 @@ module CXTDMAPhysicalP {
       || call Rf1aStatus.get() == RF1A_S_TX){ };
     switch (call Rf1aStatus.get()){
       case RF1A_S_IDLE:
+        //if we're not synched, then we need to set ourselves
+        //back up for RX.  
         setState(S_IDLE);
+        if (! s_isSynched){
+          uint32_t rp = call PrepareFrameStartAlarm.getNow();
+          call PrepareFrameStartAlarm.stop();
+          call FrameStartAlarm.stop();
+          call PrepareFrameStartAlarm.startAt(rp - PFS_SLACK,
+            2*PFS_SLACK);
+          call FrameStartAlarm.startAt(rp - PFS_SLACK,
+            3*PFS_SLACK);
+        }
         break;
       case RF1A_S_RX:
 //        printf("0");
@@ -695,8 +761,14 @@ module CXTDMAPhysicalP {
                                              int result) {
     if (checkState(S_RECEIVING)){
       if (SUCCESS == result){
+        message_t* msg = (message_t*) buffer;
+        message_metadata_t* mmd = (message_metadata_t*)(&(msg->metadata));
+        rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
+
         setState(S_RX_CLEANUP);
+        call Rf1aPhysicalMetadata.store(rf1aMD);
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
+//          printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{
             //Nope, this is done during the TX process.
   //          call CXPacket.setCount((message_t*)buffer, 
@@ -716,7 +788,7 @@ module CXTDMAPhysicalP {
               frameNum, lastRECapture);
           }
         } else {
-          printf_TESTBED("CRC Fail\r\n");
+          printf_TESTBED_CRC("R! %u\r\n", frameNum);
         }
         completeCleanup();
       } else if (ENOMEM == result){
@@ -790,7 +862,7 @@ module CXTDMAPhysicalP {
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
       uint16_t inactiveFrames, uint8_t symbolRate, 
-      uint8_t channel){
+      uint8_t channel, bool isSynched){
 //    post debugConfig();
     SS_SET_PIN;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
@@ -844,6 +916,7 @@ module CXTDMAPhysicalP {
         s_activeFrames = activeFrames;
         s_inactiveFrames = inactiveFrames;
         s_channel = channel;
+        s_isSynched = isSynched;
       }
       //If channel or symbol rate changes, need to reconfigure
       //  radio.

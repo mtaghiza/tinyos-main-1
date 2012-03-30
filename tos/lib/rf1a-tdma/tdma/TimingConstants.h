@@ -100,7 +100,7 @@
     //250 1781    0.000274057315233786
     0,
   };
-  const int32_t tuningDelays[NUM_SRS] = {
+  const int32_t originDelays[NUM_SRS] = {
     //1.2
     0,
     //2.4
@@ -116,7 +116,7 @@
     //100 
     0,
     //125 
-    31,
+    0,
     //175 This one seems less stable for some reason.
     0,
     //250 also seems less stable.

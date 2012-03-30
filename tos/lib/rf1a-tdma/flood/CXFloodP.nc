@@ -2,6 +2,7 @@
  #include "Rf1a.h"
  #include "CXFlood.h"
  #include "FDebug.h"
+ #include "SFDebug.h"
  #include "AODVDebug.h"
  #include "SchedulerDebug.h"
  #include "BreakfastDebug.h"
@@ -76,7 +77,7 @@ module CXFloodP{
   }
 
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-    printf_TESTBED("FloodSend\r\n");
+//    printf_TESTBED("FloodSend\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
@@ -120,7 +121,7 @@ module CXFloodP{
         setState(S_FWD);
         return RF1A_OM_FSTXON;
       } else {
-        printf_F_SCHED("! rx\r\n");
+        printf("!F.ft.RIR\r\n");
         return RF1A_OM_RX;
       }
     }else{
@@ -138,22 +139,25 @@ module CXFloodP{
 
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-    printf_F_GP("f.gp");
-    if (isOrigin){
-      printf_F_GP("o\r\n");
-      F_GPO_SET_PIN;
-      *msg = tx_msg;
-      *len = tx_len;
-      F_GPO_CLEAR_PIN;
-      return TRUE;
-    } else {
-      F_GPF_SET_PIN;
-      printf_F_GP("f\r\n");
-      *msg = fwd_msg;
-      *len = fwd_len;
-      F_GPF_CLEAR_PIN;
-      return TRUE;
-    }
+//    printf_F_GP("f.gp");
+    *msg = isOrigin? tx_msg : fwd_msg;
+    *len = isOrigin? tx_len : fwd_len;
+    return TRUE;
+//    if (isOrigin){
+//      printf_F_GP("o\r\n");
+//      F_GPO_SET_PIN;
+//      *msg = tx_msg;
+//      *len = tx_len;
+//      F_GPO_CLEAR_PIN;
+//      return TRUE;
+//    } else {
+//      F_GPF_SET_PIN;
+//      printf_F_GP("f\r\n");
+//      *msg = fwd_msg;
+//      *len = fwd_len;
+//      F_GPF_CLEAR_PIN;
+//      return TRUE;
+//    }
   }
 
   task void txSuccessTask(){
@@ -167,10 +171,11 @@ module CXFloodP{
   task void reportReceive(){
     atomic{
       if (rxOutstanding){
-        rxOutstanding = FALSE;
         //TODO: should we update the routing table? or should we
         //reserve that space for scoped floods, which may request
         //future routing explicitly?
+//        printf_TESTBED_SCHED("RR %u\r\n", 
+//          call CXPacketMetadata.getReceivedCount(fwd_msg));
         if ( (call CXPacket.destination(fwd_msg) == TOS_NODE_ID) ||
             (call CXPacket.destination(fwd_msg) == AM_BROADCAST_ADDR)){
           fwd_msg = signal Receive.receive[call CXPacket.type(fwd_msg)](
@@ -183,6 +188,7 @@ module CXFloodP{
             call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
             fwd_len - sizeof(cx_header_t));
         }
+        rxOutstanding = FALSE;
       }
     }
   }
@@ -235,33 +241,40 @@ module CXFloodP{
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+            printf_SF_TESTBED("PRD\r\n");
             lastSn = thisSn;
             lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
             return msg;
           }else{
+            printf_SF_TESTBED("PRK\r\n");
             printf_F_RX("b");
           }
         }
-
-        if (SUCCESS == call Resource.immediateRequest()){
-          message_t* ret = fwd_msg;
-          printf_F_RX("f\r\n");
-          lastSn = thisSn;
-          lastSrc = thisSrc;
-          lastDepth = call CXPacket.count(msg);
-          txLeft = call TDMARoutingSchedule.maxRetransmit();
-          fwd_msg = msg;
-          fwd_len = len;
-          rxOutstanding = TRUE;
-          setState(S_FWD);
-          //to handle the case where retx = 0
-          checkAndCleanup();
-          return ret;
-
-        //couldn't get the resource, ignore this packet.
-        } else {
-          printf_F_RX("!R\r\n");
+        if (!rxOutstanding){
+          if (SUCCESS == call Resource.immediateRequest()){
+//            printf_SF_TESTBED("FF\r\n");
+            message_t* ret = fwd_msg;
+            printf_F_RX("f\r\n");
+            lastSn = thisSn;
+            lastSrc = thisSrc;
+            lastDepth = call CXPacket.count(msg);
+            txLeft = call TDMARoutingSchedule.maxRetransmit();
+            fwd_msg = msg;
+            fwd_len = len;
+            rxOutstanding = TRUE;
+            setState(S_FWD);
+            //to handle the case where retx = 0
+            checkAndCleanup();
+            return ret;
+  
+          //couldn't get the resource, ignore this packet.
+          } else {
+            printf("!F.r.RIR\r\n");
+            return msg;
+          }
+        }else{
+          printf_TESTBED_SCHED("QD\r\n");
           return msg;
         }
       //duplicate, ignore

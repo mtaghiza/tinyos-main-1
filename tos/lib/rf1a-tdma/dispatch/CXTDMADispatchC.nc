@@ -9,7 +9,9 @@ configuration CXTDMADispatchC{
   components CXTDMADispatchP;
   components new FcfsArbiterC(CXTDMA_RM_RESOURCE);
 
-  Resource = FcfsArbiterC;
+//  Resource = FcfsArbiterC;
+  CXTDMADispatchP.SubResource -> FcfsArbiterC;
+  Resource = CXTDMADispatchP.Resource;
   CXTDMA = CXTDMADispatchP;
 
   //used to figure out how to multiplex CXTDMA control 
