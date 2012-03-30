@@ -220,7 +220,7 @@ module NonRootSchedulerP{
       lastRxFrameNum = rxFrameNum;
       lastRootStart = call CXPacket.getTimestamp(msg);
       printf_SCHED("\r\n");
-      post updateScheduleTask();
+//      post updateScheduleTask();
       return msg; 
     } else {
       message_t* swp = curMsg;

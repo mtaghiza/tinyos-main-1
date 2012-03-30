@@ -80,7 +80,7 @@ module CXTDMAPhysicalP {
   uint16_t s_inactiveFrames;
   uint32_t s_fwCheckLen;
   uint8_t s_sr = TDMA_INIT_SYMBOLRATE;
-  uint8_t s_sri;
+  uint8_t s_sri = 0xff;
   uint8_t s_channel = TEST_CHANNEL;
 
   uint32_t lastRECapture;
@@ -194,6 +194,7 @@ module CXTDMAPhysicalP {
     if (checkState(S_STARTING)){
       setState(S_IDLE);
 //      printStatus();
+      s_sri = srIndex(s_sr);
       signal SplitControl.startDone(SUCCESS);
     }
   }
@@ -613,9 +614,11 @@ module CXTDMAPhysicalP {
           - sfdDelays[s_sri] 
           - fsDelays[s_sri]
           - tuningDelays[s_sri];
-        printf_BF("%lu ( %lu )\r\n", thisFrameStart, 
-          call FrameStartAlarm.getAlarm() - s_frameLen);
+        printf_BF("delta: %ld \r\n", 
+          thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen)
+          );
         call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
+        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
         setState(S_RECEIVING);
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);

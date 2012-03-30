@@ -116,7 +116,7 @@
     //100 
     0,
     //125 
-    41,
+    31,
     //175 This one seems less stable for some reason.
     0,
     //250 also seems less stable.
