@@ -66,6 +66,12 @@ module NonRootSchedulerP{
   #define DELTA_BUF_LEN 8
   int32_t delta[DELTA_BUF_LEN];
 
+  bool arPending = FALSE;
+  am_addr_t ars;
+  am_addr_t ard;
+  uint32_t arn;
+  uint8_t arc;
+
   command error_t SplitControl.start(){
     error_t error = call SubSplitControl.start();
     if (SUCCESS == error){
@@ -143,6 +149,15 @@ module NonRootSchedulerP{
 
   task void updateScheduleTask();
 
+  task void reportAR(){
+    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u\r\n", 
+      ars,
+      ard,
+      arn,
+      arc);
+    arPending = FALSE;
+  }
+
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cx_schedule_t* pl = (cx_schedule_t*) payload;
@@ -150,6 +165,16 @@ module NonRootSchedulerP{
     uint32_t curRootStart;
     uint16_t rxFrameNum;
     printf_SCHED("AR.r ");
+    if (!arPending){
+      arPending = TRUE;
+      ars = call CXPacket.source(msg);
+      ard = call CXPacket.destination(msg);
+      arn = call CXPacket.sn(msg);
+      arc = call CXPacketMetadata.getReceivedCount(msg);
+      post reportAR();
+    }else {
+      printf_TESTBED("!AR.R\r\n");
+    }
 
     //update clock skew figures 
     framesSinceLastSchedule = 0;
@@ -300,6 +325,12 @@ module NonRootSchedulerP{
       printf("NonRootSchedulerP.UST!%s", decodeError(error));
     }
   }
+  
+  task void resetRadioStack(){
+    //TODO: reset internal state
+    //TODO: call subsplitcontrol.stop()
+  }
+
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
@@ -327,11 +358,21 @@ module NonRootSchedulerP{
       printf_TESTBED("SYNCH LOST\r\n");
       printf_SCHED_SR("LOST SYNC\r\n");
       framesSinceLastSchedule = 0;
+      //TODO: at this point, it would be safer/easier to just restart
+      //the entire radio stack.
+      //post resetRadioStack();
       post initScheduleTask();
     }
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
+    printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u\r\n",
+      TOS_NODE_ID,
+      call CXPacket.destination(msg),
+      call CXPacket.sn(msg),
+      (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
+      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0);
+
     if (startPending){
       startPending = FALSE;
       signal SplitControl.startDone(SUCCESS);

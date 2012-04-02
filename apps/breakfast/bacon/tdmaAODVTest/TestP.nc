@@ -85,7 +85,7 @@ module TestP {
     printf("?: print status\r\n");
     printf("========================\r\n");
     post printStatus();
-    call SplitControl.start();
+//    call SplitControl.start();
   }
 
 

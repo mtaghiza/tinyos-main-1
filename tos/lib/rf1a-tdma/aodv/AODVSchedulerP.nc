@@ -118,6 +118,8 @@ module AODVSchedulerP{
         printf_AODV_S("P");
         if (destination == lastDestination){
           call CXPacket.setRoutingMethod(msg, CX_RM_PREROUTED);
+          //TODO: if msg has ack-requested set, call
+          //ScopedFloodSend.send instead.
           error = call FloodSend.send(msg, len);
           if (CHECK_STATE(S_AO_READY)){
             SET_STATE(S_AO_PENDING, S_ERROR_2);
@@ -188,6 +190,9 @@ module AODVSchedulerP{
     TMP_STATE;
     CACHE_STATE;
     printf_AODV_S("SFS.sd: %u \r\n", lastStart);
+    //TODO: if state is S_AO_SENDING, do the same check as fs.sd for
+    //  CLEARING, but adjust time. ENOACK: still OK to stay in the
+    //  S_AO_READY state.
     if (ENOACK == error){
       lastDestination = AM_BROADCAST_ADDR;
       SET_STATE(S_IDLE, S_ERROR_3);
@@ -331,6 +336,12 @@ module AODVSchedulerP{
   //    frame now."
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
     printf_AODV_IO("io %x %u\r\n", rm, frameNum);
+    //TODO: We can get in trouble here: if we lose synchronization while we
+    //are holding the resource, we can get into a deadlock.  The node
+    //will never forward the message they're currently holding
+    //(freeing the resource), and if the resource is not available,
+    //the flood component will drop any incoming data packets,
+    //including the schedule with which we need to synch.
     return (call SubTDMARoutingSchedule.isSynched[rm](frameNum)) &&
       (call SubTDMARoutingSchedule.isOrigin[rm](frameNum) ||
         isOrigin(rm, frameNum) );

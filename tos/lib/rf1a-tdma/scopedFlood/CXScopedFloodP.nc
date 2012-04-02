@@ -136,6 +136,13 @@ module CXScopedFloodP{
   }
   
   command error_t Send.cancel[am_id_t t](message_t* msg){
+    //TODO: this should: 
+    // - free the resource. 
+    // - reset originDataPending to FALSE
+    // - put us back into S_IDLE
+    //if msg is NULL, this should
+    //also signal sendDone to indicate what happened (so that we can
+    //invoke this from a lower layer than the application sees).
     return FAIL;
   }
 
@@ -143,6 +150,8 @@ module CXScopedFloodP{
 //    printf("ft %u ", frameNum);
     //see notes in CXTDMA.sendDone. At this point, we have allowed
     //enough time to elapse for the frame to clear.
+    //TODO: if this is prerouted, we don't need to wait this long. As
+    //  soon as we get the ack, we can send in the next data frame.
     if (state == S_CLEAR_WAIT){
       if (frameNum - ackFrame > (ackFrame - originFrame) + 1){
         post signalSendDone();
@@ -280,13 +289,19 @@ module CXScopedFloodP{
     TXLeft --;
     if (TXLeft == 0){
       if (state == S_DATA){
+        //TODO: if this is pre-routed, waitLeft should be just the
+        //time required for the ack to come back (maybe + a little
+        //fudge), not all the way to the end of the slot.
+        //it would be ideal if these acks were done just with normal
+        //back-to-back-floods, but what are you going to do.
         waitLeft = leftInSlot(frameNum);
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
         post routeUpdate();
         if (originDataSent){
           //if the data we sent was pre-routed, we're done right
-          //now.
+          //now. Might be good to wait for another frame for anything
+          //left to clear.
           if ( call CXPacket.getRoutingMethod(origin_data_msg) & CX_RM_PREROUTED){
             post signalSendDone();
           } else { 

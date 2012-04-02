@@ -2,9 +2,9 @@
 killall picocom
 topo=1
 useTopo=1
-nonRootRx="1 2"
+nonRootRx=""
 nonRootTX=""
-retx=2
+retx=1
 set -x 
 make bacon2 install,0 bsl,/dev/ttyUSB0 DEBUG_SCALE=3UL TA_DIV=1UL \
   TDMA_ROOT=1 TDMA_MAX_DEPTH=6UL TDMA_MAX_NODES=6 \

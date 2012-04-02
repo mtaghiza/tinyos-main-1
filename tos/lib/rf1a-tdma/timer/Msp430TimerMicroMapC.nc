@@ -42,6 +42,7 @@ configuration Msp430TimerMicroMapC
   provides interface Msp430Timer[ uint8_t id ];
   provides interface Msp430TimerControl[ uint8_t id ];
   provides interface Msp430Compare[ uint8_t id ];
+  provides interface Msp430Capture[ uint8_t id ];
 }
 implementation
 {
@@ -50,15 +51,27 @@ implementation
   Msp430Timer[0] = Msp430TimerC.Timer0_A;
   Msp430TimerControl[0] = Msp430TimerC.Control0_A0;
   Msp430Compare[0] = Msp430TimerC.Compare0_A0;
+  Msp430Capture[0] = Msp430TimerC.Capture0_A0;
 
   Msp430Timer[1] = Msp430TimerC.Timer0_A;
   Msp430TimerControl[1] = Msp430TimerC.Control0_A1;
   Msp430Compare[1] = Msp430TimerC.Compare0_A1;
+  Msp430Capture[1] = Msp430TimerC.Capture0_A1;
 
   Msp430Timer[2] = Msp430TimerC.Timer0_A;
   Msp430TimerControl[2] = Msp430TimerC.Control0_A2;
   Msp430Compare[2] = Msp430TimerC.Compare0_A2;
-  //CCR's 3 and 4 are reserved for use by Msp430InternalCapture
+  Msp430Capture[2] = Msp430TimerC.Capture0_A2;
+  
+  //CCR 3 is reserved for GDO1Capture
+
+  #ifndef GDO2_CAPTURE_RESERVED
+  //If GDO2Capture is in use, we can't give out this timer.
+  Msp430Timer[3] = Msp430TimerC.Timer0_A;
+  Msp430TimerControl[3] = Msp430TimerC.Control0_A4;
+  Msp430Compare[3] = Msp430TimerC.Compare0_A4;
+  Msp430Capture[3] = Msp430TimerC.Capture0_A4;
+  #endif
 
 }
 

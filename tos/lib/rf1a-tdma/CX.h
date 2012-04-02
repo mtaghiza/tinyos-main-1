@@ -7,7 +7,7 @@ typedef nx_uint8_t cx_routing_method_t;
 typedef nx_struct cx_header_t {
   nx_am_addr_t destination;
   //would like to reuse the dsn in the 15.4 header, but it's not exposed in a clean way
-  nx_uint8_t sn;
+  nx_uint32_t sn;
   nx_uint16_t count;
   nx_uint8_t routingMethod;
   nx_am_id_t type;

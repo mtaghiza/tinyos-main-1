@@ -34,6 +34,7 @@ module CXTDMAPhysicalP {
   uses interface GpioCapture as SynchCapture;
 
   uses interface Rf1aDumpConfig;
+  uses interface StateTiming;
 } implementation {
   enum{
     ERROR_MASK = 0x80,
@@ -96,6 +97,9 @@ module CXTDMAPhysicalP {
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_count; 
+
+  uint16_t sendCount = 0;
+  uint16_t receiveCount = 0;
 
   message_t* tx_msg;
 
@@ -173,7 +177,7 @@ module CXTDMAPhysicalP {
   bool inError(){
     atomic return (ERROR_MASK & state);
   }
-
+  
 
   /**
    *  S_OFF: off/not duty cycled
@@ -206,6 +210,35 @@ module CXTDMAPhysicalP {
       signal SplitControl.startDone(SUCCESS);
     }
   }
+
+  uint32_t reportNum;
+
+  task void reportStats(){
+    uint8_t rs;
+    REPORT_STATS_TOGGLE_PIN;
+    printf_RADIO_STATS("PC %lu Sent %u Received %u\r\n", reportNum, sendCount,
+      receiveCount);
+    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+      uint32_t overflows = call StateTiming.getOverflows(rs);
+      uint32_t cur = call StateTiming.getTotal(rs);
+      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
+        reportNum, rs, 
+        overflows, cur);
+    }
+    reportNum++;
+//    printf_RADIO_STATS("xt2Counted = sum([");
+//    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+//      printf_RADIO_STATS("%lu, ", call StateTiming.getTotal(rs));
+//    }
+//    printf_RADIO_STATS("])/(26e6/4)\r\n");
+//    printf_RADIO_STATS("xt2Total = (%lu )/(26e6/4)\r\n",
+//      thisReport);
+////    printf_RADIO_STATS("xt2Counted\r\n");
+////    printf_RADIO_STATS("xt2Total\r\n");
+//    printf_RADIO_STATS("print (xt2Counted - xt2Total), xt2Counted, xt2Total\r\n");
+////    lastReport = thisReport;
+  }
+
   uint32_t lastFsHandled; 
   /**
    *  S_IDLE: in the part of a frame where no data is expected.
@@ -273,7 +306,7 @@ module CXTDMAPhysicalP {
         } else {
           setState(S_ERROR_1);
         }
-
+        post reportStats();
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
 //        printf_BF("wakeup\r\n");
@@ -759,6 +792,7 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    receiveCount++;
     if (checkState(S_RECEIVING)){
       if (SUCCESS == result){
         message_t* msg = (message_t*) buffer;
@@ -815,6 +849,7 @@ module CXTDMAPhysicalP {
    */
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
+    sendCount++;
     tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
       message_t* msg = (message_t*)buffer;

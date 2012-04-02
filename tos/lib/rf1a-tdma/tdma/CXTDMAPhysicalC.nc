@@ -50,4 +50,7 @@ configuration CXTDMAPhysicalC {
   CXTDMAPhysicalP.PrepareFrameStartAlarm -> PrepareFrameStartAlarm;
   CXTDMAPhysicalP.FrameWaitAlarm -> FrameWaitAlarm;
   CXTDMAPhysicalP.SynchCapture -> GDO1CaptureC;
+
+  components CXRadioStateTimingC;
+  CXTDMAPhysicalP.StateTiming -> CXRadioStateTimingC;
 }

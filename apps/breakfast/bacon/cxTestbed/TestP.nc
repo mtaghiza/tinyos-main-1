@@ -69,7 +69,13 @@ module TestP {
     }
     call UartControl.start();
     printf("Booted.\r\n");
+    #if DESKTOP_TEST == 0
     post startTask();
+    #else
+    if (TOS_NODE_ID != 0){
+      post startTask();
+    }
+    #endif
   }
 
   event void Timer.fired(){
@@ -87,7 +93,11 @@ module TestP {
     call Leds.led0On();
     if (TOS_NODE_ID != 0){
       #if IS_SENDER == 1
+        #if DESKTOP_TEST == 0
         call Timer.startOneShot(TESTBED_START_TIME);
+        #else
+        call Timer.startOneShot(DESKTOP_START_TIME);
+        #endif
       #endif
     }
   }
@@ -121,14 +131,12 @@ module TestP {
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
-    printf("TX s: %u d: %u sn: %lu \r\n",
+    printf("TX s: %u d: %u sn: %lu rm: %u pr: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
-      ((test_packet_t*)call Packet.getPayload(msg,
-      sizeof(test_packet_t)))->sn);
-    if (SUCCESS != error){
-      printf("!sd %s\r\n", decodeError(error));
-    }
+      call CXPacket.sn(msg),
+      (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
+      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0);
     if (error == ENOACK || error == SUCCESS){
       #if IS_SENDER == 1
         #if FLOOD_TEST == 1
@@ -137,6 +145,8 @@ module TestP {
         post unicastTask();
         #endif
       #endif
+    } else {
+      printf("!sd %s\r\n", decodeError(error));
     }
   }
 
@@ -152,11 +162,23 @@ module TestP {
     printf("RX s: %u d: %u sn: %lu c: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
-      ((test_packet_t*)payload)->sn,
+      call CXPacket.sn(msg),
       call CXPacketMetadata.getReceivedCount(msg));
     return msg;
   }
-  async event void UartStream.receivedByte(uint8_t byte){ }
+  async event void UartStream.receivedByte(uint8_t byte){ 
+    #if DESKTOP_TEST == 1
+    switch(byte){
+      case 'q':
+        WDTCTL=0;
+        break;
+      case 's':
+        post startTask();
+        break;
+      default:
+    }
+    #endif
+  }
   //unused events
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
     error_t error ){}

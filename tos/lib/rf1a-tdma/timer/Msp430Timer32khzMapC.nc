@@ -42,6 +42,7 @@ configuration Msp430Timer32khzMapC
   provides interface Msp430Timer[ uint8_t id ];
   provides interface Msp430TimerControl[ uint8_t id ];
   provides interface Msp430Compare[ uint8_t id ];
+  provides interface Msp430Capture[ uint8_t id ];
 }
 implementation
 {
@@ -50,13 +51,16 @@ implementation
   Msp430Timer[0] = Msp430TimerC.Timer1_A;
   Msp430TimerControl[0] = Msp430TimerC.Control1_A0;
   Msp430Compare[0] = Msp430TimerC.Compare1_A0;
+  Msp430Capture[0] = Msp430TimerC.Capture1_A0;
 
   Msp430Timer[1] = Msp430TimerC.Timer1_A;
   Msp430TimerControl[1] = Msp430TimerC.Control1_A1;
   Msp430Compare[1] = Msp430TimerC.Compare1_A1;
+  Msp430Capture[1] = Msp430TimerC.Capture1_A1;
 
   Msp430Timer[2] = Msp430TimerC.Timer1_A;
   Msp430TimerControl[2] = Msp430TimerC.Control1_A2;
   Msp430Compare[2] = Msp430TimerC.Compare1_A2;
+  Msp430Capture[2] = Msp430TimerC.Capture1_A2;
 }
 

@@ -181,6 +181,13 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
+      printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u\r\n",
+        TOS_NODE_ID,
+        call CXPacket.destination(msg),
+        call CXPacket.sn(msg),
+        (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
+        ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0);
+
       if (state == S_BASELINE || state == S_ADJUSTING 
           || state == S_FINALIZING || state == S_RESETTING
           || state == S_ESTABLISHED){
@@ -357,9 +364,14 @@ module RootSchedulerP{
     uint8_t curSRI = srIndex(curSchedule->symbolRate);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
-    printf_TESTBED("AnnounceReply: %u %u \r\n", 
-      call CXPacket.source(msg), 
+    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u\r\n", 
+      call CXPacket.source(msg),
+      call CXPacket.destination(msg),
+      call CXPacket.sn(msg),
       call CXPacketMetadata.getReceivedCount(msg));
+//    printf_TESTBED("AnnounceReply: %u %u \r\n", 
+//      call CXPacket.source(msg), 
+//      call CXPacketMetadata.getReceivedCount(msg));
     printf_SCHED_SR("reply.rx: %x %d (sn %u)\r\n", call CXPacket.source(msg), 
       call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID),
       reply->scheduleNum);
@@ -586,7 +598,8 @@ module RootSchedulerP{
       uint8_t symbolRate, 
       uint8_t channel){
     cx_schedule_t* schedule; 
-    call CXPacket.init(msg);
+    //not necessary, this is done by the send component
+    //call CXPacket.init(msg);
 
     call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);

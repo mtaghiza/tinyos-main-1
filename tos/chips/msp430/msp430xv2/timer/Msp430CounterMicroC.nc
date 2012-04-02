@@ -26,7 +26,7 @@
  * @see  Please refer to TEP 102 for more information about this component and its
  *          intended use.
  */
-
+#warning "using msp430xv2 msp430counterMicroC"
 configuration Msp430CounterMicroC
 {
   provides interface Counter<TMicro,uint16_t> as Msp430CounterMicro;
