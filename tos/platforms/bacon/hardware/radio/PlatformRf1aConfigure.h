@@ -1,5 +1,22 @@
 #ifndef PLATFORM_RF1A_CONFIGURE_H
 #define PLATFORM_RF1A_CONFIGURE_H
+#warning "using platform config from bacon"
+
+#ifndef CC1101_DEF_CHANNEL 
+#warning use default channel
+#define CC1101_DEF_CHANNEL 255
+#endif
+
+#ifndef CC1101_DEF_RFPOWER 
+#warning using default power
+//-30 0x03 
+//-12 0x25 
+//-6 0x2d 
+//0 0x8D 
+//10 0xC3 
+//max: 0xC0
+#define CC1101_DEF_RFPOWER 0x8D
+#endif
 
 const rf1a_config_t rf1a_default_config = {
     iocfg2:  0x29,   // IOCFG2    GDO2 output pin configuration.
@@ -18,7 +35,7 @@ const rf1a_config_t rf1a_default_config = {
     //TODO: this does get set in sw, right?
     addr:    0x00,   // ADDR      Device address.
     //TODO: this does get set in sw, right?
-    0x00,   // CHANNR    Channel number.
+    CC1101_DEF_CHANNEL,    // CHANNR    Channel number.
     fsctrl1: 0x0C,   // FSCTRL1   Frequency synthesizer control.
     fsctrl0: 0x00,   // FSCTRL0   Frequency synthesizer control.
     freq2:   0x23,   // FREQ2     Frequency control word, high byte.
@@ -61,6 +78,6 @@ const rf1a_config_t rf1a_default_config = {
     test1:   0x31,   // TEST1     Various test settings.
     test0:   0x09,   // TEST0     Various test settings.
     //patable (just patable0 is used), default from Rf1aConfigure.h
-    patable: {0xc6},
+    patable: {CC1101_DEF_RFPOWER},
   };
 #endif
