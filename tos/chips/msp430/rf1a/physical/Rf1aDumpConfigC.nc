@@ -349,6 +349,53 @@ module Rf1aDumpConfigC {
     printf("TEST0: 0x%02x ; TEST1: 0x%02x ; TEST2: 0x%02x\r\n",
            cp->test0, cp->test1, cp->test2);
 
+    printf("REGISTERS\r\n");
+    printf("rf1a_config_t this_config = {\r\n");
+    printf("  iocfg2:  0x%x,\r\n", cp->iocfg2);
+    printf("  iocfg1:  0x%x,\r\n", cp->iocfg1);
+    printf("  iocfg0:  0x%x,\r\n", cp->iocfg0);
+    printf("  fifothr: 0x%x,\r\n", cp->fifothr);
+    printf("  sync1:   0x%x,\r\n", cp->sync1);
+    printf("  sync0:   0x%x,\r\n", cp->sync0);
+    printf("  pktlen:  0x%x,\r\n", cp->pktlen);
+    printf("  pktctrl1:0x%x,\r\n", cp->pktctrl1);
+    printf("  pktctrl0:0x%x,\r\n", cp->pktctrl0);
+    printf("  addr:    0x%x,\r\n", cp->addr);
+    printf("  channr:  0x%x,\r\n", cp->channr);
+    printf("  fsctrl1: 0x%x,\r\n", cp->fsctrl1);
+    printf("  fsctrl0: 0x%x,\r\n", cp->fsctrl0);
+    printf("  freq2:   0x%x,\r\n", cp->freq2);
+    printf("  freq1:   0x%x,\r\n", cp->freq1);
+    printf("  freq0:   0x%x,\r\n", cp->freq0);
+    printf("  mdmcfg4: 0x%x,\r\n", cp->mdmcfg4);
+    printf("  mdmcfg3: 0x%x,\r\n", cp->mdmcfg3);
+    printf("  mdmcfg2: 0x%x,\r\n", cp->mdmcfg2);
+    printf("  mdmcfg1: 0x%x,\r\n", cp->mdmcfg1);
+    printf("  mdmcfg0: 0x%x,\r\n", cp->mdmcfg0);
+    printf("  deviatn: 0x%x,\r\n", cp->deviatn);
+    printf("  mcsm2:   0x%x,\r\n", cp->mcsm2);
+    printf("  mcsm1:   0x%x,\r\n", cp->mcsm1);
+    printf("  mcsm0:   0x%x,\r\n", cp->mcsm0);
+    printf("  foccfg:  0x%x,\r\n", cp->foccfg);
+    printf("  bscfg:   0x%x,\r\n", cp->bscfg);
+    printf("  agcctrl2:0x%x,\r\n", cp->agcctrl2);
+    printf("  agcctrl1:0x%x,\r\n", cp->agcctrl1);
+    printf("  agcctrl0:0x%x,\r\n", cp->agcctrl0);
+    printf("  worevt1: 0x%x,\r\n", cp->worevt1);
+    printf("  worevt0: 0x%x,\r\n", cp->worevt0);
+    printf("  worctrl: 0x%x,\r\n", cp->worctrl);
+    printf("  frend1:  0x%x,\r\n", cp->frend1);
+    printf("  frend0:  0x%x,\r\n", cp->frend0);
+    printf("  fscal3:  0x%x,\r\n", cp->fscal3);
+    printf("  fscal2:  0x%x,\r\n", cp->fscal2);
+    printf("  fscal1:  0x%x,\r\n", cp->fscal1);
+    printf("  fscal0:  0x%x,\r\n", cp->fscal0);
+    printf("  fstest:  0x%x,\r\n", cp->fstest);
+    printf("  test2:   0x%x,\r\n", cp->test2);
+    printf("  test1:   0x%x,\r\n", cp->test1);
+    printf("  test0:   0x%x,\r\n", cp->test0);
+    printf("  patable: {0x%x},", *(cp->patable));
+    printf("}; \r\n");
 #if 0
     r8 = cp->lqi;
     printf("FREQEST: %d ; CRC_OK: %u ; LQI: %d ; RSSI: %d\r\n",

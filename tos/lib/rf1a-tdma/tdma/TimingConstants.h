@@ -2,16 +2,13 @@
 #define TIMING_CONSTANTS_H
 
  #ifndef NUM_SRS
- #define NUM_SRS 10
+ #define NUM_SRS 7
  #endif
 
  const uint8_t symbolRates[NUM_SRS] = {
     1,
-    2,
     5,
-    10,
-    39,
-    77,
+    50,
     100,
     125,
     175,
@@ -20,11 +17,8 @@
 
   const uint32_t frameLens[NUM_SRS] = {
     (DEFAULT_TDMA_FRAME_LEN*125UL)/1UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/2UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/5UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/10UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/39UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/77UL,
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/50UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/100UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/125UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/175UL,
@@ -33,11 +27,8 @@
 
   const uint32_t fwCheckLens[NUM_SRS] = {
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/1UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/2UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/5UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/10UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/39UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/77UL,
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/50UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/100UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/125UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/175UL,
@@ -50,18 +41,12 @@
   const uint32_t sfdDelays[NUM_SRS] = {
     //1.2 
     0,
-    //2.4
-    0,
     //4.8
     0,
-    //10
-    0,
-    //39  not yet running stable
-    0,
-    //77  0.0000320872092997829 208.566
-    0,
-    //100 0.0000237307692320645 154.25
-    0,
+    //50 3.07692307695692e-05  200.000000002
+    200,
+    //100 2.37142857149429e-05,154.142857147
+    154,
     //125 9.3014354063222e-06 60.45
     61,
     //175 1.62371794875365e-05 105.541666669  odd
@@ -81,18 +66,16 @@
   const uint32_t fsDelays[NUM_SRS] = {
     //1.2
     0,
-    //2.4
-    0,
     //4.8
     0,
-    //10
-    0,
-    //39  10939   0.00168292307692308
-    0,
-    //77  5514.5  0.000848386138613861
-    0,
-    //100 4255    0.000654627915071354
-    0,
+    //50  0.00129255769231077 8401.62500002
+    8402,
+    //100 0.0006497749999986 4223.53749999
+    // on retest, this was off (fast) by 1.15476190421314e-06 7.50595237739
+    // on retest again, this was off (fast) by another 1.18478260956491e-06 7.70108696217 
+    // i'm leaving it for now, this is weird. should be close enough
+    // to not lose synch too badly. 
+    4216,
     //125 3424    0.000526769230769231
     3400,
     //175 2482    0.000381797237110289
@@ -100,18 +83,13 @@
     //250 1781    0.000274057315233786
     0,
   };
+
   const int32_t originDelays[NUM_SRS] = {
     //1.2
     0,
-    //2.4
-    0,
     //4.8
     0,
-    //10
-    0,
-    //39  
-    0,
-    //77  
+    //50  
     0,
     //100 
     0,
@@ -122,6 +100,7 @@
     //250 also seems less stable.
     0,
   };
+
   //argh i don't see a way around doing this.
   uint8_t srIndex(uint8_t symbolRate){
     uint8_t i;

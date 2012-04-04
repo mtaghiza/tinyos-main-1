@@ -5,7 +5,7 @@ module CXRadioStateTimingP{
   uses interface StateTiming as SubStateTiming;
 } implementation {
   async command void StateTiming.start(uint8_t state){
-//    STATE_TIMING_CAP_TOGGLE_PIN;  
+    STATE_TIMING_CAP_TOGGLE_PIN;  
 //    printf("c%x\r\n", state);
     //state is in upper nibble, so shift it on over
     if(state == RF1A_S_OFFLINE){

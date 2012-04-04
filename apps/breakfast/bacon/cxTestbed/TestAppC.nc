@@ -48,22 +48,16 @@ configuration TestAppC{
   CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
   
   components SRFS7_915_GFSK_1P2K_SENS_HC;
-  components SRFS7_915_GFSK_2P4K_SENS_HC;
   components SRFS7_915_GFSK_4P8K_SENS_HC;
-  components SRFS7_915_GFSK_10K_SENS_HC;
-  components SRFS7_915_GFSK_38P4K_SENS_HC;
-  components SRFS7_915_GFSK_76P8K_SENS_HC;
+  components SRFS7_915_GFSK_50K_SENS_HC;
   components SRFS7_915_GFSK_100K_SENS_HC;
   components SRFS7_915_GFSK_125K_SENS_HC;
   components SRFS7_915_GFSK_175K_SENS_HC;
   components SRFS7_915_GFSK_250K_SENS_HC;
 
   CXTDMAPhysicalC.SubRf1aConfigure[1]   -> SRFS7_915_GFSK_1P2K_SENS_HC;
-  CXTDMAPhysicalC.SubRf1aConfigure[2]   -> SRFS7_915_GFSK_2P4K_SENS_HC;
   CXTDMAPhysicalC.SubRf1aConfigure[5]   -> SRFS7_915_GFSK_4P8K_SENS_HC;
-  CXTDMAPhysicalC.SubRf1aConfigure[10]  -> SRFS7_915_GFSK_10K_SENS_HC;
-  CXTDMAPhysicalC.SubRf1aConfigure[39]  -> SRFS7_915_GFSK_38P4K_SENS_HC;
-  CXTDMAPhysicalC.SubRf1aConfigure[77]  -> SRFS7_915_GFSK_76P8K_SENS_HC;
+  CXTDMAPhysicalC.SubRf1aConfigure[50]  -> SRFS7_915_GFSK_50K_SENS_HC;
   CXTDMAPhysicalC.SubRf1aConfigure[100] -> SRFS7_915_GFSK_100K_SENS_HC;
   CXTDMAPhysicalC.SubRf1aConfigure[125] -> SRFS7_915_GFSK_125K_SENS_HC;
   CXTDMAPhysicalC.SubRf1aConfigure[175] -> SRFS7_915_GFSK_175K_SENS_HC;
@@ -85,6 +79,7 @@ configuration TestAppC{
   CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_FLOOD];
   CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_FLOOD];
   CXFloodC.CXPacket -> Rf1aCXPacketC;
+  CXFloodC.AMPacket -> AMPacket;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
 
   //this is just used to keep the enumerated arbiter happy
@@ -97,6 +92,7 @@ configuration TestAppC{
   CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_SCOPEDFLOOD];
   CXScopedFloodC.CXPacket -> Rf1aCXPacketC;
   CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
+  CXScopedFloodC.AMPacket -> AMPacket;
 
   components CXRoutingTableC;
   CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;
@@ -138,5 +134,5 @@ configuration TestAppC{
 
   TestP.Send -> TDMASchedulerC.Send;
   TestP.Receive -> TDMASchedulerC.Receive;
-  
+  TestP.Rf1aPacket -> Ieee154Packet;  
 }

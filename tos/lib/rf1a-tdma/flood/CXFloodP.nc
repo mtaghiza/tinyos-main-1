@@ -12,6 +12,7 @@ module CXFloodP{
   provides interface Receive as Snoop[am_id_t t];
 
   uses interface CXPacket;
+  uses interface AMPacket;
   //Payload: body of CXPacket
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
@@ -52,15 +53,11 @@ module CXFloodP{
   bool txSent;
   uint16_t txLeft;
 
-  am_addr_t lastSrc = 0x00;
-  uint8_t lastSn;
+  am_addr_t lastSrc = 0xff;
+  uint32_t lastSn;
   uint8_t lastDepth;
   
   uint8_t state;
-
-  uint16_t framesPerSlot;
-  uint16_t curFrame;
-  uint16_t activeFrames;
 
   message_t fwd_msg_internal;
   message_t* fwd_msg = &fwd_msg_internal;
@@ -76,6 +73,22 @@ module CXFloodP{
     state = s;
   }
 
+  task void txSuccessTask(){
+    atomic {
+      txPending = FALSE;
+      txSent = FALSE;
+    }
+    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
+  }
+
+  task void txFailTask(){
+    atomic{
+      txPending = FALSE;
+      txSent = FALSE;
+    }
+    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, FAIL);
+  }
+
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("FloodSend\r\n");
     atomic{
@@ -86,6 +99,7 @@ module CXFloodP{
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
+        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed flag
         call CXPacket.setRoutingMethod(msg, 
           (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
@@ -110,6 +124,7 @@ module CXFloodP{
 
     printf_F_SCHED("f.ft %u", frameNum);
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
+//      printf_F_TESTBED("O %u\r\n", frameNum);
       printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
         printf_F_SCHED(" tx\r\n");
@@ -121,6 +136,9 @@ module CXFloodP{
         setState(S_FWD);
         return RF1A_OM_FSTXON;
       } else {
+        //if we don't signal sendDone here, the upper layer will never
+        //  know what happened.
+        post txFailTask();
         printf("!F.ft.RIR\r\n");
         return RF1A_OM_RX;
       }
@@ -160,13 +178,6 @@ module CXFloodP{
 //    }
   }
 
-  task void txSuccessTask(){
-    atomic {
-      txPending = FALSE;
-      txSent = FALSE;
-    }
-    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
-  }
 
   task void reportReceive(){
     atomic{
@@ -224,8 +235,13 @@ module CXFloodP{
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
-    uint8_t thisSn = call CXPacket.sn(msg);
-    printf_F_RX("rx ");
+    uint32_t thisSn = call CXPacket.sn(msg);
+    printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
+    if (! call TDMARoutingSchedule.ownsFrame(thisSrc, frameNum)){
+      printf_F_RX("~o\r\n");
+      printf_TESTBED("SV F D %u %u\r\n", thisSrc, frameNum);
+      return msg;
+    }
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
@@ -241,13 +257,13 @@ module CXFloodP{
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
-            printf_SF_TESTBED("PRD\r\n");
+            printf_SF_TESTBED_PR("PRD\r\n");
             lastSn = thisSn;
             lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
             return msg;
           }else{
-            printf_SF_TESTBED("PRK\r\n");
+            printf_SF_TESTBED_PR("PRK\r\n");
             printf_F_RX("b");
           }
         }
@@ -274,7 +290,7 @@ module CXFloodP{
             return msg;
           }
         }else{
-          printf_TESTBED_SCHED("QD\r\n");
+          printf_TESTBED("QD\r\n");
           return msg;
         }
       //duplicate, ignore

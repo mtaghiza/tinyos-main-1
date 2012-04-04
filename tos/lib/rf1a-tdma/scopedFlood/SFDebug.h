@@ -7,13 +7,19 @@
 #define printf_SF_TESTBED_AW(...)
 #endif
 
-#ifdef DEBUG_SF_TESTBED
+#if DEBUG_SF_TESTBED_PR == 1
+#define printf_SF_TESTBED_PR(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_TESTBED_PR(...)
+#endif
+
+#if DEBUG_SF_TESTBED == 1
 #define printf_SF_TESTBED(...) printf(__VA_ARGS__)
 #else
 #define printf_SF_TESTBED(...)
 #endif
 
-#ifdef DEBUG_SF_STATE
+#if DEBUG_SF_STATE == 1
 #define printf_SF_STATE(...) printf(__VA_ARGS__)
 #else
 #define printf_SF_STATE(...)

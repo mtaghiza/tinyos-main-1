@@ -8,7 +8,6 @@
 
 typedef nx_struct cx_schedule_t {
   nx_uint8_t scheduleNum;
-  nx_uint16_t originalFrame;
   nx_uint32_t frameLen;
   nx_uint32_t fwCheckLen;
   nx_uint16_t activeFrames;

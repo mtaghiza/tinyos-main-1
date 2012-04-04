@@ -16,11 +16,12 @@ module RootSchedulerP{
   uses interface Receive as ReplyReceive;
 
   uses interface Packet;
+  uses interface AMPacket;
   uses interface CXPacket;
+  uses interface Rf1aPacket;
   uses interface CXRoutingTable;
   uses interface CXPacketMetadata;
   //maybe this should be done by Flood send.
-  uses interface AMPacket;
 } implementation {
 
   enum {
@@ -107,7 +108,7 @@ module RootSchedulerP{
   #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
   #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
-  #define TDMA_ROOT_INACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)/2 
+  #define TDMA_ROOT_INACTIVE_FRAMES 5
   #else
   #error Must define TDMA_MAX_NODES, TDMA_MAX_DEPTH, and TDMA_MAX_RETRANSMIT
   #endif
@@ -181,12 +182,13 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u\r\n",
+      printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
         TOS_NODE_ID,
         call CXPacket.destination(msg),
         call CXPacket.sn(msg),
         (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
-        ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0);
+        ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
+        error);
 
       if (state == S_BASELINE || state == S_ADJUSTING 
           || state == S_FINALIZING || state == S_RESETTING
@@ -339,6 +341,11 @@ module RootSchedulerP{
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
     return curSchedule->framesPerSlot;
   }
+
+  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId, uint16_t frameNum){
+    printf("WRONG OWNSFRAME\r\n");
+    return FALSE;
+  }
   
   //as root: we are origin for floods during frame 0. Other frames?
   //defer to AODV.
@@ -364,11 +371,14 @@ module RootSchedulerP{
     uint8_t curSRI = srIndex(curSchedule->symbolRate);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
-    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u\r\n", 
+    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %u l: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
-      call CXPacketMetadata.getReceivedCount(msg));
+      call CXPacketMetadata.getReceivedCount(msg),
+      call Rf1aPacket.rssi(msg),
+      call Rf1aPacket.lqi(msg)
+      );
 //    printf_TESTBED("AnnounceReply: %u %u \r\n", 
 //      call CXPacket.source(msg), 
 //      call CXPacketMetadata.getReceivedCount(msg));
@@ -395,6 +405,8 @@ module RootSchedulerP{
 
   //Schedule modification functions
   void initializeSchedule(){
+//    call AMPacket.clear(cur_schedule_msg);
+//    call AMPacket.clear(next_schedule_msg);
     //configure the uninitialized fields in curSchedule
     curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
       sizeof(cx_schedule_t)));
@@ -416,7 +428,7 @@ module RootSchedulerP{
     printf_SCHED_SR("UST\r\n");
     error = call TDMAPhySchedule.setSchedule(
       call CXPacket.getTimestamp(cur_schedule_msg), 
-      curSchedule->originalFrame,
+      call CXPacket.getOriginalFrameNum(cur_schedule_msg),
       curSchedule->frameLen,
       curSchedule->fwCheckLen, 
       curSchedule->activeFrames,
@@ -604,7 +616,6 @@ module RootSchedulerP{
     call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
     schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
-    schedule -> originalFrame = originalFrame;
     schedule -> frameLen = frameLens[srIndex(symbolRate)];
     schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
     schedule -> activeFrames = activeFrames;
@@ -642,5 +653,15 @@ module RootSchedulerP{
   }
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
       uint16_t frameNum){ }
+
+  async event void TDMAPhySchedule.peek(message_t* msg, 
+      uint16_t frameNum, uint32_t rxTime){
+    //don't need to do anything here, we're the boss.
+  }
+
+  async event uint8_t TDMAPhySchedule.getScheduleNum(){
+    return curSchedule->scheduleNum;
+  }
+
 
 }

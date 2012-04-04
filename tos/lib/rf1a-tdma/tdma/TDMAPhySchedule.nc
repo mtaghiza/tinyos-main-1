@@ -8,4 +8,7 @@ interface TDMAPhySchedule{
   async event void frameStarted(uint32_t startTime, uint16_t frameNum);
   async event int32_t getFrameAdjustment(uint16_t frameNum);
   async command uint32_t getNow();
+  async event uint8_t getScheduleNum();
+  async event void peek(message_t* msg, uint16_t frameNum, 
+    uint32_t timestamp);
 }

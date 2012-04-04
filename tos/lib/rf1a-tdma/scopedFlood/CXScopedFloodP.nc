@@ -8,6 +8,7 @@ module CXScopedFloodP{
   provides interface Receive[am_id_t t];
 
   uses interface CXPacket;
+  uses interface AMPacket;
   //Payload: body of CXPacket
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
@@ -74,11 +75,11 @@ module CXScopedFloodP{
   //for matching up acks with data and suppressing duplicate data
   //receptions
   uint16_t lastDataSrc;
-  uint8_t lastDataSn;
+  uint32_t lastDataSn;
   
   //for suppressing duplicate ack receptions.
   uint16_t lastAckSrc;
-  uint16_t lastAckSn;
+  uint32_t lastAckSn;
 
   //route update variables
   uint8_t ruSrcDepth;
@@ -123,6 +124,7 @@ module CXScopedFloodP{
         origin_data_len = len + sizeof(cx_header_t);
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
+        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed bit
         call CXPacket.setRoutingMethod(msg, 
           ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)
@@ -147,12 +149,17 @@ module CXScopedFloodP{
   }
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+    //TODO: this should generally check for slot violations and
+    //release the resource/return to idle if we're anything other than
+    //idle.
 //    printf("ft %u ", frameNum);
     //see notes in CXTDMA.sendDone. At this point, we have allowed
     //enough time to elapse for the frame to clear.
     //TODO: if this is prerouted, we don't need to wait this long. As
     //  soon as we get the ack, we can send in the next data frame.
     if (state == S_CLEAR_WAIT){
+      //TODO: watch for slot length violations, quit if this is no
+      //longer your slot.
       if (frameNum - ackFrame > (ackFrame - originFrame) + 1){
         post signalSendDone();
       }
@@ -397,7 +404,7 @@ module CXScopedFloodP{
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_id_t pType = call CXPacket.type(msg);
-    uint8_t sn = call CXPacket.sn(msg);
+    uint32_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
     printf_SF_RX("rx %x ", state);
@@ -409,6 +416,13 @@ module CXScopedFloodP{
       //duplicate, or non-synched, drop it.
       return msg;
     }
+    if (pType == CX_TYPE_DATA && ! call TDMARoutingSchedule.ownsFrame(src, frameNum)) {
+      printf_SF_TESTBED("SV SF D %u %u\r\n", src, frameNum);
+      return msg;
+    } else if (pType== CX_TYPE_ACK && ! call TDMARoutingSchedule.ownsFrame(dest, frameNum)){
+      printf_SF_TESTBED("SV SF A %u %u\r\n", dest, frameNum);
+      return msg;
+    }
            
     if (state == S_IDLE){
       printf_SF_RX("i");
@@ -418,11 +432,11 @@ module CXScopedFloodP{
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
             call CXPacket.destination(msg), &isBetween)) || !isBetween){
-          printf_SF_TESTBED("PRD\r\n");
+          printf_SF_TESTBED_PR("PRD\r\n");
           printf_SF_RX("x*\r\n");
           return msg;
         }else{
-          printf_SF_TESTBED("PRK\r\n");
+          printf_SF_TESTBED_PR("PRK\r\n");
         }
       }
       //OK: the state guards us from overwriting rx_msg. the only time

@@ -43,6 +43,7 @@ configuration TDMASchedulerC{
   TDMASchedulerP.CXRoutingTable = CXRoutingTable;
   TDMASchedulerP.CXPacketMetadata = CXPacketMetadata;
   TDMASchedulerP.AMPacket = AMPacket;
+  TDMASchedulerP.Rf1aPacket = Rf1aPacket;
   TDMASchedulerP.FrameStarted = FrameStarted;
 
   components AODVSchedulerC;

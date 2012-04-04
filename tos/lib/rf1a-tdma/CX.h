@@ -9,6 +9,8 @@ typedef nx_struct cx_header_t {
   //would like to reuse the dsn in the 15.4 header, but it's not exposed in a clean way
   nx_uint32_t sn;
   nx_uint16_t count;
+  nx_uint8_t scheduleNum;
+  nx_uint16_t originalFrameNum;
   nx_uint8_t routingMethod;
   nx_am_id_t type;
   nx_uint32_t timestamp;
@@ -25,7 +27,7 @@ enum{
 typedef nx_struct cx_ack_t{
   //DATA source id/sn
   nx_am_addr_t src;
-  nx_uint8_t sn;
+  nx_uint32_t sn;
   //how far away the dest is from the source.
   nx_uint8_t depth;
 } cx_ack_t;

@@ -1,39 +1,42 @@
 #!/bin/bash
-if [ $# -lt 1 ]
+if [ $# -lt 2 ]
 then
-  echo "Usage: $0 <logFile> [-k]"
+  echo "Usage: $0 <logFile> <title> [-k]"
   echo "<logfile> the name to assign to the local copy of the log file"
   echo "-k: do not delete temp files after parsing log file"
   exit 1
 fi
 logFile=$1
-keepTemp=$2
+label=$2
+keepTemp=$3
 db=$logFile.db
+tfDir=tmp
+mkdir -p $tfDir
 
 tickLen="4/26e6"
 
-dos2unix $logFile
+#dos2unix $logFile
 
-depthTf=$(tempfile)
-rxTf=$(tempfile)
-txTf=$(tempfile)
-irTf=$(tempfile)
-rTf=$(tempfile)
-rsTf=$(tempfile)
-pcTf=$(tempfile)
-dcTf=$(tempfile)
-prrTf=$(tempfile)
+depthTf=$(tempfile -d $tfDir)
+rxTf=$(tempfile -d $tfDir)
+txTf=$(tempfile -d $tfDir)
+irTf=$(tempfile -d $tfDir)
+rTf=$(tempfile -d $tfDir)
+rsTf=$(tempfile -d $tfDir)
+pcTf=$(tempfile -d $tfDir)
+dcTf=$(tempfile -d $tfDir)
+prrTf=$(tempfile -d $tfDir)
 
 echo "extracting depth info"
-awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' $logFile  > $depthTf
+pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
 echo "extracting RX"
-awk '($3 == "RX"){print $1,$5,$2,$7,$9, $11, 1}' $logFile  > $rxTf
+pv $logFile | awk '($3 == "RX")&&(NF == 15){print $1,$5,$2,$7,$9, $11, 1}' > $rxTf
 echo "extracting TX"
-awk '($3 == "TX"){print $1,$5,$7,$9, $11, $13}' $logFile  > $txTf
+pv $logFile | awk '($3 == "TX"){print $1,$5,$7,$9, $11, $13}' > $txTf
 echo "extracting duty cycle info"
-awk '($3 == "RS"){print $1, $2, $4, $5, $6, $7}' $logFile > $rsTf
+pv $logFile | awk '($3 == "RS"){print $1, $2, $4, $5, $6, $7}' > $rsTf
 echo "extracting forward/rx packet counts"
-awk '/^[0-9]+.[0-9]+ [0-9]+ PC [0-9]+ Sent [0-9]+ Received [0-9]+/{print $1, $2, $4, $6, $8}' $logFile > $pcTf
+pv $logFile | awk '/^[0-9]+.[0-9]+ [0-9]+ PC [0-9]+ Sent [0-9]+ Received [0-9]+/{print $1, $2, $4, $6, $8}' > $pcTf
 
 sqlite3 $db << EOF
 DROP TABLE IF EXISTS DEPTH;
@@ -324,6 +327,58 @@ CREATE TABLE FINAL_PRR AS
   GROUP BY src, dest
   ORDER BY src, dest;
 
+DROP TABLE IF EXISTS FINAL_PRR_NO_STARTUP;
+CREATE TABLE FINAL_PRR_NO_STARTUP AS 
+  SELECT 
+    src, 
+    dest, 
+    avg(received) as prr
+  FROM conn 
+  WHERE (src ==0 or dest == 0) and sn > 10
+  GROUP BY src, dest
+  ORDER BY src, dest;
+
+DROP TABLE IF EXISTS rx_tx_delta;
+
+CREATE TABLE rx_tx_delta as
+SELECT * 
+--tCount.src, tCount.cnt - rCount.cnt
+FROM 
+  (
+   SELECT 
+   dest, 
+   count(*) as rCount
+   FROM RX
+   WHERE src == 0
+   GROUP BY dest
+  ) rCount
+  JOIN 
+  (
+   SELECT src, count(*) as tCount
+   FROM TX 
+   GROUP BY src
+  ) tCount 
+  on tCount.src == rCount.dest
+;
+
+DROP TABLE IF EXISTS rx_ordered;
+CREATE TABLE rx_ordered as 
+SELECT * from rx
+WHERE src == 0
+ORDER by dest, ts;
+
+-- looking at this, we can see that basically all of the one-hop nodes
+-- see a gap right at the start that corresponds to the synch timeout
+-- period
+DROP TABLE IF EXISTS rx_adj;
+CREATE TABLE rx_adj as
+SELECT l.dest as node, 
+  l.ts as startGap,
+  r.ts - l.ts as gapLen
+FROM rx_ordered l
+JOIN rx_ordered r
+ON l.dest == r.dest AND l.rowid+1 == r.rowid
+ORDER BY l.dest, l.ts;
 
 --select * from AGG_DEPTH;
 --select count(*) from AGG_DEPTH;
@@ -335,10 +390,10 @@ sqlite3 $db < prr_dist.sql > $prrTf
 
 echo "generating figures"
 mkdir -p figs/$(dirname $logFile)
-R --no-save --args dataFile=$prrTf plotPdf=T \
-  outPrefix=figs/$logFile < fig_scripts/prr.R
-R --no-save --args dataFile=$dcTf plotPdf=T \
-  outPrefix=figs/$logFile < fig_scripts/dc.R
+R --slave --no-save --args dataFile=$prrTf plotPdf=T \
+  outPrefix=figs/$logFile label=$label < fig_scripts/prr.R
+R --slave --no-save --args dataFile=$dcTf plotPdf=T \
+  outPrefix=figs/$logFile label=$label < fig_scripts/dc.R
 
 if [ "$keepTemp" != "-k" ]
 then

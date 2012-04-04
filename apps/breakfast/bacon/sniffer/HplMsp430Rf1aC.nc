@@ -74,47 +74,27 @@ generic configuration HplMsp430Rf1aC (
 
   components new HplMsp430Rf1aP() as HplRf1aP;
   HplRf1aP.Rf1aIf -> HplRf1aIfP;
+  ArbiterC.ResourceConfigure -> HplRf1aP;
   HplRf1aP.ArbiterInfo -> ArbiterC;
+  Rf1aConfigure = HplRf1aP;
+  Rf1aPhysical = HplRf1aP;
   Rf1aPhysicalMetadata = HplRf1aP;
   Rf1aTransmitFragment = HplRf1aP;
   Rf1aStatus = HplRf1aP;
-  Rf1aConfigure = HplRf1aP;
 
   components HplMsp430Rf1aInterruptP;
-
-  #if CX_RADIO_LOGGING == 1
-  components new Alarm32khz16C();
-  components MainC;
-
-  components CXRadioStateTimingC;
-  components new HplMsp430Rf1aLoggingP();
-  HplMsp430Rf1aLoggingP.Alarm -> Alarm32khz16C;
-  MainC.SoftwareInit -> HplMsp430Rf1aLoggingP;
-
-  HplMsp430Rf1aLoggingP.StateTiming -> CXRadioStateTimingC;
-  HplMsp430Rf1aLoggingP.Rf1aStatus -> HplRf1aP;
-  
-  ArbiterC.ResourceConfigure -> HplMsp430Rf1aLoggingP;
-  HplMsp430Rf1aLoggingP.SubResourceConfigure -> HplRf1aP;
-
-  Rf1aPhysical = HplMsp430Rf1aLoggingP;
-  HplMsp430Rf1aLoggingP.SubRf1aPhysical -> HplRf1aP;
-
-  HplRf1aP.Rf1aInterrupts -> HplMsp430Rf1aLoggingP;
-  HplMsp430Rf1aLoggingP.SubRf1aInterrupts -> HplMsp430Rf1aInterruptP;
-
-  #else
-  ArbiterC.ResourceConfigure -> HplRf1aP;
-  Rf1aPhysical = HplRf1aP;
   HplRf1aP.Rf1aInterrupts -> HplMsp430Rf1aInterruptP;
-  #endif
-  
   HplMsp430Rf1aInterruptP.ArbiterInfo -> ArbiterC;
 
+  components CounterMicro32C;
+  HplRf1aP.Counter -> CounterMicro32C;
+  
+  components StdOutC;
+  HplRf1aP.StdOut -> StdOutC;
+  
   components LedsC;
   HplRf1aP.Leds -> LedsC;
   HplMsp430Rf1aInterruptP.Leds -> LedsC;
-
 }
 
 /* 

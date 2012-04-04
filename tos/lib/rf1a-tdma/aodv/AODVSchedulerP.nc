@@ -276,7 +276,10 @@ module AODVSchedulerP{
     uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot[rm]();
     TMP_STATE;
     CACHE_STATE;
+    //shouldn't we be looking at RM here?
     if (CHECK_STATE(S_FLOODING) && (frameNum == TOS_NODE_ID*fps)){
+      printf_F_TESTBED("F: %u==%u*%u (%u)\r\n", frameNum, TOS_NODE_ID,
+        fps, TOS_NODE_ID*fps);
       printf_AODV_IO("IO F %u\r\n", frameNum);
       return TRUE;
     }
@@ -335,6 +338,8 @@ module AODVSchedulerP{
   //  - AODV internal logic figures "OK, it's cool to send a new data
   //    frame now."
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
+    bool subIS = call SubTDMARoutingSchedule.isSynched[rm](frameNum);
+    bool subIO = call SubTDMARoutingSchedule.isOrigin[rm](frameNum);
     printf_AODV_IO("io %x %u\r\n", rm, frameNum);
     //TODO: We can get in trouble here: if we lose synchronization while we
     //are holding the resource, we can get into a deadlock.  The node
@@ -342,9 +347,24 @@ module AODVSchedulerP{
     //(freeing the resource), and if the resource is not available,
     //the flood component will drop any incoming data packets,
     //including the schedule with which we need to synch.
+//    if (subIS && ! subIO){
+//      printf_F_TESTBED("a.io %x\r\n", state);
+//    }
     return (call SubTDMARoutingSchedule.isSynched[rm](frameNum)) &&
       (call SubTDMARoutingSchedule.isOrigin[rm](frameNum) ||
         isOrigin(rm, frameNum) );
+  }
+
+  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId,
+      uint16_t frameNum){
+    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot[rm]();
+    //TODO: should this be nodeId+1? or does 0 just never get to send
+    //  except for schedule?
+
+    //fps<=1: for special case of when we haven't received any
+    //schedules yet. it's not perfect...
+    return (fps <= 1) ||((frameNum >= (nodeId*fps)) 
+      && (frameNum < ((nodeId+1)*fps)));
   }
 
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){

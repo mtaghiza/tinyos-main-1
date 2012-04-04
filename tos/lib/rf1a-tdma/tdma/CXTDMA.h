@@ -23,7 +23,8 @@
 #ifndef PFS_SLACK_BASE
 //this was too short at full speed.
 //#define PFS_SLACK_BASE (110UL * (TA_SCALE))
-#define PFS_SLACK_BASE (200UL * (TA_SCALE))
+//#define PFS_SLACK_BASE (200UL * (TA_SCALE))
+#define PFS_SLACK_BASE (400UL * (TA_SCALE))
 #endif
 
 //10 ms at 26mhz/24
@@ -31,9 +32,11 @@
 #define DEFAULT_TDMA_FRAME_LEN_BASE (10833UL * TA_SCALE)
 #endif
 
-//0.6 ms at 26mhz/24
 #ifndef DEFAULT_TDMA_FW_CHECK_LEN_BASE
-#define DEFAULT_TDMA_FW_CHECK_LEN_BASE (650UL *TA_SCALE)
+//1.2 ms
+#define DEFAULT_TDMA_FW_CHECK_LEN_BASE (1300UL * TA_SCALE)
+//0.6 ms at 26mhz/24
+//#define DEFAULT_TDMA_FW_CHECK_LEN_BASE (650UL *TA_SCALE)
 #endif
 
 #ifndef DEFAULT_TDMA_ACTIVE_FRAMES

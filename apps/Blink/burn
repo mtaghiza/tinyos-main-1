@@ -9,7 +9,7 @@ shift 1
 
 make bacon2 $@
 
-for i in `cut -d ' ' -f 2 $MAP`
+for i in $(grep -v '#' $MAP | awk '{print $2}')
 do
   make bacon2 reinstall,$i wpt,$MAP
 done

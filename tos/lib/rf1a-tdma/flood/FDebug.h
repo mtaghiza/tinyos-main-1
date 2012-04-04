@@ -1,7 +1,14 @@
 #ifndef F_DEBUG_H
 #define F_DEBUG_H
 
-#ifdef DEBUG_F_STATE
+#if DEBUG_F_TESTBED == 1
+#define printf_F_TESTBED(...) printf(__VA_ARGS__)
+#else
+#define printf_F_TESTBED(...) 
+#endif
+
+
+#if DEBUG_F_STATE == 1
 #define printf_F_STATE(...) printf(__VA_ARGS__)
 #else
 #define printf_F_STATE(...) 

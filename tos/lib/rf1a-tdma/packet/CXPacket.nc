@@ -19,4 +19,8 @@ interface CXPacket{
   command uint8_t getRoutingMethod(message_t* amsg);
   command void setTimestamp(message_t* amsg, uint32_t ts);
   command uint32_t getTimestamp(message_t* amsg);
+  command void setScheduleNum(message_t* amsg, uint8_t scheduleNum);
+  command uint8_t getScheduleNum(message_t* amsg);
+  command void setOriginalFrameNum(message_t* amsg, uint16_t frameNum);
+  command uint16_t getOriginalFrameNum(message_t* amsg);
 }

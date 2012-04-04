@@ -156,6 +156,21 @@ module Rf1aCXPacketP{
     return getMetadata(amsg)->symbolRate;
   }
 
+  command void CXPacket.setScheduleNum(message_t* amsg,
+      uint8_t scheduleNum){
+    getHeader(amsg)->scheduleNum = scheduleNum;
+  }
+  command uint8_t CXPacket.getScheduleNum(message_t* amsg){
+    return getHeader(amsg)->scheduleNum;
+  }
+
+  command void CXPacket.setOriginalFrameNum(message_t* amsg,
+      uint16_t originalFrameNum){
+    getHeader(amsg)->originalFrameNum = originalFrameNum;
+  }
+  command uint16_t CXPacket.getOriginalFrameNum(message_t* amsg){
+    return getHeader(amsg)->originalFrameNum;
+  }
 
 
   async event void ActiveMessageAddress.changed(){ }

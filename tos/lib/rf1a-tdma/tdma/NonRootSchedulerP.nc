@@ -16,6 +16,7 @@ module NonRootSchedulerP{
 
   uses interface Packet;
   uses interface CXPacket;
+  uses interface Rf1aPacket;
   uses interface CXPacketMetadata;
   //maybe this should be done by Flood send.
   uses interface AMPacket;
@@ -45,6 +46,7 @@ module NonRootSchedulerP{
   message_t* replyMsg = &reply_msg_internal;
 
   uint16_t framesSinceLastSchedule = 2;
+  uint16_t framesSinceLastSynch = 2;
   uint16_t lastRxFrameNum;
   uint16_t lastFrameNum;
   uint32_t lastRxTS;
@@ -71,6 +73,8 @@ module NonRootSchedulerP{
   am_addr_t ard;
   uint32_t arn;
   uint8_t arc;
+  int arr;
+  int arl;
 
   command error_t SplitControl.start(){
     error_t error = call SubSplitControl.start();
@@ -124,7 +128,7 @@ module NonRootSchedulerP{
 
   //initialize curSched to try to catch a new schedule announcement.
   event void SubSplitControl.startDone(error_t error){
-
+//    call AMPacket.clear(replyMsg);
     if (SUCCESS != error){
       printf("setSchedule: %s\r\n", decodeError(error));
     }else{
@@ -150,11 +154,13 @@ module NonRootSchedulerP{
   task void updateScheduleTask();
 
   task void reportAR(){
-    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u\r\n", 
+    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
       ars,
       ard,
       arn,
-      arc);
+      arc,
+      arr,
+      arl);
     arPending = FALSE;
   }
 
@@ -171,6 +177,8 @@ module NonRootSchedulerP{
       ard = call CXPacket.destination(msg);
       arn = call CXPacket.sn(msg);
       arc = call CXPacketMetadata.getReceivedCount(msg);
+      arr = call Rf1aPacket.rssi(msg);
+      arl = call Rf1aPacket.lqi(msg);
       post reportAR();
     }else {
       printf_TESTBED("!AR.R\r\n");
@@ -179,8 +187,8 @@ module NonRootSchedulerP{
     //update clock skew figures 
     framesSinceLastSchedule = 0;
 
-    rxFrameNum = pl->originalFrame 
-      + call CXRoutingTable.distance(call CXPacket.source(msg), TOS_NODE_ID) 
+    rxFrameNum = call CXPacket.getOriginalFrameNum(msg)
+      + call CXPacketMetadata.getReceivedCount(msg)
       - 1;  
     rxTS = call CXPacketMetadata.getPhyTimestamp(msg);
     curRootStart = call CXPacket.getTimestamp(msg);
@@ -334,30 +342,19 @@ module NonRootSchedulerP{
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     framesSinceLastSchedule++;
-//    printf_SCHED("fs.f %u ", frameNum);
-    //may be off by one
-//    if (changePending && (frameNum + 1 ==
-//        (curSched->activeFrames+curSched->inactiveFrames))){
-//      error_t error;
-//      message_t* swp = curMsg;
-////      printf_SCHED("c");
-//      curMsg = nextMsg;
-//      nextMsg = swp;
-//      curSched = (cx_schedule_t*) call Packet.getPayload(curMsg,
-//       sizeof(cx_schedule_t));
-//      post updateScheduleTask();
-//    }else
+    framesSinceLastSynch++;
 
     //reinitialize the schedule if we have gone too long without
     //hearing it.
     //also: try to do this not-so-close to the very beginning of the
     //cycle, where we can get into all kinds of trouble/edge cases.
-    if (isSynched && framesSinceLastSchedule > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
+    if (isSynched && framesSinceLastSynch > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
         curSched->activeFrames / 2){
       isSynched = FALSE;
       printf_TESTBED("SYNCH LOST\r\n");
       printf_SCHED_SR("LOST SYNC\r\n");
       framesSinceLastSchedule = 0;
+      framesSinceLastSynch = 0;
       //TODO: at this point, it would be safer/easier to just restart
       //the entire radio stack.
       //post resetRadioStack();
@@ -366,12 +363,13 @@ module NonRootSchedulerP{
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
-    printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u\r\n",
+    printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
       (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
-      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0);
+      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
+      error);
 
     if (startPending){
       startPending = FALSE;
@@ -409,6 +407,26 @@ module NonRootSchedulerP{
     #endif
   }
 
+  async event void TDMAPhySchedule.peek(message_t* msg, 
+      uint16_t frameNum, uint32_t rxTime){
+    uint16_t senderFrameNum = (call CXPacket.getOriginalFrameNum(msg) 
+      + call CXPacketMetadata.getReceivedCount(msg) 
+      - 1);
+    if (call CXPacketMetadata.getFrameNum(msg) == senderFrameNum 
+        && (call CXPacket.getScheduleNum(msg) 
+          == signal TDMAPhySchedule.getScheduleNum())){
+      framesSinceLastSynch = 0;
+    } else {
+      //TODO: if we are out of synch, but this schedule num matches
+      //our current schedule num, then we should post a task to update
+      //the schedule.
+    }
+  }
+
+  async event uint8_t TDMAPhySchedule.getScheduleNum(){
+    return curSched->scheduleNum;
+  }
+
   //we are origin if reply needed and this is the start of our slot.
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
     printf_SCHED_IO("io: ");
@@ -424,8 +442,9 @@ module NonRootSchedulerP{
   }
 
   async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
-    return (framesSinceLastSchedule <= curSched->activeFrames+curSched->inactiveFrames);
+    return (framesSinceLastSynch <= curSched->activeFrames+curSched->inactiveFrames);
   }
+
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
 //    printf_SCHED("nrs.mr\r\n");
     return curSched->maxRetransmit;
@@ -433,7 +452,11 @@ module NonRootSchedulerP{
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
     return curSched->framesPerSlot;
   }
-  
+  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId,
+      uint16_t frameNum){
+    printf("WRONG OWNSFRAME\r\n");
+    return FALSE;
+  }
   //unused
   event void AnnounceSend.sendDone(message_t* msg, error_t error){}
   event message_t* ReplyReceive.receive(message_t* msg, void* payload, uint8_t len){ return msg;}

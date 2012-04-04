@@ -10,7 +10,8 @@ plotCdf<-function(ds, xl, yl, t, plotPdf=F, pdfFile=""){
     (0:(length(ds)-1))/(length(ds)-1), 
     type = 'l',
     xlab=xl,
-    ylab=yl)
+    ylab=yl,
+    xlim=c(0,1))
   title(t)
   if (plotPdf){
     g<-dev.off()

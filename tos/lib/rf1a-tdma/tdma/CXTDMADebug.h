@@ -137,7 +137,7 @@
 #define printf_PHY_TIME(...) 
 #endif
 
-#ifdef DEBUG_RADIO_STATS
+#if DEBUG_RADIO_STATS == 1
 #define printf_RADIO_STATS(...) printf(__VA_ARGS__)
 #else
 #define printf_RADIO_STATS(...) 
