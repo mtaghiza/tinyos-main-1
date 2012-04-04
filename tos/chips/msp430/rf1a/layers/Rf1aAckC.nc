@@ -38,6 +38,7 @@ generic configuration Rf1aAckC () {
     interface Receive as SubReceive;
     interface Send as AckSend;
     interface Receive as AckReceive;
+    interface AMPacket;
     interface Rf1aPacket;
     interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
@@ -51,6 +52,7 @@ generic configuration Rf1aAckC () {
   SubReceive = Rf1aAckP.SubReceive;
   AckSend = Rf1aAckP.AckSend;
   AckReceive = Rf1aAckP.AckReceive;
+  AMPacket = Rf1aAckP;
   Rf1aPacket = Rf1aAckP;
   Rf1aPhysical = Rf1aAckP;
   Rf1aPhysicalMetadata = Rf1aAckP;

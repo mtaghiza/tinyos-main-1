@@ -12,6 +12,7 @@ generic module Rf1aAckP () {
     interface Receive as AckReceive;
     interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
+    interface AMPacket;
     interface Rf1aPacket;
   }
 } implementation {
@@ -138,7 +139,8 @@ generic module Rf1aAckP () {
   uint8_t rx_state;
 
   /** The structure used to transmit an acknowledgment message */
-  ack_message_t ack_message;
+//  ack_message_t ack_message;
+  message_t ack_message;
 
   enum {
     /** The number of 32KHz ticks to wait, after completion of
@@ -360,6 +362,12 @@ generic module Rf1aAckP () {
     #ifdef DEBUG_RX_4
     P1OUT |=BIT4;
     #endif
+
+
+    if (!call AMPacket.isForMe(msg) || !call Rf1aPacket.crcPassed(msg))
+      return msg;
+      
+
     if (fcfp->ack_request) {
       /* Need to transmit an Ack, though we won't if we're still
        * waiting for one to finish transmitting. */
@@ -381,7 +389,7 @@ generic module Rf1aAckP () {
         error_t rv;
 
         call Rf1aPhysical.disableCca();
-        rv = call AckSend.send((message_t*)&ack_message, 0);
+        rv = call AckSend.send((message_t*)&ack_message, 1);
 
         if (SUCCESS != rv) {
           call Rf1aPhysical.enableCca();
@@ -403,6 +411,12 @@ generic module Rf1aAckP () {
   event message_t* AckReceive.receive (message_t* msg, void* payload, uint8_t len)
   {
     phy_header_t* hp = header(msg);
+
+
+//    if (!call AMPacket.isForMe(msg) || !call Rf1aPacket.crcPassed(msg))
+    if (!call AMPacket.isForMe(msg))
+      return msg;      
+
 
     atomic {
       uint8_t bare_state = TX_S_MASK & tx_state;

@@ -113,6 +113,7 @@ implementation {
   AckC.AckSend -> TinyOsPhysicalC.Send[IEEE154_TYPE_ACK];
   AckC.AckReceive -> TinyOsPhysicalC.Receive[IEEE154_TYPE_ACK];
   AckC.Rf1aPacket -> PhyPacketC;
+  AckC.AMPacket -> PacketC;
   AckC.Rf1aPhysical -> PhysicalC;
   AckC.Rf1aPhysicalMetadata -> PhysicalC;
   PacketAcknowledgements = AckC;
