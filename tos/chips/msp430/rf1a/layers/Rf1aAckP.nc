@@ -147,7 +147,7 @@ generic module Rf1aAckP () {
      * sendDone, before assuming the remote has failed to acknowledge
      * the transmission. */
 //    CFG_macAckWaitDuration_32k = 3277, // 100ms
-    CFG_macAckWaitDuration_32k = 7*32, // 10ms
+    CFG_macAckWaitDuration_32k = 20*32, // 20ms
 
     /** The number of retransmissions allowed.  Note that a value of 0
      * is legitimate, and requires acknowledgment on the first

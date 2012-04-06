@@ -85,7 +85,7 @@ typedef nx_struct rf1a_metadata_t {
  * to 255 bytes, to reduce overhead we default to a physical frame
  * limit of 127 bytes, less the size of the fixed header.  Beware that
  * rf1a_nalp_am_t headers cut into this payload space. */
-#define TOSH_DATA_LENGTH (127 - sizeof(rf1a_ieee154_t))
+#define TOSH_DATA_LENGTH (61 - sizeof(rf1a_ieee154_t))
 #endif // TOSH_DATA_LENGTH
 
 #endif _Rf1aPacket_H_
