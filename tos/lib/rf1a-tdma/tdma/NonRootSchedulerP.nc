@@ -341,6 +341,8 @@ module NonRootSchedulerP{
 
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
+    bool lostSynch;
+    bool lostSchedule;
     framesSinceLastSchedule++;
     framesSinceLastSynch++;
 
@@ -348,8 +350,13 @@ module NonRootSchedulerP{
     //hearing it.
     //also: try to do this not-so-close to the very beginning of the
     //cycle, where we can get into all kinds of trouble/edge cases.
-    if (isSynched && framesSinceLastSynch > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
-        curSched->activeFrames / 2){
+    lostSynch = framesSinceLastSynch > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
+        curSched->activeFrames / 2 ;
+    lostSchedule = framesSinceLastSchedule >
+        2*TDMA_TIMEOUT_CYCLES*(curSched ->activeFrames) +
+        curSched->activeFrames/2 ;
+
+    if (isSynched && (lostSynch || lostSchedule)){
       isSynched = FALSE;
       printf_TESTBED("SYNCH LOST\r\n");
       printf_SCHED_SR("LOST SYNC\r\n");

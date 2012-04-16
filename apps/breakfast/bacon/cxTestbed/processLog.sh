@@ -26,6 +26,7 @@ rsTf=$(tempfile -d $tfDir)
 pcTf=$(tempfile -d $tfDir)
 dcTf=$(tempfile -d $tfDir)
 prrTf=$(tempfile -d $tfDir)
+gapsTf=$(tempfile -d $tfDir)
 
 echo "extracting depth info"
 pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
@@ -327,6 +328,8 @@ CREATE TABLE FINAL_PRR AS
   GROUP BY src, dest
   ORDER BY src, dest;
 
+--assume that 10 rounds are enough for the initial schedule
+-- distribution
 DROP TABLE IF EXISTS FINAL_PRR_NO_STARTUP;
 CREATE TABLE FINAL_PRR_NO_STARTUP AS 
   SELECT 
@@ -387,6 +390,7 @@ EOF
 echo "dumping stats to file"
 sqlite3 $db < duty_cycles.sql > $dcTf 
 sqlite3 $db < prr_dist.sql > $prrTf 
+sqlite3 $db < gaps.sql > $gapsTf 
 
 echo "generating figures"
 mkdir -p figs/$(dirname $logFile)
@@ -394,6 +398,8 @@ R --slave --no-save --args dataFile=$prrTf plotPdf=T \
   outPrefix=figs/$logFile label=$label < fig_scripts/prr.R
 R --slave --no-save --args dataFile=$dcTf plotPdf=T \
   outPrefix=figs/$logFile label=$label < fig_scripts/dc.R
+R --slave --no-save --args dataFile=$gapsTf \
+  outPrefix=figs/$logFile label=$label < fig_scripts/gaps.R
 
 if [ "$keepTemp" != "-k" ]
 then
@@ -405,6 +411,7 @@ then
   rm $rsTf
   rm $dcTf
   rm $prrTf
+  rm $gapsTf
 else
   echo "keeping temp files"
 fi

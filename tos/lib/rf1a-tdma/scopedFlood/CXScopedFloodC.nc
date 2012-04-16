@@ -9,6 +9,9 @@ configuration CXScopedFloodC{
   uses interface TDMARoutingSchedule;
   uses interface Resource;
   uses interface CXRoutingTable;
+
+  uses interface Queue<message_t*>;
+  uses interface Pool<message_t>;
 } implementation {
   components CXScopedFloodP;
   
@@ -21,5 +24,7 @@ configuration CXScopedFloodC{
   CXScopedFloodP.Resource = Resource;
   CXScopedFloodP.CXRoutingTable = CXRoutingTable;
   CXScopedFloodP.TDMARoutingSchedule = TDMARoutingSchedule;
+  CXScopedFloodP.Queue = Queue;
+  CXScopedFloodP.Pool = Pool;
 }
 

@@ -21,6 +21,9 @@ module CXFloodP{
   
   uses interface CXRoutingTable;
 
+  uses interface Queue<message_t*>;
+  uses interface Pool<message_t>;
+
 } implementation {
 
   enum{
@@ -180,27 +183,26 @@ module CXFloodP{
 
 
   task void reportReceive(){
-    atomic{
-      if (rxOutstanding){
-        //TODO: should we update the routing table? or should we
-        //reserve that space for scoped floods, which may request
-        //future routing explicitly?
+    
+    if (rxOutstanding){
+      //TODO: should we update the routing table? or should we
+      //reserve that space for scoped floods, which may request
+      //future routing explicitly?
 //        printf_TESTBED_SCHED("RR %u\r\n", 
 //          call CXPacketMetadata.getReceivedCount(fwd_msg));
-        if ( (call CXPacket.destination(fwd_msg) == TOS_NODE_ID) ||
-            (call CXPacket.destination(fwd_msg) == AM_BROADCAST_ADDR)){
-          fwd_msg = signal Receive.receive[call CXPacket.type(fwd_msg)](
-            fwd_msg, 
-            call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
-            fwd_len - sizeof(cx_header_t));
-        }else {
-          fwd_msg = signal Snoop.receive[call CXPacket.type(fwd_msg)](
-            fwd_msg, 
-            call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
-            fwd_len - sizeof(cx_header_t));
-        }
-        rxOutstanding = FALSE;
+      if ( (call CXPacket.destination(fwd_msg) == TOS_NODE_ID) ||
+          (call CXPacket.destination(fwd_msg) == AM_BROADCAST_ADDR)){
+        fwd_msg = signal Receive.receive[call CXPacket.type(fwd_msg)](
+          fwd_msg, 
+          call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
+          fwd_len - sizeof(cx_header_t));
+      }else {
+        fwd_msg = signal Snoop.receive[call CXPacket.type(fwd_msg)](
+          fwd_msg, 
+          call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
+          fwd_len - sizeof(cx_header_t));
       }
+      rxOutstanding = FALSE;
     }
   }
 

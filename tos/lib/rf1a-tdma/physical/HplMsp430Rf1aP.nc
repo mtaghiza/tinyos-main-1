@@ -293,7 +293,7 @@ generic module HplMsp430Rf1aP () @safe() {
       uint8_t strobe = RF_SIDLE;
       uint8_t state = RF1A_S_IDLE;
       uint8_t rc;
-      
+      HPL_ATOMIC_SET_PIN;
       /* Maybe wake radio from deep sleep */
       rc = call Rf1aIf.strobe(RF_SNOP);
       if (0x80 & rc) {
@@ -312,6 +312,7 @@ generic module HplMsp430Rf1aP () @safe() {
       do {
         rc = call Rf1aIf.strobe(RF_SNOP);
       } while (state != (RF1A_S_MASK & rc));
+      HPL_ATOMIC_CLEAR_PIN;
     }
   }
 
@@ -329,6 +330,7 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     atomic {
       const uint8_t* cp = (const uint8_t*)config;
+      HPL_ATOMIC_SET_PIN;
 
       /* Reset the core.  Should be unnecessary, but a BOR might leave
        * the radio with garbage in its TXFIFO, which won't get cleared
@@ -380,6 +382,7 @@ generic module HplMsp430Rf1aP () @safe() {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
       }
+      HPL_ATOMIC_CLEAR_PIN;
     }
   }
 
@@ -388,10 +391,12 @@ generic module HplMsp430Rf1aP () @safe() {
     /* NB: We intentionally ignore the client here. */
     memset(config, 0, sizeof(config));
     atomic {
+      HPL_ATOMIC_SET_PIN;
       call Rf1aIf.readBurstRegister(PATABLE, config->patable, sizeof(config->patable));
       call Rf1aIf.readBurstRegister(0, (uint8_t*)config, RF1A_CONFIG_BURST_READ_LENGTH);
       config->partnum = call Rf1aIf.readRegister(PARTNUM);
       config->version = call Rf1aIf.readRegister(VERSION);
+      HPL_ATOMIC_CLEAR_PIN;
     }
   }
 
@@ -399,8 +404,10 @@ generic module HplMsp430Rf1aP () @safe() {
   void unconfigure_ ()
   {
     atomic {
+      HPL_ATOMIC_SET_PIN;
       call Rf1aIf.setIe((~ IFG_INTERRUPT) & call Rf1aIf.getIe());
       call Rf1aIf.resetRadioCore();
+      HPL_ATOMIC_CLEAR_PIN;
     }
   }
 
@@ -444,6 +451,7 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     unsigned int rv = count;
     atomic {
+      HPL_ATOMIC_SET_PIN;
       if (tx_pos) {
         unsigned int remaining = (tx_end - tx_pos);
         if (remaining < rv) {
@@ -452,6 +460,7 @@ generic module HplMsp430Rf1aP () @safe() {
       } else {
         rv = 0;
       }
+      HPL_ATOMIC_CLEAR_PIN;
     }
     return rv;
   }
@@ -464,6 +473,7 @@ generic module HplMsp430Rf1aP () @safe() {
     uint8_t* rp;
 
     atomic {
+      HPL_ATOMIC_SET_PIN;
       rp = tx_pos;
       if (rp) {
         unsigned int remaining = (tx_end - tx_pos);
@@ -481,6 +491,7 @@ generic module HplMsp430Rf1aP () @safe() {
           rp = tx_pos = 0;
         }
       }
+      HPL_ATOMIC_CLEAR_PIN;
     }
     return rp;
   }
@@ -584,6 +595,7 @@ generic module HplMsp430Rf1aP () @safe() {
     TXCP_SET_PIN;
     //save tx info
     atomic {
+      HPL_ATOMIC_SET_PIN;
       tx_remain = length;
       tx_result = SUCCESS;
       tx_state = TX_S_preparing;
@@ -594,6 +606,7 @@ generic module HplMsp430Rf1aP () @safe() {
         tx_pos = tx_end = 0;
       }
       tx_client = call ArbiterInfo.userId();
+      HPL_ATOMIC_CLEAR_PIN;
     }
     inuse = call Rf1aIf.readRegister(TXBYTES);
     /* If we're using variable packet lengths, and we haven't
@@ -672,6 +685,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      if ((RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
         register int loop_limit = RADIO_LOOP_LIMIT;
         uint8_t rc;
+        HPL_ATOMIC_SET_PIN;
         /* We're *supposed* to be in FSTXON here, so this strobe can't
          * be rejected.  In fact, it appears that if we're in FSTXON
          * and CCA fails, the radio transitions to RX mode.  In other
@@ -694,6 +708,7 @@ generic module HplMsp430Rf1aP () @safe() {
         if( ! signal Rf1aPhysical.getPacket[clientId](&tx_buffer, &tx_length) 
            || 0 == tx_length || tx_length >= FIFO_FILL_LIMIT){
           resumeIdleMode_(FALSE);
+          HPL_ATOMIC_CLEAR_PIN;
           return ESIZE;
         }
         GETPACKET_CLEAR_PIN;
@@ -724,6 +739,7 @@ generic module HplMsp430Rf1aP () @safe() {
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
           tx_result = ERETRY;
           cancelTransmit_();
+          HPL_ATOMIC_CLEAR_PIN;
           return tx_result;
         }
 //      }
@@ -744,6 +760,7 @@ generic module HplMsp430Rf1aP () @safe() {
           }
         }
       }
+      HPL_ATOMIC_CLEAR_PIN;
     } // atomic
     //all of the above code paths will result in a sendDone,
     //eventually.
@@ -769,12 +786,12 @@ generic module HplMsp430Rf1aP () @safe() {
     printf("st_\n\r");
     #endif
     atomic {
+      //TODO: check long atomic (encapsulated)
       uint8_t strobe = RF_STX;
       uint8_t state = RF1A_S_TX;
       uint8_t rc;
       bool entered_rx = FALSE;
       register int16_t loop_limit = RADIO_LOOP_LIMIT;
-
       if (target_fstxon) {
         strobe = RF_SFSTXON;
         state = RF1A_S_FSTXON;
@@ -840,6 +857,7 @@ generic module HplMsp430Rf1aP () @safe() {
     uint8_t rc;
 
     atomic {
+      //TODO: check long atomic (encapsulated)
       rx_state = RX_S_listening;
       // Go to receive mode now, unless in an active transmit mode
       if (transmitIsInactive_atomic_()) {
@@ -863,6 +881,8 @@ generic module HplMsp430Rf1aP () @safe() {
       return EBUSY;
     }
     atomic{
+      HPL_ATOMIC_SET_PIN;
+      //TODO: check long atomic
       /* And we can't be actively receiving anything */
       if (RX_S_listening < rx_state) {
         rc = call Rf1aIf.strobe(RF_RXSTAT | RF_SNOP);
@@ -879,11 +899,13 @@ generic module HplMsp430Rf1aP () @safe() {
           rx_result = FAIL;
           post receiveData_task();
         }
+        HPL_ATOMIC_CLEAR_PIN;
         return EBUSY;
       }
 
       /* And we can't already be transmitting something. */
       if (0 < tx_remain) {
+        HPL_ATOMIC_CLEAR_PIN;
         return EBUSY;
       }
 
@@ -915,6 +937,7 @@ generic module HplMsp430Rf1aP () @safe() {
       /* Even if it's being transmitted from the radio, wait until
        * it's gone. */
       if (! transmitIsInactive_atomic_()) {
+        HPL_ATOMIC_CLEAR_PIN;
         return ERETRY;
       }
 
@@ -931,10 +954,12 @@ generic module HplMsp430Rf1aP () @safe() {
       if ((RF1A_S_FSTXON != (rc & RF1A_S_MASK)) && (RF1A_S_TX != (rc & RF1A_S_MASK))) {
         int rv = startTransmission_(cca_check, TRUE);
         if (SUCCESS != rv) {
+          HPL_ATOMIC_CLEAR_PIN;
           return rv;
         }
         rc = RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP);
       }
+      HPL_ATOMIC_CLEAR_PIN;
       return SUCCESS;
     }
   }
@@ -995,6 +1020,7 @@ generic module HplMsp430Rf1aP () @safe() {
       return EBUSY;
     }
     atomic {
+      HPL_ATOMIC_SET_PIN;
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
         #ifdef DEBUG_TX_P
         printf("rp.rim\n\r");
@@ -1010,6 +1036,7 @@ generic module HplMsp430Rf1aP () @safe() {
         resumeIdleMode_(signal Rf1aPhysical.idleModeRx[client]());
       }
     }
+    HPL_ATOMIC_CLEAR_PIN;
     return SUCCESS;
   }
 
@@ -1028,10 +1055,13 @@ generic module HplMsp430Rf1aP () @safe() {
       return EBUSY;
     }
     atomic {
+      HPL_ATOMIC_SET_PIN;
       if (0 != rx_pos) {
+        HPL_ATOMIC_CLEAR_PIN;
         return EALREADY;
       }
       startReception_();
+      HPL_ATOMIC_CLEAR_PIN;
     }
     return SUCCESS;
   }
@@ -1048,6 +1078,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     atomic {
       uint8_t rc;
+      HPL_ATOMIC_SET_PIN;
 
       /* Reject sleep if actively receiving or have a transmission
        * queued or going out */
@@ -1064,6 +1095,7 @@ generic module HplMsp430Rf1aP () @safe() {
       while (! (0x80 & rc)) {
         rc = call Rf1aIf.strobe(RF_SNOP);
       }
+      HPL_ATOMIC_CLEAR_PIN;
     }
     return SUCCESS;
   }
@@ -1120,6 +1152,7 @@ generic module HplMsp430Rf1aP () @safe() {
     int result;
 
     atomic {
+      HPL_ATOMIC_SET_PIN;
       do {
         unsigned int need;
         unsigned int consume;
@@ -1274,6 +1307,7 @@ generic module HplMsp430Rf1aP () @safe() {
           rx_state = RX_S_inactive;
         }
       }
+      HPL_ATOMIC_CLEAR_PIN;
     } // atomic
 
     /* Repost the receive task if there's more work to be done. */
@@ -1338,6 +1372,7 @@ generic module HplMsp430Rf1aP () @safe() {
       length = 0;
     }
     atomic {
+      HPL_ATOMIC_SET_PIN;
       /* If there's a buffer in play and we're actively receiving into
        * it, reject the attempt. */
       if (rx_pos && (RX_S_listening < rx_state)) {
@@ -1348,6 +1383,7 @@ generic module HplMsp430Rf1aP () @safe() {
         P1OUT |= BIT1;
         #endif
         printf_BF("receiving: %x\r\n", rx_state);
+        HPL_ATOMIC_CLEAR_PIN;
         return EBUSY;
       }
 
@@ -1379,6 +1415,7 @@ generic module HplMsp430Rf1aP () @safe() {
       } else if (RX_S_inactive == rx_state) {
         startReception_();
       }
+      HPL_ATOMIC_CLEAR_PIN;
     }
     return SUCCESS;
   }

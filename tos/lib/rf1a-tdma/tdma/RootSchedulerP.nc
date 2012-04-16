@@ -366,19 +366,34 @@ module RootSchedulerP{
     return curSchedule->maxRetransmit;
   }
   
+  am_addr_t rrSource;
+  am_addr_t rrDest;
+  uint32_t rrSn;
+  uint8_t rrRC;
+  int16_t rrRssi;
+  uint8_t rrLqi;
+
+  task void reportReplyReceive(){
+    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+      rrSource,
+      rrDest,
+      rrSn,
+      rrRC,
+      rrRssi,
+      rrLqi);
+  }
+
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
     uint8_t curSRI = srIndex(curSchedule->symbolRate);
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
-    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %u l: %u\r\n", 
-      call CXPacket.source(msg),
-      call CXPacket.destination(msg),
-      call CXPacket.sn(msg),
-      call CXPacketMetadata.getReceivedCount(msg),
-      call Rf1aPacket.rssi(msg),
-      call Rf1aPacket.lqi(msg)
-      );
+    rrSource = call CXPacket.source(msg);
+    rrDest = call CXPacket.destination(msg);
+    rrSn = call CXPacket.sn(msg);
+    rrRC = call CXPacketMetadata.getReceivedCount(msg);
+    rrRssi = call Rf1aPacket.rssi(msg);
+    rrLqi = call Rf1aPacket.lqi(msg);
 //    printf_TESTBED("AnnounceReply: %u %u \r\n", 
 //      call CXPacket.source(msg), 
 //      call CXPacketMetadata.getReceivedCount(msg));

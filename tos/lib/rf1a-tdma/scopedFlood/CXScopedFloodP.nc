@@ -16,6 +16,9 @@ module CXScopedFloodP{
   uses interface Resource;
 
   uses interface CXRoutingTable;
+
+  uses interface Queue<message_t*>;
+  uses interface Pool<message_t>;
 } implementation {
   enum{
     S_IDLE = 0x00,
@@ -283,6 +286,7 @@ module CXScopedFloodP{
 
   task void signalSendDone(){
     atomic{
+      //TODO: check long atomic
       originDataPending = FALSE;
       originDataSent = FALSE;
       signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, sendDoneError);
@@ -367,6 +371,7 @@ module CXScopedFloodP{
   //generate an ack, get a new RX buffer, and ready for sending acks.
   task void processReceive(){
     atomic{
+      //TODO: check long atomic
       if (state == S_ACK_PREPARE){
         cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(origin_ack_msg, sizeof(cx_ack_t)));
 

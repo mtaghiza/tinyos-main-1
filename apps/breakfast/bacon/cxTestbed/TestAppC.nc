@@ -65,6 +65,12 @@ configuration TestAppC{
 
   Rf1aPhysicalC.Rf1aConfigure -> CXTDMAPhysicalC.Rf1aConfigure;
 
+  components new QueueC(message_t*, CX_MESSAGE_POOL_SIZE)
+    as FloodQueue;
+  components new QueueC(message_t*, CX_MESSAGE_POOL_SIZE)
+    as ScopedFloodQueue;
+  components new PoolC(message_t, CX_MESSAGE_POOL_SIZE);
+
   components CXTDMADispatchC;
   CXTDMADispatchC.SubCXTDMA -> CXTDMAPhysicalC;
   CXTDMADispatchC.CXPacket -> Rf1aCXPacketC;
@@ -81,6 +87,8 @@ configuration TestAppC{
   CXFloodC.CXPacket -> Rf1aCXPacketC;
   CXFloodC.AMPacket -> AMPacket;
   CXFloodC.LayerPacket -> Rf1aCXPacketC;
+  CXFloodC.Pool -> PoolC;
+  CXFloodC.Queue -> FloodQueue;
 
   //this is just used to keep the enumerated arbiter happy
   enum{
@@ -93,6 +101,8 @@ configuration TestAppC{
   CXScopedFloodC.CXPacket -> Rf1aCXPacketC;
   CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
   CXScopedFloodC.AMPacket -> AMPacket;
+  CXFloodC.Pool -> PoolC;
+  CXFloodC.Queue -> ScopedFloodQueue;
 
   components CXRoutingTableC;
   CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;

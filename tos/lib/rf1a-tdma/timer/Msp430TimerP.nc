@@ -67,6 +67,7 @@ implementation
 
     if( isClockSourceAsync ) {
       atomic {
+        //TODO: check long atomic
         uint16_t t0;
         uint16_t t1;
         uint16_t t2;
@@ -141,6 +142,11 @@ implementation
 
   async event void Overflow.fired()
   {
+    //TODO: remove debug code: if the width of these gets messed up,
+    //then we're missing overflow events, which would cause the
+    //+10.08ms behavior
+    #warning Using p1.1 for overflow event
+    P1OUT ^= BIT1;
     signal Timer.overflow();
   }
 

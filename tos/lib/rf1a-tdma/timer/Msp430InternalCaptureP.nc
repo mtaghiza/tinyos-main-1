@@ -40,7 +40,13 @@ generic module Msp430InternalCaptureP(){
   }
 
   async event void Msp430Capture.captured( uint16_t time ) {
-    call Msp430TimerControl.clearPendingInterrupt();
+  //Is this supressing the compare interrupt? we just want to say "ok,
+  //we got the capture." Surely this is wired to a different instance
+  //from the alarms.
+  // it appears to be suppressing it, that seems bad.
+  //according to the user guide, the interrupt flag for capture events
+  //is cleared automatically when the interrupt is serviced.
+//    call Msp430TimerControl.clearPendingInterrupt();
     call Msp430Capture.clearOverflow();
     signal Capture.captured( time );
   }

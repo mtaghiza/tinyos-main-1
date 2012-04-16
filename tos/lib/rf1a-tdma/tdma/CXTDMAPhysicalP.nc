@@ -103,6 +103,10 @@ module CXTDMAPhysicalP {
   uint16_t rxCaptureCount = 0;
   uint16_t txCaptureCount = 0;
 
+  int32_t adjustments[64];
+  uint16_t adjustmentFrames[64];
+  uint8_t adjustmentCount = 0;
+
   message_t* tx_msg;
   
   task void debugConfig();
@@ -220,6 +224,7 @@ module CXTDMAPhysicalP {
 
   task void reportStats(){
     uint8_t rs;
+    uint8_t i;
     REPORT_STATS_TOGGLE_PIN;
     printf_RADIO_STATS("PC %lu Sent %u Received %u tx cap %u rx cap %u\r\n", reportNum, sendCount,
       receiveCount, txCaptureCount, rxCaptureCount);
@@ -231,6 +236,11 @@ module CXTDMAPhysicalP {
         overflows, cur);
     }
     reportNum++;
+    for (i = 0; i < adjustmentCount; i++){
+      printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
+        adjustments[i]);
+    }
+    adjustmentCount = 0;
 
 //    printf_RADIO_STATS("xt2Counted = sum([");
 //    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
@@ -675,6 +685,36 @@ module CXTDMAPhysicalP {
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst; 
     uint32_t capture;
+    //Something is wrong with this correction: we are shifting the
+    //next frame start by some 10 mS at times (one 16-bit overflow). 
+    // It could be caused by:
+    // UL 
+    // 1x : capture recorded as x
+    // 2x : other stuff still happening
+    // 2y : capture ISR runs
+    // 2z : getNow returns 
+    //      we compare z to x and say "ok, no overflow has occurred
+    //      between the capture and checking the current time, because
+    //      z > x". But this misses the previous overflow.
+    //
+    // But I see no evidence for this in the LA output. This would
+    // occur if more than 10 ms elapsed between the GDO signal and the
+    // capture ISR running, which I don't see.
+     
+    //could hack around this by saying "only allow adjustments of up
+    //to x uS, assume anything larger is erroneous. 
+    // - tried having nodes log the size of each adjustment they make:
+    //   it looks like they are unaware of this problem (i.e. I don't
+    //   see anything about the adjustment which causes the
+    //   off-by-10ms issue and other valid adjustments).
+
+    //could also occur if there's some issue with the alarm logic and
+    //we schedule the next FSA event with the right value but overflow
+    //is handled incorrectly and it gets handled at the wrong point.
+    //This seems more likely given the fact that the above hack was
+    //not an option, but I have a poor track record for identifying
+    //bugs in core components.
+
 //    printf("cm %x\r\n", captureMode);
     SC_SET_PIN;
     fst = call FrameStartAlarm.getNow();
@@ -694,7 +734,9 @@ module CXTDMAPhysicalP {
     //  most once before this event runs (hopefully true, about 10 ms
     //  at 6.5 Mhz)
     if (time > (fst & 0x0000ffff)){
+      SYNCH_SET_PIN;
       fst  -= 0x00010000;
+      SYNCH_CLEAR_PIN;
     } 
     capture = (fst & 0xffff0000) | time;
     //1 uS
@@ -724,10 +766,13 @@ module CXTDMAPhysicalP {
         printf_BF("delta: %ld \r\n", 
           thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen)
           );
+        adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
 //        post rxResynch();
+        adjustmentFrames[adjustmentCount] = frameNum;
+        adjustmentCount = (adjustmentCount + 1) %64;
         setState(S_RECEIVING);
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
@@ -739,6 +784,7 @@ module CXTDMAPhysicalP {
         uint32_t thisFrameStart = capture 
           - fsDelays[s_sri];
 //          - tuningDelays[s_sri];
+        adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         txCaptureCount++;
         if (lastSentOrigin){
           //TODO: see if this holds constant across different nodes.
@@ -755,8 +801,9 @@ module CXTDMAPhysicalP {
         call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
+        adjustmentFrames[adjustmentCount] = frameNum;
+        adjustmentCount = (adjustmentCount + 1) %64;
 //        post txResynch();
-
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else {
         setState(S_ERROR_9);
@@ -866,6 +913,8 @@ module CXTDMAPhysicalP {
           receiveCount++;
 //          printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{
+            //TODO: check long atomic
+
             //Nope, this is done during the TX process.
   //          call CXPacket.setCount((message_t*)buffer, 
   //            call CXPacket.count((message_t*)buffer) +1);

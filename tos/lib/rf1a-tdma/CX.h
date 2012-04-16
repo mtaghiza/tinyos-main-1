@@ -44,4 +44,8 @@ typedef struct cx_metadata_t{
 #define CX_TYPE_ACK  0xab
 #define CXTDMA_RM_RESOURCE "CXTDMA.RM.Resource"
 
+#ifndef CX_MESSAGE_POOL_SIZE
+#define CX_MESSAGE_POOL_SIZE 8
+#endif
+
 #endif
