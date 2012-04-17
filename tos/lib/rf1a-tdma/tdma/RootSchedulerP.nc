@@ -170,7 +170,9 @@ module RootSchedulerP{
           ns->scheduleNum,
           ns->symbolRate);
         txState = S_SENDING;
-      }else{
+      }else if (EBUSY == error){
+        printf_SCHED("announce schedule: %s\r\n", decodeError(error));
+      }else {
         printf("announce schedule: %s\r\n", decodeError(error));
       }
     } else {
@@ -411,7 +413,7 @@ module RootSchedulerP{
         curSchedule->scheduleNum, curSchedule->scheduleNum, curSRI, nodesReachable[curSRI],
         maxDepth[curSRI]);
     } else {
-      printf("Unexpected reply.rx: state: %x src %u (sn: %u) cur sched: %u\r\n", 
+      printf_SCHED("Unexpected reply.rx: state: %x src %u (sn: %u) cur sched: %u\r\n", 
         state, call CXPacket.source(msg), reply->scheduleNum, 
         curSchedule->scheduleNum);
     }

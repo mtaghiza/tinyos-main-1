@@ -75,7 +75,7 @@ generic module Msp430SWCaptureP(){
         lastCapture, 
         ret);
       ret &= 0x0000ffff;
-      printf("%lx\r\n", ret);
+      printf_SW_CAPTURE("%lx\r\n", ret);
     }
     lastCapture = cap;
 //    overflows = 0;

@@ -14,19 +14,19 @@
 #define printf_F_STATE(...) 
 #endif
 
-#ifdef DEBUG_F_RX
+#if DEBUG_F_RX == 1
 #define printf_F_RX(...) printf(__VA_ARGS__)
 #else
 #define printf_F_RX(...) 
 #endif
 
-#ifdef DEBUG_F_SCHED
+#if DEBUG_F_SCHED == 1
 #define printf_F_SCHED(...) printf(__VA_ARGS__)
 #else
 #define printf_F_SCHED(...) 
 #endif
 
-#ifdef DEBUG_F_GP
+#if DEBUG_F_GP == 1
 #define printf_F_GP(...) printf(__VA_ARGS__)
 #else
 #define printf_F_GP(...) 

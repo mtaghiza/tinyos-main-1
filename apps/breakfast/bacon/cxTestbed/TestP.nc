@@ -9,6 +9,7 @@
 #include "message.h"
 #include "CXTDMA.h"
 #include "SchedulerDebug.h"
+#include "test.h"
 
 module TestP {
   uses interface Boot;
@@ -69,7 +70,7 @@ module TestP {
       P2OUT |=BIT1;
     }
     call UartControl.start();
-    printf("Booted.\r\n");
+    printf_APP("Booted.\r\n");
     #if DESKTOP_TEST == 0
 //    printf("starting\r\n");
     post startTask();
@@ -92,7 +93,7 @@ module TestP {
   event void SplitControl.startDone(error_t error){
 //    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
 //    call AMPacket.clear(tx_msg);
-    printf("Started.\r\n");
+    printf_APP("Started.\r\n");
     call Leds.led0On();
     if (TOS_NODE_ID != 0){
       #if IS_SENDER == 1
@@ -106,7 +107,7 @@ module TestP {
   }
 
   event void SplitControl.stopDone(error_t error){
-    printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    printf_APP("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
   task void broadcastTask(){
@@ -134,7 +135,7 @@ module TestP {
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
-    printf("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+    printf_APP("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
@@ -163,7 +164,7 @@ module TestP {
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     call Leds.led2Toggle();
-    printf("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+    printf_APP("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),

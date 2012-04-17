@@ -1,62 +1,58 @@
 #ifndef SCHEDULER_DEBUG_H
 #define SCHEDULER_DEBUG_H
 
-#ifdef DEBUG_TESTBED_SCHED_NEW
+#if DEBUG_TESTBED_SCHED_NEW == 1
 #define printf_TESTBED_SCHED_NEW(...) printf(__VA_ARGS__)
 #else
 #define printf_TESTBED_SCHED_NEW(...)
 #endif
 
-#ifdef DEBUG_TESTBED_SCHED_ALL
+#if DEBUG_TESTBED_SCHED_ALL == 1
 #define printf_TESTBED_SCHED_ALL(...) printf(__VA_ARGS__)
 #else
 #define printf_TESTBED_SCHED_ALL(...)
 #endif
 
-#ifdef DEBUG_TESTBED_SCHED
+#if DEBUG_TESTBED_SCHED == 1
 #define printf_TESTBED_SCHED(...) printf(__VA_ARGS__)
 #else
 #define printf_TESTBED_SCHED(...)
 #endif
 
-#ifdef DEBUG_TESTBED
+#if DEBUG_TESTBED == 1
 #define printf_TESTBED(...) printf(__VA_ARGS__)
 #else
 #define printf_TESTBED(...)
 #endif
 
-#ifdef DEBUG_TESTBED_CRC
+#if DEBUG_TESTBED_CRC == 1
 #define printf_TESTBED_CRC(...) printf(__VA_ARGS__)
 #else
 #define printf_TESTBED_CRC(...)
 #endif
 
-
-
-#ifdef DEBUG_SCHED
+#if DEBUG_SCHED == 1
 #define printf_SCHED(...) printf(__VA_ARGS__)
 #else
 #define printf_SCHED(...)
 #endif
 
-#ifdef DEBUG_SCHED_IO
+#if DEBUG_SCHED_IO == 1
 #define printf_SCHED_IO(...) printf(__VA_ARGS__)
 #else
 #define printf_SCHED_IO(...)
 #endif
 
-#ifdef DEBUG_SCHED_SR
+#if DEBUG_SCHED_SR == 1
 #define printf_SCHED_SR(...) printf(__VA_ARGS__)
 #else
 #define printf_SCHED_SR(...)
 #endif
 
-#ifdef DEBUG_TIMING
+#if DEBUG_TIMING == 1
 #define printf_TIMING(...) printf(__VA_ARGS__)
 #else
 #define printf_TIMING(...)
 #endif
-
-
 
 #endif

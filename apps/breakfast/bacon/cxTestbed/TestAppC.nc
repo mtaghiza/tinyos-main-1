@@ -9,6 +9,12 @@ configuration TestAppC{
   components PlatformSerialC;
   components LedsC;
   components new TimerMilliC();
+  #if STACK_PROTECTION == 1
+  
+  components StackGuardC;
+  #else
+  #warning Disabling stack protection
+  #endif
 
   TestP.Boot -> MainC;
   TestP.UartStream -> PlatformSerialC;
@@ -101,8 +107,8 @@ configuration TestAppC{
   CXScopedFloodC.CXPacket -> Rf1aCXPacketC;
   CXScopedFloodC.LayerPacket -> Rf1aCXPacketC;
   CXScopedFloodC.AMPacket -> AMPacket;
-  CXFloodC.Pool -> PoolC;
-  CXFloodC.Queue -> ScopedFloodQueue;
+  CXScopedFloodC.Pool -> PoolC;
+  CXScopedFloodC.Queue -> ScopedFloodQueue;
 
   components CXRoutingTableC;
   CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;

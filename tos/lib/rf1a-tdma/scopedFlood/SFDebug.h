@@ -1,7 +1,7 @@
 #ifndef SF_DEBUG_H
 #define SF_DEBUG_H
 
-#ifdef DEBUG_SF_TESTBED_AW
+#if DEBUG_SF_TESTBED_AW == 1
 #define printf_SF_TESTBED_AW(...) printf(__VA_ARGS__)
 #else
 #define printf_SF_TESTBED_AW(...)
@@ -25,13 +25,13 @@
 #define printf_SF_STATE(...)
 #endif
 
-#ifdef DEBUG_SF_GP
+#if DEBUG_SF_GP == 1
 #define printf_SF_GP(...) printf(__VA_ARGS__)
 #else
 #define printf_SF_GP(...)
 #endif
 
-#ifdef DEBUG_SF_RX
+#if DEBUG_SF_RX == 1
 #define printf_SF_RX(...) printf(__VA_ARGS__)
 #else
 #define printf_SF_RX(...)

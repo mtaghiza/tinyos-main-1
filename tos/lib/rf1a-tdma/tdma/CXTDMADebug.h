@@ -113,25 +113,25 @@
 #define GP_SET_PIN 
 #endif
 
-#ifdef DEBUG_TDMA_SS
+#if DEBUG_TDMA_SS == 1
 #define printf_TDMA_SS(...) printf(__VA_ARGS__)
 #else
 #define printf_TDMA_SS(...) 
 #endif
 
-#ifdef DEBUG_PFS
+#if DEBUG_PFS == 1
 #define printf_PFS(...) printf(__VA_ARGS__)
 #else
 #define printf_PFS(...) 
 #endif
 
-#ifdef DEBUG_PFS_FREAKOUT
+#if DEBUG_PFS_FREAKOUT == 1
 #define printf_PFS_FREAKOUT(...) printf(__VA_ARGS__)
 #else
 #define printf_PFS_FREAKOUT(...) 
 #endif
 
-#ifdef DEBUG_PHY_TIME
+#if DEBUG_PHY_TIME == 1
 #define printf_PHY_TIME(...) printf(__VA_ARGS__)
 #else
 #define printf_PHY_TIME(...) 
@@ -147,6 +147,12 @@
 #define printf_SYNCH_ADJUST(...) printf(__VA_ARGS__)
 #else
 #define printf_SYNCH_ADJUST(...) 
+#endif
+
+#if DEBUG_CONFIG == 1
+#define printf_DEBUG_CONFIG(...) printf(__VA_ARGS__)
+#else
+#define printf_DEBUG_CONFIG(...) 
 #endif
 
 

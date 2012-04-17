@@ -14,7 +14,7 @@ module SRFS7_915_GFSK_100K_SENS_HC {
     return SRFS7_915_GFSK_100K_SENS_H_GLOBAL_ID;
   }
 
-rf1a_config_t this_config = {
+const rf1a_config_t this_config = {
   iocfg2: SRFS7_915_GFSK_100K_SENS_H_SMARTRF_SETTING_IOCFG2,
 #if defined(SRFS7_915_GFSK_100K_SENS_H_SMARTRF_SETTING_IOCFG1)
   iocfg1: SRFS7_915_GFSK_100K_SENS_H_SMARTRF_SETTING_IOCFG1,

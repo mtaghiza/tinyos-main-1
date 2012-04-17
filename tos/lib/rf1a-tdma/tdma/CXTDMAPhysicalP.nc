@@ -103,9 +103,11 @@ module CXTDMAPhysicalP {
   uint16_t rxCaptureCount = 0;
   uint16_t txCaptureCount = 0;
 
+  #if DEBUG_SYNCH_ADJUST == 1
   int32_t adjustments[64];
   uint16_t adjustmentFrames[64];
   uint8_t adjustmentCount = 0;
+  #endif
 
   message_t* tx_msg;
   
@@ -236,12 +238,13 @@ module CXTDMAPhysicalP {
         overflows, cur);
     }
     reportNum++;
+    #if DEBUG_SYNCH_ADJUST == 1
     for (i = 0; i < adjustmentCount; i++){
       printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
         adjustments[i]);
     }
     adjustmentCount = 0;
-
+    #endif
 //    printf_RADIO_STATS("xt2Counted = sum([");
 //    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
 //      printf_RADIO_STATS("%lu, ", call StateTiming.getTotal(rs));
@@ -766,13 +769,17 @@ module CXTDMAPhysicalP {
         printf_BF("delta: %ld \r\n", 
           thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen)
           );
+        #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
+        #endif
         call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
 //        post rxResynch();
+        #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustmentFrames[adjustmentCount] = frameNum;
         adjustmentCount = (adjustmentCount + 1) %64;
+        #endif
         setState(S_RECEIVING);
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
@@ -784,7 +791,9 @@ module CXTDMAPhysicalP {
         uint32_t thisFrameStart = capture 
           - fsDelays[s_sri];
 //          - tuningDelays[s_sri];
+        #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
+        #endif
         txCaptureCount++;
         if (lastSentOrigin){
           //TODO: see if this holds constant across different nodes.
@@ -801,8 +810,10 @@ module CXTDMAPhysicalP {
         call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
         call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
+        #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustmentFrames[adjustmentCount] = frameNum;
         adjustmentCount = (adjustmentCount + 1) %64;
+        #endif
 //        post txResynch();
         signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else {
@@ -874,10 +885,6 @@ module CXTDMAPhysicalP {
     printf_RADIO_STATS("CRC PASSED\r\n");
   }
 
-  task void printFailed(){
-    printf("CRC FAILED\r\n");
-  }
-
   am_addr_t reportRXSrc;
   uint32_t reportRXSn;
   task void reportRX(){
@@ -895,7 +902,7 @@ module CXTDMAPhysicalP {
                                              int result) {
     reportRXSrc = call CXPacket.source((message_t*) buffer);
     reportRXSn = call CXPacket.sn((message_t*) buffer);
-    post reportRX();
+//    post reportRX();
 //    printf_TESTBED("RD.");
     if (checkState(S_RECEIVING)){
 //      printf_TESTBED("r");
@@ -935,8 +942,6 @@ module CXTDMAPhysicalP {
               frameNum, lastRECapture);
           }
         } else {
-//          printf_TESTBED("~c\r\n");
-          post printFailed();
           printf_TESTBED_CRC("R! %u\r\n", frameNum);
         }
         completeCleanup();
@@ -1007,8 +1012,10 @@ module CXTDMAPhysicalP {
 
   task void debugConfig(){
     rf1a_config_t config;
+    #if DEBUG_CONFIG == 1
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
+    #endif
   }
   
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
