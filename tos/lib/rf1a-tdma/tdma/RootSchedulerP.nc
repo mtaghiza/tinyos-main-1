@@ -184,7 +184,7 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+      printf_SCHED_RXTX("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
         TOS_NODE_ID,
         call CXPacket.destination(msg),
         call CXPacket.sn(msg),
@@ -376,7 +376,7 @@ module RootSchedulerP{
   uint8_t rrLqi;
 
   task void reportReplyReceive(){
-    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+    printf_SCHED_RXTX("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
       rrSource,
       rrDest,
       rrSn,
@@ -387,15 +387,17 @@ module RootSchedulerP{
 
   event message_t* ReplyReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    uint8_t curSRI; 
     uint8_t receivedCount = call CXPacketMetadata.getReceivedCount(msg);
     cx_schedule_reply_t* reply = (cx_schedule_reply_t*)payload;
+    curSRI = srIndex(curSchedule->symbolRate);    
     rrSource = call CXPacket.source(msg);
     rrDest = call CXPacket.destination(msg);
     rrSn = call CXPacket.sn(msg);
     rrRC = call CXPacketMetadata.getReceivedCount(msg);
     rrRssi = call Rf1aPacket.rssi(msg);
     rrLqi = call Rf1aPacket.lqi(msg);
+    post reportReplyReceive();
 //    printf_TESTBED("AnnounceReply: %u %u \r\n", 
 //      call CXPacket.source(msg), 
 //      call CXPacketMetadata.getReceivedCount(msg));
@@ -475,7 +477,9 @@ module RootSchedulerP{
 
   //Tests
   bool disconnected(){
-    return nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
+    bool ret;
+    ret = nodesReachable[srIndex(curSchedule->symbolRate)] != totalNodes;
+    return ret;
   }
 
   bool higherSRChecked(){
@@ -483,8 +487,10 @@ module RootSchedulerP{
   }
 
   bool lowerMoreEfficient(){
-    uint8_t lastDepth = maxDepth[srIndex(lastSR)];
-    uint8_t curDepth = maxDepth[srIndex(curSR)];
+    uint8_t lastDepth;
+    uint8_t curDepth;
+    lastDepth = maxDepth[srIndex(lastSR)];
+    curDepth = maxDepth[srIndex(curSR)];
 //    printf_SCHED_SR("last %u cur %u: %u *%u < %u * %u\r\n",
 //      lastSR, curSR, curSR, lastDepth, lastSR, curDepth);
     //TRUE: lastDepth/lastSR < curDepth/curSR
@@ -530,7 +536,8 @@ module RootSchedulerP{
   }
 
   bool increaseNextSR(){
-    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    uint8_t curSRI ;
+    curSRI = srIndex(curSchedule->symbolRate);
     //OK to increase if we will not exceed maximum-established symbol
     //rate.
     if ( curSRI < NUM_SRS - 1 ){
@@ -555,7 +562,8 @@ module RootSchedulerP{
   }
 
   bool decreaseNextSR(){
-    uint8_t curSRI = srIndex(curSchedule->symbolRate);
+    uint8_t curSRI ;
+    curSRI = srIndex(curSchedule->symbolRate);
     //OK to decrease if we are not already at min 
     if ( curSRI > 0 ){
       setupPacket(next_schedule_msg,
@@ -629,7 +637,6 @@ module RootSchedulerP{
     cx_schedule_t* schedule; 
     //not necessary, this is done by the send component
     //call CXPacket.init(msg);
-
     call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
     schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));

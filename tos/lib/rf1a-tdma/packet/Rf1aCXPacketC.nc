@@ -6,6 +6,7 @@ configuration Rf1aCXPacketC{
   uses interface Ieee154Packet;
   uses interface AMPacket;
   uses interface Rf1aPacket;
+  uses interface ActiveMessageAddress;
 } implementation {
   components Rf1aCXPacketP as PacketP;
   Packet = PacketP;
@@ -15,4 +16,5 @@ configuration Rf1aCXPacketC{
   Rf1aPacket = PacketP;
   AMPacket = PacketP;
   CXPacketMetadata = PacketP;
+  PacketP.ActiveMessageAddress = ActiveMessageAddress;
 }

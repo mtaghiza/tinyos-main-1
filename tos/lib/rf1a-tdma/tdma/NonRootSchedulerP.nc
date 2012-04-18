@@ -68,14 +68,6 @@ module NonRootSchedulerP{
   #define DELTA_BUF_LEN 8
   int32_t delta[DELTA_BUF_LEN];
 
-  bool arPending = FALSE;
-  am_addr_t ars;
-  am_addr_t ard;
-  uint32_t arn;
-  uint8_t arc;
-  int arr;
-  int arl;
-
   command error_t SplitControl.start(){
     error_t error = call SubSplitControl.start();
     if (SUCCESS == error){
@@ -153,16 +145,6 @@ module NonRootSchedulerP{
 
   task void updateScheduleTask();
 
-  task void reportAR(){
-    printf_TESTBED("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
-      ars,
-      ard,
-      arn,
-      arc,
-      arr,
-      arl);
-    arPending = FALSE;
-  }
 
   event message_t* AnnounceReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
@@ -170,20 +152,16 @@ module NonRootSchedulerP{
     uint32_t rxTS;
     uint32_t curRootStart;
     uint16_t rxFrameNum;
+    printf_TMP("AR.r: %p %p %u\r\n", msg, payload, len);
     printf_SCHED("AR.r ");
-    if (!arPending){
-      arPending = TRUE;
-      ars = call CXPacket.source(msg);
-      ard = call CXPacket.destination(msg);
-      arn = call CXPacket.sn(msg);
-      arc = call CXPacketMetadata.getReceivedCount(msg);
-      arr = call Rf1aPacket.rssi(msg);
-      arl = call Rf1aPacket.lqi(msg);
-      post reportAR();
-    }else {
-      printf_TESTBED("!AR.R\r\n");
-    }
-
+    printf_SCHED_RXTX("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+      call CXPacket.source(msg),
+      call CXPacket.destination(msg),
+      call CXPacket.sn(msg),
+      call CXPacketMetadata.getReceivedCount(msg),
+      call Rf1aPacket.rssi(msg),
+      call Rf1aPacket.lqi(msg));
+  
     //update clock skew figures 
     framesSinceLastSchedule = 0;
 
@@ -194,6 +172,7 @@ module NonRootSchedulerP{
     curRootStart = call CXPacket.getTimestamp(msg);
 
     if (pl->scheduleNum == curSched->scheduleNum){
+      printf_TMP("NEW\r\n");
       printf_SCHED("s");
       if(lastRxTS != 0){
         uint8_t i;
@@ -262,6 +241,7 @@ module NonRootSchedulerP{
       return msg; 
     } else {
       message_t* swp = curMsg;
+      printf_TMP("REPEAT\r\n");
       printf_SCHED("n\r\n");
       changePending = TRUE;
       lastRxTS = rxTS;
@@ -370,7 +350,7 @@ module NonRootSchedulerP{
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
-    printf_TESTBED("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+    printf_SCHED_RXTX("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),

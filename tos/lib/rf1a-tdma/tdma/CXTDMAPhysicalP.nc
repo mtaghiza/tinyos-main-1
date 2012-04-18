@@ -25,6 +25,7 @@ module CXTDMAPhysicalP {
   uses interface Rf1aStatus;
 
   uses interface Rf1aPacket;
+  uses interface Packet;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
 
@@ -914,6 +915,10 @@ module CXTDMAPhysicalP {
 
         setState(S_RX_CLEANUP);
         call Rf1aPhysicalMetadata.store(rf1aMD);
+        //count includes the header length, so we need to subtract it
+        //here.
+        call Packet.setPayloadLength(msg,
+          count-sizeof(message_header_t));
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
 //          printf_TESTBED("c\r\n");
           post printPassed();

@@ -17,7 +17,7 @@ tickLen="4/26e6"
 
 #dos2unix $logFile
 
-depthTf=$(tempfile -d $tfDir)
+#depthTf=$(tempfile -d $tfDir)
 rxTf=$(tempfile -d $tfDir)
 txTf=$(tempfile -d $tfDir)
 irTf=$(tempfile -d $tfDir)
@@ -28,8 +28,8 @@ dcTf=$(tempfile -d $tfDir)
 prrTf=$(tempfile -d $tfDir)
 gapsTf=$(tempfile -d $tfDir)
 
-echo "extracting depth info"
-pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
+#echo "extracting depth info"
+#pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
 echo "extracting RX"
 pv $logFile | awk '($3 == "RX")&&(NF == 15){print $1,$5,$2,$7,$9, $11, 1}' > $rxTf
 echo "extracting TX"
@@ -47,20 +47,20 @@ CREATE TABLE DEPTH (
   depth INTEGER
 );
 .separator ' '
-select "Importing Depth from $depthTf";
-.import $depthTf DEPTH
+--select "Importing Depth from $depthTf";
+--.import $depthTf DEPTH
 
-select "Aggregating depth";
-DROP TABLE IF EXISTS AGG_DEPTH;
-CREATE TABLE AGG_DEPTH AS
-SELECT node,
-  min(depth) as minDepth, 
-  max(depth) as maxDepth,
-  avg(depth) as avgDepth,
-  count(*) as cnt
-FROM DEPTH
-GROUP BY node
-ORDER BY avgDepth;
+--select "Aggregating depth";
+--DROP TABLE IF EXISTS AGG_DEPTH;
+--CREATE TABLE AGG_DEPTH AS
+--SELECT node,
+--  min(depth) as minDepth, 
+--  max(depth) as maxDepth,
+--  avg(depth) as avgDepth,
+--  count(*) as cnt
+--FROM DEPTH
+--GROUP BY node
+--ORDER BY avgDepth;
 
 DROP TABLE IF EXISTS TX;
 CREATE TABLE TX (
@@ -86,6 +86,19 @@ CREATE TABLE RX_D (
 );
 select "Importing RX_D from $rxTf";
 .import $rxTf RX_D
+
+select "Aggregating depth info";
+DROP TABLE IF EXISTS AGG_DEPTH;
+CREATE TABLE AGG_DEPTH AS 
+SELECT dest as node,
+  min(depth) as minDepth,
+  max(depth) as maxDepth,
+  avg(depth) as avgDepth,
+  count(*) as cnt
+FROM RX_D
+WHERE src == 0
+GROUP BY dest
+ORDER BY avgDepth;
 
 DROP TABLE IF EXISTS RX;
 CREATE TABLE RX AS
@@ -403,7 +416,6 @@ R --slave --no-save --args dataFile=$gapsTf \
 
 if [ "$keepTemp" != "-k" ]
 then
-  rm $depthTf
   rm $rxTf
   rm $txTf
   rm $irTf

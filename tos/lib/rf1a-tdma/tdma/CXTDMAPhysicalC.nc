@@ -12,6 +12,7 @@ configuration CXTDMAPhysicalC {
   uses interface Rf1aPacket;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
+  uses interface Packet;
 
   provides interface Rf1aConfigure;
   uses interface Rf1aConfigure as SubRf1aConfigure[uint8_t sr];
@@ -53,4 +54,6 @@ configuration CXTDMAPhysicalC {
 
   components CXRadioStateTimingC;
   CXTDMAPhysicalP.StateTiming -> CXRadioStateTimingC;
+
+  CXTDMAPhysicalP.Packet = Packet;
 }

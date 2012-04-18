@@ -8,8 +8,12 @@ MAP=$1
 shift 1
 
 make bacon2 $@
-
-for i in $(grep -v '#' $MAP | awk '{print $2}')
-do
-  make bacon2 reinstall,$i wpt,$MAP
-done
+if [ $? -eq 0 ]
+then
+  for i in $(grep -v '#' $MAP | awk '{print $2}')
+  do
+    make bacon2 reinstall,$i wpt,$MAP
+  done
+else
+  echo "ERRORS IN BUILD"
+fi

@@ -35,6 +35,7 @@ configuration TestAppC{
   Rf1aCXPacketC.SubPacket -> Ieee154Packet;
   Rf1aCXPacketC.Ieee154Packet -> Ieee154Packet;
   Rf1aCXPacketC.Rf1aPacket -> Ieee154Packet;
+  Rf1aCXPacketC.ActiveMessageAddress -> Ieee154AMAddressC;
 
   components Rf1aAMPacketC as AMPacket;
   AMPacket.SubPacket -> Rf1aCXPacketC;
@@ -50,6 +51,7 @@ configuration TestAppC{
   CXTDMAPhysicalC.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aStatus -> Rf1aPhysicalC;
   CXTDMAPhysicalC.Rf1aPacket -> Ieee154Packet;
+  CXTDMAPhysicalC.Packet -> Ieee154Packet;
   CXTDMAPhysicalC.CXPacket -> Rf1aCXPacketC;
   CXTDMAPhysicalC.CXPacketMetadata -> Rf1aCXPacketC;
   

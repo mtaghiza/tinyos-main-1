@@ -62,6 +62,10 @@ module CXFloodP{
   
   uint8_t state;
 
+  //This could be incorporated into the general message pool shared by
+  //CX routing methods, but then we'd end up having to deal with a lot
+  //of async accesses to it. Done like this, all of our interaction
+  //with the pool can be done in the task context.
   message_t fwd_msg_internal;
   message_t* fwd_msg = &fwd_msg_internal;
   uint8_t fwd_len;
@@ -180,29 +184,57 @@ module CXFloodP{
 //      return TRUE;
 //    }
   }
-
+  
+  task void signalReceive(){
+    printf_TMP("SR");
+    if (!call Queue.empty()){
+      message_t* msg = call Queue.dequeue();
+      printf_TMP("Q");
+      if (call CXPacket.isForMe(msg)){
+        printf_TMP("M");
+        msg = signal Receive.receive[call CXPacket.type(msg)](msg,
+          call LayerPacket.getPayload(msg, 
+            call LayerPacket.payloadLength(msg)), 
+          call LayerPacket.payloadLength(msg));
+      }else{
+        printf_TMP("~M");
+        msg = signal Snoop.receive[call CXPacket.type(msg)](msg,
+          call LayerPacket.getPayload(msg, 
+            call LayerPacket.payloadLength(msg)), 
+          call LayerPacket.payloadLength(msg));
+      }
+      call Pool.put(msg);
+    }else{
+      printf_TMP("~Q");
+    }
+    if (!call Queue.empty()){
+      printf_TMP("R\r\n");
+      post signalReceive();
+    }else{
+      printf_TMP("~R\r\n");
+    }
+  }
 
   task void reportReceive(){
-    
+    printf_TMP("RR");
     if (rxOutstanding){
+      printf_TMP("O");
       //TODO: should we update the routing table? or should we
       //reserve that space for scoped floods, which may request
       //future routing explicitly?
-//        printf_TESTBED_SCHED("RR %u\r\n", 
-//          call CXPacketMetadata.getReceivedCount(fwd_msg));
-      if ( (call CXPacket.destination(fwd_msg) == TOS_NODE_ID) ||
-          (call CXPacket.destination(fwd_msg) == AM_BROADCAST_ADDR)){
-        fwd_msg = signal Receive.receive[call CXPacket.type(fwd_msg)](
-          fwd_msg, 
-          call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
-          fwd_len - sizeof(cx_header_t));
-      }else {
-        fwd_msg = signal Snoop.receive[call CXPacket.type(fwd_msg)](
-          fwd_msg, 
-          call LayerPacket.getPayload(fwd_msg, fwd_len- sizeof(cx_header_t)),
-          fwd_len - sizeof(cx_header_t));
+      if ( ! call Pool.empty()){
+        printf_TMP("S\r\n");
+        call Queue.enqueue(fwd_msg);
+        fwd_msg = call Pool.get();
+        post signalReceive();
+        rxOutstanding = FALSE;
+      }else{
+        printf("!Message Pool empty\r\n");
+        //try again momentarily, hopefully it frees up soon.
+        post reportReceive();
       }
-      rxOutstanding = FALSE;
+    }else{
+      printf_TMP("~O\r\n");
     }
   }
 
@@ -313,6 +345,12 @@ module CXFloodP{
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
-  default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
-  default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
+  default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
+    printf_TMP("!DefaultReceive: %x\r\n", t);
+    return msg;
+  }
+  default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
+    printf_TMP("!DefaultSnoop: %x\r\n", t);
+    return msg;
+  }
 }

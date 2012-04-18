@@ -1,5 +1,5 @@
  #include "CX.h"
-
+ #include "CXPacketDebug.h"
 module Rf1aCXPacketP{
   provides interface CXPacket;
   provides interface Packet;
@@ -39,20 +39,26 @@ module Rf1aCXPacketP{
   }
 
   command void Packet.setPayloadLength(message_t* msg, uint8_t len){
-    //TODO: double-check: shouldn't need to do anything here.
+    call SubPacket.setPayloadLength(msg, len + sizeof(cx_header_t));
   }
 
   command uint8_t Packet.maxPayloadLength(){
-    return call SubPacket.maxPayloadLength() - sizeof(cx_header_t);
+    uint8_t ret = call SubPacket.maxPayloadLength() - sizeof(cx_header_t);
+    printf_PACKET("p.mpl %u - %u = %u\r\n", 
+      call SubPacket.maxPayloadLength(), sizeof(cx_header_t), ret);
+    return ret;
   }
 
   command void* Packet.getPayload(message_t* msg, uint8_t len){
+    void* ret;
     if (len <= call Packet.maxPayloadLength()){
-      return (void*) (sizeof(cx_header_t) + (call SubPacket.getPayload(msg,
+      ret = (void*) (sizeof(cx_header_t) + (call SubPacket.getPayload(msg,
         len+sizeof(cx_header_t))));
     } else {
-      return 0;
+      ret = 0;
     }
+    printf_PACKET("p.gp %p %u: %p\r\n", msg, len, ret);
+    return ret;
   }
 
   command am_addr_t CXPacket.destination(message_t* amsg){

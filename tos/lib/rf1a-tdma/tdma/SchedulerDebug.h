@@ -55,4 +55,10 @@
 #define printf_TIMING(...)
 #endif
 
+#if DEBUG_SCHED_RXTX == 1
+#define printf_SCHED_RXTX(...) printf(__VA_ARGS__)
+#else
+#define printf_SCHED_RXTX(...)
+#endif
+
 #endif
