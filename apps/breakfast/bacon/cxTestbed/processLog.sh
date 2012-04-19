@@ -31,7 +31,7 @@ gapsTf=$(tempfile -d $tfDir)
 #echo "extracting depth info"
 #pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
 echo "extracting RX"
-pv $logFile | awk '($3 == "RX")&&(NF == 15){print $1,$5,$2,$7,$9, $11, 1}' > $rxTf
+pv $logFile | awk '($3 == "RX" && (/s: 0/ || $2 == 0))&&(NF == 15){print $1,$5,$2,$7,$9, $11, 1}' > $rxTf
 echo "extracting TX"
 pv $logFile | awk '($3 == "TX"){print $1,$5,$7,$9, $11, $13}' > $txTf
 echo "extracting duty cycle info"

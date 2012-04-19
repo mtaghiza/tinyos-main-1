@@ -60,7 +60,6 @@ module RadioCountToLedsC @safe() {
     interface Boot;
     interface Receive;
     interface AMSend;
-    interface Timer<TMilli> as MilliTimer;
     interface SplitControl as AMControl;
     interface Packet;
     interface AMPacket;
@@ -102,10 +101,7 @@ implementation {
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
     if (err == SUCCESS) {
-      printf("Starting\r\n");
-      #if IS_SENDER == 1
-      call MilliTimer.startOneShot(TEST_IPI);
-      #endif
+      printf("Started\r\n");
     }
     else {
       call AMControl.start();
@@ -115,8 +111,8 @@ implementation {
   event void AMControl.stopDone(error_t err) {
     // do nothing
   }
-  
-  event void MilliTimer.fired() {
+
+  task void doSend(){
     error_t error;
     counter++;
 //    printf(".");
@@ -176,17 +172,9 @@ implementation {
   }
 
   event void AMSend.sendDone(message_t* bufPtr, error_t error) {
-    radio_count_msg_t* rcm = (radio_count_msg_t*)(call Packet.getPayload(bufPtr, sizeof(radio_count_msg_t)));
     if (&packet == bufPtr) {
       locked = FALSE;
     }
-    #if IS_SENDER==1
-      call MilliTimer.startOneShot(TEST_IPI);
-    #endif
-    printf("TX %u %u %lu\r\n", 
-      call AMPacket.source(bufPtr),
-      call AMPacket.destination(bufPtr),
-      rcm->counter);
 //    printf("+");
 //    printf("Send Done: %x\n\r", error);
 //    printf("\n\r\n\r");
@@ -207,26 +195,20 @@ implementation {
 //  }
 //
   async event void UartStream.receivedByte(uint8_t byte){
-//    switch(byte){
-//      case 'q':
-//        WDTCTL=0;
-//        break;
-//      case 't':
-//        if (call MilliTimer.isRunning()){
-//          call MilliTimer.stop();
-//          printf("STOP\n\r");
-//        }else{
-//          call MilliTimer.startPeriodic(1024);
-//          printf("START\n\r");
-//        }
-//        break;
-//      case '\r':
-//        printf("\n\r");
-//        break;
-//      default:
-//        printf("%c", byte);
-//        break;
-//    }
+    switch(byte){
+      case 'q':
+        WDTCTL=0;
+        break;
+      case 't':
+        post doSend();
+        break;
+      case '\r':
+        printf("\r\n");
+        break;
+      default:
+        printf("%c", byte);
+        break;
+    }
   }
 
   //unused events

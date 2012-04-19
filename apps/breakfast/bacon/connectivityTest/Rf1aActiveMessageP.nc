@@ -87,6 +87,14 @@ implementation {
 
   event void SubSend.sendDone(message_t* msg, error_t error)
   {
+    radio_count_msg_t* rcm = (radio_count_msg_t*)(call Packet.getPayload(msg, sizeof(radio_count_msg_t)));
+    printf("TX %u %u %u %u %u %lu\r\n", 
+      TEST_SR,
+      TEST_POWER,
+      call Packet.payloadLength(msg),
+      call AMPacket.source(msg),
+      call AMPacket.destination(msg),
+      rcm->counter);
     signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 
@@ -95,7 +103,10 @@ implementation {
     uint8_t* payload = (uint8_t*)payload_ + sizeof(layer_header_t);
     radio_count_msg_t* rcm = (radio_count_msg_t*) payload;
     len -= sizeof(layer_header_t);
-    printf("RX %u %u %lu %d %d %x\r\n",
+    printf("RX %u %u %u %u %u %lu %d %d %x\r\n",
+      TEST_SR,
+      TEST_POWER,
+      len,
       call AMPacket.source(msg),
       call AMPacket.destination(msg),
       rcm->counter,

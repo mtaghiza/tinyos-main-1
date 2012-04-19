@@ -62,11 +62,13 @@ implementation {
   components ActiveMessageC;
 
   components Rf1aActiveMessageC;
-  //TODO: switch at compile time
+  #if TEST_SR == 100
   components SRFS7_915_GFSK_100K_SENS_HC as Rf1aSettings;
+  #else
+  //TODO: other symbol rates
+  #error Unknown symbol rate
+  #endif
   Rf1aActiveMessageC.Rf1aConfigure -> Rf1aSettings;
-  
-  components new TimerMilliC() as DelayTimer;
 
   components SerialPrintfC;
   components PlatformSerialC;
@@ -78,7 +80,6 @@ implementation {
   App.AMSend -> AMSenderC;
   App.AMControl -> ActiveMessageC;
   App.Leds -> LedsC;
-  App.MilliTimer -> TimerMilliC;
   App.Packet -> AMSenderC;
   App.AMPacket -> AMSenderC;
   App.Random -> RandomC;
