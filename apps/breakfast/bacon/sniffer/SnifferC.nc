@@ -8,6 +8,7 @@ implementation {
 
 //  components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
 //  components Rf1aConfig100KC as Rf1aSettings;
+  //TODO: switch at compile time
   components SRFS7_915_GFSK_100K_SENS_HC as Rf1aSettings;
 
   Rf1aActiveMessageC.Rf1aConfigure 
