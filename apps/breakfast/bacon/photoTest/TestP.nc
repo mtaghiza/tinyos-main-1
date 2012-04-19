@@ -10,34 +10,34 @@ module TestP{
   bool keepSampling = FALSE;
 
   event void SplitControl.startDone(error_t err){
-    printf("StartDone\n\r");
+    printf("StartDone\r\n");
   }
 
   event void SplitControl.stopDone(error_t err){
-    printf("StopDone\n\r");
+    printf("StopDone\r\n");
   }
 
   event void Boot.booted(){
     call UartControl.start();
     call SplitControl.start();
-    printf("\n\rPhoto sensor test\n\r");
-    printf("s: Sample\n\r");
-    printf("v: toggle power(start/stop)\n\r");
-    printf("q: quit/reset\n\r");
+    printf("Photo sensor test\r\n");
+    printf("s: Sample\r\n");
+    printf("v: toggle power(start/stop)\r\n");
+    printf("q: quit/reset\r\n");
   }
 
   task void sample(){
-    printf("Read: %x\n\r", call Read.read());
+    printf("Read: %x\r\n", call Read.read());
   }
 
   task void startSample(){
-    printf("Sampling. \n\r");
+    printf("Sampling. \r\n");
     keepSampling = TRUE;
     post sample();
   }
 
   task void stopSample(){
-    printf("stop sampling.\n\r");
+    printf("stop sampling.\r\n");
     keepSampling = FALSE;
     post sample();
   }
@@ -46,12 +46,12 @@ module TestP{
     if (keepSampling){
       post sample();
     } else{
-      printf("Skip.\n\r");
+      printf("Skip.\r\n");
     }
   }
 
   event void Read.readDone(error_t err, uint16_t val){
-    printf("X R: %x VCC: %x P2.5DIR: %x P2.5SEL: %x P2MAP4: %x Value: %d\n\r", err, 
+    printf("X R: %x VCC: %x P2.5DIR: %x P2.5SEL: %x P2MAP4: %x Value: %d\r\n", err, 
       0x01 & (PJDIR >>1), 
       0x01 & (P2DIR >>5), 0x01 & (P2SEL >> 5),
       P2MAP4,
@@ -76,7 +76,7 @@ module TestP{
         }
         break;
       case '\r':
-        printf("\n\r");
+        printf("\r\n");
         break;
       default:
         printf("%c", b);
