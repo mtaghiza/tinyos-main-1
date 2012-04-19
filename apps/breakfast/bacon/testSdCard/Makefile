@@ -1,0 +1,4 @@
+COMPONENT=TestSDC
+
+include $(MAKERULES)
+
