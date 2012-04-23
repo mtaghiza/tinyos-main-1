@@ -3,7 +3,8 @@ configuration TestSDC {
 
 } implementation {
 //  components TestSDP;
-  components BenchmarkSDP as TestSDP;
+//  components BenchmarkSDP as TestSDP;
+  components BenchmarkNoFSP as TestSDP;
 
   components MainC;
   TestSDP.Boot -> MainC;
@@ -14,7 +15,8 @@ configuration TestSDC {
   components new TimerMilliC() as Timer;
   TestSDP.Timer -> Timer;
 
-  components SDCardSyncC as SDCardC;
+//  components SDCardSyncC as SDCardC;
+  components SDCardC as SDCardC;
   TestSDP.Resource -> SDCardC;
   TestSDP.SDCard -> SDCardC;
   
