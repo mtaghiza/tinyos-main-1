@@ -17,9 +17,9 @@ DSTATUS disk_initialize (
 	DSTATUS stat = RES_OK;
 
 	// Put your code here
-	call StdOut.print("initialize: ");
-	call StdOut.printBase10uint8(Drive);
-	call StdOut.print("\n\r");
+//	call StdOut.print("initialize: ");
+//	call StdOut.printBase10uint8(Drive);
+//	call StdOut.print("\n\r");
 
 	return stat;
 }
@@ -57,12 +57,12 @@ DRESULT disk_read (
 	DRESULT res = RES_OK;
 
 	// Put your code here
-	call StdOut.print("read: ");
-	call StdOut.printBase10uint16(SectorNumber);
-	call StdOut.print(" ");
-	call StdOut.printBase10uint16(SectorCount);
-	call StdOut.print("\n\r");
-
+//	call StdOut.print("read: ");
+//	call StdOut.printBase10uint16(SectorNumber);
+//	call StdOut.print(" ");
+//	call StdOut.printBase10uint16(SectorCount);
+//	call StdOut.print("\n\r");
+//
 
 	call SDCard.read(SectorNumber*512, Buffer, SectorCount*512);
 
@@ -85,11 +85,11 @@ DRESULT disk_write (
 	uint16_t i;
 	DRESULT res = RES_OK;
 
-	call StdOut.print("write: ");
-	call StdOut.printBase10uint16(SectorNumber);
-	call StdOut.print(" ");
-	call StdOut.printBase10uint16(SectorCount);
-	call StdOut.print("\n\r");
+//	call StdOut.print("write: ");
+//	call StdOut.printBase10uint16(SectorNumber);
+//	call StdOut.print(" ");
+//	call StdOut.printBase10uint16(SectorCount);
+//	call StdOut.print("\n\r");
 
 	for (i = 0; i < SectorCount; i++)
 		call SDCard.write(SectorNumber*512, (uint8_t*)Buffer+512*i, 512);
@@ -118,20 +118,20 @@ DRESULT disk_ioctl (
 		// When the disk I/O module has a write back cache, flush the dirty
 		// sector immediately. This command is not used in read-only configuration.
 		case CTRL_SYNC:
-						call StdOut.print("ioctl: sync\n\r");
+//						call StdOut.print("ioctl: sync\n\r");
 						break;
 
 		// Returns sector size of the drive into the WORD variable pointed by Buffer.
 		// This command is not used in fixed sector size configuration, _MAX_SS is 512.
 		case GET_SECTOR_SIZE:
-						call StdOut.print("ioctl: get sector size\n\r");
+//						call StdOut.print("ioctl: get sector size\n\r");
 						break;
 
 		// Returns number of available sectors on the drive into the DWORD variable
 		// pointed by Buffer. This command is used by only f_mkfs function to
 		// determine the volume size to be created.
 		case GET_SECTOR_COUNT:
-						call StdOut.print("ioctl: get sector count\n\r");
+//						call StdOut.print("ioctl: get sector count\n\r");
 						break;
 
 		// Returns erase block size of the flash memory in unit of sector into the
@@ -140,7 +140,7 @@ DRESULT disk_ioctl (
 		// This command is used by only f_mkfs function and it attempts to align data
 		// area to the erase block boundary.
 		case GET_BLOCK_SIZE:
-						call StdOut.print("ioctl: get block size\n\r");
+//						call StdOut.print("ioctl: get block size\n\r");
 						break;
 
 
@@ -151,7 +151,7 @@ DRESULT disk_ioctl (
 		// is not affected even if the sectors are not erased well. This command
 		// is called on removing a cluster chain when _USE_ERASE is 1.
 		case CTRL_ERASE_SECTOR:
-						call StdOut.print("ioctl: erase sector\n\r");
+//						call StdOut.print("ioctl: erase sector\n\r");
 						break;
 
 		default:
@@ -168,7 +168,7 @@ DRESULT disk_ioctl (
 
 DWORD get_fattime (void)
 {
-	call StdOut.print("get fattime\n\r");
+//	call StdOut.print("get fattime\n\r");
 
 	return 42;
 }

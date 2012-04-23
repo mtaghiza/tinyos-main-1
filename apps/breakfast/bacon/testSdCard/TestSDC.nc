@@ -2,7 +2,8 @@
 configuration TestSDC {
 
 } implementation {
-  components TestSDP;
+//  components TestSDP;
+  components BenchmarkSDP as TestSDP;
 
   components MainC;
   TestSDP.Boot -> MainC;

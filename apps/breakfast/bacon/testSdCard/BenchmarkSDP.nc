@@ -1,5 +1,5 @@
 
-module TestSDP {
+module BenchmarkSDP {
   uses {
     interface Boot;
 
@@ -18,6 +18,11 @@ module TestSDP {
   }  
   
 } implementation {
+  #define TEST_FILE "1.1G"
+  #define BUF_SIZE 512
+  #define TEST_DURATION 5120
+  bool testRunning;
+  uint32_t testCount = 0;
 
 #include <stdio.h>
 extern int      sprintf(char *__s, const char *__fmt, ...)
@@ -32,7 +37,7 @@ __attribute__((C));
 //#include "ff_async.c"
 
   uint16_t uart_value;
-  uint8_t buffer[512];
+  uint8_t buffer[BUF_SIZE];
   
   /***************************************************************************/
     FATFS myfs;
@@ -52,7 +57,10 @@ __attribute__((C));
   {  
     call SerialControl.start();
 
-    call StdOut.print("Test Application\n\r");
+    call StdOut.print("SD lib benchmark\r\n");
+    call StdOut.print(" q: quit/restart\r\n");
+    call StdOut.print(" r: read test\r\n");
+    call StdOut.print(" w: write test\r\n\r\n");
 
     fs = &myfs;        
     P2DIR |= BIT1;
@@ -86,8 +94,15 @@ __attribute__((C));
   
   event void Timer.fired()
   {
-    call StdOut.printBase10uint16(call Msp430Counter32khz.get());
-    call StdOut.print("\n\r");                  
+    testRunning = FALSE;
+//    call StdOut.printBase10uint32(call Timer.getNow());
+    call StdOut.printBase10uint32(testCount);
+    call StdOut.print(" B in ");
+    call StdOut.printBase10uint32(TEST_DURATION);
+    call StdOut.print(" bms (buffer size: ");
+    call StdOut.printBase10uint16(BUF_SIZE);
+    call StdOut.print(" )\r\n");
+    f_close(&myfile);
   }
   
   
@@ -162,13 +177,13 @@ __attribute__((C));
   uint8_t tmpchar;
   uint16_t i;
 
+
   task void StdOutTask()
   {    
     char str[2];    
     atomic str[0] = tmpchar;
     
     switch(str[0]) {
-
       case '1':   if (call Resource.request() == FAIL)
                     call StdOut.print("Start Fail\n\r");
                   break;
@@ -311,7 +326,91 @@ __attribute__((C));
                   break;
      }
   }
+
+  task void doRead(){
+    if (testRunning){
+      f_read(&myfile, buffer, BUF_SIZE, &br);    
+      call Leds.led0Toggle();
+      if(br == BUF_SIZE){
+        testCount += BUF_SIZE;
+        post doRead();
+      } else {
+        call StdOut.print("Requested ");
+        call StdOut.printBase10uint16(BUF_SIZE);
+        call StdOut.print(" read ");
+        call StdOut.printBase10uint16(br);
+        call StdOut.print("\r\n");
+      }
+    }
+  }
+
+  task void readTest(){
+    testCount = 0;
+    f_mount(0, &myfs);        
+    f_open(&myfile, TEST_FILE, FA_READ);
+    f_lseek(&myfile, 0);
+    call StdOut.print("READ ");
+    call Timer.startOneShot(TEST_DURATION);
+    testRunning = TRUE;
+    post doRead();
+  }
   
+  task void doWrite(){
+    if(testRunning){
+      f_write(&myfile, buffer, BUF_SIZE, &br);
+      if (br == BUF_SIZE){
+        call Leds.led0Toggle();
+        testCount += BUF_SIZE;
+        post doWrite();
+      } else {
+        call StdOut.print("Requested ");
+        call StdOut.printBase10uint16(BUF_SIZE);
+        call StdOut.print(" wrote ");
+        call StdOut.printBase10uint16(br);
+        call StdOut.print("\r\n");
+      }
+    }
+  }
+
+  task void writeTest(){
+    uint16_t bp;
+    testCount = 0;
+    f_mount(0, &myfs);
+    f_open(&myfile, TEST_FILE, FA_WRITE|FA_OPEN_ALWAYS);
+    f_lseek(&myfile,0);
+
+    for(bp = 0; bp < BUF_SIZE; bp++){
+      buffer[bp] = 0x00;
+    }
+    call StdOut.print("WRITE ");
+
+    call Timer.startOneShot(TEST_DURATION);
+    testRunning = TRUE;
+    post doWrite();
+  }
+
+  task void performAction(){
+    char str[2];
+    switch(tmpchar){
+      case 'q':
+        WDTCTL = 0;
+        break;
+      case 'r':
+        post readTest();
+        break;
+      case 'w':
+        post writeTest();
+        break;
+      case '\r':
+        call StdOut.print("\r\n");
+        break;
+      default: 
+        str[1] = '\0';
+        call StdOut.print(str);
+        break;
+    }
+  }
+
   /* incoming serial data */
   async event void StdOut.get(uint8_t data) 
   {
@@ -319,7 +418,7 @@ __attribute__((C));
 
     tmpchar = data;
     
-    post StdOutTask();
+    post performAction();
   }
 
 
