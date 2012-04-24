@@ -42,6 +42,10 @@
 #ifndef MSP430DMA_H
 #define MSP430DMA_H
 
+#if defined DMARMWDIS && ! defined DMAONFETCH
+#define DMAONFETCH DMARMWDIS
+#endif
+
 // General stuff
 enum {
   DMA_CHANNELS = 3
@@ -71,36 +75,71 @@ enum {
   DMA2TSEL_MASK  = ( 0xf00 ),
 };
 
+#if defined(__msp430x261x)
 // Per-field (channel) in DMACTL0
 typedef enum {
   DMA_TRIGGER_DMAREQ =          0x0, // software trigger
   DMA_TRIGGER_TACCR2 =          0x1,            
   DMA_TRIGGER_TBCCR2 =          0x2,
 
-#if defined(__msp430x261x)
   DMA_TRIGGER_UCA0RXIFG =       0x3, // RX on USCIA0 (UART/SPI)
   DMA_TRIGGER_UCA0TXIFG =       0x4, // TX on USCIA0 (UART/SPI)
-#else
-  DMA_TRIGGER_URXIFG0 =         0x3, // RX on USART0 (UART/SPI)
-  DMA_TRIGGER_UTXIFG0 =         0x4, // TX on USART0 (UART/SPI)
-#endif
   DMA_TRIGGER_DAC12IFG =        0x5, // DAC12_0CTL DAC12IFG bit
   DMA_TRIGGER_ADC12IFGx =       0x6, 
   DMA_TRIGGER_TACCR0 =          0x7, // CCIFG bit
   DMA_TRIGGER_TBCCR0 =          0x8, // CCIFG bit
-#if defined(__msp430x261x)
   DMA_TRIGGER_UCB0RXIFG =       0x9, // RX on USCIB0 (UART/SPI)
   DMA_TRIGGER_UCB0TXIFG =       0xa, // TX on USCIB0 (UART/SPI)
-#else
-  DMA_TRIGGER_URXIFG1 =         0x9, // RX on USART1 (UART/SPI)
-  DMA_TRIGGER_UTXIFG1 =         0xa, // TX on USART1 (UART/SPI)
-#endif
   DMA_TRIGGER_MULT =            0xb, // Hardware Multiplier Ready
   DMA_TRIGGER_DMAxIFG =         0xe, // DMA0IFG triggers DMA channel 1
                                      // DMA1IFG triggers DMA channel 2
                                      // DMA2IFG triggers DMA channel 0
   DMA_TRIGGER_DMAE0 =           0xf  // External Trigger DMAE0
 } dma_trigger_t;
+
+#elif defined(__cc430x513x)
+
+typedef enum {
+  DMA_TRIGGER_DMAREQ =          0x0, // software trigger
+  DMA_TRIGGER_TA0CCR0 =          0x1,            
+  DMA_TRIGGER_TA0CCR2 =          0x2,
+  DMA_TRIGGER_TA1CCR0 =          0x3,            
+  DMA_TRIGGER_TA1CCR2 =          0x4,
+  //5-15: reserved
+  DMA_TRIGGER_UCA0RXIFG = 0x10,
+  DMA_TRIGGER_UCA0TXIFG = 0x11,
+  DMA_TRIGGER_UCB0RXIFG = 0x12,
+  DMA_TRIGGER_UCB0TXIFG = 0x13,
+  //20-23: reserved
+  DMA_TRIGGER_ADC12IFGx = 0x18,
+  //25-28: reserved
+  DMA_TRIGGER_MULT = 0x1d,
+  DMA_TRIGGER_DMAxIFG = 0x1e,
+  DMA_TRIGGER_DMAE0 = 0x1f,
+} dma_trigger_t;
+
+#else
+// Per-field (channel) in DMACTL0
+typedef enum {
+  DMA_TRIGGER_DMAREQ =          0x0, // software trigger
+  DMA_TRIGGER_TACCR2 =          0x1,            
+  DMA_TRIGGER_TBCCR2 =          0x2,
+
+  DMA_TRIGGER_URXIFG0 =         0x3, // RX on USART0 (UART/SPI)
+  DMA_TRIGGER_UTXIFG0 =         0x4, // TX on USART0 (UART/SPI)
+  DMA_TRIGGER_DAC12IFG =        0x5, // DAC12_0CTL DAC12IFG bit
+  DMA_TRIGGER_ADC12IFGx =       0x6, 
+  DMA_TRIGGER_TACCR0 =          0x7, // CCIFG bit
+  DMA_TRIGGER_TBCCR0 =          0x8, // CCIFG bit
+  DMA_TRIGGER_URXIFG1 =         0x9, // RX on USART1 (UART/SPI)
+  DMA_TRIGGER_UTXIFG1 =         0xa, // TX on USART1 (UART/SPI)
+  DMA_TRIGGER_MULT =            0xb, // Hardware Multiplier Ready
+  DMA_TRIGGER_DMAxIFG =         0xe, // DMA0IFG triggers DMA channel 1
+                                     // DMA1IFG triggers DMA channel 2
+                                     // DMA2IFG triggers DMA channel 0
+  DMA_TRIGGER_DMAE0 =           0xf  // External Trigger DMAE0
+} dma_trigger_t;
+#endif
 
 typedef struct dma_channel_trigger_s {
   unsigned int trigger : 4; 
