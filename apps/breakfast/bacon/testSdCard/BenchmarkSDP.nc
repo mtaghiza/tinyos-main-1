@@ -18,11 +18,17 @@ module BenchmarkSDP {
   }  
   
 } implementation {
-  #define TEST_FILE "1.1G"
+  #ifndef BUF_SIZE
   #define BUF_SIZE 512
+  #endif
+
+  #define TEST_FILE "test.txt"
   #define TEST_DURATION 5120
   bool testRunning;
   uint32_t testCount = 0;
+  uint8_t testNum;
+  task void writeTest();
+  task void readTest();
 
 #include <stdio.h>
 extern int      sprintf(char *__s, const char *__fmt, ...)
@@ -74,7 +80,7 @@ __attribute__((C));
   /***************************************************************************/
   event void Resource.granted()
   {
-    call StdOut.print("Resource granted\n\r");
+    call Timer.startOneShot(1024);
   }
     
   event void SDCard.writeDone(uint32_t addr, uint8_t*buf, uint16_t count, error_t error)
@@ -95,16 +101,28 @@ __attribute__((C));
   event void Timer.fired()
   {
     testRunning = FALSE;
-//    call StdOut.printBase10uint32(call Timer.getNow());
-    call StdOut.printBase10uint32(testCount);
-    call StdOut.print(" B in ");
-    call StdOut.printBase10uint32(TEST_DURATION);
-    call StdOut.print(" bms approx. ");
-    call StdOut.printBase10uint32( (testCount * 1024)/TEST_DURATION );
-    call StdOut.print(" B/S (buffer size: ");
-    call StdOut.printBase10uint16(BUF_SIZE);
-    call StdOut.print(" )\r\n");
-    f_close(&myfile);
+    if (testNum){
+      call StdOut.printBase10uint32(testCount);
+      call StdOut.print(" B in ");
+      call StdOut.printBase10uint32(TEST_DURATION);
+      call StdOut.print(" bms approx. ");
+      call StdOut.printBase10uint32( (testCount * 1024)/TEST_DURATION );
+      call StdOut.print(" B/S (buffer size: ");
+      call StdOut.printBase10uint16(BUF_SIZE);
+      call StdOut.print(" FS: ");
+      call StdOut.printBase10uint8(USE_FS);
+      call StdOut.print(" Sync: ");
+      call StdOut.printBase10uint8(SYNC_SD);
+      call StdOut.print(" )\r\n");
+      f_close(&myfile);
+    }
+    testNum++;
+    if (testNum == 1){
+      post writeTest();
+    }
+    if (testNum == 2){
+      post readTest();
+    }
   }
   
   

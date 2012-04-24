@@ -2,9 +2,11 @@
 configuration TestSDC {
 
 } implementation {
-//  components TestSDP;
-//  components BenchmarkSDP as TestSDP;
+  #if USE_FS == 1
+  components BenchmarkSDP as TestSDP;
+  #else
   components BenchmarkNoFSP as TestSDP;
+  #endif
 
   components MainC;
   TestSDP.Boot -> MainC;
@@ -15,8 +17,11 @@ configuration TestSDC {
   components new TimerMilliC() as Timer;
   TestSDP.Timer -> Timer;
 
-//  components SDCardSyncC as SDCardC;
+  #if USE_FS || SYNC_SD == 1
+  components SDCardSyncC as SDCardC;
+  #else
   components SDCardC as SDCardC;
+  #endif
   TestSDP.Resource -> SDCardC;
   TestSDP.SDCard -> SDCardC;
   
