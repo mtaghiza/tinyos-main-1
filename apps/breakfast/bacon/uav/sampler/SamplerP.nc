@@ -8,6 +8,8 @@ module SamplerP{
   uses interface Resource as SDResource;
   uses interface SDCard;
 
+  uses interface Leds;
+
   uses interface AdcConfigure<const msp430adc12_channel_config_t*>;
 
   provides interface Sampler;
@@ -28,6 +30,7 @@ module SamplerP{
   norace uint16_t bufferIndex = 0;
 
   uint8_t* flushStart;
+  uint32_t flushes;
   uint32_t addr = 0;
   uint32_t endAddr = 0;
   bool markingEnd = FALSE;
@@ -94,6 +97,8 @@ module SamplerP{
       if (!markingEnd){
         addr += count;
         writing = FALSE;
+        flushes++;
+        call Leds.set(flushes);
         signal Sampler.burstDone(count/sizeof(uint16_t));
       }else{
         markingEnd = TRUE;

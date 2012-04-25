@@ -4,6 +4,7 @@ configuration SamplerC{
   uses interface AdcConfigure<const msp430adc12_channel_config_t*>;
 } implementation{
   components SamplerP;
+  components LedsC;
 
   components new Msp430Adc12ClientAutoRVGC() as AdcClient;
   SamplerP.ADCResource -> AdcClient.Resource;
@@ -21,5 +22,6 @@ configuration SamplerC{
   components SDCardC as SDCardC;
   SamplerP.SDResource -> SDCardC;
   SamplerP.SDCard -> SDCardC;
+  SamplerP.Leds -> LedsC;
 
 }
