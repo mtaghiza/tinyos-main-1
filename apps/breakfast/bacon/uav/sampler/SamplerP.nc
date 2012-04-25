@@ -1,9 +1,12 @@
 module SamplerP{
   provides interface SplitControl;
 
-  uses interface Resource;
+  uses interface Resource as ADCResource;
   uses interface Msp430Adc12SingleChannel;
   uses interface Msp430Adc12Overflow;
+
+  uses interface Resource as SDResource;
+  uses interface SDCard;
 
   uses interface AdcConfigure<const msp430adc12_channel_config_t*>;
 
@@ -16,26 +19,29 @@ module SamplerP{
   #define NUM_BUFFERS 32
   #endif
 
-  typedef struct burst_t{
-    bool dirty;
+  typedef struct burst_t {
     uint16_t buffer[BUFFER_SIZE];
   } burst_t;
-  uint8_t lastProvided;
   burst_t bursts[NUM_BUFFERS];
+  
+  //
+  norace uint16_t bufferIndex = 0;
 
-//  uint16_t bufferA[BUFFER_SIZE];
-//  uint16_t bufferB[BUFFER_SIZE];
+  uint8_t* flushStart;
+  uint32_t addr = 0;
 
-//  norace uint16_t* curBuf = bufferA;
-//  norace uint16_t* lastBuf = bufferB;
-
+  bool writing = FALSE;
   norace bool stopSampling = FALSE;
 
   command error_t SplitControl.start(){
-    return call Resource.request();
+    return call ADCResource.request();
   }
 
-  event void Resource.granted(){
+  event void ADCResource.granted(){
+    call SDResource.request();
+  }
+
+  event void SDResource.granted(){
     signal SplitControl.startDone(SUCCESS);
   }
 
@@ -44,48 +50,69 @@ module SamplerP{
   }
   
   command error_t SplitControl.stop(){
-    error_t err = call Resource.release();
+    error_t err = call ADCResource.release();
     if (err == SUCCESS){
-      post stopDoneTask();
+      err = call SDResource.release();
+      if (err == SUCCESS){
+        post stopDoneTask();
+      }
     }
     return err;
   }
-  bool outstandingReport;
-
-  //signal up one of the used buffers
-  task void reportData(){
-    uint8_t i;
-    for(i = 0; i < NUM_BUFFERS; i++){
-      if (( i != lastProvided) && bursts[i].dirty){
-        uint16_t* result = signal Sampler.burstDone(bursts[i].buffer);
-        bursts[i].dirty = FALSE;
-//        printf("purged: %u\r\n", i);
-        if (result == NULL){
-          stopSampling = TRUE;
-        }
-        post reportData();
-        return;
+  
+  task void flushTask(){
+    uint8_t* fs;
+    error_t error;
+    atomic{
+      fs = flushStart;
+    }
+    if (writing){
+      printf("!OW\r\n");
+    }else{
+      error = call SDCard.write(addr, fs, sizeof(burst_t)*(NUM_BUFFERS/2));
+  
+      if (error != SUCCESS){
+        printf("SDWrite: %s\r\n", decodeError(error));
+      }else{
+        writing = TRUE;
+      }
+    }
+    atomic{
+      if (fs != flushStart){
+        printf("!OF\r\n");
+        //TODO: report overflow
       }
     }
   }
+
+  event void SDCard.writeDone(uint32_t addr_, uint8_t*buf, uint16_t count, error_t error)
+  {
+    if (error == SUCCESS){
+      addr += count;
+      writing = FALSE;
+      stopSampling = !signal Sampler.burstDone(count/sizeof(uint16_t));
+    }else{
+      printf("WD Error: %s\r\n", decodeError(error));
+    }
+  }
+
+  event void SDCard.readDone(uint32_t addr_, uint8_t*buf, uint16_t count, error_t error)
+  {
+    printf("SDCard read done\n\r");
+  }
+
 
   async event uint16_t * COUNT_NOK(numSamples) Msp430Adc12SingleChannel.multipleDataReady(uint16_t *COUNT(numSamples) buffer, uint16_t numSamples) {
 //    P1OUT ^= BIT1;
     if ( stopSampling){
       return NULL;
     } else {
-      uint8_t i;
-      //start at 1+last-provided, search for next clean buffer
-      for(i = 1; i < (NUM_BUFFERS - 1) &&
-        bursts[(lastProvided+i)%NUM_BUFFERS].dirty; i++){}
-      lastProvided = (lastProvided +i)%NUM_BUFFERS;
-//      printf("next: %u\r\n", lastProvided);
-      if (bursts[lastProvided].dirty){
-        printf("!O\r\n");
+      bufferIndex = (bufferIndex+1)%NUM_BUFFERS;
+      if ((bufferIndex %(NUM_BUFFERS/2))==0){
+        flushStart = (uint8_t*)(bursts[bufferIndex].buffer);
+        post flushTask();
       }
-      bursts[lastProvided].dirty = TRUE;
-      post reportData();
-      return bursts[lastProvided].buffer;
+      return bursts[bufferIndex].buffer;
     }
   }
 
@@ -100,10 +127,10 @@ module SamplerP{
   
   error_t configure(uint16_t sampleInterval){
     error_t error ;
-    lastProvided = 0;
+    bufferIndex = 0;
     error = call Msp430Adc12SingleChannel.configureMultipleRepeat(
       call AdcConfigure.getConfiguration(),
-      bursts[lastProvided].buffer, 
+      bursts[bufferIndex].buffer, 
       BUFFER_SIZE,
       sampleInterval);
 

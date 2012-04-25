@@ -10,9 +10,6 @@ module TestP{
   uses interface Sampler;
   uses interface SplitControl as SamplerControl;
 
-  uses interface SDLogger;
-  uses interface SplitControl as WriteControl;
-
   uses interface Timer<TMilli>;
 
   provides interface AdcConfigure<const msp430adc12_channel_config_t*>;
@@ -54,9 +51,6 @@ module TestP{
     P2DIR |= BIT1;
     P2SEL &= ~BIT1;
     P2OUT |= BIT1;
-//    P1SEL &= ~BIT1;
-//    P1OUT &= ~BIT1;
-//    P1DIR |= BIT1;
 
     call SerialControl.start();
     call SamplerControl.start();
@@ -66,22 +60,9 @@ module TestP{
     post printWelcome();
   }
 
-  uint32_t sampleCount;
-  event uint16_t* Sampler.burstDone(uint16_t* buffer){
-    error_t error = call SDLogger.writeRecords(buffer, BUFFER_SIZE);
-    sampleCount += BUFFER_SIZE;
-    if (error != SUCCESS){
-      printf("SDL.writeRecords: (%s %p %d)\r\n", 
-        decodeError(error),
-        buffer, BUFFER_SIZE);
-      isSampling = FALSE;
-    }
-    if (isSampling){
-      return buffer;
-    } else {
-//      printf("done sampling, return null\r\n");
-      return NULL;
-    }
+  event bool Sampler.burstDone(uint16_t numSamples){
+    sampleCount += numSamples;
+    return isSampling;
   }
 
   task void sample(){
@@ -93,22 +74,10 @@ module TestP{
     }
   }
 
-  event void WriteControl.startDone(error_t error){
-    if (error == SUCCESS){
-      post sample();
-    }else{
-      printf("WC.startDone: %s\r\n", decodeError(error));
-    }
-  }
-
-  task void start(){
-    error_t error = call WriteControl.start();
-    printf("WriteControl.start: %s\r\n", decodeError(error));
-  }
-
   task void stop(){
     uint32_t stopTime;
     printf("STOPPING\r\n");
+    //why is this causing it to crash?
 //    uint32_t duration = call Timer.getNow() - startTime;
     isSampling = FALSE;
 //    printf("STOP: %lu samples in %lu bms\r\n",
@@ -123,7 +92,7 @@ module TestP{
         break;
 
       case 's':
-        post start();
+        post sample();
         break;
 
       case 'S':
@@ -136,9 +105,6 @@ module TestP{
       default:
         printf("%c", byte);
     }
-  }
-
-  event void WriteControl.stopDone(error_t error){
   }
 
   event void Timer.fired(){}

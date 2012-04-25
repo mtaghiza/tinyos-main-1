@@ -11,11 +11,11 @@ module SDLoggerRawP{
   uint32_t addr;
 
   #ifndef SD_BUFFER_LEN
-  #define SD_BUFFER_LEN 512
+  #define SD_BUFFER_LEN 544
   #endif
 
   #ifndef FLUSH_THRESHOLD
-  #define FLUSH_THRESHOLD 256
+  #define FLUSH_THRESHOLD 512
   #endif
 
   uint16_t recordBuffer_a[SD_BUFFER_LEN];

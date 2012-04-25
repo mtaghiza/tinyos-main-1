@@ -6,7 +6,7 @@ configuration SamplerC{
   components SamplerP;
 
   components new Msp430Adc12ClientAutoRVGC() as AdcClient;
-  SamplerP.Resource -> AdcClient.Resource;
+  SamplerP.ADCResource -> AdcClient.Resource;
   SamplerP.Msp430Adc12SingleChannel ->
     AdcClient.Msp430Adc12SingleChannel;
   SamplerP.Msp430Adc12Overflow ->
@@ -17,5 +17,9 @@ configuration SamplerC{
 
   SplitControl = SamplerP;
   Sampler = SamplerP;
+
+  components SDCardC as SDCardC;
+  SamplerP.SDResource -> SDCardC;
+  SamplerP.SDCard -> SDCardC;
 
 }
