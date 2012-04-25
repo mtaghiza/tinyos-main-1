@@ -6,28 +6,19 @@ module TestP{
   uses interface Boot;
   uses interface UartStream;
   uses interface StdControl as SerialControl;
+  uses interface SplitControl as SamplerControl;
 
-  uses interface Resource;
-  uses interface Msp430Adc12SingleChannel;
-  uses interface Msp430Adc12Overflow;
+  uses interface Sampler;
 
   provides interface AdcConfigure<const msp430adc12_channel_config_t*>;
 } implementation {
-  #ifndef BUFFER_SIZE
-  #define BUFFER_SIZE 16
-  #endif
 
+  
   #ifndef SAMPLE_INTERVAL
-  #define SAMPLE_INTERVAL 100
+  #define SAMPLE_INTERVAL 650
   #endif
 
-  uint16_t bufferA[BUFFER_SIZE];
-  uint16_t bufferB[BUFFER_SIZE];
-
-  norace uint16_t* curBuf = bufferA;
-  uint16_t* lastBuf = bufferB;
-
-  bool repeatSample = TRUE;
+  bool isSampling = FALSE;
 
   msp430adc12_channel_config_t config = {
     //no surprises here
@@ -47,10 +38,9 @@ module TestP{
   };
 
   task void printWelcome(){
-    printf("ADC12 + DMA Test\r\n");
-    printf(" r: toggle repeated-sampling (currently: %x)\r\n",
-      repeatSample);
+    printf("ADC12 Test\r\n");
     printf(" s: start sampling\r\n");
+    printf(" S: stop sampling\r\n");
     printf(" q: reset\r\n");
   }
 
@@ -60,64 +50,33 @@ module TestP{
     P1DIR |= BIT1;
 
     call SerialControl.start();
-    call Resource.request();
+    call SamplerControl.start();
   }
 
-  task void reportData(){
-//    printf("sampling done\r\n");  
-    //TODO: use UartStream, flash, or SDCard to record the data.
-//    printf("%u\r\n", lastBuf[0]);
-  }
-
-  async event uint16_t * COUNT_NOK(numSamples) Msp430Adc12SingleChannel.multipleDataReady(uint16_t *COUNT(numSamples) buffer, uint16_t numSamples) {
-    uint16_t* swp;
-    P1OUT ^= BIT1;
-    swp = lastBuf;
-    if (curBuf != buffer){
-      printf("!Buffer mismatch\r\n");
-      return NULL;
-    }
-    lastBuf = curBuf;
-    curBuf = swp;
-    post reportData();
-    if (repeatSample){
-      return curBuf;
-    }else{
-      return NULL;
-    }
-  }
-
-  async event void Msp430Adc12Overflow.memOverflow(){
-    printf("!memOverflow\r\n");
-  }
-
-  async event void Msp430Adc12Overflow.conversionTimeOverflow(){
-    printf("!ctOverflow\r\n");
-  }
-
-  
-  task void configure(){
-    error_t error = call Msp430Adc12SingleChannel.configureMultipleRepeat(
-      call AdcConfigure.getConfiguration(), curBuf, BUFFER_SIZE,
-      SAMPLE_INTERVAL);
-
-    if (error != SUCCESS){
-      printf("ConfigureMultiple: %s\r\n", decodeError(error));
-    }
-  }
-
-  event void Resource.granted(){
+  event void SamplerControl.startDone(error_t error){
     post printWelcome();
-    post configure();
+  }
+
+  event uint16_t* Sampler.burstDone(uint16_t* buffer){
+    if (isSampling){
+      printf(".");
+      return buffer;
+    } else {
+      return NULL;
+    }
   }
 
   task void sample(){
-    error_t error = call Msp430Adc12SingleChannel.getData();
-    if (SUCCESS != error){
-      printf("getData: %s\r\n", decodeError(error));
-    }else{
-      printf("Start\r\n");
+    if (!isSampling){
+      printf("START");
+      isSampling = TRUE;
+      call Sampler.startSampling(SAMPLE_INTERVAL);
     }
+  }
+
+  task void stop(){
+    isSampling = FALSE;
+    printf("STOP\r\n");
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
@@ -130,9 +89,8 @@ module TestP{
         post sample();
         break;
 
-      case 'r':
-        repeatSample = !repeatSample;
-        printf("Repeat sample: %x\r\n", repeatSample);
+      case 'S':
+        post stop();
         break;
 
       case '\r':
@@ -146,13 +104,8 @@ module TestP{
   async command const msp430adc12_channel_config_t* AdcConfigure.getConfiguration(){
     return &config;
   }
-
-  //unused
-  async event error_t Msp430Adc12SingleChannel.singleDataReady(uint16_t data){
-    printf("!singleDataReady\r\n");
-    return SUCCESS;
+  event void SamplerControl.stopDone(error_t error){
   }
-
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf_, uint16_t len,
