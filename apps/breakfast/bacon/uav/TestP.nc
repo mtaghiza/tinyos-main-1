@@ -21,8 +21,6 @@ module TestP{
   #define SAMPLE_INTERVAL 650
   #endif
 
-  bool isSampling = FALSE;
-
   msp430adc12_channel_config_t config = {
     //no surprises here
     inch: SUPPLY_VOLTAGE_HALF_CHANNEL,
@@ -44,6 +42,7 @@ module TestP{
     printf("ADC12 Test\r\n");
     printf(" s: start sampling\r\n");
     printf(" S: stop sampling\r\n");
+    printf(" r: read back\r\n");
     printf(" q: reset\r\n");
   }
 
@@ -60,29 +59,65 @@ module TestP{
     post printWelcome();
   }
 
-  event bool Sampler.burstDone(uint16_t numSamples){
+  event void Sampler.burstDone(uint16_t numSamples){
     sampleCount += numSamples;
-    return isSampling;
   }
 
   task void sample(){
-    if (!isSampling){
-      printf("START");
-      isSampling = TRUE;
-      startTime = call Timer.getNow();
-      call Sampler.startSampling(SAMPLE_INTERVAL);
-    }
+    printf("START");
+    startTime = call Timer.getNow();
+    call Sampler.startSampling(SAMPLE_INTERVAL, TRUE);
+  }
+
+  task void resume(){
+    printf("RESUME");
+    call Sampler.startSampling(SAMPLE_INTERVAL, FALSE);
   }
 
   task void stop(){
     uint32_t stopTime;
     printf("STOPPING\r\n");
+    call Sampler.stopSampling();
     //why is this causing it to crash?
 //    uint32_t duration = call Timer.getNow() - startTime;
-    isSampling = FALSE;
 //    printf("STOP: %lu samples in %lu bms\r\n",
 //      sampleCount, duration);
 //      sampleCount/(duration/1024));
+  }
+ 
+  #ifndef RB_BUFFER_LEN
+  #define RB_BUFFER_LEN 8
+  #endif
+
+  uint32_t endAddr;
+  uint32_t addr;
+  uint16_t readBackBuffer[RB_BUFFER_LEN];
+
+  uint32_t rbc;
+  
+  task void readNext(){
+    call Sampler.read(addr, (uint8_t*)readBackBuffer,
+      sizeof(uint16_t)*RB_BUFFER_LEN);
+  }
+
+  event void Sampler.readDone(uint32_t addr_, uint8_t* buf, 
+      uint16_t count, error_t error){
+    uint8_t i;
+    for (i = 0; i < RB_BUFFER_LEN; i++){
+      printf("%lu %u\r\n", rbc, readBackBuffer[i]);
+      rbc++;
+    }
+    if (addr_ < endAddr){
+      addr = addr_ + count;
+      post readNext();
+    }
+  }
+
+  task void readBack(){
+    endAddr = call Sampler.getEnd();
+    rbc=0;
+    addr=0;
+    post readNext();
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
@@ -97,6 +132,10 @@ module TestP{
 
       case 'S':
         post stop();
+        break;
+      
+      case 'r':
+        post readBack();
         break;
 
       case '\r':

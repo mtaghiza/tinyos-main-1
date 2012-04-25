@@ -29,6 +29,8 @@ module SamplerP{
 
   uint8_t* flushStart;
   uint32_t addr = 0;
+  uint32_t endAddr = 0;
+  bool markingEnd = FALSE;
 
   bool writing = FALSE;
   norace bool stopSampling = FALSE;
@@ -66,6 +68,7 @@ module SamplerP{
     atomic{
       fs = flushStart;
     }
+//    printf("flush %p\r\n", fs);
     if (writing){
       printf("!OW\r\n");
     }else{
@@ -88,9 +91,13 @@ module SamplerP{
   event void SDCard.writeDone(uint32_t addr_, uint8_t*buf, uint16_t count, error_t error)
   {
     if (error == SUCCESS){
-      addr += count;
-      writing = FALSE;
-      stopSampling = !signal Sampler.burstDone(count/sizeof(uint16_t));
+      if (!markingEnd){
+        addr += count;
+        writing = FALSE;
+        signal Sampler.burstDone(count/sizeof(uint16_t));
+      }else{
+        markingEnd = TRUE;
+      }
     }else{
       printf("WD Error: %s\r\n", decodeError(error));
     }
@@ -98,18 +105,40 @@ module SamplerP{
 
   event void SDCard.readDone(uint32_t addr_, uint8_t*buf, uint16_t count, error_t error)
   {
-    printf("SDCard read done\n\r");
+    signal Sampler.readDone(addr_, buf, count, error);
   }
+ 
+  #ifndef END_MARK_LEN
+  #define END_MARK_LEN 8
+  #endif
 
+  task void markEnd(){
+    uint8_t i, j;
+    for(i = 0; i < NUM_BUFFERS; i++){
+      for(j=0; j < BUFFER_SIZE; j++){
+        bursts[i].buffer[j] = 0xff;
+      }
+    }
+    markingEnd = TRUE;
+    call SDCard.write(addr, (uint8_t*)bursts[0].buffer, END_MARK_LEN);
+  }
 
   async event uint16_t * COUNT_NOK(numSamples) Msp430Adc12SingleChannel.multipleDataReady(uint16_t *COUNT(numSamples) buffer, uint16_t numSamples) {
 //    P1OUT ^= BIT1;
     if ( stopSampling){
+      post markEnd();
       return NULL;
     } else {
       bufferIndex = (bufferIndex+1)%NUM_BUFFERS;
       if ((bufferIndex %(NUM_BUFFERS/2))==0){
-        flushStart = (uint8_t*)(bursts[bufferIndex].buffer);
+        if (bufferIndex == 0){
+          flushStart = (uint8_t*)bursts[NUM_BUFFERS/2].buffer;
+        }else{
+          flushStart = (uint8_t*)bursts[0].buffer;
+        }
+//        uint8_t* flushEnd = (uint8_t*)(bursts[bufferIndex].buffer);
+//        flushStart = flushEnd - (sizeof(burst_t)*(NUM_BUFFERS/2));
+//        flushStart = (uint8_t*)(bursts[bufferIndex].buffer);
         post flushTask();
       }
       return bursts[bufferIndex].buffer;
@@ -140,8 +169,13 @@ module SamplerP{
     return error;
   }
 
-  command error_t Sampler.startSampling(uint16_t sampleInterval){
+
+  command error_t Sampler.startSampling(uint16_t sampleInterval, 
+      bool startAtZero){
     error_t error = configure(sampleInterval);
+    if (startAtZero){
+      addr = 0;
+    }
     if (SUCCESS == error){
       error = call Msp430Adc12SingleChannel.getData();
       if (SUCCESS != error){
@@ -151,6 +185,25 @@ module SamplerP{
       }
     }
     return error;
+  }
+
+  command error_t Sampler.stopSampling(){
+    if(stopSampling){
+      return EALREADY;
+    }else{
+      endAddr = addr;
+      //TODO: should write a block of nulls to the end of the SD card.
+      stopSampling = TRUE;
+      return SUCCESS;
+    }
+  }
+
+  command uint32_t Sampler.getEnd(){
+    return endAddr;
+  }
+
+  command error_t Sampler.read(uint32_t addr_, uint8_t* buf, uint16_t len){
+    return call SDCard.read(addr_, buf, len);
   }
 
   async event error_t Msp430Adc12SingleChannel.singleDataReady(uint16_t data){
