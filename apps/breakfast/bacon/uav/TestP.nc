@@ -66,17 +66,20 @@ module TestP{
     post printWelcome();
   }
 
-//  uint32_t sampleCount;
+  uint32_t sampleCount;
   event uint16_t* Sampler.burstDone(uint16_t* buffer){
     error_t error = call SDLogger.writeRecords(buffer, BUFFER_SIZE);
-//    sampleCount += BUFFER_SIZE;
+    sampleCount += BUFFER_SIZE;
     if (error != SUCCESS){
-      printf("SDL.writeRecords: %s\r\n", decodeError(error));
+      printf("SDL.writeRecords: (%s %p %d)\r\n", 
+        decodeError(error),
+        buffer, BUFFER_SIZE);
       isSampling = FALSE;
     }
     if (isSampling){
       return buffer;
     } else {
+//      printf("done sampling, return null\r\n");
       return NULL;
     }
   }
@@ -104,11 +107,12 @@ module TestP{
   }
 
   task void stop(){
+    uint32_t stopTime;
+    printf("STOPPING\r\n");
 //    uint32_t duration = call Timer.getNow() - startTime;
     isSampling = FALSE;
-    printf("STOP\r\n");
-//    printf("STOP: %lu samples in %lu bms (~ %lu sample/s)\r\n", 
-//      sampleCount, duration, 
+//    printf("STOP: %lu samples in %lu bms\r\n",
+//      sampleCount, duration);
 //      sampleCount/(duration/1024));
   }
 

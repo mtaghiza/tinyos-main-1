@@ -1,4 +1,4 @@
-module SDLoggerP{
+module SDLoggerFileP{
   provides interface SDLogger;
   provides interface SplitControl as WriteControl;
   uses interface Resource;
@@ -26,26 +26,26 @@ module SDLoggerP{
   }
 
   command error_t SDLogger.writeRecords(uint16_t* buffer, uint8_t recordCount){
-//    FRESULT fr = f_write(&myfile, buffer, sizeof(uint16_t)*recordCount, &br);
+    FRESULT fr = f_write(&myfile, buffer, sizeof(uint16_t)*recordCount, &br);
 //    printf("W %u fr: %x\r\n", br, fr);
-//    if (fr != FR_OK){
-//      return FAIL;
-//    }else{
-//      return SUCCESS;
-//    }
-    uint8_t i;
-    uint8_t bc = 1;
-    for(i = 0; i < recordCount && bc != 0; i++){
-      bc = f_printf(&myfile, "%u\n", buffer[i]);
-    }
-//    if (bc != 0){
-//      bc = f_printf(&myfile, "\n");
-//    }
-    if (bc == 0){
+    if (fr != FR_OK){
       return FAIL;
-    } else {
+    }else{
       return SUCCESS;
     }
+//    uint8_t i;
+//    uint8_t bc = 1;
+//    for(i = 0; i < recordCount && bc != 0; i++){
+//      bc = f_printf(&myfile, "%u\n", buffer[i]);
+//    }
+////    if (bc != 0){
+////      bc = f_printf(&myfile, "\n");
+////    }
+//    if (bc == 0){
+//      return FAIL;
+//    } else {
+//      return SUCCESS;
+//    }
   }
 
   command error_t WriteControl.start(){

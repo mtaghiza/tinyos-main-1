@@ -17,7 +17,7 @@ configuration TestAppC{
   TestP.SamplerControl -> SamplerC;
   SamplerC.AdcConfigure -> TestP;
 
-  components SDLoggerC;
+  components SDLoggerRawC as SDLoggerC;
   TestP.SDLogger -> SDLoggerC;
   TestP.WriteControl -> SDLoggerC;
 

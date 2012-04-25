@@ -40,14 +40,18 @@ module SamplerP{
     }
     return err;
   }
+  bool outstandingReport;
 
   task void reportData(){
-    uint16_t* result = signal Sampler.burstDone(lastBuf);
-    if (result == NULL){
-      stopSampling = TRUE;
-    } else { 
-      stopSampling = FALSE;
-      lastBuf = result;
+    if (outstandingReport){
+      uint16_t* result = signal Sampler.burstDone(lastBuf);
+      if (result == NULL){
+        stopSampling = TRUE;
+      } else { 
+        stopSampling = FALSE;
+        lastBuf = result;
+      }
+      outstandingReport = FALSE;
     }
   }
 
@@ -55,9 +59,13 @@ module SamplerP{
 //    P1OUT ^= BIT1;
     if ( stopSampling){
       return NULL;
-    }else{
+    } else {
+      if (outstandingReport){
+//        printf("!o\r\n");
+      }
       curBuf = lastBuf;
       lastBuf = buffer;
+      outstandingReport = TRUE;
       post reportData();
       return curBuf;
     }

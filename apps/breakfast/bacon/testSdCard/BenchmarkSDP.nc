@@ -400,7 +400,7 @@ __attribute__((C));
     f_lseek(&myfile,0);
 
     for(bp = 0; bp < BUF_SIZE; bp++){
-      buffer[bp] = 0x00;
+      buffer[bp] = 'a';
     }
     call StdOut.print("WRITE ");
 

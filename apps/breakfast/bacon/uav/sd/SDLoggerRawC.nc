@@ -1,9 +1,9 @@
-configuration SDLoggerC{
+configuration SDLoggerRawC{
   provides interface SDLogger;
   provides interface SplitControl as WriteControl;
 } implementation {
-  components SDLoggerP;
-  components SDCardSyncC as SDCardC;
+  components SDLoggerRawP as SDLoggerP;
+  components SDCardC as SDCardC;
 
   SDLoggerP.Resource -> SDCardC;
   SDLoggerP.SDCard -> SDCardC;
