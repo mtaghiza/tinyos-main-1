@@ -12,12 +12,22 @@ module SamplerP{
   #ifndef BUFFER_SIZE
   #define BUFFER_SIZE 16
   #endif
+  #ifndef NUM_BUFFERS
+  #define NUM_BUFFERS 32
+  #endif
 
-  uint16_t bufferA[BUFFER_SIZE];
-  uint16_t bufferB[BUFFER_SIZE];
+  typedef struct burst_t{
+    bool dirty;
+    uint16_t buffer[BUFFER_SIZE];
+  } burst_t;
+  uint8_t lastProvided;
+  burst_t bursts[NUM_BUFFERS];
 
-  norace uint16_t* curBuf = bufferA;
-  norace uint16_t* lastBuf = bufferB;
+//  uint16_t bufferA[BUFFER_SIZE];
+//  uint16_t bufferB[BUFFER_SIZE];
+
+//  norace uint16_t* curBuf = bufferA;
+//  norace uint16_t* lastBuf = bufferB;
 
   norace bool stopSampling = FALSE;
 
@@ -42,16 +52,20 @@ module SamplerP{
   }
   bool outstandingReport;
 
+  //signal up one of the used buffers
   task void reportData(){
-    if (outstandingReport){
-      uint16_t* result = signal Sampler.burstDone(lastBuf);
-      if (result == NULL){
-        stopSampling = TRUE;
-      } else { 
-        stopSampling = FALSE;
-        lastBuf = result;
+    uint8_t i;
+    for(i = 0; i < NUM_BUFFERS; i++){
+      if (( i != lastProvided) && bursts[i].dirty){
+        uint16_t* result = signal Sampler.burstDone(bursts[i].buffer);
+        bursts[i].dirty = FALSE;
+//        printf("purged: %u\r\n", i);
+        if (result == NULL){
+          stopSampling = TRUE;
+        }
+        post reportData();
+        return;
       }
-      outstandingReport = FALSE;
     }
   }
 
@@ -60,14 +74,18 @@ module SamplerP{
     if ( stopSampling){
       return NULL;
     } else {
-      if (outstandingReport){
-//        printf("!o\r\n");
+      uint8_t i;
+      //start at 1+last-provided, search for next clean buffer
+      for(i = 1; i < (NUM_BUFFERS - 1) &&
+        bursts[(lastProvided+i)%NUM_BUFFERS].dirty; i++){}
+      lastProvided = (lastProvided +i)%NUM_BUFFERS;
+//      printf("next: %u\r\n", lastProvided);
+      if (bursts[lastProvided].dirty){
+        printf("!O\r\n");
       }
-      curBuf = lastBuf;
-      lastBuf = buffer;
-      outstandingReport = TRUE;
+      bursts[lastProvided].dirty = TRUE;
       post reportData();
-      return curBuf;
+      return bursts[lastProvided].buffer;
     }
   }
 
@@ -81,8 +99,12 @@ module SamplerP{
 
   
   error_t configure(uint16_t sampleInterval){
-    error_t error = call Msp430Adc12SingleChannel.configureMultipleRepeat(
-      call AdcConfigure.getConfiguration(), curBuf, BUFFER_SIZE,
+    error_t error ;
+    lastProvided = 0;
+    error = call Msp430Adc12SingleChannel.configureMultipleRepeat(
+      call AdcConfigure.getConfiguration(),
+      bursts[lastProvided].buffer, 
+      BUFFER_SIZE,
       sampleInterval);
 
     if (error != SUCCESS){
