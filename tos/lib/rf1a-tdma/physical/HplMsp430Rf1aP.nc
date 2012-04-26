@@ -64,6 +64,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
   uses {
     interface ArbiterInfo;
+    interface Rf1aFifo;
     interface HplMsp430Rf1aIf as Rf1aIf;
     interface Rf1aConfigure[uint8_t client];
     interface Rf1aTransmitFragment[uint8_t client];
@@ -587,7 +588,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
-  void loadFifo_(uint8_t* buffer, uint8_t length){
+  void loadFifo_(uint8_t* buffer, uint8_t dataLength){
     bool need_to_write_length = FALSE;
     const uint8_t* data;
     unsigned int count;
@@ -596,12 +597,12 @@ generic module HplMsp430Rf1aP () @safe() {
     //save tx info
     atomic {
       HPL_ATOMIC_SET_PIN;
-      tx_remain = length;
+      tx_remain = dataLength;
       tx_result = SUCCESS;
       tx_state = TX_S_preparing;
       if (buffer) {
         tx_pos = buffer;
-        tx_end = buffer + length;
+        tx_end = buffer + dataLength;
       } else {
         tx_pos = tx_end = 0;
       }
@@ -650,11 +651,13 @@ generic module HplMsp430Rf1aP () @safe() {
     call Rf1aIf.setIe( 
       call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
     if (need_to_write_length) {
-      uint8_t len8 = tx_remain;
-      call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
+      uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain);
+      //FEC not encoded: should reflect encoded length
+      call Rf1aFifo.writeTXFIFO(&len8, sizeof(len8), TRUE);
     }
     TXCP_CLEAR_PIN;
-    call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
+    //FEC: encode this data on the way in.
+    call Rf1aFifo.writeTXFIFO (data, count, FALSE);
     tx_state = TX_S_loaded;
     /* Account for what we just queued. */
     tx_remain -= count;
@@ -1178,9 +1181,11 @@ generic module HplMsp430Rf1aP () @safe() {
 
           if (variable_packet_length_mode) {
             uint8_t len8;
-            call Rf1aIf.readBurstRegister(RF_RXFIFORD, &len8, sizeof(len8));
+            //FEC length: not encoded. reflects the number of bytes
+            //  actually sent, not the encoded payload length
+            call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
             avail -= 1;
-            rx_expected = len8;
+            rx_expected = call Rf1aFifo.getDecodedLen(len8);
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 
@@ -1232,10 +1237,11 @@ generic module HplMsp430Rf1aP () @safe() {
         //  in this function
         //~33uS to read data
 //        printf_BF("rx %p %u\r\n", rx_pos, consume);
-        call Rf1aIf.readBurstRegister(RF_RXFIFORD, rx_pos, consume);
+        //FEC: this should decode the data as we pull it out
+        call Rf1aFifo.readRXFIFO(rx_pos, consume, FALSE);
         rx_pos += consume;
         rx_received += consume;
-        avail -= consume;
+        avail -= call Rf1aFifo.getEncodedLen(consume);
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
           /* If APPEND_STATUS is set, gotta clear out that data. */
@@ -1245,8 +1251,11 @@ generic module HplMsp430Rf1aP () @safe() {
             while (2 > avail) {
               avail = 0x7f & call Rf1aIf.readRegister(RXBYTES);
             }
-            call Rf1aIf.readBurstRegister(RF_RXFIFORD, &rx_rssi_raw, sizeof(rx_rssi_raw));
-            call Rf1aIf.readBurstRegister(RF_RXFIFORD, &rx_lqi_raw, sizeof(rx_lqi_raw));
+            //FEC: not encoded
+            call Rf1aFifo.readRXFIFO(&rx_rssi_raw,
+              sizeof(rx_rssi_raw), TRUE);
+            call Rf1aFifo.readRXFIFO(&rx_lqi_raw, sizeof(rx_lqi_raw),
+              TRUE);
             avail -= 2;
           }
 

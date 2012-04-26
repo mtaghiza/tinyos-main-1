@@ -37,6 +37,18 @@
 #define printf_SF_RX(...)
 #endif
 
+#if DEBUG_SF_SV == 1
+#define printf_SF_SV(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_SV(...) 
+#endif
+
+#if DEBUG_SF_ROUTE == 1
+#define printf_SF_ROUTE(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_ROUTE(...) 
+#endif
+
 #if defined PORT_SF_GPO && defined PIN_SF_GPO
 #define SF_GPO_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_SF_GPO, PIN_SF_GPO)
 #define SF_GPO_CLEAR_PIN TDMA_CLEAR_PIN(PORT_SF_GPO, PIN_SF_GPO)

@@ -7,9 +7,18 @@ implementation {
   
 
 //  components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
-//  components Rf1aConfig100KC as Rf1aSettings;
-  //TODO: switch at compile time
-  components SRFS7_915_GFSK_100K_SENS_HC as Rf1aSettings;
+  #if SYMBOLRATE == 50
+  components Rf1aConfig50KC as Rf1aSettings;
+  #elif SYMBOLRATE == 100
+  components Rf1aConfig100KC as Rf1aSettings;
+  #elif SYMBOLRATE == 125
+  components Rf1aConfig125KC as Rf1aSettings;
+  #elif SYMBOLRATE == 250
+  components Rf1aConfig250KC as Rf1aSettings;
+  #else
+  #error Unrecognized symbol rate
+  #endif
+//  components SRFS7_915_GFSK_100K_SENS_HC as Rf1aSettings;
 
   Rf1aActiveMessageC.Rf1aConfigure 
     -> Rf1aSettings;

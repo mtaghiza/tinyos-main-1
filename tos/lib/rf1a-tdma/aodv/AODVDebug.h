@@ -25,6 +25,11 @@
 #define printf_AODV_STATE(...) 
 #endif
 
+#if DEBUG_AODV_CLEAR == 1
+#define printf_AODV_CLEAR(...) printf(__VA_ARGS__)
+#else
+#define printf_AODV_CLEAR(...) 
+#endif
 
 #endif
 

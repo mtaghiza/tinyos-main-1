@@ -23,14 +23,7 @@ module NonRootSchedulerP{
 
   uses interface CXRoutingTable;
 } implementation {
-  #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
-  #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
-  #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
-  #define TDMA_ROOT_INACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT) 
-  #else
-  #error Must define TDMA_MAX_NODES, TDMA_MAX_DEPTH, and TDMA_MAX_RETRANSMIT
-  #endif
-  
+ 
   //store current/next schedule as pointer to some received-schedule's
   //  payload.
   //This layer needs to have two message_t's then. When we receive a
@@ -41,6 +34,8 @@ module NonRootSchedulerP{
   message_t sched_1;
   message_t* curMsg = &sched_1;
   cx_schedule_t* curSched;
+  const cx_schedule_descriptor_t* curSchedDescriptor =
+    &SCHEDULES[TDMA_INIT_SCHEDULE_ID];
 
   message_t reply_msg_internal;
   message_t* replyMsg = &reply_msg_internal;
@@ -86,28 +81,30 @@ module NonRootSchedulerP{
 //    curSched -> scheduleNum = 0xff;
 //    curSched -> framesPerSlot = TDMA_ROOT_FRAMES_PER_SLOT;
 //    curSched -> maxRetransmit = TDMA_MAX_RETRANSMIT;
-
-    curSched -> frameLen = 10*DEFAULT_TDMA_FRAME_LEN;
-    curSched -> fwCheckLen = 2*10*DEFAULT_TDMA_FRAME_LEN;
-    curSched -> activeFrames = 1;
-    curSched -> inactiveFrames = 0;
+//    curSched -> frameLen = 10*DEFAULT_TDMA_FRAME_LEN;
+//    curSched -> fwCheckLen = 2*10*DEFAULT_TDMA_FRAME_LEN;
+//    curSched -> activeFrames = 1;
+//    curSched -> inactiveFrames = 0;
+//    curSched -> framesPerSlot = 0;
+//    curSched -> maxRetransmit = 0;
+//    curSched -> channel = TEST_CHANNEL;
     curSched -> symbolRate = TDMA_INIT_SYMBOLRATE;
+    curSched -> scheduleId = TDMA_INIT_SCHEDULE_ID;
     curSched -> scheduleNum = 0xff;
-    curSched -> framesPerSlot = 0;
-    curSched -> maxRetransmit = 0;
-    curSched -> channel = TEST_CHANNEL;
+    curSchedDescriptor = &SCHEDULES[curSched->scheduleId];
+
 
     lastSR = curSched -> symbolRate;
     isSynched = FALSE;
     return call TDMAPhySchedule.setSchedule(
       call TDMAPhySchedule.getNow(), 
       0, 
-      curSched->frameLen,
-      curSched->fwCheckLen, 
-      curSched->activeFrames,
-      curSched->inactiveFrames, 
+      10*frameLens[srIndex(curSched->symbolRate)],
+      2*10*frameLens[srIndex(curSched->symbolRate)],
+      1,
+      0,
       curSched->symbolRate,
-      curSched->channel,
+      curSchedDescriptor->channel,
       FALSE);
   }
 
@@ -180,7 +177,7 @@ module NonRootSchedulerP{
         uint32_t myTicks;
         int32_t d;
         int32_t framesElapsed = 
-          curSched->activeFrames+curSched->inactiveFrames;
+          curSchedDescriptor->activeFrames+curSchedDescriptor->inactiveFrames;
         printf_SCHED("v");
         printf_SCHED("(%lu, %lu) -> (%lu, %lu) over %ld\r\n", 
           lastRxTS, lastRootStart, 
@@ -254,6 +251,7 @@ module NonRootSchedulerP{
 
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
+      curSchedDescriptor = &SCHEDULES[curSched->scheduleId];
       printf_TESTBED_SCHED_NEW("S %u\r\n", 
         call CXPacketMetadata.getReceivedCount(msg));
       printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
@@ -291,12 +289,12 @@ module NonRootSchedulerP{
         - fsDelays[lastSRI],
 //        - tuningDelays[lastSRI], 
       lastRxFrameNum,
-      curSched->frameLen,
-      curSched->fwCheckLen, 
-      curSched->activeFrames,
-      curSched->inactiveFrames, 
+      frameLens[srIndex(curSched->symbolRate)],
+      fwCheckLens[srIndex(curSched->symbolRate)],
+      curSchedDescriptor->activeFrames,
+      curSchedDescriptor->inactiveFrames, 
       curSched->symbolRate,
-      curSched->channel,
+      curSchedDescriptor->channel,
       TRUE);
 
     if (changePending){
@@ -330,11 +328,12 @@ module NonRootSchedulerP{
     //hearing it.
     //also: try to do this not-so-close to the very beginning of the
     //cycle, where we can get into all kinds of trouble/edge cases.
-    lostSynch = framesSinceLastSynch > TDMA_TIMEOUT_CYCLES*(curSched->activeFrames) +
-        curSched->activeFrames / 2 ;
+    lostSynch = framesSinceLastSynch >
+        TDMA_TIMEOUT_CYCLES*(curSchedDescriptor->activeFrames) +
+        curSchedDescriptor->activeFrames / 2 ;
     lostSchedule = framesSinceLastSchedule >
-        2*TDMA_TIMEOUT_CYCLES*(curSched ->activeFrames) +
-        curSched->activeFrames/2 ;
+        2*TDMA_TIMEOUT_CYCLES*(curSchedDescriptor ->activeFrames) +
+        curSchedDescriptor->activeFrames/2 ;
 
     if (isSynched && (lostSynch || lostSchedule)){
       isSynched = FALSE;
@@ -419,7 +418,7 @@ module NonRootSchedulerP{
     printf_SCHED_IO("io: ");
     if ((rm == CX_RM_FLOOD) 
         && replyPending 
-        && (frameNum == (TOS_NODE_ID * (curSched->framesPerSlot)))){
+        && (frameNum == (TOS_NODE_ID * (curSchedDescriptor->framesPerSlot)))){
       printf_SCHED_IO("T\r\n");
       return TRUE;
     }else{
@@ -429,15 +428,16 @@ module NonRootSchedulerP{
   }
 
   async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
-    return (framesSinceLastSynch <= curSched->activeFrames+curSched->inactiveFrames);
+    return (framesSinceLastSynch <=
+    curSchedDescriptor->activeFrames+curSchedDescriptor->inactiveFrames);
   }
 
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
 //    printf_SCHED("nrs.mr\r\n");
-    return curSched->maxRetransmit;
+    return curSchedDescriptor->maxRetransmit;
   }
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
-    return curSched->framesPerSlot;
+    return curSchedDescriptor->framesPerSlot;
   }
   async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId,
       uint16_t frameNum){

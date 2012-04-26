@@ -69,6 +69,8 @@ module AODVSchedulerP{
   uint16_t nextSlotStart;
   uint16_t aoClearTime;
   uint16_t lastStart;
+
+  uint16_t lastFn;
   
 
   //OK: take advantage of 1-deep queueing
@@ -107,7 +109,17 @@ module AODVSchedulerP{
       //If we are idle OR if we have established a path, but there's
       //not enough time left to send another packet along it, we go to
       //AO_SETUP and stash the message in ScopedFloodSend.
-      if (CHECK_STATE(S_IDLE) || CHECK_STATE(S_AO_CLEARING_END)){ 
+
+      //TODO: some packets which we (should) know are destined for slot
+      //  violation seem to be going to FloodSend. So, maybe we're not
+      //  ending up in the AO_CLEARING_END state when we're supposed
+      //  to.
+      if (
+        (CHECK_STATE(S_IDLE) || CHECK_STATE(S_AO_CLEARING_END)) 
+        || 
+        (CHECK_STATE(S_AO_READY) && (lastFn + aoClearTime >= nextSlotStart))
+        ){ 
+        printf_AODV_CLEAR("SF %u (%u)\r\n", lastFn, nextSlotStart);
         printf_AODV_S("S");
         call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
         error = call ScopedFloodSend.send(msg, len);
@@ -117,6 +129,7 @@ module AODVSchedulerP{
       } else if (CHECK_STATE(S_AO_READY) || CHECK_STATE(S_AO_CLEARING)){
         printf_AODV_S("P");
         if (destination == lastDestination){
+          printf_AODV_CLEAR("F %u (%u %x)\r\n", lastFn, nextSlotStart, state);
           call CXPacket.setRoutingMethod(msg, CX_RM_PREROUTED);
           //TODO: if msg has ack-requested set, call
           //ScopedFloodSend.send instead.
@@ -206,12 +219,18 @@ module AODVSchedulerP{
           + call SubTDMARoutingSchedule.maxRetransmit[0]();
         lastDestination = call CXPacket.destination(msg);
 
+        //TODO: check this: we seem to be accepting packets that we
+        //know will end in slot violation (sometimes), which would indicate that
+        //this logic is wrong (ending up in S_AO_READY when we should
+        //be going to S_IDLE)
         if (2*aoClearTime + lastStart >= nextSlotStart){
+          printf_AODV_CLEAR("CI %u %u\r\n", aoClearTime, lastStart);
           //this would be the case where, for instance, we are so far
           //away from the destination that there's not time after the
           //initial path-establishment to do anything else.
           SET_STATE(S_IDLE, S_ERROR_3);
         } else {
+          printf_AODV_CLEAR("CR %u %u\r\n", aoClearTime, lastStart);
           SET_STATE(S_AO_READY, S_ERROR_3);
         }
       }else{
@@ -232,10 +251,10 @@ module AODVSchedulerP{
       //if we get a framestarted before it gets sent, then we'll go
       //back to idle as usual.
       if (2*aoClearTime + lastStart >= nextSlotStart){
-        printf_AODV("CE\r\n");
+        printf_AODV_CLEAR("CE %u %u\r\n", aoClearTime, lastStart);
         SET_STATE(S_AO_CLEARING_END, S_ERROR_6);
       } else {
-        printf_AODV("C\r\n");
+        printf_AODV_CLEAR("C %u %u\r\n", aoClearTime, lastStart);
         SET_STATE(S_AO_CLEARING, S_ERROR_6);
       }
       signal Send.sendDone(msg, error);
@@ -276,13 +295,24 @@ module AODVSchedulerP{
     uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot[rm]();
     TMP_STATE;
     CACHE_STATE;
-    //shouldn't we be looking at RM here?
-    if (CHECK_STATE(S_FLOODING) && (frameNum == TOS_NODE_ID*fps)){
-      printf_F_TESTBED("F: %u==%u*%u (%u)\r\n", frameNum, TOS_NODE_ID,
-        fps, TOS_NODE_ID*fps);
-      printf_AODV_IO("IO F %u\r\n", frameNum);
-      return TRUE;
+    
+    //OK to send if we are flooding and this is either the start of
+    //our slot or 
+    if (CHECK_STATE(S_FLOODING)){
+      bool of = call TDMARoutingSchedule.ownsFrame[rm](TOS_NODE_ID, frameNum);
+      bool mightViolate = ! (call TDMARoutingSchedule.ownsFrame[rm](TOS_NODE_ID, frameNum + TDMA_MAX_DEPTH));
+      bool startSlot = (frameNum == TOS_NODE_ID*fps);
+      bool lastCleared = (frameNum > lastStart + TDMA_MAX_DEPTH);
+
+      if (of && !mightViolate && (startSlot || lastCleared)){
+        lastStart = frameNum;
+        printf_F_TESTBED("F: %u==%u*%u (%u)\r\n", frameNum, TOS_NODE_ID,
+          fps, TOS_NODE_ID*fps);
+        printf_AODV_IO("IO F %u\r\n", frameNum);
+        return TRUE;
+      }
     }
+
     if (CHECK_STATE(S_AO_SETUP) && (frameNum == TOS_NODE_ID*fps)){
       SET_STATE(S_AO_SETUP_SENDING, S_ERROR_9);
       lastStart = frameNum;
@@ -301,21 +331,35 @@ module AODVSchedulerP{
 //    printf_AODV("IOX %u\r\n", frameNum);
     return FALSE;
   }
-
+  
+  uint16_t abortFn;
+  task void reportAbort(){
+    printf_AODV_CLEAR("Abort: %u\r\n", abortFn);
+  }
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     TMP_STATE;
-    bool lastCleared = (frameNum >= aoClearTime + lastStart);
-    bool noTimeLeft = (aoClearTime + frameNum > nextSlotStart);
+    bool lastCleared = (frameNum >= (aoClearTime + lastStart));
+    bool noTimeLeft = ((aoClearTime + frameNum) >= nextSlotStart);
+    lastFn = frameNum;
     CACHE_STATE;
+
+    if (CHECK_STATE(S_AO_CLEARING) && lastCleared){
+//      if (noTimeLeft){
+//        setState(S_IDLE, S_ERROR_c);
+//      }else{
+        SET_STATE(S_AO_READY, S_ERROR_c);
+//      }
+//      return;
+    }    
+    
     if (CHECK_STATE(S_AO_READY) && noTimeLeft){
+      abortFn = frameNum;
+      post reportAbort();
       SET_STATE(S_IDLE, S_ERROR_c);
       return;
     }
-    if (CHECK_STATE(S_AO_CLEARING) && lastCleared){
-      SET_STATE(S_AO_READY, S_ERROR_c);
-      return;
-    }
+
     if (CHECK_STATE(S_AO_CLEARING_PENDING) && lastCleared){
       SET_STATE(S_AO_PENDING, S_ERROR_c);
       return;

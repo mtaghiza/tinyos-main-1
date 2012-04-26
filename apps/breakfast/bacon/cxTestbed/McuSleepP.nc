@@ -111,22 +111,22 @@ implementation {
     power_state = call McuPowerOverride.lowestState();
     signal McuSleepEvents.preSleep(power_state);
     temp = msp430PowerBits[power_state] | SR_GIE;
-    #warning Using P1.4 to indicate interrupt status
-    P1OUT |= BIT4;
-    nop();
-    nop();
-    nop();
-    nop();
+//    #warning Using P1.4 to indicate interrupt status
+//    P1OUT |= BIT4;
+//    nop();
+//    nop();
+//    nop();
+//    nop();
     //...just what the heck is going on here?
     __asm__ __volatile__( "bis  %0, r2" : : "m" (temp) );
     // All of memory may change at this point...
     asm volatile ("" : : : "memory");
-    nop();
-    nop();
-    nop();
-    nop();
+//    nop();
+//    nop();
+//    nop();
+//    nop();
     __nesc_disable_interrupt();
-    P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
+//    P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
     signal McuSleepEvents.postSleep(power_state);
   }
 

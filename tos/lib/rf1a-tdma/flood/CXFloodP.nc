@@ -273,7 +273,7 @@ module CXFloodP{
     printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
     if (! call TDMARoutingSchedule.ownsFrame(thisSrc, frameNum)){
       printf_F_RX("~o\r\n");
-      printf_TESTBED("SV F D %u %u\r\n", thisSrc, frameNum);
+      printf_F_SV("SV F D %u %u\r\n", thisSrc, frameNum);
       return msg;
     }
     if (state == S_IDLE){
@@ -291,13 +291,13 @@ module CXFloodP{
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
-            printf_SF_TESTBED_PR("PRD\r\n");
+            printf_SF_TESTBED_PR("PRD %lu\r\n", thisSn);
             lastSn = thisSn;
             lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
             return msg;
           }else{
-            printf_SF_TESTBED_PR("PRK\r\n");
+            printf_SF_TESTBED_PR("PRK %lu\r\n", thisSn);
             printf_F_RX("b");
           }
         }

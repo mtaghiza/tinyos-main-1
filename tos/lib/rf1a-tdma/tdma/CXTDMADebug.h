@@ -155,6 +155,11 @@
 #define printf_DEBUG_CONFIG(...) 
 #endif
 
+#if DEBUG_RXREADY_ERROR == 1
+#define printf_RXREADY_ERROR(...) printf(__VA_ARGS__)
+#else
+#define printf_RXREADY_ERROR(...) 
+#endif
 
 #if defined PORT_FS_STROBE && defined PIN_FS_STROBE 
 #define FS_STROBE_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_FS_STROBE, PIN_FS_STROBE)

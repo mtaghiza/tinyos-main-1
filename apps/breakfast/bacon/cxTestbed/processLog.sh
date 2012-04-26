@@ -14,6 +14,7 @@ tfDir=tmp
 mkdir -p $tfDir
 
 tickLen="4/26e6"
+RXREADY_FAULT_WINDOW=3.0
 
 #dos2unix $logFile
 
@@ -27,6 +28,7 @@ pcTf=$(tempfile -d $tfDir)
 dcTf=$(tempfile -d $tfDir)
 prrTf=$(tempfile -d $tfDir)
 gapsTf=$(tempfile -d $tfDir)
+rxrTf=$(tempfile -d $tfDir)
 
 #echo "extracting depth info"
 #pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
@@ -38,6 +40,8 @@ echo "extracting duty cycle info"
 pv $logFile | awk '($3 == "RS"){print $1, $2, $4, $5, $6, $7}' > $rsTf
 echo "extracting forward/rx packet counts"
 pv $logFile | awk '/^[0-9]+.[0-9]+ [0-9]+ PC [0-9]+ Sent [0-9]+ Received [0-9]+/{print $1, $2, $4, $6, $8}' > $pcTf
+echo "Finding RXREADY faults"
+pv $logFile | awk '/RXREADY/{print $1, $2}' > $rxrTf
 
 sqlite3 $db << EOF
 DROP TABLE IF EXISTS DEPTH;
@@ -62,8 +66,8 @@ CREATE TABLE DEPTH (
 --GROUP BY node
 --ORDER BY avgDepth;
 
-DROP TABLE IF EXISTS TX;
-CREATE TABLE TX (
+DROP TABLE IF EXISTS TX_ALL;
+CREATE TABLE TX_ALL (
   ts REAL,
   src INTEGER,
   dest INTEGER,
@@ -71,8 +75,64 @@ CREATE TABLE TX (
   rm INTEGER,
   pr INTEGER
 );
-select "Importing TX from $txTf";
-.import $txTf TX
+select "Importing TX_ALL from $txTf";
+.import $txTf TX_ALL
+
+DROP TABLE IF EXISTS RXR;
+CREATE TABLE RXR(
+  ts REAL,
+  node INTEGER
+);
+
+select "Importing RXREADY faults from $rxrTf";
+.import $rxrTf RXR
+
+--generate ranges affected by errors
+DROP TABLE IF EXISTS RXR_RANGE;
+CREATE TABLE RXR_RANGE
+AS
+SELECT 
+  node,
+  ts - (${RXREADY_FAULT_WINDOW}/2.0) as start,
+  ts + (${RXREADY_FAULT_WINDOW}/2.0) as end
+FROM RXR;
+
+select "Removing impacted transmissions";
+
+--identify the transmissions affected
+DROP TABLE IF EXISTS RXR_FAULTS;
+CREATE TABLE RXR_FAULTS AS
+SELECT
+  TX_ALL.src,
+  TX_ALL.sn
+FROM TX_ALL
+JOIN RXR_RANGE ON
+  TX_ALL.src == RXR_RANGE.node
+  AND TX_ALL.ts > RXR_RANGE.start
+  AND TX_ALL.ts < RXR_RANGE.end;
+
+--invert this selection to get the valid transmissions
+DROP TABLE IF EXISTS RXR_TX;
+CREATE TABLE RXR_TX AS
+SELECT 
+  TX_ALL.src,
+  TX_ALL.sn
+FROM TX_ALL
+EXCEPT
+SELECT src, sn
+FROM RXR_FAULTS;
+
+--use join to intersect the valid transmission identifiers with the
+--  full transmission records
+DROP TABLE IF EXISTS TX;
+CREATE TABLE TX AS
+SELECT 
+  TX_ALL.*
+FROM TX_ALL
+JOIN RXR_TX 
+  ON RXR_TX.src == TX_ALL.src
+  AND RXR_TX.sn == TX_ALL.sn;
+
 
 DROP TABLE IF EXISTS RX_D;
 CREATE TABLE RX_D (
@@ -206,7 +266,7 @@ CREATE TABLE MISSING_NR_SN AS
       EXCEPT SELECT 0
       ) allNodes
     WHERE tx.src==0
-    AND tx.dest=65535
+    AND ( tx.dest=65535 OR tx.dest = allNodes.node)
   --  and allNodes.node == 1
     EXCEPT SELECT rx.src, rx.sn, rx.dest
     FROM rx;
@@ -236,7 +296,7 @@ CREATE TABLE MISSING_R_SN AS
      -- EXCEPT SELECT 0
       ) allNodes
     WHERE tx.src!=0
-    AND tx.dest=65535
+    AND (tx.dest=65535 OR tx.dest == allNodes.node)
   --  and allNodes.node == 1
     EXCEPT SELECT rx.src, rx.sn, rx.dest
     FROM rx;
@@ -404,6 +464,8 @@ echo "dumping stats to file"
 sqlite3 $db < duty_cycles.sql > $dcTf 
 sqlite3 $db < prr_dist.sql > $prrTf 
 sqlite3 $db < gaps.sql > $gapsTf 
+
+#awk '($2==13){print $0}' debug/sf_13_burst_rxr | awk '/TX/{lastSn=$9} /RXREADY/{print lastSn}' > debug/sf_13_burst_rxr.rxready
 
 echo "generating figures"
 mkdir -p figs/$(dirname $logFile)

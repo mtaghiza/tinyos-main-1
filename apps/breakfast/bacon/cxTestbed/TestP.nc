@@ -27,7 +27,10 @@ module TestP {
   uses interface Receive;
 
   uses interface Leds;
-  uses interface Timer<TMilli>;
+  uses interface Timer<TMilli> as StartupTimer;
+  uses interface Timer<TMilli> as SendTimer;
+
+  uses interface Random;
 
 } implementation {
   
@@ -38,13 +41,17 @@ module TestP {
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
   uint8_t rx_len;
+  bool sending;
 
   typedef nx_struct test_packet_t{
     nx_uint32_t sn;
   } test_packet_t;
+
+  uint16_t packetQueue = 0;
   
   task void unicastTask();
   task void broadcastTask();
+  task void sendTask();
   task void startTask();
 
   event void Boot.booted(){
@@ -80,14 +87,25 @@ module TestP {
     }
     #endif
   }
+  
+  event void SendTimer.fired(){
+    packetQueue++;
+    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
+    if (packetQueue >= QUEUE_THRESHOLD){
+      printf_TEST_QUEUE("send\r\n");
+      post sendTask();
+    }else{
+      printf_TEST_QUEUE("wait\r\n");
+    }
 
-  event void Timer.fired(){
+    call SendTimer.startOneShot((TEST_IPI/2) + 
+      (call Random.rand32())%TEST_IPI );
+  }
+
+  event void StartupTimer.fired(){
     printf_TESTBED("Begin transmissions\r\n");
-    #if FLOOD_TEST == 1
-    post broadcastTask();
-    #else 
-    post unicastTask();
-    #endif
+    call SendTimer.startOneShot((TEST_IPI/2) + 
+      (call Random.rand32())%TEST_IPI );
   }
 
   event void SplitControl.startDone(error_t error){
@@ -98,9 +116,9 @@ module TestP {
     if (TOS_NODE_ID != 0){
       #if IS_SENDER == 1
         #if DESKTOP_TEST == 0
-        call Timer.startOneShot(TESTBED_START_TIME);
+        call StartupTimer.startOneShot(TESTBED_START_TIME);
         #else
-        call Timer.startOneShot(DESKTOP_START_TIME);
+        call StartupTimer.startOneShot(DESKTOP_START_TIME);
         #endif
       #endif
     }
@@ -119,6 +137,9 @@ module TestP {
     //TODO: where should am header be accounted for?
     error = call Send.send(tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
+    if (SUCCESS == error){
+      sending = TRUE;
+    }
 //    printf("Send.Send (broadcast): %s\r\n", decodeError(error));
   }
 
@@ -130,11 +151,26 @@ module TestP {
     pl -> sn ++;//= (1+TOS_NODE_ID);
     error = call Send.send(tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
+    if (SUCCESS == error){
+      sending = TRUE;
+    }
 //    printf("Send.Send (unicast): %s\r\n", decodeError(error));
   }
 
+  task void sendTask(){
+    if (!sending){
+      #if FLOOD_TEST == 1
+      post broadcastTask();
+      #else 
+      post unicastTask();
+      #endif
+    }
+  }
+
+
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
+    sending = FALSE;
     printf_APP("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
@@ -142,14 +178,13 @@ module TestP {
       (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
       ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
       error);
+    if (packetQueue){
+      packetQueue--;
+    }
     if (error == ENOACK || error == SUCCESS){
-      #if IS_SENDER == 1
-        #if FLOOD_TEST == 1
-        post broadcastTask();
-        #else 
-        post unicastTask();
-        #endif
-      #endif
+      if (packetQueue){
+        post sendTask();
+      }
     } else {
       printf("!sd %s\r\n", decodeError(error));
     }

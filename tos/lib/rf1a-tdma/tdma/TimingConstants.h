@@ -1,6 +1,8 @@
 #ifndef TIMING_CONSTANTS_H
 #define TIMING_CONSTANTS_H
 
+#include <stdio.h>
+
  #ifndef NUM_SRS
  #define NUM_SRS 7
  #endif

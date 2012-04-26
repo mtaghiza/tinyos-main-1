@@ -163,7 +163,15 @@ module CXScopedFloodP{
     if (state == S_CLEAR_WAIT){
       //TODO: watch for slot length violations, quit if this is no
       //longer your slot.
-      if (frameNum - ackFrame > (ackFrame - originFrame) + 1){
+
+      //TODO: looking at the sniffer logs, it seems likely that this
+      //  bound is incorrect, and we are in fact allowing the first
+      //  flood transmission of the burst to be sent while the last
+      //  ack is still circulating.
+      //  should be +1, but i see what appear to be collisions here,
+      //  so increasing to +2
+      //  and at +2 it looks better
+      if (frameNum - ackFrame > (ackFrame - originFrame) + 2){
         post signalSendDone();
       }
     }
@@ -317,7 +325,8 @@ module CXScopedFloodP{
             post signalSendDone();
           } else { 
             //otherwise, we have to wait for the air to clear.
-            //if we got the ack n frames after our tx, then there are n
+            //if we got the ack n frames after our tx, then there are
+            //  n+1
             //frames in the worst case for our forwarded ack to suppress
             //the edges of the flood. 
             //
@@ -333,6 +342,7 @@ module CXScopedFloodP{
             //  8             a
             //  9         d
             // 10           a
+            // 11         a
   
             setState(S_CLEAR_WAIT);
           }
@@ -422,10 +432,10 @@ module CXScopedFloodP{
       return msg;
     }
     if (pType == CX_TYPE_DATA && ! call TDMARoutingSchedule.ownsFrame(src, frameNum)) {
-      printf_SF_TESTBED("SV SF D %u %u\r\n", src, frameNum);
+      printf_SF_SV("SV SF D %u %u\r\n", src, frameNum);
       return msg;
     } else if (pType== CX_TYPE_ACK && ! call TDMARoutingSchedule.ownsFrame(dest, frameNum)){
-      printf_SF_TESTBED("SV SF A %u %u\r\n", dest, frameNum);
+      printf_SF_SV("SV SF A %u %u\r\n", dest, frameNum);
       return msg;
     }
            
@@ -437,11 +447,11 @@ module CXScopedFloodP{
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
             call CXPacket.destination(msg), &isBetween)) || !isBetween){
-          printf_SF_TESTBED_PR("PRD\r\n");
+          printf_SF_TESTBED_PR("PRD %lu\r\n", sn);
           printf_SF_RX("x*\r\n");
           return msg;
         }else{
-          printf_SF_TESTBED_PR("PRK\r\n");
+          printf_SF_TESTBED_PR("PRK %lu\r\n", sn);
         }
       }
       //OK: the state guards us from overwriting rx_msg. the only time
@@ -474,6 +484,7 @@ module CXScopedFloodP{
           setState(S_ACK_PREPARE);
         //not for me: forward it.
         }else {
+          printf_SF_ROUTE("D %u %u %u\r\n", src, dest, frameNum);
           printf_SF_RX("f");
           ret = fwd_msg;
           fwd_msg = msg;
@@ -507,6 +518,7 @@ module CXScopedFloodP{
       } else if (pType == CX_TYPE_ACK){
         cx_ack_t* ack = (cx_ack_t*) (call LayerPacket.getPayload(msg,
           sizeof(cx_ack_t)));
+        printf_SF_ROUTE("A %u %u %u\r\n", src, dest, frameNum);
         printf_SF_RX("a");
         if ( (ack->src == lastDataSrc) && (ack->sn == lastDataSn) ){
           message_t* ret = fwd_msg;

@@ -400,9 +400,9 @@ void __nesc_disable_interrupt(void) @safe()
 void __nesc_enable_interrupt(void) @safe()
 {
   eint();
-  #warning Using P1.4 to indicate interrupt status
+//  #warning Using P1.4 to indicate interrupt status
 //  nop();
-  P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
+//  P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
 //  P1OUT |= BIT4;
 }
 
@@ -420,8 +420,8 @@ __nesc_atomic_t __nesc_atomic_start(void) @spontaneous() @safe()
   __nesc_atomic_t result = ((READ_SR & SR_GIE) != 0);
   __nesc_disable_interrupt();
   asm volatile("" : : : "memory"); /* ensure atomic section effect visibility */
-  #warning Using P1.4 to indicate interrupt status
-  P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
+//  #warning Using P1.4 to indicate interrupt status
+//  P1OUT = (P1OUT & ~BIT4) | ((READ_SR & SR_GIE)? BIT4 : 0x00);
   return result;
 }
 

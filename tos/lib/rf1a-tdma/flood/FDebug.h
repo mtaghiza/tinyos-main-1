@@ -32,6 +32,13 @@
 #define printf_F_GP(...) 
 #endif
 
+#if DEBUG_F_SV == 1
+#define printf_F_SV(...) printf(__VA_ARGS__)
+#else
+#define printf_F_SV(...) 
+#endif
+
+
 #if defined PORT_F_GPO && defined PIN_F_GPO
 #define F_GPO_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_F_GPO, PIN_F_GPO)
 #define F_GPO_CLEAR_PIN TDMA_CLEAR_PIN(PORT_F_GPO, PIN_F_GPO)

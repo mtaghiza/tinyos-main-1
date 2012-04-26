@@ -145,8 +145,6 @@ implementation
     //TODO: remove debug code: if the width of these gets messed up,
     //then we're missing overflow events, which would cause the
     //+10.08ms behavior
-    #warning Using p1.1 for overflow event
-    P1OUT ^= BIT1;
     signal Timer.overflow();
   }
 

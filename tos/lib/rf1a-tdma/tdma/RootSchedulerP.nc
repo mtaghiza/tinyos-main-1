@@ -58,8 +58,8 @@ module RootSchedulerP{
     S_SWITCH_PENDING = 0x01,
   };
   
-  //TODO:other stuff
   task void announceSchedule();
+  task void printSchedule();
 
   //transition test functions
   bool disconnected();
@@ -75,13 +75,8 @@ module RootSchedulerP{
   void keepNextSR(bool increaseSN);
   void setupPacket(message_t* msg, 
       uint8_t sn, 
-      uint16_t originalFrame, 
-      uint16_t activeFrames, 
-      uint16_t inactiveFrames, 
-      uint16_t framesPerSlot, 
-      uint8_t maxRetransmit, 
       uint8_t symbolRate, 
-      uint8_t channel);
+      uint8_t scheduleId);
 
   //schedule modification functions
   void initializeSchedule();
@@ -104,18 +99,10 @@ module RootSchedulerP{
 
   uint16_t nodesReachable[NUM_SRS]; 
   uint8_t maxDepth[NUM_SRS]; 
-
-  #if defined (TDMA_MAX_NODES) && defined (TDMA_MAX_DEPTH) && defined (TDMA_MAX_RETRANSMIT)
-  #define TDMA_ROOT_FRAMES_PER_SLOT (TDMA_MAX_DEPTH + TDMA_MAX_RETRANSMIT)
-  #define TDMA_ROOT_ACTIVE_FRAMES (TDMA_MAX_NODES * TDMA_ROOT_FRAMES_PER_SLOT)
-  #define TDMA_ROOT_INACTIVE_FRAMES 5
-  #else
-  #error Must define TDMA_MAX_NODES, TDMA_MAX_DEPTH, and TDMA_MAX_RETRANSMIT
-  #endif
-
   message_t cur_schedule_msg_internal;
   message_t* cur_schedule_msg = &cur_schedule_msg_internal;
   cx_schedule_t* curSchedule;
+  const cx_schedule_descriptor_t* curScheduleDescriptor;
 
   message_t next_schedule_msg_internal;
   message_t* next_schedule_msg = &next_schedule_msg_internal;
@@ -231,7 +218,8 @@ module RootSchedulerP{
 
   async event void FrameStarted.frameStarted(uint16_t frameNum){
 
-    if ((1+frameNum)%(curSchedule->activeFrames + curSchedule->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
+    if ((1+frameNum)%(curScheduleDescriptor->activeFrames +
+    curScheduleDescriptor->inactiveFrames) == (TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID)){
       txState = S_NOT_SENT;
       #if CX_ADAPTIVE_SR != 1
       state = S_ESTABLISHED;
@@ -341,7 +329,7 @@ module RootSchedulerP{
   }
 
   async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
-    return curSchedule->framesPerSlot;
+    return curScheduleDescriptor->framesPerSlot;
   }
 
   async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId, uint16_t frameNum){
@@ -365,7 +353,7 @@ module RootSchedulerP{
   }
 
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
-    return curSchedule->maxRetransmit;
+    return curScheduleDescriptor->maxRetransmit;
   }
   
   am_addr_t rrSource;
@@ -430,7 +418,8 @@ module RootSchedulerP{
     curSchedule = (cx_schedule_t*)(call Packet.getPayload(cur_schedule_msg,
       sizeof(cx_schedule_t)));
     curSchedule->scheduleNum = 0;
-    curSchedule->channel = TEST_CHANNEL;
+    curSchedule->scheduleId = 0;
+    curScheduleDescriptor = &SCHEDULES[curSchedule->scheduleId];
     //initialize nextSchedule
     resetNextSR(TRUE, TRUE);
     //this timestamp will be fed to the phy scheduler.
@@ -438,6 +427,7 @@ module RootSchedulerP{
       call TDMAPhySchedule.getNow());
     //post task to start lower layer and swap cur with next
     useNextSchedule();
+    post printSchedule();
     //set up next identical to this one 
     keepNextSR(FALSE);
   }
@@ -448,12 +438,12 @@ module RootSchedulerP{
     error = call TDMAPhySchedule.setSchedule(
       call CXPacket.getTimestamp(cur_schedule_msg), 
       call CXPacket.getOriginalFrameNum(cur_schedule_msg),
-      curSchedule->frameLen,
-      curSchedule->fwCheckLen, 
-      curSchedule->activeFrames,
-      curSchedule->inactiveFrames, 
+      frameLens[srIndex(curSchedule->symbolRate)],
+      fwCheckLens[srIndex(curSchedule->symbolRate)],
+      SCHEDULES[curSchedule->scheduleId].activeFrames,
+      SCHEDULES[curSchedule->scheduleId].inactiveFrames,
       curSchedule->symbolRate,
-      curSchedule->channel,
+      SCHEDULES[curSchedule->scheduleId].channel,
       TRUE
     );
     if (SUCCESS != error){
@@ -470,6 +460,7 @@ module RootSchedulerP{
     lastSR = curSchedule->symbolRate;
     cur_schedule_msg = next_schedule_msg;
     curSchedule = (cx_schedule_t*) call Packet.getPayload(cur_schedule_msg, sizeof(cx_schedule_t));
+    curScheduleDescriptor = &SCHEDULES[curSchedule->scheduleId];
     next_schedule_msg = swp;
     psState = S_SWITCH_PENDING;
     post updateScheduleTask();
@@ -519,13 +510,8 @@ module RootSchedulerP{
   void resetNextSR(bool resetC, bool resetM){
     setupPacket(next_schedule_msg,
       (curSchedule->scheduleNum+1)%0xff,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
       TDMA_INIT_SYMBOLRATE,
-      curSchedule->channel
+      TDMA_INIT_SCHEDULE_ID
     );
     if (resetC){
       resetCounts();
@@ -543,13 +529,8 @@ module RootSchedulerP{
     if ( curSRI < NUM_SRS - 1 ){
       setupPacket(next_schedule_msg,
         (curSchedule->scheduleNum+1)%0xff,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-        TDMA_ROOT_ACTIVE_FRAMES, 
-        TDMA_ROOT_INACTIVE_FRAMES,
-        TDMA_ROOT_FRAMES_PER_SLOT,
-        TDMA_MAX_RETRANSMIT,
         symbolRates[curSRI + 1],
-        curSchedule->channel
+        TDMA_INIT_SCHEDULE_ID
       );
       nextSR = ((cx_schedule_t*)
         (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
@@ -568,13 +549,8 @@ module RootSchedulerP{
     if ( curSRI > 0 ){
       setupPacket(next_schedule_msg,
         (curSchedule->scheduleNum+1)%0xff,
-        TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-        TDMA_ROOT_ACTIVE_FRAMES, 
-        TDMA_ROOT_INACTIVE_FRAMES,
-        TDMA_ROOT_FRAMES_PER_SLOT,
-        TDMA_MAX_RETRANSMIT,
         symbolRates[curSRI - 1],
-        curSchedule->channel
+        TDMA_INIT_SCHEDULE_ID
       );
       nextSR = ((cx_schedule_t*)
         (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
@@ -589,13 +565,8 @@ module RootSchedulerP{
   void finalizeNextSR(){
     setupPacket(next_schedule_msg,
       (curSchedule->scheduleNum+1)%0xff,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
       maxSR,
-      curSchedule->channel
+      TDMA_INIT_SCHEDULE_ID
     );
     nextSR = ((cx_schedule_t*)
       (call Packet.getPayload(next_schedule_msg, sizeof(cx_schedule_t)))
@@ -611,13 +582,8 @@ module RootSchedulerP{
     }
     setupPacket(next_schedule_msg,
       nextSN,
-      TDMA_ROOT_FRAMES_PER_SLOT*TOS_NODE_ID,
-      TDMA_ROOT_ACTIVE_FRAMES, 
-      TDMA_ROOT_INACTIVE_FRAMES,
-      TDMA_ROOT_FRAMES_PER_SLOT,
-      TDMA_MAX_RETRANSMIT,
       curSchedule->symbolRate,
-      curSchedule->channel
+      TDMA_INIT_SCHEDULE_ID
     );
     printf_SCHED_SR("KN %p sr %u\r\n", next_schedule_msg,
       ((cx_schedule_t*)(call Packet.getPayload(next_schedule_msg,
@@ -627,38 +593,40 @@ module RootSchedulerP{
   //general packet setup
   void setupPacket(message_t* msg, 
       uint8_t sn, 
-      uint16_t originalFrame, 
-      uint16_t activeFrames, 
-      uint16_t inactiveFrames, 
-      uint16_t framesPerSlot, 
-      uint8_t maxRetransmit, 
       uint8_t symbolRate, 
-      uint8_t channel){
+      uint8_t scheduleId){
     cx_schedule_t* schedule; 
     //not necessary, this is done by the send component
     //call CXPacket.init(msg);
     call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call CXPacket.setDestination(msg, AM_BROADCAST_ADDR);
     schedule = (cx_schedule_t*)call Packet.getPayload(msg, sizeof(cx_schedule_t));
-    schedule -> frameLen = frameLens[srIndex(symbolRate)];
-    schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
-    schedule -> activeFrames = activeFrames;
-    schedule -> inactiveFrames = inactiveFrames;
-    schedule -> framesPerSlot = framesPerSlot;
-    schedule -> maxRetransmit = maxRetransmit;
+//    schedule -> frameLen = frameLens[srIndex(symbolRate)];
+//    schedule -> fwCheckLen = fwCheckLens[srIndex(symbolRate)];
+//    schedule -> activeFrames = activeFrames;
+//    schedule -> inactiveFrames = inactiveFrames;
+//    schedule -> framesPerSlot = framesPerSlot;
+//    schedule -> maxRetransmit = maxRetransmit;
     schedule -> symbolRate = symbolRate;
-    schedule -> channel = channel;
+//    schedule -> channel = channel;
     schedule -> scheduleNum = sn;
+    schedule -> scheduleId = scheduleId;
   }
 
   //utilities
   task void printSchedule(){
-    printf_SCHED_SR("sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
-      curSchedule->scheduleNum, curSchedule->originalFrame, curSchedule->frameLen,
-      curSchedule->fwCheckLen, curSchedule->activeFrames, 
-      curSchedule->inactiveFrames, curSchedule->framesPerSlot, 
-      curSchedule->maxRetransmit, curSchedule->symbolRate,
-      curSchedule->channel);
+    printf_SCHED("sn %u of %u si %u (%p) sri %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
+      curSchedule->scheduleNum, call
+      CXPacket.getOriginalFrameNum(cur_schedule_msg),
+      curSchedule->scheduleId,
+      curScheduleDescriptor,
+      srIndex(curSchedule->symbolRate),
+      frameLens[srIndex(curSchedule->symbolRate)],
+      fwCheckLens[srIndex(curSchedule->symbolRate)],
+      curScheduleDescriptor->activeFrames, 
+      curScheduleDescriptor->inactiveFrames, curScheduleDescriptor->framesPerSlot, 
+      curScheduleDescriptor->maxRetransmit, curSchedule->symbolRate,
+      curScheduleDescriptor->channel);
   }
   
   //TODO: split control

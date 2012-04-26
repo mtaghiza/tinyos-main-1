@@ -8,9 +8,11 @@ configuration TestAppC{
   components SerialPrintfC;
   components PlatformSerialC;
   components LedsC;
-  components new TimerMilliC();
+  components new TimerMilliC() as StartupTimer;
+  components new TimerMilliC() as SendTimer;
+  components RandomC;
+
   #if STACK_PROTECTION == 1
-  
   components StackGuardC;
   #else
   #warning Disabling stack protection
@@ -21,9 +23,9 @@ configuration TestAppC{
   TestP.UartControl -> PlatformSerialC;
   TestP.Leds -> LedsC;
 
-  TestP.Timer -> TimerMilliC;
-
-  
+  TestP.StartupTimer -> StartupTimer;
+  TestP.SendTimer -> SendTimer;
+  TestP.Random -> RandomC;
 
   components new Rf1aPhysicalC();
 

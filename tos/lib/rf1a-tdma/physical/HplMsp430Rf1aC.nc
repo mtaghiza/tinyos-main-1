@@ -82,6 +82,16 @@ generic configuration HplMsp430Rf1aC (
 
   components HplMsp430Rf1aInterruptP;
 
+  #if RF1A_FEC_DISABLED == 1
+  #warning Disabling software FEC!
+  components Rf1aFifoC as Rf1aFifo;
+  #else
+  components FECRf1aFifoC as Rf1aFifo;
+  #endif
+
+  Rf1aFifo.Rf1aIf -> HplRf1aIfP;
+  HplRf1aP.Rf1aFifo -> Rf1aFifo;
+
   #if CX_RADIO_LOGGING == 1
   components new Alarm32khz16C();
   components MainC;

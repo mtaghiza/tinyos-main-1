@@ -1259,7 +1259,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      call StdOut.print("\n\r");
       call StdOut.printBase10uint32(rxTime);
       call StdOut.print(" ");
-      call StdOut.dumpHex(start,received,"");
+      call StdOut.dumpHex(start,received," ");
       call StdOut.print(" ");
       call StdOut.printHex(rx_lqi_raw &  0x80);
       call StdOut.print(" ");

@@ -404,6 +404,10 @@ module CXTDMAPhysicalP {
               //7uS
               PFS_TOGGLE_PIN;
             }
+            if (call Rf1aStatus.get() != RF1A_S_RX){
+              printf_RXREADY_ERROR("! PFS.F RXREADY but radio %x\r\n", 
+                call Rf1aStatus.get() );
+            }
             setState(S_RX_READY);
             RX_READY_SET_PIN;
 //            printf("PFS1  %s\r\n", decodeStatus());
@@ -561,7 +565,7 @@ module CXTDMAPhysicalP {
       FS_TOGGLE_PIN;
     } else if (checkState(S_RX_READY)){
       if (call Rf1aStatus.get() != RF1A_S_RX){
-        printf("RXREADY but radio %x!\r\n", call Rf1aStatus.get());
+        printf_RXREADY_ERROR("! FS.F RXREADY but radio %x\r\n", call Rf1aStatus.get());
       }
       //4 uS to here
       FS_TOGGLE_PIN;
@@ -923,7 +927,7 @@ module CXTDMAPhysicalP {
 //          printf_TESTBED("c\r\n");
           post printPassed();
           receiveCount++;
-//          printf_TESTBED_CRC("R. %u\r\n", frameNum);
+          printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{
             //TODO: check long atomic
 
@@ -947,7 +951,16 @@ module CXTDMAPhysicalP {
               frameNum, lastRECapture);
           }
         } else {
+          #if DEBUG_TESTBED_CRC == 1
+          uint8_t ghettoRXCRC = 0;
+          uint8_t i;
+          for(i = 0; i< count; i++){
+            ghettoRXCRC ^= buffer[i];
+          }
+          ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
+          printf("RC %x \r\n", ghettoRXCRC);
           printf_TESTBED_CRC("R! %u\r\n", frameNum);
+          #endif
         }
         completeCleanup();
       } else if (ENOMEM == result){
@@ -971,6 +984,12 @@ module CXTDMAPhysicalP {
     }
   }
 
+  uint8_t ghettoTXCRC;
+
+  task void reportTXCRC(){
+    printf_TESTBED_CRC("TC %x \r\n", ghettoTXCRC);
+  }
+
   /**
    * S_TRANSMITTING:
    *   phy.sendDone / signal sendDone -> S_TX_CLEANUP 
@@ -981,6 +1000,7 @@ module CXTDMAPhysicalP {
     tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
       message_t* msg = (message_t*)buffer;
+      uint8_t i;
       setState(S_TX_CLEANUP);
       completeCleanup();
       //set the phy timestamp if we are the source and this is the
@@ -993,6 +1013,14 @@ module CXTDMAPhysicalP {
 //        call CXPacketMetadata.setAlarmTimestamp(msg, 
 //          lastFsaHandled);
       }
+      #if DEBUG_TESTBED_CRC == 1
+      ghettoTXCRC = 0;
+      for (i=0; i< len; i++){
+        ghettoTXCRC ^= buffer[i];
+      }
+      ghettoTXCRC ^= call CXPacket.count((message_t*)buffer);
+      post reportTXCRC();
+      #endif
       signal CXTDMA.sendDone(msg, len, frameNum, result);
     } else {
       setState(S_ERROR_e);
@@ -1047,9 +1075,14 @@ module CXTDMAPhysicalP {
       call SynchCapture.disable();
       printf_TDMA_SS("SS@ %lu: %lu %u %lu %lu %u %u %u %u\r\n", 
         call FrameStartAlarm.getNow(), 
-        startAt, atFrameNum,
-        frameLen, fwCheckLen, activeFrames, inactiveFrames,
-        symbolRate, channel);
+        startAt, 
+        atFrameNum,
+        frameLen, 
+        fwCheckLen, 
+        activeFrames, 
+        inactiveFrames,
+        symbolRate, 
+        channel);
       atomic{
         //while target frameStart is in the past
         // - add 1 to target frameNum, add framelen to target frameStart
