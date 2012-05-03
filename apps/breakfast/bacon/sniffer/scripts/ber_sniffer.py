@@ -32,10 +32,10 @@ def computeStats(fn):
     sns = []
     failures = []
     rxCount = 0
+    nonMatched = 0
     for line in f:
-        
         if not lp.match(line):
-            pass
+            nonMatched +=1
 #            print "No match:", line
         else:
 #            print "match:", line
@@ -91,11 +91,13 @@ def computeStats(fn):
         errorCount += len(f[-1])
     ber = float(errorCount)/(8*len(sns) * len(prev[-1]))
     sr = int(fn.split('_')[-1])*1000
-    return (sr, ber, crcFailureRate, prrAll, prrPassed)
+    nodeCount = int(fn.split('_')[-3])
+#    print "unmatched:",nonMatched, "total",len(sns)
+    return (nodeCount, sr, ber, crcFailureRate, prrAll, prrPassed)
     
 
 if __name__ == '__main__':
-    print "SR BER CRC_ERR PRR_ALL PRR_PASSED"
+    print "NODECOUNT SR BER CRC_ERR PRR_ALL PRR_PASSED"
     for fn in sys.argv[1:]:
         result = computeStats(fn)
-        print "%i %.6f %.4f %.4f %.4f"%result
+        print "%i %i %.6f %.4f %.4f %.4f"%result

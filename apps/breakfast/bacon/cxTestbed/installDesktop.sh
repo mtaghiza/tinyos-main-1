@@ -3,13 +3,13 @@
 txp=0x8D
 tc=0
 
-debugScale=2UL
+debugScale=4UL
 
 #test setup
 floodTest=1
 rootId="0"
-nonrootRx="1 2 3"
-#nonrootRx=""
+nonrootRx="1"
+allPlugged="0 1 2 3"
 nonrootTx=""
 
 ipi=5120UL
@@ -27,7 +27,7 @@ rs=0
 
 #schedule config
 #init symbol rate
-initSR=100
+initSR=250
 
 #stack protection
 sp=1
@@ -51,7 +51,7 @@ killall picocom
 pushd .
 cd ~/tinyos-2.x/apps/Blink
 make bacon2
-for id in $nonrootRx $nonrootTx $rootId
+for id in $allPlugged
 do
   make bacon2 reinstall bsl,ref,JH00030$id
 done
