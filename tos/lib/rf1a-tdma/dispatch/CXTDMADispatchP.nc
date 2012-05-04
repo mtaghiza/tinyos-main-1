@@ -1,4 +1,5 @@
  #include "CXTDMADispatchDebug.h"
+ #include "FECDebug.h"
 
 module CXTDMADispatchP{
   provides interface CXTDMA[uint8_t clientId];
@@ -149,6 +150,13 @@ module CXTDMADispatchP{
 
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
+//    uint8_t i;
+//    printf("RM %x: ", call CXPacket.getRoutingMethod(msg));
+//    for (i =0 ; i< TOSH_DATA_LENGTH + sizeof(message_header_t); i++){
+//      printf("%02X ", ((uint8_t*)msg)[i]);
+//    }
+//    printf("\r\n");
+
     if (deliverMsg(msg)){
       #if SW_TOPO == 1
       printf_SW_TOPO("KEEP %u (%u) %u \r\n", 
@@ -176,8 +184,16 @@ module CXTDMADispatchP{
       uint16_t frameNum){ return FALSE;}
   default async event void CXTDMA.sendDone[uint8_t routingMethod](message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){}
+
   default async event message_t* CXTDMA.receive[uint8_t routingMethod](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
+    uint8_t i;
+    printf("Unexpected RM %x: ", routingMethod);
+//    for (i =0 ; i< TOSH_DATA_LENGTH + sizeof(message_header_t); i++){
+//      printf("%02X ", ((uint8_t*)msg)[i]);
+//    }
+//    printf("\r\n");
+//    
     return msg;
   }
 

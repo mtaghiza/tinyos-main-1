@@ -1153,6 +1153,7 @@ generic module HplMsp430Rf1aP () @safe() {
     unsigned int expected;
     unsigned int received;
     int result;
+    error_t crcError;
 
     atomic {
       HPL_ATOMIC_SET_PIN;
@@ -1186,6 +1187,10 @@ generic module HplMsp430Rf1aP () @safe() {
             call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
             avail -= 1;
             rx_expected = call Rf1aFifo.getDecodedLen(len8);
+              //maybe we're reading it out early? spin until we cool.
+            do{
+              avail = receiveCountAvailable_();
+            }while (avail  != (len8 + 2));
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 
@@ -1238,24 +1243,44 @@ generic module HplMsp430Rf1aP () @safe() {
         //~33uS to read data
 //        printf_BF("rx %p %u\r\n", rx_pos, consume);
         //FEC: this should decode the data as we pull it out
-        call Rf1aFifo.readRXFIFO(rx_pos, consume, FALSE);
+        crcError = call Rf1aFifo.readRXFIFO(rx_pos, consume, FALSE);
         rx_pos += consume;
         rx_received += consume;
-        avail -= call Rf1aFifo.getEncodedLen(consume);
+//        printf_FEC("A %u c %u\r\n", avail, consume);
+//        avail = 0x7f & call Rf1aIf.readRegister(RXBYTES);
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
           /* If APPEND_STATUS is set, gotta clear out that data. */
           if (0x04 & call Rf1aIf.readRegister(PKTCTRL1)) {
+            uint16_t readTimeout = 0x1fff;
             /* Better be two more octets.  Busy-wait until they show
              * up. */
-            while (2 > avail) {
-              avail = 0x7f & call Rf1aIf.readRegister(RXBYTES);
+            //For whatever reason, receiveCountAvailable_ seems to
+            //give erroneous results here when used with FEC.  Rather
+            //than trust it, we wait until it tells us there's 2 bytes
+            //left or we retry too many times and fail.
+            do {
+              avail = receiveCountAvailable_(); //0x7f & call Rf1aIf.readRegister(RXBYTES);
+              readTimeout --;
+//              printf("A' %u %u\r\n", avail, readTimeout);
+            }while (2 != avail && readTimeout); 
+//            printf_FEC("A. %u\r\n", avail);
+            if (! readTimeout){
+              printf("!COULD NOT READ RX METADATA: %u avail\r\n", avail);
             }
             //FEC: not encoded
             call Rf1aFifo.readRXFIFO(&rx_rssi_raw,
               sizeof(rx_rssi_raw), TRUE);
             call Rf1aFifo.readRXFIFO(&rx_lqi_raw, sizeof(rx_lqi_raw),
               TRUE);
+            //crcError is FAIL if some codewords had detectable but
+            //uncorrected bit errors. 
+            //This is not as strong as a full CRC.
+            if (SUCCESS == crcError){
+              rx_lqi_raw |= 0x80;
+            }else{
+              rx_lqi_raw &= 0x7f;
+            }
             avail -= 2;
           }
 
@@ -1289,7 +1314,7 @@ generic module HplMsp430Rf1aP () @safe() {
        * even if we've finished this message. */
       //~6 uS to check
       need_post = (0 < receiveCountAvailable_());
-
+      printf_FEC("NP: %x\r\n", need_post);
       /* Extract the start of any filled buffer (length was set above) */
       if (signal_filled) {
         start = rx_start;

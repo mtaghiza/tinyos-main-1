@@ -661,8 +661,15 @@ module CXTDMAPhysicalP {
       lastSentOrigin = amSource && isFirst;
       //lastAlarm *should* be valid, AFAIK, since FSA is already set
       //up at this point.
+      #if DEBUG_FEC == 1
+      call CXPacket.setTimestamp(tx_msg, 
+        lastSentOrigin? 0xdeadbeef : curTimestamp);
+      #else
+//      call CXPacket.setTimestamp(tx_msg, 
+//        lastSentOrigin? 0xdeadbeef : curTimestamp);
       call CXPacket.setTimestamp(tx_msg, 
         lastSentOrigin? lastAlarm : curTimestamp);
+      #endif
       call CXPacket.setScheduleNum(tx_msg,
         lastSentOrigin? mySN: curSN);
       call CXPacket.setOriginalFrameNum(tx_msg,
@@ -897,6 +904,20 @@ module CXTDMAPhysicalP {
       printf("RX %u %lu\r\n", reportRXSrc, reportRXSn);
     }
   }
+  
+  uint8_t lastRxBuf[64];
+  uint8_t lastRxLen;
+  bool lastRxBufBusy;
+  task void printLastRx(){
+    uint8_t i;
+    printf("R ");
+    for (i = 0; i < lastRxLen; i++){
+      printf("%02X ",lastRxBuf[i]);
+    }
+    printf("\r\n");
+    lastRxBufBusy = FALSE;
+  }
+
 
   /**
    * S_RECEIVING: frame has started, expecting data.
@@ -923,6 +944,19 @@ module CXTDMAPhysicalP {
         //here.
         call Packet.setPayloadLength(msg,
           count-sizeof(message_header_t));
+//        #if DEBUG_FEC == 1
+//        {
+//          uint8_t i;
+//          if (!lastRxBufBusy){
+//            lastRxBufBusy = TRUE;
+//            lastRxLen = count;
+//            for(i=0; i< count; i++){
+//              lastRxBuf[i] = buffer[i];
+//            }
+//            post printLastRx();
+//          }
+//        }
+//        #endif
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
 //          printf_TESTBED("c\r\n");
           post printPassed();
@@ -952,14 +986,16 @@ module CXTDMAPhysicalP {
           }
         } else {
           #if DEBUG_TESTBED_CRC == 1
-          uint8_t ghettoRXCRC = 0;
-          uint8_t i;
-          for(i = 0; i< count; i++){
-            ghettoRXCRC ^= buffer[i];
+          {
+            uint8_t ghettoRXCRC = 0;
+            uint8_t i;
+            for(i = 0; i< count; i++){
+              ghettoRXCRC ^= buffer[i];
+            }
+            ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
+            printf("RC %x \r\n", ghettoRXCRC);
+            printf_TESTBED_CRC("R! %u\r\n", frameNum);
           }
-          ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
-          printf("RC %x \r\n", ghettoRXCRC);
-          printf_TESTBED_CRC("R! %u\r\n", frameNum);
           #endif
         }
         completeCleanup();

@@ -1,16 +1,20 @@
 #!/bin/bash
 #radio physical params
-txp=0x8D
+txp=0x25
 tc=0
 
-debugScale=4UL
+debugScale=3UL
 
 #test setup
 floodTest=1
 rootId="0"
-nonrootRx="1"
-allPlugged="0 1 2 3"
+nonrootRx="1 2"
+#allPlugged="0 1 2 3"
+allPlugged="0 1 2"
 nonrootTx=""
+
+fecDisabled=0
+fecHamming74=1
 
 ipi=5120UL
 queueThreshold=2
@@ -27,7 +31,7 @@ rs=0
 
 #schedule config
 #init symbol rate
-initSR=250
+initSR=100
 
 #stack protection
 sp=1
@@ -38,11 +42,12 @@ debugPacket=0
 sv=0
 pr=0
 sfr=0
-crc=1
+crc=0
 debugConfig=1
 txAodvState=0
 rxAodvState=0
 aodvClear=0
+debugFEC=0
 #debug RXREADY error messages
 rxr=1
 
@@ -65,10 +70,10 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC" 
 
 
-testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0"
+testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_DISABLED=$fecDisabled FEC_HAMMING74=$fecHamming74"
 miscSettings="ENABLE_SKEW_CORRECTION=0"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
