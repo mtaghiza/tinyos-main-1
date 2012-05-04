@@ -1182,6 +1182,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
           if (variable_packet_length_mode) {
             uint8_t len8;
+            uint16_t availTimeout = 0x1ff;
             //FEC length: not encoded. reflects the number of bytes
             //  actually sent, not the encoded payload length
             call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
@@ -1190,7 +1191,11 @@ generic module HplMsp430Rf1aP () @safe() {
               //maybe we're reading it out early? spin until we cool.
             do{
               avail = receiveCountAvailable_();
-            }while (avail  != (len8 + 2));
+              availTimeout --;
+            }while (avail  != (len8 + 2) && availTimeout);
+            if (!availTimeout){
+              printf("!rest of packet never showed up\r\n");
+            }
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 
@@ -1276,10 +1281,12 @@ generic module HplMsp430Rf1aP () @safe() {
             //crcError is FAIL if some codewords had detectable but
             //uncorrected bit errors. 
             //This is not as strong as a full CRC.
-            if (SUCCESS == crcError){
-              rx_lqi_raw |= 0x80;
-            }else{
-              rx_lqi_raw &= 0x7f;
+            if (call Rf1aFifo.crcOverride()){
+              if (SUCCESS == crcError){
+                rx_lqi_raw |= 0x80;
+              }else{
+                rx_lqi_raw &= 0x7f;
+              }
             }
             avail -= 2;
           }

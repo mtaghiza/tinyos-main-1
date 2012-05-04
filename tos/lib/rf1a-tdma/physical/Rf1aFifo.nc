@@ -5,4 +5,7 @@ interface Rf1aFifo{
     bool isControl);
   async command error_t writeTXFIFO(const uint8_t* buf, uint8_t dataBytes, 
     bool isControl);
+  //returns true if this Rf1aFifo provider does error-checking inline
+  //(thus overriding the crc bit, if it exists)
+  async command bool crcOverride();
 }

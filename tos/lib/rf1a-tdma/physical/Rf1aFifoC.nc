@@ -2,6 +2,9 @@ module Rf1aFifoC {
   provides interface Rf1aFifo;
   uses interface HplMsp430Rf1aIf as Rf1aIf;
 } implementation {
+  async command bool Rf1aFifo.crcOverride(){
+    return FALSE;
+  }
   async command uint8_t Rf1aFifo.getDecodedLen(uint8_t encodedLen){return encodedLen;}
   async command uint8_t Rf1aFifo.getEncodedLen(uint8_t decodedLen){return decodedLen;}
 

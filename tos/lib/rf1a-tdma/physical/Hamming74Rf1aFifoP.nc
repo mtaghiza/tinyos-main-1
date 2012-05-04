@@ -9,6 +9,10 @@ module Hamming74Rf1aFifoP{
   #define FEC_BUF_LEN 64
   uint8_t encodedBuf[FEC_BUF_LEN];
 
+  async command bool Rf1aFifo.crcOverride(){
+    return TRUE;
+  }
+
   async command uint8_t Rf1aFifo.getEncodedLen(uint8_t decodedLen){
     return 2*decodedLen;
   }
