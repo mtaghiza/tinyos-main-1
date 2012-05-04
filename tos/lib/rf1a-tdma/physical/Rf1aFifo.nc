@@ -8,4 +8,6 @@ interface Rf1aFifo{
   //returns true if this Rf1aFifo provider does error-checking inline
   //(thus overriding the crc bit, if it exists)
   async command bool crcOverride();
+  //return crc length in encoded bytes 
+  async command uint8_t getCrcLen();
 }

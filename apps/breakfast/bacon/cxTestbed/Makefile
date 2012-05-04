@@ -53,6 +53,7 @@ CFLAGS+=-DDESKTOP_TEST=$(DESKTOP_TEST)
 PFLAGS += -I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I../../util
 CFLAGS += -I../../util/stackGuard
+CFLAGS += -I../../util/crc
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/tdma

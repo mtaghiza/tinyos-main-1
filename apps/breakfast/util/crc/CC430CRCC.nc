@@ -8,7 +8,7 @@ module CC430CRCC{
 
   async command uint16_t Crc.seededCrc16(uint16_t startCrc, void* buf, uint8_t len){
     uint8_t i; 
-    uint16_t nw;
+    uint16_t nw = 0;
     uint16_t result;
     atomic{
       CRCINIRES = startCrc;

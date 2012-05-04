@@ -8,7 +8,7 @@ debugScale=3UL
 #test setup
 floodTest=1
 rootId="0"
-nonrootRx="1 2"
+nonrootRx="1"
 #allPlugged="0 1 2 3"
 allPlugged="0 1 2"
 nonrootTx=""
@@ -42,7 +42,7 @@ debugPacket=0
 sv=0
 pr=0
 sfr=0
-crc=0
+crc=1
 debugConfig=1
 txAodvState=0
 rxAodvState=0

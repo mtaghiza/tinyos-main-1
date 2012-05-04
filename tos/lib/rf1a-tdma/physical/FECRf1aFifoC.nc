@@ -3,7 +3,9 @@ configuration FECRf1aFifoC{
   uses interface HplMsp430Rf1aIf as Rf1aIf;
 } implementation {
   #if FEC_HAMMING74 == 1
+  components CC430CRCC;
   components Hamming74Rf1aFifoP as FECRf1aFifoP;
+  FECRf1aFifoP.Crc -> CC430CRCC;
   #else
   components DoubleRf1aFifoP as FECRf1aFifoP;
   #endif

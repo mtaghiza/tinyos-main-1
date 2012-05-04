@@ -12,8 +12,8 @@ typedef nx_struct cx_schedule_t {
   nx_uint8_t scheduleNum;
   nx_uint8_t symbolRate;
   nx_uint8_t scheduleId;
-  nx_uint8_t padding[TOSH_DATA_LENGTH - sizeof(cx_header_t) -
-    sizeof(message_header_t) - 3*sizeof(nx_uint8_t) ];
+//  nx_uint8_t padding[TOSH_DATA_LENGTH - sizeof(cx_header_t) -
+//    sizeof(message_header_t) - 3*sizeof(nx_uint8_t) ];
 } cx_schedule_t;
 
 typedef struct cx_schedule_descriptor_t {

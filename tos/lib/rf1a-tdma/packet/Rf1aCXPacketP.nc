@@ -11,7 +11,7 @@ module Rf1aCXPacketP{
   uses interface ActiveMessageAddress;
 } implementation {
   //this should probably be longer, right?
-  uint32_t cxSN = 0;
+  uint16_t cxSN = 0;
 
   cx_header_t* getHeader(message_t* msg){
     return (cx_header_t*)(call SubPacket.getPayload(msg, sizeof(cx_header_t)));
@@ -77,7 +77,7 @@ module Rf1aCXPacketP{
   }
 
   //argh why doesn't ieee154packet expose this?
-  command uint32_t CXPacket.sn(message_t* amsg){
+  command uint16_t CXPacket.sn(message_t* amsg){
     return getHeader(amsg)->sn;
   }
 

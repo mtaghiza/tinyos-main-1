@@ -171,7 +171,7 @@ module TestP {
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
     sending = FALSE;
-    printf_APP("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+    printf_APP("TX s: %u d: %u sn: %u rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
@@ -199,7 +199,7 @@ module TestP {
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     call Leds.led2Toggle();
-    printf_APP("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+    printf_APP("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),

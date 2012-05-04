@@ -5,9 +5,14 @@
 module Hamming74Rf1aFifoP{
   provides interface Rf1aFifo;
   uses interface HplMsp430Rf1aIf as Rf1aIf;
+  uses interface Crc;
 } implementation {
-  #define FEC_BUF_LEN 64
+  #define FEC_BUF_LEN (64 + 4)
   uint8_t encodedBuf[FEC_BUF_LEN];
+
+  async command uint8_t Rf1aFifo.getCrcLen(){
+    return 4;
+  }
 
   async command bool Rf1aFifo.crcOverride(){
     return TRUE;
@@ -29,24 +34,24 @@ module Hamming74Rf1aFifoP{
       printf_FEC("(%x)\r\n", *buf);
       return SUCCESS;
     } else {
-      if (call Rf1aFifo.getEncodedLen(dataBytes) > FEC_BUF_LEN){
+      if ((call Rf1aFifo.getEncodedLen(dataBytes) + 4) > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
         uint8_t d;
         error_t ret = SUCCESS;
 
-        printf_FEC("[ ");
+//        printf_FEC("[ ");
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, encodedBuf,
-          dataBytes*2);
+          dataBytes*2 + 4);
         //TODO: should check for invalid encodings here? or just plan
         //on putting in a checksum
-        for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes); i++){
+        for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + 4; i++){
           d = decoding[encodedBuf[i]];
-//          printf_FEC("%02X ", encodedBuf[i]);
+//          printf_FEC("%02X", encodedBuf[i]);
           if (i&0x01){
             buf[i>>1] |= d;
-            printf_FEC("%02X ", buf[i>>1]);
+//            printf_FEC(" %02X\r\n", buf[i>>1]);
           }else{
             buf[i>>1] = d << 4;
           }
@@ -55,7 +60,16 @@ module Hamming74Rf1aFifoP{
             ret = FAIL;
           }
         }
-        printf_FEC("]\r\n");
+        if (ret == SUCCESS){
+          //god byte alignment is the worst
+          uint16_t receivedCrc = buf[dataBytes]| buf[dataBytes+1]<<8;
+          uint16_t cc = call Crc.crc16(buf, dataBytes);
+          printf_TESTBED_CRC("RC %x CC %x\r\n", receivedCrc, cc);
+          if( receivedCrc != cc){
+            ret = FAIL;
+          }
+        }
+//        printf_FEC("]\r\n");
         return ret;
       }
     }
@@ -65,16 +79,19 @@ module Hamming74Rf1aFifoP{
   //  into the buffer at 2*i, low-order nibble at 1+2*i
   async command error_t Rf1aFifo.writeTXFIFO(const uint8_t* buf, uint8_t dataBytes, 
       bool isControl){
-//    printf_FEC("W %u %x\r\n", dataBytes, isControl);
     if (isControl){
       call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, buf,
         dataBytes);
+//      printf_FEC("W %u\r\n", *buf);
       return SUCCESS;
     } else {
-      if (call Rf1aFifo.getEncodedLen(dataBytes) > FEC_BUF_LEN){
+      if ((call Rf1aFifo.getEncodedLen(dataBytes) + 4) > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
+        uint8_t k;
+        uint16_t crc;
+        uint8_t* crcb = (uint8_t*)&crc;
         for (i=0; i < dataBytes; i++){
           //would like this to be more flexible so we can change the
           //encoding.
@@ -82,6 +99,14 @@ module Hamming74Rf1aFifoP{
           encodedBuf[(2*i)+1] = encoding[(buf[i] & 0x0f)];
           call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*i], 2);
         }
+        crc = call Crc.crc16((uint8_t*)buf, dataBytes);
+        printf_TESTBED_CRC("WC %x\r\n", crc);
+        for (k=0; k < sizeof(uint16_t); k++){
+          encodedBuf[(2*(i+k))] = encoding[crcb[k]>>4];
+          encodedBuf[(2*(i+k))+1] = encoding[crcb[k] & 0x0f];
+          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*(i+k)], 2);
+        }
+
 //        call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, encodedBuf, 
 //          call Rf1aFifo.getEncodedLen(dataBytes));
         return SUCCESS;

@@ -171,7 +171,7 @@ module RootSchedulerP{
     if (SUCCESS != error){
       printf("AS.send done: %s\r\n", decodeError(error));
     } else {
-      printf_SCHED_RXTX("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+      printf_SCHED_RXTX("TX s: %u d: %u sn: %u rm: %u pr: %u e: %u\r\n",
         TOS_NODE_ID,
         call CXPacket.destination(msg),
         call CXPacket.sn(msg),

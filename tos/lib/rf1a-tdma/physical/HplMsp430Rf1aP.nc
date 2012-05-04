@@ -651,7 +651,11 @@ generic module HplMsp430Rf1aP () @safe() {
     call Rf1aIf.setIe( 
       call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
     if (need_to_write_length) {
-      uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain);
+      uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain) 
+        + call Rf1aFifo.getCrcLen();
+      printf_FEC("Len %u + %u\r\n", 
+        call Rf1aFifo.getEncodedLen(tx_remain),
+        call Rf1aFifo.getCrcLen());
       //FEC not encoded: should reflect encoded length
       call Rf1aFifo.writeTXFIFO(&len8, sizeof(len8), TRUE);
     }
@@ -1186,15 +1190,36 @@ generic module HplMsp430Rf1aP () @safe() {
             //FEC length: not encoded. reflects the number of bytes
             //  actually sent, not the encoded payload length
             call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
+            //TODO: if len8+2 > 64, we're going to be reading a bunch
+            //  of extra crap out of here. 
+            //The correct way to handle this would be to let this
+            //  re-post itself and just make sure that the data v.
+            //  control sizes are handled correctly (this would also
+            //  allow for >64 bye packets). However, that complicates
+            //  the CRC computation slightly and generally sounds like a
+            //  real pain to debug.
+            //So, maybe an easier way to handle this, given the
+            //  current radio stack, would be to immediately give up,
+            //  let the RXFIFO overflow happen, and then recover in
+            //  the next layer up.
+            //!!!Either way, we should be validating that the data length
+            //  we receive is not going to overflow anything. If we
+            //  get a len of 255, we are never going to read all of
+            //  it.
             avail -= 1;
-            rx_expected = call Rf1aFifo.getDecodedLen(len8);
-              //maybe we're reading it out early? spin until we cool.
+            //rx_expected: in data bytes
+            rx_expected = call Rf1aFifo.getDecodedLen(len8 - call Rf1aFifo.getCrcLen()) ;
+
+            //spin until the entire packet is available: if len8 +2 >
+            //64, we're not going to wait for it all to show up.
             do{
               avail = receiveCountAvailable_();
               availTimeout --;
-            }while (avail  != (len8 + 2) && availTimeout);
+            //+2 = metadata 
+            }while (((len8+2) <= 64) && (avail  != (len8 + 2)) && availTimeout);
             if (!availTimeout){
-              printf("!rest of packet never showed up\r\n");
+              printf("!rest of packet never showed up (%u, expecting %u)\r\n", 
+                avail, (len8 + 2));
             }
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
@@ -1272,12 +1297,15 @@ generic module HplMsp430Rf1aP () @safe() {
 //            printf_FEC("A. %u\r\n", avail);
             if (! readTimeout){
               printf("!COULD NOT READ RX METADATA: %u avail\r\n", avail);
+              rx_rssi_raw = 0x00;
+              rx_lqi_raw = 0x00;
+            }else{
+              //FEC: not encoded
+              call Rf1aFifo.readRXFIFO(&rx_rssi_raw,
+                sizeof(rx_rssi_raw), TRUE);
+              call Rf1aFifo.readRXFIFO(&rx_lqi_raw, sizeof(rx_lqi_raw),
+                TRUE);
             }
-            //FEC: not encoded
-            call Rf1aFifo.readRXFIFO(&rx_rssi_raw,
-              sizeof(rx_rssi_raw), TRUE);
-            call Rf1aFifo.readRXFIFO(&rx_lqi_raw, sizeof(rx_lqi_raw),
-              TRUE);
             //crcError is FAIL if some codewords had detectable but
             //uncorrected bit errors. 
             //This is not as strong as a full CRC.

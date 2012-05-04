@@ -692,6 +692,14 @@ module CXTDMAPhysicalP {
     printf("TR\r\n");
   }
 
+  uint32_t resynchFrameStart;
+
+  void resynch(){
+    call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
+    call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
+    
+  }
+
   /**
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *   FSCapture.captured() / signal frameStarted(call
@@ -784,16 +792,16 @@ module CXTDMAPhysicalP {
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
-        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
-        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
+        resynchFrameStart = thisFrameStart;
+//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
+//        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
-//        post rxResynch();
+
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustmentFrames[adjustmentCount] = frameNum;
         adjustmentCount = (adjustmentCount + 1) %64;
         #endif
         setState(S_RECEIVING);
-        signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else if (checkState(S_TRANSMITTING)){
         //Just transmitted: we could try to fix jitter here (i.e. to
         //"fix" the last frame start alarm to match what a receiver
@@ -819,15 +827,16 @@ module CXTDMAPhysicalP {
           //    1.1e-6   1.2e-6
           thisFrameStart += originDelays[s_sri];
         }
-        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
-        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
+        resynchFrameStart = thisFrameStart;
+//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
+//        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
+        resynch();
         call FrameWaitAlarm.stop();
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustmentFrames[adjustmentCount] = frameNum;
         adjustmentCount = (adjustmentCount + 1) %64;
         #endif
 //        post txResynch();
-        signal TDMAPhySchedule.frameStarted(lastRECapture, frameNum);
       } else {
         setState(S_ERROR_9);
       }
@@ -958,6 +967,7 @@ module CXTDMAPhysicalP {
 //        }
 //        #endif
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
+          resynch();
 //          printf_TESTBED("c\r\n");
           post printPassed();
           receiveCount++;
@@ -1004,6 +1014,11 @@ module CXTDMAPhysicalP {
         //this gives ENOMEM if we don't receive the entire packet, I
         //guess due to interference or something? 
         //anyway, nothing to be done about it so just clean up.
+        setState(S_RX_CLEANUP);
+        completeCleanup();
+      } else if (ECANCEL == result){
+        //RXFIFO overflow leads to this (happens if the length field
+        //is corrupted/too long, for instance).
         setState(S_RX_CLEANUP);
         completeCleanup();
       } else {

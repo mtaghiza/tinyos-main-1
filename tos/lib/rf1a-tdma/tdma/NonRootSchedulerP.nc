@@ -43,7 +43,6 @@ module NonRootSchedulerP{
   uint16_t framesSinceLastSchedule = 2;
   uint16_t framesSinceLastSynch = 2;
   uint16_t lastRxFrameNum;
-  uint16_t lastFrameNum;
   uint32_t lastRxTS;
   uint32_t lastRootStart;
   uint32_t lastSR;
@@ -151,7 +150,7 @@ module NonRootSchedulerP{
     uint16_t rxFrameNum;
     printf_TMP("AR.r: %p %p %u\r\n", msg, payload, len);
     printf_SCHED("AR.r ");
-    printf_SCHED_RXTX("RX s: %u d: %u sn: %lu c: %u r: %d l: %u\r\n", 
+    printf_SCHED_RXTX("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
@@ -349,7 +348,7 @@ module NonRootSchedulerP{
   }
 
   event void ReplySend.sendDone(message_t* msg, error_t error){
-    printf_SCHED_RXTX("TX s: %u d: %u sn: %lu rm: %u pr: %u e: %u\r\n",
+    printf_SCHED_RXTX("TX s: %u d: %u sn: %u rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
@@ -374,7 +373,6 @@ module NonRootSchedulerP{
 
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, 
       uint16_t frameNum){
-    lastFrameNum = frameNum;
   }
   
   //ticksPerFrame: applied to each frame
