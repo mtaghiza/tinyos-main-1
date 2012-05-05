@@ -82,7 +82,7 @@ generic configuration HplMsp430Rf1aC (
 
   components HplMsp430Rf1aInterruptP;
 
-  #if RF1A_FEC_DISABLED == 1
+  #if RF1A_FEC_ENABLED != 1
   #warning Disabling software FEC!
   components Rf1aFifoC as Rf1aFifo;
   #else

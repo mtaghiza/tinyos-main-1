@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+import logging
 import sys
 import re
 import pdb
+import decode
 
-COUNT_INDEX = 17
+logging.basicConfig(level = logging.DEBUG)
 
 def toInt(x):
     return reduce(lambda l,r: (l<<8) + r, x)
@@ -25,79 +27,113 @@ def countErrors(b):
         b = (b >> 1)
     return acc
 
-def computeStats(fn):
+def src(pkt):
+    if len(pkt) < 10:
+        return -1
+    else:
+        return toInt(reversed(pkt[8:10]))
+   
+def sn(pkt):
+    if len(pkt) < 14:
+        return -1 
+    else:
+        return toInt(pkt[12:14])
+
+def count(pkt):
+    if len(pkt) < 15:
+        return -1
+    else:
+        return pkt[14]
+
+def extractPacket(line):
+    r = [int(v, 16) for v in line.strip().split()[2:]]
+    pkt = r[0:-3]
+    crcPassed = (r[-3] == 0x80)
+    pktComm = pkt[0:14]+pkt[15:]
+    return (pkt, pktComm, pktComm, pkt, crcPassed)
+
+def decodePacket(line):
+    r = [int(v, 16) for v in line.strip().split()[2:]]
+    pkt = r[0:-3]
+    crcPassed = (r[-3] == 0x80)
+    lqi = r[-2]
+    rssi = r[-1]
+    dpkt = decode.decode(pkt)
+    pktComm = pkt[0:28]+pkt[30:-5]
+#    pdb.set_trace()
+    return (dpkt, pktComm, decode.decode(pktComm), pkt, crcPassed)
+
+def computeStats(fn, fecEnabled):
     lp = re.compile("""^[0-9]*.[0-9]* [0-9]*( [0-9A-F]{2})* -[0-9]*""")
     f = open(fn, 'r')
     prev = None
     sns = []
-    failures = []
-    rxCount = 0
+    results = []
     nonMatched = 0
+    if fecEnabled:
+        toPacket = decodePacket
+    else:
+        toPacket = extractPacket
     for line in f:
         if not lp.match(line):
             nonMatched +=1
 #            print "No match:", line
         else:
-#            print "match:", line
-            r = [int(v, 16) for v in line.strip().split()[2:]]
-            if len(r) <= 18:
-                continue
-            pkt = r[0:-3]
-            crcPassed = r[-3] == 0x80
-            lqi = r[-2]
-            rssi = r[-1]
-            src = toInt(pkt[8:10])
-            count = toInt(pkt[17:18])
-            sn = toInt(pkt[12:16])
-#            pdb.set_trace()
-#            print crcPassed, sn, count, src, pkt
-            if count == 1 and src == 0:
-                prev = (sn, pkt)
-                sns.append(sn)
-            if count == 2 and src == 0 and sn == prev[0]:
-                rxCount += 1
-            if not crcPassed and sn == prev[0] and src == 0 and count==2:
-#                errorCounts = [countErrors(lv ^ rv) for (lv, rv) in zip(prev[1], pkt)] 
-                errorOffsets = [findErrors(lv ^ rv) for (lv, rv) in zip(prev[1], pkt)] 
-                bitErrors = []
-                for (i, eo) in enumerate(errorOffsets):
-                    if i != COUNT_INDEX:
-                        for b in eo:
-                            bitErrors.append(i*8+b)
-
-#                errorLocs = [  for (i, eo) in enumerate(errorOffsets)] 
-#                locs = [(i, c) for (i, c) in enumerate(errors) if c > 0 and i != COUNT_INDEX]
-                failures.append( (count, bitErrors))
-                if bitErrors and '-v' in sys.argv:
-                    print bitErrors, zip(range(len(pkt)), prev[1], pkt)
-                if '--all' in sys.argv:
-                    print failures[-1]
-    if '--pos' in sys.argv:
-        p = {}
-        for f in failures:
-            for l in f[1]:
-                p[l] = p.get(l,0) + 1
-        for l in p:
-            print l, p[l]
-    #PRR, including failed CRCs
-    prrAll = float(rxCount)/len(sns)
-    #PRR, only passed
-    prrPassed = (float(rxCount)-len(failures))/len(sns)
-    #CRC failure rate
-    crcFailureRate = float(len(failures))/rxCount
-    #BER computation
-    errorCount = 0
-    for f in failures:
-        errorCount += len(f[-1])
-    ber = float(errorCount)/(8*len(sns) * len(prev[-1]))
-    sr = int(fn.split('_')[-1])*1000
-    nodeCount = int(fn.split('_')[-3])
+            #decode for sn, count, contents
+            (dpkt, pktComm, dpktComm, pkt, crcPassed) = toPacket(line)
+            #record original broadcast info
+            if count(dpkt) == 1 and src(dpkt) == 0:
+                prev = (dpkt, pktComm, dpktComm)
+                sns.append(sn(dpkt))
+            #rebroadcast
+            if count(dpkt) == 2 and src(dpkt) == 0 and sn(dpkt) == sn(prev[0]):
+                rawErrorOffsets = [findErrors(lv ^ rv) for (lv, rv) in
+                  zip(prev[1], pktComm)] 
+                rbe = []
+                for (i, eo) in enumerate(rawErrorOffsets):
+                    for b in eo:
+                        rbe.append(i*8+b)
+                errorBytes = [ 1 if countErrors(lv ^ rv) else 0 for (lv, rv) in zip(prev[2], dpktComm)]
+#                pdb.set_trace()
+                #results: (data comparison pass/fail, crc pass/fail, 
+                # number of bit errors, packet len
+                # in bits, positions of bit errors)
+                results.append((1 if sum(errorBytes) == 0 else 0,
+                  crcPassed,
+                  len(rbe), 
+                  len(pkt)*8, 
+                  rbe) )
+    rxCount = len(results)
+    rxDataCount = sum([r[0] for r in results])
+    rxCrcCount = sum([r[1] for r in results])
+    txCount = float(1 + sns[-1] - sns[0])
+    totalBits = float(sum([r[3] for r in results]))
+    bitErrors = float(sum([r[2] for r in results]))
+    #overall PRR, including errors
+    prrAll = rxCount / txCount
+    #overall PRR, data passed
+    prrDataPassed = rxDataCount/txCount
+    #overall PRR, crc passed
+    prrCrcPassed = rxCrcCount/txCount
+    ber = bitErrors/ totalBits
 #    print "unmatched:",nonMatched, "total",len(sns)
-    return (nodeCount, sr, ber, crcFailureRate, prrAll, prrPassed)
+    return (ber, prrCrcPassed, prrDataPassed, prrAll)
     
 
 if __name__ == '__main__':
-    print "NODECOUNT SR BER CRC_ERR PRR_ALL PRR_PASSED"
+    """Run with sniffer files as arguments, config encoded in name:
+      Naming convention: dir/sm_x_np_x_fec_x_sr_x_nc_x
+      sm: synch mode (MDMCFG2.SYNC_MODE)
+      np: number of preamble bytes (MDMCFG1.NUM_PREAMBLE)
+      fec: 0= off 1 = on
+      sr: in Kbps
+      nc: node count (estimated)
+    """
+    print "FEC SM NP SR NC BER PCRC PDATA PALL"
     for fn in sys.argv[1:]:
-        result = computeStats(fn)
-        print "%i %i %.6f %.4f %.4f %.4f"%result
+        descriptor_str = fn.split('/')[-1].split('_')
+        descriptor = dict([(k , int(v)) for (k,v) in
+          zip(descriptor_str[::2], descriptor_str[1::2])])
+        result = computeStats(fn, descriptor['fec'])
+        print "%(fec)i %(sm)i %(np)i %(sr)i %(nc)i"%descriptor,
+        print "%.4f %.4f %.4f %.4f"%result

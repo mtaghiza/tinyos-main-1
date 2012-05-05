@@ -13,7 +13,7 @@ nonrootRx="1"
 allPlugged="0 1 2"
 nonrootTx=""
 
-fecDisabled=0
+fecEnabled=1
 fecHamming74=1
 
 ipi=5120UL
@@ -73,7 +73,8 @@ loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC" 
 
 
-testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_DISABLED=$fecDisabled FEC_HAMMING74=$fecHamming74"
+testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold
+TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
 miscSettings="ENABLE_SKEW_CORRECTION=0"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
