@@ -56,10 +56,23 @@ implementation {
    * this packet layout. */
   typedef rf1a_nalp_am_t layer_header_t;
 
+  uint16_t pending_length;
+  message_t * ONE_NOK pending_message = NULL;
+  
+  task void pendingSendTask()
+  {
+    error_t rc = call SubSend.send(pending_message, pending_length + sizeof(layer_header_t));
+
+    if (rc != SUCCESS)
+      signal AMSend.sendDone[call AMPacket.type(pending_message)](pending_message, rc);
+  }
+
   command error_t AMSend.send[am_id_t id](am_addr_t addr,
                                           message_t* msg,
                                           uint8_t len)
   {
+    error_t rc;
+    
     call Rf1aPacket.configureAsData(msg);
     call AMPacket.setSource(msg, call AMPacket.address());
     call Ieee154Packet.setPan(msg, call Ieee154Packet.localPan());
@@ -67,7 +80,14 @@ implementation {
     call AMPacket.setType(msg, id);
     signal SendNotifier.aboutToSend[id](addr, msg);
     // Account for layer header in payload length
-    return call SubSend.send(msg, len + sizeof(layer_header_t));
+
+    // emulate CC2420 behavior 
+    pending_length = len;
+    pending_message = msg;
+
+    post pendingSendTask();
+  
+    return SUCCESS;
   }
 
   command uint8_t AMSend.maxPayloadLength[am_id_t id]()

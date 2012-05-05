@@ -147,7 +147,7 @@ generic module Rf1aAckP () {
      * sendDone, before assuming the remote has failed to acknowledge
      * the transmission. */
 //    CFG_macAckWaitDuration_32k = 3277, // 100ms
-    CFG_macAckWaitDuration_32k = 20*32, // 20ms
+    CFG_macAckWaitDuration_32k = 60*32, // 20-60ms
 
     /** The number of retransmissions allowed.  Note that a value of 0
      * is legitimate, and requires acknowledgment on the first
@@ -181,7 +181,8 @@ generic module Rf1aAckP () {
    * invoked while in an atomic section. */
   void transitionToWaiting_atomic_ ()
   {
-    call AckWaitAlarm.start(CFG_macAckWaitDuration_32k);
+    uint16_t wait = ((35 * tx_length) / 50 + 20) * 32; 
+    call AckWaitAlarm.start(wait);
     tx_state = TX_S_waiting;
   }
 
