@@ -70,11 +70,13 @@ def computeStats(fn, fecEnabled):
     sns = []
     results = []
     nonMatched = 0
+    lineCount = 0
     if fecEnabled:
         toPacket = decodePacket
     else:
         toPacket = extractPacket
     for line in f:
+        lineCount += 1
         if not lp.match(line):
             nonMatched +=1
 #            print "No match:", line
@@ -116,8 +118,12 @@ def computeStats(fn, fecEnabled):
     #overall PRR, crc passed
     prrCrcPassed = rxCrcCount/txCount
     ber = bitErrors/ totalBits
-#    print "unmatched:",nonMatched, "total",len(sns)
-    return (ber, prrCrcPassed, prrDataPassed, prrAll)
+    #for debugging/quality control
+    fractionInvalid = float(nonMatched)/lineCount
+    r = {'ber':ber, 'prrCrcPassed':prrCrcPassed,
+    'prrDataPassed':prrDataPassed, 'prrAll':prrAll,
+    'fractionInvalid':fractionInvalid}
+    return r
     
 
 if __name__ == '__main__':
@@ -136,4 +142,6 @@ if __name__ == '__main__':
           zip(descriptor_str[::2], descriptor_str[1::2])])
         result = computeStats(fn, descriptor['fec'])
         print "%(fec)i %(sm)i %(np)i %(sr)i %(nc)i"%descriptor,
-        print "%.4f %.4f %.4f %.4f"%result
+        print "%(ber).4f %(prrCrcPassed).4f %(prrDataPassed).4f %(prrAll).4f"%result
+        logging.debug("File %s fraction invalid: %.4f"%(fn,
+          result['fractionInvalid']))
