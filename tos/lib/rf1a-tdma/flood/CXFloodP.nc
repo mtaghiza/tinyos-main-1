@@ -309,7 +309,11 @@ module CXFloodP{
             lastSn = thisSn;
             lastSrc = thisSrc;
             lastDepth = call CXPacket.count(msg);
-            txLeft = call TDMARoutingSchedule.maxRetransmit();
+            if ( call TDMARoutingSchedule.isSynched(frameNum)){
+              txLeft = call TDMARoutingSchedule.maxRetransmit();
+            }else{
+              txLeft = 0;
+            }
             fwd_msg = msg;
             fwd_len = len;
             rxOutstanding = TRUE;

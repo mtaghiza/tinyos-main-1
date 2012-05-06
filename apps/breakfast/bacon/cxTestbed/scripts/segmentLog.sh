@@ -14,6 +14,7 @@ lastFile=""
 #for each test setup
 grep -v '#' $testList | while read line
 do
+  isEndMarker=$(echo $line | grep -c END)
   #pull the start timestamp, plus the test parameters
   start=$(echo $line | awk '{print $2}')
   fec=$(echo $line | awk '{print $4}')
@@ -32,8 +33,11 @@ do
     awk --assign et=$start '($1 < et){print $0}' $lastFile > $lastFile.tmp
     mv ${lastFile}.tmp ${lastFile}
   fi
-  echo "ST $start $fn"
-  #take any lines from the original log where timestamp > test start time
-  awk --assign st=$start '($1 > st){print $0}' $testbedLog > $fn
-  lastFile=$fn
+  if [ $isEndMarker -eq 0 ]
+  then
+    echo "ST $start $fn"
+    #take any lines from the original log where timestamp > test start time
+    awk --assign st=$start '($1 > st){print $0}' $testbedLog > $fn
+    lastFile=$fn
+  fi
 done 

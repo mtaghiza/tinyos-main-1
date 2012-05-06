@@ -793,6 +793,11 @@ module CXTDMAPhysicalP {
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
         resynchFrameStart = thisFrameStart;
+        #if SYNCH_AT_RX == 1
+        //Wait until CRC is validated before reysnching
+        #else
+        resynch();
+        #endif
 //        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
 //        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
@@ -967,7 +972,11 @@ module CXTDMAPhysicalP {
 //        }
 //        #endif
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
+          #if SYNCH_AT_RX == 1
           resynch();
+          #else
+          //already synched at capture
+          #endif
 //          printf_TESTBED("c\r\n");
           post printPassed();
           receiveCount++;

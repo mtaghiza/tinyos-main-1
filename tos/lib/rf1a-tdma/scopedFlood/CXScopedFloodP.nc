@@ -440,6 +440,13 @@ module CXScopedFloodP{
     }
            
     if (state == S_IDLE){
+      if ( ! call TDMARoutingSchedule.isSynched(frameNum)){
+        printf_SF_RX("~s\r\n");
+        return msg;
+      }else{
+        printf_SF_RX("s\r\n");
+      }
+
       printf_SF_RX("i");
       //drop pre-routed packets for which we aren't on a route.
       if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){

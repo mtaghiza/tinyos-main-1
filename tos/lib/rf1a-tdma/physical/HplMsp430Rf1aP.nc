@@ -35,6 +35,7 @@
 #include "CXTDMADebug.h"
 #include "BreakfastDebug.h"
 #include "CXTDMADispatchDebug.h"
+#include "FECDebug.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -1212,15 +1213,19 @@ generic module HplMsp430Rf1aP () @safe() {
 
             //spin until the entire packet is available: if len8 +2 >
             //64, we're not going to wait for it all to show up.
-            do{
+            #if WAIT_FOR_PACKET == 1
+              do{
+                avail = receiveCountAvailable_();
+                availTimeout --;
+              //+2 = metadata 
+              }while (((len8+2) <= 64) && (avail  != (len8 + 2)) && availTimeout);
+              if (!availTimeout){
+                printf("!rest of packet never showed up (%u, expecting %u)\r\n", 
+                  avail, (len8 + 2));
+              }
+            #else
               avail = receiveCountAvailable_();
-              availTimeout --;
-            //+2 = metadata 
-            }while (((len8+2) <= 64) && (avail  != (len8 + 2)) && availTimeout);
-            if (!availTimeout){
-              printf("!rest of packet never showed up (%u, expecting %u)\r\n", 
-                avail, (len8 + 2));
-            }
+            #endif
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 

@@ -426,8 +426,7 @@ module NonRootSchedulerP{
   }
 
   async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
-    return (framesSinceLastSynch <=
-    curSchedDescriptor->activeFrames+curSchedDescriptor->inactiveFrames);
+    return isSynched;
   }
 
   async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
