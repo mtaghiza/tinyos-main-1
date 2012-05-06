@@ -1186,7 +1186,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
           if (variable_packet_length_mode) {
             uint8_t len8;
-            uint16_t availTimeout = 0x1ff;
+            uint16_t availTimeout = 0x2ff;
             //FEC length: not encoded. reflects the number of bytes
             //  actually sent, not the encoded payload length
             call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
@@ -1598,7 +1598,7 @@ generic module HplMsp430Rf1aP () @safe() {
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
   {
     atomic {
-      printf_SW_TOPO("RXO\r\n");
+      printf("!RXOVERFLOW\r\n");
       rx_result = ECANCEL;
       post receiveData_task();
     }
