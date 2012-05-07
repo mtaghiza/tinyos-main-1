@@ -1,22 +1,20 @@
 #!/bin/bash
 set -x 
-#FEC one-hop testing
 testDuration=3600
 #CX flood/non-flood 
 
 for floodTest in 0 1
 do
-  for mapset in "nonrootRx map.nonroot nonrootTx map.none" "nonrootTx map.nonroot nonrootRx map.none" 
+  for mapset in "nonrootRx map.none nonrootTx map.nonroot" 
   do
-    for fec in 0 1
-    do
-      ./installTestbed.sh autoRun 1 fecEnabled $fec initSR 100 \
-        debugScale 2 $mapset fps 30
-      sleep $testDuration
-    done
+    ./installTestbed.sh autoRun 1 fecEnabled 0 initSR 100 \
+      debugScale 1 $mapset fps 30 floodTest $floodTest
+    sleep $testDuration
   done
 done
 
+exit 0
+#FEC one-hop testing
 for initSR in 50 125 
 do
   for fec in 1 0 
