@@ -27,7 +27,7 @@ mr=1
 
 #radio logging
 rl=0
-rs=0
+rs=1
 
 #schedule config
 #init symbol rate

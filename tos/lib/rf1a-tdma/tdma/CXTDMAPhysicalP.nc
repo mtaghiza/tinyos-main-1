@@ -231,13 +231,13 @@ module CXTDMAPhysicalP {
     REPORT_STATS_TOGGLE_PIN;
     printf_RADIO_STATS("PC %lu Sent %u Received %u tx cap %u rx cap %u\r\n", reportNum, sendCount,
       receiveCount, txCaptureCount, rxCaptureCount);
-    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
-      uint32_t overflows = call StateTiming.getOverflows(rs);
-      uint32_t cur = call StateTiming.getTotal(rs);
-      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
-        reportNum, rs, 
-        overflows, cur);
-    }
+//    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+//      uint32_t overflows = call StateTiming.getOverflows(rs);
+//      uint32_t cur = call StateTiming.getTotal(rs);
+//      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
+//        reportNum, rs, 
+//        overflows, cur);
+//    }
     reportNum++;
     #if DEBUG_SYNCH_ADJUST == 1
     for (i = 0; i < adjustmentCount; i++){
@@ -978,7 +978,7 @@ module CXTDMAPhysicalP {
           //already synched at capture
           #endif
 //          printf_TESTBED("c\r\n");
-          post printPassed();
+//          post printPassed();
           receiveCount++;
           printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{

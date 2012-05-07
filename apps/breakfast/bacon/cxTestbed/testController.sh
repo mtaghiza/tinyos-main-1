@@ -3,12 +3,12 @@ set -x
 testDuration=3600
 #CX flood/non-flood 
 
-for floodTest in 0 1
+for floodTest in 1 0
 do
   for mapset in "nonrootRx map.none nonrootTx map.nonroot" 
   do
     ./installTestbed.sh autoRun 1 fecEnabled 0 initSR 100 \
-      debugScale 1 $mapset fps 30 floodTest $floodTest
+      debugScale 3 $mapset fps 30 floodTest $floodTest
     sleep $testDuration
   done
 done
