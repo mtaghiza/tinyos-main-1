@@ -23,7 +23,7 @@ do
   rx=$(echo $line | awk '{print $10}')
   tx=$(echo $line | awk '{print $12}')
   #construct a filename for this setup
-  fn=${outdir}/${prefix}_fec_${fec}_sr_${sr}_flood_${flood}_rx_${rx}_tx_${tx}
+  fn=${outdir}/${prefix}_fec_${fec}_sr_${sr}_flood_${flood}_rx_${rx}_tx_${tx}_ts_${start}
   
   #cut out everything from the previous output file that overlaps with
   #  the current test

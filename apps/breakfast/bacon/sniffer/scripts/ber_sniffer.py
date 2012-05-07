@@ -5,7 +5,7 @@ import re
 import pdb
 import decode
 
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level = logging.INFO)
 
 def toInt(x):
     return reduce(lambda l,r: (l<<8) + r, x)
