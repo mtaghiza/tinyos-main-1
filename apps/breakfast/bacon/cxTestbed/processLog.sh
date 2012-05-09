@@ -19,16 +19,17 @@ RXREADY_FAULT_WINDOW=3.0
 #dos2unix $logFile
 
 #depthTf=$(tempfile -d $tfDir)
-rxTf=$(tempfile -d $tfDir)
-txTf=$(tempfile -d $tfDir)
-irTf=$(tempfile -d $tfDir)
-rTf=$(tempfile -d $tfDir)
-rsTf=$(tempfile -d $tfDir)
-pcTf=$(tempfile -d $tfDir)
-dcTf=$(tempfile -d $tfDir)
-prrTf=$(tempfile -d $tfDir)
-gapsTf=$(tempfile -d $tfDir)
-rxrTf=$(tempfile -d $tfDir)
+tfb=$(tempfile -d $tfDir)
+rxTf=$tfb.rx
+txTf=$tfb.tx
+irTf=$tfb.ir
+rTf=$tfb.r
+rsTf=$tfb.rs
+pcTf=$tfb.pc
+dcTf=$tfb.dc.csv
+prrTf=$tfb.prr.csv
+gapsTf=$tfb.gaps.csv
+rxrTf=$tfb.rxr
 
 #echo "extracting depth info"
 #pv $logFile | awk '($3 == "s" || $3 == "S"){print $1,$2,$4}' > $depthTf
@@ -469,6 +470,7 @@ sqlite3 $db < gaps.sql > $gapsTf
 
 echo "generating figures"
 mkdir -p figs/$(dirname $logFile)
+set -x
 R --slave --no-save --args dataFile=$prrTf plotPdf=T \
   outPrefix=figs/$logFile label=$label < fig_scripts/prr.R
 R --slave --no-save --args dataFile=$dcTf plotPdf=T \

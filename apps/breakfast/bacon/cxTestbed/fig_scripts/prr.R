@@ -36,6 +36,7 @@ xl <- "PRR [0, 1.0]"
 yl <- "P [0, 1.0]"
 t <- "Leaf->Root PRR"
 plotCdf(ds, xl, yl, paste(label, t, sep=' '), plotPdf, paste(outPrefix, 'prr_lr', 'pdf', sep='.'))
+print(paste(dataFile, median(ds)))
 
 ds <- x$src_to_dest - x$dest_to_src
 xl <- "PRR (root,leaf) - (leaf, root)"

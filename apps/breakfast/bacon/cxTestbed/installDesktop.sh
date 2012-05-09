@@ -3,17 +3,17 @@
 txp=0x25
 tc=0
 
-debugScale=3UL
+debugScale=4UL
 
 #test setup
 floodTest=1
 rootId="0"
-nonrootRx="1"
+nonrootRx=""
 #allPlugged="0 1 2 3"
 allPlugged="0 1 2"
-nonrootTx=""
+nonrootTx="1"
 
-fecEnabled=1
+fecEnabled=0
 fecHamming74=1
 
 ipi=5120UL
@@ -21,8 +21,8 @@ queueThreshold=2
 
 #network params
 maxNodes=5
-fps=5
-md=5
+fps=10
+md=2
 mr=1
 
 #radio logging
