@@ -182,7 +182,6 @@ implementation {
     call CSN.clr(); P1OUT &= ~BIT1;
     call SpiPacket.send( m_cmd, NULL, cmd_len );
 
-    call Leds.led0On();
     return SUCCESS;
   }
 
@@ -195,8 +194,6 @@ implementation {
 				       uint16_t len, error_t error ) {
 
     int i;
-
-    call Leds.led0Off();
 
     switch( m_cmd[ 0 ] ) {
 
