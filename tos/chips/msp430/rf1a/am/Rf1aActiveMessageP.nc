@@ -71,8 +71,6 @@ implementation {
                                           message_t* msg,
                                           uint8_t len)
   {
-    error_t rc;
-    
     call Rf1aPacket.configureAsData(msg);
     call AMPacket.setSource(msg, call AMPacket.address());
     call Ieee154Packet.setPan(msg, call Ieee154Packet.localPan());
