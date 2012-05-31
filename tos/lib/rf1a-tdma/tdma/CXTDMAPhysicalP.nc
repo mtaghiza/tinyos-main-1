@@ -127,125 +127,14 @@ module CXTDMAPhysicalP {
   void completeCleanup();
   task void signalStopDone();
   task void debugConfig();
+  bool checkState(uint8_t s);
+  void setState(uint8_t s);
+  bool inError();
+  void stopTimers();
+  task void reportStats();
+  const char* decodeStatus();
   
-  //pretty status-reporting
-  const char* decodeStatus(){
-    switch(call Rf1aStatus.get()){
-      case RF1A_S_IDLE:
-        return "S_IDLE";
-      case RF1A_S_RX:
-        return "S_RX";
-      case RF1A_S_TX:
-        return "S_TX";
-      case RF1A_S_FSTXON:
-        return "S_FSTXON";
-      case RF1A_S_CALIBRATE:
-        return "S_CALIBRATE";
-      case RF1A_S_FIFOMASK:
-        return "S_FIFOMASK";
-      case RF1A_S_SETTLING:
-        return "S_SETTLING";
-      case RF1A_S_RXFIFO_OVERFLOW:
-        return "S_RXFIFO_OVERFLOW";
-      case RF1A_S_TXFIFO_UNDERFLOW:
-        return "S_TXFIFO_UNDERFLOW";
-      case RF1A_S_OFFLINE:
-        return "S_OFFLINE";
-      default:
-        return "???";
-    }
-  }
-
-  void printStatus(){
-    printf("* Core: %s\r\n", decodeStatus());
-    printf("--------\r\n");
-  }
-
-  task void printStatusTask(){
-    printStatus();
-  }
-  
-
-  //stop all timers: used at error or when shutting down the
-  //component.
-  void stopTimers(){
-    call PrepareFrameStartAlarm.stop();
-    call FrameStartAlarm.stop();
-    call FrameWaitAlarm.stop();
-    call SynchCapture.disable();
-  }
  
-  //convenience state manipulation functions
-  bool checkState(uint8_t s){ atomic return (state == s); }
-  void setState(uint8_t s){
-    atomic {
-      if (state == s){
-        return;
-      }
-      #ifdef DEBUG_CX_TDMA_P_STATE_IDLE
-      if (s == S_IDLE){
-        printf("[%x->%x]\r\n", state, s);
-      }
-      #endif
-      #ifdef DEBUG_CX_TDMA_P_STATE
-      printf("[%x->%x]\r\n", state, s);
-      #endif
-      #ifdef DEBUG_CX_TDMA_P_STATE_ERROR
-      if (ERROR_MASK == (s & ERROR_MASK)){
-        P2OUT |= BIT4;
-        stopTimers();
-        printf("!ERR [%x->%x]\r\n", state, s);
-      }
-      #endif
-      state = s;
-    }
-  }
-
-  bool inError(){
-    atomic return (ERROR_MASK & state);
-  }
-
-  //Reporting functions
-  uint32_t reportNum;
-
-  task void reportStats(){
-    REPORT_STATS_TOGGLE_PIN;
-    printf_RADIO_STATS("PC %lu Sent %u Received %u tx cap %u rx cap %u\r\n", reportNum, sendCount,
-      receiveCount, txCaptureCount, rxCaptureCount);
-//    {
-//    uint8_t rs;
-////    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
-////      uint32_t overflows = call StateTiming.getOverflows(rs);
-////      uint32_t cur = call StateTiming.getTotal(rs);
-////      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
-////        reportNum, rs, 
-////        overflows, cur);
-////    }
-//    }
-    reportNum++;
-    #if DEBUG_SYNCH_ADJUST == 1
-    {
-      uint8_t i;
-      for (i = 0; i < adjustmentCount; i++){
-        printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
-          adjustments[i]);
-      }
-    }
-    adjustmentCount = 0;
-    #endif
-//    printf_RADIO_STATS("xt2Counted = sum([");
-//    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
-//      printf_RADIO_STATS("%lu, ", call StateTiming.getTotal(rs));
-//    }
-//    printf_RADIO_STATS("])/(26e6/4)\r\n");
-//    printf_RADIO_STATS("xt2Total = (%lu )/(26e6/4)\r\n",
-//      thisReport);
-////    printf_RADIO_STATS("xt2Counted\r\n");
-////    printf_RADIO_STATS("xt2Total\r\n");
-//    printf_RADIO_STATS("print (xt2Counted - xt2Total), xt2Counted, xt2Total\r\n");
-////    lastReport = thisReport;
-  } 
-  
   /***********************************
      MAIN LOGIC BELOW
    ***********************************/
@@ -300,7 +189,7 @@ module CXTDMAPhysicalP {
    *    PFS.fired + !isTX / setReceiveBuffer + startReception + set
    *      next PrepareFrameStartAlarm + start capture
    *      -> S_RX_READY
-   *    PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_READY
+   *    PFS.fired + isTX  / startTransmit(FSTXON), post getPacket task -> S_TX_READY
    *    All: schedule next PFS alarm based on s_frameLen and
    *      frameAdjustment from TDMAPhySchedule
    */
@@ -375,13 +264,10 @@ module CXTDMAPhysicalP {
         }
       } 
     }
-//    printf("pfs %x %s\r\n", state, decodeStatus());
     //Idle, or we are in an extra long frame-wait (e.g. trying to
     //  synch)
-//    if (checkState(S_IDLE) || checkState(S_RX_READY) 
-//        || checkState(S_TX_READY) || checkState(S_RECEIVING)){
-    if (checkState(S_IDLE) || checkState(S_RX_READY)){
-//      printf("PFS %s\r\n", decodeStatus());
+    if (checkState(S_IDLE) || checkState(S_RX_READY) 
+        || checkState(S_RECEIVING)){
       //7.75 uS
       PFS_TOGGLE_PIN;
 
@@ -392,7 +278,6 @@ module CXTDMAPhysicalP {
           IS_TX_SET_PIN;
           //0.75 uS
           PFS_TOGGLE_PIN;
-//          printf("TX from %s\r\n", decodeStatus());
           error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
           //114 uS: when coming from idle, i guess this is OK. 
           PFS_TOGGLE_PIN;
@@ -409,20 +294,15 @@ module CXTDMAPhysicalP {
           call SynchCapture.captureRisingEdge();
           post getPacketTask();
 
-  //        printf("TA0CTL   %x\r\n", TA0CTL);
-  //        printf("TA0CCTL3 %x\r\n", TA0CCTL3);
-  //        printf("IOCFG1   %x\r\n", call HplMsp430Rf1aIf.readRegister(IOCFG1));
           break;
         case RF1A_OM_RX:
 //          printf_SW_TOPO("R %u\r\n", frameNum);
           //0.25 uS
           PFS_TOGGLE_PIN;
-//          printf("RX from %s\r\n", decodeStatus());
           error = call Rf1aPhysical.setReceiveBuffer(
             (uint8_t*)(rx_msg->header),
             TOSH_DATA_LENGTH + sizeof(message_header_t),
             RF1A_OM_IDLE);
-//            s_isSynched?RF1A_OM_IDLE: RF1A_OM_RX);
           //11 uS
           PFS_TOGGLE_PIN;
           if (SUCCESS == error){
@@ -440,7 +320,6 @@ module CXTDMAPhysicalP {
             }
             setState(S_RX_READY);
             RX_READY_SET_PIN;
-//            printf("PFS1  %s\r\n", decodeStatus());
           } else {
             printf("Error %s\r\n", decodeError(error));
             setState(S_ERROR_4);
@@ -481,12 +360,6 @@ module CXTDMAPhysicalP {
    *    FWA.fired / resumeIdleMode -> S_IDLE
    */
   async event void FrameWaitAlarm.fired(){
-//    uint32_t now = call FrameWaitAlarm.getNow();
-//    printf("At %lu (%lx) fwa.f %lu (%lx)\r\n",
-//      now, now,
-//      call FrameWaitAlarm.getAlarm(),
-//      call FrameWaitAlarm.getAlarm());
-//
     if (call FrameWaitAlarm.getNow() < call FrameWaitAlarm.getAlarm()){
       printf_PFS_FREAKOUT("FW EARLY");
       call FrameWaitAlarm.startAt(
@@ -498,7 +371,6 @@ module CXTDMAPhysicalP {
     FW_TOGGLE_PIN;
     if (checkState(S_RX_READY)){
       error_t error;
-//      printf("fw %s\r\n", decodeStatus());
       RX_READY_CLEAR_PIN;
       error = call Rf1aPhysical.resumeIdleMode();
       FW_TOGGLE_PIN;
@@ -513,7 +385,6 @@ module CXTDMAPhysicalP {
         //resumeIdleMode above?
         error = call Rf1aPhysical.setReceiveBuffer(0, 0,
           RF1A_OM_IDLE);
-//          s_isSynched?RF1A_OM_IDLE: RF1A_OM_RX);
         if (error == SUCCESS){
           setState(S_IDLE);
         } else {
@@ -533,28 +404,24 @@ module CXTDMAPhysicalP {
     }
   }
 
-//  uint32_t lastFsaHandled;
   /**
+   * Fires at the point where nodes believe their transmissions should
+   * begin. When state is S_TX_READY, this means that everything up to
+   * the completeSend command is timing-critical: it must be
+   * deterministic between nodes and relatively short.
+   *
    * S_RX_READY: radio is in receive mode, frame has not yet started.
    *    FrameStartAlarm.fired / start frameWaitAlarm -> S_RX_READY
    *
    * S_TX_READY:
-   *    FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
+   *    FS.fired / call phy.completeSend
    *      -> S_TRANSMITTING
    *
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
     uint32_t lastFsa;
-//    lastFsaHandled = call FrameStartAlarm.getNow();
-//    if(lastFsaHandled < call FrameStartAlarm.getAlarm()){
-//      printf_PFS_FREAKOUT("FS EARLY");
-//      printf_BF("fs1\r\n");
-//      call FrameStartAlarm.startAt(
-//        call FrameStartAlarm.getAlarm() - s_frameLen, 
-//        s_frameLen);
-//      return;
-//    }    
+
     if (frameNum & BIT0){
       FS_CYCLE_CLEAR_PIN;
     }else{
@@ -563,9 +430,7 @@ module CXTDMAPhysicalP {
     //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
-//    printf("FS %u %lu (%lu)\r\n", frameNum, 
-//      call FrameStartAlarm.getNow(), 
-//      call FrameStartAlarm.getAlarm());
+
     if (checkState(S_TX_READY)){
       FS_STROBE_SET_PIN;
       TXCP_SET_PIN;
@@ -669,7 +534,10 @@ module CXTDMAPhysicalP {
   bool gpResult;
   uint8_t* gpBuf;
   uint8_t gpLen;
+  
 
+  //retrieve packet from upper layer and store it here until requested
+  //from phy.
   task void getPacketTask(){
     gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), &gpLen, frameNum);
     tx_msg = (message_t*)(gpBuf);
@@ -708,6 +576,9 @@ module CXTDMAPhysicalP {
     }  
   }
 
+
+  //give back pointers to the most-recently-cached TX packet from
+  //upper layers.
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
     *buffer = gpBuf;
@@ -715,16 +586,11 @@ module CXTDMAPhysicalP {
     return gpResult;
   }
 
-  task void rxResynch(){
-    printf("RR\r\n");
-  }
-
-  task void txResynch(){
-    printf("TR\r\n");
-  }
-
   uint32_t resynchFrameStart;
-
+  
+  //set frame start alarm and prepare frame start alarm in response to
+  //a resynchronization event (either starting to send a packet, or
+  //upon successful reception of a packet).
   void resynch(){
     call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
     call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
@@ -732,53 +598,21 @@ module CXTDMAPhysicalP {
   }
 
   /**
+   * Indicates a packet start/end capture from the radio. We use this
+   * to synch to the frame edges (immediately if in TX, deferred until
+   * CRC passed if in RX).
+   *
    * S_RX_READY: radio is in receive mode, frame has not yet started.
-   *   FSCapture.captured() / signal frameStarted(call
-   *     FSCapture.event()),  call FWA.stop() -> S_RECEIVING
+   *   SynchCapture.captured() /  call FWA.stop() -> S_RECEIVING
+   * S_TRANSMITTING: our own start-of-packet
+   *   SynchCapture.captured() / adjust alarms -> S_TRANSMITTING
    */
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst; 
     uint32_t capture;
-    //Something is wrong with this correction: we are shifting the
-    //next frame start by some 10 mS at times (one 16-bit overflow). 
-    // It could be caused by:
-    // UL 
-    // 1x : capture recorded as x
-    // 2x : other stuff still happening
-    // 2y : capture ISR runs
-    // 2z : getNow returns 
-    //      we compare z to x and say "ok, no overflow has occurred
-    //      between the capture and checking the current time, because
-    //      z > x". But this misses the previous overflow.
-    //
-    // But I see no evidence for this in the LA output. This would
-    // occur if more than 10 ms elapsed between the GDO signal and the
-    // capture ISR running, which I don't see.
-     
-    //could hack around this by saying "only allow adjustments of up
-    //to x uS, assume anything larger is erroneous. 
-    // - tried having nodes log the size of each adjustment they make:
-    //   it looks like they are unaware of this problem (i.e. I don't
-    //   see anything about the adjustment which causes the
-    //   off-by-10ms issue and other valid adjustments).
 
-    //could also occur if there's some issue with the alarm logic and
-    //we schedule the next FSA event with the right value but overflow
-    //is handled incorrectly and it gets handled at the wrong point.
-    //This seems more likely given the fact that the above hack was
-    //not an option, but I have a poor track record for identifying
-    //bugs in core components.
-
-//    printf("cm %x\r\n", captureMode);
     SC_SET_PIN;
     fst = call FrameStartAlarm.getNow();
-//    //There is a ~9.25 uS delay between the SFD signal at the sender and
-//    //  at the receiver. So, we need to adjust the capture time
-//    //  accordingly.
-//    //This is bizarre to me: it should be *subtracting* from time, but
-//    //  that had the opposite effect. 
-//    time += SFD_PROCESSING_DELAY;
-//  This is corrected elsewhere, don't touch it.
 
     //to put into 32-bit time scale, keep upper 16 bits of 32-bit
     //  counter. 
@@ -823,14 +657,8 @@ module CXTDMAPhysicalP {
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
+        //Wait until CRC is validated before reysnching.
         resynchFrameStart = thisFrameStart;
-        #if SYNCH_AT_RX == 1
-        //Wait until CRC is validated before reysnching
-        #else
-        resynch();
-        #endif
-//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
-//        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         call FrameWaitAlarm.stop();
 
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
@@ -839,9 +667,6 @@ module CXTDMAPhysicalP {
         #endif
         setState(S_RECEIVING);
       } else if (checkState(S_TRANSMITTING)){
-        //Just transmitted: we could try to fix jitter here (i.e. to
-        //"fix" the last frame start alarm to match what a receiver
-        //would have computed.
         //adjust self to compensate for jitter introduced by
         //interrupt handling.
         uint32_t thisFrameStart = capture 
@@ -864,28 +689,24 @@ module CXTDMAPhysicalP {
 //          thisFrameStart += originDelays[s_sri];
 //        }
         resynchFrameStart = thisFrameStart;
-//        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
-//        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
         resynch();
         call FrameWaitAlarm.stop();
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustmentFrames[adjustmentCount] = frameNum;
         adjustmentCount = (adjustmentCount + 1) %64;
         #endif
-//        post txResynch();
       } else {
         setState(S_ERROR_9);
       }
       //7 uS
       SC_TOGGLE_PIN;
     } else if (captureMode == MSP430TIMER_CM_FALLING){
+      //Note: this is currently unused. Is there any benefit to
+      //recording packet duration?
       lastFECapture = capture;
       atomic{
         captureMode = MSP430TIMER_CM_NONE;
         call SynchCapture.disable();
-      }
-      if (checkState(S_RECEIVING)){
-        //TODO: record packet duration? not sure if we need this.
       }
     } else if (checkState(S_OFF)){
       //sometimes see this after wdtpw reset
@@ -900,7 +721,7 @@ module CXTDMAPhysicalP {
   }
 
   /**
-   *  Synch this layer's state with radio core.
+   *  Synch this layer's state with radio core. 
    */ 
   void completeCleanup(){
     //we see a state of RF1A_S_SETTLING if we're doing an automatic switch from RX to FSTXON
@@ -936,10 +757,6 @@ module CXTDMAPhysicalP {
         printf("cleanup in state %s\r\n", decodeStatus());
         setState(S_ERROR_b);
     }
-  }
-
-  task void printPassed(){
-    printf_RADIO_STATS("CRC PASSED\r\n");
   }
 
   norace am_addr_t reportRXSrc;
@@ -996,27 +813,8 @@ module CXTDMAPhysicalP {
         //here.
         call Packet.setPayloadLength(msg,
           count-sizeof(message_header_t));
-//        #if DEBUG_FEC == 1
-//        {
-//          uint8_t i;
-//          if (!lastRxBufBusy){
-//            lastRxBufBusy = TRUE;
-//            lastRxLen = count;
-//            for(i=0; i< count; i++){
-//              lastRxBuf[i] = buffer[i];
-//            }
-//            post printLastRx();
-//          }
-//        }
-//        #endif
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
-          #if SYNCH_AT_RX == 1
           resynch();
-          #else
-          //already synched at capture
-          #endif
-//          printf_TESTBED("c\r\n");
-//          post printPassed();
           receiveCount++;
           printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{
@@ -1040,18 +838,18 @@ module CXTDMAPhysicalP {
               frameNum, lastRECapture);
           }
         } else {
-          #if DEBUG_TESTBED_CRC == 1
-          {
-            uint8_t ghettoRXCRC = 0;
-            uint8_t i;
-            for(i = 0; i< count; i++){
-              ghettoRXCRC ^= buffer[i];
-            }
-            ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
-            printf("RC %x \r\n", ghettoRXCRC);
-            printf_TESTBED_CRC("R! %u\r\n", frameNum);
-          }
-          #endif
+//          #if DEBUG_TESTBED_CRC == 1
+//          {
+//            uint8_t ghettoRXCRC = 0;
+//            uint8_t i;
+//            for(i = 0; i< count; i++){
+//              ghettoRXCRC ^= buffer[i];
+//            }
+//            ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
+//            printf("RC %x \r\n", ghettoRXCRC);
+//          }
+//          #endif
+          printf_TESTBED_CRC("R! %u\r\n", frameNum);
         }
         completeCleanup();
       } else if (ENOMEM == result){
@@ -1080,15 +878,9 @@ module CXTDMAPhysicalP {
     }
   }
 
-  uint8_t ghettoTXCRC;
-
-  task void reportTXCRC(){
-    printf_TESTBED_CRC("TC %x \r\n", ghettoTXCRC);
-  }
-
   /**
    * S_TRANSMITTING:
-   *   phy.sendDone / signal sendDone -> S_TX_CLEANUP 
+   *   phy.sendDone / signal sendDone, set phy timestamp if origin -> S_TX_CLEANUP 
    */
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
@@ -1105,17 +897,7 @@ module CXTDMAPhysicalP {
         printf_PHY_TIME("set phy\r\n");
         call CXPacketMetadata.setPhyTimestamp(msg,
           lastRECapture);
-//        call CXPacketMetadata.setAlarmTimestamp(msg, 
-//          lastFsaHandled);
       }
-      #if DEBUG_TESTBED_CRC == 1
-      ghettoTXCRC = 0;
-      for (i=0; i< len; i++){
-        ghettoTXCRC ^= buffer[i];
-      }
-      ghettoTXCRC ^= call CXPacket.count((message_t*)buffer);
-      post reportTXCRC();
-      #endif
       signal CXTDMA.sendDone(msg, len, frameNum, result);
     } else {
       setState(S_ERROR_e);
@@ -1138,14 +920,8 @@ module CXTDMAPhysicalP {
     return call FrameStartAlarm.getNow();
   }
 
-  task void debugConfig(){
-    #if DEBUG_CONFIG == 1
-    rf1a_config_t config;
-    call Rf1aPhysical.readConfiguration(&config);
-    call Rf1aDumpConfig.display(&config);
-    #endif
-  }
-  
+ 
+  //Update schedule parameters, taking care to handle missed alarms.
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint32_t frameLen,
       uint32_t fwCheckLen, uint16_t activeFrames, 
@@ -1241,7 +1017,9 @@ module CXTDMAPhysicalP {
   async event uint8_t Rf1aPhysical.getChannelToUse(){
     return s_channel;
   }
-
+  
+  //configuration is determined by dispatching to current
+  //symbol rate's config
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
     printf_SCHED_SR("Get configuration: %u\r\n", s_sr);
     return call SubRf1aConfigure.getConfiguration[s_sr]();
@@ -1266,11 +1044,10 @@ module CXTDMAPhysicalP {
 
 
   async event void Rf1aPhysical.frameStarted () { 
-//    printf("rp.fs\r\n");
     //ignored: we use the GDO timer capture for this.
   }
 
-  //BEGIN unimplemented
+  //BEGIN unused
   async event void Rf1aPhysical.carrierSense () { }
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
@@ -1282,69 +1059,135 @@ module CXTDMAPhysicalP {
     return FALSE;
   }
   //END unimplemented
-  /**
-    x S_OFF: off/not duty cycled
-      x SplitControl.start / resource.request -> S_STARTING
-    
-    x S_STARTING: radio core starting up/calibrating
-      x resource.granted / -  -> S_IDLE
 
-    x S_IDLE: in the part of a frame where no data is expected.
-      x PFS.fired + !isTX / setReceiveBuffer + startReception -> S_RX_STARTING
-      x PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_STARTING
-    
-    ~ S_RX_STARTING: setting up for cs/fs check
-      ~ phy.currentStatus(RX) / call FrameWaitAlarm.startAt(call FS.alarm(),
-        fwCheckLen) -> S_RX_READY
+  /************
+    status-reporting/debug below
+  ************/
+  const char* decodeStatus(){
+    switch(call Rf1aStatus.get()){
+      case RF1A_S_IDLE:
+        return "S_IDLE";
+      case RF1A_S_RX:
+        return "S_RX";
+      case RF1A_S_TX:
+        return "S_TX";
+      case RF1A_S_FSTXON:
+        return "S_FSTXON";
+      case RF1A_S_CALIBRATE:
+        return "S_CALIBRATE";
+      case RF1A_S_FIFOMASK:
+        return "S_FIFOMASK";
+      case RF1A_S_SETTLING:
+        return "S_SETTLING";
+      case RF1A_S_RXFIFO_OVERFLOW:
+        return "S_RXFIFO_OVERFLOW";
+      case RF1A_S_TXFIFO_UNDERFLOW:
+        return "S_TXFIFO_UNDERFLOW";
+      case RF1A_S_OFFLINE:
+        return "S_OFFLINE";
+      default:
+        return "???";
+    }
+  }
 
-    x S_RX_READY: radio is in receive mode, frame has not yet started.
-      ~ phy.carrierSense / record time -> S_RX_READY
-      x FSCapture.captured() / signal frameStarted(call
-         FSCapture.event()),  call FWA.stop() -> S_RECEIVING
-      x FWA.fired / resumeIdleMode -> S_IDLE
+  void printStatus(){
+    printf("* Core: %s\r\n", decodeStatus());
+    printf("--------\r\n");
+  }
 
-    S_RECEIVING: frame has started, expecting data.
-      phy.receiveDone / post receiveTask -> S_RX_CLEANUP
-      (cases where frame starts but we don't get data: same as S_IDLE)
-      PFS.fired + !isTX / setReceiveBuffer + startReception -> S_RX_STARTING
-      PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_STARTING
-    
-    S_RX_CLEANUP:
-      receiveTask / signal receive + buffer swap 
-        -> (phy.currentStatus)? [S_RX_READY, S_TX_READY]
+  task void printStatusTask(){
+    printStatus();
+  }
+ 
+  task void debugConfig(){
+    #if DEBUG_CONFIG == 1
+    rf1a_config_t config;
+    call Rf1aPhysical.readConfiguration(&config);
+    call Rf1aDumpConfig.display(&config);
+    #endif
+  } 
 
-    S_TX_STARTING:
-      phy.currentStatus(FSTXON) / -> S_TX_READY 
-    
-    x S_TX_READY:
-    x  FS.fired / call phy.sendNow(signal TDMA.getPacket()) 
-        -> S_TRANSMITTING
-    
-    S_TRANSMITTING:
-      phy.sendDone / post sendDoneTask -> S_TX_CLEANUP
+  //stop all timers: used at error or when shutting down the
+  //component.
+  void stopTimers(){
+    call PrepareFrameStartAlarm.stop();
+    call FrameStartAlarm.stop();
+    call FrameWaitAlarm.stop();
+    call SynchCapture.disable();
+  }
+ 
+  //convenience state manipulation functions
+  bool checkState(uint8_t s){ atomic return (state == s); }
+  void setState(uint8_t s){
+    atomic {
+      if (state == s){
+        return;
+      }
+      #ifdef DEBUG_CX_TDMA_P_STATE_IDLE
+      if (s == S_IDLE){
+        printf("[%x->%x]\r\n", state, s);
+      }
+      #endif
+      #ifdef DEBUG_CX_TDMA_P_STATE
+      printf("[%x->%x]\r\n", state, s);
+      #endif
+      #ifdef DEBUG_CX_TDMA_P_STATE_ERROR
+      if (ERROR_MASK == (s & ERROR_MASK)){
+        P2OUT |= BIT4;
+        stopTimers();
+        printf("!ERR [%x->%x]\r\n", state, s);
+      }
+      #endif
+      state = s;
+    }
+  }
 
-    S_TX_CLEANUP:
-      sendDoneTask / signal send done 
-        -> (phy.currentStatus)? [S_RX_READY, S_TX_READY]
+  bool inError(){
+    atomic return (ERROR_MASK & state);
+  }
 
-    S_*_CLEANUP:
-      *Task + dcOffPending + !scOffPending / call Resource.release +
-        start dcTimer -> S_INACTIVE
-      *Task + dcOffPending +  scOffPending / call Resource.release +
-        stop timers -> S_OFF
-    
-    S_INACTIVE:
-      dcTimer.fired() / call resource.request -> S_STARTING
+  //Reporting functions
+  uint32_t reportNum;
 
-    Other stuff:
-      - splitcontrol.stop: set scOffPending
-      - resource.granted: set dcTimer to turn off after last frame
-      - dcTimer.fired: toggle dcOffPending, schedule to turn on prior
-        to next period start
+  task void reportStats(){
+    REPORT_STATS_TOGGLE_PIN;
+    printf_RADIO_STATS("PC %lu Sent %u Received %u tx cap %u rx cap %u\r\n", reportNum, sendCount,
+      receiveCount, txCaptureCount, rxCaptureCount);
+//    {
+//    uint8_t rs;
+////    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+////      uint32_t overflows = call StateTiming.getOverflows(rs);
+////      uint32_t cur = call StateTiming.getTotal(rs);
+////      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
+////        reportNum, rs, 
+////        overflows, cur);
+////    }
+//    }
+    reportNum++;
+    #if DEBUG_SYNCH_ADJUST == 1
+    {
+      uint8_t i;
+      for (i = 0; i < adjustmentCount; i++){
+        printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
+          adjustments[i]);
+      }
+    }
+    adjustmentCount = 0;
+    #endif
+//    printf_RADIO_STATS("xt2Counted = sum([");
+//    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+//      printf_RADIO_STATS("%lu, ", call StateTiming.getTotal(rs));
+//    }
+//    printf_RADIO_STATS("])/(26e6/4)\r\n");
+//    printf_RADIO_STATS("xt2Total = (%lu )/(26e6/4)\r\n",
+//      thisReport);
+////    printf_RADIO_STATS("xt2Counted\r\n");
+////    printf_RADIO_STATS("xt2Total\r\n");
+//    printf_RADIO_STATS("print (xt2Counted - xt2Total), xt2Counted, xt2Total\r\n");
+////    lastReport = thisReport;
+  } 
 
-  */
-
-}
+ }
 /* 
  * Local Variables:
  * mode: c
