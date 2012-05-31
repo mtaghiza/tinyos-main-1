@@ -283,16 +283,26 @@ module CXTDMAPhysicalP {
 
 
   /**
+   *  Indicates that a frame is going to be starting soon. At this
+   *  point, upper layers will indicate whether or not they're going
+   *  to use the radio (for RX or TX), and we set up the synch
+   *  capture.
+   *
+   *  This should only fire when we're in S_IDLE.
+   * 
    *  S_IDLE: in the part of a frame where no data is expected.
-   *    frameNum > activeFrames / call resource.release()
+   *    scStopPending / call resource.release() -> S_STOPPING
+   *    frameNum == activeFrames / call physical.sleep(), disable
+   *      framestart alarm
    *      -> S_INACTIVE
-   *    frameNum = activeFrames + inactiveFrames - 1 / call
-   *        Resource.request()
-   *      -> S_STARTING
+   *    frameNum == 0 / call physical.resumeIdle()
+   *      -> S_IDLE (continues)
    *    PFS.fired + !isTX / setReceiveBuffer + startReception + set
    *      next PrepareFrameStartAlarm + start capture
    *      -> S_RX_READY
    *    PFS.fired + isTX  / startTransmit(FSTXON) -> S_TX_READY
+   *    All: schedule next PFS alarm based on s_frameLen and
+   *      frameAdjustment from TDMAPhySchedule
    */
   async event void PrepareFrameStartAlarm.fired(){
     error_t error;
@@ -367,9 +377,10 @@ module CXTDMAPhysicalP {
     }
 //    printf("pfs %x %s\r\n", state, decodeStatus());
     //Idle, or we are in an extra long frame-wait (e.g. trying to
-    //  synch), or we started receiving, but gave up.
-    if (checkState(S_IDLE) || checkState(S_RX_READY) 
-        || checkState(S_TX_READY) || checkState(S_RECEIVING)){
+    //  synch)
+//    if (checkState(S_IDLE) || checkState(S_RX_READY) 
+//        || checkState(S_TX_READY) || checkState(S_RECEIVING)){
+    if (checkState(S_IDLE) || checkState(S_RX_READY)){
 //      printf("PFS %s\r\n", decodeStatus());
       //7.75 uS
       PFS_TOGGLE_PIN;
