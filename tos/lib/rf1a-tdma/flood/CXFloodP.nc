@@ -100,13 +100,15 @@ module CXFloodP{
     signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, FAIL);
   }
 
+  /**
+   * Accept a packet if we're not busy and hold it until the origin
+   * frame comes around.
+   **/
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-//    printf_TESTBED("FloodSend\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
         tx_len = len + sizeof(cx_header_t) ;
-//        printf("flood %u -> %u\r\n", len, tx_len);
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, t);
@@ -128,14 +130,18 @@ module CXFloodP{
     return FAIL;
   }
 
+  /**
+   * Indicate to the TDMA layer what activity we'll be doing during
+   * this frame. 
+   * - if we're going to initiate a flood, then claim the CX resource
+   *   and indicate TX
+   * - if we're holding a packet that needs forwarding, indicate TX
+   *   (resource should be held already)
+   * - otherwise: RX (maybe we'll be in a flood soon)
+   */
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    //should be an isOrigin command provided by some other component
-    //(RootC / NonRootC? For AODV, will want to send as many packets
-    //in a frame as it can.)
-
     printf_F_SCHED("f.ft %u", frameNum);
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
-//      printf_F_TESTBED("O %u\r\n", frameNum);
       printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
         printf_F_SCHED(" tx\r\n");
@@ -165,30 +171,16 @@ module CXFloodP{
       return RF1A_OM_RX;
     }
   }
-
+ 
+  //Provide packet for transmission to TDMA/phy layers.
   async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
       uint16_t frameNum){ 
-//    printf_F_GP("f.gp");
     *msg = isOrigin? tx_msg : fwd_msg;
     *len = isOrigin? tx_len : fwd_len;
     return TRUE;
-//    if (isOrigin){
-//      printf_F_GP("o\r\n");
-//      F_GPO_SET_PIN;
-//      *msg = tx_msg;
-//      *len = tx_len;
-//      F_GPO_CLEAR_PIN;
-//      return TRUE;
-//    } else {
-//      F_GPF_SET_PIN;
-//      printf_F_GP("f\r\n");
-//      *msg = fwd_msg;
-//      *len = fwd_len;
-//      F_GPF_CLEAR_PIN;
-//      return TRUE;
-//    }
   }
   
+  //Signal received packets upward and refill pool.
   task void signalReceive(){
     printf_TMP("SR");
     if (!call Queue.empty()){
@@ -218,7 +210,11 @@ module CXFloodP{
       printf_TMP("~R\r\n");
     }
   }
+  
 
+  //Enqueue the last received packet and fetch a new packet from pool
+  //to be used for next reception.
+  //Post task to signal reception upwards.
   task void reportReceive(){
     printf_TMP("RR");
     atomic{
@@ -243,6 +239,7 @@ module CXFloodP{
     }
   }
 
+  //deal with the aftermath of a packet transmission.
   void checkAndCleanup(){
     if (txLeft == 0){
       setState(S_IDLE);
@@ -256,6 +253,8 @@ module CXFloodP{
     }
   }
 
+  //decrement remaining transmissions on this packet and potentially
+  //move into cleanup steps
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
@@ -271,6 +270,12 @@ module CXFloodP{
     checkAndCleanup();
   }
 
+
+  /**
+   * Check a received packet from the lower layer for duplicates,
+   * decide whether or not it should be forwarded, and provide a clean
+   * buffer to the lower layer.
+   */
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
@@ -314,6 +319,10 @@ module CXFloodP{
             lastSn = thisSn;
             lastSrc = thisSrc;
             lastDepth = call CXPacket.count(msg);
+            //TODO ASSIGNMENT: avoid slot violation w. txLeft 
+            // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
+            // This will prevent slot violations from happening and
+            // doesn't require deep knowledge of the schedule.
             if ( call TDMARoutingSchedule.isSynched(frameNum)){
               txLeft = call TDMARoutingSchedule.maxRetransmit();
             }else{

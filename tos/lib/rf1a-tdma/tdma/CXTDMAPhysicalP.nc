@@ -230,6 +230,11 @@ module CXTDMAPhysicalP {
     signal FrameStarted.frameStarted(frameNum);
     //0.5uS
     PFS_TOGGLE_PIN;
+
+    //TODO ASSIGNMENT: this should use the TDMAPhySchedule (right?)
+    //interface to check for on/off frames. There may be gaps as well
+    //as the slack period, and we need a way to get the
+    //transport-layer information down here. 
     if (s_inactiveFrames > 0){
       //if there are n active frames, then frameNum n-1 is the last to
       //have data in it. so, we go to sleep at this point.
