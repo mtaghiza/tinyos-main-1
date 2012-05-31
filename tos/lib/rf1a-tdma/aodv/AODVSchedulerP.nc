@@ -382,8 +382,6 @@ module AODVSchedulerP{
   //  - AODV internal logic figures "OK, it's cool to send a new data
   //    frame now."
   async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-    bool subIS = call SubTDMARoutingSchedule.isSynched[rm](frameNum);
-    bool subIO = call SubTDMARoutingSchedule.isOrigin[rm](frameNum);
     printf_AODV_IO("io %x %u\r\n", rm, frameNum);
     //TODO: We can get in trouble here: if we lose synchronization while we
     //are holding the resource, we can get into a deadlock.  The node
@@ -391,9 +389,6 @@ module AODVSchedulerP{
     //(freeing the resource), and if the resource is not available,
     //the flood component will drop any incoming data packets,
     //including the schedule with which we need to synch.
-//    if (subIS && ! subIO){
-//      printf_F_TESTBED("a.io %x\r\n", state);
-//    }
     return (call SubTDMARoutingSchedule.isSynched[rm](frameNum)) &&
       (call SubTDMARoutingSchedule.isOrigin[rm](frameNum) ||
         isOrigin(rm, frameNum) );

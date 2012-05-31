@@ -187,13 +187,7 @@ module CXTDMADispatchP{
 
   default async event message_t* CXTDMA.receive[uint8_t routingMethod](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    uint8_t i;
     printf("Unexpected RM %x: ", routingMethod);
-//    for (i =0 ; i< TOSH_DATA_LENGTH + sizeof(message_header_t); i++){
-//      printf("%02X ", ((uint8_t*)msg)[i]);
-//    }
-//    printf("\r\n");
-//    
     return msg;
   }
 

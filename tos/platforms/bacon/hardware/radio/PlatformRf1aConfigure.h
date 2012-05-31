@@ -1,6 +1,5 @@
 #ifndef PLATFORM_RF1A_CONFIGURE_H
 #define PLATFORM_RF1A_CONFIGURE_H
-#warning "using platform config from bacon"
 
 #ifndef CC1101_DEF_CHANNEL 
 #warning use default channel
@@ -28,13 +27,13 @@ const rf1a_config_t rf1a_default_config = {
     sync1:   0xd3,
     //sync0 default from Rf1aConfigure.h 
     sync1:   0x91,
-    //TODO: this does get set in sw, right?
+    //0x3D max bytes (pktctrl0.length_config is 0b01, var length)
     pktlen:  0x3D,    // PKTLEN    Packet length.
     pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
     pktctrl0:0x05,   // PKTCTRL0  Packet automation control.
-    //TODO: this does get set in sw, right?
+    //pktrctrl1.adr_chk is 0, no address check
     addr:    0x00,   // ADDR      Device address.
-    //TODO: this does get set in sw, right?
+    //this may get overridden at run time
     CC1101_DEF_CHANNEL,    // CHANNR    Channel number.
     fsctrl1: 0x0C,   // FSCTRL1   Frequency synthesizer control.
     fsctrl0: 0x00,   // FSCTRL0   Frequency synthesizer control.

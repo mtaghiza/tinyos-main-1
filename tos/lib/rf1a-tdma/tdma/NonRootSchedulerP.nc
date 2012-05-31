@@ -129,14 +129,15 @@ module NonRootSchedulerP{
   }
 
   task void printCur(){
-    cx_schedule_t* pl = (cx_schedule_t*) call
-    Packet.getPayload(curMsg, sizeof(cx_schedule_t));
+    #if DEBUG_SCHED_SR == 1
+    cx_schedule_t* pl = (cx_schedule_t*) call Packet.getPayload(curMsg, sizeof(cx_schedule_t));
     printf_SCHED_SR("ps %p (%p) sn %u of %u fl %lu fw %lu af %u if %u fps %u mr %u sr %u chan %u\r\n", 
       curMsg, pl,
       pl->scheduleNum, pl->originalFrame, pl->frameLen,
       pl->fwCheckLen, pl->activeFrames, pl->inactiveFrames,
       pl->framesPerSlot, pl->maxRetransmit, pl->symbolRate,
       pl->channel);
+    #endif
   }
 
   task void updateScheduleTask();

@@ -226,23 +226,27 @@ module CXTDMAPhysicalP {
   uint32_t reportNum;
 
   task void reportStats(){
-    uint8_t rs;
-    uint8_t i;
     REPORT_STATS_TOGGLE_PIN;
     printf_RADIO_STATS("PC %lu Sent %u Received %u tx cap %u rx cap %u\r\n", reportNum, sendCount,
       receiveCount, txCaptureCount, rxCaptureCount);
-//    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
-//      uint32_t overflows = call StateTiming.getOverflows(rs);
-//      uint32_t cur = call StateTiming.getTotal(rs);
-//      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
-//        reportNum, rs, 
-//        overflows, cur);
+//    {
+//    uint8_t rs;
+////    for (rs = 0x00; rs <= 0x80; rs+= 0x10){
+////      uint32_t overflows = call StateTiming.getOverflows(rs);
+////      uint32_t cur = call StateTiming.getTotal(rs);
+////      printf_RADIO_STATS("RS %lu %x %lu %lu\r\n", 
+////        reportNum, rs, 
+////        overflows, cur);
+////    }
 //    }
     reportNum++;
     #if DEBUG_SYNCH_ADJUST == 1
-    for (i = 0; i < adjustmentCount; i++){
-      printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
-        adjustments[i]);
+    {
+      uint8_t i;
+      for (i = 0; i < adjustmentCount; i++){
+        printf_SYNCH_ADJUST("ADJUST %u %ld\r\n", adjustmentFrames[i],
+          adjustments[i]);
+      }
     }
     adjustmentCount = 0;
     #endif
@@ -1060,7 +1064,6 @@ module CXTDMAPhysicalP {
     tx_msg = NULL;
     if(checkState(S_TRANSMITTING)){
       message_t* msg = (message_t*)buffer;
-      uint8_t i;
       setState(S_TX_CLEANUP);
       completeCleanup();
       //set the phy timestamp if we are the source and this is the
@@ -1104,8 +1107,8 @@ module CXTDMAPhysicalP {
   }
 
   task void debugConfig(){
-    rf1a_config_t config;
     #if DEBUG_CONFIG == 1
+    rf1a_config_t config;
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
     #endif
