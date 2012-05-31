@@ -104,21 +104,31 @@ module CXScopedFloodP{
     printf_SF_STATE("{%x->%x}\r\n", state, s);
     state = s;
   }
+
+  //TODO: this should maybe come direct from Routing schedule instead
+  //of being computed here
   uint16_t leftInSlot(uint16_t frameNum){
     uint16_t fps = call TDMARoutingSchedule.framesPerSlot();
     //left-in-slot: call TDMARoutingSchedule.framesPerSlot() - frameNum%(call TDMARoutingSchedule.framesPerSlot())
     return fps - frameNum%fps;
   }
+  
 
+  /**
+   * Distinguish data and ack frames from each other (so that
+   * getPacket knows what to provide)
+   */
   bool isDataFrame(uint16_t frameNum){
+    //TODO flood_quench: Unhardcode data:ack ratio
     uint16_t localF = frameNum % (call TDMARoutingSchedule.framesPerSlot());
     return ((localF%3) == 0);
   }
-
   bool isAckFrame(uint16_t frameNum){
     return ! isDataFrame(frameNum);
   }
 
+  //Buffer a packet from the transport layer if we're not already
+  //holding one.
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("ScopedFloodSend\r\n");
     atomic{
@@ -151,26 +161,18 @@ module CXScopedFloodP{
     return FAIL;
   }
 
+
+
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    //TODO: this should generally check for slot violations and
-    //release the resource/return to idle if we're anything other than
-    //idle.
-//    printf("ft %u ", frameNum);
-    //see notes in CXTDMA.sendDone. At this point, we have allowed
-    //enough time to elapse for the frame to clear.
-    //TODO: if this is prerouted, we don't need to wait this long. As
-    //  soon as we get the ack, we can send in the next data frame.
+    //Check for (implicit) completion of SF
     if (state == S_CLEAR_WAIT){
       //TODO: watch for slot length violations, quit if this is no
       //longer your slot.
 
-      //TODO: looking at the sniffer logs, it seems likely that this
-      //  bound is incorrect, and we are in fact allowing the first
-      //  flood transmission of the burst to be sent while the last
-      //  ack is still circulating.
-      //  should be +1, but i see what appear to be collisions here,
-      //  so increasing to +2
-      //  and at +2 it looks better
+      //TODO retx: account for retransmissions in completion time
+      //TODO flood_quench: bound will change with ack:data ratio
+      //TODO: if this is prerouted, we don't need to wait this long. As
+      //  soon as we get the ack, we can send in the next data frame.
       if (frameNum - ackFrame > (ackFrame - originFrame) + 2){
         post signalSendDone();
       }
@@ -313,6 +315,11 @@ module CXScopedFloodP{
         //fudge), not all the way to the end of the slot.
         //it would be ideal if these acks were done just with normal
         //back-to-back-floods, but what are you going to do.
+
+        //TODO: this should be shorter, for sure. If we make an
+        //assumption about the network diameter, then this (+ ack:data
+        //ratio) will tell us how many frames we need to sit around
+        //for.
         waitLeft = leftInSlot(frameNum);
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
@@ -415,7 +422,11 @@ module CXScopedFloodP{
     }
   }
 
-
+  /**
+   * Receive packet and decide whether to drop it or forward it. For
+   * acknowledgments to packets which we sent, update return code to
+   * indicate ack was received.
+   */
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_id_t pType = call CXPacket.type(msg);
@@ -496,6 +507,8 @@ module CXScopedFloodP{
           ret = fwd_msg;
           fwd_msg = msg;
           fwd_len = len;
+          //TODO retx: avoid slot violation. 
+          //TODO flood_quench: account for ack:data ratio, too
           TXLeft = call TDMARoutingSchedule.maxRetransmit();
           isOrigin = FALSE;
           setState(S_DATA);

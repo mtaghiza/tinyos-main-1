@@ -141,6 +141,9 @@ module CXFloodP{
    */
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     printf_F_SCHED("f.ft %u", frameNum);
+    //TODO reliable burst: This should go through transport protocol
+    //The acks (cumulative or individual) will originate from
+    //transport layer, but not from the owner of the slot.
     if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
       printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
