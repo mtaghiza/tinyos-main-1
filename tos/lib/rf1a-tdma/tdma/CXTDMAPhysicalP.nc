@@ -73,10 +73,15 @@ module CXTDMAPhysicalP {
   };
 
   uint8_t state = S_OFF;
-
+  
+  //GpioCapture doesn't maintain this, we need it to differentiate
+  //between the start-of-packet capture and end-of-packet capture
   uint8_t captureMode = MSP430TIMER_CM_NONE;
-
+  
+  //current frame in cycle
   uint16_t frameNum;
+
+  //schedule variables
   uint32_t s_frameStart;
   uint32_t s_frameLen;
   uint16_t s_activeFrames;
@@ -87,18 +92,24 @@ module CXTDMAPhysicalP {
   uint8_t s_channel = TEST_CHANNEL;
   uint8_t s_isSynched = FALSE;
 
+  //persist capture timings for cases where it must be recorded in a
+  //later event
   uint32_t lastRECapture;
   uint32_t lastFECapture;
-  uint32_t lastFsa;
-  bool lastSentOrigin;
 
+  //used for latching stop command to prepare-frame-start alarms
   bool scStopPending;
   error_t scStopError;
 
+  //local buffer for received packets (swapped when signalling up)
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
-  uint8_t rx_count; 
 
+  //pointer to currently-outstanding transmission: set when packet
+  //retrieved from upper layer, cleared at sendDone from lower layer.
+  message_t* tx_msg;
+  
+  //variables for various reports
   uint16_t sendCount = 0;
   //all access is in interrupt context
   norace uint16_t receiveCount = 0;
@@ -111,10 +122,13 @@ module CXTDMAPhysicalP {
   uint8_t adjustmentCount = 0;
   #endif
 
-  message_t* tx_msg;
-  
+  //forward declarations
+  task void getPacketTask();
+  void completeCleanup();
+  task void signalStopDone();
   task void debugConfig();
-
+  
+  //pretty status-reporting
   const char* decodeStatus(){
     switch(call Rf1aStatus.get()){
       case RF1A_S_IDLE:
@@ -141,9 +155,6 @@ module CXTDMAPhysicalP {
         return "???";
     }
   }
-  task void debugConfig();
-  void completeCleanup();
-  task void signalStopDone();
 
   void printStatus(){
     printf("* Core: %s\r\n", decodeStatus());
@@ -153,14 +164,18 @@ module CXTDMAPhysicalP {
   task void printStatusTask(){
     printStatus();
   }
+  
 
+  //stop all timers: used at error or when shutting down the
+  //component.
   void stopTimers(){
     call PrepareFrameStartAlarm.stop();
     call FrameStartAlarm.stop();
     call FrameWaitAlarm.stop();
     call SynchCapture.disable();
   }
-
+ 
+  //convenience state manipulation functions
   bool checkState(uint8_t s){ atomic return (state == s); }
   void setState(uint8_t s){
     atomic {
@@ -189,41 +204,8 @@ module CXTDMAPhysicalP {
   bool inError(){
     atomic return (ERROR_MASK & state);
   }
-  
 
-  /**
-   *  S_OFF: off/not duty cycled
-   *    SplitControl.start / start capture + resource.request -> S_STARTING
-   *  Other: EALREADY
-  */ 
-  command error_t SplitControl.start(){
-    if (checkState(S_OFF)){
-      atomic{
-        captureMode = MSP430TIMER_CM_NONE;
-        call SynchCapture.disable();
-      }
-      setState(S_STARTING);
-//      printStatus();
-      return call Resource.request();
-    } else {
-      return EALREADY;
-    }
-  }
-
-  /**
-   *  S_STARTING: radio core starting up/calibrating
-   *   resource.granted / start timers  -> S_IDLE
-   */
-  event void Resource.granted(){
-    if (checkState(S_STARTING)){
-      setState(S_IDLE);
-//      printStatus();
-      post debugConfig();
-      s_sri = srIndex(s_sr);
-      signal SplitControl.startDone(SUCCESS);
-    }
-  }
-
+  //Reporting functions
   uint32_t reportNum;
 
   task void reportStats(){
@@ -262,11 +244,43 @@ module CXTDMAPhysicalP {
 ////    printf_RADIO_STATS("xt2Total\r\n");
 //    printf_RADIO_STATS("print (xt2Counted - xt2Total), xt2Counted, xt2Total\r\n");
 ////    lastReport = thisReport;
+  } 
+  
+  /***********************************
+     MAIN LOGIC BELOW
+   ***********************************/
+
+  /**
+   *  S_OFF: off/not duty cycled
+   *    SplitControl.start / start capture + resource.request -> S_STARTING
+   *  Other: EALREADY
+   */ 
+  command error_t SplitControl.start(){
+    if (checkState(S_OFF)){
+      atomic{
+        captureMode = MSP430TIMER_CM_NONE;
+        call SynchCapture.disable();
+      }
+      setState(S_STARTING);
+      return call Resource.request();
+    } else {
+      return EALREADY;
+    }
   }
 
-  uint32_t lastFsHandled; 
+  /**
+   *  S_STARTING: radio core starting up/calibrating
+   *   resource.granted / start timers  -> S_IDLE
+   */
+  event void Resource.granted(){
+    if (checkState(S_STARTING)){
+      setState(S_IDLE);
+      post debugConfig();
+      s_sri = srIndex(s_sr);
+      signal SplitControl.startDone(SUCCESS);
+    }
+  }
 
-  task void getPacketTask();
 
   /**
    *  S_IDLE: in the part of a frame where no data is expected.
@@ -520,6 +534,7 @@ module CXTDMAPhysicalP {
    */
   async event void FrameStartAlarm.fired(){
     error_t error;
+    uint32_t lastFsa;
 //    lastFsaHandled = call FrameStartAlarm.getNow();
 //    if(lastFsaHandled < call FrameStartAlarm.getAlarm()){
 //      printf_PFS_FREAKOUT("FS EARLY");
@@ -663,7 +678,7 @@ module CXTDMAPhysicalP {
       uint8_t curSN = call CXPacket.getScheduleNum(tx_msg);
       uint8_t mySN = signal TDMAPhySchedule.getScheduleNum();
       uint16_t curOF = call CXPacket.getOriginalFrameNum(tx_msg);
-      lastSentOrigin = amSource && isFirst;
+      bool lastSentOrigin = amSource && isFirst;
       //lastAlarm *should* be valid, AFAIK, since FSA is already set
       //up at this point.
       #if DEBUG_FEC == 1
@@ -825,18 +840,18 @@ module CXTDMAPhysicalP {
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
         txCaptureCount++;
-        if (lastSentOrigin){
-          //TODO: see if this holds constant across different nodes.
-          //   300 -> 301 -> 302 , originDelay = 0 retx2_noadjust.csv
-          //     1.0e-6  -1.7e-7
-          //   300 -> 301 -> 302 , originDelay = 7 retx2.csv
-          //     1.3e-7  7.3e-7
-          //   301 -> 300 -> 302 , originDelay = 7 retx2_swap.csv
-          //    -2.1e-7  1.0e-6
-          //   301 -> 300 -> 302 , originDelay = 0 retx2_swap_noadjust.csv
-          //    1.1e-6   1.2e-6
-          thisFrameStart += originDelays[s_sri];
-        }
+//        if (lastSentOrigin){
+//          //TODO: see if this holds constant across different nodes.
+//          //   300 -> 301 -> 302 , originDelay = 0 retx2_noadjust.csv
+//          //     1.0e-6  -1.7e-7
+//          //   300 -> 301 -> 302 , originDelay = 7 retx2.csv
+//          //     1.3e-7  7.3e-7
+//          //   301 -> 300 -> 302 , originDelay = 7 retx2_swap.csv
+//          //    -2.1e-7  1.0e-6
+//          //   301 -> 300 -> 302 , originDelay = 0 retx2_swap_noadjust.csv
+//          //    1.1e-6   1.2e-6
+//          thisFrameStart += originDelays[s_sri];
+//        }
         resynchFrameStart = thisFrameStart;
 //        call PrepareFrameStartAlarm.startAt(thisFrameStart, s_frameLen - PFS_SLACK);
 //        call FrameStartAlarm.startAt(thisFrameStart, s_frameLen);
