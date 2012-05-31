@@ -100,7 +100,8 @@ module CXTDMAPhysicalP {
   uint8_t rx_count; 
 
   uint16_t sendCount = 0;
-  uint16_t receiveCount = 0;
+  //all access is in interrupt context
+  norace uint16_t receiveCount = 0;
   uint16_t rxCaptureCount = 0;
   uint16_t txCaptureCount = 0;
 
@@ -915,11 +916,18 @@ module CXTDMAPhysicalP {
     printf_RADIO_STATS("CRC PASSED\r\n");
   }
 
-  am_addr_t reportRXSrc;
-  uint32_t reportRXSn;
+  norace am_addr_t reportRXSrc;
+  norace uint32_t reportRXSn;
+
   task void reportRX(){
-    if (reportRXSrc == 0){
-      printf("RX %u %lu\r\n", reportRXSrc, reportRXSn);
+    am_addr_t tempRXSrc;
+    uint32_t tempRXSn;
+    atomic {
+      tempRXSrc = reportRXSrc;
+      tempRXSn = reportRXSn;
+    }
+    if (tempRXSrc == 0){
+      printf("RX %u %lu\r\n", tempRXSrc, tempRXSn);
     }
   }
   
@@ -986,8 +994,6 @@ module CXTDMAPhysicalP {
           receiveCount++;
           printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{
-            //TODO: check long atomic
-
             //Nope, this is done during the TX process.
   //          call CXPacket.setCount((message_t*)buffer, 
   //            call CXPacket.count((message_t*)buffer) +1);

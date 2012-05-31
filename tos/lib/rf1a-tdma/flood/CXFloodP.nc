@@ -67,13 +67,17 @@ module CXFloodP{
   //of async accesses to it. Done like this, all of our interaction
   //with the pool can be done in the task context.
   message_t fwd_msg_internal;
-  message_t* fwd_msg = &fwd_msg_internal;
-  uint8_t fwd_len;
+  norace message_t* fwd_msg = &fwd_msg_internal;
+  //TODO CLEANUP: this should be removed/replaced with a call to the packet metadata
+  norace uint8_t fwd_len;
   
   bool rxOutstanding;
 
   //distinguish between tx_msg and fwd_msg
-  bool isOrigin;
+  //when this is set, it's in atomic context (during cleanup) or during the frameType
+  //async event. We check it just at the getPacket, which will never
+  //intersect with either of these times, if all is well.
+  norace bool isOrigin;
 
   void setState(uint8_t s){
     printf_F_STATE("(%x->%x)\r\n", state, s);
@@ -217,24 +221,25 @@ module CXFloodP{
 
   task void reportReceive(){
     printf_TMP("RR");
-    if (rxOutstanding){
-      printf_TMP("O");
-      //TODO: should we update the routing table? or should we
-      //reserve that space for scoped floods, which may request
-      //future routing explicitly?
-      if ( ! call Pool.empty()){
-        printf_TMP("S\r\n");
-        call Queue.enqueue(fwd_msg);
-        fwd_msg = call Pool.get();
-        post signalReceive();
-        rxOutstanding = FALSE;
+    atomic{
+      if (rxOutstanding){
+        printf_TMP("O");
+        if ( ! call Pool.empty()){
+          printf_TMP("S\r\n");
+          atomic{
+            call Queue.enqueue(fwd_msg);
+            fwd_msg = call Pool.get();
+          }
+          post signalReceive();
+          rxOutstanding = FALSE;
+        }else{
+          printf("!Message Pool empty\r\n");
+          //try again momentarily, hopefully it frees up soon.
+          post reportReceive();
+        }
       }else{
-        printf("!Message Pool empty\r\n");
-        //try again momentarily, hopefully it frees up soon.
-        post reportReceive();
+        printf_TMP("~O\r\n");
       }
-    }else{
-      printf_TMP("~O\r\n");
     }
   }
 
