@@ -1,0 +1,4 @@
+#include linker scripts that fake a larger ROM size for cc430f5137
+#This is useful if your binary is too big, but you don't know how much
+# space you need to cut to fit it in.
+LDFLAGS+= -L $(TOSDIR)/lib/baconxl/ldscripts
