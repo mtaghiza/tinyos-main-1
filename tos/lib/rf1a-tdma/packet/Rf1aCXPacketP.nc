@@ -105,20 +105,30 @@ module Rf1aCXPacketP{
             call CXPacket.destination(amsg) == AM_BROADCAST_ADDR);
   }
 
-  command am_id_t CXPacket.type(message_t* amsg){
+  command uint8_t CXPacket.getNetworkProtocol(message_t* amsg){
+    return getHeader(amsg)->nProto;
+  }
+  command void CXPacket.setNetworkProtocol(message_t* amsg,
+      uint8_t t){
+    getHeader(amsg)->nProto = t;
+  }
+
+  command uint8_t CXPacket.type(message_t* amsg){
     return getHeader(amsg)->type;
   }
-  command void CXPacket.setType(message_t* amsg, am_id_t t){
+  command void CXPacket.setType(message_t* amsg,
+      uint8_t t){
     getHeader(amsg)->type = t;
   }
 
-  command uint8_t CXPacket.getRoutingMethod(message_t* amsg){
-    return getHeader(amsg)->routingMethod;
+  command uint8_t CXPacket.getTransportProtocol(message_t* amsg){
+    return getHeader(amsg)->tProto;
   }
-  command void CXPacket.setRoutingMethod(message_t* amsg,
+  command void CXPacket.setTransportProtocol(message_t* amsg,
       uint8_t t){
-    getHeader(amsg)->routingMethod = t;
+    getHeader(amsg)->tProto = t;
   }
+
 
   command uint32_t CXPacket.getTimestamp(message_t* amsg){
     return getHeader(amsg)->timestamp;

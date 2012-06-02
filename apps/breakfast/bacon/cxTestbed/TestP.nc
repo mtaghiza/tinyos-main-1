@@ -23,7 +23,7 @@ module TestP {
   uses interface Rf1aPacket;
   uses interface CXPacketMetadata;
 
-  uses interface Send;
+  uses interface AMSend;
   uses interface Receive;
 
   uses interface Leds;
@@ -132,10 +132,10 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
+//    call CXPacket.setDestination(tx_msg, AM_BROADCAST_ADDR);
     pl -> sn ++;//= (1+TOS_NODE_ID);
     //TODO: where should am header be accounted for?
-    error = call Send.send(tx_msg, sizeof(test_packet_t) +
+    error = call AMSend.send(AM_BROADCAST_ADDR, tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
     if (SUCCESS == error){
       sending = TRUE;
@@ -147,9 +147,8 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call CXPacket.setDestination(tx_msg, 0);
     pl -> sn ++;//= (1+TOS_NODE_ID);
-    error = call Send.send(tx_msg, sizeof(test_packet_t) +
+    error = call AMSend.send(0, tx_msg, sizeof(test_packet_t) +
       sizeof(rf1a_nalp_am_t));
     if (SUCCESS == error){
       sending = TRUE;
@@ -168,15 +167,15 @@ module TestP {
   }
 
 
-  event void Send.sendDone(message_t* msg, error_t error){
+  event void AMSend.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
     sending = FALSE;
     printf_APP("TX s: %u d: %u sn: %u rm: %u pr: %u e: %u\r\n",
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
-      (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
-      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
+      (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
+      ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
       error);
     if (packetQueue){
       packetQueue--;

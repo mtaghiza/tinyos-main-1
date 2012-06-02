@@ -3,15 +3,15 @@
  #include "TimingConstants.h"
 module NonRootSchedulerP{
   provides interface SplitControl;
-  provides interface TDMARoutingSchedule[uint8_t rm];
+  provides interface TDMARoutingSchedule;
   uses interface FrameStarted;
 
   uses interface SplitControl as SubSplitControl;
   uses interface TDMAPhySchedule;
 
-  uses interface Send as AnnounceSend;
+  uses interface AMSend as AnnounceSend;
   uses interface Receive as AnnounceReceive;
-  uses interface Send as ReplySend;
+  uses interface AMSend as ReplySend;
   uses interface Receive as ReplyReceive;
 
   uses interface Packet;
@@ -149,7 +149,6 @@ module NonRootSchedulerP{
     uint32_t rxTS;
     uint32_t curRootStart;
     uint16_t rxFrameNum;
-    printf_TMP("AR.r: %p %p %u\r\n", msg, payload, len);
     printf_SCHED("AR.r ");
     printf_SCHED_RXTX("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
       call CXPacket.source(msg),
@@ -169,7 +168,6 @@ module NonRootSchedulerP{
     curRootStart = call CXPacket.getTimestamp(msg);
 
     if (pl->scheduleNum == curSched->scheduleNum){
-      printf_TMP("NEW\r\n");
       printf_SCHED("s");
       if(lastRxTS != 0){
         uint8_t i;
@@ -238,7 +236,12 @@ module NonRootSchedulerP{
       return msg; 
     } else {
       message_t* swp = curMsg;
-      printf_TMP("REPEAT\r\n");
+      uint8_t i;
+//      printf_TMP("RXS %p ", msg);
+//      for (i=0; i < sizeof(message_t); i++){
+//        printf_TMP("%2X ", ((uint8_t*) msg)[i]);
+//      }
+//      printf_TMP("\r\n");
       printf_SCHED("n\r\n");
       changePending = TRUE;
       lastRxTS = rxTS;
@@ -252,6 +255,8 @@ module NonRootSchedulerP{
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
       curSchedDescriptor = &SCHEDULES[curSched->scheduleId];
+      printf_TMP("RXS %x %x %x\r\n", curSched->scheduleNum,
+        curSched->symbolRate, curSched->scheduleId);
       printf_TESTBED_SCHED_NEW("S %u\r\n", 
         call CXPacketMetadata.getReceivedCount(msg));
       printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
@@ -267,7 +272,8 @@ module NonRootSchedulerP{
     cx_schedule_reply_t* reply = 
       (cx_schedule_reply_t*)call ReplySend.getPayload(replyMsg, sizeof(cx_schedule_reply_t));
     reply->scheduleNum = curSched->scheduleNum;
-    error = call ReplySend.send(replyMsg, sizeof(replyMsg) +
+    //TODO: should be rootId?
+    error = call ReplySend.send(0, replyMsg, sizeof(replyMsg) +
       sizeof(rf1a_nalp_am_t));
     if (SUCCESS == error){
       printf_SCHED_SR("ReplySend.send OK\r\n");
@@ -353,8 +359,8 @@ module NonRootSchedulerP{
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
-      (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
-      ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
+      (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
+      ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
       error);
 
     if (startPending){
@@ -412,34 +418,36 @@ module NonRootSchedulerP{
     return curSched->scheduleNum;
   }
 
-  //we are origin if reply needed and this is the start of our slot.
-  async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-    printf_SCHED_IO("io: ");
-    if ((rm == CX_RM_FLOOD) 
-        && replyPending 
-        && (frameNum == (TOS_NODE_ID * (curSchedDescriptor->framesPerSlot)))){
-      printf_SCHED_IO("T\r\n");
-      return TRUE;
-    }else{
-      printf_SCHED_IO("F\r\n");
-      return FALSE;
-    }
-  }
+//  //we are origin if reply needed and this is the start of our slot.
+//  async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
+//    printf_SCHED_IO("io: ");
+//    if ((rm == CX_RM_FLOOD) 
+//        && replyPending 
+//        && (frameNum == (TOS_NODE_ID * (curSchedDescriptor->framesPerSlot)))){
+//      printf_SCHED_IO("T\r\n");
+//      return TRUE;
+//    }else{
+//      printf_SCHED_IO("F\r\n");
+//      return FALSE;
+//    }
+//  }
 
-  async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
+  async command bool TDMARoutingSchedule.isSynched(uint16_t frameNum){
     return isSynched;
   }
 
-  async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
+  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
 //    printf_SCHED("nrs.mr\r\n");
     return curSchedDescriptor->maxRetransmit;
   }
-  async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
+  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return curSchedDescriptor->framesPerSlot;
   }
-  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId,
-      uint16_t frameNum){
-    printf("WRONG OWNSFRAME\r\n");
+  async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
+    return call TDMARoutingSchedule.framesPerSlot() 
+      - (frameNum % (call TDMARoutingSchedule.framesPerSlot()));
+  }
+  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
     return FALSE;
   }
   //unused

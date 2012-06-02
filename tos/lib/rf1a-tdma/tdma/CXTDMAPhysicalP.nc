@@ -25,6 +25,7 @@ module CXTDMAPhysicalP {
   uses interface Rf1aStatus;
 
   uses interface Rf1aPacket;
+  //needed to set metadata fields of received packets
   uses interface Packet;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
@@ -239,7 +240,6 @@ module CXTDMAPhysicalP {
       //if there are n active frames, then frameNum n-1 is the last to
       //have data in it. so, we go to sleep at this point.
       if (frameNum == s_activeFrames){
-//        printf_BF("sleep\r\n");
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           call FrameWaitAlarm.stop();
@@ -256,10 +256,7 @@ module CXTDMAPhysicalP {
         post reportStats();
       //wake up radio when we come around the bend.
       } else if (frameNum == 0 ){
-//        printf_BF("wakeup\r\n");
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-//          printf("fs@ %lu + %lu\r\n", call PrepareFrameStartAlarm.getAlarm(), PFS_SLACK);
-//          printf_BF("fs0\r\n");
           call FrameStartAlarm.startAt(
             call PrepareFrameStartAlarm.getAlarm(), 
             PFS_SLACK);
@@ -494,7 +491,6 @@ module CXTDMAPhysicalP {
       //jitter.
       if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
         printf_PFS_FREAKOUT("FS EARLY");
-        printf_BF("fs1\r\n");
         call FrameStartAlarm.startAt(
           call FrameStartAlarm.getAlarm() - s_frameLen, 
           s_frameLen);
@@ -524,7 +520,6 @@ module CXTDMAPhysicalP {
     //0.5 uS
     FS_TOGGLE_PIN;
     if (! inError()){
-//      printf_BF("fs2\r\n");
       call FrameStartAlarm.startAt(lastFsa,
         s_frameLen 
         + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
@@ -656,9 +651,6 @@ module CXTDMAPhysicalP {
           - fsDelays[s_sri];
 //          - tuningDelays[s_sri];
         rxCaptureCount++;
-        printf_BF("delta: %ld \r\n", 
-          thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen)
-          );
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
@@ -980,7 +972,6 @@ module CXTDMAPhysicalP {
         delta = call PrepareFrameStartAlarm.getNow();
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
-//        printf_BF("fs3\r\n");
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
   

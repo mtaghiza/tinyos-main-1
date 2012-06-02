@@ -1,6 +1,8 @@
 #ifndef TEST_H
 #define TEST_H
 
+#define AM_ID_CX_TESTBED 0xdc
+
 #ifndef DEBUG_APP
 #define DEBUG_APP 0
 #endif
@@ -15,6 +17,12 @@
 #define printf_TEST_QUEUE(...) printf(__VA_ARGS__)
 #else
 #define printf_TEST_QUEUE(...) 
+#endif
+
+#if DEBUG_TMP == 1
+#define printf_TMP(...) printf(__VA_ARGS__)
+#else
+#define printf_TMP(...) 
 #endif
 
 #ifndef TEST_IPI

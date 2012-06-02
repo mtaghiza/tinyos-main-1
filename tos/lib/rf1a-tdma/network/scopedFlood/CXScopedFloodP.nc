@@ -8,11 +8,12 @@ module CXScopedFloodP{
   provides interface Receive[am_id_t t];
 
   uses interface CXPacket;
-  uses interface AMPacket;
-  //Payload: body of CXPacket
+  //Payload: body of CXPacket (a.k.a. header of AM packet, if it's AM
+  //data)
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
+  uses interface CXTransportSchedule[uint8_t tProto];
   uses interface Resource;
 
   uses interface CXRoutingTable;
@@ -20,6 +21,8 @@ module CXScopedFloodP{
   uses interface Queue<message_t*>;
   uses interface Pool<message_t>;
 } implementation {
+
+  #define ACKS_PER_DATA 2
   enum{
     S_IDLE = 0x00,
 
@@ -105,23 +108,13 @@ module CXScopedFloodP{
     state = s;
   }
 
-  //TODO: this should maybe come direct from Routing schedule instead
-  //of being computed here
-  uint16_t leftInSlot(uint16_t frameNum){
-    uint16_t fps = call TDMARoutingSchedule.framesPerSlot();
-    //left-in-slot: call TDMARoutingSchedule.framesPerSlot() - frameNum%(call TDMARoutingSchedule.framesPerSlot())
-    return fps - frameNum%fps;
-  }
-  
-
   /**
    * Distinguish data and ack frames from each other (so that
    * getPacket knows what to provide)
    */
   bool isDataFrame(uint16_t frameNum){
-    //TODO flood_quench: Unhardcode data:ack ratio
     uint16_t localF = frameNum % (call TDMARoutingSchedule.framesPerSlot());
-    return ((localF%3) == 0);
+    return ((localF%ACKS_PER_DATA) == 0);
   }
   bool isAckFrame(uint16_t frameNum){
     return ! isDataFrame(frameNum);
@@ -136,11 +129,10 @@ module CXScopedFloodP{
         origin_data_msg = msg;
         origin_data_len = len + sizeof(cx_header_t);
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, t);
-        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
+        call CXPacket.setTransportProtocol(msg, t);
         //preserve pre-routed bit
-        call CXPacket.setRoutingMethod(msg, 
-          ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)
+        call CXPacket.setNetworkProtocol(msg, 
+          ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)
           | CX_RM_SCOPEDFLOOD);
         originDataPending = TRUE;
         return SUCCESS;
@@ -199,15 +191,18 @@ module CXScopedFloodP{
       }
     }
 
-    if (originDataPending && call TDMARoutingSchedule.isOrigin(frameNum)){
-      if (!isDataFrame(frameNum)){
-        printf("!origin but non-data frame %u\r\n", frameNum);
-      }
+    if (originDataPending 
+        && isDataFrame(frameNum) 
+        && call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(origin_data_msg)](frameNum)){
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
         if (SUCCESS == call Resource.immediateRequest()){
-          TXLeft = call TDMARoutingSchedule.maxRetransmit();
+          uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+          uint16_t dataFramesLeft = 
+            call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
+            (ACKS_PER_DATA + 1);
+          TXLeft = (mr < dataFramesLeft)? mr : dataFramesLeft;
           lastDataSrc = TOS_NODE_ID;
           lastDataSn = call CXPacket.sn(origin_data_msg);
           setState(S_DATA);
@@ -299,7 +294,7 @@ module CXScopedFloodP{
       //TODO: check long atomic
       originDataPending = FALSE;
       originDataSent = FALSE;
-      signal Send.sendDone[call CXPacket.type(origin_data_msg)](origin_data_msg, sendDoneError);
+      signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
       call Resource.release();
       setState(S_IDLE);
     }
@@ -320,7 +315,7 @@ module CXScopedFloodP{
         //assumption about the network diameter, then this (+ ack:data
         //ratio) will tell us how many frames we need to sit around
         //for.
-        waitLeft = leftInSlot(frameNum);
+        waitLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
         post routeUpdate();
@@ -328,7 +323,7 @@ module CXScopedFloodP{
           //if the data we sent was pre-routed, we're done right
           //now. Might be good to wait for another frame for anything
           //left to clear.
-          if ( call CXPacket.getRoutingMethod(origin_data_msg) & CX_RM_PREROUTED){
+          if ( call CXPacket.getNetworkProtocol(origin_data_msg) & CX_RM_PREROUTED){
             post signalSendDone();
           } else { 
             //otherwise, we have to wait for the air to clear.
@@ -394,15 +389,17 @@ module CXScopedFloodP{
 
         call CXPacket.init(origin_ack_msg);
         call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
-        call CXPacket.setRoutingMethod(origin_ack_msg, CX_RM_SCOPEDFLOOD);
+        call CXPacket.setNetworkProtocol(origin_ack_msg, CX_RM_SCOPEDFLOOD);
         call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
+        call CXPacket.setTransportProtocol(origin_ack_msg, 
+          call CXPacket.getTransportProtocol(rx_msg));
         call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
         ack -> src = call CXPacket.source(rx_msg);
         ack -> sn  = call CXPacket.sn(rx_msg);
         ack -> depth = call CXPacket.count(rx_msg);
 //        printf_BF("su ack: %x %u %u\r\n", ack->src, ack->sn, ack->depth);
         isOrigin = TRUE;
-        TXLeft = call TDMARoutingSchedule.maxRetransmit();
+
         //TODO: I am worried that this isn't running before getPacket
         //tries to get the origin ack.
 
@@ -413,7 +410,7 @@ module CXScopedFloodP{
         ruDistance = ruSrcDepth;
         routeUpdatePending = TRUE;
 
-        rx_msg = signal Receive.receive[call CXPacket.type(rx_msg)](
+        rx_msg = signal Receive.receive[call CXPacket.getTransportProtocol(rx_msg)](
           rx_msg, 
           call LayerPacket.getPayload(rx_msg, rx_len- sizeof(cx_header_t)),
           rx_len - sizeof(cx_header_t));
@@ -442,14 +439,16 @@ module CXScopedFloodP{
       //duplicate, or non-synched, drop it.
       return msg;
     }
-    if (pType == CX_TYPE_DATA && ! call TDMARoutingSchedule.ownsFrame(src, frameNum)) {
-      printf_SF_SV("SV SF D %u %u\r\n", src, frameNum);
-      return msg;
-    } else if (pType== CX_TYPE_ACK && ! call TDMARoutingSchedule.ownsFrame(dest, frameNum)){
-      printf_SF_SV("SV SF A %u %u\r\n", dest, frameNum);
-      return msg;
-    }
-           
+//TODO: Slot violations should be preemptively stopped by setting
+//txLeft to an appropriate value.
+//    if (pType == CX_TYPE_DATA && ! call TDMARoutingSchedule.ownsFrame(src, frameNum)) {
+//      printf_SF_SV("SV SF D %u %u\r\n", src, frameNum);
+//      return msg;
+//    } else if (pType== CX_TYPE_ACK && ! call TDMARoutingSchedule.ownsFrame(dest, frameNum)){
+//      printf_SF_SV("SV SF A %u %u\r\n", dest, frameNum);
+//      return msg;
+//    }
+//           
     if (state == S_IDLE){
       if ( ! call TDMARoutingSchedule.isSynched(frameNum)){
         printf_SF_RX("~s\r\n");
@@ -460,7 +459,7 @@ module CXScopedFloodP{
 
       printf_SF_RX("i");
       //drop pre-routed packets for which we aren't on a route.
-      if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
+      if (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED){
         bool isBetween;
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
@@ -494,6 +493,11 @@ module CXScopedFloodP{
 
         //for me: save it for RX and prepare to send ack.
         if (dest == TOS_NODE_ID){
+          uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+          uint16_t ackFramesLeft = 
+            (call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
+            (ACKS_PER_DATA + 1)) * ACKS_PER_DATA;
+          TXLeft = (mr < ackFramesLeft)?mr:ackFramesLeft;
           printf_SF_RX("M");
           ret = rx_msg;
           rx_msg = msg;
@@ -502,14 +506,18 @@ module CXScopedFloodP{
           setState(S_ACK_PREPARE);
         //not for me: forward it.
         }else {
+          uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+          uint16_t dataFramesLeft = 
+            call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
+            (ACKS_PER_DATA + 1);
           printf_SF_ROUTE("D %u %u %u\r\n", src, dest, frameNum);
           printf_SF_RX("f");
           ret = fwd_msg;
           fwd_msg = msg;
           fwd_len = len;
-          //TODO retx: avoid slot violation. 
-          //TODO flood_quench: account for ack:data ratio, too
-          TXLeft = call TDMARoutingSchedule.maxRetransmit();
+          //data packet: if there are n framesLeft, dataFramesLeft is
+          //n/3.
+          TXLeft = (mr < dataFramesLeft)? mr : dataFramesLeft;
           isOrigin = FALSE;
           setState(S_DATA);
         }
@@ -542,12 +550,16 @@ module CXScopedFloodP{
         printf_SF_RX("a");
         if ( (ack->src == lastDataSrc) && (ack->sn == lastDataSn) ){
           message_t* ret = fwd_msg;
+          uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+          uint16_t ackFramesLeft = 
+            (call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
+            (ACKS_PER_DATA + 1)) * ACKS_PER_DATA;
           lastAckSrc = src;
           lastAckSn = sn;
           printf_SF_RX("m");
           fwd_msg = msg;
           fwd_len = len;
-          TXLeft = call TDMARoutingSchedule.maxRetransmit();
+          TXLeft = (mr < ackFramesLeft)?mr:ackFramesLeft;
           
           //record routing information (our distance from the ack
           //  origin, src->dest distance)
@@ -604,4 +616,8 @@ module CXScopedFloodP{
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
 
+  default async command bool CXTransportSchedule.isOrigin[uint8_t
+  tProto](uint16_t frameNum){ 
+    return FALSE;
+  }
 }

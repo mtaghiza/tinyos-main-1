@@ -60,14 +60,17 @@ CFLAGS += -I../../util/crc
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/tdma
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/flood
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/scopedFlood
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/flood
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/scopedFlood
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/simpleFlood
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/aodv
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical/configs
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/routing
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/aodv
 
 CX_RADIO_LOGGING?=0
 CFLAGS+=-DCX_RADIO_LOGGING=$(CX_RADIO_LOGGING)
@@ -214,6 +217,8 @@ DEBUG_APP?=1
 CFLAGS += -DDEBUG_APP=$(DEBUG_APP)
 DEBUG_TEST_QUEUE?=0
 CFLAGS += -DDEBUG_TEST_QUEUE=$(DEBUG_TEST_QUEUE)
+DEBUG_TMP?=1
+CFLAGS += -DDEBUG_TMP=$(DEBUG_TMP)
 
 #FECDebug.h
 DEBUG_FEC?=0

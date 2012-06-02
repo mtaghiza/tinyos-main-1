@@ -9,40 +9,40 @@ module CXTDMADispatchP{
   uses interface CXPacket;
   uses interface CXPacketMetadata;
 
-  provides interface Resource[uint8_t routingMethod];
-  uses interface Resource as SubResource[uint8_t routingMethod];
+  provides interface Resource[uint8_t NetworkProtocol];
+  uses interface Resource as SubResource[uint8_t NetworkProtocol];
 } implementation {
   uint16_t lastFrame;
 
-  async command error_t Resource.request[uint8_t routingMethod](){
+  async command error_t Resource.request[uint8_t NetworkProtocol](){
     #ifdef DEBUG_TESTBED_RESOURCE
-    printf_TESTBED_RESOURCE("R.q %x %u\r\n", routingMethod, lastFrame);
+    printf_TESTBED_RESOURCE("R.q %x %u\r\n", NetworkProtocol, lastFrame);
     #endif
-    return  call SubResource.request[routingMethod]();
+    return  call SubResource.request[NetworkProtocol]();
   }
-  async command error_t Resource.immediateRequest[uint8_t routingMethod](){
+  async command error_t Resource.immediateRequest[uint8_t NetworkProtocol](){
     #ifdef DEBUG_TESTBED_RESOURCE
-    printf_TESTBED_RESOURCE("R.ir %x %u\r\n", routingMethod, lastFrame);
+    printf_TESTBED_RESOURCE("R.ir %x %u\r\n", NetworkProtocol, lastFrame);
     #endif
-    return call SubResource.immediateRequest[routingMethod]();
+    return call SubResource.immediateRequest[NetworkProtocol]();
   }
-  event void SubResource.granted[uint8_t routingMethod](){
+  event void SubResource.granted[uint8_t NetworkProtocol](){
     #ifdef DEBUG_TESTBED_RESOURCE
-    printf_TESTBED_RESOURCE("R.g %x %u\r\n", routingMethod, lastFrame);
+    printf_TESTBED_RESOURCE("R.g %x %u\r\n", NetworkProtocol, lastFrame);
     #endif
-    signal Resource.granted[routingMethod]();
+    signal Resource.granted[NetworkProtocol]();
   }
-  async command error_t Resource.release[uint8_t routingMethod](){
+  async command error_t Resource.release[uint8_t NetworkProtocol](){
     #ifdef DEBUG_TESTBED_RESOURCE
-    printf_TESTBED_RESOURCE("R.r %x %u\r\n", routingMethod, lastFrame);
+    printf_TESTBED_RESOURCE("R.r %x %u\r\n", NetworkProtocol, lastFrame);
     #endif
-    return call SubResource.release[routingMethod]();
+    return call SubResource.release[NetworkProtocol]();
   }
-  async command bool Resource.isOwner[uint8_t routingMethod](){
+  async command bool Resource.isOwner[uint8_t NetworkProtocol](){
     #ifdef DEBUG_TESTBED_RESOURCE
-    printf_TESTBED_RESOURCE("R.o %x %u\r\n", routingMethod, lastFrame);
+    printf_TESTBED_RESOURCE("R.o %x %u\r\n", NetworkProtocol, lastFrame);
     #endif
-    return call SubResource.isOwner[routingMethod]();
+    return call SubResource.isOwner[NetworkProtocol]();
   }
 
   async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
@@ -151,7 +151,7 @@ module CXTDMADispatchP{
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
 //    uint8_t i;
-//    printf("RM %x: ", call CXPacket.getRoutingMethod(msg));
+//    printf("RM %x: ", call CXPacket.getNetworkProtocol(msg));
 //    for (i =0 ; i< TOSH_DATA_LENGTH + sizeof(message_header_t); i++){
 //      printf("%02X ", ((uint8_t*)msg)[i]);
 //    }
@@ -164,7 +164,7 @@ module CXTDMADispatchP{
         depthFrom()[call CXPacket.source(msg)], 
         call CXPacketMetadata.getReceivedCount(msg));
       #endif
-      return signal CXTDMA.receive[ call CXPacket.getRoutingMethod(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
+      return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
     } else {
       #if SW_TOPO == 1
       printf_SW_TOPO("DROP %u (%u) %u \r\n", 
@@ -175,19 +175,19 @@ module CXTDMADispatchP{
       return msg;
     }
   }
-  default event void Resource.granted[uint8_t routingMethod](){
+  default event void Resource.granted[uint8_t NetworkProtocol](){
   }
-  default async event rf1a_offmode_t CXTDMA.frameType[uint8_t routingMethod](uint16_t frameNum){
+  default async event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
     return RF1A_OM_RX;
   }
-  default async event bool CXTDMA.getPacket[uint8_t routingMethod](message_t** msg, uint8_t* len,
+  default async event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, uint8_t* len,
       uint16_t frameNum){ return FALSE;}
-  default async event void CXTDMA.sendDone[uint8_t routingMethod](message_t* msg, uint8_t len,
+  default async event void CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){}
 
-  default async event message_t* CXTDMA.receive[uint8_t routingMethod](message_t* msg, uint8_t len,
+  default async event message_t* CXTDMA.receive[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    printf("Unexpected RM %x: ", routingMethod);
+    printf("Unexpected RM %x: ", NetworkProtocol);
     return msg;
   }
 

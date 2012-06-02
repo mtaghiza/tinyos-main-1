@@ -4,15 +4,15 @@
 
 module RootSchedulerP{
   provides interface SplitControl;
-  provides interface TDMARoutingSchedule[uint8_t rm];
+  provides interface TDMARoutingSchedule;
   uses interface FrameStarted;
 
   uses interface SplitControl as SubSplitControl;
   uses interface TDMAPhySchedule;
 
-  uses interface Send as AnnounceSend;
+  uses interface AMSend as AnnounceSend;
   uses interface Receive as AnnounceReceive;
-  uses interface Send as ReplySend;
+  uses interface AMSend as ReplySend;
   uses interface Receive as ReplyReceive;
 
   uses interface Packet;
@@ -145,13 +145,15 @@ module RootSchedulerP{
     if (state == S_BASELINE || state == S_ADJUSTING 
         || state == S_FINALIZING || state == S_RESETTING 
         || state == S_ESTABLISHED){
-      //TODO: size, come on. the worst.
-      error_t error = call AnnounceSend.send(next_schedule_msg,
-          sizeof(cx_schedule_t) + sizeof(rf1a_nalp_am_t));
+      error_t error = call AnnounceSend.send(AM_BROADCAST_ADDR, 
+        next_schedule_msg,
+        sizeof(cx_schedule_t)); 
       if (SUCCESS == error){
         cx_schedule_t* ns = (cx_schedule_t*)(call
           Packet.getPayload(next_schedule_msg,
           sizeof(cx_schedule_t)));
+        printf_TMP("TXS: %x %x %x\r\n", ns->scheduleNum,
+          ns->symbolRate, ns->scheduleId);
         printf_SCHED("Announce Sending %p sn %u sr %u\r\n", 
           next_schedule_msg,
           ns->scheduleNum,
@@ -175,8 +177,8 @@ module RootSchedulerP{
         TOS_NODE_ID,
         call CXPacket.destination(msg),
         call CXPacket.sn(msg),
-        (call CXPacket.getRoutingMethod(msg)) & ~CX_RM_PREROUTED,
-        ((call CXPacket.getRoutingMethod(msg)) & CX_RM_PREROUTED)?1:0,
+        (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
+        ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
         error);
 
       if (state == S_BASELINE || state == S_ADJUSTING 
@@ -328,32 +330,40 @@ module RootSchedulerP{
     return 0;
   }
 
-  async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
+  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return curScheduleDescriptor->framesPerSlot;
   }
 
-  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId, uint16_t frameNum){
-    printf("WRONG OWNSFRAME\r\n");
-    return FALSE;
+  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
+    //TODO: this should be flexible enough to allow root to have
+    //multiple slots.
+    return (frameNum <= call TDMARoutingSchedule.framesPerSlot());
   }
   
-  //as root: we are origin for floods during frame 0. Other frames?
-  //defer to AODV.
-  async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-    if (frameNum == 0 && rm == CX_RM_FLOOD){
-      return TRUE;
-    }else {
-      return FALSE;
-    }
-  }
+//  //as root: we are origin for floods during frame 0. Other frames?
+//  //defer to AODV.
+//  async command bool TDMARoutingSchedule.isOrigin(uint16_t frameNum){
+//    //TODO: router gets slot 0, and should also be allowed at least
+//    //one other one (or just any unassigned slots.)
+//    if (frameNum == 0){ //&& rm == CX_RM_FLOOD){
+//      return TRUE;
+//    }else {
+//      return FALSE;
+//    }
+//  }
   
   //always in synch, so ok to forward.
-  async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
+  async command bool TDMARoutingSchedule.isSynched(uint16_t frameNum){
     return TRUE;
   }
 
-  async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
+  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
     return curScheduleDescriptor->maxRetransmit;
+  }
+
+  async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
+    return call TDMARoutingSchedule.framesPerSlot() 
+      - (frameNum % (call TDMARoutingSchedule.framesPerSlot()));
   }
   
   am_addr_t rrSource;

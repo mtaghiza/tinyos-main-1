@@ -1,3 +1,5 @@
+#include "Rf1a.h"
+
 interface CXTDMA{
   async event rf1a_offmode_t frameType(uint16_t frameNum);
 

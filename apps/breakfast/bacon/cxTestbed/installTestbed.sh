@@ -23,7 +23,7 @@ ipi=5120UL
 queueThreshold=2
 
 #network/schedule params
-fps=5
+fps=20
 md=10
 mr=1
 
@@ -129,7 +129,7 @@ done
 
 maxNodes=$(grep -v '#' $root $nonrootRx $nonrootTx | awk '{print $NF}' | sort -n | tail -1)
 
-scheduleOptions="DEBUG_SCALE=${debugScale}UL TA_DIV=1UL  TDMA_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 TDMA_MAX_DEPTH=${md}UL TDMA_MAX_NODES=$maxNodes TDMA_ROOT_FRAMES_PER_SLOT=$fps TDMA_MAX_RETRANSMIT=${mr}UL"
+scheduleOptions="DEBUG_SCALE=${debugScale}UL TA_DIV=1UL TDMA_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 TDMA_MAX_DEPTH=${md}UL TDMA_MAX_NODES=$(($maxNodes + 2)) TDMA_ROOT_FRAMES_PER_SLOT=$fps TDMA_MAX_RETRANSMIT=${mr}UL"
 
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 
@@ -174,7 +174,7 @@ if [ "$nonrootTx" != "" ]
 then
   ./burn $nonrootTx \
       TDMA_ROOT=0 IS_SENDER=1 \
-      DEBUG_AODV_STATE=$txAodvState $commonOptions
+      DEBUG_AODV_STATE=$txAodvState $commonOptions 
 fi
 
 if [ "$root" != "" ]

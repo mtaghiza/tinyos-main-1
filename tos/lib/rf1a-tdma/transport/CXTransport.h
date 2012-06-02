@@ -1,0 +1,7 @@
+#ifndef CX_TRANSPORT_H
+#define CX_TRANSPORT_H
+
+#define CX_TP_UNRELIABLE_BURST 0x01
+#define CX_TP_SIMPLE_FLOOD 0x02
+
+#endif

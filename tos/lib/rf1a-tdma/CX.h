@@ -12,9 +12,10 @@ typedef nx_struct cx_header_t {
   nx_uint8_t count;
   nx_uint8_t scheduleNum;
   nx_uint16_t originalFrameNum;
-  nx_uint8_t routingMethod;
-  nx_am_id_t type;
   nx_uint32_t timestamp;
+  nx_uint8_t nProto;
+  nx_uint8_t tProto;
+  nx_uint8_t type;
 } cx_header_t;
 
 enum{

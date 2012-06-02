@@ -1,14 +1,16 @@
  #include "stateSafety.h"
  #include "AODVDebug.h"
+ #include "FDebug.h"
 module AODVSchedulerP{
-  provides interface TDMARoutingSchedule[uint8_t rm];
-  uses interface TDMARoutingSchedule as SubTDMARoutingSchedule[uint8_t rm];
+//  provides interface TDMARoutingSchedule;
+  provides interface CXTransportSchedule;
+  uses interface TDMARoutingSchedule as SubTDMARoutingSchedule;
   uses interface FrameStarted;
 
   uses interface CXRoutingTable;
 
-  provides interface Send;
-  provides interface Receive;
+  provides interface AMSend[am_id_t id];
+  provides interface Receive[am_id_t id];
   
   uses interface Send as FloodSend;
   uses interface Receive as FloodReceive;
@@ -81,7 +83,10 @@ module AODVSchedulerP{
   //  TRUE again until that time has been reached.
   //  additionally, do not accept any sends if they will not be able
   //  to be handled during your slot.
-  command error_t Send.send(message_t* msg, uint8_t len){
+  command error_t AMSend.send[am_id_t id](am_addr_t addr, 
+      message_t* msg, uint8_t len){
+    //TODO: set AM type in AM header
+    //TODO: set destination in CX header
     am_addr_t destination; 
     error_t error;
     TMP_STATE;
@@ -91,7 +96,7 @@ module AODVSchedulerP{
     //broadcast: flood
     if (destination == AM_BROADCAST_ADDR){
       printf_AODV_S("F");
-      call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
+      call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
         SET_STATE(S_FLOODING, S_ERROR_1);
@@ -121,7 +126,7 @@ module AODVSchedulerP{
         ){ 
         printf_AODV_CLEAR("SF %u (%u)\r\n", lastFn, nextSlotStart);
         printf_AODV_S("S");
-        call CXPacket.setRoutingMethod(msg, CX_RM_NONE);
+        call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
           SET_STATE(S_AO_SETUP, S_ERROR_2);
@@ -130,7 +135,7 @@ module AODVSchedulerP{
         printf_AODV_S("P");
         if (destination == lastDestination){
           printf_AODV_CLEAR("F %u (%u %x)\r\n", lastFn, nextSlotStart, state);
-          call CXPacket.setRoutingMethod(msg, CX_RM_PREROUTED);
+          call CXPacket.setNetworkProtocol(msg, CX_RM_PREROUTED);
           //TODO: if msg has ack-requested set, call
           //ScopedFloodSend.send instead.
           error = call FloodSend.send(msg, len);
@@ -213,10 +218,10 @@ module AODVSchedulerP{
       if (CHECK_STATE(S_AO_SETUP_SENDING)){
         nextSlotStart = (
           (1+TOS_NODE_ID)
-          *(call SubTDMARoutingSchedule.framesPerSlot[0]()));
+          *(call SubTDMARoutingSchedule.framesPerSlot()));
         aoClearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
           call CXPacket.destination(msg)) 
-          + call SubTDMARoutingSchedule.maxRetransmit[0]();
+          + call SubTDMARoutingSchedule.maxRetransmit();
         lastDestination = call CXPacket.destination(msg);
 
         //TODO: check this: we seem to be accepting packets that we
@@ -237,7 +242,7 @@ module AODVSchedulerP{
         printf_AODV_S("Unexpected sfs.sd\r\n");
       }
     }
-    signal Send.sendDone(msg, error);
+    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
@@ -257,10 +262,10 @@ module AODVSchedulerP{
         printf_AODV_CLEAR("C %u %u\r\n", aoClearTime, lastStart);
         SET_STATE(S_AO_CLEARING, S_ERROR_6);
       }
-      signal Send.sendDone(msg, error);
+      signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
     }else if (CHECK_STATE(S_FLOODING)){
       SET_STATE(S_IDLE, S_ERROR_6);
-      signal Send.sendDone(msg, error);
+      signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
     }
   }
 
@@ -268,20 +273,20 @@ module AODVSchedulerP{
       uint8_t len){
     //TODO: buffer it here to minimize risk of user app doing anything
     //  stupid?
-    return signal Receive.receive(msg, payload, len);
+    return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
   }
 
   event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
     //TODO: buffer it here to minimize risk of user app doing anything
     //  stupid?
-    return signal Receive.receive(msg, payload, len);
+    return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
   }
 
   task void signalAborted(){
     TMP_STATE;
     CACHE_STATE;
     SET_STATE(S_IDLE, S_ERROR_5);
-    signal Send.sendDone(lastMsg, ERETRY);
+    signal AMSend.sendDone[call AMPacket.type(lastMsg)](lastMsg, ERETRY);
   }
 
   //only called from async context
@@ -291,16 +296,17 @@ module AODVSchedulerP{
   // - AO_SETUP AND start of our slot
   // - AO_WAIT and enough time has elapsed for the last ao packet to
   //   have cleared.
-  bool isOrigin(uint8_t rm, uint16_t frameNum){
-    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot[rm]();
+  bool isOrigin(uint16_t frameNum){
+    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot();
     TMP_STATE;
     CACHE_STATE;
     
     //OK to send if we are flooding and this is either the start of
     //our slot or 
     if (CHECK_STATE(S_FLOODING)){
-      bool of = call TDMARoutingSchedule.ownsFrame[rm](TOS_NODE_ID, frameNum);
-      bool mightViolate = ! (call TDMARoutingSchedule.ownsFrame[rm](TOS_NODE_ID, frameNum + TDMA_MAX_DEPTH));
+      bool of = call SubTDMARoutingSchedule.ownsFrame(frameNum);
+      bool mightViolate = ! (call SubTDMARoutingSchedule.ownsFrame(frameNum + TDMA_MAX_DEPTH));
+      //TODO: startSlot should not be tied to TOS_NODE_ID
       bool startSlot = (frameNum == TOS_NODE_ID*fps);
       bool lastCleared = (frameNum > lastStart + TDMA_MAX_DEPTH);
 
@@ -370,10 +376,6 @@ module AODVSchedulerP{
     }
   }
 
-  async command bool TDMARoutingSchedule.isSynched[uint8_t rm](uint16_t frameNum){
-    return call SubTDMARoutingSchedule.isSynched[rm](frameNum);
-  }
-  
   //origin if:
   //- we're synched AND
   //- one of the following holds
@@ -381,46 +383,54 @@ module AODVSchedulerP{
   //    wants to send a schedule announcement or reply
   //  - AODV internal logic figures "OK, it's cool to send a new data
   //    frame now."
-  async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
-    printf_AODV_IO("io %x %u\r\n", rm, frameNum);
+  async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
+//    printf_AODV_IO("io %x %u\r\n", rm, frameNum);
     //TODO: We can get in trouble here: if we lose synchronization while we
     //are holding the resource, we can get into a deadlock.  The node
     //will never forward the message they're currently holding
     //(freeing the resource), and if the resource is not available,
     //the flood component will drop any incoming data packets,
     //including the schedule with which we need to synch.
-    return (call SubTDMARoutingSchedule.isSynched[rm](frameNum)) &&
-      (call SubTDMARoutingSchedule.isOrigin[rm](frameNum) ||
-        isOrigin(rm, frameNum) );
+    return (call SubTDMARoutingSchedule.isSynched(frameNum)) &&
+      (isOrigin(frameNum) );
   }
 
-  async command bool TDMARoutingSchedule.ownsFrame[uint8_t rm](am_addr_t nodeId,
-      uint16_t frameNum){
-    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot[rm]();
-    //TODO: should this be nodeId+1? or does 0 just never get to send
-    //  except for schedule?
+//  //TODO schedule assignment: have to get away from using this for the
+//  //general case: we should be able to identify slot boundaries and
+//  //which frames belong to us, but not schedule for other nodes
+//  async command bool TDMARoutingSchedule.ownsFrame(am_addr_t nodeId,
+//      uint16_t frameNum){
+//    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot();
+//    //TODO: should this be nodeId+1? or does 0 just never get to send
+//    //  except for schedule?
+//    
+//    //fps<=1: for special case of when we haven't received any
+//    //schedules yet. it's not perfect...
+//    return (fps <= 1) ||((frameNum >= (nodeId*fps)) 
+//      && (frameNum < ((nodeId+1)*fps)));
+//  }
 
-    //fps<=1: for special case of when we haven't received any
-    //schedules yet. it's not perfect...
-    return (fps <= 1) ||((frameNum >= (nodeId*fps)) 
-      && (frameNum < ((nodeId+1)*fps)));
-  }
-
-  async command uint8_t TDMARoutingSchedule.maxRetransmit[uint8_t rm](){
-//    printf_SCHED("aodv.mr\r\n");
-    return call SubTDMARoutingSchedule.maxRetransmit[rm]();
-  }
-  async command uint16_t TDMARoutingSchedule.framesPerSlot[uint8_t rm](){
-    return call SubTDMARoutingSchedule.framesPerSlot[rm]();
-  }
-  command error_t Send.cancel(message_t* msg){
+//  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
+////    printf_SCHED("aodv.mr\r\n");
+//    return call SubTDMARoutingSchedule.maxRetransmit();
+//  }
+//  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
+//    return call SubTDMARoutingSchedule.framesPerSlot();
+//  }
+  command error_t AMSend.cancel[am_id_t id](message_t* msg){
     return FAIL;
   }
-  command void* Send.getPayload(message_t* msg, uint8_t len){
+  command void* AMSend.getPayload[am_id_t id](message_t* msg, uint8_t len){
     return call Packet.getPayload(msg, len);
   }
-  command uint8_t Send.maxPayloadLength(){
+  command uint8_t AMSend.maxPayloadLength[am_id_t id](){
     return call Packet.maxPayloadLength();
+  }
+
+  default event void AMSend.sendDone[am_id_t id](message_t* msg, error_t error){}
+  default event message_t* Receive.receive[am_id_t id](message_t* msg,
+      void* paylod, uint8_t len){
+    return msg;
   }
 
 }

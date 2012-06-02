@@ -4,38 +4,19 @@ configuration CXTDMAPhysicalC {
   provides interface TDMAPhySchedule;
   provides interface FrameStarted;
 
-  uses interface HplMsp430Rf1aIf;
-  uses interface Resource;
-  uses interface Rf1aPhysical;
-  uses interface Rf1aPhysicalMetadata;
-  uses interface Rf1aStatus;
-  uses interface Rf1aPacket;
-  uses interface CXPacket;
-  uses interface CXPacketMetadata;
-  uses interface Packet;
-
-  provides interface Rf1aConfigure;
-  uses interface Rf1aConfigure as SubRf1aConfigure[uint8_t sr];
+  provides interface Rf1aPhysicalMetadata;
 
 } implementation {
   components CXTDMAPhysicalP;
+
+  components CXPacketStackC;
 
   SplitControl = CXTDMAPhysicalP;
   CXTDMA = CXTDMAPhysicalP;
   TDMAPhySchedule = CXTDMAPhysicalP;
 
-  HplMsp430Rf1aIf = CXTDMAPhysicalP;
-  Resource = CXTDMAPhysicalP;
-  Rf1aPhysical = CXTDMAPhysicalP;
-  Rf1aPhysicalMetadata = CXTDMAPhysicalP;
-  Rf1aStatus = CXTDMAPhysicalP;
-  Rf1aPacket = CXTDMAPhysicalP;
-  CXPacket = CXTDMAPhysicalP;
-  CXPacketMetadata = CXTDMAPhysicalP;
   FrameStarted = CXTDMAPhysicalP;
 
-  CXTDMAPhysicalP.SubRf1aConfigure = SubRf1aConfigure;
-  Rf1aConfigure = CXTDMAPhysicalP.Rf1aConfigure;
 
   components new AlarmMicro32C() as FrameStartAlarm;
   components new AlarmMicro32C() as PrepareFrameStartAlarm;
@@ -55,5 +36,36 @@ configuration CXTDMAPhysicalC {
   components CXRadioStateTimingC;
   CXTDMAPhysicalP.StateTiming -> CXRadioStateTimingC;
 
-  CXTDMAPhysicalP.Packet = Packet;
+
+  components new Rf1aPhysicalC();
+
+  components SRFS7_915_GFSK_1P2K_SENS_HC;
+  components SRFS7_915_GFSK_4P8K_SENS_HC;
+  components SRFS7_915_GFSK_50K_SENS_HC;
+  components SRFS7_915_GFSK_100K_SENS_HC;
+  components SRFS7_915_GFSK_125K_SENS_HC;
+  components SRFS7_915_GFSK_175K_SENS_HC;
+  components SRFS7_915_GFSK_250K_SENS_HC;
+
+  CXTDMAPhysicalP.SubRf1aConfigure[1]   -> SRFS7_915_GFSK_1P2K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[5]   -> SRFS7_915_GFSK_4P8K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[50]  -> SRFS7_915_GFSK_50K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[100] -> SRFS7_915_GFSK_100K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[125] -> SRFS7_915_GFSK_125K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[175] -> SRFS7_915_GFSK_175K_SENS_HC;
+  CXTDMAPhysicalP.SubRf1aConfigure[250] -> SRFS7_915_GFSK_250K_SENS_HC;
+
+  Rf1aPhysicalC.Rf1aConfigure -> CXTDMAPhysicalP.Rf1aConfigure;
+
+  CXTDMAPhysicalP.HplMsp430Rf1aIf -> Rf1aPhysicalC;
+  CXTDMAPhysicalP.Resource -> Rf1aPhysicalC;
+  CXTDMAPhysicalP.Rf1aPhysical -> Rf1aPhysicalC;
+  CXTDMAPhysicalP.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
+  CXTDMAPhysicalP.Rf1aStatus -> Rf1aPhysicalC;
+  CXTDMAPhysicalP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
+  CXTDMAPhysicalP.Packet -> CXPacketStackC.Ieee154PacketBody;
+  CXTDMAPhysicalP.CXPacket -> CXPacketStackC.CXPacket;
+  CXTDMAPhysicalP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+
+  Rf1aPhysicalMetadata = Rf1aPhysicalC;
 }

@@ -7,16 +7,17 @@
  #include "SchedulerDebug.h"
  #include "BreakfastDebug.h"
 module CXFloodP{
+  //TODO: these should be tProto's, not AM IDs
   provides interface Send[am_id_t t];
   provides interface Receive[am_id_t t];
   provides interface Receive as Snoop[am_id_t t];
 
   uses interface CXPacket;
-  uses interface AMPacket;
-  //Payload: body of CXPacket
+  //Payload: body of CXPacket (a.k.a. header of AM packet)
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
+  uses interface CXTransportSchedule[uint8_t tProto];
   uses interface Resource;
   
   uses interface CXRoutingTable;
@@ -89,7 +90,7 @@ module CXFloodP{
       txPending = FALSE;
       txSent = FALSE;
     }
-    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, SUCCESS);
+    signal Send.sendDone[call CXPacket.getTransportProtocol(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void txFailTask(){
@@ -97,25 +98,32 @@ module CXFloodP{
       txPending = FALSE;
       txSent = FALSE;
     }
-    signal Send.sendDone[call CXPacket.type(tx_msg)](tx_msg, FAIL);
+    signal Send.sendDone[call CXPacket.getTransportProtocol(tx_msg)](tx_msg, FAIL);
   }
 
   /**
    * Accept a packet if we're not busy and hold it until the origin
    * frame comes around.
    **/
+  //TODO transport: this type should be a cx_transport_protocol_t
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+    uint8_t i;
+    printf_TMP("TXS %p ", msg);
+    for (i=0; i < sizeof(message_t); i++){
+      printf_TMP("%2X ", ((uint8_t*) msg)[i]);
+    }
+    printf_TMP("\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
         tx_len = len + sizeof(cx_header_t) ;
         txPending = TRUE;
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, t);
-        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
+        call CXPacket.setTransportProtocol(msg, t);
+//        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed flag
-        call CXPacket.setRoutingMethod(msg, 
-          (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
+        call CXPacket.setNetworkProtocol(msg, 
+          (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
         printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
         return SUCCESS;
       }else{
@@ -144,11 +152,17 @@ module CXFloodP{
     //TODO reliable burst: This should go through transport protocol
     //The acks (cumulative or individual) will originate from
     //transport layer, but not from the owner of the slot.
-    if (txPending && (call TDMARoutingSchedule.isOrigin(frameNum))){
+
+    //TODO: so we should keep track of which transport protocol
+    //provided the packet that we are currently hanging onto, and use
+    //that instance of the TDMARoutingSchedule interface.
+    if (txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
       printf_F_SCHED("o");
       if (SUCCESS == call Resource.immediateRequest()){
+        uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+        uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
         printf_F_SCHED(" tx\r\n");
-        txLeft = call TDMARoutingSchedule.maxRetransmit();
+        txLeft = (mr < framesLeft)? mr : framesLeft;
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
         txSent = TRUE;
@@ -185,32 +199,25 @@ module CXFloodP{
   
   //Signal received packets upward and refill pool.
   task void signalReceive(){
-    printf_TMP("SR");
     if (!call Queue.empty()){
       message_t* msg = call Queue.dequeue();
-      printf_TMP("Q");
       if (call CXPacket.isForMe(msg)){
-        printf_TMP("M");
-        msg = signal Receive.receive[call CXPacket.type(msg)](msg,
+        msg = signal Receive.receive[call CXPacket.getTransportProtocol(msg)](msg,
           call LayerPacket.getPayload(msg, 
             call LayerPacket.payloadLength(msg)), 
           call LayerPacket.payloadLength(msg));
       }else{
-        printf_TMP("~M");
-        msg = signal Snoop.receive[call CXPacket.type(msg)](msg,
+        msg = signal Snoop.receive[call CXPacket.getTransportProtocol(msg)](msg,
           call LayerPacket.getPayload(msg, 
             call LayerPacket.payloadLength(msg)), 
           call LayerPacket.payloadLength(msg));
       }
       call Pool.put(msg);
     }else{
-      printf_TMP("~Q");
     }
     if (!call Queue.empty()){
-      printf_TMP("R\r\n");
       post signalReceive();
     }else{
-      printf_TMP("~R\r\n");
     }
   }
   
@@ -219,12 +226,9 @@ module CXFloodP{
   //to be used for next reception.
   //Post task to signal reception upwards.
   task void reportReceive(){
-    printf_TMP("RR");
     atomic{
       if (rxOutstanding){
-        printf_TMP("O");
         if ( ! call Pool.empty()){
-          printf_TMP("S\r\n");
           atomic{
             call Queue.enqueue(fwd_msg);
             fwd_msg = call Pool.get();
@@ -237,7 +241,6 @@ module CXFloodP{
           post reportReceive();
         }
       }else{
-        printf_TMP("~O\r\n");
       }
     }
   }
@@ -284,11 +287,6 @@ module CXFloodP{
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint32_t thisSn = call CXPacket.sn(msg);
     printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
-    if (! call TDMARoutingSchedule.ownsFrame(thisSrc, frameNum)){
-      printf_F_RX("~o\r\n");
-      printf_F_SV("SV F D %u %u\r\n", thisSrc, frameNum);
-      return msg;
-    }
     if (state == S_IDLE){
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
@@ -299,7 +297,7 @@ module CXFloodP{
 
         //check for routed flag: ignore it if the routed flag is
         //set, but we are not on the path.
-        if (call CXPacket.getRoutingMethod(msg) & CX_RM_PREROUTED){
+        if (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED){
           bool isBetween;
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
@@ -327,7 +325,9 @@ module CXFloodP{
             // This will prevent slot violations from happening and
             // doesn't require deep knowledge of the schedule.
             if ( call TDMARoutingSchedule.isSynched(frameNum)){
-              txLeft = call TDMARoutingSchedule.maxRetransmit();
+              uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+              uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
+              txLeft = (mr < framesLeft)? mr : framesLeft;
             }else{
               txLeft = 0;
             }
@@ -360,18 +360,20 @@ module CXFloodP{
       return msg;
     }
   }
-
+  
   event void Resource.granted(){}
 
   command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
-    printf_TMP("!DefaultReceive: %x\r\n", t);
     return msg;
   }
   default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
-    printf_TMP("!DefaultSnoop: %x\r\n", t);
     return msg;
+  }
+
+  default async command bool CXTransportSchedule.isOrigin[uint8_t tProto](uint16_t frameNum){
+    return FALSE;
   }
 }
