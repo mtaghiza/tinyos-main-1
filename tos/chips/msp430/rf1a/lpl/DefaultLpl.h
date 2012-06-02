@@ -54,7 +54,7 @@ typedef enum {
  * Equivalent to the (8ms) CCA checks on the CC2420.
  */
 #ifndef LPL_DEF_LISTEN_TIME
-#define LPL_DEF_LISTEN_TIME 10
+#define LPL_DEF_LISTEN_TIME 60
 #endif
 
 
