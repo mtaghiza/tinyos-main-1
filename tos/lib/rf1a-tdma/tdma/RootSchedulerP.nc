@@ -14,7 +14,7 @@ module RootSchedulerP{
   uses interface Receive as AnnounceReceive;
   uses interface AMSend as ReplySend;
   uses interface Receive as ReplyReceive;
-
+  
   uses interface Packet;
   uses interface AMPacket;
   uses interface CXPacket;
@@ -145,15 +145,14 @@ module RootSchedulerP{
     if (state == S_BASELINE || state == S_ADJUSTING 
         || state == S_FINALIZING || state == S_RESETTING 
         || state == S_ESTABLISHED){
-      error_t error = call AnnounceSend.send(AM_BROADCAST_ADDR, 
+      error_t error;
+      error = call AnnounceSend.send(AM_BROADCAST_ADDR, 
         next_schedule_msg,
         sizeof(cx_schedule_t)); 
       if (SUCCESS == error){
         cx_schedule_t* ns = (cx_schedule_t*)(call
           Packet.getPayload(next_schedule_msg,
           sizeof(cx_schedule_t)));
-        printf_TMP("TXS: %x %x %x\r\n", ns->scheduleNum,
-          ns->symbolRate, ns->scheduleId);
         printf_SCHED("Announce Sending %p sn %u sr %u\r\n", 
           next_schedule_msg,
           ns->scheduleNum,

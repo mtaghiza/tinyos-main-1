@@ -11,6 +11,7 @@ configuration SimpleFloodSchedulerC{
   uses interface Packet as AMPacketBody;
   uses interface CXPacket;
   uses interface TDMARoutingSchedule;
+  uses interface FrameStarted;
 } implementation{
   //This should use the meta-scheduler to determine when its slots
   //occur, and will basically just use the pre-defined max depth to
@@ -28,4 +29,5 @@ configuration SimpleFloodSchedulerC{
   SimpleFloodSchedulerP.FloodSend = FloodSend;
   SimpleFloodSchedulerP.FloodReceive = FloodReceive;
   SimpleFloodSchedulerP.CXPacket = CXPacket;
+  SimpleFloodSchedulerP.FrameStarted = FrameStarted;
 }

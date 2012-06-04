@@ -245,7 +245,7 @@ module CXScopedFloodP{
     }
   }
 
-  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
+  async event bool CXTDMA.getPacket(message_t** msg,
       uint16_t frameNum){ 
 
     printf_SF_GP("gp");
@@ -256,13 +256,11 @@ module CXScopedFloodP{
         printf_SF_GP("o");
         originDataSent = TRUE;
         *msg = origin_data_msg;
-        *len = origin_data_len;
         SF_GPO_CLEAR_PIN;
       } else{
         SF_GPF_SET_PIN;
         printf_SF_GP("f");
         *msg = fwd_msg;
-        *len = fwd_len;
         SF_GPF_CLEAR_PIN;
       }
       printf_SF_GP("\r\n");
@@ -273,13 +271,11 @@ module CXScopedFloodP{
         SF_GPO_SET_PIN;
         printf_SF_GP("o");
         *msg = origin_ack_msg;
-        *len = origin_ack_len;
         SF_GPO_CLEAR_PIN;
       } else {
         SF_GPF_SET_PIN;
         printf_SF_GP("f");
         *msg = fwd_msg;
-        *len = fwd_len;
         SF_GPF_CLEAR_PIN;
       }
       printf_SF_GP("\r\n");

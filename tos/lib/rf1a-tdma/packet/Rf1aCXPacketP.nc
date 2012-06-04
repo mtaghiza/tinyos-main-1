@@ -51,13 +51,16 @@ module Rf1aCXPacketP{
 
   command void* Packet.getPayload(message_t* msg, uint8_t len){
     void* ret;
+    printf_PACKET("cx.gp %u \r\n", len);
     if (len <= call Packet.maxPayloadLength()){
       ret = (void*) (sizeof(cx_header_t) + (call SubPacket.getPayload(msg,
         len+sizeof(cx_header_t))));
     } else {
       ret = 0;
     }
-    printf_PACKET("p.gp %p %u: %p\r\n", msg, len, ret);
+    printf_PACKET("/cx.gp %p (%p) %u: %p\r\n", msg, 
+      call SubPacket.getPayload(msg, len + sizeof(cx_header_t)), 
+      len, ret);
     return ret;
   }
 

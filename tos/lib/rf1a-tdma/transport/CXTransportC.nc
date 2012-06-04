@@ -47,6 +47,7 @@ configuration CXTransportC{
   SimpleFloodSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
   SimpleFloodSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
   SimpleFloodSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
+  SimpleFloodSchedulerC.FrameStarted -> CXTDMAPhysicalC.FrameStarted;
   SimpleFloodSchedulerC.TDMARoutingSchedule 
     -> TDMASchedulerC.TDMARoutingSchedule;
   SimpleFloodSchedulerC.FloodSend 

@@ -51,7 +51,6 @@ module CXFloodP{
 
   //provided by Send
   message_t* tx_msg;
-  uint8_t tx_len; 
 
   bool txPending;
   bool txSent;
@@ -69,8 +68,6 @@ module CXFloodP{
   //with the pool can be done in the task context.
   message_t fwd_msg_internal;
   norace message_t* fwd_msg = &fwd_msg_internal;
-  //TODO CLEANUP: this should be removed/replaced with a call to the packet metadata
-  norace uint8_t fwd_len;
   
   bool rxOutstanding;
 
@@ -107,16 +104,9 @@ module CXFloodP{
    **/
   //TODO transport: this type should be a cx_transport_protocol_t
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
-    uint8_t i;
-    printf_TMP("TXS %p ", msg);
-    for (i=0; i < sizeof(message_t); i++){
-      printf_TMP("%2X ", ((uint8_t*) msg)[i]);
-    }
-    printf_TMP("\r\n");
     atomic{
       if (!txPending){
         tx_msg = msg;
-        tx_len = len + sizeof(cx_header_t) ;
         txPending = TRUE;
         call CXPacket.init(msg);
         call CXPacket.setTransportProtocol(msg, t);
@@ -190,10 +180,9 @@ module CXFloodP{
   }
  
   //Provide packet for transmission to TDMA/phy layers.
-  async event bool CXTDMA.getPacket(message_t** msg, uint8_t* len,
+  async event bool CXTDMA.getPacket(message_t** msg, 
       uint16_t frameNum){ 
     *msg = isOrigin? tx_msg : fwd_msg;
-    *len = isOrigin? tx_len : fwd_len;
     return TRUE;
   }
   
@@ -332,7 +321,6 @@ module CXFloodP{
               txLeft = 0;
             }
             fwd_msg = msg;
-            fwd_len = len;
             rxOutstanding = TRUE;
             setState(S_FWD);
             //to handle the case where retx = 0

@@ -47,7 +47,7 @@ configuration TestAppC{
   TDMASchedulerC.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
   TDMASchedulerC.CXPacket -> CXPacketStackC.CXPacket;
   TDMASchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
-  TDMASchedulerC.Packet -> CXPacketStackC.CXPacketBody;
+  TDMASchedulerC.Packet -> CXPacketStackC.AMPacketBody;
   TDMASchedulerC.CXRoutingTable -> CXRoutingTableC;
 
   TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
@@ -59,7 +59,7 @@ configuration TestAppC{
   TestP.AMPacket -> CXPacketStackC.AMPacket;
   TestP.CXPacket -> CXPacketStackC.CXPacket;
   TestP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
-  TestP.Packet -> CXPacketStackC.CXPacketBody;
+  TestP.Packet -> CXPacketStackC.AMPacketBody;
   
   TestP.AMSend -> CXTransportC.SimpleFloodSend[AM_ID_CX_TESTBED];
   TestP.Receive -> CXTransportC.SimpleFloodReceive[AM_ID_CX_TESTBED];

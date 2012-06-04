@@ -533,15 +533,15 @@ module CXTDMAPhysicalP {
 
   bool gpResult;
   uint8_t* gpBuf;
-  uint8_t gpLen;
+  uint16_t gpLen;
   
 
   //retrieve packet from upper layer and store it here until requested
   //from phy.
   task void getPacketTask(){
-    gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), &gpLen, frameNum);
+    gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), frameNum);
     tx_msg = (message_t*)(gpBuf);
-    gpLen += sizeof(rf1a_ieee154_t);
+    gpLen = (call Rf1aPacket.metadata(tx_msg))->payload_length;
     call CXPacket.incCount(tx_msg);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.

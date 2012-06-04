@@ -32,8 +32,11 @@ module SimpleFloodSchedulerP{
   command error_t AMSend.send[am_id_t id](am_addr_t addr, 
       message_t* msg, uint8_t len){
     if (state == S_IDLE){
-      //TODO: fill in destination, am type
-      error_t error = call FloodSend.send(msg, len);
+      error_t error ;
+      call AMPacketBody.setPayloadLength(msg, len);
+      call AMPacket.setType(msg, id);
+      call CXPacket.setDestination(msg, addr);
+      error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
         state = S_PENDING;
       }
@@ -62,9 +65,13 @@ module SimpleFloodSchedulerP{
   }
 
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
-    if (state == S_PENDING && call TDMARoutingSchedule.ownsFrame(frameNum)){
-      state = S_SENDING;
-      return TRUE;
+    if (state == S_PENDING){
+      if(call TDMARoutingSchedule.ownsFrame(frameNum)){
+        state = S_SENDING;
+        return TRUE;
+      }else{
+        return FALSE;
+      }
     }else{
       return FALSE;
     }
@@ -90,7 +97,12 @@ module SimpleFloodSchedulerP{
 
   event message_t* FloodReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
+    //TODO: might be necessary to restore AMPacket's destination field
+    //(from CXPacket header)?
+    return signal Receive.receive[call AMPacket.type(msg)](msg,
+      call AMPacketBody.getPayload(msg, 
+        call AMPacketBody.payloadLength(msg)),
+      call AMPacketBody.payloadLength(msg));
   }
 
   default event void AMSend.sendDone[am_id_t id](message_t* msg, error_t error){ }

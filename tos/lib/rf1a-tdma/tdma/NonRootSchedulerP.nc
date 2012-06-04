@@ -236,12 +236,6 @@ module NonRootSchedulerP{
       return msg; 
     } else {
       message_t* swp = curMsg;
-      uint8_t i;
-//      printf_TMP("RXS %p ", msg);
-//      for (i=0; i < sizeof(message_t); i++){
-//        printf_TMP("%2X ", ((uint8_t*) msg)[i]);
-//      }
-//      printf_TMP("\r\n");
       printf_SCHED("n\r\n");
       changePending = TRUE;
       lastRxTS = rxTS;
@@ -255,8 +249,6 @@ module NonRootSchedulerP{
       curMsg = msg;
       curSched = (cx_schedule_t*)payload;
       curSchedDescriptor = &SCHEDULES[curSched->scheduleId];
-      printf_TMP("RXS %x %x %x\r\n", curSched->scheduleNum,
-        curSched->symbolRate, curSched->scheduleId);
       printf_TESTBED_SCHED_NEW("S %u\r\n", 
         call CXPacketMetadata.getReceivedCount(msg));
       printf_SCHED_SR("RX new: %p sn %u sr %u\r\n", curMsg,
@@ -272,9 +264,8 @@ module NonRootSchedulerP{
     cx_schedule_reply_t* reply = 
       (cx_schedule_reply_t*)call ReplySend.getPayload(replyMsg, sizeof(cx_schedule_reply_t));
     reply->scheduleNum = curSched->scheduleNum;
-    //TODO: should be rootId?
-    error = call ReplySend.send(0, replyMsg, sizeof(replyMsg) +
-      sizeof(rf1a_nalp_am_t));
+    //TODO: should be from source of schedule (root ID will frequently be non-0)
+    error = call ReplySend.send(0, replyMsg, sizeof(replyMsg));
     if (SUCCESS == error){
       printf_SCHED_SR("ReplySend.send OK\r\n");
     }else{
@@ -447,9 +438,16 @@ module NonRootSchedulerP{
     return call TDMARoutingSchedule.framesPerSlot() 
       - (frameNum % (call TDMARoutingSchedule.framesPerSlot()));
   }
+
+  //TODO: replace with dynamic slot-assignment logic
   async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
-    return FALSE;
+    uint16_t firstFrame = (call TDMARoutingSchedule.framesPerSlot())*TOS_NODE_ID;
+    uint16_t lastFrame = firstFrame 
+      + call TDMARoutingSchedule.framesPerSlot() -1;
+    return ((frameNum >= firstFrame) 
+      && (frameNum <= lastFrame));
   }
+
   //unused
   event void AnnounceSend.sendDone(message_t* msg, error_t error){}
   event message_t* ReplyReceive.receive(message_t* msg, void* payload, uint8_t len){ return msg;}

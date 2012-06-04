@@ -67,11 +67,11 @@ module CXTDMADispatchP{
     }
   }
 
-  async event bool SubCXTDMA.getPacket(message_t** msg, uint8_t* len,
+  async event bool SubCXTDMA.getPacket(message_t** msg,
       uint16_t frameNum){ 
     if ( call ArbiterInfo.inUse()){
       return signal CXTDMA.getPacket[call ArbiterInfo.userId()](msg,
-        len, frameNum);
+        frameNum);
     } else {
       return FALSE;
     }
@@ -180,7 +180,7 @@ module CXTDMADispatchP{
   default async event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
     return RF1A_OM_RX;
   }
-  default async event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, uint8_t* len,
+  default async event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, 
       uint16_t frameNum){ return FALSE;}
   default async event void CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){}
