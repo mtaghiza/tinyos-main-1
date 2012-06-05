@@ -31,6 +31,7 @@ module SimpleFloodSchedulerP{
 
   command error_t AMSend.send[am_id_t id](am_addr_t addr, 
       message_t* msg, uint8_t len){
+    printf_TMP("SFS.s %x\r\n", id);
     if (state == S_IDLE){
       error_t error ;
       call AMPacketBody.setPayloadLength(msg, len);

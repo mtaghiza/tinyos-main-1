@@ -140,8 +140,9 @@ module TestP {
       
     if (SUCCESS == error){
       sending = TRUE;
+    }else{
+      printf("Send.Send (broadcast): %s\r\n", decodeError(error));
     }
-//    printf("Send.Send (broadcast): %s\r\n", decodeError(error));
   }
 
   task void unicastTask(){
@@ -153,8 +154,9 @@ module TestP {
     error = call AMSend.send(0, tx_msg, sizeof(test_packet_t));
     if (SUCCESS == error){
       sending = TRUE;
+    }else{
+      printf("Send.Send (unicast): %s\r\n", decodeError(error));
     }
-//    printf("Send.Send (unicast): %s\r\n", decodeError(error));
   }
 
   task void sendTask(){

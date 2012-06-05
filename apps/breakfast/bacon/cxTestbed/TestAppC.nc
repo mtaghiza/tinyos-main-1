@@ -61,8 +61,13 @@ configuration TestAppC{
   TestP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   TestP.Packet -> CXPacketStackC.AMPacketBody;
   
+  #if FLOOD_TEST == 1
   TestP.AMSend -> CXTransportC.SimpleFloodSend[AM_ID_CX_TESTBED];
   TestP.Receive -> CXTransportC.SimpleFloodReceive[AM_ID_CX_TESTBED];
+  #else
+  TestP.AMSend -> CXTransportC.UnreliableBurstSend[AM_ID_CX_TESTBED];
+  TestP.Receive -> CXTransportC.UnreliableBurstReceive[AM_ID_CX_TESTBED];
+  #endif
 
   TestP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;  
 }

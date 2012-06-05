@@ -50,14 +50,15 @@ configuration CXNetworkC {
   CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_SCOPEDFLOOD];
   CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_SCOPEDFLOOD];
   CXScopedFloodC.CXPacket -> CXPacketStackC.CXPacket;
+  CXScopedFloodC.AMPacket -> CXPacketStackC.AMPacket;
   CXScopedFloodC.LayerPacket -> CXPacketStackC.CXPacketBody;
   CXScopedFloodC.Pool -> PoolC;
   CXScopedFloodC.Queue -> ScopedFloodQueue;
   CXScopedFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule;
   CXScopedFloodC.CXTransportSchedule = CXTransportSchedule;
 
-  ScopedFloodSend = CXFloodC;
-  ScopedFloodReceive = CXFloodC;
+  ScopedFloodSend = CXScopedFloodC;
+  ScopedFloodReceive = CXScopedFloodC;
 
   components CXRoutingTableC;
   CXScopedFloodC.CXRoutingTable -> CXRoutingTableC;

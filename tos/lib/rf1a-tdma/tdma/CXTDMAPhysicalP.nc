@@ -541,8 +541,6 @@ module CXTDMAPhysicalP {
   task void getPacketTask(){
     gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), frameNum);
     tx_msg = (message_t*)(gpBuf);
-    gpLen = (call Rf1aPacket.metadata(tx_msg))->payload_length;
-    call CXPacket.incCount(tx_msg);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.
     //This looks a little funny, but we're trying to make sure that
@@ -550,30 +548,34 @@ module CXTDMAPhysicalP {
     //timestamp or not, so that we can maintain synchronization
     //between the origin and the forwarder.
     if (tx_msg != NULL){
-      bool amSource = call CXPacket.source(tx_msg) == TOS_NODE_ID;
-      bool isFirst = call CXPacket.count(tx_msg) == 1;
-      uint32_t lastAlarm = call FrameStartAlarm.getAlarm();
-      uint32_t curTimestamp = call CXPacket.getTimestamp(tx_msg);
-      uint8_t curSN = call CXPacket.getScheduleNum(tx_msg);
-      uint8_t mySN = signal TDMAPhySchedule.getScheduleNum();
-      uint16_t curOF = call CXPacket.getOriginalFrameNum(tx_msg);
-      bool lastSentOrigin = amSource && isFirst;
-      //lastAlarm *should* be valid, AFAIK, since FSA is already set
-      //up at this point.
-      #if DEBUG_FEC == 1
-      call CXPacket.setTimestamp(tx_msg, 
-        lastSentOrigin? 0xdeadbeef : curTimestamp);
-      #else
-//      call CXPacket.setTimestamp(tx_msg, 
-//        lastSentOrigin? 0xdeadbeef : curTimestamp);
-      call CXPacket.setTimestamp(tx_msg, 
-        lastSentOrigin? lastAlarm : curTimestamp);
-      #endif
-      call CXPacket.setScheduleNum(tx_msg,
-        lastSentOrigin? mySN: curSN);
-      call CXPacket.setOriginalFrameNum(tx_msg,
-        lastSentOrigin? frameNum: curOF);
-    }  
+      gpLen = (call Rf1aPacket.metadata(tx_msg))->payload_length;
+      call CXPacket.incCount(tx_msg);
+      {
+        bool amSource = call CXPacket.source(tx_msg) == TOS_NODE_ID;
+        bool isFirst = call CXPacket.count(tx_msg) == 1;
+        uint32_t lastAlarm = call FrameStartAlarm.getAlarm();
+        uint32_t curTimestamp = call CXPacket.getTimestamp(tx_msg);
+        uint8_t curSN = call CXPacket.getScheduleNum(tx_msg);
+        uint8_t mySN = signal TDMAPhySchedule.getScheduleNum();
+        uint16_t curOF = call CXPacket.getOriginalFrameNum(tx_msg);
+        bool lastSentOrigin = amSource && isFirst;
+        //lastAlarm *should* be valid, AFAIK, since FSA is already set
+        //up at this point.
+        #if DEBUG_FEC == 1
+        call CXPacket.setTimestamp(tx_msg, 
+          lastSentOrigin? 0xdeadbeef : curTimestamp);
+        #else
+  //      call CXPacket.setTimestamp(tx_msg, 
+  //        lastSentOrigin? 0xdeadbeef : curTimestamp);
+        call CXPacket.setTimestamp(tx_msg, 
+          lastSentOrigin? lastAlarm : curTimestamp);
+        #endif
+        call CXPacket.setScheduleNum(tx_msg,
+          lastSentOrigin? mySN: curSN);
+        call CXPacket.setOriginalFrameNum(tx_msg,
+          lastSentOrigin? frameNum: curOF);
+      }
+    }
   }
 
 

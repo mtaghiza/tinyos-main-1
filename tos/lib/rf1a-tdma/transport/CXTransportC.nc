@@ -23,6 +23,7 @@ configuration CXTransportC{
     -> CXNetworkC.FloodSend[CX_TP_UNRELIABLE_BURST];
   AODVSchedulerC.FloodReceive 
     -> CXNetworkC.FloodReceive[CX_TP_UNRELIABLE_BURST];
+
   AODVSchedulerC.ScopedFloodSend 
     -> CXNetworkC.ScopedFloodSend[CX_TP_UNRELIABLE_BURST];
   AODVSchedulerC.ScopedFloodReceive 
@@ -30,7 +31,7 @@ configuration CXTransportC{
 
   AODVSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
   AODVSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
-  AODVSchedulerC.Packet -> CXPacketStackC.CXPacketBody;
+  AODVSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
   AODVSchedulerC.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
   AODVSchedulerC.Ieee154Packet -> CXPacketStackC.Ieee154Packet;
 

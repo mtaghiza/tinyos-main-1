@@ -14,7 +14,7 @@ configuration AODVSchedulerC{
   
   uses interface AMPacket;
   uses interface CXPacket;
-  uses interface Packet;
+  uses interface Packet as AMPacketBody;
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
 
@@ -32,7 +32,7 @@ configuration AODVSchedulerC{
   AODVSchedulerP.ScopedFloodReceive = ScopedFloodReceive;
   AODVSchedulerP.AMPacket = AMPacket;
   AODVSchedulerP.CXPacket = CXPacket;
-  AODVSchedulerP.Packet = Packet;
+  AODVSchedulerP.AMPacketBody = AMPacketBody;
   AODVSchedulerP.Rf1aPacket = Rf1aPacket;
   AODVSchedulerP.Ieee154Packet = Ieee154Packet;
 

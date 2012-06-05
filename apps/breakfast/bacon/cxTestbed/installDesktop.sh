@@ -6,7 +6,7 @@ tc=0
 debugScale=4UL
 
 #test setup
-floodTest=1
+floodTest=0
 rootId="0"
 nonrootRx=""
 #allPlugged="0 1 2 3"
@@ -27,7 +27,7 @@ mr=1
 
 #radio logging
 rl=0
-rs=1
+rs=0
 
 #schedule config
 #init symbol rate
@@ -42,14 +42,14 @@ debugPacket=0
 sv=0
 pr=0
 sfr=0
-crc=1
-debugConfig=1
+crc=0
+debugConfig=0
 txAodvState=0
 rxAodvState=0
 aodvClear=0
 debugFEC=0
 #debug RXREADY error messages
-rxr=1
+rxr=0
 
 killall picocom
 
@@ -95,12 +95,14 @@ then
   do
     make bacon2 install,$id bsl,ref,JH00030$id \
       TDMA_ROOT=0 IS_SENDER=1 \
-      DEBUG_AODV_STATE=$txAodvState $commonOptions
+      DEBUG_AODV_STATE=$txAodvState $commonOptions\
+      DEBUG_TMP=1
   done
 fi
 
 if [ "$rootId" != "" ]
 then
   make bacon2 install,0 bsl,ref,JH00030$rootId \
-    TDMA_ROOT=1 $commonOptions
+    TDMA_ROOT=1 $commonOptions\
+    DEBUG_TMP=1
 fi

@@ -104,6 +104,7 @@ module CXFloodP{
    **/
   //TODO transport: this type should be a cx_transport_protocol_t
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+    printf_TMP("floodsend.send %x\r\n", t);
     atomic{
       if (!txPending){
         tx_msg = msg;
