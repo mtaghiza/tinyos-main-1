@@ -124,7 +124,7 @@ module CXTDMAPhysicalP {
   #endif
 
   //forward declarations
-  task void getPacketTask();
+  bool getPacket();
   void completeCleanup();
   task void signalStopDone();
   task void debugConfig();
@@ -277,6 +277,7 @@ module CXTDMAPhysicalP {
       switch(signal CXTDMA.frameType(frameNum)){
         case RF1A_OM_FSTXON:
           printf_SW_TOPO("F %u\r\n", frameNum);
+          if (getPacket()){
           IS_TX_SET_PIN;
           //0.75 uS
           PFS_TOGGLE_PIN;
@@ -294,8 +295,10 @@ module CXTDMAPhysicalP {
   
           captureMode = MSP430TIMER_CM_RISING;
           call SynchCapture.captureRisingEdge();
-          post getPacketTask();
+          } else {
+            printf("!Error: frameType FSTXON, but getPacket returned false\r\n");
 
+          }
           break;
         case RF1A_OM_RX:
 //          printf_SW_TOPO("R %u\r\n", frameNum);
@@ -538,7 +541,7 @@ module CXTDMAPhysicalP {
 
   //retrieve packet from upper layer and store it here until requested
   //from phy.
-  task void getPacketTask(){
+  bool getPacket(){
     gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), frameNum);
     tx_msg = (message_t*)(gpBuf);
     //set the tx timestamp if we are the origin
@@ -576,6 +579,7 @@ module CXTDMAPhysicalP {
           lastSentOrigin? frameNum: curOF);
       }
     }
+    return gpResult;
   }
 
 
@@ -796,6 +800,7 @@ module CXTDMAPhysicalP {
                                              int result) {
     reportRXSrc = call CXPacket.source((message_t*) buffer);
     reportRXSn = call CXPacket.sn((message_t*) buffer);
+//    printf_TMP("RD %u\r\n", frameNum);
 //    post reportRX();
 //    printf_TESTBED("RD.");
     if (checkState(S_RECEIVING)){
