@@ -13,7 +13,7 @@
 
 typedef union message_header {
   rf1a_ieee154_t rf1a_ieee154;
-} message_header_t;
+} __attribute__((packed)) message_header_t;
 
 typedef union TOSRadioFooter {
 } message_footer_t;
