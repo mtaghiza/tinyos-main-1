@@ -228,14 +228,22 @@ module CXScopedFloodP{
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     //Check for (implicit) completion of SF
     if (state == S_CLEAR_WAIT){
-      //TODO: watch for slot length violations, quit if this is no
-      //longer your slot.
-
       //TODO retx: account for retransmissions in completion time
-      //TODO flood_quench: bound will change with ack:data ratio
       //TODO: if this is prerouted, we don't need to wait this long. As
       //  soon as we get the ack, we can send in the next data frame.
-      if (frameNum - ackFrame > (ackFrame - originFrame) + 2){
+
+      //we're done when the number of data frames since the initial
+      //transmission < the number of ack frames since we got the ack.
+      //nice and easy.
+
+      //dataElapsed = 1 + (frames after original tx / data+ack cycle length)
+      int16_t dataElapsed = 1 + (frameNum - originFrame - 1)/(ACKS_PER_DATA+1);
+      //This assumes ack was received on *first* ack frame of ack
+      //section. so, it could be overestimating by ACKS_PER_DATA -1 in
+      //the worst case
+      //acksElapsed = 1 + ((ack:data ratio * frames after ack received) / data+ack cycle length)
+      int16_t acksElapsed = 1 + (ACKS_PER_DATA*(frameNum - ackFrame -1))/(ACKS_PER_DATA+1);
+      if (acksElapsed  + (ACKS_PER_DATA - 1 ) > dataElapsed){
         post signalSendDone();
       }
     }

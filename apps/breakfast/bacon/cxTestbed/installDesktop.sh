@@ -31,7 +31,7 @@ rs=0
 
 #schedule config
 #init symbol rate
-initSR=100
+initSR=125
 
 #stack protection
 sp=1
@@ -42,13 +42,13 @@ debugPacket=0
 sv=0
 pr=0
 sfr=0
-crc=1
+crc=0
 debugConfig=0
 txAodvState=0
 rxAodvState=0
 aodvClear=0
 debugFEC=0
-debugSFRX=1
+debugSFRX=0
 #debug RXREADY error messages
 rxr=0
 
