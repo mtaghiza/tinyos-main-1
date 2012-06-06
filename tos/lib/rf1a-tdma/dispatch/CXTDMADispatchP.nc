@@ -148,6 +148,20 @@ module CXTDMADispatchP{
     
   }
 
+  message_t* dispMsg;
+  task void displayPacket(){
+    printf(" CX d: %x sn: %x count: %x sched: %x of: %x ts: %lx np: %x tp: %x type: %x\r\n", 
+      call CXPacket.destination(dispMsg),
+      call CXPacket.sn(dispMsg),
+      call CXPacket.count(dispMsg),
+      call CXPacket.getScheduleNum(dispMsg),
+      call CXPacket.getOriginalFrameNum(dispMsg),
+      call CXPacket.getTimestamp(dispMsg),
+      call CXPacket.getNetworkProtocol(dispMsg),
+      call CXPacket.getTransportProtocol(dispMsg),
+      call CXPacket.type(dispMsg));
+   }
+
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
 //    uint8_t i;
