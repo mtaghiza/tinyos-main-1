@@ -29,7 +29,7 @@ enum{
 typedef nx_struct cx_ack_t{
   //DATA source id/sn
   nx_am_addr_t src;
-  nx_uint32_t sn;
+  nx_uint16_t sn;
   //how far away the dest is from the source.
   nx_uint8_t depth;
 } cx_ack_t;

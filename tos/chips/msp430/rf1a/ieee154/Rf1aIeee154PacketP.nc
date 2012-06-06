@@ -159,7 +159,9 @@ generic module Rf1aIeee154PacketP () {
   }
 
   command uint8_t Packet.maxPayloadLength() { return TOSH_DATA_LENGTH; }
-  command void Packet.setPayloadLength(message_t* msg, uint8_t len) { metadata_(msg)->payload_length = len + sizeof(header_t); }
+  command void Packet.setPayloadLength(message_t* msg, uint8_t len) { 
+    metadata_(msg)->payload_length = len + sizeof(header_t); 
+  }
   command uint8_t Packet.payloadLength(message_t* msg) { return cmetadata_(msg)->payload_length - sizeof(header_t); }
   command void* Packet.getPayload(message_t* msg, uint8_t len)
   {

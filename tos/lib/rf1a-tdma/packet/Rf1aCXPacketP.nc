@@ -39,6 +39,7 @@ module Rf1aCXPacketP{
   }
 
   command void Packet.setPayloadLength(message_t* msg, uint8_t len){
+//    printf_TMP("CX.spl %u + %u\r\n", len, sizeof(cx_header_t));
     call SubPacket.setPayloadLength(msg, len + sizeof(cx_header_t));
   }
 

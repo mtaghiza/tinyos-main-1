@@ -42,12 +42,13 @@ debugPacket=0
 sv=0
 pr=0
 sfr=0
-crc=0
+crc=1
 debugConfig=0
 txAodvState=0
 rxAodvState=0
 aodvClear=0
 debugFEC=0
+debugSFRX=1
 #debug RXREADY error messages
 rxr=0
 
@@ -70,7 +71,7 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX" 
 
 
 testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold

@@ -132,7 +132,6 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call Packet.setPayloadLength(tx_msg, sizeof(test_packet_t));
     pl -> sn ++;//= (1+TOS_NODE_ID);
 
     error = call AMSend.send(AM_BROADCAST_ADDR, tx_msg,
@@ -149,7 +148,6 @@ module TestP {
     error_t error;
     test_packet_t* pl = call Packet.getPayload(tx_msg,
       sizeof(test_packet_t));
-    call Packet.setPayloadLength(tx_msg, sizeof(test_packet_t));
     pl -> sn ++;//= (1+TOS_NODE_ID);
     error = call AMSend.send(0, tx_msg, sizeof(test_packet_t));
     if (SUCCESS == error){

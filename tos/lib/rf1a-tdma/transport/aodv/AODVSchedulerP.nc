@@ -88,7 +88,7 @@ module AODVSchedulerP{
     error_t error;
     TMP_STATE;
     CACHE_STATE;
-    printf_TMP("UBS.s %x\r\n", id);
+//    printf_TMP("UBS.s %x\r\n", id);
     call AMPacket.setType(msg, id);
     call AMPacketBody.setPayloadLength(msg, len);
     call CXPacket.setDestination(msg, addr);
@@ -116,7 +116,7 @@ module AODVSchedulerP{
         || 
         (CHECK_STATE(S_AO_READY) && (lastFn + aoClearTime >= nextSlotStart))
         ){ 
-        printf_TMP("UBS: call sfs.s\r\n");
+//        printf_TMP("UBS: call sfs.s\r\n");
         printf_AODV_CLEAR("SF %u (%u)\r\n", lastFn, nextSlotStart);
         printf_AODV_S("S");
         call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
@@ -125,7 +125,7 @@ module AODVSchedulerP{
           SET_STATE(S_AO_SETUP, S_ERROR_2);
         } 
       } else if (CHECK_STATE(S_AO_READY) || CHECK_STATE(S_AO_CLEARING)){
-        printf_TMP("UBS: call fs.s\r\n");
+//        printf_TMP("UBS: call fs.s\r\n");
         printf_AODV_S("P");
         if (destination == lastDestination){
           printf_AODV_CLEAR("F %u (%u %x)\r\n", lastFn, nextSlotStart, state);
@@ -201,7 +201,7 @@ module AODVSchedulerP{
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
     TMP_STATE;
     CACHE_STATE;
-    printf_TMP("sfs.sd: %s\r\n", decodeError(error));
+//    printf_TMP("sfs.sd: %s\r\n", decodeError(error));
     printf_AODV_S("SFS.sd: %u \r\n", lastStart);
     //TODO: if state is S_AO_SENDING, do the same check as fs.sd for
     //  CLEARING, but adjust time. ENOACK: still OK to stay in the
@@ -296,16 +296,16 @@ module AODVSchedulerP{
       SET_STATE(S_AO_SETUP_SENDING, S_ERROR_9);
       lastStart = frameNum;
       printf_AODV_IO("IO ASU %u\r\n", frameNum);
-      printf_TMP("io %u ", frameNum);
-      printf_TMP("SUT\r\n");
+//      printf_TMP("io %u ", frameNum);
+//      printf_TMP("SUT\r\n");
       return TRUE;
     } 
     //TODO: if the pending message is being sent with acks
     //(scoped-flood) then we should only return true if it's a data
     //frame  (localFrame%3==0)
     if (CHECK_STATE(S_AO_PENDING)){
-      printf_TMP("io %u ", frameNum);
-      printf_TMP("PT\r\n");
+//      printf_TMP("io %u ", frameNum);
+//      printf_TMP("PT\r\n");
       printf_AODV_IO("IO AP %u\r\n", frameNum);
       SET_STATE(S_AO_SENDING, S_ERROR_a);
       lastStart = frameNum;

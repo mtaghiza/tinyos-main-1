@@ -70,7 +70,8 @@ module Rf1aAMPacketP {
   /** Adjust the payload to account for the layer header.  There is no
    * footer at this layer.  */
   command uint8_t Packet.maxPayloadLength() { return call SubPacket.maxPayloadLength() - sizeof(layer_header_t); }
-  command void Packet.setPayloadLength(message_t* msg, uint8_t len) { call SubPacket.setPayloadLength(msg, len + sizeof(layer_header_t)); }
+  command void Packet.setPayloadLength(message_t* msg, uint8_t len) { 
+    call SubPacket.setPayloadLength(msg, len + sizeof(layer_header_t)); }
   command uint8_t Packet.payloadLength(message_t* msg) { return call SubPacket.payloadLength(msg) - sizeof(layer_header_t); }
   command void* Packet.getPayload(message_t* msg, uint8_t len) { return (void*)(1 + layerHeader(msg)); }
 
