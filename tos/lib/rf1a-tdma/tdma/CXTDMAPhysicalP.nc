@@ -85,10 +85,9 @@ module CXTDMAPhysicalP {
   //schedule variables
   uint32_t s_frameStart;
   uint32_t s_frameLen;
-  uint16_t s_activeFrames;
-  uint16_t s_inactiveFrames;
+  uint32_t s_totalFrames;
   uint32_t s_fwCheckLen;
-  uint8_t s_sr = TDMA_INIT_SYMBOLRATE;
+  uint8_t s_sr = SCHED_INIT_SYMBOLRATE;
   uint8_t s_sri = 0xff;
   uint8_t s_channel = TEST_CHANNEL;
   uint8_t s_isSynched = FALSE;
@@ -211,7 +210,7 @@ module CXTDMAPhysicalP {
       PFS_CYCLE_SET_PIN;
     }
     PFS_SET_PIN;
-    frameNum = (frameNum + 1)%(s_activeFrames + s_inactiveFrames);
+    frameNum = (frameNum + 1)%(s_totalFrames);
     printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
       call PrepareFrameStartAlarm.getNow(), 
       call PrepareFrameStartAlarm.getAlarm());
@@ -231,41 +230,37 @@ module CXTDMAPhysicalP {
     signal FrameStarted.frameStarted(frameNum);
     //0.5uS
     PFS_TOGGLE_PIN;
-
-    //TODO ASSIGNMENT: this should use the TDMAPhySchedule (right?)
-    //interface to check for on/off frames. There may be gaps as well
-    //as the slack period, and we need a way to get the
-    //transport-layer information down here. 
-    if (s_inactiveFrames > 0){
-      //if there are n active frames, then frameNum n-1 is the last to
-      //have data in it. so, we go to sleep at this point.
-      if (frameNum == s_activeFrames){
-        if (SUCCESS == call Rf1aPhysical.sleep()){
-          call FrameStartAlarm.stop();
-          call FrameWaitAlarm.stop();
-          //TODO: post task to indicate that we are done with the
-          //active phase?
-//          printf_PFS_FREAKOUT("Inactive: %u\r\n", frameNum);
-          FS_CYCLE_CLEAR_PIN;
-//          PFS_CYCLE_CLEAR_PIN;
-          setState(S_INACTIVE);
-        } else {
-          setState(S_ERROR_1);
-        }
-//        post debugConfig();
-        post reportStats();
-      //wake up radio when we come around the bend.
-      } else if (frameNum == 0 ){
-        if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-          call FrameStartAlarm.startAt(
-            call PrepareFrameStartAlarm.getAlarm(), 
-            PFS_SLACK);
-          setState(S_IDLE);
-        } else {
-          setState(S_ERROR_2);
-        }
-      } 
+    
+    if (frameNum == s_totalFrames - 1){
+      post reportStats();
     }
+
+    //TODO: transport duty cycle optimizations through here too
+    //If we're currently not inactive, but this frame is unused, sleep
+    //the radio.
+    if (!checkState(S_INACTIVE) 
+        && signal TDMAPhySchedule.isInactive(frameNum) ){
+      if (SUCCESS == call Rf1aPhysical.sleep()){
+        call FrameStartAlarm.stop();
+        call FrameWaitAlarm.stop();
+        FS_CYCLE_CLEAR_PIN;
+        setState(S_INACTIVE);
+      } else {
+        setState(S_ERROR_1);
+      }
+    //If we're inactive, but this frame is used, wakeup the radio
+    }else if (checkState(S_INACTIVE) 
+        && ! signal TDMAPhySchedule.isInactive(frameNum)){
+      if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
+        call FrameStartAlarm.startAt(
+          call PrepareFrameStartAlarm.getAlarm(), 
+          PFS_SLACK);
+        setState(S_IDLE);
+      } else {
+        setState(S_ERROR_2);
+      }
+    }
+
     //Idle, or we are in an extra long frame-wait (e.g. trying to
     //  synch)
     if (checkState(S_IDLE) || checkState(S_RX_READY) 
@@ -927,9 +922,7 @@ module CXTDMAPhysicalP {
  
   //Update schedule parameters, taking care to handle missed alarms.
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
-      uint16_t atFrameNum, uint32_t frameLen,
-      uint32_t fwCheckLen, uint16_t activeFrames, 
-      uint16_t inactiveFrames, uint8_t symbolRate, 
+      uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
       uint8_t channel, bool isSynched){
 //    post debugConfig();
     SS_SET_PIN;
@@ -944,7 +937,8 @@ module CXTDMAPhysicalP {
     } else if(!inError()) {
       uint32_t pfsStartAt;
       uint32_t delta;
-
+      uint8_t last_sr;
+      uint8_t last_channel;
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
       call SynchCapture.disable();
@@ -959,18 +953,25 @@ module CXTDMAPhysicalP {
         symbolRate, 
         channel);
       atomic{
+        last_sr = s_sr;
+        last_channel = s_channel;
+        s_sr = symbolRate;
+        s_sri = srIndex(s_sr);
+        s_frameLen = frameLens[s_sri];
+        s_fwCheckLen = fwCheckLens[s_sri];
+
         //while target frameStart is in the past
         // - add 1 to target frameNum, add framelen to target frameStart
         pfsStartAt = startAt - PFS_SLACK ;
         while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
-          pfsStartAt += frameLen;
-          atFrameNum = (atFrameNum + 1)%(activeFrames + inactiveFrames);
+          pfsStartAt += s_frameLen;
+          atFrameNum = (atFrameNum + 1)%(s_totalFrames);
         }
         //now that target is in the future: 
         //  - set frameNum to target framenum - 1 (so that pfs counts to
         //    correct frame num when it fires).
         if (atFrameNum == 0){
-          frameNum = activeFrames + inactiveFrames;
+          frameNum = s_totalFrames;
         }else{
           frameNum = atFrameNum - 1;
         }
@@ -983,18 +984,11 @@ module CXTDMAPhysicalP {
           delta + PFS_SLACK);
   
         s_frameStart = startAt;
-        s_frameLen = frameLen;
-        s_fwCheckLen = fwCheckLen;
-        s_activeFrames = activeFrames;
-        s_inactiveFrames = inactiveFrames;
-        s_channel = channel;
         s_isSynched = isSynched;
       }
       //If channel or symbol rate changes, need to reconfigure
       //  radio.
-      if (s_sr != symbolRate || s_channel != channel){
-        s_sr = symbolRate;
-        s_sri = srIndex(s_sr);
+      if (s_sr != last_sr || s_channel != last_channel){
         call Rf1aPhysical.reconfigure();
       }
  

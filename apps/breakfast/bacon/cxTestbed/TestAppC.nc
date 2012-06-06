@@ -43,12 +43,12 @@ configuration TestAppC{
   //Scheduler: should sit above transport layer. So it should be
   //dealing with AM packets (using CX header as needed)
   TDMASchedulerC.SubSplitControl -> CXTDMAPhysicalC;
-  TDMASchedulerC.AMPacket -> CXPacketStackC.AMPacket;
-  TDMASchedulerC.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
-  TDMASchedulerC.CXPacket -> CXPacketStackC.CXPacket;
-  TDMASchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
-  TDMASchedulerC.Packet -> CXPacketStackC.AMPacketBody;
-  TDMASchedulerC.CXRoutingTable -> CXRoutingTableC;
+//  TDMASchedulerC.AMPacket -> CXPacketStackC.AMPacket;
+//  TDMASchedulerC.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
+//  TDMASchedulerC.CXPacket -> CXPacketStackC.CXPacket;
+//  TDMASchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+//  TDMASchedulerC.Packet -> CXPacketStackC.AMPacketBody;
+//  TDMASchedulerC.CXRoutingTable -> CXRoutingTableC;
 
   TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
   TDMASchedulerC.FrameStarted -> CXTDMAPhysicalC;
