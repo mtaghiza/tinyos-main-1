@@ -587,6 +587,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
   norace uint8_t tx_client;
 
+
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
   void loadFifo_(uint8_t* buffer, uint8_t dataLength){

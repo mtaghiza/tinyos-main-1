@@ -19,12 +19,18 @@ module MasterSchedulerP {
 
   uses interface ExternalScheduler;
 
+  uses interface CXPacket;
+
 } implementation {
   //which nodes are assigned to which slots
   assignment_t assignments[SCHED_NUM_SLOTS];
 
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
+
+  message_t response_msg_internal;
+  message_t* response_msg = &response_msg_internal;
+
   cx_schedule_t* schedule;
   
   //state variables
@@ -42,8 +48,18 @@ module MasterSchedulerP {
   //   the queue of pending responses
   // if requestsReceived, update assignments at end of cycle
 
-  //the point at which we send announcements
-  uint16_t announcementSlot;
+  //for designating transmissions which are dependent on position in
+  //  cycle
+  //TODO: announcement/data might be defined externally.
+  uint16_t announcementSlot = 0;
+  uint16_t responseSlot = INVALID_SLOT;
+  uint16_t dataSlot = 1;
+
+  uint16_t totalFrames;
+
+  //pre-compute for faster idle-check
+  uint16_t firstIdleFrame;
+  uint16_t lastIdleFrame;
  
   //S_OFF
   // start / TDMAPhySchedule.set, AnnounceSend.send 
@@ -74,37 +90,31 @@ module MasterSchedulerP {
     uint8_t i;
     schedule = call AnnounceSend.getPayload(schedule_msg,
       sizeof(cx_schedule_t));
-    printf_TMP("Schedule msg %p pl %p\r\n", schedule_msg, schedule);
     schedule->scheduleNum++;
     schedule->symbolRate = SCHED_INIT_SYMBOLRATE;
     schedule->channel = TEST_CHANNEL;
     schedule->slots = SCHED_NUM_SLOTS;
     schedule->framesPerSlot = SCHED_FRAMES_PER_SLOT;
     schedule->maxRetransmit = SCHED_MAX_RETRANSMIT;
-
+    totalFrames = schedule->framesPerSlot * schedule->slots;
     for (i=0; i < SCHED_NUM_SLOTS; i++){
       assignments[i].owner = UNCLAIMED;   
     }
-    //TODO: the slot numbers here may be informed from outside
-    //for announcements
-    assignments[0].owner = TOS_NODE_ID;
-    assignments[0].notified = TRUE;
-    //for other data
-    assignments[1].owner = TOS_NODE_ID;
-    assignments[1].notified = TRUE;
+    assignments[announcementSlot].owner = TOS_NODE_ID;
+    assignments[announcementSlot].notified = TRUE;
+
+    assignments[dataSlot].owner = TOS_NODE_ID;
+    assignments[dataSlot].notified = TRUE;
     return call SubSplitControl.start();
   }
   
   task void requestExternalSchedule();
   event void SubSplitControl.startDone(error_t error){
-    printf("%s: \r\n", __FUNCTION__);
     post requestExternalSchedule();
   }
 
   task void recomputeSchedule();
   task void requestExternalSchedule(){
-    printf("%s: \r\n", __FUNCTION__);
-    printf_TMP("schedule pl %p\r\n", schedule);
     call TDMAPhySchedule.setSchedule( 
       call ExternalScheduler.getStartTime(call TDMAPhySchedule.getNow()),
       call ExternalScheduler.getStartFrame(),
@@ -112,7 +122,7 @@ module MasterSchedulerP {
       schedule->symbolRate,
       schedule->channel, 
       TRUE);
-//    post recomputeSchedule();
+    post recomputeSchedule();
   }
 
   //by default, start the schedule as soon as the radio is on and
@@ -126,20 +136,72 @@ module MasterSchedulerP {
     return 0;
   }
 
-  task void recomputeSchedule(){
+  void printSchedule(){
     uint8_t i;
+    printf_TMP("SCHED: sn %u sr %u chan %u slots %u fps %u mr %u fis %u lis %u [",
+      schedule->scheduleNum,
+      schedule->symbolRate,
+      schedule->channel,
+      schedule->slots,
+      schedule->framesPerSlot,
+      schedule->maxRetransmit,
+      schedule->firstIdleSlot,
+      schedule->lastIdleSlot
+    );
+    for (i = 0; i < MAX_ANNOUNCED_SLOTS; i++){
+      printf_TMP(" %u, ", schedule->availableSlots[i]);
+    }
+    printf_TMP("]\r\n");
+   }
+
+  task void printScheduleTask(){
+    printSchedule();
+  }
+
+  task void recomputeSchedule(){
+    uint16_t i;
     uint8_t j;
-    //TODO: go through assignments and set up availableSlots in
-    //schedule
+    error_t error;
+    uint16_t lastAnnounced = 0;
+    for (i = 0; i< MAX_ANNOUNCED_SLOTS; i++){
+      schedule->availableSlots[i] = INVALID_SLOT;
+    }
     for (i = 0 ; i < SCHED_NUM_SLOTS; i++){
-      if (assignments[i].owner == UNCLAIMED && j < MAX_ANNOUNCED_SLOTS){
-        //TODO: fill in availableSlots[j]
+      if (assignments[i].owner == UNCLAIMED &&
+           j < MAX_ANNOUNCED_SLOTS){
+        schedule->availableSlots[j] = i;
         j++;
+        lastAnnounced = i;
       }
     }
-    //TODO: eviction
-    //TODO: update idle periods
-    call AnnounceSend.send(AM_BROADCAST_ADDR, schedule_msg, sizeof(cx_schedule_t));
+
+    //TODO: eviction of unused slots
+
+    //update idle periods of schedule. Currently assumes that the end
+    //of the cycle is the last to be filled in.
+    schedule->lastIdleSlot = SCHED_NUM_SLOTS;
+    i = SCHED_NUM_SLOTS-1;
+    while (i > 0 && assignments[i].owner == UNCLAIMED){
+      i --;
+    }
+    //announced+unassigned slots should not be idle
+    schedule->firstIdleSlot = 1+(lastAnnounced > i? lastAnnounced:i);
+    firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
+    lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
+    printSchedule();
+//    post printScheduleTask();
+    error = call AnnounceSend.send(AM_BROADCAST_ADDR, schedule_msg, sizeof(cx_schedule_t));
+    printf_TMP("%s: %s\r\n", __FUNCTION__, decodeError(error));
+  }
+  
+  uint16_t getSlot(uint16_t frameNum){
+    return frameNum / schedule->framesPerSlot;
+  }
+
+  //owns announce, data, and response frames
+  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
+    uint16_t sn = getSlot(frameNum); 
+    return sn == announcementSlot || sn == dataSlot || sn == responseSlot;
   }
 
 ////TODO:uncomment when this interface exists
@@ -160,33 +222,55 @@ module MasterSchedulerP {
 
   event message_t* RequestReceive.receive(message_t* msg, void* pl,
       uint8_t len){
+    cx_request_t* request = (cx_request_t*)pl;
+    printf("%s: \r\n", __FUNCTION__);
     requestsReceived = TRUE;
-    //TODO: read slot, sender out of it.
-    //TODO: update assignments if this slot is still available.
+    if ( assignments[request->slotNumber].owner == UNCLAIMED){
+      assignments[request->slotNumber].owner 
+        = call CXPacket.source(msg);
+    }
     return msg;
   }
   
   async event void FrameStarted.frameStarted(uint16_t frameNum){
-    //TODO: fill these bools in
-    bool cycleStart = FALSE;
-    bool cycleEnd = FALSE;
+    bool cycleStart = (frameNum == totalFrames - 1);
+    bool cycleEnd = (frameNum == totalFrames - 2);
     if (cycleStart){
       post recomputeSchedule();
     } else if (cycleEnd){
       responsesPending = requestsReceived;
     } else {
       //nothin'
-      if (frameNum %10 == 0){
-        printf("FS %u \r\n", frameNum);
-      }
     }
   }
 
   task void checkResponses(){
+    printf("%s: \r\n", __FUNCTION__);
     if (responsesPending){
-      //TODO: find first assigned un-notified slot (return if none)
-      //TODO: set up response_msg accordingly
-      //TODO: call ResponseSend.send with it
+      uint8_t i;
+      //find first assigned un-notified slot 
+      for (i = 0; i < SCHED_NUM_SLOTS; i++){
+        if (assignments[i].owner != UNCLAIMED 
+            && !assignments[i].notified){
+          error_t error;
+          //inform node it's been assigned
+          cx_response_t* response 
+            = call ResponseSend.getPayload(response_msg, sizeof(cx_response_t));
+          response->slotNumber = i;
+          response->owner = assignments[i].owner;
+           
+          error = call ResponseSend.send(response->owner,
+            response_msg, 
+            sizeof(cx_response_t));
+          if (error != SUCCESS){
+            printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+          }
+          responseSlot = response->slotNumber;
+          break;
+        }
+      }
+    }else{
+      responseSlot = INVALID_SLOT;
     }
   }
 
@@ -196,8 +280,15 @@ module MasterSchedulerP {
 //  }
 
   event void ResponseSend.sendDone(message_t* msg, error_t error){
-    //TODO: update assignments
-    post checkResponses();
+    printf("%s: \r\n", __FUNCTION__);
+    if ( error == SUCCESS){
+      cx_response_t* response = call ResponseSend.getPayload(msg,
+        sizeof(cx_response_t));
+      assignments[response->slotNumber].notified = TRUE;
+      post checkResponses();
+    } else{ 
+      printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    }
   }
 
 
@@ -208,37 +299,31 @@ module MasterSchedulerP {
   event void SubSplitControl.stopDone(error_t error){
     signal SplitControl.stopDone(error);
   }
-
+  
   async event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-    //TODO: return true if frameNum is between firstIdle and lastIdle,
-    //or is in an unannounced+unassigned slot.
-    return TRUE;
+    return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
   async event void TDMAPhySchedule.frameStarted(uint32_t startTime, uint16_t frameNum){}
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
   async event uint8_t TDMAPhySchedule.getScheduleNum(){
-    //TODO: return current schedule num
-    return 0;
+    return schedule->scheduleNum;
   }
+
   async event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp){}
   
-  //TODO: fill 'em in
   async command uint16_t TDMARoutingSchedule.framesPerSlot(){
-    return 0;
+    return schedule->framesPerSlot;
   }
   async command bool TDMARoutingSchedule.isSynched(uint16_t frameNum){
-    return FALSE;
+    return TRUE;
   }
   async command uint8_t TDMARoutingSchedule.maxRetransmit(){
-    return 0;
-  }
-  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
-    return FALSE;
+    return schedule->maxRetransmit;
   }
   async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
-    return 0;
+    return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
   
 }

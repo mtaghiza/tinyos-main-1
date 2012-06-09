@@ -14,6 +14,7 @@ configuration MasterSchedulerC {
   uses interface SplitControl as SubSplitControl;
 } implementation {
   components MasterSchedulerP;
+  components CXPacketStackC;
 
   MasterSchedulerP.AnnounceSend = AnnounceSend; 
   MasterSchedulerP.RequestReceive = RequestReceive;
@@ -26,4 +27,5 @@ configuration MasterSchedulerC {
 
   SplitControl = MasterSchedulerP.SplitControl;
   MasterSchedulerP.SubSplitControl = SubSplitControl;
+  MasterSchedulerP.CXPacket -> CXPacketStackC.CXPacket;
 }

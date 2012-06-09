@@ -8,10 +8,10 @@ debugScale=4UL
 #test setup
 floodTest=0
 rootId="0"
-nonrootRx=""
+nonrootRx="1"
 #allPlugged="0 1 2 3"
-allPlugged="0 1 2"
-nonrootTx="1"
+allPlugged="0 1"
+nonrootTx=""
 
 fecEnabled=0
 fecHamming74=1
@@ -20,7 +20,7 @@ ipi=5120UL
 queueThreshold=2
 
 #network params
-maxNodes=5
+numSlots=10
 fps=10
 md=2
 mr=1
@@ -49,6 +49,7 @@ rxAodvState=0
 aodvClear=0
 debugFEC=0
 debugSFRX=0
+debugSS=0
 #debug RXREADY error messages
 rxr=0
 
@@ -63,7 +64,7 @@ do
 done
 popd
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL  TDMA_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 TDMA_MAX_DEPTH=${md}UL TDMA_MAX_NODES=$maxNodes TDMA_ROOT_FRAMES_PER_SLOT=$fps TDMA_MAX_RETRANSMIT=${mr}UL"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL"
 
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 
@@ -71,7 +72,7 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX" 
 
 
 testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold

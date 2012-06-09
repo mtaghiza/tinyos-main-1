@@ -26,6 +26,8 @@
 
 enum {
   UNCLAIMED = 0xffff,
+  INVALID_SCHEDULE_NUM= 0xff,
+  INVALID_SLOT = 0xffff,
 };
 
 typedef struct assignment_t {
@@ -45,8 +47,16 @@ typedef nx_struct cx_schedule_t {
   nx_uint8_t  maxRetransmit;
   nx_uint16_t firstIdleSlot; //range of cycle with no traffic
   nx_uint16_t lastIdleSlot;
-  nx_uint8_t numAvailableSlots; //how many free slots are being announced
   nx_uint16_t availableSlots[MAX_ANNOUNCED_SLOTS]; //the free slots
 } cx_schedule_t;
+
+typedef nx_struct cx_request_t {
+  nx_uint16_t slotNumber;
+} cx_request_t;
+
+typedef nx_struct cx_response_t {
+  nx_am_addr_t owner;
+  nx_uint16_t slotNumber;
+} cx_response_t;
 
 #endif

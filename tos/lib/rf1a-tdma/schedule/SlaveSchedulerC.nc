@@ -14,6 +14,9 @@ configuration SlaveSchedulerC{
   uses interface SplitControl as SubSplitControl;
 
 } implementation {
+  components CXPacketStackC;
+  components RandomC;
+
   components SlaveSchedulerP;
 
   SlaveSchedulerP.AnnounceReceive = AnnounceReceive;
@@ -26,5 +29,9 @@ configuration SlaveSchedulerC{
   TDMARoutingSchedule = SlaveSchedulerP.TDMARoutingSchedule;
   SplitControl = SlaveSchedulerP.SplitControl;
   SlaveSchedulerP.SubSplitControl = SubSplitControl;
+
+  SlaveSchedulerP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+  SlaveSchedulerP.CXPacket-> CXPacketStackC.CXPacket;
+  SlaveSchedulerP.Random -> RandomC;
 
 }

@@ -574,6 +574,7 @@ module CXTDMAPhysicalP {
           lastSentOrigin? frameNum: curOF);
       }
     }
+//    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
     return gpResult;
   }
 
@@ -942,31 +943,37 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.stop();
       call FrameStartAlarm.stop();
       call SynchCapture.disable();
-      printf_TDMA_SS("SS@ %lu: %lu %u %lu %lu %u %u %u %u\r\n", 
+      printf_TDMA_SS("SS@ %lu: %lu %u %u %u %u\r\n", 
         call FrameStartAlarm.getNow(), 
         startAt, 
         atFrameNum,
-        frameLen, 
-        fwCheckLen, 
-        activeFrames, 
-        inactiveFrames,
+        totalFrames,
         symbolRate, 
         channel);
       atomic{
         last_sr = s_sr;
         last_channel = s_channel;
+        s_totalFrames = totalFrames;
         s_sr = symbolRate;
         s_sri = srIndex(s_sr);
         s_frameLen = frameLens[s_sri];
         s_fwCheckLen = fwCheckLens[s_sri];
 
+        //not synched: set the frame wait timeout to 2x frame len
+        if (!isSynched){
+          s_frameLen *= 10;
+          s_fwCheckLen = 2*s_frameLen;
+        }
+
         //while target frameStart is in the past
         // - add 1 to target frameNum, add framelen to target frameStart
+        //TODO: fix issue with PFS_SLACK causing numbers to wrap
         pfsStartAt = startAt - PFS_SLACK ;
         while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
           pfsStartAt += s_frameLen;
           atFrameNum = (atFrameNum + 1)%(s_totalFrames);
         }
+
         //now that target is in the future: 
         //  - set frameNum to target framenum - 1 (so that pfs counts to
         //    correct frame num when it fires).
