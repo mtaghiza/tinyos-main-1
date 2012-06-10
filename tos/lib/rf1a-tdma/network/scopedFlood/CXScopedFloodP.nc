@@ -191,7 +191,6 @@ module CXScopedFloodP{
   //holding one.
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("ScopedFloodSend\r\n");
-//    printf_TMP("scopedflood.send %x\r\n", t);
     atomic{
       if (!originDataPending){
         origin_data_msg = msg;
@@ -392,7 +391,9 @@ module CXScopedFloodP{
 //    printf_TMP("cx.sd\r\n");
 ////    dispMsg = msg;
 ////    post displayPacket();
-    TXLeft --;
+    if(TXLeft != 0){
+      TXLeft --;
+    }
     if (TXLeft == 0){
       if (state == S_DATA){
         //TODO: if this is pre-routed, waitLeft should be just the
@@ -619,9 +620,12 @@ module CXScopedFloodP{
         //for me: save it for RX and prepare to send ack.
         if (dest == TOS_NODE_ID){
           uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
-          uint16_t ackFramesLeft = 
-            (call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
-            (ACKS_PER_DATA + 1)) * ACKS_PER_DATA;
+          uint16_t fl =
+             call TDMARoutingSchedule.framesLeftInSlot(frameNum);
+          uint16_t ackFramesLeft =
+            ( fl/ (ACKS_PER_DATA + 1)) * ACKS_PER_DATA;
+//          printf_TMP("fn: %u mr: %u fl: %u afl: %u\r\n", frameNum, 
+//            mr, fl, ackFramesLeft);
           TXLeft = (mr < ackFramesLeft)?mr:ackFramesLeft;
           printf_SF_RX("M");
           ret = rx_msg;

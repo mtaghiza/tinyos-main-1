@@ -61,7 +61,7 @@ module SlaveSchedulerP {
 
   task void updateSchedule(){
     uint8_t sri = srIndex(schedule->symbolRate);
-    printf("%s: \r\n", __FUNCTION__);
+    isSynched = TRUE;
     //TODO: clock skew correction
     //TODO: why is originalFrameNum in the packet interface rather
     //than metadata?
@@ -73,7 +73,7 @@ module SlaveSchedulerP {
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
-      TRUE
+      isSynched
     );
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
@@ -86,7 +86,6 @@ module SlaveSchedulerP {
     uint8_t numValid;
     cx_request_t* request = call RequestSend.getPayload(request_msg,
       sizeof(cx_request_t));
-    printf("%s: \r\n", __FUNCTION__);
 
     //pick a valid slot
     for(numValid = 0; numValid < MAX_ANNOUNCED_SLOTS; numValid++){
@@ -107,7 +106,6 @@ module SlaveSchedulerP {
 
   event message_t* AnnounceReceive.receive(message_t* msg, void* pl, uint8_t len){
     message_t* ret = schedule_msg;
-    printf("%s: \r\n", __FUNCTION__);
     schedule_msg = msg;
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
@@ -127,17 +125,20 @@ module SlaveSchedulerP {
   }
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
-    printf("%s: \r\n", __FUNCTION__);
     //now we're waiting for response
+  }
+
+  task void startDoneTask(){
+    signal SplitControl.startDone(SUCCESS);
   }
 
   event message_t* ResponseReceive.receive(message_t* msg, void* pl, uint8_t len){
     cx_response_t* response = (cx_response_t*)pl;
-    printf("%s: \r\n", __FUNCTION__);
     if (response->slotNumber == mySlot){
       if (response->owner == TOS_NODE_ID){
         //confirmed, hooray.
         printf_TMP("Confirmed @%u\r\n", mySlot);
+        post startDoneTask();
       }else{
         //contradicts us: somebody else claimed it.
         printf_TMP("Contradicted @%u, try again\r\n", mySlot);
@@ -195,7 +196,10 @@ module SlaveSchedulerP {
     return frameNum / call TDMARoutingSchedule.framesPerSlot();
   }
   async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
-    return getSlot(frameNum)== mySlot;
+//    if (getSlot(frameNum) == mySlot){
+//      printf_TMP("of: %u\r\n", frameNum);
+//    }
+    return getSlot(frameNum) == mySlot;
   }
   async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);

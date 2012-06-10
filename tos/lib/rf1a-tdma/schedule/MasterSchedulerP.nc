@@ -188,10 +188,12 @@ module MasterSchedulerP {
     schedule->firstIdleSlot = 1+(lastAnnounced > i? lastAnnounced:i);
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
-    printSchedule();
+//    printSchedule();
 //    post printScheduleTask();
     error = call AnnounceSend.send(AM_BROADCAST_ADDR, schedule_msg, sizeof(cx_schedule_t));
-    printf_TMP("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    if (error != SUCCESS){
+      printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    }
   }
   
   uint16_t getSlot(uint16_t frameNum){
@@ -223,7 +225,6 @@ module MasterSchedulerP {
   event message_t* RequestReceive.receive(message_t* msg, void* pl,
       uint8_t len){
     cx_request_t* request = (cx_request_t*)pl;
-    printf("%s: \r\n", __FUNCTION__);
     requestsReceived = TRUE;
     if ( assignments[request->slotNumber].owner == UNCLAIMED){
       assignments[request->slotNumber].owner 
@@ -245,7 +246,6 @@ module MasterSchedulerP {
   }
 
   task void checkResponses(){
-    printf("%s: \r\n", __FUNCTION__);
     if (responsesPending){
       uint8_t i;
       //find first assigned un-notified slot 
@@ -280,7 +280,6 @@ module MasterSchedulerP {
 //  }
 
   event void ResponseSend.sendDone(message_t* msg, error_t error){
-    printf("%s: \r\n", __FUNCTION__);
     if ( error == SUCCESS){
       cx_response_t* response = call ResponseSend.getPayload(msg,
         sizeof(cx_response_t));

@@ -8,16 +8,16 @@ debugScale=4UL
 #test setup
 floodTest=0
 rootId="0"
-nonrootRx="1"
+nonrootRx=""
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx=""
+nonrootTx="1"
 
 fecEnabled=0
 fecHamming74=1
 
 ipi=5120UL
-queueThreshold=2
+queueThreshold=1
 
 #network params
 numSlots=10

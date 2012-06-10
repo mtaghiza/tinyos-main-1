@@ -88,7 +88,6 @@ module AODVSchedulerP{
     error_t error;
     TMP_STATE;
     CACHE_STATE;
-//    printf_TMP("UBS.s %x\r\n", id);
     call AMPacket.setType(msg, id);
     call AMPacketBody.setPayloadLength(msg, len);
     call CXPacket.setDestination(msg, addr);
@@ -289,10 +288,13 @@ module AODVSchedulerP{
   // - AO_WAIT and enough time has elapsed for the last ao packet to
   //   have cleared.
   bool isOrigin(uint16_t frameNum){
-    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot();
     TMP_STATE;
     CACHE_STATE;
-    if (CHECK_STATE(S_AO_SETUP) && (frameNum == TOS_NODE_ID*fps)){
+    //we should only get called here if the frame is owned and this is
+    //indeed a data frame.
+    if (CHECK_STATE(S_AO_SETUP) && 
+      call SubTDMARoutingSchedule.framesLeftInSlot(frameNum) == call SubTDMARoutingSchedule.framesPerSlot()
+      ){
       SET_STATE(S_AO_SETUP_SENDING, S_ERROR_9);
       lastStart = frameNum;
       printf_AODV_IO("IO ASU %u\r\n", frameNum);
@@ -300,9 +302,6 @@ module AODVSchedulerP{
 //      printf_TMP("SUT\r\n");
       return TRUE;
     } 
-    //TODO: if the pending message is being sent with acks
-    //(scoped-flood) then we should only return true if it's a data
-    //frame  (localFrame%3==0)
     if (CHECK_STATE(S_AO_PENDING)){
 //      printf_TMP("io %u ", frameNum);
 //      printf_TMP("PT\r\n");
@@ -311,7 +310,7 @@ module AODVSchedulerP{
       lastStart = frameNum;
       return TRUE;
     }
-//    printf_AODV("IOX %u\r\n", frameNum);
+    printf_AODV("IOX %u\r\n", frameNum);
     return FALSE;
   }
   
@@ -369,6 +368,7 @@ module AODVSchedulerP{
     //the flood component will drop any incoming data packets,
     //including the schedule with which we need to synch.
     return (call SubTDMARoutingSchedule.isSynched(frameNum)) &&
+      call SubTDMARoutingSchedule.ownsFrame(frameNum) && 
       (isOrigin(frameNum) );
   }
 
