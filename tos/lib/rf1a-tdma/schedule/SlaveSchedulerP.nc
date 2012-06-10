@@ -28,6 +28,7 @@ module SlaveSchedulerP {
   uint16_t lastIdleFrame = 0;
   uint16_t mySlot = INVALID_SLOT;
   bool isSynched = FALSE;
+  bool claimedLast = FALSE;
 
   enum {
     S_OFF = 0x00,
@@ -48,6 +49,7 @@ module SlaveSchedulerP {
   }
 
   task void startListen(){
+    state = S_LISTEN;
     call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNow(),
       0, 
       1, 
@@ -77,13 +79,24 @@ module SlaveSchedulerP {
     );
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
-    if (mySlot == INVALID_SLOT){
+
+    //this indicates that we sent a request, but got no response.
+    if (state == S_CONFIRM_WAIT){
+      mySlot = INVALID_SLOT;
+      state = S_LISTEN;
+    }
+    
+    if (mySlot == INVALID_SLOT && state == S_LISTEN){
+      state = S_REQUESTING;
       post claimSlotTask();
+    }else if (state == S_REQUESTING){
+      state = S_CONFIRM_WAIT;
     }
   }
 
   task void claimSlotTask(){
     uint8_t numValid;
+    error_t error;
     cx_request_t* request = call RequestSend.getPayload(request_msg,
       sizeof(cx_request_t));
 
@@ -93,22 +106,29 @@ module SlaveSchedulerP {
         numValid++;
       }
     }
-    mySlot = (call Random.rand16() % numValid);
+    mySlot = schedule->availableSlots[(call Random.rand16() % numValid)];
 
     //set up packet
     request->slotNumber = mySlot;
-
+    printf_TMP("Claim %u\r\n", mySlot);
     //call RequestSend.send
-    call RequestSend.send(call CXPacket.source(schedule_msg), 
+    error = call RequestSend.send(call CXPacket.source(schedule_msg), 
       request_msg, 
       sizeof(cx_request_t));
+    if (error != SUCCESS){
+      printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    }
   }
 
+  task void reportRX(){
+    printf_TESTBED("RX sched\r\n");
+  }
   event message_t* AnnounceReceive.receive(message_t* msg, void* pl, uint8_t len){
     message_t* ret = schedule_msg;
     schedule_msg = msg;
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
+    post reportRX();
     return ret;
   }
 
@@ -126,6 +146,7 @@ module SlaveSchedulerP {
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
     //now we're waiting for response
+    state = S_REQUESTING;
   }
 
   task void startDoneTask(){
@@ -136,10 +157,13 @@ module SlaveSchedulerP {
     cx_response_t* response = (cx_response_t*)pl;
     if (response->slotNumber == mySlot){
       if (response->owner == TOS_NODE_ID){
+        state = S_READY;
         //confirmed, hooray.
         printf_TMP("Confirmed @%u\r\n", mySlot);
         post startDoneTask();
       }else{
+        mySlot = INVALID_SLOT;
+        state = S_LISTEN;
         //contradicts us: somebody else claimed it.
         printf_TMP("Contradicted @%u, try again\r\n", mySlot);
         mySlot = INVALID_SLOT;

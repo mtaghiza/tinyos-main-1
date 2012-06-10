@@ -29,11 +29,11 @@ mr=1
 
 #radio logging
 rl=0
-rs=1
+rs=0
 
 #schedule config
 #init symbol rate
-initSR=100
+initSR=125
 
 #stack protection
 sp=1
@@ -128,8 +128,9 @@ do
 done
 
 maxNodes=$(grep -v '#' $root $nonrootRx $nonrootTx | awk '{print $NF}' | sort -n | tail -1)
+numSlots=$(($maxNodes + 5))
 
-scheduleOptions="DEBUG_SCALE=${debugScale}UL TA_DIV=1UL TDMA_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 TDMA_MAX_DEPTH=${md}UL TDMA_MAX_NODES=$(($maxNodes + 2)) TDMA_ROOT_FRAMES_PER_SLOT=$fps TDMA_MAX_RETRANSMIT=${mr}UL"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL"
 
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 

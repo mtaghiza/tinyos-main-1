@@ -213,7 +213,11 @@ module MasterSchedulerP {
 
   task void checkResponses();
 
+  task void reportTX(){
+    printf_TESTBED("TX sched\r\n"); 
+  }
   event void AnnounceSend.sendDone(message_t* msg, error_t error){
+    post reportTX();
     if (error == SUCCESS){
       post checkResponses();
     }else{
