@@ -7,6 +7,7 @@ configuration RouterSchedulerC {
   uses interface FrameStarted;
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
+  provides interface SlotStarted;
 
 } implementation {
 
@@ -82,6 +83,10 @@ configuration RouterSchedulerC {
   //currently-active scheduler.
   components RouterSchedulerP;
 
+  SlotStarted = RouterSchedulerP.SlotStarted;
+  RouterSchedulerP.SubSlotStarted[CX_SCHEDULER_MASTER] 
+    -> MasterSchedulerC;
+
   TDMAPhySchedule = RouterSchedulerP.SubTDMAPhySchedule;
   SlaveSchedulerC.TDMAPhySchedule
     -> RouterSchedulerP.TDMAPhySchedule[CX_SCHEDULER_SLAVE] ;
@@ -110,20 +115,30 @@ configuration RouterSchedulerC {
     RouterSchedulerP.FrameStarted[CX_SCHEDULER_SLAVE];
   MasterSchedulerC.FrameStarted ->
     RouterSchedulerP.FrameStarted[CX_SCHEDULER_MASTER];
+  
+  components new CXAMSenderC(AM_ID_LEAF_SCHEDULE, CX_TP_SIMPLE_FLOOD)
+    as MasterAnnounceSend;
+  components new AMReceiverC(AM_ID_LEAF_REQUEST) as MasterRequestReceive;
+  components new CXAMSenderC(AM_ID_LEAF_RESPONSE, CX_TP_SIMPLE_FLOOD)
+    as MasterResponseSend;
 
-  MasterSchedulerC.AnnounceSend ->
-    CXTransportC.SimpleFloodSend[AM_ID_LEAF_SCHEDULE];
-  MasterSchedulerC.RequestReceive ->
-    CXTransportC.SimpleFloodReceive[AM_ID_LEAF_REQUEST];
-  MasterSchedulerC.ResponseSend -> 
-    CXTransportC.SimpleFloodSend[AM_ID_LEAF_RESPONSE];
+  MasterSchedulerC.AnnounceSend -> MasterAnnounceSend;
+  MasterAnnounceSend.ScheduledSend 
+    -> MasterSchedulerC.AnnounceSchedule;
+  MasterSchedulerC.RequestReceive -> MasterRequestReceive;
+  MasterSchedulerC.ResponseSend -> MasterResponseSend;
+  MasterResponseSend.ScheduledSend 
+    -> MasterSchedulerC.ResponseSchedule;
 
-  SlaveSchedulerC.AnnounceReceive ->
-    CXTransportC.SimpleFloodReceive[AM_ID_ROUTER_SCHEDULE];
-  SlaveSchedulerC.RequestSend ->
-    CXTransportC.SimpleFloodSend[AM_ID_ROUTER_REQUEST];
-  SlaveSchedulerC.ResponseReceive -> 
-    CXTransportC.SimpleFloodReceive[AM_ID_ROUTER_RESPONSE];
+  components new AMReceiverC(AM_ID_ROUTER_SCHEDULE) 
+    as SlaveAnnounceReceive;
+  components new CXAMSenderC(AM_ID_ROUTER_REQUEST, CX_TP_SIMPLE_FLOOD) 
+    as SlaveRequestSend;
+  components new AMReceiverC(AM_ID_ROUTER_RESPONSE) 
+    as SlaveResponseReceive;
+  SlaveSchedulerC.AnnounceReceive -> SlaveAnnounceReceive;
+  SlaveSchedulerC.RequestSend -> SlaveRequestSend;
+  SlaveSchedulerC.ResponseReceive -> SlaveResponseReceive;
 
 }
 

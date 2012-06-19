@@ -8,6 +8,8 @@
  #include "CXTDMADispatchDebug.h"
  #include "SchedulerDebug.h"
  #include "TimingConstants.h"
+ #include "Msp430Timer.h"
+ #include "decodeError.h"
 
 module CXTDMAPhysicalP {
   provides interface SplitControl;

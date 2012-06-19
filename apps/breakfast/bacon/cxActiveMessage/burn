@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ $# -lt 1 ]
+then
+  echo "Usage: $0 <map> [additional make args]"
+  exit 1
+fi
+MAP=$1
+shift 1
+
+make bacon2 $@
+if [ $? -eq 0 ]
+then
+  for i in $(grep -v '#' $MAP | awk '{print $2}')
+  do
+    make bacon2 reinstall,$i wpt,$MAP
+  done
+else
+  echo "ERRORS IN BUILD"
+fi

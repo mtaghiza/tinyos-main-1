@@ -13,6 +13,8 @@ configuration SlaveSchedulerC{
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
 
+  provides interface SlotStarted;
+
 } implementation {
   components CXPacketStackC;
   components RandomC;
@@ -33,5 +35,7 @@ configuration SlaveSchedulerC{
   SlaveSchedulerP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   SlaveSchedulerP.CXPacket-> CXPacketStackC.CXPacket;
   SlaveSchedulerP.Random -> RandomC;
+
+  SlotStarted = SlaveSchedulerP.SlotStarted;
 
 }

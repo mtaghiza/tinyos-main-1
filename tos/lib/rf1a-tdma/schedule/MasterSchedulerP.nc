@@ -8,14 +8,15 @@ module MasterSchedulerP {
 
   uses interface TDMAPhySchedule;
   uses interface FrameStarted;
+  provides interface SlotStarted;
 
   uses interface AMSend as AnnounceSend;
-  ////always pegged to announcementSlot
-  //provides interface ScheduledSend as AnnounceSchedule;
+  //always pegged to announcementSlot
+  provides interface ScheduledSend as AnnounceSchedule;
   uses interface Receive as RequestReceive;
   uses interface AMSend as ResponseSend;
-  ////peg to slot being granted
-  //provides interface ScheduledSend as ResponseSchedule;
+  //peg to slot being granted
+  provides interface ScheduledSend as ResponseSchedule;
 
   uses interface ExternalScheduler;
 
@@ -60,6 +61,8 @@ module MasterSchedulerP {
   //pre-compute for faster idle-check
   uint16_t firstIdleFrame;
   uint16_t lastIdleFrame;
+
+  uint16_t curSlot = INVALID_SLOT;
  
   //S_OFF
   // start / TDMAPhySchedule.set, AnnounceSend.send 
@@ -206,10 +209,10 @@ module MasterSchedulerP {
     return sn == announcementSlot || sn == dataSlot || sn == responseSlot;
   }
 
-////TODO:uncomment when this interface exists
-//  event uint16_t AnnounceSchedule.getSlot(){
-//    return announcementSlot;
-//  }
+  command uint16_t AnnounceSchedule.getSlot(){
+    printf_TMP("%s: \r\n", __FUNCTION__);
+    return announcementSlot;
+  }
 
   task void checkResponses();
 
@@ -236,10 +239,18 @@ module MasterSchedulerP {
     }
     return msg;
   }
+
+  task void reportSlotStart(){
+    signal SlotStarted.slotStarted(curSlot);
+  }
   
   async event void FrameStarted.frameStarted(uint16_t frameNum){
     bool cycleStart = (frameNum == totalFrames - 1);
     bool cycleEnd = (frameNum == totalFrames - 2);
+    if (0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot()))){
+      curSlot = getSlot(frameNum);
+      post reportSlotStart();
+    }
     if (cycleStart){
       post recomputeSchedule();
     } else if (cycleEnd){
@@ -278,10 +289,11 @@ module MasterSchedulerP {
     }
   }
 
-////TODO:uncomment when this interface exists
-//  event uint16_t ResponseSchedule.getSlot(){
-//    //TODO: return the slot designated by response
-//  }
+  command uint16_t ResponseSchedule.getSlot(){
+    printf("%s: \r\n", __FUNCTION__);
+    return ((cx_response_t*)call ResponseSend.getPayload(response_msg,
+      sizeof(cx_response_t)))->slotNumber;
+  }
 
   event void ResponseSend.sendDone(message_t* msg, error_t error){
     if ( error == SUCCESS){
@@ -329,4 +341,11 @@ module MasterSchedulerP {
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
   
+  command uint16_t TDMARoutingSchedule.getDefaultSlot(){
+    return dataSlot;
+  }
+
+  command uint16_t TDMARoutingSchedule.getNumSlots(){
+    return schedule->slots;
+  }
 }

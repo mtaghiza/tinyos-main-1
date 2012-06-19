@@ -16,6 +16,9 @@ module RouterSchedulerP {
    
   provides interface TDMAPhySchedule[uint8_t clientId];
   uses interface TDMAPhySchedule as SubTDMAPhySchedule;
+
+  provides interface SlotStarted;
+  uses interface SlotStarted as SubSlotStarted[uint8_t clientId];
 } implementation {
   command error_t AppSplitControl.start(){
     printf_TMP("AppSC.start\r\n");
@@ -123,8 +126,26 @@ module RouterSchedulerP {
   async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return call SubTDMARoutingSchedule.framesLeftInSlot[CX_SCHEDULER_MASTER](frameNum);
   }
+  command uint16_t TDMARoutingSchedule.getNumSlots(){
+    return call SubTDMARoutingSchedule.getNumSlots[CX_SCHEDULER_MASTER]();
+  }
+  command uint16_t TDMARoutingSchedule.getDefaultSlot(){
+    return call SubTDMARoutingSchedule.getDefaultSlot[CX_SCHEDULER_MASTER]();
+  }
 
-  default async event void FrameStarted.frameStarted[uint8_t clientId](uint16_t frameNum){}
+  event void SubSlotStarted.slotStarted[uint8_t clientId](uint16_t slotNum){
+    signal SlotStarted.slotStarted(slotNum);
+  }
+
+  default command uint16_t SubTDMARoutingSchedule.getDefaultSlot[uint8_t clientId](){
+    return 0xffff;
+  }
+
+  default command uint16_t SubTDMARoutingSchedule.getNumSlots[uint8_t clientId](){
+    return 0;
+  }
+
+  default async event void FrameStarted.frameStarted[uint8_t clientId](uint16_t frameNum){ }
   default async command uint16_t SubTDMARoutingSchedule.framesPerSlot[uint8_t clientId](){ return 0; }
   default async command bool SubTDMARoutingSchedule.isSynched[uint8_t clientId](uint16_t frameNum){return FALSE;}
   default async command uint8_t SubTDMARoutingSchedule.maxRetransmit[uint8_t clientId](){ return 0;}

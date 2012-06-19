@@ -14,6 +14,8 @@ module SlaveSchedulerP {
   uses interface CXPacket;
   uses interface Random;
 
+  provides interface SlotStarted;
+
 } implementation {
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
@@ -30,6 +32,8 @@ module SlaveSchedulerP {
   bool isSynched = FALSE;
   bool claimedLast = FALSE;
 
+  uint16_t curSlot = INVALID_SLOT;
+
   enum {
     S_OFF = 0x00,
     S_LISTEN = 0x01,
@@ -39,6 +43,8 @@ module SlaveSchedulerP {
   }; 
 
   uint8_t state = S_OFF;
+
+  uint16_t getSlot(uint16_t frameNum);
 
   command error_t SplitControl.start(){
     return call SubSplitControl.start();
@@ -140,7 +146,15 @@ module SlaveSchedulerP {
     signal SplitControl.stopDone(error);
   }
 
+  task void reportSlotStart(){
+    signal SlotStarted.slotStarted(curSlot);
+  }
+
   async event void FrameStarted.frameStarted(uint16_t frameNum){
+    if (0 == frameNum % call TDMARoutingSchedule.framesPerSlot() ){
+      curSlot = getSlot(frameNum);
+      post reportSlotStart();
+    }
     //TODO: check for synch loss
   }
 
@@ -220,13 +234,21 @@ module SlaveSchedulerP {
     return frameNum / call TDMARoutingSchedule.framesPerSlot();
   }
   async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
-//    if (getSlot(frameNum) == mySlot){
-//      printf_TMP("of: %u\r\n", frameNum);
-//    }
     return getSlot(frameNum) == mySlot;
   }
+
   async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
+
+  command uint16_t TDMARoutingSchedule.getDefaultSlot(){
+    return mySlot;
+  }
+
+  command uint16_t TDMARoutingSchedule.getNumSlots(){
+    return schedule->slots;
+  }
+
+  default event void SlotStarted.slotStarted(uint16_t slotNum){}
    
 }

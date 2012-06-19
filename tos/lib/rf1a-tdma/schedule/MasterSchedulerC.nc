@@ -12,6 +12,10 @@ configuration MasterSchedulerC {
 
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
+
+  provides interface SlotStarted;
+  provides interface ScheduledSend as ResponseSchedule;
+  provides interface ScheduledSend as AnnounceSchedule;
 } implementation {
   components MasterSchedulerP;
   components CXPacketStackC;
@@ -28,4 +32,8 @@ configuration MasterSchedulerC {
   SplitControl = MasterSchedulerP.SplitControl;
   MasterSchedulerP.SubSplitControl = SubSplitControl;
   MasterSchedulerP.CXPacket -> CXPacketStackC.CXPacket;
+
+  SlotStarted = MasterSchedulerP.SlotStarted;
+  ResponseSchedule = MasterSchedulerP.ResponseSchedule;
+  AnnounceSchedule = MasterSchedulerP.AnnounceSchedule;
 }

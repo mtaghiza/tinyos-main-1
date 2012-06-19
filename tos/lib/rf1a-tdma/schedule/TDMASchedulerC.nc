@@ -5,6 +5,7 @@ configuration TDMASchedulerC {
   uses interface FrameStarted;
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
+  provides interface SlotStarted;
   
 } implementation {
   #if TDMA_ROOT == 1 
@@ -18,4 +19,5 @@ configuration TDMASchedulerC {
   FrameStarted = TDMASchedulerP.FrameStarted;
   SplitControl = TDMASchedulerP.SplitControl;
   TDMASchedulerP.SubSplitControl = SubSplitControl;
+  SlotStarted = TDMASchedulerP.SlotStarted;
 }
