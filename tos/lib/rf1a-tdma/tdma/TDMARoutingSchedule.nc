@@ -5,6 +5,8 @@ interface TDMARoutingSchedule{
   async command uint8_t maxRetransmit();
   async command bool ownsFrame(uint16_t frameNum);
   async command uint16_t framesLeftInSlot(uint16_t frameNum);
+  async command uint16_t maxDepth();
+  command uint16_t currentFrame();
   command uint16_t getDefaultSlot();
   command uint16_t getNumSlots();
 }

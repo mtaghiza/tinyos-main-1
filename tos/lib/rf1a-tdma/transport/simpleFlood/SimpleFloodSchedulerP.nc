@@ -57,7 +57,7 @@ module SimpleFloodSchedulerP{
     }
   }
 
-  async event void FrameStarted.frameStarted(uint16_t frameNum){
+  event void FrameStarted.frameStarted(uint16_t frameNum){
     //TODO: FLOOD_CLEAR_TIME = maxDepth + retransmits
     if (state == S_CLEARING && frameNum > (lastSent + SCHED_MAX_DEPTH + SCHED_MAX_RETRANSMIT)){
       post signalDone();

@@ -63,6 +63,7 @@ module MasterSchedulerP {
   uint16_t lastIdleFrame;
 
   uint16_t curSlot = INVALID_SLOT;
+  uint16_t curFrame = INVALID_SLOT;
  
   //S_OFF
   // start / TDMAPhySchedule.set, AnnounceSend.send 
@@ -118,14 +119,18 @@ module MasterSchedulerP {
 
   task void recomputeSchedule();
   task void requestExternalSchedule(){
-    call TDMAPhySchedule.setSchedule( 
+    error_t err = call TDMAPhySchedule.setSchedule( 
       call ExternalScheduler.getStartTime(call TDMAPhySchedule.getNow()),
       call ExternalScheduler.getStartFrame(),
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel, 
       TRUE);
-    post recomputeSchedule();
+////removed: this will get setup next go-around
+//    if (SUCCESS == err){
+//      post recomputeSchedule();
+//    }
+    signal SplitControl.startDone(err);
   }
 
   //by default, start the schedule as soon as the radio is on and
@@ -133,7 +138,8 @@ module MasterSchedulerP {
   //to this interface will let you use an RTC, for instance, to set
   //the start point.
   default command uint32_t ExternalScheduler.getStartTime(uint32_t curTime){
-    return curTime;
+    //TODO: unhardcode this: appx. 10 ms in the future
+    return curTime + 65000UL;
   }
   default command uint16_t ExternalScheduler.getStartFrame(){
     return 0;
@@ -209,18 +215,18 @@ module MasterSchedulerP {
     return sn == announcementSlot || sn == dataSlot || sn == responseSlot;
   }
 
+  async command uint16_t TDMARoutingSchedule.maxDepth(){
+    //TODO: should this be in the schedule announcement?
+    return SCHED_MAX_DEPTH;
+  }
+
   command uint16_t AnnounceSchedule.getSlot(){
-    printf_TMP("%s: \r\n", __FUNCTION__);
     return announcementSlot;
   }
 
   task void checkResponses();
 
-  task void reportTX(){
-    printf_TESTBED("TX sched\r\n"); 
-  }
   event void AnnounceSend.sendDone(message_t* msg, error_t error){
-    post reportTX();
     if (error == SUCCESS){
       post checkResponses();
     }else{
@@ -239,17 +245,15 @@ module MasterSchedulerP {
     }
     return msg;
   }
-
-  task void reportSlotStart(){
-    signal SlotStarted.slotStarted(curSlot);
-  }
   
-  async event void FrameStarted.frameStarted(uint16_t frameNum){
+  event void FrameStarted.frameStarted(uint16_t frameNum){
     bool cycleStart = (frameNum == totalFrames - 1);
     bool cycleEnd = (frameNum == totalFrames - 2);
-    if (0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot()))){
-      curSlot = getSlot(frameNum);
-      post reportSlotStart();
+    curFrame = frameNum;
+    if (curSlot == INVALID_SLOT || 
+        0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot())) ){
+      curSlot = getSlot(frameNum); 
+      signal SlotStarted.slotStarted(curSlot);
     }
     if (cycleStart){
       post recomputeSchedule();
@@ -290,7 +294,6 @@ module MasterSchedulerP {
   }
 
   command uint16_t ResponseSchedule.getSlot(){
-    printf("%s: \r\n", __FUNCTION__);
     return ((cx_response_t*)call ResponseSend.getPayload(response_msg,
       sizeof(cx_response_t)))->slotNumber;
   }
@@ -315,11 +318,10 @@ module MasterSchedulerP {
     signal SplitControl.stopDone(error);
   }
   
-  async event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
+  event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
     return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
-  async event void TDMAPhySchedule.frameStarted(uint32_t startTime, uint16_t frameNum){}
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
   async event uint8_t TDMAPhySchedule.getScheduleNum(){
     return schedule->scheduleNum;
@@ -347,5 +349,13 @@ module MasterSchedulerP {
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){
     return schedule->slots;
+  }
+
+  command uint16_t TDMARoutingSchedule.currentFrame(){
+    return curFrame;
+  }
+
+  command uint16_t SlotStarted.currentSlot(){
+    return curSlot;
   }
 }

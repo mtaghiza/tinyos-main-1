@@ -3,7 +3,6 @@ interface TDMAPhySchedule{
     uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate,
     uint8_t channel, bool isSynched);
 
-  async event void frameStarted(uint32_t startTime, uint16_t frameNum);
   async event int32_t getFrameAdjustment(uint16_t frameNum);
   async command uint32_t getNow();
   async event uint8_t getScheduleNum();
@@ -11,5 +10,5 @@ interface TDMAPhySchedule{
     uint32_t timestamp);
 
   //TODO: should come from transport layer AND main schedule
-  async event bool isInactive(uint16_t frameNum);
+  event bool isInactive(uint16_t frameNum);
 }

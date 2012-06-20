@@ -84,6 +84,14 @@ module CXTDMAPhysicalP {
   //current frame in cycle
   uint16_t frameNum;
 
+  //used to detect cases where frame setup does not get done in time:
+  //  pfsPending: PFS was scheduled but not handled yet. FS should not
+  //    find itself in a state that takes radio action.
+  //  fsMissed: FS fired before we got to handle the PFS task: just
+  //    reschedule and accept the missed frame start.
+  bool pfsPending = FALSE;
+  bool fsMissed = FALSE;
+
   //schedule variables
   uint32_t s_frameStart;
   uint32_t s_frameLen;
@@ -135,6 +143,7 @@ module CXTDMAPhysicalP {
   void stopTimers();
   task void reportStats();
   const char* decodeStatus();
+  task void pfsTask();
   
  
   /***********************************
@@ -196,7 +205,22 @@ module CXTDMAPhysicalP {
    *      frameAdjustment from TDMAPhySchedule
    */
   async event void PrepareFrameStartAlarm.fired(){
-    error_t error;
+    //increment frame number and then post a task which
+    //does all the work outside of the interrupt context. the
+    //only timing-critical code in here should be along the
+    //FrameStartAlarm.fired path. 
+    //It is important that we figure out what state to put the radio
+    //in prior to the frameStartAlarm firing, though, and the tighter
+    //we can make that timing, the more efficient this will be. So
+    //maybe we should:
+    //- pre-pfs.fired: at an undetermined point prior to frame-start: increment frame number
+    //  and post task to figure out what we're going to do at the next
+    //  frame boundary. In this task, set time for next alarm
+    //- pfs.fired: this alarm should fire at a point dictated
+    //  by the relevant setup time in the datasheet.  This should be
+    //  as tight as we can make it.
+    //- framestartalarm.fired: begin transmission (if TX), start
+    //  timeout (if RX)
     if(call PrepareFrameStartAlarm.getNow() < call PrepareFrameStartAlarm.getAlarm()){
       printf_PFS_FREAKOUT("PFS EARLY (%lu < %lu)\r\n", call
       PrepareFrameStartAlarm.getNow(), call
@@ -213,135 +237,153 @@ module CXTDMAPhysicalP {
     }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_totalFrames);
+    pfsPending = TRUE;
+    post pfsTask();
+  }
+
+  task void pfsTask(){
+    error_t error;
     printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
       call PrepareFrameStartAlarm.getNow(), 
       call PrepareFrameStartAlarm.getAlarm());
-    if (scStopPending){
-      scStopError = call Resource.release();
-      if (SUCCESS == scStopError){
-        stopTimers();
-        scStopPending = FALSE;
-        setState(S_STOPPING);
-      } else{
-        setState(S_ERROR_1);
-      }
-      post signalStopDone();
-      PFS_CLEAR_PIN;
-      return;
-    }
-    signal FrameStarted.frameStarted(frameNum);
-    //0.5uS
-    PFS_TOGGLE_PIN;
-    
-    if (frameNum == s_totalFrames - 1){
-      post reportStats();
-    }
-
-    //TODO: transport duty cycle optimizations through here too
-    //If we're currently not inactive, but this frame is unused, sleep
-    //the radio.
-    if (!checkState(S_INACTIVE) 
-        && signal TDMAPhySchedule.isInactive(frameNum) ){
-      if (SUCCESS == call Rf1aPhysical.sleep()){
-        call FrameStartAlarm.stop();
-        call FrameWaitAlarm.stop();
-        FS_CYCLE_CLEAR_PIN;
-        setState(S_INACTIVE);
-      } else {
-        setState(S_ERROR_1);
-      }
-    //If we're inactive, but this frame is used, wakeup the radio
-    }else if (checkState(S_INACTIVE) 
-        && ! signal TDMAPhySchedule.isInactive(frameNum)){
-      if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-        call FrameStartAlarm.startAt(
-          call PrepareFrameStartAlarm.getAlarm(), 
-          PFS_SLACK);
-        setState(S_IDLE);
-      } else {
-        setState(S_ERROR_2);
-      }
-    }
-
-    //Idle, or we are in an extra long frame-wait (e.g. trying to
-    //  synch)
-    if (checkState(S_IDLE) || checkState(S_RX_READY) 
-        || checkState(S_RECEIVING)){
-      //7.75 uS
-      PFS_TOGGLE_PIN;
-
-      IS_TX_CLEAR_PIN;
-      switch(signal CXTDMA.frameType(frameNum)){
-        case RF1A_OM_FSTXON:
-          printf_SW_TOPO("F %u\r\n", frameNum);
-          if (getPacket()){
-          IS_TX_SET_PIN;
-          //0.75 uS
-          PFS_TOGGLE_PIN;
-          error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
-          //114 uS: when coming from idle, i guess this is OK. 
-          PFS_TOGGLE_PIN;
-          if (SUCCESS == error){
-            setState(S_TX_READY);
-          } else {
-            printf("Error: %s\r\n", decodeError(error));
-            setState(S_ERROR_f);
-          }
-          //2.75 uS
-          PFS_TOGGLE_PIN;
-  
-          captureMode = MSP430TIMER_CM_RISING;
-          call SynchCapture.captureRisingEdge();
-          } else {
-            printf("!Error: frameType FSTXON, but getPacket returned false\r\n");
-
-          }
-          break;
-        case RF1A_OM_RX:
-//          printf_SW_TOPO("R %u\r\n", frameNum);
-          //0.25 uS
-          PFS_TOGGLE_PIN;
-          error = call Rf1aPhysical.setReceiveBuffer(
-            (uint8_t*)(rx_msg->header),
-            TOSH_DATA_LENGTH + sizeof(message_header_t),
-            RF1A_OM_IDLE);
-          //11 uS
-          PFS_TOGGLE_PIN;
-          if (SUCCESS == error){
-            atomic {
-              captureMode = MSP430TIMER_CM_RISING;
-              //0.75uS
-              PFS_TOGGLE_PIN;
-              call SynchCapture.captureRisingEdge();
-              //7uS
-              PFS_TOGGLE_PIN;
-            }
-            if (call Rf1aStatus.get() != RF1A_S_RX){
-              printf_RXREADY_ERROR("! PFS.F RXREADY but radio %x\r\n", 
-                call Rf1aStatus.get() );
-            }
-            setState(S_RX_READY);
-            RX_READY_SET_PIN;
-          } else {
-            printf("Error %s\r\n", decodeError(error));
-            setState(S_ERROR_4);
-          }
-          //3.75 uS
-          PFS_TOGGLE_PIN;
-          break;
-        default:
+    PFS_CYCLE_TOGGLE_PIN;
+    PFS_CYCLE_TOGGLE_PIN;
+    if (!fsMissed){
+      if (scStopPending){
+        scStopError = call Resource.release();
+        if (SUCCESS == scStopError){
+          stopTimers();
+          scStopPending = FALSE;
+          setState(S_STOPPING);
+        } else{
           setState(S_ERROR_1);
-          return;
+        }
+        post signalStopDone();
+        PFS_CLEAR_PIN;
+        pfsPending = FALSE;
+        return;
       }
-    } else if (checkState(S_OFF)){
-      //sometimes see this after wdtpw reset
-      PFS_CLEAR_PIN;
-      return;
-    } else if (checkState(S_INACTIVE)){
-      //nothing else to do, just reschedule alarm.
-    } else {
-      setState(S_ERROR_5);
-      return;
+      signal FrameStarted.frameStarted(frameNum);
+      //0.5uS
+      PFS_TOGGLE_PIN;
+      
+      if (frameNum == s_totalFrames - 1){
+        post reportStats();
+      }
+  
+      //TODO: transport duty cycle optimizations through here too
+      //If we're currently not inactive, but this frame is unused, sleep
+      //the radio.
+      if (!checkState(S_INACTIVE) 
+          && signal TDMAPhySchedule.isInactive(frameNum) ){
+        if (SUCCESS == call Rf1aPhysical.sleep()){
+          call FrameStartAlarm.stop();
+          call FrameWaitAlarm.stop();
+          FS_CYCLE_CLEAR_PIN;
+          setState(S_INACTIVE);
+        } else {
+          setState(S_ERROR_1);
+        }
+      //If we're inactive, but this frame is used, wakeup the radio
+      }else if (checkState(S_INACTIVE) 
+          && ! signal TDMAPhySchedule.isInactive(frameNum)){
+        if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
+          call FrameStartAlarm.startAt(
+            call PrepareFrameStartAlarm.getAlarm(), 
+            PFS_SLACK);
+          setState(S_IDLE);
+        } else {
+          setState(S_ERROR_2);
+        }
+      }
+
+      //TODO: could post the below stuff in a second task. 
+      //frameStarted is potentially a rather-long event to handle
+
+      //Idle, or we are in an extra long frame-wait (e.g. trying to
+      //  synch)
+      if (checkState(S_IDLE) || checkState(S_RX_READY) 
+          || checkState(S_RECEIVING)){
+        //7.75 uS
+        PFS_TOGGLE_PIN;
+  
+        IS_TX_CLEAR_PIN;
+        switch(signal CXTDMA.frameType(frameNum)){
+          case RF1A_OM_FSTXON:
+            printf_SW_TOPO("F %u\r\n", frameNum);
+            if (getPacket()){
+            IS_TX_SET_PIN;
+            //0.75 uS
+            PFS_TOGGLE_PIN;
+            error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
+            //114 uS: when coming from idle, i guess this is OK. 
+            PFS_TOGGLE_PIN;
+            if (SUCCESS == error){
+              setState(S_TX_READY);
+            } else {
+              printf("Error: %s\r\n", decodeError(error));
+              setState(S_ERROR_f);
+            }
+            //2.75 uS
+            PFS_TOGGLE_PIN;
+    
+            captureMode = MSP430TIMER_CM_RISING;
+            call SynchCapture.captureRisingEdge();
+            } else {
+              printf("!Error: frameType FSTXON, but getPacket returned false\r\n");
+  
+            }
+            break;
+          case RF1A_OM_RX:
+  //          printf_SW_TOPO("R %u\r\n", frameNum);
+            //0.25 uS
+            PFS_TOGGLE_PIN;
+            error = call Rf1aPhysical.setReceiveBuffer(
+              (uint8_t*)(rx_msg->header),
+              TOSH_DATA_LENGTH + sizeof(message_header_t),
+              RF1A_OM_IDLE);
+            //11 uS
+            PFS_TOGGLE_PIN;
+            if (SUCCESS == error){
+              atomic {
+                captureMode = MSP430TIMER_CM_RISING;
+                //0.75uS
+                PFS_TOGGLE_PIN;
+                call SynchCapture.captureRisingEdge();
+                //7uS
+                PFS_TOGGLE_PIN;
+              }
+              if (call Rf1aStatus.get() != RF1A_S_RX){
+                printf_RXREADY_ERROR("! PFS.F RXREADY but radio %x\r\n", 
+                  call Rf1aStatus.get() );
+              }
+              setState(S_RX_READY);
+              RX_READY_SET_PIN;
+            } else {
+              printf("Error %s\r\n", decodeError(error));
+              setState(S_ERROR_4);
+            }
+            //3.75 uS
+            PFS_TOGGLE_PIN;
+            break;
+          default:
+            setState(S_ERROR_1);
+            pfsPending = FALSE;
+            return;
+        }
+      } else if (checkState(S_OFF)){
+        //sometimes see this after wdtpw reset
+        PFS_CLEAR_PIN;
+        pfsPending = FALSE;
+        return;
+      } else if (checkState(S_INACTIVE)){
+        //nothing else to do, just reschedule alarm.
+      } else {
+        setState(S_ERROR_5);
+        return;
+      }
+    }else{
+      printf_TMP("Missed FS\r\n");
     }
 //    printf_TDMA_SS("pfs1\r\n");
 //    printf_PFS("pfs1 %lu %lu: ", 
@@ -355,6 +397,8 @@ module CXTDMAPhysicalP {
     //16 uS
     PFS_SET_PIN;
     PFS_CLEAR_PIN;
+    pfsPending = FALSE;
+    fsMissed = FALSE;
   }
 
   /**
@@ -429,10 +473,16 @@ module CXTDMAPhysicalP {
     }else{
       FS_CYCLE_SET_PIN;
     }
+    //indicates that we did not handle the setup yet for this frame.
+    //So, the pfs task should *not* run as usual (should just
+    //reschedule and move on).
+    if (pfsPending){
+      fsMissed = TRUE;
+    }
+
     //0.25 uS
     TX_SET_PIN;
     FS_SET_PIN;
-
     if (checkState(S_TX_READY)){
       FS_STROBE_SET_PIN;
       TXCP_SET_PIN;
@@ -487,6 +537,7 @@ module CXTDMAPhysicalP {
       //reception. In this case, just ignore it, we should get a good
       //schedule soon.
     }  else {
+
       //would rather do this up top, but getNow introduces a TON of
       //jitter.
       if(call FrameStartAlarm.getNow() < call FrameStartAlarm.getAlarm()){
@@ -504,7 +555,9 @@ module CXTDMAPhysicalP {
 
       //either way, let's just ignore it and hope that it resolves
       //itself.
-      printf_TESTBED("!FSA.F\r\n");
+      printf_TMP("!FSA.F\r\n");
+      FS_CYCLE_TOGGLE_PIN;
+      FS_CYCLE_TOGGLE_PIN;
 
       } else if (checkState(S_INACTIVE)){
         //happens when we lose synch: we'll pick it up again

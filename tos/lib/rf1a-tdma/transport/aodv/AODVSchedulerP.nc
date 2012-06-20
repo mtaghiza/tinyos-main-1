@@ -319,7 +319,7 @@ module AODVSchedulerP{
     printf_AODV_CLEAR("Abort: %u\r\n", abortFn);
   }
 
-  async event void FrameStarted.frameStarted(uint16_t frameNum){
+  event void FrameStarted.frameStarted(uint16_t frameNum){
     TMP_STATE;
     bool lastCleared = (frameNum >= (aoClearTime + lastStart));
     bool noTimeLeft = ((aoClearTime + frameNum) >= nextSlotStart);

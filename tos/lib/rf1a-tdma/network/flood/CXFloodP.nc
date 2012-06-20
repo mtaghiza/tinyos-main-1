@@ -107,16 +107,30 @@ module CXFloodP{
 //    printf_TMP("floodsend.send %x\r\n", t);
     atomic{
       if (!txPending){
-        tx_msg = msg;
-        txPending = TRUE;
-        call CXPacket.init(msg);
-        call CXPacket.setTransportProtocol(msg, t);
-//        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
-        //preserve pre-routed flag
-        call CXPacket.setNetworkProtocol(msg, 
-          (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
-        printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
-        return SUCCESS;
+        uint16_t clearTime = 0xff;
+        if ((call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED)){
+          clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
+            call CXPacket.destination(msg));
+        }
+        clearTime = clearTime == 0xff ? call
+          TDMARoutingSchedule.maxDepth(): clearTime;
+
+        if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime){
+//          printf_TMP("RETRY\r\n");
+          return ERETRY;
+        }else{
+//          printf_TMP("clear time OK: %u\r\n", clearTime);
+          tx_msg = msg;
+          txPending = TRUE;
+          call CXPacket.init(msg);
+          call CXPacket.setTransportProtocol(msg, t);
+  //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
+          //preserve pre-routed flag
+          call CXPacket.setNetworkProtocol(msg, 
+            (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
+          printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
+          return SUCCESS;
+        }
       }else{
         return EBUSY;
       }

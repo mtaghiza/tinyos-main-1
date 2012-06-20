@@ -33,6 +33,7 @@ module SlaveSchedulerP {
   bool claimedLast = FALSE;
 
   uint16_t curSlot = INVALID_SLOT;
+  uint16_t curFrame = INVALID_SLOT;
 
   enum {
     S_OFF = 0x00,
@@ -102,16 +103,20 @@ module SlaveSchedulerP {
 
   task void claimSlotTask(){
     uint8_t numValid;
+    uint8_t i;
     error_t error;
     cx_request_t* request = call RequestSend.getPayload(request_msg,
       sizeof(cx_request_t));
-
+//    printf_TMP("%s: slots ", __FUNCTION__);
     //pick a valid slot
-    for(numValid = 0; numValid < MAX_ANNOUNCED_SLOTS; numValid++){
-      if (schedule->availableSlots[numValid] != INVALID_SLOT){
+    for(i = 0; i < MAX_ANNOUNCED_SLOTS; i++){
+      if (schedule->availableSlots[i] != INVALID_SLOT){
+//        printf_TMP("%u: %u ", i, schedule->availableSlots[i]); 
         numValid++;
       }
     }
+
+//    printf_TMP("\r\n");
     mySlot = schedule->availableSlots[(call Random.rand16() % numValid)];
 
     //set up packet
@@ -126,15 +131,11 @@ module SlaveSchedulerP {
     }
   }
 
-  task void reportRX(){
-    printf_TESTBED("RX sched\r\n");
-  }
   event message_t* AnnounceReceive.receive(message_t* msg, void* pl, uint8_t len){
     message_t* ret = schedule_msg;
     schedule_msg = msg;
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
-    post reportRX();
     return ret;
   }
 
@@ -146,14 +147,12 @@ module SlaveSchedulerP {
     signal SplitControl.stopDone(error);
   }
 
-  task void reportSlotStart(){
-    signal SlotStarted.slotStarted(curSlot);
-  }
-
-  async event void FrameStarted.frameStarted(uint16_t frameNum){
-    if (0 == frameNum % call TDMARoutingSchedule.framesPerSlot() ){
+  event void FrameStarted.frameStarted(uint16_t frameNum){
+    curFrame = frameNum;
+    if (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot())){
+      printf_TMP("s %u\r\n", curFrame);
       curSlot = getSlot(frameNum);
-      post reportSlotStart();
+      signal SlotStarted.slotStarted(curSlot);
     }
     //TODO: check for synch loss
   }
@@ -207,12 +206,11 @@ module SlaveSchedulerP {
   // OR timeout / -
   // -> S_LISTEN
 
-  async event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
+  event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
     return (state != S_LISTEN) && (schedule != NULL) 
       && (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
-  async event void TDMAPhySchedule.frameStarted(uint32_t startTime, uint16_t frameNum){}
   async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
   async event uint8_t TDMAPhySchedule.getScheduleNum(){
     return scheduleNum;
@@ -237,8 +235,17 @@ module SlaveSchedulerP {
     return getSlot(frameNum) == mySlot;
   }
 
+  async command uint16_t TDMARoutingSchedule.maxDepth(){
+    //TODO: should this be in the schedule announcement?
+    return SCHED_MAX_DEPTH;
+  }
+
   async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
+  }
+
+  command uint16_t TDMARoutingSchedule.currentFrame(){
+    return curFrame;
   }
 
   command uint16_t TDMARoutingSchedule.getDefaultSlot(){
@@ -249,6 +256,8 @@ module SlaveSchedulerP {
     return schedule->slots;
   }
 
-  default event void SlotStarted.slotStarted(uint16_t slotNum){}
+  command uint16_t SlotStarted.currentSlot(){ 
+    return curSlot;
+  }
    
 }

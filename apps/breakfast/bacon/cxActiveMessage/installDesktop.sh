@@ -6,12 +6,14 @@ tc=0
 debugScale=4UL
 
 #test setup
-floodTest=0
+floodTest=1
 rootId="0"
+rootSender=1
+rootDest=1
 nonrootRx=""
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx="1"
+nonrootTx=""
 
 fecEnabled=0
 fecHamming74=1
@@ -87,24 +89,34 @@ then
   do
     make bacon2 install,$id bsl,ref,JH00030$id \
       TDMA_ROOT=0 IS_SENDER=0 \
-      DEBUG_AODV_STATE=$rxAodvState $commonOptions
+      DEBUG_AODV_STATE=$rxAodvState \
+      $commonOptions DEBUG_TESTBED=1
   done
 fi
 
 if [ "$nonrootTx" != "" ]
 then
+  if [ $floodTest -eq 1 ]
+  then
+    leafDest=0xffff
+  else
+    leafDest=0
+  fi
   for id in $nonrootTx
   do
     make bacon2 install,$id bsl,ref,JH00030$id \
       TDMA_ROOT=0 IS_SENDER=1 \
+      TEST_DEST_ADDR=$leafDest \
       DEBUG_AODV_STATE=$txAodvState $commonOptions\
-      DEBUG_TMP=1
+      DEBUG_TMP=1 DEBUG_TESTBED=1
   done
 fi
 
 if [ "$rootId" != "" ]
 then
   make bacon2 install,0 bsl,ref,JH00030$rootId \
-    TDMA_ROOT=1 $commonOptions\
-    DEBUG_TMP=1
+    TDMA_ROOT=1 IS_SENDER=$rootSender \
+    TEST_DEST_ADDR=$rootDest\
+    $commonOptions\
+    DEBUG_TMP=1 DEBUG_TESTBED=1
 fi

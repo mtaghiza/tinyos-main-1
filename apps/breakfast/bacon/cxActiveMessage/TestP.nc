@@ -49,10 +49,12 @@ module TestP {
 
   uint16_t packetQueue = 0;
   
-  task void unicastTask();
-  task void broadcastTask();
   task void sendTask();
   task void startTask();
+
+  #ifndef TEST_DEST_ADDR
+  #define TEST_DEST_ADDR AM_BROADCAST_ADDR
+  #endif
 
   event void Boot.booted(){
     atomic{
@@ -113,71 +115,40 @@ module TestP {
 //    call AMPacket.clear(tx_msg);
     printf_APP("Started.\r\n");
     call Leds.led0On();
-    if (TOS_NODE_ID != 0){
-      #if IS_SENDER == 1
-        #if DESKTOP_TEST == 0
-        call StartupTimer.startOneShot(TESTBED_START_TIME);
-        #else
-        call StartupTimer.startOneShot(DESKTOP_START_TIME);
-        #endif
+    #if IS_SENDER == 1
+      #if DESKTOP_TEST == 0
+      call StartupTimer.startOneShot(TESTBED_START_TIME);
+      #else
+      call StartupTimer.startOneShot(DESKTOP_START_TIME);
       #endif
-    }
+    #endif
   }
 
   event void SplitControl.stopDone(error_t error){
     printf_APP("%s: %s\r\n", __FUNCTION__, decodeError(error));
   }
 
-  task void broadcastTask(){
-    error_t error;
-    test_packet_t* pl = call Packet.getPayload(tx_msg,
-      sizeof(test_packet_t));
-    pl -> sn ++;//= (1+TOS_NODE_ID);
-
-    error = call AMSend.send(AM_BROADCAST_ADDR, tx_msg,
-      sizeof(test_packet_t)); 
-      
-    if (SUCCESS == error){
-      sending = TRUE;
-    }else{
-      printf("Send.Send (broadcast): %s\r\n", decodeError(error));
-    }
-  }
-
-  task void unicastTask(){
-    error_t error;
-    test_packet_t* pl = call Packet.getPayload(tx_msg,
-      sizeof(test_packet_t));
-    pl -> sn ++;//= (1+TOS_NODE_ID);
-    error = call AMSend.send(0, tx_msg, sizeof(test_packet_t));
-    if (SUCCESS == error){
-      sending = TRUE;
-    }else{
-      printf("Send.Send (unicast): %s\r\n", decodeError(error));
-    }
-  }
-
   task void sendTask(){
     if (!sending){
-      #if FLOOD_TEST == 1
-      post broadcastTask();
-      #else 
-      post unicastTask();
-      #endif
+      error_t error;
+      test_packet_t* pl = call Packet.getPayload(tx_msg,
+        sizeof(test_packet_t));
+      pl -> sn ++;//= (1+TOS_NODE_ID);
+  
+      error = call AMSend.send(TEST_DEST_ADDR, tx_msg,
+        sizeof(test_packet_t)); 
+        
+      if (SUCCESS == error){
+        sending = TRUE;
+      }else{
+        printf("Send.Send: %s\r\n", decodeError(error));
+      }
     }
   }
-
 
   event void AMSend.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
     sending = FALSE;
-    printf_APP("TX s: %u d: %u sn: %u rm: %u pr: %u e: %u\r\n",
-      TOS_NODE_ID,
-      call CXPacket.destination(msg),
-      call CXPacket.sn(msg),
-      (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
-      ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
-      error);
     if (packetQueue){
       packetQueue--;
     }
@@ -199,14 +170,6 @@ module TestP {
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     call Leds.led2Toggle();
-    printf_APP("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
-      call CXPacket.source(msg),
-      call CXPacket.destination(msg),
-      call CXPacket.sn(msg),
-      call CXPacketMetadata.getReceivedCount(msg),
-      call Rf1aPacket.rssi(msg),
-      call Rf1aPacket.lqi(msg)
-      );
     return msg;
   }
   async event void UartStream.receivedByte(uint8_t byte){ 

@@ -65,42 +65,64 @@ implementation {
     uint8_t nextClient = numClients;
 
     bool isSending = FALSE;
+    bool someDeferred = FALSE;
 
     typedef struct {
         message_t* ONE_NOK msg;
         uint16_t sendSlot;
+        bool deferred;
     } queue_entry_t;
   
     queue_entry_t queue[numClients];
     uint8_t cancelMask[numClients/8 + 1];
 
-    task void doSend();
+    task void doSendTask();
+    void doSend();
   
-    task void nextPacket() {
-      printf_TMP("%s: \r\n", __FUNCTION__);
+    task void nextPacketTask() {
+      if (curSlot == INVALID_SLOT){
+        curSlot = call SlotStarted.currentSlot();
+      }
+
+//      printf_TMP("NP curSlot: %u\r\n", curSlot);
       //this is where the scheduled-send logic comes in:
       //iterate through clients, check for next claimed slot 
-      if (!isSending){
+      if (!isSending && curSlot != INVALID_SLOT){
         uint8_t i;
         uint16_t closestSend = 0xffff;
-        for(i=nextClient; i < numClients; i++){
+//        printf_TMP("not sending\r\n");
+        //start with next client and loop around
+        for(i = 1; i < numClients+1; i++){
           uint8_t k = (nextClient+i)%numClients;
-          if (queue[k].msg != NULL && !(cancelMask[k/8] & (1 << k%8))){
+          if (!queue[k].deferred && queue[k].msg != NULL && !(cancelMask[k/8] & (1 << k%8))){
             uint16_t slotsRemaining;
+//            printf_TMP("check c %u s %u: ", k,
+//              queue[k].sendSlot);
             if (curSlot <= queue[k].sendSlot){
               slotsRemaining = queue[k].sendSlot - curSlot;
             }else{
               slotsRemaining = (queue[k].sendSlot + call TDMARoutingSchedule.getNumSlots()) - curSlot;
             }
             if (slotsRemaining < closestSend){
+//              printf_TMP("keep %u < %u\r\n", slotsRemaining,
+//                closestSend);
+//              printf_TMP("%u is closer than %u\r\n", slotsRemaining,
+//                closestSend);
               closestSend = slotsRemaining;
               nextSlot = queue[k].sendSlot;
               nextClient = k;
+            }else{
+//              printf_TMP("skip %u !< %u\r\n", slotsRemaining,
+//                closestSend);
+//              printf_TMP("%u is not closest\r\n", slotsRemaining);
             }
+          }else{
+//            printf_TMP("client %u not pending\r\n", k);
           }
         }
         if (closestSend == 0){
-          post doSend();
+//          printf_TMP("send now\r\n");
+          doSend();
         }
       }
     }
@@ -116,7 +138,6 @@ implementation {
      */
     command error_t Send.send[uint8_t clientId](message_t* msg,
                                                 uint8_t len) {
-        printf_TMP("%s: \r\n", __FUNCTION__);
         if (clientId >= numClients) {
             return FAIL;
         }
@@ -127,9 +148,12 @@ implementation {
         
         queue[clientId].msg = msg;
         queue[clientId].sendSlot = call ScheduledSend.getSlot[clientId]();
+        queue[clientId].deferred = FALSE;
         call Packet.setPayloadLength(msg, len);
 
-        post nextPacket();
+//        printf_TMP("AMQ: client %u @ %u\r\n", clientId,
+//          queue[clientId].sendSlot);
+        post nextPacketTask();
         return SUCCESS;
     }
 
@@ -186,7 +210,18 @@ implementation {
 
     void sendDone(uint8_t last, message_t * ONE msg, error_t err) {
         queue[last].msg = NULL;
-        post nextPacket();
+        nextSlot = INVALID_SLOT;
+        post nextPacketTask();
+        printf_APP("TX s: %u d: %u sn: %u ofn: %u np: %u pr: %u tp: %u am: %u e: %u\r\n",
+          TOS_NODE_ID,
+          call CXPacket.destination(msg),
+          call CXPacket.sn(msg),
+          call CXPacket.getOriginalFrameNum(msg),
+          (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
+          ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
+          call CXPacket.getTransportProtocol(msg),
+          call AMPacket.type(msg),
+          err);
         signal Send.sendDone[last](msg, err);
     }
 
@@ -218,28 +253,45 @@ implementation {
           dbg("PointerBug", "%s received send done for %p, signaling for %p.\n",
               __FUNCTION__, msg, queue[current].msg);
       }
+      post nextPacketTask();
     }
 
 
     event void SlotStarted.slotStarted(uint16_t slotNum){
-      printf_TMP("%s: %u\r\n", __FUNCTION__, slotNum);
+      uint16_t previousSlot = curSlot;
       curSlot = slotNum;
-      if (INVALID_SLOT != curSlot && nextSlot == curSlot){
-        post doSend();
+//      printf_TMP("%s: %u (%u)\r\n", __FUNCTION__, slotNum, nextSlot);
+      if (someDeferred){
+        uint8_t i;
+        someDeferred = FALSE;
+        for (i=0; i< numClients; i++){
+          queue[i].deferred = FALSE;
+        }
+        post nextPacketTask();
+      }
+
+      //corner case: if this is the first valid slot we've detected,
+      //then we should check for the next scheduled packet
+      if (previousSlot == INVALID_SLOT){
+        post nextPacketTask();
+      }else if (nextSlot == curSlot && ! isSending){
+        doSend();
       }
     }
 
-    task void doSend(){
+    task void doSendTask(){
+      doSend();
+    }
+
+    void doSend(){
       error_t nextErr;
       message_t* nextMsg = queue[nextClient].msg;
       am_id_t nextId = call AMPacket.type(nextMsg);
       am_addr_t nextDest = call AMPacket.destination(nextMsg);
       uint8_t len = call Packet.payloadLength(nextMsg);
 
-      printf_TMP("%s: \r\n", __FUNCTION__);
-
-      //TODO: should find out whether it is deliverable or not
-      //  before passing down to transport!
+//      printf_TMP("%s: \r\n", __FUNCTION__);
+//      printf_TMP("send for %u @ %u\r\n", nextClient, curSlot);
       switch(call CXPacket.getTransportProtocol(nextMsg)){
         case CX_TP_UNRELIABLE_BURST:
           nextErr = call UnreliableBurstSend.send[nextId](nextDest, nextMsg, len);
@@ -251,7 +303,16 @@ implementation {
           nextErr = FAIL;
           break;
       }
-      if(nextErr != SUCCESS) {
+
+      if (nextErr == ERETRY){
+          //defer for now: nextPacket will skip any deferred clients
+          //deferred flags cleared at slot boundary.
+          queue[nextClient].deferred = TRUE;
+          someDeferred = TRUE;
+          nextSlot = INVALID_SLOT;
+          post nextPacketTask();
+      } else if(nextErr != SUCCESS) {
+          printf("%s: %s\r\n", __FUNCTION__, decodeError(nextErr));
           post errorTask();
       }else{
         isSending = TRUE;
@@ -259,9 +320,11 @@ implementation {
     }
     
     event void UnreliableBurstSend.sendDone[am_id_t id](message_t* msg, error_t err) {
+//      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
       sendDoneEvent(msg, err);
     }
     event void SimpleFloodSend.sendDone[am_id_t id](message_t* msg, error_t err) {
+//      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
       sendDoneEvent(msg, err);
     }
     

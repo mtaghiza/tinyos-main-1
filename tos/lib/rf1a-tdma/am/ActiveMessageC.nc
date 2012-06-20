@@ -32,6 +32,10 @@ configuration ActiveMessageC {
     CXTransportC.SimpleFloodReceive;
   CombineReceiveP.UnreliableBurstReceive ->
     CXTransportC.UnreliableBurstReceive;
+  CombineReceiveP.CXPacket -> CXPacketStackC.CXPacket;
+  CombineReceiveP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+  CombineReceiveP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
+  CombineReceiveP.AMPacket -> CXPacketStackC.AMPacket;
 
   Receive = CombineReceiveP.Receive;
 

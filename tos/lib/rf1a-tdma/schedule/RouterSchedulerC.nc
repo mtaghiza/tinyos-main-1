@@ -86,6 +86,8 @@ configuration RouterSchedulerC {
   SlotStarted = RouterSchedulerP.SlotStarted;
   RouterSchedulerP.SubSlotStarted[CX_SCHEDULER_MASTER] 
     -> MasterSchedulerC;
+  RouterSchedulerP.SubSlotStarted[CX_SCHEDULER_SLAVE] 
+    -> SlaveSchedulerC;
 
   TDMAPhySchedule = RouterSchedulerP.SubTDMAPhySchedule;
   SlaveSchedulerC.TDMAPhySchedule
