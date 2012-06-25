@@ -192,6 +192,13 @@ module Rf1aCXPacketP{
     return getHeader(amsg)->originalFrameNum;
   }
 
+  command void CXPacketMetadata.setRequiresClear(message_t* amsg,
+      bool requiresClear){
+    getMetadata(amsg)->requiresClear = requiresClear;
+  }
+  command bool CXPacketMetadata.getRequiresClear(message_t* amsg){
+    return getMetadata(amsg)->requiresClear;
+  }
 
   async event void ActiveMessageAddress.changed(){ }
 }

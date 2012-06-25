@@ -8,6 +8,7 @@ module CXScopedFloodP{
   provides interface Receive[am_id_t t];
 
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   uses interface AMPacket;
   //Payload: body of CXPacket (a.k.a. header of AM packet, if it's AM
   //data)
@@ -33,6 +34,7 @@ module CXScopedFloodP{
     S_ACK_PREPARE = 0x04,
 
     S_CLEAR_WAIT = 0x05,
+    S_CLEAR_WAIT_SETUP = 0x06,
 
     S_ERROR = 0x10,
 
@@ -78,6 +80,7 @@ module CXScopedFloodP{
   //race condition guard variables
   bool routeUpdatePending;
   bool rxOutstanding;
+  bool clearTimePending;
   
   //for matching up acks with data and suppressing duplicate data
   //receptions
@@ -97,12 +100,19 @@ module CXScopedFloodP{
   bool routeUpdatePending;
 
   uint16_t originFrame;
-  uint16_t ackFrame;
+  uint16_t clearFrame;
   
+  //for debug
+  uint16_t ssdFrame;
+  uint16_t ecwFrame;
+  uint16_t ackFrame;
+  uint16_t dataReceivedFrame;
+  uint8_t ssdPoster;
 
   //forward declarations
   task void signalSendDone();
   task void routeUpdate();
+  task void clearTimeUpdate();
   
   void setState(uint8_t s){
     printf_SF_STATE("{%x->%x}\r\n", state, s);
@@ -187,24 +197,70 @@ module CXScopedFloodP{
 //    printf_TMP("\r\n");
   }
 
+  uint8_t clearTime(uint8_t distance){
+    int8_t ackEdge = -1*distance;
+    int8_t dataEdge;
+    uint8_t time=0;
+    dataEdge = 0;
+    while (dataEdge < distance){
+      if (time % (ACKS_PER_DATA+1) == 0){
+        dataEdge++;
+      }
+      time++;
+    }
+    while (ackEdge != dataEdge){
+      if (time %(ACKS_PER_DATA+1) == 0){
+        dataEdge++;
+      }else{
+        ackEdge++;
+      }
+      time++;
+    }
+    return time;
+  }
+
+//  uint16_t tempCt;
+//  am_addr_t tempDest;
+//  task void printCt(){
+//    printf_TMP("ct-> %x: %u\r\n", tempDest, tempCt);
+//  }
+
   //Buffer a packet from the transport layer if we're not already
   //holding one.
   command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("ScopedFloodSend\r\n");
     atomic{
       if (!originDataPending){
-        origin_data_msg = msg;
-        call CXPacket.init(msg);
-        call CXPacket.setType(msg, CX_TYPE_DATA);
-        call CXPacket.setTransportProtocol(msg, t);
-        //preserve pre-routed bit
-        call CXPacket.setNetworkProtocol(msg, 
-          ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)
-          | CX_RM_SCOPEDFLOOD);
-        originDataPending = TRUE;
-//        dispMsg = origin_data_msg;
-//        post displayPacket();
-        return SUCCESS;
+        //compute clear time and compare to frames left in slot
+        //if there's not enough time, return ERETRY
+       uint8_t distance = call CXRoutingTable.distance(TOS_NODE_ID,
+          call CXPacket.destination(msg));
+        uint8_t ct;
+        if (distance > call TDMARoutingSchedule.maxDepth()){
+          distance = call TDMARoutingSchedule.maxDepth();
+        }
+        ct = clearTime(distance);
+//        tempCt = ct;
+//        post printCt();
+        if (ct > 
+            call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame())){
+//          printf_TMP("RETRY (%u > %u)\r\n", ct, call
+//          TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()));
+          return ERETRY;
+        } else{
+          origin_data_msg = msg;
+          call CXPacket.init(msg);
+          call CXPacket.setType(msg, CX_TYPE_DATA);
+          call CXPacket.setTransportProtocol(msg, t);
+          //preserve pre-routed bit
+          call CXPacket.setNetworkProtocol(msg, 
+            ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)
+            | CX_RM_SCOPEDFLOOD);
+          originDataPending = TRUE;
+  //        dispMsg = origin_data_msg;
+  //        post displayPacket();
+          return SUCCESS;
+        }
       } else {
         return EBUSY;
       }
@@ -225,29 +281,23 @@ module CXScopedFloodP{
 
 
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
-    //Check for (implicit) completion of SF
-    if (state == S_CLEAR_WAIT){
-      //TODO retx: account for retransmissions in completion time
-      //TODO: if this is prerouted, we don't need to wait this long. As
-      //  soon as we get the ack, we can send in the next data frame.
-
-      //we're done when the number of data frames since the initial
-      //transmission < the number of ack frames since we got the ack.
-      //nice and easy.
-
-      //dataElapsed = 1 + (frames after original tx / data+ack cycle length)
-      int16_t dataElapsed = 1 + (frameNum - originFrame - 1)/(ACKS_PER_DATA+1);
-      //This assumes ack was received on *first* ack frame of ack
-      //section. so, it could be overestimating by ACKS_PER_DATA -1 in
-      //the worst case
-      //acksElapsed = 1 + ((ack:data ratio * frames after ack received) / data+ack cycle length)
-      int16_t acksElapsed = 1 + (ACKS_PER_DATA*(frameNum - ackFrame -1))/(ACKS_PER_DATA+1);
-      if (acksElapsed  + (ACKS_PER_DATA - 1 ) > dataElapsed){
+    //Check for (implicit) completion of SF: clearFrame is set in
+    //CXTDMA.sendDone at the point where we enter the S_CLEAR_WAIT
+    //state
+    if ((state == S_CLEAR_WAIT)){
+      if ( frameNum >= clearFrame){
+        ssdFrame = frameNum;
+        ssdPoster = 0;
         post signalSendDone();
+        return RF1A_OM_RX;
+//      }else{
+//        printf_TMP("%u!=%u\r\n", frameNum, clearFrame);
       }
     }
+
     //check for end of ACK_WAIT and clean up 
     if (state == S_ACK_WAIT){
+      //TODO: this should also use something analogous to clearFrame rather than a countdown
       waitLeft --;
       printf_SF_TESTBED_AW("WL %u %u %u\r\n", frameNum, 
         call TDMARoutingSchedule.framesPerSlot(), 
@@ -261,6 +311,8 @@ module CXScopedFloodP{
         //no ack by the end of the slot, done.
         if (originDataSent){
           sendDoneError = ENOACK;
+          ssdFrame = frameNum;
+          ssdPoster = 1;
           post signalSendDone();
         }
         //get ready for next slot
@@ -380,10 +432,16 @@ module CXScopedFloodP{
       //TODO: check long atomic
       originDataPending = FALSE;
       originDataSent = FALSE;
-      signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
       call Resource.release();
       setState(S_IDLE);
+      signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
     }
+    printf_TMP("ssd.%u@%u(%u,%u)\r\n", ssdPoster, ssdFrame, ackFrame, ecwFrame);
+    ecwFrame = 0;
+  }
+
+  task void printAckTiming(){
+    printf_TMP("d@%ua@%u\r\n", dataReceivedFrame, ackFrame);
   }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
@@ -396,16 +454,11 @@ module CXScopedFloodP{
     }
     if (TXLeft == 0){
       if (state == S_DATA){
-        //TODO: if this is pre-routed, waitLeft should be just the
-        //time required for the ack to come back (maybe + a little
-        //fudge), not all the way to the end of the slot.
-        //it would be ideal if these acks were done just with normal
-        //back-to-back-floods, but what are you going to do.
+        //TODO: we should handle this like we do the CLEAR_WAIT below:
+        //  if we are in this state, then we're either pre-routed and
+        //  know the distance from src to dest (+original frame), or
+        //  we're not prerouted and we know src + original frame.
 
-        //TODO: this should be shorter, for sure. If we make an
-        //assumption about the network diameter, then this (+ ack:data
-        //ratio) will tell us how many frames we need to sit around
-        //for.
         waitLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
@@ -415,31 +468,17 @@ module CXScopedFloodP{
           //now. Might be good to wait for another frame for anything
           //left to clear.
           if ( call CXPacket.getNetworkProtocol(origin_data_msg) & CX_RM_PREROUTED){
+            ssdFrame = frameNum;
+            ssdPoster = 2;
             post signalSendDone();
           } else { 
-            //otherwise, we have to wait for the air to clear.
-            //if we got the ack n frames after our tx, then there are
-            //  n+1
-            //frames in the worst case for our forwarded ack to suppress
-            //the edges of the flood. 
-            //
-            //      6 5 4 3 2 1 0 1 2 
-            //  0               d
-            //  1          
-            //  2                
-            //  3             d   d
-            //  4                   a
-            // *5                 a
-            //  6           d
-            //  7               a
-            //  8             a
-            //  9         d
-            // 10           a
-            // 11         a
-  
-            setState(S_CLEAR_WAIT);
+            ecwFrame = frameNum;
+            clearTimePending = TRUE;
+            setState(S_CLEAR_WAIT_SETUP);
           }
         } else {
+          ackFrame = frameNum;
+          post printAckTiming();
           call Resource.release();
           setState(S_IDLE);
         }
@@ -468,6 +507,28 @@ module CXScopedFloodP{
           ruAckDepth);
         routeUpdatePending = FALSE;
       }
+      if (clearTimePending){
+        post clearTimeUpdate();
+      }
+    }
+  }
+
+  task void clearTimeUpdate(){
+    if (state == S_CLEAR_WAIT_SETUP){
+//      uint8_t dist = call CXRoutingTable.distance(TOS_NODE_ID,
+//        call CXPacket.destination(origin_data_msg)); 
+//      printf_TMP("cf %x(%u) = ", 
+//        call CXPacket.destination(origin_data_msg), 
+//        dist);
+      //subtract 1: clearTime+originFrame is the first frame for which
+      //  the air is clear. So, we should signal completion after the
+      //  transmission in frame ct+origin - 1
+      clearFrame = clearTime(
+        call CXRoutingTable.distance(TOS_NODE_ID, call CXPacket.destination(origin_data_msg))) 
+        + originFrame - 1;
+//      printf_TMP("c@%u\r\n", clearFrame);
+      setState(S_CLEAR_WAIT);
+      clearTimePending = FALSE;
     }
   }
 
@@ -548,10 +609,6 @@ module CXScopedFloodP{
    */
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-//    printf_TMP("cx.rx@ %u\r\n", frameNum);
-//    dispMsg = msg;
-//    post displayPacket();
-//    return msg;
     am_id_t pType = call CXPacket.type(msg);
     uint32_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
@@ -565,16 +622,6 @@ module CXScopedFloodP{
       //duplicate, or non-synched, drop it.
       return msg;
     }
-////TODO: Slot violations should be preemptively stopped by setting
-////txLeft to an appropriate value.
-////    if (pType == CX_TYPE_DATA && ! call TDMARoutingSchedule.ownsFrame(src, frameNum)) {
-////      printf_SF_SV("SV SF D %u %u\r\n", src, frameNum);
-////      return msg;
-////    } else if (pType== CX_TYPE_ACK && ! call TDMARoutingSchedule.ownsFrame(dest, frameNum)){
-////      printf_SF_SV("SV SF A %u %u\r\n", dest, frameNum);
-////      return msg;
-////    }
-////           
     if (state == S_IDLE){
       if ( ! call TDMARoutingSchedule.isSynched(frameNum)){
         printf_SF_RX("~s");
@@ -631,6 +678,7 @@ module CXScopedFloodP{
           ret = rx_msg;
           rx_msg = msg;
           rx_len = len;
+          dataReceivedFrame = frameNum;
           post processReceive();
           setState(S_ACK_PREPARE);
         //not for me: forward it.

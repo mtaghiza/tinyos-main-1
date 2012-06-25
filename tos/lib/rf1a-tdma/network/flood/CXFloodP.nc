@@ -3,7 +3,6 @@
  #include "CXFlood.h"
  #include "FDebug.h"
  #include "SFDebug.h"
- #include "AODVDebug.h"
  #include "SchedulerDebug.h"
  #include "BreakfastDebug.h"
 module CXFloodP{
@@ -13,6 +12,7 @@ module CXFloodP{
   provides interface Receive as Snoop[am_id_t t];
 
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   //Payload: body of CXPacket (a.k.a. header of AM packet)
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
@@ -55,6 +55,7 @@ module CXFloodP{
   bool txPending;
   bool txSent;
   uint16_t txLeft;
+  uint16_t clearLeft;
 
   am_addr_t lastSrc = 0xff;
   uint32_t lastSn;
@@ -76,6 +77,8 @@ module CXFloodP{
   //async event. We check it just at the getPacket, which will never
   //intersect with either of these times, if all is well.
   norace bool isOrigin;
+
+  void checkAndCleanup();
 
   void setState(uint8_t s){
     printf_F_STATE("(%x->%x)\r\n", state, s);
@@ -154,20 +157,29 @@ module CXFloodP{
    */
   async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     printf_F_SCHED("f.ft %u", frameNum);
-    //TODO reliable burst: This should go through transport protocol
-    //The acks (cumulative or individual) will originate from
-    //transport layer, but not from the owner of the slot.
 
-    //TODO: so we should keep track of which transport protocol
-    //provided the packet that we are currently hanging onto, and use
-    //that instance of the TDMARoutingSchedule interface.
-    if (txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
+    if (!txSent && txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
+      error_t error = call Resource.immediateRequest(); 
       printf_F_SCHED("o");
-      if (SUCCESS == call Resource.immediateRequest()){
+      if (SUCCESS == error){
         uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
         uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
         printf_F_SCHED(" tx\r\n");
         txLeft = (mr < framesLeft)? mr : framesLeft;
+        if (call CXPacketMetadata.getRequiresClear(tx_msg)){
+          clearLeft = 0xffff;
+          //pre-routed: clear when destination reached, if distance
+          //known. otherwise, max-depth
+          if (call CXPacket.getNetworkProtocol(tx_msg) & CX_RM_PREROUTED){
+            clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
+              call CXPacket.destination(tx_msg));
+          }
+          if (call TDMARoutingSchedule.maxDepth() < clearLeft){
+            clearLeft = call TDMARoutingSchedule.maxDepth();
+          }
+        }else{
+          clearLeft = 0;
+        }
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
         txSent = TRUE;
@@ -178,7 +190,8 @@ module CXFloodP{
         //if we don't signal sendDone here, the upper layer will never
         //  know what happened.
         post txFailTask();
-        printf("!F.ft.RIR\r\n");
+        printf("!F.ft.RIR %s io %x\r\n", decodeError(error), 
+          call Resource.isOwner());
         return RF1A_OM_RX;
       }
     }else{
@@ -189,6 +202,13 @@ module CXFloodP{
       printf_F_SCHED("f\r\n");
       return RF1A_OM_FSTXON;
     } else {
+      //finished transmitting, but waiting for it to finish clearing.
+      if (clearLeft > 0){
+        clearLeft --;
+        if (clearLeft == 0){
+          checkAndCleanup();
+        }
+      }
       printf_F_SCHED("r\r\n");
       return RF1A_OM_RX;
     }
@@ -251,7 +271,7 @@ module CXFloodP{
 
   //deal with the aftermath of a packet transmission.
   void checkAndCleanup(){
-    if (txLeft == 0){
+    if (clearLeft + txLeft == 0){
       setState(S_IDLE);
       isOrigin = FALSE;
       call Resource.release();
@@ -276,7 +296,11 @@ module CXFloodP{
     }else{
       printf("CXFloodP sent extra?\r\n");
     }
-//    printf("sd %p %u %lu \r\n", msg, call CXPacket.count(msg), call CXPacket.getTimestamp(msg));
+    //also need to decrement clear time!
+    if (clearLeft > 0){
+      clearLeft --;
+    }
+    //    printf("sd %p %u %lu \r\n", msg, call CXPacket.count(msg), call CXPacket.getTimestamp(msg));
     checkAndCleanup();
   }
 
@@ -324,7 +348,7 @@ module CXFloodP{
             lastSn = thisSn;
             lastSrc = thisSrc;
             lastDepth = call CXPacket.count(msg);
-            //TODO ASSIGNMENT: avoid slot violation w. txLeft 
+            //avoid slot violation w. txLeft 
             // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
             // This will prevent slot violations from happening and
             // doesn't require deep knowledge of the schedule.
@@ -333,6 +357,13 @@ module CXFloodP{
               uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
               txLeft = (mr < framesLeft)? mr : framesLeft;
             }else{
+              txLeft = 0;
+            }
+            //if it's pre-routed and ends with us, then we don't need
+            //to forward it. This lets us shave one frame off the
+            //inter-packet spacing.
+            if (call CXPacket.isForMe(msg) && 
+                (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED)){
               txLeft = 0;
             }
             fwd_msg = msg;

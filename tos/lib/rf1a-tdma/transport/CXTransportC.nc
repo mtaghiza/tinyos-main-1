@@ -14,31 +14,29 @@ configuration CXTransportC{
   components CXPacketStackC;
   components CXRoutingTableC;
 
-  components AODVSchedulerC;
-  AODVSchedulerC.SubTDMARoutingSchedule ->
+  components UnreliableBurstSchedulerC;
+  UnreliableBurstSchedulerC.TDMARoutingSchedule ->
     TDMASchedulerC.TDMARoutingSchedule;
-  AODVSchedulerC.FrameStarted -> CXTDMAPhysicalC.FrameStarted;
+  UnreliableBurstSchedulerC.SlotStarted -> TDMASchedulerC.SlotStarted;
 
-  AODVSchedulerC.FloodSend 
+  UnreliableBurstSchedulerC.FloodSend 
     -> CXNetworkC.FloodSend[CX_TP_UNRELIABLE_BURST];
-  AODVSchedulerC.FloodReceive 
+  UnreliableBurstSchedulerC.FloodReceive 
     -> CXNetworkC.FloodReceive[CX_TP_UNRELIABLE_BURST];
 
-  AODVSchedulerC.ScopedFloodSend 
+  UnreliableBurstSchedulerC.ScopedFloodSend 
     -> CXNetworkC.ScopedFloodSend[CX_TP_UNRELIABLE_BURST];
-  AODVSchedulerC.ScopedFloodReceive 
+  UnreliableBurstSchedulerC.ScopedFloodReceive 
     -> CXNetworkC.ScopedFloodReceive[CX_TP_UNRELIABLE_BURST];
 
-  AODVSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
-  AODVSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
-  AODVSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
-  AODVSchedulerC.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
-  AODVSchedulerC.Ieee154Packet -> CXPacketStackC.Ieee154Packet;
+  UnreliableBurstSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
+  UnreliableBurstSchedulerC.AMPacketBody 
+    -> CXPacketStackC.AMPacketBody;
+  UnreliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
+  UnreliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
-  AODVSchedulerC.CXRoutingTable -> CXRoutingTableC;
-
-  UnreliableBurstSend = AODVSchedulerC.AMSend;
-  UnreliableBurstReceive = AODVSchedulerC.Receive;
+  UnreliableBurstSend = UnreliableBurstSchedulerC.AMSend;
+  UnreliableBurstReceive = UnreliableBurstSchedulerC.Receive;
 
 
   components SimpleFloodSchedulerC;
@@ -48,7 +46,8 @@ configuration CXTransportC{
   SimpleFloodSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
   SimpleFloodSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
   SimpleFloodSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
-  SimpleFloodSchedulerC.FrameStarted -> CXTDMAPhysicalC.FrameStarted;
+  SimpleFloodSchedulerC.CXPacketMetadata 
+    -> CXPacketStackC.CXPacketMetadata;
   SimpleFloodSchedulerC.TDMARoutingSchedule 
     -> TDMASchedulerC.TDMARoutingSchedule;
   SimpleFloodSchedulerC.FloodSend 
@@ -57,7 +56,7 @@ configuration CXTransportC{
     -> CXNetworkC.FloodReceive[CX_TP_SIMPLE_FLOOD];
 
   CXNetworkC.CXTransportSchedule[CX_TP_UNRELIABLE_BURST] 
-    -> AODVSchedulerC.CXTransportSchedule;
+    -> UnreliableBurstSchedulerC.CXTransportSchedule;
   CXNetworkC.CXTransportSchedule[CX_TP_SIMPLE_FLOOD] 
     -> SimpleFloodSchedulerC.CXTransportSchedule;
 }

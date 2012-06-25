@@ -21,6 +21,7 @@ module AODVSchedulerP{
   uses interface AMPacket;
   uses interface Packet as AMPacketBody;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   uses interface Rf1aPacket;
   uses interface Ieee154Packet;
 } implementation {
@@ -119,6 +120,7 @@ module AODVSchedulerP{
         printf_AODV_CLEAR("SF %u (%u)\r\n", lastFn, nextSlotStart);
         printf_AODV_S("S");
         call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
+        call CXPacketMetadata.setRequiresClear(msg, TRUE);
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
           SET_STATE(S_AO_SETUP, S_ERROR_2);
@@ -129,9 +131,12 @@ module AODVSchedulerP{
         if (destination == lastDestination){
           printf_AODV_CLEAR("F %u (%u %x)\r\n", lastFn, nextSlotStart, state);
           call CXPacket.setNetworkProtocol(msg, CX_RM_PREROUTED);
-          //TODO: if msg has ack-requested set, call
-          //ScopedFloodSend.send instead.
+          call CXPacketMetadata.setRequiresClear(msg, TRUE);
           error = call FloodSend.send(msg, len);
+
+          //TODO: can get ERETRY here if the network layer says
+          //"there's not enough time to send this." 
+
           if (CHECK_STATE(S_AO_READY)){
             SET_STATE(S_AO_PENDING, S_ERROR_2);
           } else if (CHECK_STATE(S_AO_CLEARING)){
@@ -372,28 +377,6 @@ module AODVSchedulerP{
       (isOrigin(frameNum) );
   }
 
-//  //TODO schedule assignment: have to get away from using this for the
-//  //general case: we should be able to identify slot boundaries and
-//  //which frames belong to us, but not schedule for other nodes
-//  async command bool TDMARoutingSchedule.ownsFrame(am_addr_t nodeId,
-//      uint16_t frameNum){
-//    uint16_t fps = call SubTDMARoutingSchedule.framesPerSlot();
-//    //TODO: should this be nodeId+1? or does 0 just never get to send
-//    //  except for schedule?
-//    
-//    //fps<=1: for special case of when we haven't received any
-//    //schedules yet. it's not perfect...
-//    return (fps <= 1) ||((frameNum >= (nodeId*fps)) 
-//      && (frameNum < ((nodeId+1)*fps)));
-//  }
-
-//  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
-////    printf_SCHED("aodv.mr\r\n");
-//    return call SubTDMARoutingSchedule.maxRetransmit();
-//  }
-//  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
-//    return call SubTDMARoutingSchedule.framesPerSlot();
-//  }
   command error_t AMSend.cancel[am_id_t id](message_t* msg){
     return FAIL;
   }

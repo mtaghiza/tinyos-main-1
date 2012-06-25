@@ -6,24 +6,24 @@ tc=0
 debugScale=4UL
 
 #test setup
-floodTest=1
+floodTest=0
 rootId="0"
-rootSender=1
+rootSender=0
 rootDest=1
 nonrootRx=""
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx=""
+nonrootTx="1"
 
 fecEnabled=0
 fecHamming74=1
 
-ipi=5120UL
-queueThreshold=1
+ipi=2560UL
+queueThreshold=5
 
 #network params
 numSlots=10
-fps=10
+fps=20
 md=2
 mr=1
 
@@ -51,7 +51,8 @@ rxAodvState=0
 aodvClear=0
 debugFEC=0
 debugSFRX=0
-debugSS=0
+debugSS=1
+debugTestbedResource=0
 #debug RXREADY error messages
 rxr=0
 
@@ -74,7 +75,7 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource" 
 
 
 testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold

@@ -40,6 +40,7 @@ typedef struct cx_metadata_t{
   uint32_t alarmTimestamp;
   uint16_t frameNum;
   uint8_t symbolRate;
+  bool requiresClear;
 } cx_metadata_t;
 
 #define CX_TYPE_DATA 0xaa

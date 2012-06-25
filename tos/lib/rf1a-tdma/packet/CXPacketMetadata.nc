@@ -9,5 +9,7 @@ interface CXPacketMetadata{
   command uint8_t getReceivedCount(message_t* amsg);
   command void setSymbolRate(message_t* amsg, uint8_t symbolRate);
   command uint8_t getSymbolRate(message_t* amsg);
+  command void setRequiresClear(message_t* amsg, bool rc);
+  command bool getRequiresClear(message_t* amsg);
 
 }

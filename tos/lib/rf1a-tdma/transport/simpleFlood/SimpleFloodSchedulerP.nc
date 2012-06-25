@@ -7,9 +7,9 @@ module SimpleFloodSchedulerP{
 
   uses interface AMPacket;
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
 
   uses interface Packet as AMPacketBody;
-  uses interface FrameStarted;
 
   uses interface TDMARoutingSchedule;
 
@@ -23,11 +23,6 @@ module SimpleFloodSchedulerP{
   };
 
   uint8_t state = S_IDLE;
-  uint16_t lastSent;
-  message_t* outstandingMsg;
-  error_t sdError;
-
-  task void signalDone();
 
   command error_t AMSend.send[am_id_t id](am_addr_t addr, 
       message_t* msg, uint8_t len){
@@ -36,6 +31,7 @@ module SimpleFloodSchedulerP{
       call AMPacketBody.setPayloadLength(msg, len);
       call AMPacket.setType(msg, id);
       call CXPacket.setDestination(msg, addr);
+      call CXPacketMetadata.setRequiresClear(msg, TRUE);
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
         state = S_PENDING;
@@ -47,21 +43,8 @@ module SimpleFloodSchedulerP{
   }
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
-    //Upon completion at network layer, read original frame num from
-    //cx header
-    if (state == S_SENDING){
-      state = S_CLEARING;
-      outstandingMsg = msg;
-      sdError = error;
-      lastSent = call CXPacket.getOriginalFrameNum(msg);
-    }
-  }
-
-  event void FrameStarted.frameStarted(uint16_t frameNum){
-    //TODO: FLOOD_CLEAR_TIME = maxDepth + retransmits
-    if (state == S_CLEARING && frameNum > (lastSent + SCHED_MAX_DEPTH + SCHED_MAX_RETRANSMIT)){
-      post signalDone();
-    }
+    state = S_IDLE;
+    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
@@ -75,11 +58,6 @@ module SimpleFloodSchedulerP{
     }else{
       return FALSE;
     }
-  }
-
-  task void signalDone(){
-    state = S_IDLE;
-    signal AMSend.sendDone[call AMPacket.type(outstandingMsg)](outstandingMsg, sdError);
   }
 
   command error_t AMSend.cancel[am_id_t id](message_t* msg){

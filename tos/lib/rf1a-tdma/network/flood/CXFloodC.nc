@@ -3,6 +3,7 @@ configuration CXFloodC{
   provides interface Receive[am_id_t type];
 
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
@@ -17,6 +18,7 @@ configuration CXFloodC{
   Send = CXFloodP.Send;
   Receive = CXFloodP.Receive;
   CXPacket = CXFloodP.CXPacket;
+  CXPacketMetadata = CXFloodP.CXPacketMetadata;
   CXTDMA = CXFloodP.CXTDMA;
   TDMARoutingSchedule = CXFloodP.TDMARoutingSchedule;
   CXTransportSchedule = CXFloodP.CXTransportSchedule;

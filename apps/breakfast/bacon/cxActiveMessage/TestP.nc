@@ -92,12 +92,12 @@ module TestP {
   
   event void SendTimer.fired(){
     packetQueue++;
-    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
+//    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
     if (packetQueue >= QUEUE_THRESHOLD){
-      printf_TEST_QUEUE("send\r\n");
+//      printf_TEST_QUEUE("send\r\n");
       post sendTask();
     }else{
-      printf_TEST_QUEUE("wait\r\n");
+//      printf_TEST_QUEUE("wait\r\n");
     }
 
     call SendTimer.startOneShot((TEST_IPI/2) + 

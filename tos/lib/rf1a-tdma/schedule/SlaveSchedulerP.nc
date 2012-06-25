@@ -72,13 +72,12 @@ module SlaveSchedulerP {
     uint8_t sri = srIndex(schedule->symbolRate);
     isSynched = TRUE;
     //TODO: clock skew correction
-    //TODO: why is originalFrameNum in the packet interface rather
-    //than metadata?
+    //looks like it: OFN 0 and receivedCount 1: should be received at
+    //frame 0, not frame 1. dummy.
     call TDMAPhySchedule.setSchedule(
       call CXPacketMetadata.getPhyTimestamp(schedule_msg) -
       sfdDelays[sri] - fsDelays[sri],
-      call CXPacket.getOriginalFrameNum(schedule_msg) + call
-      CXPacketMetadata.getReceivedCount(schedule_msg),
+      call CXPacket.getOriginalFrameNum(schedule_msg) + call CXPacketMetadata.getReceivedCount(schedule_msg) -1,
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
@@ -150,7 +149,6 @@ module SlaveSchedulerP {
   event void FrameStarted.frameStarted(uint16_t frameNum){
     curFrame = frameNum;
     if (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot())){
-      printf_TMP("s %u\r\n", curFrame);
       curSlot = getSlot(frameNum);
       signal SlotStarted.slotStarted(curSlot);
     }

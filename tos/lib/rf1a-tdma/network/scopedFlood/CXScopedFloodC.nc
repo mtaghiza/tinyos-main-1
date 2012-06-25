@@ -3,6 +3,7 @@ configuration CXScopedFloodC{
   provides interface Receive[am_id_t type];
 
   uses interface CXPacket;
+  uses interface CXPacketMetadata;
   uses interface AMPacket;
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
@@ -19,6 +20,7 @@ configuration CXScopedFloodC{
   Send = CXScopedFloodP.Send;
   Receive = CXScopedFloodP.Receive;
   CXScopedFloodP.CXPacket = CXPacket;
+  CXScopedFloodP.CXPacketMetadata = CXPacketMetadata;
   CXScopedFloodP.AMPacket = AMPacket;
   CXTDMA = CXScopedFloodP.CXTDMA;
   LayerPacket = CXScopedFloodP.LayerPacket;
