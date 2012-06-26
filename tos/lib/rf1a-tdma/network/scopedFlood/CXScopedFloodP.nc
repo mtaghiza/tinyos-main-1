@@ -243,7 +243,8 @@ module CXScopedFloodP{
 //        tempCt = ct;
 //        post printCt();
         if (ct > 
-            call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame())){
+            call TDMARoutingSchedule.framesLeftInSlot(call
+            TDMARoutingSchedule.currentFrame())+1){
 //          printf_TMP("RETRY (%u > %u)\r\n", ct, call
 //          TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()));
           return ERETRY;

@@ -275,6 +275,7 @@ implementation {
       if (previousSlot == INVALID_SLOT){
         post nextPacketTask();
       }else if (nextSlot == curSlot && ! isSending){
+//        printf_TMP("a%u\r\n", slotNum);
         doSend();
       }
     }

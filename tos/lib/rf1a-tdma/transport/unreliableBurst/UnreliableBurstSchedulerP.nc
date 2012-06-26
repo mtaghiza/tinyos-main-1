@@ -1,3 +1,4 @@
+ #include "schedule.h"
 module UnreliableBurstSchedulerP{
   provides interface CXTransportSchedule;
   uses interface TDMARoutingSchedule;
@@ -31,9 +32,17 @@ module UnreliableBurstSchedulerP{
 
   uint8_t state = S_IDLE;
   am_addr_t lastDest = AM_BROADCAST_ADDR;
+  uint16_t curSlot = INVALID_SLOT;
+  
+  void newSlot(uint16_t slotNum);
 
   command error_t AMSend.send[am_id_t id](am_addr_t addr, 
       message_t* msg, uint8_t len){
+    //ugh. this is to handle the case where AMSend.send is called from
+    //some other component's SlotStarted event BEFORE our
+    //SlotStarted event has fired and set up for the new slot.
+//    printf_TMP("am\r\n");
+    newSlot(call SlotStarted.currentSlot());
     //unicast only
     if (addr == AM_BROADCAST_ADDR){
       return EINVAL;
@@ -85,8 +94,8 @@ module UnreliableBurstSchedulerP{
         lastDest = call CXPacket.destination(msg);
         state = S_READY;
       }
-      signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
     }
+    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
@@ -117,20 +126,28 @@ module UnreliableBurstSchedulerP{
     }
   }
 
-  event void SlotStarted.slotStarted(uint16_t slotNum){
-    lastDest = AM_BROADCAST_ADDR;
-    //in some cases, we can end up getting the slotStarted event
-    //before seeing the sendDone event (even though the last
-    //transmission did not violate a slot boundary)
-    //e.g. at frame 98 we supply a packet. it gets sent in frame 99.
-    //when frame 100 starts (new slot), the flood layer posts a task
-    //to signal sendDone, but directly signals the slotStarted event.
-    if (state == S_READY){
-      state = S_IDLE;
-    }else if (state != S_IDLE){
-      printf("!SS.SS in %x\r\n", state);
-      state = S_ERROR_3;
+  void newSlot(uint16_t slotNum){
+    if (slotNum != curSlot){
+      lastDest = AM_BROADCAST_ADDR;
+      curSlot = slotNum;
+      //in some cases, we can end up getting the slotStarted event
+      //before seeing the sendDone event (even though the last
+      //transmission did not violate a slot boundary)
+      //e.g. at frame 98 we supply a packet. it gets sent in frame 99.
+      //when frame 100 starts (new slot), the flood layer posts a task
+      //to signal sendDone, but directly signals the slotStarted event.
+      if (state == S_READY){
+        state = S_IDLE;
+      }else if (state != S_IDLE){
+        printf("!SS.SS in %x\r\n", state);
+        state = S_ERROR_3;
+      }
     }
+  }
+
+  event void SlotStarted.slotStarted(uint16_t slotNum){
+//    printf_TMP("ss\r\n");
+    newSlot(slotNum);
   }
 
   command error_t AMSend.cancel[am_id_t id](message_t* msg){
