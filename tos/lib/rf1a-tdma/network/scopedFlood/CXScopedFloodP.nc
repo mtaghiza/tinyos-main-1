@@ -527,7 +527,12 @@ module CXScopedFloodP{
         call CXRoutingTable.distance(TOS_NODE_ID, call CXPacket.destination(origin_data_msg))) 
         + originFrame - 1;
 //      printf_TMP("c@%u\r\n", clearFrame);
-      setState(S_CLEAR_WAIT);
+      //For the case where it's already done
+      if (clearFrame >= ecwFrame){
+        post signalSendDone();
+      } else{
+        setState(S_CLEAR_WAIT);
+      }
       clearTimePending = FALSE;
     }
   }

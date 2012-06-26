@@ -72,8 +72,8 @@ module SlaveSchedulerP {
     uint8_t sri = srIndex(schedule->symbolRate);
     isSynched = TRUE;
     //TODO: clock skew correction
-    //looks like it: OFN 0 and receivedCount 1: should be received at
-    //frame 0, not frame 1. dummy.
+    //OFN 0 and receivedCount 1: should be received at
+    //frame 0, not frame 1. 
     call TDMAPhySchedule.setSchedule(
       call CXPacketMetadata.getPhyTimestamp(schedule_msg) -
       sfdDelays[sri] - fsDelays[sri],
