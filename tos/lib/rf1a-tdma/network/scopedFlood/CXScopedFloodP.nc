@@ -436,13 +436,13 @@ module CXScopedFloodP{
       setState(S_IDLE);
       signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
     }
-    printf_TMP("ssd.%u@%u(%u,%u)\r\n", ssdPoster, ssdFrame, ackFrame, ecwFrame);
+//    printf_TMP("ssd.%u@%u(%u,%u)\r\n", ssdPoster, ssdFrame, ackFrame, ecwFrame);
     ecwFrame = 0;
   }
 
-  task void printAckTiming(){
-    printf_TMP("d@%ua@%u\r\n", dataReceivedFrame, ackFrame);
-  }
+//  task void printAckTiming(){
+//    printf_TMP("d@%ua@%u\r\n", dataReceivedFrame, ackFrame);
+//  }
 
   async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
@@ -478,7 +478,7 @@ module CXScopedFloodP{
           }
         } else {
           ackFrame = frameNum;
-          post printAckTiming();
+//          post printAckTiming();
           call Resource.release();
           setState(S_IDLE);
         }

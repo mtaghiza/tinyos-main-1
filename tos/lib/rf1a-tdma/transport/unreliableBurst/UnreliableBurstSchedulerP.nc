@@ -91,7 +91,7 @@ module UnreliableBurstSchedulerP{
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
     if (state != S_SENDING){
-      printf("!SFS.sd: in %x expected %x\r\n", state, S_SENDING);
+      printf("!FS.sd: in %x expected %x\r\n", state, S_SENDING);
       state = S_ERROR_2;
     } else {
       state = S_READY;
@@ -128,7 +128,7 @@ module UnreliableBurstSchedulerP{
     if (state == S_READY){
       state = S_IDLE;
     }else if (state != S_IDLE){
-      printf("!SS.SS while in %x\r\n", state);
+      printf("!SS.SS in %x\r\n", state);
       state = S_ERROR_3;
     }
   }

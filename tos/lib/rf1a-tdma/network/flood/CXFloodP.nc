@@ -63,6 +63,10 @@ module CXFloodP{
   
   uint8_t state;
 
+  //for debugging completion reporting
+  uint16_t ccfn;
+  uint8_t cccaller;
+
   //This could be incorporated into the general message pool shared by
   //CX routing methods, but then we'd end up having to deal with a lot
   //of async accesses to it. Done like this, all of our interaction
@@ -117,8 +121,9 @@ module CXFloodP{
         }
         clearTime = clearTime == 0xff ? call
           TDMARoutingSchedule.maxDepth(): clearTime;
-
-        if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime){
+        // have to add 1 here: if we're in the last frame now and the
+        // clear time is 1, then we don't have time to send it.
+        if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
 //          printf_TMP("RETRY\r\n");
           return ERETRY;
         }else{
@@ -205,9 +210,9 @@ module CXFloodP{
       //finished transmitting, but waiting for it to finish clearing.
       if (clearLeft > 0){
         clearLeft --;
-        if (clearLeft == 0){
-          checkAndCleanup();
-        }
+        ccfn = frameNum;
+        cccaller = 0;
+        checkAndCleanup();
       }
       printf_F_SCHED("r\r\n");
       return RF1A_OM_RX;
@@ -272,12 +277,15 @@ module CXFloodP{
   //deal with the aftermath of a packet transmission.
   void checkAndCleanup(){
     if (clearLeft + txLeft == 0){
+//      printf_TMP("CC.%u@%u", cccaller, ccfn);
       setState(S_IDLE);
       isOrigin = FALSE;
       call Resource.release();
       if (txSent){
+//        printf_TMP("t\r\n");
         post txSuccessTask();
       } else {
+//        printf_TMP("r\r\n");
         post reportReceive();
       }
     }
@@ -301,6 +309,8 @@ module CXFloodP{
       clearLeft --;
     }
     //    printf("sd %p %u %lu \r\n", msg, call CXPacket.count(msg), call CXPacket.getTimestamp(msg));
+    ccfn = frameNum;
+    cccaller = 1;
     checkAndCleanup();
   }
 
@@ -370,6 +380,8 @@ module CXFloodP{
             rxOutstanding = TRUE;
             setState(S_FWD);
             //to handle the case where retx = 0
+            ccfn = frameNum;
+            cccaller = 2;
             checkAndCleanup();
             return ret;
   

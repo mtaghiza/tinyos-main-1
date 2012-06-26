@@ -18,8 +18,8 @@ nonrootTx="1"
 fecEnabled=0
 fecHamming74=1
 
-ipi=2560UL
-queueThreshold=5
+ipi=512UL
+queueThreshold=20
 
 #network params
 numSlots=10
@@ -51,7 +51,7 @@ rxAodvState=0
 aodvClear=0
 debugFEC=0
 debugSFRX=0
-debugSS=1
+debugSS=0
 debugTestbedResource=0
 #debug RXREADY error messages
 rxr=0
