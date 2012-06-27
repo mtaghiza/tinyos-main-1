@@ -106,8 +106,8 @@ module RouterP{
     printf("root: %d %X\n\r", boot_counter, reset_vector);
 
     call RadioControl.start();
-    call ClockTimer.startPeriodic(CLOCK_INTERVAL);
-    call StatusTimer.startPeriodic(STATUS_INTERVAL);
+    call ClockTimer.startPeriodic(ROUTER_CLOCK_INTERVAL);
+    call StatusTimer.startPeriodic(ROUTER_STATUS_INTERVAL);
 
     /* flash leds to signal successful boot */
     ledsGet = LEDS_LED0|LEDS_LED1|LEDS_LED2;
@@ -517,7 +517,7 @@ module RouterP{
                               
                               printf("\n\r");
 
-                              call ClockTimer.startPeriodic(CLOCK_INTERVAL);
+                              call ClockTimer.startPeriodic(ROUTER_CLOCK_INTERVAL);
                               post clockTask();
 
                               break;
@@ -577,7 +577,7 @@ module RouterP{
         remoteRtc[4] = 0x21; // date
         remoteRtc[5] = 0x05; // month
         remoteRtc[6] = 0x12; // year 
-        call ClockTimer.startPeriodic(CLOCK_INTERVAL);
+        call ClockTimer.startPeriodic(ROUTER_CLOCK_INTERVAL);
         post clockTask();
         break;
 
