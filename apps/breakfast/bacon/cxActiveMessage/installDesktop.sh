@@ -6,7 +6,7 @@ tc=0
 debugScale=4UL
 
 #test setup
-testTransportProtocol=1
+testTransportProtocol=2
 rootId="0"
 rootSender=0
 rootDest=1
