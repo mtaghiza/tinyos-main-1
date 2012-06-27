@@ -219,11 +219,12 @@ module CXScopedFloodP{
     return time;
   }
 
-//  uint16_t tempCt;
+  uint16_t tempCt;
+  uint16_t tempLeft;
 //  am_addr_t tempDest;
-//  task void printCt(){
-//    printf_TMP("ct-> %x: %u\r\n", tempDest, tempCt);
-//  }
+  task void printCt(){
+    printf_TMP("ct %u l %u\r\n", tempCt, tempLeft);
+  }
 
   //Buffer a packet from the transport layer if we're not already
   //holding one.
@@ -239,16 +240,22 @@ module CXScopedFloodP{
         if (distance > call TDMARoutingSchedule.maxDepth()){
           distance = call TDMARoutingSchedule.maxDepth();
         }
-        ct = clearTime(distance);
-//        tempCt = ct;
-//        post printCt();
+        ct = clearTime(distance)+1;
+        tempCt = ct;
+        tempLeft = call TDMARoutingSchedule.framesLeftInSlot(call
+            TDMARoutingSchedule.currentFrame());
+        post printCt();
         if (ct > 
             call TDMARoutingSchedule.framesLeftInSlot(call
-            TDMARoutingSchedule.currentFrame())+1){
-//          printf_TMP("RETRY (%u > %u)\r\n", ct, call
-//          TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()));
+            TDMARoutingSchedule.currentFrame())){
+//          printf_TMP("RETRY (%u > %u)\r\n", ct, 
+//            call TDMARoutingSchedule.framesLeftInSlot(call
+//            TDMARoutingSchedule.currentFrame())+1);
           return ERETRY;
         } else{
+//          printf_TMP("OK (%u !> %u)\r\n", ct, 
+//            call TDMARoutingSchedule.framesLeftInSlot(call
+//            TDMARoutingSchedule.currentFrame())+1);
           origin_data_msg = msg;
           call CXPacket.init(msg);
           call CXPacket.setType(msg, CX_TYPE_DATA);
