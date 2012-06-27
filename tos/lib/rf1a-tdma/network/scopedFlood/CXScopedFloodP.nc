@@ -75,7 +75,7 @@ module CXScopedFloodP{
   
   //for determining when to transition states
   uint8_t TXLeft;
-  uint16_t waitLeft;
+  uint8_t waitLeft;
 
   //race condition guard variables
   bool routeUpdatePending;
@@ -219,12 +219,12 @@ module CXScopedFloodP{
     return time;
   }
 
-  uint16_t tempCt;
-  uint16_t tempLeft;
-//  am_addr_t tempDest;
-  task void printCt(){
-    printf_TMP("ct %u l %u\r\n", tempCt, tempLeft);
-  }
+//  uint16_t tempCt;
+//  uint16_t tempLeft;
+////  am_addr_t tempDest;
+//  task void printCt(){
+//    printf_TMP("ct %u l %u\r\n", tempCt, tempLeft);
+//  }
 
   //Buffer a packet from the transport layer if we're not already
   //holding one.
@@ -241,10 +241,10 @@ module CXScopedFloodP{
           distance = call TDMARoutingSchedule.maxDepth();
         }
         ct = clearTime(distance)+1;
-        tempCt = ct;
-        tempLeft = call TDMARoutingSchedule.framesLeftInSlot(call
-            TDMARoutingSchedule.currentFrame());
-        post printCt();
+//        tempCt = ct;
+//        tempLeft = call TDMARoutingSchedule.framesLeftInSlot(call
+//            TDMARoutingSchedule.currentFrame());
+//        post printCt();
         if (ct > 
             call TDMARoutingSchedule.framesLeftInSlot(call
             TDMARoutingSchedule.currentFrame())){
@@ -466,8 +466,8 @@ module CXScopedFloodP{
         //  if we are in this state, then we're either pre-routed and
         //  know the distance from src to dest (+original frame), or
         //  we're not prerouted and we know src + original frame.
-
-        waitLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
+        
+        waitLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum)-1;
         setState(S_ACK_WAIT);
       }else if (state == S_ACK){
         post routeUpdate();
