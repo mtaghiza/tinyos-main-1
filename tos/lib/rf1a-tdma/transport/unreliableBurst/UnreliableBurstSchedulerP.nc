@@ -130,7 +130,7 @@ module UnreliableBurstSchedulerP{
     if (slotNum != curSlot){
       lastDest = AM_BROADCAST_ADDR;
       curSlot = slotNum;
-      printf_TMP("%u\r\n", curSlot);
+//      printf_TMP("%u\r\n", curSlot);
       //in some cases, we can end up getting the slotStarted event
       //before seeing the sendDone event (even though the last
       //transmission did not violate a slot boundary)
@@ -144,12 +144,12 @@ module UnreliableBurstSchedulerP{
         state = S_ERROR_3;
       }
     }else{
-      printf_TMP("\r\n");
+//      printf_TMP("\r\n");
     }
   }
 
   event void SlotStarted.slotStarted(uint16_t slotNum){
-    printf_TMP("ss");
+//    printf_TMP("ss");
     newSlot(slotNum);
   }
 

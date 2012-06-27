@@ -83,8 +83,9 @@ module ReliableBurstSchedulerP{
   
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
 //    printf_TMP("RB.sfs.sd\r\n");
-    if (state != S_SETUP && state != S_READY){
-      printf("!RB.SFS.sd: in %x expected %x\r\n", state, S_SETUP);
+    if (state != S_SETUP && state != S_SENDING){
+      printf("!RB.SFS.sd: in %x expected %x or %x \r\n", state,
+        S_SETUP, S_SENDING);
       state = S_ERROR_1;
     } else {
       if (ENOACK == error){
