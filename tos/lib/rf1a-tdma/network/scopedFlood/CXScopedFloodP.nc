@@ -555,7 +555,9 @@ module CXScopedFloodP{
 
     if (msg != NULL){
       uint8_t tp = call CXPacket.getTransportProtocol(msg);
-      uint8_t len = call LayerPacket.payloadLength(msg) - sizeof(cx_header_t);
+      uint8_t len = call LayerPacket.payloadLength(msg);
+//      printf_TMP("len %u -> %u\r\n", 
+//        call LayerPacket.payloadLength(msg), len);
       msg = signal Receive.receive[tp]( msg, 
         call LayerPacket.getPayload(msg, len),
         len);

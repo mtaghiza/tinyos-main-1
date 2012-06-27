@@ -39,6 +39,7 @@ configuration ActiveMessageC {
   CombineReceiveP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CombineReceiveP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
   CombineReceiveP.AMPacket -> CXPacketStackC.AMPacket;
+  CombineReceiveP.AMPacketBody -> CXPacketStackC.AMPacketBody;
 
   Receive = CombineReceiveP.Receive;
 

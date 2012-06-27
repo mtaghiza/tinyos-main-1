@@ -19,8 +19,8 @@ nonrootTx="1"
 fecEnabled=0
 fecHamming74=1
 
-ipi=512UL
-queueThreshold=20
+ipi=10240UL
+queueThreshold=1
 
 #network params
 numSlots=10

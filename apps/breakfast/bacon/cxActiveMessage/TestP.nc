@@ -44,6 +44,12 @@ module TestP {
   bool sending;
 
   typedef nx_struct test_packet_t{
+    nx_uint8_t a;
+    nx_uint8_t b;
+    nx_uint8_t c;
+    nx_uint8_t d;
+    nx_uint8_t e;
+    nx_uint8_t f;
     nx_uint32_t sn;
   } test_packet_t;
 
@@ -133,6 +139,12 @@ module TestP {
       error_t error;
       test_packet_t* pl = call Packet.getPayload(tx_msg,
         sizeof(test_packet_t));
+      pl -> a = 0xaa;
+      pl -> b = 0xbb;
+      pl -> c = 0xcc;
+      pl -> d = 0xdd;
+      pl -> e = 0xee;
+      pl -> f = 0xff;
       pl -> sn ++;//= (1+TOS_NODE_ID);
   
       error = call AMSend.send(TEST_DEST_ADDR, tx_msg,
@@ -169,9 +181,33 @@ module TestP {
   }
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
+//    uint8_t i;
     call Leds.led2Toggle();
+//    printf_APP("[");
+//    for (i=0; i < TOSH_DATA_LENGTH+sizeof(message_header_t); i++){
+//      printf_APP("%02X", msg->header[i]);
+//    }
+//    printf_APP("]");
+//    printf_APP("\r\n");
+//    printf_APP("(");
+//    if (payload != NULL){
+//      for (i=0; i < len; i++){
+//        printf_APP("%02X", ((uint8_t*)payload)[i]);
+//      }
+//    } else{
+//      printf_APP("NULL");
+//    }
+//    printf_APP(")");
+//    printf_APP("\r\n");
+//    printf_APP("rx %p %u calc %p %u\r\n", 
+//      payload, 
+//      len, 
+//      call Packet.getPayload(msg, sizeof(test_packet_t)),
+//      call Packet.payloadLength(msg));
+//
     return msg;
   }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
     #if DESKTOP_TEST == 1
     switch(byte){
