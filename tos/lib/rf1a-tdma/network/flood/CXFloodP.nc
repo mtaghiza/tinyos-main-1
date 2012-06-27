@@ -174,13 +174,14 @@ module CXFloodP{
         if (call CXPacketMetadata.getRequiresClear(tx_msg)){
           clearLeft = 0xffff;
           //pre-routed: clear when destination reached, if distance
-          //known. otherwise, max-depth
+          //known. otherwise, max-depth + 1 (since some nodes at
+          //maxDepth will rebroadcast)
           if (call CXPacket.getNetworkProtocol(tx_msg) & CX_RM_PREROUTED){
             clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
               call CXPacket.destination(tx_msg));
           }
           if (call TDMARoutingSchedule.maxDepth() < clearLeft){
-            clearLeft = call TDMARoutingSchedule.maxDepth();
+            clearLeft = call TDMARoutingSchedule.maxDepth() + 1;
           }
         }else{
           clearLeft = 0;
