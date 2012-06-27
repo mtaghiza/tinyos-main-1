@@ -103,7 +103,7 @@
   /***********************************/
   /* Toast sampling                  */
   /***********************************/
-
+#ifdef USE_TOAST_ADC  
   event void ToastSampleTimer.fired()
   {
     // only proceed if toast is attached
@@ -189,7 +189,7 @@
       
     return responseMsg;
   }
-
+#endif
 
   /***********************************/
   /* clock sampling (phoenix TS)     */
@@ -324,6 +324,7 @@
   /* Toast Board                                                             */
   /***************************************************************************/
 
+#ifdef USE_TOAST_ADC  
   /***********************************/
   /* Toast ADC congifuration         */
   /***********************************/
@@ -422,7 +423,7 @@
     printf("%s: %s\n\r", __FUNCTION__, decodeError(error));
 #endif
   }
-
+#endif // USE_TOAST_ADC
 
   /***************************************************************************/
   /* Flash                                                                   */

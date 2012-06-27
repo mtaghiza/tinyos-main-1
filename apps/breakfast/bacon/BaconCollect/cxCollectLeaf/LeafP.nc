@@ -4,13 +4,7 @@
 #include "Msp430Adc12.h"
 #include "I2CADCReader.h"
 
-//#define DEBUG 1
 
-#ifdef DEBUG
-#include <stdio.h>
-#else
-int printf ( const char * format, ... ) {return 0;}
-#endif
 
 module LeafP{
   uses interface Boot;
@@ -29,19 +23,20 @@ module LeafP{
 
   uses interface SplitControl as TempControl;
   uses interface Read<uint16_t> as Mcp9700;
+
+  uses interface Timer<TMilli> as BaconSampleTimer;
 #endif
 
   /* toast board */
+#ifdef USE_TOAST_ADC  
   uses interface I2CDiscoverer;
   uses interface I2CADCReaderMaster;
 
+  uses interface Timer<TMilli> as ToastSampleTimer;
+#endif
 
   /* Timers */  
-#ifdef USE_BACON_ADC  
-  uses interface Timer<TMilli> as BaconSampleTimer;
-#endif 
   uses interface Timer<TMilli> as StatusSampleTimer;
-  uses interface Timer<TMilli> as ToastSampleTimer;
   uses interface Timer<TMilli> as OffloadTimer;
   uses interface Timer<TMilli> as DelayTimer;
   uses interface Timer<TMilli> as WDTResetTimer;
@@ -83,6 +78,7 @@ module LeafP{
   /*************************/
   /* toast                 */  
   /*************************/
+#ifdef USE_TOAST_ADC  
   
   typedef struct {
     uint8_t address;
@@ -101,7 +97,7 @@ module LeafP{
   task void initChannelsTask(); // configure i2c packet read settings
   task void toastDiscoveryTask(); 
 
-
+#endif
 
   /*************************/
   /* flash                 */
@@ -144,12 +140,16 @@ module LeafP{
   uint32_t bacon_sample_interval = BACON_SAMPLE_INTERVAL;
 #endif
 
+#ifdef USE_TOAST_ADC  
   sample_toast_t * toastSamplePointer;
   uint32_t toast_sample_interval = TOAST_SAMPLE_INTERVAL;
   task void toastSampleTask();
+#endif
 
   uint32_t status_sample_interval = STATUS_SAMPLE_INTERVAL;
   task void statusSampleTask();
+
+  uint32_t offload_sample_interval = OFFLOAD_SAMPLE_INTERVAL;
 
   // status samples       
   uint32_t radioOnTime;
@@ -195,9 +195,6 @@ module LeafP{
     call SerialControl.start();
 #endif
 
-    // initialize I2C sample packet
-    post initChannelsTask();
-    
     // set WDT to reset at 1 second; set timer to renew every half second
     call WDTResetTimer.startPeriodic(512);
     WDTCTL = WDT_ARST_1000;
@@ -231,18 +228,26 @@ module LeafP{
     // and let basestation rewind if necessary       
     offloadCookie = call LogWrite.currentOffset();
 
+#ifdef USE_TOAST_ADC  
+    // initialize I2C sample packet
+    post initChannelsTask();
+
     // discover toast boards
     post toastDiscoveryTask();
+#endif
 
     // start periodic sample timers
 #ifdef USE_BACON_ADC  
     call BaconSampleTimer.startPeriodic(bacon_sample_interval);
 #endif
+#ifdef USE_TOAST_ADC  
     call ToastSampleTimer.startPeriodic(toast_sample_interval);
+#endif
+
     call StatusSampleTimer.startPeriodic(status_sample_interval);
 
     // start periodic offload timer
-    call OffloadTimer.startPeriodic(toast_sample_interval * 4);
+    call OffloadTimer.startPeriodic(offload_sample_interval);
 
     // flash leds to signal successful boot 
     blinkTaskParameter = LEDS_LED0|LEDS_LED1|LEDS_LED2;
@@ -350,9 +355,11 @@ module LeafP{
         call LogWrite.erase();
         break;
 
+#ifdef USE_TOAST_ADC
       case 't':
         post toastDiscoveryTask();
         break;
+#endif
 
       case 's':
         break;

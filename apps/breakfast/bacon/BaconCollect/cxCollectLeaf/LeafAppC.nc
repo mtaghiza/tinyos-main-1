@@ -3,6 +3,17 @@
 #include "test.h"
 #include "CXTransport.h"
 
+//#define DEBUG 1
+//#define USE_TOAST_ADC
+//#define USE_BACON_ADC
+
+#ifdef DEBUG
+#include <stdio.h>
+#else
+int printf ( const char * format, ... ) {return 0;}
+#endif
+
+
 configuration LeafAppC{
 } implementation {
   components LeafP as TestP;
@@ -46,23 +57,22 @@ configuration LeafAppC{
   components Mcp9700C;
   TestP.TempControl -> Mcp9700C;
   TestP.Mcp9700 -> Mcp9700C;
+
+  components new TimerMilliC() as BaconSampleTimer;
+  TestP.BaconSampleTimer -> BaconSampleTimer;
 #endif
 
   /* toast sensors */
+#ifdef USE_TOAST_ADC  
   components new I2CDiscovererC();
   TestP.I2CDiscoverer -> I2CDiscovererC;
 
   components I2CADCReaderMasterC;
   TestP.I2CADCReaderMaster -> I2CADCReaderMasterC;
-  
-  /* timers */
-#ifdef USE_BACON_ADC  
-  components new TimerMilliC() as BaconSampleTimer;
-  TestP.BaconSampleTimer -> BaconSampleTimer;
-#endif
 
   components new TimerMilliC() as ToastSampleTimer;
   TestP.ToastSampleTimer -> ToastSampleTimer;
+#endif
 
   components new TimerMilliC() as StatusSampleTimer;
   TestP.StatusSampleTimer -> StatusSampleTimer;
