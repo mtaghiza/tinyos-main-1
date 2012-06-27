@@ -1,4 +1,6 @@
- #include "schedule.h"
+#include "schedule.h"
+#include "CXTransport.h" 
+ 
 configuration LeafSchedulerC {
   provides interface TDMARoutingSchedule;
 

@@ -1,5 +1,6 @@
+#include "schedule.h"
+#include "CXTransport.h"
 
- #include "schedule.h"
 configuration RouterSchedulerC {
   provides interface TDMARoutingSchedule;
 
