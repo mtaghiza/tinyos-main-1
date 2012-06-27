@@ -26,8 +26,11 @@ CFLAGS+=-DIS_SENDER=$(IS_SENDER)
 TEST_DEST_ADDR?=0xffff
 CFLAGS+=-DTEST_DEST_ADDR=$(TEST_DEST_ADDR)
 
-FLOOD_TEST?=1
-CFLAGS+=-DFLOOD_TEST=$(FLOOD_TEST)
+#1: simple flood
+#2: unreliable burst
+#3: reliable burst
+TEST_TRANSPORT_PROTOCOL?=1
+CFLAGS+=-DTEST_TRANSPORT_PROTOCOL=$(TEST_TRANSPORT_PROTOCOL)
 
 FE_SYNCH?=0
 CFLAGS+=-DFE_SYNCH=$(FE_SYNCH)
@@ -70,6 +73,7 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/scopedFlood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/simpleFlood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/unreliableBurst
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/reliableBurst
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical

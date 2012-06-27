@@ -7,6 +7,9 @@ configuration CXTransportC{
   provides interface AMSend as SimpleFloodSend[am_id_t id];
   provides interface Receive as SimpleFloodReceive[am_id_t id];
 
+  provides interface AMSend as ReliableBurstSend[am_id_t id]; 
+  provides interface Receive as ReliableBurstReceive[am_id_t id]; 
+
 } implementation {
   components TDMASchedulerC;
   components CXNetworkC;
@@ -59,4 +62,24 @@ configuration CXTransportC{
     -> UnreliableBurstSchedulerC.CXTransportSchedule;
   CXNetworkC.CXTransportSchedule[CX_TP_SIMPLE_FLOOD] 
     -> SimpleFloodSchedulerC.CXTransportSchedule;
+
+  components ReliableBurstSchedulerC;
+  ReliableBurstSchedulerC.TDMARoutingSchedule ->
+    TDMASchedulerC.TDMARoutingSchedule;
+  ReliableBurstSchedulerC.SlotStarted -> TDMASchedulerC.SlotStarted;
+
+  ReliableBurstSchedulerC.ScopedFloodSend 
+    -> CXNetworkC.ScopedFloodSend[CX_TP_RELIABLE_BURST];
+  ReliableBurstSchedulerC.ScopedFloodReceive 
+    -> CXNetworkC.ScopedFloodReceive[CX_TP_RELIABLE_BURST];
+
+  ReliableBurstSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
+  ReliableBurstSchedulerC.AMPacketBody 
+    -> CXPacketStackC.AMPacketBody;
+  ReliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
+  ReliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+
+  ReliableBurstSend = ReliableBurstSchedulerC.AMSend;
+  ReliableBurstReceive = ReliableBurstSchedulerC.Receive;
+
 }

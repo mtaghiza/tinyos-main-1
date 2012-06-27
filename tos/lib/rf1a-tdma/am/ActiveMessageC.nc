@@ -11,6 +11,7 @@ configuration ActiveMessageC {
   //Separate paths for each transport protocol
   provides interface AMSend as UnreliableBurstSend[am_id_t id];
   provides interface AMSend as SimpleFloodSend[am_id_t id];
+  provides interface AMSend as ReliableBurstSend[am_id_t id];
 
   //at receiver: no distinction
   provides interface Receive[am_id_t id];
@@ -32,6 +33,8 @@ configuration ActiveMessageC {
     CXTransportC.SimpleFloodReceive;
   CombineReceiveP.UnreliableBurstReceive ->
     CXTransportC.UnreliableBurstReceive;
+  CombineReceiveP.ReliableBurstReceive ->
+    CXTransportC.ReliableBurstReceive;
   CombineReceiveP.CXPacket -> CXPacketStackC.CXPacket;
   CombineReceiveP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CombineReceiveP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
@@ -65,5 +68,6 @@ configuration ActiveMessageC {
 
   SimpleFloodSend = CXTransportC.SimpleFloodSend;
   UnreliableBurstSend = CXTransportC.UnreliableBurstSend;
+  ReliableBurstSend = CXTransportC.ReliableBurstSend;
 
 }

@@ -59,6 +59,8 @@ implementation {
     -> ActiveMessageC.SimpleFloodSend;
   AMQueueImplP.UnreliableBurstSend 
     -> ActiveMessageC.UnreliableBurstSend;
+  AMQueueImplP.ReliableBurstSend 
+    -> ActiveMessageC.ReliableBurstSend;
   AMQueueImplP.AMPacket -> ActiveMessageC;
   AMQueueImplP.Packet -> ActiveMessageC;
   AMQueueImplP.CXPacket -> ActiveMessageC;

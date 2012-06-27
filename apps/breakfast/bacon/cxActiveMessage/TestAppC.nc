@@ -30,13 +30,13 @@ configuration TestAppC{
   TestP.SendTimer -> SendTimer;
   TestP.Random -> RandomC;
   
-  #if FLOOD_TEST == 1
-  components new CXAMSenderC(AM_ID_CX_TESTBED, CX_TP_SIMPLE_FLOOD) 
+  #ifndef TEST_TRANSPORT_PROTOCOL
+  #warning No transport protocol defined, using simple flood.
+  #define TEST_TRANSPORT_PROTOCOL CX_TP_SIMPLE_FLOOD
+  #endif 
+
+  components new CXAMSenderC(AM_ID_CX_TESTBED, TEST_TRANSPORT_PROTOCOL) 
     as CXAMSenderC;
-  #else
-  components new CXAMSenderC(AM_ID_CX_TESTBED, CX_TP_UNRELIABLE_BURST)
-    as CXAMSenderC;
-  #endif
   components new AMReceiverC(AM_ID_CX_TESTBED);
 
   TestP.AMSend -> CXAMSenderC;

@@ -51,6 +51,7 @@ generic module CXAMQueueImplP(int numClients) @safe() {
     provides interface Send[uint8_t client];
     uses interface AMSend as UnreliableBurstSend[am_id_t id];
     uses interface AMSend as SimpleFloodSend[am_id_t id];
+    uses interface AMSend as ReliableBurstSend[am_id_t id];
     uses interface AMPacket;
     uses interface Packet;
     uses interface CXPacket;
@@ -195,6 +196,10 @@ implementation {
                 err = call SimpleFloodSend.cancel[amId](msg);
                 break;
 
+              case CX_TP_RELIABLE_BURST:
+                err = call ReliableBurstSend.cancel[amId](msg);
+                break;
+
               default:
                 err = FAIL;
                 break;
@@ -300,6 +305,9 @@ implementation {
         case CX_TP_SIMPLE_FLOOD:
           nextErr = call SimpleFloodSend.send[nextId](nextDest, nextMsg, len);
           break;
+        case CX_TP_RELIABLE_BURST:
+          nextErr = call ReliableBurstSend.send[nextId](nextDest, nextMsg, len);
+          break;
         default:
           nextErr = FAIL;
           break;
@@ -320,6 +328,10 @@ implementation {
       }
     }
     
+    event void ReliableBurstSend.sendDone[am_id_t id](message_t* msg, error_t err) {
+//      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
+      sendDoneEvent(msg, err);
+    }
     event void UnreliableBurstSend.sendDone[am_id_t id](message_t* msg, error_t err) {
 //      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
       sendDoneEvent(msg, err);
@@ -338,6 +350,10 @@ implementation {
     }
     default event void Send.sendDone[uint8_t id](message_t* msg, error_t err) {
         // Do nothing
+    }
+
+    default command error_t ReliableBurstSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
+        return FAIL;
     }
 
     default command error_t UnreliableBurstSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
