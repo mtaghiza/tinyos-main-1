@@ -11,6 +11,7 @@ rootId="0"
 rootSender=0
 rootDest=1
 nonrootRx=""
+leafDest=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
 nonrootTx="1"
@@ -97,12 +98,6 @@ fi
 
 if [ "$nonrootTx" != "" ]
 then
-  if [ $floodTest -eq 1 ]
-  then
-    leafDest=0xffff
-  else
-    leafDest=0
-  fi
   for id in $nonrootTx
   do
     make bacon2 install,$id bsl,ref,JH00030$id \
