@@ -1,16 +1,13 @@
-COMPONENT=LeafAppC
-CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+COMPONENT=RouterAppC
 
 CFLAGS+=-I..
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
-CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
-CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cDiscover
-CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cCom
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
-CFLAGS+=-I$(TOSDIR)/chips/msp430/x2xxx/internalFlash
 
 
-#CFLAGS+=-DUSE_BACON_ADC
+
+
+
 
 WAIT_FOR_PACKET?=1
 CFLAGS += -DWAIT_FOR_PACKET=$(WAIT_FOR_PACKET)
@@ -321,3 +318,4 @@ TA_DIV?=1UL
 CFLAGS+=-DTA_DIV=$(TA_DIV)
 
 include $(MAKERULES)
+

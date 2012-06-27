@@ -1,5 +1,7 @@
 #include "StorageVolumes.h"
 #include "baconCollect.h"
+#include "test.h"
+#include "CXTransport.h"
 
 configuration LeafAppC{
 } implementation {
@@ -104,30 +106,21 @@ configuration LeafAppC{
   /* cx related                                                         */
   /***************************************************************************/
 
-  components CXPacketStackC;
-  components CXTDMAPhysicalC;
-  components CXNetworkC;
-  components CXTransportC;
-  components CXRoutingTableC;
+  components ActiveMessageC;
+  TestP.RadioControl -> ActiveMessageC;
+  TestP.Packet -> ActiveMessageC;
+  TestP.Rf1aPacket -> ActiveMessageC;  
+  TestP.AMPacket -> ActiveMessageC;
 
-  components TDMASchedulerC;
-  TDMASchedulerC.SubSplitControl -> CXTDMAPhysicalC;
-  TDMASchedulerC.TDMAPhySchedule -> CXTDMAPhysicalC;
-  TDMASchedulerC.FrameStarted -> CXTDMAPhysicalC;
+  components new AMReceiverC(CONTROL_CHANNEL);
+  TestP.ControlReceive -> AMReceiverC;
 
+  components new CXAMSenderC(PERIODIC_CHANNEL, CX_TP_SIMPLE_FLOOD) as PeriodicSendC;
+  TestP.PeriodicSend -> PeriodicSendC;
 
-  TestP.RadioControl -> TDMASchedulerC.SplitControl;
+  components new CXAMSenderC(CONTROL_CHANNEL, CX_TP_SIMPLE_FLOOD) as ControlSendC;
+  TestP.ControlSend -> ControlSendC;
 
-  TestP.AMPacket -> CXPacketStackC.AMPacket;
-//  TestP.CXPacket -> CXPacketStackC.CXPacket;
-//  TestP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
-  TestP.Packet -> CXPacketStackC.AMPacketBody;
-  
-  TestP.PeriodicSend -> CXTransportC.UnreliableBurstSend[PERIODIC_CHANNEL];
-  TestP.ControlSend -> CXTransportC.UnreliableBurstSend[CONTROL_CHANNEL];
-  TestP.ControlReceive -> CXTransportC.UnreliableBurstReceive[CONTROL_CHANNEL];
-
-  TestP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;  
 
   /***************************************************************************/
   /* radio related                                                           */
