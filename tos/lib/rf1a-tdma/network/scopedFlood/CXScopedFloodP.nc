@@ -433,12 +433,12 @@ module CXScopedFloodP{
       //TODO: check long atomic
       originDataPending = FALSE;
       originDataSent = FALSE;
+      ecwFrame = 0;
       call Resource.release();
       setState(S_IDLE);
-      signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
     }
+    signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
 //    printf_TMP("ssd.%u@%u(%u,%u)\r\n", ssdPoster, ssdFrame, ackFrame, ecwFrame);
-    ecwFrame = 0;
   }
 
 //  task void printAckTiming(){

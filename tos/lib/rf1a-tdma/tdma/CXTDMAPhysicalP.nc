@@ -953,6 +953,7 @@ module CXTDMAPhysicalP {
         call CXPacketMetadata.setPhyTimestamp(msg,
           lastRECapture);
       }
+      //TODO: this could be outside of interrupt context
       signal CXTDMA.sendDone(msg, len, frameNum, result);
     } else {
       setState(S_ERROR_e);

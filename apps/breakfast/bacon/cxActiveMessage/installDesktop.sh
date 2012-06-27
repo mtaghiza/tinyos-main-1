@@ -24,7 +24,7 @@ queueThreshold=20
 #network params
 numSlots=10
 fps=20
-md=2
+md=1
 mr=1
 
 #radio logging
