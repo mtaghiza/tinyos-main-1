@@ -297,7 +297,8 @@ implementation {
       uint8_t len = call Packet.payloadLength(nextMsg);
 
 //      printf_TMP("%s: \r\n", __FUNCTION__);
-//      printf_TMP("send for %u @ %u\r\n", nextClient, curSlot);
+//      printf_TMP("send for tp %x client %u @ %u\r\n", 
+//        call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
       switch(call CXPacket.getTransportProtocol(nextMsg)){
         case CX_TP_UNRELIABLE_BURST:
           nextErr = call UnreliableBurstSend.send[nextId](nextDest, nextMsg, len);

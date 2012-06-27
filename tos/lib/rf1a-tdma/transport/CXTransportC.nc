@@ -60,6 +60,8 @@ configuration CXTransportC{
 
   CXNetworkC.CXTransportSchedule[CX_TP_UNRELIABLE_BURST] 
     -> UnreliableBurstSchedulerC.CXTransportSchedule;
+  CXNetworkC.CXTransportSchedule[CX_TP_RELIABLE_BURST] 
+    -> ReliableBurstSchedulerC.CXTransportSchedule;
   CXNetworkC.CXTransportSchedule[CX_TP_SIMPLE_FLOOD] 
     -> SimpleFloodSchedulerC.CXTransportSchedule;
 

@@ -84,7 +84,7 @@ module UnreliableBurstSchedulerP{
   
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
     if (state != S_SETUP){
-      printf("!SFS.sd: in %x expected %x\r\n", state, S_SETUP);
+      printf("!UB.SFS.sd: in %x expected %x\r\n", state, S_SETUP);
       state = S_ERROR_1;
     } else {
       if (ENOACK == error){
@@ -100,7 +100,7 @@ module UnreliableBurstSchedulerP{
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
     if (state != S_SENDING){
-      printf("!FS.sd: in %x expected %x\r\n", state, S_SENDING);
+      printf("!UB.FS.sd: in %x expected %x\r\n", state, S_SENDING);
       state = S_ERROR_2;
     } else {
       state = S_READY;
@@ -130,6 +130,7 @@ module UnreliableBurstSchedulerP{
     if (slotNum != curSlot){
       lastDest = AM_BROADCAST_ADDR;
       curSlot = slotNum;
+      printf_TMP("%u\r\n", curSlot);
       //in some cases, we can end up getting the slotStarted event
       //before seeing the sendDone event (even though the last
       //transmission did not violate a slot boundary)
@@ -142,11 +143,13 @@ module UnreliableBurstSchedulerP{
         printf("!SS.SS in %x\r\n", state);
         state = S_ERROR_3;
       }
+    }else{
+      printf_TMP("\r\n");
     }
   }
 
   event void SlotStarted.slotStarted(uint16_t slotNum){
-//    printf_TMP("ss\r\n");
+    printf_TMP("ss");
     newSlot(slotNum);
   }
 

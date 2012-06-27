@@ -54,6 +54,7 @@ module ReliableBurstSchedulerP{
       //  We need to set up a new route
       if (state == S_IDLE || (state == S_READY && addr != lastDest)){
         call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
+//        printf_TMP("sfs.sn\r\n");
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
           state = S_SETUP;
@@ -61,27 +62,29 @@ module ReliableBurstSchedulerP{
       //sending along an established set of paths
       } else if (state == S_READY && addr == lastDest){
         call CXPacket.setNetworkProtocol(msg, CX_RM_PREROUTED);
+//        printf_TMP("sfs.sP\r\n");
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
           state = S_SENDING;
         }
       }else{
-        printf("!UB.S: sending\r\n");
+        printf("!RB.S: sending\r\n");
         error = EBUSY;
       }
       //SUCCESS: OK, we're going to send it. 
       //RETRY: not enough time in this slot
       if (error != SUCCESS && error != ERETRY){
         state = S_ERROR_0;
-        printf("!UB.S: Error: %s\r\n", decodeError(error));
+        printf("!RB.S: Error: %s\r\n", decodeError(error));
       }
       return error;
     }
   }
   
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
+//    printf_TMP("RB.sfs.sd\r\n");
     if (state != S_SETUP && state != S_READY){
-      printf("!SFS.sd: in %x expected %x\r\n", state, S_SETUP);
+      printf("!RB.SFS.sd: in %x expected %x\r\n", state, S_SETUP);
       state = S_ERROR_1;
     } else {
       if (ENOACK == error){
@@ -98,7 +101,7 @@ module ReliableBurstSchedulerP{
   event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
     return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
   }
-
+  
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
     if (call TDMARoutingSchedule.isSynched(frameNum) &&
         call TDMARoutingSchedule.ownsFrame(frameNum)){
@@ -121,7 +124,7 @@ module ReliableBurstSchedulerP{
       if (state == S_READY){
         state = S_IDLE;
       }else if (state != S_IDLE){
-        printf("!SS.SS in %x\r\n", state);
+        printf("!RB.SS.SS in %x\r\n", state);
         state = S_ERROR_3;
       }
     }
