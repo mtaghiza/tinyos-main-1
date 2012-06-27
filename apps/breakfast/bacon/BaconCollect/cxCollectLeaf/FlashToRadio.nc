@@ -174,6 +174,8 @@
 
   event void RadioControl.startDone(error_t error) 
   { 
+    // boot sequence continues in syncDone 
+    call LogWrite.sync();
 #ifdef DEBUG
     printf("radio on\n\r");    
 #endif

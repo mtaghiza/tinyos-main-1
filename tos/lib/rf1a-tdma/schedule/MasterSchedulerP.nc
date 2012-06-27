@@ -302,6 +302,8 @@ module MasterSchedulerP {
     if ( error == SUCCESS){
       cx_response_t* response = call ResponseSend.getPayload(msg,
         sizeof(cx_response_t));
+      printf_SCHED_RXTX("Assign %x to %u\r\n", response->owner,
+        response->slotNumber);
       assignments[response->slotNumber].notified = TRUE;
       post checkResponses();
     } else{ 

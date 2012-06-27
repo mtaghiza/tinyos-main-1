@@ -115,10 +115,10 @@ configuration LeafAppC{
   components new AMReceiverC(CONTROL_CHANNEL);
   TestP.ControlReceive -> AMReceiverC;
 
-  components new CXAMSenderC(PERIODIC_CHANNEL, CX_TP_SIMPLE_FLOOD) as PeriodicSendC;
+  components new CXAMSenderC(PERIODIC_CHANNEL, CX_TP_RELIABLE_BURST) as PeriodicSendC;
   TestP.PeriodicSend -> PeriodicSendC;
 
-  components new CXAMSenderC(CONTROL_CHANNEL, CX_TP_SIMPLE_FLOOD) as ControlSendC;
+  components new CXAMSenderC(CONTROL_CHANNEL, CX_TP_RELIABLE_BURST) as ControlSendC;
   TestP.ControlSend -> ControlSendC;
 
 

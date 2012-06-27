@@ -12,7 +12,7 @@
 #define STATUS_SAMPLE_INTERVAL (1024UL * 10 * 1)
 
 #define CLOCK_INTERVAL (1024UL * 60 * 60)
-#define STATUS_INTERVAL (1024UL * 60 * 60)
+#define STATUS_INTERVAL (1024UL * 10 * 1)
 #define FLASH_MAX_READ (254)
 
   enum {

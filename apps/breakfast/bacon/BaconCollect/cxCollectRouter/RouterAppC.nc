@@ -56,7 +56,7 @@ configuration RouterAppC{
   components new AMReceiverC(PERIODIC_CHANNEL) as PeriodicReceiveC;
   TestP.PeriodicReceive -> PeriodicReceiveC;
 
-  components new CXAMSenderC(CONTROL_CHANNEL, CX_TP_SIMPLE_FLOOD) as ControlSendC;
+  components new CXAMSenderC(CONTROL_CHANNEL, CX_TP_RELIABLE_BURST) as ControlSendC;
   TestP.ControlSend -> ControlSendC;
   
   components new AMReceiverC(CONTROL_CHANNEL) as ControlReceiveC;

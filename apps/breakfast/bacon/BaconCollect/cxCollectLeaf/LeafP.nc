@@ -202,8 +202,9 @@ module LeafP{
     call WDTResetTimer.startPeriodic(512);
     WDTCTL = WDT_ARST_1000;
 
-    // boot sequence continues in syncDone 
-    call LogWrite.sync();
+
+    // keep radio on; rely on radio stack to duty-cycle radio
+    call RadioControl.start();
   }
 
 
@@ -232,9 +233,6 @@ module LeafP{
 
     // discover toast boards
     post toastDiscoveryTask();
-
-    // keep radio on; rely on radio stack to duty-cycle radio
-    call RadioControl.start();
 
     // start periodic sample timers
 #ifdef USE_BACON_ADC  

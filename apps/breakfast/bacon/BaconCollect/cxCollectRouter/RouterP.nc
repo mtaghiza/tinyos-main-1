@@ -287,7 +287,19 @@ module RouterP{
 
   event message_t* PeriodicReceive.receive(message_t* msg_, void* pl, uint8_t len)
   { 
-    printMessage(pl);
+    uint8_t i;
+    for (i=0; i< sizeof(message_t); i++){
+      printf("%02X", ((uint8_t*)msg_)[i]);
+    }
+    printf("\r\n");
+
+    for (i=0; i< len; i++){
+      printf("%02X", ((uint8_t*)pl)[i]);
+    }
+    printf("\r\n");
+    printf("rp: %p calc: %p\r\n", pl, 
+      call Packet.getPayload(msg_, sizeof(sample_status_t)));
+//    printMessage(pl);
 
     if (!call Pool.empty())
     {
