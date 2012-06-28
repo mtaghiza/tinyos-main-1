@@ -3,7 +3,7 @@
 txp=0x25
 tc=0
 
-debugScale=4UL
+debugScale=2UL
 
 #test setup
 testTransportProtocol=3
@@ -19,8 +19,8 @@ nonrootTx="1"
 fecEnabled=0
 fecHamming74=1
 
-ipi=10240UL
-queueThreshold=1
+ipi=1024UL
+queueThreshold=10
 
 #network params
 numSlots=20

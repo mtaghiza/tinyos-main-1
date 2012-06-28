@@ -1,15 +1,12 @@
 #!/bin/bash
-
-autoRun=0
-
 #radio physical params
 txp=0xC3
 tc=0
-
+autoRun=0
 debugScale=4
 
 #test setup
-floodTest=1
+testTransportProtocol=3
 root=map.root
 nonrootRx=map.nonroot.rx
 #allPlugged="0 1 2 3"
@@ -23,7 +20,7 @@ ipi=5120UL
 queueThreshold=2
 
 #network/schedule params
-fps=20
+fps=100
 md=10
 mr=1
 
@@ -127,8 +124,8 @@ do
   esac
 done
 
-maxNodes=$(grep -v '#' $root $nonrootRx $nonrootTx | awk '{print $NF}' | sort -n | tail -1)
-numSlots=$(($maxNodes + 5))
+numNodes=$(grep -c -v '#' $root $nonrootRx $nonrootTx )
+numSlots=$(($numNodes + 5))
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL"
 
