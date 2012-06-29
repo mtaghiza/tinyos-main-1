@@ -58,9 +58,6 @@ module CXTDMADispatchP{
         ret = signal CXTDMA.frameType[CX_RM_SCOPEDFLOOD](frameNum);
       }
       if ( ! call ArbiterInfo.inUse()){
-        ret = signal CXTDMA.frameType[CX_RM_AODV](frameNum);
-      }
-      if ( ! call ArbiterInfo.inUse()){
         ret = RF1A_OM_RX;
       }
       return ret;

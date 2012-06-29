@@ -241,21 +241,11 @@ module CXScopedFloodP{
           distance = call TDMARoutingSchedule.maxDepth();
         }
         ct = clearTime(distance)+1;
-//        tempCt = ct;
-//        tempLeft = call TDMARoutingSchedule.framesLeftInSlot(call
-//            TDMARoutingSchedule.currentFrame());
-//        post printCt();
         if (ct > 
             call TDMARoutingSchedule.framesLeftInSlot(call
             TDMARoutingSchedule.currentFrame())){
-//          printf_TMP("RETRY (%u > %u)\r\n", ct, 
-//            call TDMARoutingSchedule.framesLeftInSlot(call
-//            TDMARoutingSchedule.currentFrame())+1);
           return ERETRY;
         } else{
-//          printf_TMP("OK (%u !> %u)\r\n", ct, 
-//            call TDMARoutingSchedule.framesLeftInSlot(call
-//            TDMARoutingSchedule.currentFrame())+1);
           origin_data_msg = msg;
           call CXPacket.init(msg);
           call CXPacket.setType(msg, CX_TYPE_DATA);
@@ -265,8 +255,6 @@ module CXScopedFloodP{
             ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)
             | CX_RM_SCOPEDFLOOD);
           originDataPending = TRUE;
-  //        dispMsg = origin_data_msg;
-  //        post displayPacket();
           return SUCCESS;
         }
       } else {
