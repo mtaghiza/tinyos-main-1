@@ -3,7 +3,7 @@
 txp=0xC3
 tc=0
 autoRun=0
-debugScale=4
+debugScale=4UL
 
 #test setup
 testTransportProtocol=3
@@ -20,8 +20,8 @@ ipi=5120UL
 queueThreshold=2
 
 #network/schedule params
-fps=100
-md=10
+fps=50
+md=5
 mr=1
 
 #radio logging
@@ -124,7 +124,7 @@ do
   esac
 done
 
-numNodes=$(grep -c -v '#' $root $nonrootRx $nonrootTx )
+numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
 numSlots=$(($numNodes + 5))
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL"

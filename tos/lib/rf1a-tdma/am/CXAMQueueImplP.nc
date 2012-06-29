@@ -143,6 +143,7 @@ implementation {
             return FAIL;
         }
         if (queue[clientId].msg != NULL) {
+            printf("busy: q@ %u\r\n", queue[clientId].sendSlot);
             return EBUSY;
         }
         dbg("AMQueue", "AMQueue: request to send from %hhu (%p): passed checks\n", clientId, msg);

@@ -43,6 +43,7 @@ module MasterSchedulerP {
   //responsesPending: set to requestsReceived at end of cycle, cleared
   //  when last response sent
   norace bool responsesPending;
+  bool responseSending = FALSE;
 
   //in general:
   // if responsesPending, do a series of ResponseSend's to clear out
@@ -266,26 +267,37 @@ module MasterSchedulerP {
 
   task void checkResponses(){
     if (responsesPending){
-      uint8_t i;
-      //find first assigned un-notified slot 
-      for (i = 0; i < SCHED_NUM_SLOTS; i++){
-        if (assignments[i].owner != UNCLAIMED 
-            && !assignments[i].notified){
-          error_t error;
-          //inform node it's been assigned
-          cx_response_t* response 
-            = call ResponseSend.getPayload(response_msg, sizeof(cx_response_t));
-          response->slotNumber = i;
-          response->owner = assignments[i].owner;
-           
-          error = call ResponseSend.send(response->owner,
-            response_msg, 
-            sizeof(cx_response_t));
-          if (error != SUCCESS){
-            printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+      if (!responseSending){
+        uint8_t i, j;
+        uint8_t startSlot = (responseSlot == INVALID_SLOT)? 0:
+          responseSlot+1;
+        //find first assigned un-notified slot 
+        for (j = 0; j < SCHED_NUM_SLOTS; j++){
+          i = (startSlot + j) % SCHED_NUM_SLOTS;
+          if (assignments[i].owner != UNCLAIMED 
+              && !assignments[i].notified){
+            error_t error;
+            //inform node it's been assigned
+            cx_response_t* response 
+              = call ResponseSend.getPayload(response_msg, sizeof(cx_response_t));
+            response->slotNumber = i;
+            response->owner = assignments[i].owner;
+             
+            error = call ResponseSend.send(response->owner,
+              response_msg, 
+              sizeof(cx_response_t));
+            printf_SCHED_RXTX("Assign %u to %u (%u/%u)\r\n", response->owner,
+              response->slotNumber, 
+              sizeof(cx_schedule_t), 
+              call ResponseSend.maxPayloadLength());
+            if (error != SUCCESS){
+              printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+            }else{
+              responseSending = TRUE;
+              responseSlot = response->slotNumber;
+            }
+            break;
           }
-          responseSlot = response->slotNumber;
-          break;
         }
       }
     }else{
@@ -302,7 +314,8 @@ module MasterSchedulerP {
     if ( error == SUCCESS){
       cx_response_t* response = call ResponseSend.getPayload(msg,
         sizeof(cx_response_t));
-      printf_SCHED_RXTX("Assign %x to %u\r\n", response->owner,
+      responseSending = FALSE;
+      printf_SCHED_RXTX("Assigned %u to %u\r\n", response->owner,
         response->slotNumber);
       assignments[response->slotNumber].notified = TRUE;
       post checkResponses();
