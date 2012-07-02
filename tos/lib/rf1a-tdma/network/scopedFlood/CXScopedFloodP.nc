@@ -621,12 +621,12 @@ module CXScopedFloodP{
            (src == lastDataSrc && sn == lastDataSn))
        ||(pType == CX_TYPE_ACK &&
            (src == lastAckSrc && sn == lastAckSn)) 
-       || (!call TDMARoutingSchedule.isSynched(frameNum))){
+       || (!call TDMARoutingSchedule.isSynched())){
       //duplicate, or non-synched, drop it.
       return msg;
     }
     if (state == S_IDLE){
-      if ( ! call TDMARoutingSchedule.isSynched(frameNum)){
+      if ( ! call TDMARoutingSchedule.isSynched()){
         printf_SF_RX("~s");
         return msg;
       }else{

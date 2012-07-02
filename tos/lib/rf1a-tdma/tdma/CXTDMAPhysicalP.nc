@@ -83,6 +83,8 @@ module CXTDMAPhysicalP {
   
   //current frame in cycle
   uint16_t frameNum;
+  //last point where we did a soft re-synch based on RX
+  uint16_t resynchFrame;
 
   //used to detect cases where frame setup does not get done in time:
   //  pfsPending: PFS was scheduled but not handled yet. FS should not
@@ -841,6 +843,10 @@ module CXTDMAPhysicalP {
     lastRxBufBusy = FALSE;
   }
 
+  task void reportResynch(){
+    signal TDMAPhySchedule.resynched(resynchFrame);
+  }
+
 
   /**
    * S_RECEIVING: frame has started, expecting data.
@@ -869,7 +875,12 @@ module CXTDMAPhysicalP {
         call Packet.setPayloadLength(msg,
           count-sizeof(message_header_t));
         if (call Rf1aPacket.crcPassed((message_t*)buffer)){
-          resynch();
+          if (call CXPacket.getScheduleNum((message_t*)buffer) == 
+              signal TDMAPhySchedule.getScheduleNum()){
+            resynchFrame = frameNum;
+            resynch();
+            post reportResynch();
+          }
           receiveCount++;
           printf_TESTBED_CRC("R. %u\r\n", frameNum);
           atomic{

@@ -6,6 +6,7 @@ configuration TDMASchedulerC {
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
   provides interface SlotStarted;
+  provides interface ScheduledSend as DefaultScheduledSend;
   
 } implementation {
   #if TDMA_ROOT == 1 
@@ -20,4 +21,5 @@ configuration TDMASchedulerC {
   SplitControl = TDMASchedulerP.SplitControl;
   TDMASchedulerP.SubSplitControl = SubSplitControl;
   SlotStarted = TDMASchedulerP.SlotStarted;
+  DefaultScheduledSend = TDMASchedulerP.DefaultScheduledSend;
 }

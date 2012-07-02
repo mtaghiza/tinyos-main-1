@@ -22,6 +22,8 @@ module MasterSchedulerP {
 
   uses interface CXPacket;
 
+  provides interface ScheduledSend as DefaultScheduledSend;
+
 } implementation {
   //which nodes are assigned to which slots
   assignment_t assignments[SCHED_NUM_SLOTS];
@@ -224,6 +226,9 @@ module MasterSchedulerP {
   command uint16_t AnnounceSchedule.getSlot(){
     return announcementSlot;
   }
+  command bool AnnounceSchedule.sendReady(){
+    return TRUE;
+  }
 
   task void checkResponses();
 
@@ -268,7 +273,7 @@ module MasterSchedulerP {
   task void checkResponses(){
     if (responsesPending){
       if (!responseSending){
-        uint8_t i, j;
+        uint8_t i, j,k;
         uint8_t startSlot = (responseSlot == INVALID_SLOT)? 0:
           responseSlot+1;
         //find first assigned un-notified slot 
@@ -277,11 +282,23 @@ module MasterSchedulerP {
           if (assignments[i].owner != UNCLAIMED 
               && !assignments[i].notified){
             error_t error;
+
             //inform node it's been assigned
             cx_response_t* response 
               = call ResponseSend.getPayload(response_msg, sizeof(cx_response_t));
             response->slotNumber = i;
             response->owner = assignments[i].owner;
+
+            //free any previously-claimed slots for this node
+            for (k =0; k < SCHED_NUM_SLOTS; k++){
+              if (k != i && 
+                  assignments[k].owner == assignments[i].owner){
+                printf_SCHED_RXTX("Free %u (%u)\r\n", 
+                  k, assignments[k].owner);
+                assignments[k].owner = UNCLAIMED;
+                assignments[k].notified = FALSE;
+              }
+            }
              
             error = call ResponseSend.send(response->owner,
               response_msg, 
@@ -308,6 +325,9 @@ module MasterSchedulerP {
   command uint16_t ResponseSchedule.getSlot(){
     return ((cx_response_t*)call ResponseSend.getPayload(response_msg,
       sizeof(cx_response_t)))->slotNumber;
+  }
+  command bool ResponseSchedule.sendReady(){
+    return TRUE;
   }
 
   event void ResponseSend.sendDone(message_t* msg, error_t error){
@@ -344,11 +364,13 @@ module MasterSchedulerP {
 
   async event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp){}
+
+  event void TDMAPhySchedule.resynched(uint16_t frameNum){ }
   
   async command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return schedule->framesPerSlot;
   }
-  async command bool TDMARoutingSchedule.isSynched(uint16_t frameNum){
+  async command bool TDMARoutingSchedule.isSynched(){
     return TRUE;
   }
   async command uint8_t TDMARoutingSchedule.maxRetransmit(){
@@ -358,8 +380,12 @@ module MasterSchedulerP {
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
   
-  command uint16_t TDMARoutingSchedule.getDefaultSlot(){
+  command uint16_t DefaultScheduledSend.getSlot(){
     return dataSlot;
+  }
+
+  command bool DefaultScheduledSend.sendReady(){
+    return call TDMARoutingSchedule.isSynched();
   }
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){

@@ -1,3 +1,4 @@
+ #include "schedule.h"
 module SlaveSchedulerP {
   provides interface TDMARoutingSchedule;
 
@@ -16,6 +17,9 @@ module SlaveSchedulerP {
 
   provides interface SlotStarted;
 
+  provides interface ScheduledSend as RequestScheduledSend;
+  provides interface ScheduledSend as DefaultScheduledSend;
+
 } implementation {
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
@@ -31,9 +35,13 @@ module SlaveSchedulerP {
   uint16_t mySlot = INVALID_SLOT;
   bool isSynched = FALSE;
   bool claimedLast = FALSE;
+  bool hasStarted = FALSE;
 
   uint16_t curSlot = INVALID_SLOT;
   uint16_t curFrame = INVALID_SLOT;
+
+  uint8_t cyclesSinceSchedule = 0;
+  uint16_t framesSinceSynch = 0;
 
   enum {
     S_OFF = 0x00,
@@ -56,13 +64,16 @@ module SlaveSchedulerP {
   }
 
   task void startListen(){
+    printf_SCHED_RXTX("start listen\r\n");
     state = S_LISTEN;
+    isSynched = FALSE;
+    mySlot = INVALID_SLOT;
     call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNow(),
       0, 
       1, 
       SCHED_INIT_SYMBOLRATE,
       TEST_CHANNEL,
-      FALSE
+      isSynched
       );
   }
 
@@ -71,6 +82,7 @@ module SlaveSchedulerP {
   task void updateSchedule(){
     uint8_t sri = srIndex(schedule->symbolRate);
     isSynched = TRUE;
+    scheduleNum = schedule->scheduleNum;
     //TODO: clock skew correction
     //OFN 0 and receivedCount 1: should be received at
     //frame 0, not frame 1. 
@@ -91,6 +103,10 @@ module SlaveSchedulerP {
       mySlot = INVALID_SLOT;
       state = S_LISTEN;
     }
+    //TODO: check for whether YOUR slot is in the list (indicating it
+    //was freed by the master (either because the master reset or
+    //because your keep-alives got lost)). If it is, pretend that
+    //we're searching for a slot again (reset state/mySlot)
     
     if (mySlot == INVALID_SLOT && state == S_LISTEN){
       state = S_REQUESTING;
@@ -120,7 +136,7 @@ module SlaveSchedulerP {
 
     //set up packet
     request->slotNumber = mySlot;
-    printf_TMP("Claim %u\r\n", mySlot);
+    printf_SCHED_RXTX("Claim %u\r\n", mySlot);
     //call RequestSend.send
     error = call RequestSend.send(call CXPacket.source(schedule_msg), 
       request_msg, 
@@ -135,6 +151,7 @@ module SlaveSchedulerP {
     schedule_msg = msg;
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
+    cyclesSinceSchedule = 0;
     return ret;
   }
 
@@ -143,16 +160,34 @@ module SlaveSchedulerP {
   }
 
   event void SubSplitControl.stopDone(error_t error){ 
+    hasStarted = FALSE;
     signal SplitControl.stopDone(error);
   }
 
   event void FrameStarted.frameStarted(uint16_t frameNum){
     curFrame = frameNum;
+    framesSinceSynch++;
+    
+    //increment the number of cycles since we last got a schedule
+    //  announcement at the start of each cycle.
+    if (frameNum == 0){
+      cyclesSinceSchedule ++;
+      if (cyclesSinceSchedule > CX_RESYNCH_CYCLES && state != S_LISTEN){
+        post startListen();
+      }
+    }
+
+    //no synch since the cycle started: so, we shouldn't be initiating
+    //  any communications.
+    if (isSynched && (framesSinceSynch > frameNum)){
+//      printf_TMP("@%u fss %u > fn\r\n", frameNum, framesSinceSynch);
+      isSynched = FALSE;
+    }
+
     if (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot())){
       curSlot = getSlot(frameNum);
       signal SlotStarted.slotStarted(curSlot);
     }
-    //TODO: check for synch loss
   }
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
@@ -161,7 +196,10 @@ module SlaveSchedulerP {
   }
 
   task void startDoneTask(){
-    signal SplitControl.startDone(SUCCESS);
+    if (!hasStarted){
+      hasStarted = TRUE;
+      signal SplitControl.startDone(SUCCESS);
+    }
   }
 
   event message_t* ResponseReceive.receive(message_t* msg, void* pl, uint8_t len){
@@ -170,13 +208,13 @@ module SlaveSchedulerP {
       if (response->owner == TOS_NODE_ID){
         state = S_READY;
         //confirmed, hooray.
-        printf_TMP("Confirmed @%u\r\n", mySlot);
+        printf_SCHED_RXTX("Confirmed @%u\r\n", mySlot);
         post startDoneTask();
       }else{
         mySlot = INVALID_SLOT;
         state = S_LISTEN;
         //contradicts us: somebody else claimed it.
-        printf_TMP("Contradicted @%u, try again\r\n", mySlot);
+        printf_SCHED_RXTX("Contradicted @%u, try again\r\n", mySlot);
         mySlot = INVALID_SLOT;
       }
     }
@@ -213,18 +251,36 @@ module SlaveSchedulerP {
   async event uint8_t TDMAPhySchedule.getScheduleNum(){
     return scheduleNum;
   }
+  
+  event void TDMAPhySchedule.resynched(uint16_t resynchFrame){
+    isSynched = TRUE;
+    framesSinceSynch = 0;
+  }
+
   async event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp){}
 
-  async command bool TDMARoutingSchedule.isSynched(uint16_t frameNum){
-    return isSynched;
+  async command bool TDMARoutingSchedule.isSynched(){
+    // we pretend that we're synched if we're requesting a slot. yugh
+    if (state == S_REQUESTING 
+        && call SlotStarted.currentSlot() == mySlot){
+      return TRUE;
+    } else{
+      return isSynched;
+    }
   }
   
   async command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return schedule->framesPerSlot;
   }
+
+  //No retransmissions allowed if we're not in synch.
   async command uint8_t TDMARoutingSchedule.maxRetransmit(){
-    return schedule->maxRetransmit;
+    if (call TDMARoutingSchedule.isSynched()){
+      return schedule->maxRetransmit;
+    } else {
+      return 0;
+    }
   }
   uint16_t getSlot(uint16_t frameNum){
     return frameNum / call TDMARoutingSchedule.framesPerSlot();
@@ -245,9 +301,23 @@ module SlaveSchedulerP {
   command uint16_t TDMARoutingSchedule.currentFrame(){
     return curFrame;
   }
-
-  command uint16_t TDMARoutingSchedule.getDefaultSlot(){
+  
+  //Requests: ready if we're synched or it's the right slot.
+  command uint16_t RequestScheduledSend.getSlot(){
     return mySlot;
+  }
+
+  command bool RequestScheduledSend.sendReady(){
+    return call TDMARoutingSchedule.isSynched();
+  }
+
+  //everything else: ready if we're synched
+  command uint16_t DefaultScheduledSend.getSlot(){
+    return mySlot;
+  }
+
+  command bool DefaultScheduledSend.sendReady(){
+    return (state == S_READY) && isSynched;
   }
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){

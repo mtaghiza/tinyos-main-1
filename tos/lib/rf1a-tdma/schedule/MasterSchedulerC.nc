@@ -16,6 +16,7 @@ configuration MasterSchedulerC {
   provides interface SlotStarted;
   provides interface ScheduledSend as ResponseSchedule;
   provides interface ScheduledSend as AnnounceSchedule;
+  provides interface ScheduledSend as DefaultScheduledSend;
 } implementation {
   components MasterSchedulerP;
   components CXPacketStackC;
@@ -36,4 +37,5 @@ configuration MasterSchedulerC {
   SlotStarted = MasterSchedulerP.SlotStarted;
   ResponseSchedule = MasterSchedulerP.ResponseSchedule;
   AnnounceSchedule = MasterSchedulerP.AnnounceSchedule;
+  DefaultScheduledSend = MasterSchedulerP.DefaultScheduledSend;
 }

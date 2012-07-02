@@ -66,6 +66,8 @@ implementation {
   AMQueueImplP.CXPacket -> ActiveMessageC;
   AMQueueImplP.TDMARoutingSchedule -> ActiveMessageC;
   AMQueueImplP.SlotStarted -> ActiveMessageC;
+  AMQueueImplP.DefaultScheduledSend 
+    -> ActiveMessageC.DefaultScheduledSend;
   
 }
 

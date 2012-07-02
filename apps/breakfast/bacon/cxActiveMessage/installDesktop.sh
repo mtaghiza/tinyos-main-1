@@ -3,10 +3,10 @@
 txp=0x25
 tc=0
 
-debugScale=2UL
+debugScale=4UL
 
 #test setup
-testTransportProtocol=3
+testTransportProtocol=1
 rootId="0"
 rootSender=0
 rootDest=1
@@ -20,11 +20,11 @@ fecEnabled=0
 fecHamming74=1
 
 ipi=1024UL
-queueThreshold=10
+queueThreshold=1
 
 #network params
-numSlots=20
-fps=20
+numSlots=10
+fps=10
 md=1
 mr=1
 

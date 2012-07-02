@@ -118,7 +118,7 @@ module UnreliableBurstSchedulerP{
   }
 
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
-    if (call TDMARoutingSchedule.isSynched(frameNum) &&
+    if (call TDMARoutingSchedule.isSynched() &&
         call TDMARoutingSchedule.ownsFrame(frameNum)){
       return TRUE;
     }else{

@@ -364,7 +364,7 @@ module CXFloodP{
             // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
             // This will prevent slot violations from happening and
             // doesn't require deep knowledge of the schedule.
-            if ( call TDMARoutingSchedule.isSynched(frameNum)){
+            if ( call TDMARoutingSchedule.isSynched()){
               uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
               uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
               txLeft = (mr < framesLeft)? mr : framesLeft;

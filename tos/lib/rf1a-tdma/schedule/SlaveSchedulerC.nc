@@ -14,6 +14,8 @@ configuration SlaveSchedulerC{
   uses interface SplitControl as SubSplitControl;
 
   provides interface SlotStarted;
+  provides interface ScheduledSend as DefaultScheduledSend;
+  provides interface ScheduledSend as RequestScheduledSend;
 
 } implementation {
   components CXPacketStackC;
@@ -37,5 +39,7 @@ configuration SlaveSchedulerC{
   SlaveSchedulerP.Random -> RandomC;
 
   SlotStarted = SlaveSchedulerP.SlotStarted;
+  DefaultScheduledSend = SlaveSchedulerP.DefaultScheduledSend;
+  RequestScheduledSend = SlaveSchedulerP.RequestScheduledSend;
 
 }

@@ -24,6 +24,10 @@
 #define SCHED_FRAMES_PER_SLOT 10
 #endif
 
+#ifndef CX_RESYNCH_CYCLES
+#define CX_RESYNCH_CYCLES 3
+#endif
+
 enum {
   UNCLAIMED = 0xffff,
   INVALID_SCHEDULE_NUM= 0xff,

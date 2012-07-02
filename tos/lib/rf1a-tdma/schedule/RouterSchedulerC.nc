@@ -9,7 +9,7 @@ configuration RouterSchedulerC {
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
   provides interface SlotStarted;
-
+  provides interface ScheduledSend as DefaultScheduledSend;
 } implementation {
 
   /**
@@ -142,6 +142,11 @@ configuration RouterSchedulerC {
   SlaveSchedulerC.AnnounceReceive -> SlaveAnnounceReceive;
   SlaveSchedulerC.RequestSend -> SlaveRequestSend;
   SlaveSchedulerC.ResponseReceive -> SlaveResponseReceive;
-
+  
+  DefaultScheduledSend = RouterSchedulerP.DefaultScheduledSend;
+  RouterSchedulerP.SubDefaultScheduledSend[CX_SCHEDULER_SLAVE] 
+    -> SlaveSchedulerC.DefaultScheduledSend;
+  RouterSchedulerP.SubDefaultScheduledSend[CX_SCHEDULER_MASTER] 
+    -> MasterSchedulerC.DefaultScheduledSend;
 }
 

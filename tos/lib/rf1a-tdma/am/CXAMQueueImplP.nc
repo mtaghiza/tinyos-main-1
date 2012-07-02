@@ -58,6 +58,7 @@ generic module CXAMQueueImplP(int numClients) @safe() {
     uses interface SlotStarted;
     uses interface TDMARoutingSchedule;
     uses interface ScheduledSend[uint8_t client];
+    uses interface ScheduledSend as DefaultScheduledSend;
 }
 
 implementation {
@@ -291,28 +292,32 @@ implementation {
     }
 
     void doSend(){
-      error_t nextErr;
-      message_t* nextMsg = queue[nextClient].msg;
-      am_id_t nextId = call AMPacket.type(nextMsg);
-      am_addr_t nextDest = call AMPacket.destination(nextMsg);
-      uint8_t len = call Packet.payloadLength(nextMsg);
+      error_t nextErr = ERETRY;
 
-//      printf_TMP("%s: \r\n", __FUNCTION__);
-//      printf_TMP("send for tp %x client %u @ %u\r\n", 
-//        call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
-      switch(call CXPacket.getTransportProtocol(nextMsg)){
-        case CX_TP_UNRELIABLE_BURST:
-          nextErr = call UnreliableBurstSend.send[nextId](nextDest, nextMsg, len);
-          break;
-        case CX_TP_SIMPLE_FLOOD:
-          nextErr = call SimpleFloodSend.send[nextId](nextDest, nextMsg, len);
-          break;
-        case CX_TP_RELIABLE_BURST:
-          nextErr = call ReliableBurstSend.send[nextId](nextDest, nextMsg, len);
-          break;
-        default:
-          nextErr = FAIL;
-          break;
+      //If we're not synched, defer initiating new transmissions.
+      if (call ScheduledSend.sendReady[nextClient]()){
+        message_t* nextMsg = queue[nextClient].msg;
+        am_id_t nextId = call AMPacket.type(nextMsg);
+        am_addr_t nextDest = call AMPacket.destination(nextMsg);
+        uint8_t len = call Packet.payloadLength(nextMsg);
+  
+  //      printf_TMP("%s: \r\n", __FUNCTION__);
+  //      printf_TMP("send for tp %x client %u @ %u\r\n", 
+  //        call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
+        switch(call CXPacket.getTransportProtocol(nextMsg)){
+          case CX_TP_UNRELIABLE_BURST:
+            nextErr = call UnreliableBurstSend.send[nextId](nextDest, nextMsg, len);
+            break;
+          case CX_TP_SIMPLE_FLOOD:
+            nextErr = call SimpleFloodSend.send[nextId](nextDest, nextMsg, len);
+            break;
+          case CX_TP_RELIABLE_BURST:
+            nextErr = call ReliableBurstSend.send[nextId](nextDest, nextMsg, len);
+            break;
+          default:
+            nextErr = FAIL;
+            break;
+        }
       }
 
       if (nextErr == ERETRY){
@@ -367,6 +372,9 @@ implementation {
     }
 
     default command uint16_t ScheduledSend.getSlot[uint8_t clientId](){
-      return call TDMARoutingSchedule.getDefaultSlot();
+      return call DefaultScheduledSend.getSlot();
+    }
+    default command bool ScheduledSend.sendReady[uint8_t clientId](){
+      return call DefaultScheduledSend.sendReady();
     }
 }

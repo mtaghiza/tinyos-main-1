@@ -8,6 +8,7 @@ interface TDMAPhySchedule{
   async event uint8_t getScheduleNum();
   async event void peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp);
+  event void resynched(uint16_t frameNum);
 
   //TODO: should come from transport layer AND main schedule
   event bool isInactive(uint16_t frameNum);

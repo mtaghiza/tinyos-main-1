@@ -19,6 +19,7 @@ configuration ActiveMessageC {
 //  provides interface PacketAcknowledgements;
   provides interface TDMARoutingSchedule;
   provides interface SlotStarted;
+  provides interface ScheduledSend as DefaultScheduledSend;
 
 } implementation {
   components CXPacketStackC;
@@ -60,6 +61,7 @@ configuration ActiveMessageC {
   SplitControl = TDMASchedulerC.SplitControl;
   SlotStarted = TDMASchedulerC.SlotStarted;
   TDMARoutingSchedule = TDMASchedulerC.TDMARoutingSchedule;
+  DefaultScheduledSend = TDMASchedulerC.DefaultScheduledSend;
 
   AMPacket = CXPacketStackC.AMPacket;
   CXPacket = CXPacketStackC.CXPacket;

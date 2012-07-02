@@ -9,6 +9,7 @@ configuration LeafSchedulerC {
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
   provides interface SlotStarted;
+  provides interface ScheduledSend as DefaultScheduledSend;
 } implementation{
   components SlaveSchedulerC;
   components CXTransportC;
@@ -25,6 +26,9 @@ configuration LeafSchedulerC {
   components new CXAMSenderC(AM_ID_LEAF_REQUEST, CX_TP_SIMPLE_FLOOD)
     as RequestSend;
   components new AMReceiverC(AM_ID_LEAF_RESPONSE) as ResponseReceive;
+
+  RequestSend.ScheduledSend -> SlaveSchedulerC.RequestScheduledSend;
+  DefaultScheduledSend = SlaveSchedulerC.DefaultScheduledSend;
 
   SlaveSchedulerC.AnnounceReceive -> AnnounceReceive;
   SlaveSchedulerC.RequestSend -> RequestSend;
