@@ -1,25 +1,29 @@
 #!/bin/bash
-#radio physical params
-txp=0xC3
-tc=0
 autoRun=0
+
+root=map.root
+nonrootRx=map.nonroot.rx
+nonrootTx=map.nonroot.tx
+
+#radio physical params
+txp=0x25
+tc=0
+
 debugScale=4UL
 
 #test setup
 testTransportProtocol=3
-root=map.root
-nonrootRx=map.nonroot.rx
-#allPlugged="0 1 2 3"
-#allPlugged="0 1 2"
-nonrootTx=map.nonroot.tx
+rootSender=0
+rootDest=1
+leafDest=0
 
 fecEnabled=0
 fecHamming74=1
 
-ipi=5120UL
-queueThreshold=2
+ipi=1024UL
+queueThreshold=10
 
-#network/schedule params
+#network params
 fps=50
 md=5
 mr=1
@@ -48,81 +52,11 @@ txAodvState=0
 rxAodvState=0
 aodvClear=0
 debugFEC=0
+debugSFRX=0
+debugSS=0
+debugTestbedResource=0
 #debug RXREADY error messages
-rxr=1
-
-#bug fix options
-waitForPacket=1
-synchAtRx=1
-
-programDelay=120
-
-#killall picocom
-
-while [ $# -gt 0 ]
-do
-  case $1 in
-    synchAtRx)
-      shift 1
-      synchAtRx=$1
-      shift 1
-    ;;
-    waitForPacket)
-      shift 1
-      waitForPacket=$1
-      shift 1
-    ;;
-    autoRun)
-      shift 1
-      autoRun=$1
-      shift 1
-    ;;
-    fps)
-      shift 1
-      fps=$1
-      shift 1 
-    ;;
-    programDelay)
-      shift 1
-      programDelay=$1
-      shift 1
-    ;;
-    initSR)
-      shift 1
-      initSR=$1
-      shift 1
-    ;;
-    fecEnabled)
-      shift 1
-      fecEnabled=$1
-      shift 1
-    ;;
-    nonrootRx)
-      shift 1
-      nonrootRx=$1
-      shift 1
-    ;;
-    nonrootTx)
-      shift 1
-      nonrootTx=$1
-      shift 1
-    ;;
-    floodTest)
-      shift 1
-      floodTest=$1
-      shift 1
-    ;;
-    debugScale)
-      shift 1
-      debugScale=$1
-      shift 1
-    ;;
-    *)
-      echo "unrecognized: $1"
-      shift 1
-    ;;
-  esac
-done
+rxr=0
 
 numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
 numSlots=$(($numNodes + 5))
@@ -135,14 +69,13 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=0 DEBUG_FEC=$debugFEC DEBUG_TESTBED=$debugTestbed" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=1" 
 
 
-testSettings="FLOOD_TEST=$floodTest QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
+testSettings="TEST_TRANSPORT_PROTOCOL=$testTransportProtocol QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
 miscSettings="ENABLE_SKEW_CORRECTION=0"
-bugFixSettings="SYNCH_AT_RX=$synchAtRx WAIT_FOR_PACKET=$waitForPacket"
 
-commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings $bugFixSettings"
+commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
 
 set -x 
 
@@ -159,24 +92,25 @@ else
   sleep $programDelay
 fi
 
-echo "START $(date +%s) fec $fecEnabled sr $initSR flood $floodTest rx $nonrootRx tx $nonrootTx" | tee -a tests.log
-
 if [ "$nonrootRx" != "" ]
 then
   ./burn $nonrootRx \
-      TDMA_ROOT=0 IS_SENDER=0 \
-      DEBUG_AODV_STATE=$rxAodvState $commonOptions
+    TDMA_ROOT=0 IS_SENDER=0 \
+    $commonOptions 
 fi
 
 if [ "$nonrootTx" != "" ]
 then
   ./burn $nonrootTx \
-      TDMA_ROOT=0 IS_SENDER=1 \
-      DEBUG_AODV_STATE=$txAodvState $commonOptions 
+    TDMA_ROOT=0 IS_SENDER=1 \
+    TEST_DEST_ADDR=$leafDest \
+    $commonOptions
 fi
 
 if [ "$root" != "" ]
 then
   ./burn $root \
-    TDMA_ROOT=1 $commonOptions
+    TDMA_ROOT=1 IS_SENDER=$rootSender \
+    TEST_DEST_ADDR=$rootDest \
+    $commonOptions
 fi
