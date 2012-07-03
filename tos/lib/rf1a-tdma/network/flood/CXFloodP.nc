@@ -9,7 +9,6 @@ module CXFloodP{
   //TODO: these should be tProto's, not AM IDs
   provides interface Send[am_id_t t];
   provides interface Receive[am_id_t t];
-  provides interface Receive as Snoop[am_id_t t];
 
   uses interface CXPacket;
   uses interface CXPacketMetadata;
@@ -232,23 +231,11 @@ module CXFloodP{
   task void signalReceive(){
     if (!call Queue.empty()){
       message_t* msg = call Queue.dequeue();
-      if (call CXPacket.isForMe(msg)){
-        msg = signal Receive.receive[call CXPacket.getTransportProtocol(msg)](msg,
-          call LayerPacket.getPayload(msg, 
-            call LayerPacket.payloadLength(msg)), 
-          call LayerPacket.payloadLength(msg));
-      }else{
-        msg = signal Snoop.receive[call CXPacket.getTransportProtocol(msg)](msg,
-          call LayerPacket.getPayload(msg, 
-            call LayerPacket.payloadLength(msg)), 
-          call LayerPacket.payloadLength(msg));
-      }
+      msg = signal Receive.receive[call CXPacket.getTransportProtocol(msg)](msg, call LayerPacket.getPayload(msg, call LayerPacket.payloadLength(msg)), call LayerPacket.payloadLength(msg));
       call Pool.put(msg);
-    }else{
     }
     if (!call Queue.empty()){
       post signalReceive();
-    }else{
     }
   }
   
@@ -415,9 +402,6 @@ module CXFloodP{
   command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
-    return msg;
-  }
-  default event message_t* Snoop.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
     return msg;
   }
 

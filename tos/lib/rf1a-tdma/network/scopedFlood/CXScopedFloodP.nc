@@ -700,6 +700,7 @@ module CXScopedFloodP{
           TXLeft = (mr < dataFramesLeft)? mr : dataFramesLeft;
           isOrigin = FALSE;
           setState(S_DATA);
+          //TODO: should be able to snoop data.
         }
         printf_SF_RX("\r\n");
         return ret;

@@ -12,7 +12,7 @@ tc=0
 debugScale=4UL
 
 #test setup
-testTransportProtocol=3
+testTransportProtocol=1
 rootSender=0
 rootDest=1
 leafDest=0
