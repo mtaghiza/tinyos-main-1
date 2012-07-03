@@ -20,6 +20,7 @@ configuration MasterSchedulerC {
 } implementation {
   components MasterSchedulerP;
   components CXPacketStackC;
+  components ActiveMessageC;
 
   MasterSchedulerP.AnnounceSend = AnnounceSend; 
   MasterSchedulerP.RequestReceive = RequestReceive;
@@ -27,6 +28,8 @@ configuration MasterSchedulerC {
 
   MasterSchedulerP.FrameStarted = FrameStarted;
   MasterSchedulerP.TDMAPhySchedule = TDMAPhySchedule;
+
+  MasterSchedulerP.ReceiveNotify -> ActiveMessageC.ReceiveNotify;
 
   TDMARoutingSchedule = MasterSchedulerP.TDMARoutingSchedule;
 

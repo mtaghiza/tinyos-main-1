@@ -15,6 +15,7 @@ configuration ActiveMessageC {
 
   //at receiver: no distinction
   provides interface Receive[am_id_t id];
+  provides interface ReceiveNotify;
 
 //  provides interface PacketAcknowledgements;
   provides interface TDMARoutingSchedule;
@@ -43,6 +44,7 @@ configuration ActiveMessageC {
   CombineReceiveP.AMPacketBody -> CXPacketStackC.AMPacketBody;
 
   Receive = CombineReceiveP.Receive;
+  ReceiveNotify = CombineReceiveP.ReceiveNotify;
 
   //this component is responsible for:
   // - receiving/distributing schedule-related packets

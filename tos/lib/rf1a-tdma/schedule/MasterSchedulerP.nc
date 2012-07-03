@@ -21,6 +21,7 @@ module MasterSchedulerP {
   uses interface ExternalScheduler;
 
   uses interface CXPacket;
+  uses interface ReceiveNotify;
 
   provides interface ScheduledSend as DefaultScheduledSend;
 
@@ -179,6 +180,16 @@ module MasterSchedulerP {
       schedule->availableSlots[i] = INVALID_SLOT;
     }
     for (i = 0 ; i < SCHED_NUM_SLOTS; i++){
+      assignments[i].absentCycles++;
+      //evict missing nodes
+      if (assignments[i].owner != TOS_NODE_ID 
+          && assignments[i].owner != UNCLAIMED 
+          && assignments[i].absentCycles > CX_KEEPALIVE_CYCLES){
+        printf_SCHED_RXTX("Evict %u @%u\r\n", 
+          assignments[i].owner, i);
+        assignments[i].owner = UNCLAIMED;
+        assignments[i].notified = FALSE;
+      }
       if (assignments[i].owner == UNCLAIMED &&
            j < MAX_ANNOUNCED_SLOTS){
         schedule->availableSlots[j] = i;
@@ -186,8 +197,7 @@ module MasterSchedulerP {
         lastAnnounced = i;
       }
     }
-
-    //TODO: eviction of unused slots
+    
 
     //update idle periods of schedule. Currently assumes that the end
     //of the cycle is the last to be filled in.
@@ -248,6 +258,7 @@ module MasterSchedulerP {
     if ( assignments[request->slotNumber].owner == UNCLAIMED){
       assignments[request->slotNumber].owner 
         = call CXPacket.source(msg);
+      assignments[request->slotNumber].absentCycles = 0;
     }
     return msg;
   }
@@ -398,5 +409,14 @@ module MasterSchedulerP {
 
   command uint16_t SlotStarted.currentSlot(){
     return curSlot;
+  }
+
+  event void ReceiveNotify.received(am_addr_t from){
+    uint8_t i;
+    for (i = 0; i < SCHED_NUM_SLOTS; i++){
+      if (assignments[i].owner == from){
+        assignments[i].absentCycles = 0;
+      }
+    }
   }
 }

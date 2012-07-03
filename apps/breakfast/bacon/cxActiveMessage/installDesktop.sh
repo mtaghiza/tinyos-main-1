@@ -10,11 +10,11 @@ testTransportProtocol=1
 rootId="0"
 rootSender=0
 rootDest=1
-nonrootRx=""
+nonrootRx="1"
 leafDest=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx="1"
+nonrootTx=""
 
 fecEnabled=0
 fecHamming74=1

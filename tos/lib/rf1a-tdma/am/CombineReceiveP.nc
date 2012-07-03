@@ -10,6 +10,7 @@ module CombineReceiveP{
   uses interface Rf1aPacket;
   uses interface AMPacket;
   uses interface Packet as AMPacketBody;
+  provides interface ReceiveNotify;
 } implementation {
   void printRX(message_t* msg){
     printf_APP("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
@@ -30,6 +31,7 @@ module CombineReceiveP{
     // signal (msg, payload + sizeof(am_header), len - sizeof(am_header))
     uint8_t pll = call AMPacketBody.payloadLength(msg);
     void* pl = call AMPacketBody.getPayload(msg, pll);
+    signal ReceiveNotify.received(call AMPacket.source(msg));
     printRX(msg);
     if (call AMPacket.isForMe(msg)){
       return signal Receive.receive[id](msg, pl, pll);
@@ -60,4 +62,6 @@ module CombineReceiveP{
       void* payload, uint8_t len){
     return msg;
   }
+
+  default event void ReceiveNotify.received(am_addr_t from){}
 }

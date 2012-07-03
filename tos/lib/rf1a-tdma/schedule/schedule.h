@@ -25,7 +25,11 @@
 #endif
 
 #ifndef CX_RESYNCH_CYCLES
-#define CX_RESYNCH_CYCLES 3
+#define CX_RESYNCH_CYCLES 5
+#endif
+
+#ifndef CX_TIMEOUT_CYCLES
+#define CX_KEEPALIVE_CYCLES 10
 #endif
 
 enum {

@@ -81,6 +81,7 @@ module SlaveSchedulerP {
 
   task void updateSchedule(){
     uint8_t sri = srIndex(schedule->symbolRate);
+    uint8_t i;
     isSynched = TRUE;
     scheduleNum = schedule->scheduleNum;
     //TODO: clock skew correction
@@ -103,11 +104,21 @@ module SlaveSchedulerP {
       mySlot = INVALID_SLOT;
       state = S_LISTEN;
     }
-    //TODO: check for whether YOUR slot is in the list (indicating it
+
+    //check for whether YOUR slot is in the list (indicating it
     //was freed by the master (either because the master reset or
     //because your keep-alives got lost)). If it is, pretend that
     //we're searching for a slot again (reset state/mySlot)
-    
+    if (mySlot != INVALID_SLOT){
+      for (i =0 ; i< MAX_ANNOUNCED_SLOTS; i++){
+        if (schedule->availableSlots[i] == mySlot){
+          mySlot = INVALID_SLOT;
+          state = S_LISTEN;
+          break;
+        }
+      }
+    }
+
     if (mySlot == INVALID_SLOT && state == S_LISTEN){
       state = S_REQUESTING;
       post claimSlotTask();
