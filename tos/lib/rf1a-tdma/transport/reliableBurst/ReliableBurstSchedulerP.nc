@@ -4,8 +4,8 @@ module ReliableBurstSchedulerP{
   uses interface TDMARoutingSchedule;
   uses interface SlotStarted;
 
-  provides interface AMSend[am_id_t id];
-  provides interface Receive[am_id_t id];
+  provides interface Send;
+  provides interface Receive;
 
   uses interface Send as ScopedFloodSend;
   uses interface Receive as ScopedFloodReceive;
@@ -33,21 +33,18 @@ module ReliableBurstSchedulerP{
   
   void newSlot(uint16_t slotNum);
 
-  command error_t AMSend.send[am_id_t id](am_addr_t addr, 
-      message_t* msg, uint8_t len){
+  command error_t Send.send( message_t* msg, uint8_t len){
     //ugh. this is to handle the case where AMSend.send is called from
     //some other component's SlotStarted event BEFORE our
     //SlotStarted event has fired and set up for the new slot.
 //    printf_TMP("am\r\n");
+    am_addr_t addr = call CXPacket.destination(msg);
     newSlot(call SlotStarted.currentSlot());
     //unicast only
     if (addr == AM_BROADCAST_ADDR){
       return EINVAL;
     } else {
       error_t error;
-      call AMPacket.setType(msg, id);
-      call AMPacketBody.setPayloadLength(msg, len);
-      call CXPacket.setDestination(msg, addr);
       call CXPacketMetadata.setRequiresClear(msg, TRUE);
 
       //Idle or ready (but for a different destination):
@@ -96,11 +93,11 @@ module ReliableBurstSchedulerP{
         state = S_READY;
       }
     }
-    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
+    signal Send.sendDone(msg, error);
   }
 
   event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
-    return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
+    return signal Receive.receive(msg, payload, len);
   }
   
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
@@ -136,15 +133,15 @@ module ReliableBurstSchedulerP{
     newSlot(slotNum);
   }
 
-  command error_t AMSend.cancel[am_id_t id](message_t* msg){
+  command error_t Send.cancel(message_t* msg){
     return FAIL;
   }
 
-  command uint8_t AMSend.maxPayloadLength[am_id_t id](){
+  command uint8_t Send.maxPayloadLength(){
     return call AMPacketBody.maxPayloadLength();
   }
 
-  command void* AMSend.getPayload[am_id_t id](message_t* msg, 
+  command void* Send.getPayload(message_t* msg, 
       uint8_t len){
     return call AMPacketBody.getPayload(msg, len);
   }

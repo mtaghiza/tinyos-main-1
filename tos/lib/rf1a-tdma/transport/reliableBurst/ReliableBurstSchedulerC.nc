@@ -3,8 +3,8 @@ configuration ReliableBurstSchedulerC{
   uses interface TDMARoutingSchedule;
   uses interface SlotStarted;
 
-  provides interface AMSend[am_id_t id];
-  provides interface Receive[am_id_t id];
+  provides interface Send;
+  provides interface Receive;
 
   uses interface Send as ScopedFloodSend;
   uses interface Receive as ScopedFloodReceive;
@@ -20,7 +20,7 @@ configuration ReliableBurstSchedulerC{
   ReliableBurstSchedulerP.TDMARoutingSchedule = TDMARoutingSchedule;
   ReliableBurstSchedulerP.SlotStarted = SlotStarted;
 
-  AMSend = ReliableBurstSchedulerP.AMSend;
+  Send = ReliableBurstSchedulerP.Send;
   Receive = ReliableBurstSchedulerP.Receive;
 
   ReliableBurstSchedulerP.ScopedFloodSend = ScopedFloodSend;

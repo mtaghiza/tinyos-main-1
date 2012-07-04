@@ -1,14 +1,8 @@
  #include "CXTransport.h"
 
 configuration CXTransportC{ 
-  provides interface AMSend as UnreliableBurstSend[am_id_t id]; 
-  provides interface Receive as UnreliableBurstReceive[am_id_t id]; 
-
-  provides interface AMSend as SimpleFloodSend[am_id_t id];
-  provides interface Receive as SimpleFloodReceive[am_id_t id];
-
-  provides interface AMSend as ReliableBurstSend[am_id_t id]; 
-  provides interface Receive as ReliableBurstReceive[am_id_t id]; 
+  provides interface Send[uint8_t tproto]; 
+  provides interface Receive[uint8_t tproto]; 
 
 } implementation {
   components TDMASchedulerC;
@@ -16,7 +10,26 @@ configuration CXTransportC{
   components CXTDMAPhysicalC;
   components CXPacketStackC;
   components CXRoutingTableC;
+  components SimpleFloodSchedulerC;
+  
+  Send[CX_TP_SIMPLE_FLOOD] = SimpleFloodSchedulerC.Send;
+  Receive[CX_TP_SIMPLE_FLOOD] = SimpleFloodSchedulerC.Receive;
+  SimpleFloodSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
+  SimpleFloodSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
+  SimpleFloodSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
+  SimpleFloodSchedulerC.CXPacketMetadata 
+    -> CXPacketStackC.CXPacketMetadata;
+  SimpleFloodSchedulerC.TDMARoutingSchedule 
+    -> TDMASchedulerC.TDMARoutingSchedule;
+  SimpleFloodSchedulerC.FloodSend 
+    -> CXNetworkC.FloodSend[CX_TP_SIMPLE_FLOOD];
+  SimpleFloodSchedulerC.FloodReceive 
+    -> CXNetworkC.FloodReceive[CX_TP_SIMPLE_FLOOD];
 
+  CXNetworkC.CXTransportSchedule[CX_TP_SIMPLE_FLOOD] 
+    -> SimpleFloodSchedulerC.CXTransportSchedule;
+
+#if INCLUDE_UNRELIABLE_BURST == 1
   components UnreliableBurstSchedulerC;
   UnreliableBurstSchedulerC.TDMARoutingSchedule ->
     TDMASchedulerC.TDMARoutingSchedule;
@@ -38,33 +51,13 @@ configuration CXTransportC{
   UnreliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
   UnreliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
-  UnreliableBurstSend = UnreliableBurstSchedulerC.AMSend;
-  UnreliableBurstReceive = UnreliableBurstSchedulerC.Receive;
-
-
-  components SimpleFloodSchedulerC;
-  
-  SimpleFloodSend = SimpleFloodSchedulerC;
-  SimpleFloodReceive = SimpleFloodSchedulerC;
-  SimpleFloodSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
-  SimpleFloodSchedulerC.AMPacketBody -> CXPacketStackC.AMPacketBody;
-  SimpleFloodSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
-  SimpleFloodSchedulerC.CXPacketMetadata 
-    -> CXPacketStackC.CXPacketMetadata;
-  SimpleFloodSchedulerC.TDMARoutingSchedule 
-    -> TDMASchedulerC.TDMARoutingSchedule;
-  SimpleFloodSchedulerC.FloodSend 
-    -> CXNetworkC.FloodSend[CX_TP_SIMPLE_FLOOD];
-  SimpleFloodSchedulerC.FloodReceive 
-    -> CXNetworkC.FloodReceive[CX_TP_SIMPLE_FLOOD];
-
+  Send[CX_TP_UNRELIABLE_BURST] = UnreliableBurstSchedulerC.Send;
+  Receive[CX_TP_UNRELIABLE_BURST] = UnreliableBurstSchedulerC.Receive;
   CXNetworkC.CXTransportSchedule[CX_TP_UNRELIABLE_BURST] 
     -> UnreliableBurstSchedulerC.CXTransportSchedule;
-  CXNetworkC.CXTransportSchedule[CX_TP_RELIABLE_BURST] 
-    -> ReliableBurstSchedulerC.CXTransportSchedule;
-  CXNetworkC.CXTransportSchedule[CX_TP_SIMPLE_FLOOD] 
-    -> SimpleFloodSchedulerC.CXTransportSchedule;
+#endif
 
+#if INCLUDE_RELIABLE_BURST == 1
   components ReliableBurstSchedulerC;
   ReliableBurstSchedulerC.TDMARoutingSchedule ->
     TDMASchedulerC.TDMARoutingSchedule;
@@ -81,7 +74,10 @@ configuration CXTransportC{
   ReliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
   ReliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
-  ReliableBurstSend = ReliableBurstSchedulerC.AMSend;
-  ReliableBurstReceive = ReliableBurstSchedulerC.Receive;
+  Send[CX_TP_RELIABLE_BURST] = ReliableBurstSchedulerC.Send;
+  Receive[CX_TP_RELIABLE_BURST] = ReliableBurstSchedulerC.Receive;
 
+  CXNetworkC.CXTransportSchedule[CX_TP_RELIABLE_BURST] 
+    -> ReliableBurstSchedulerC.CXTransportSchedule;
+#endif
 }

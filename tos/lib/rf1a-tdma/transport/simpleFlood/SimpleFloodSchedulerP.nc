@@ -1,6 +1,6 @@
 module SimpleFloodSchedulerP{
-  provides interface AMSend[am_id_t id];
-  provides interface Receive[am_id_t id];
+  provides interface Send;
+  provides interface Receive;
 
   uses interface Send as FloodSend;
   uses interface Receive as FloodReceive;
@@ -24,13 +24,9 @@ module SimpleFloodSchedulerP{
 
   uint8_t state = S_IDLE;
 
-  command error_t AMSend.send[am_id_t id](am_addr_t addr, 
-      message_t* msg, uint8_t len){
+  command error_t Send.send(message_t* msg, uint8_t len){
     if (state == S_IDLE){
       error_t error ;
-      call AMPacketBody.setPayloadLength(msg, len);
-      call AMPacket.setType(msg, id);
-      call CXPacket.setDestination(msg, addr);
       call CXPacketMetadata.setRequiresClear(msg, TRUE);
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
@@ -44,7 +40,7 @@ module SimpleFloodSchedulerP{
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
     state = S_IDLE;
-    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
+    signal Send.sendDone(msg, error);
   }
 
   async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
@@ -60,15 +56,15 @@ module SimpleFloodSchedulerP{
     }
   }
 
-  command error_t AMSend.cancel[am_id_t id](message_t* msg){
+  command error_t Send.cancel(message_t* msg){
     return FAIL;
   }
 
-  command uint8_t AMSend.maxPayloadLength[am_id_t id](){
+  command uint8_t Send.maxPayloadLength(){
     return call AMPacketBody.maxPayloadLength();
   }
 
-  command void* AMSend.getPayload[am_id_t id](message_t* msg, 
+  command void* Send.getPayload(message_t* msg, 
       uint8_t len){
     return call AMPacketBody.getPayload(msg, len);
   }
@@ -77,15 +73,10 @@ module SimpleFloodSchedulerP{
       uint8_t len){
     //TODO: might be necessary to restore AMPacket's destination field
     //(from CXPacket header)?
-    return signal Receive.receive[call AMPacket.type(msg)](msg,
+    return signal Receive.receive(msg,
       call AMPacketBody.getPayload(msg, 
         call AMPacketBody.payloadLength(msg)),
       call AMPacketBody.payloadLength(msg));
   }
 
-  default event void AMSend.sendDone[am_id_t id](message_t* msg, error_t error){ }
-  default event message_t* Receive.receive[am_id_t id](message_t* msg, 
-      void* payload, uint8_t len){ 
-    return msg;
-  }
 }

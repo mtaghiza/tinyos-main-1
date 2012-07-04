@@ -14,7 +14,7 @@ nonrootRx="1"
 leafDest=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx=""
+nonrootTx="1"
 
 fecEnabled=0
 fecHamming74=1

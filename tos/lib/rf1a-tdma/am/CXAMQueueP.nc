@@ -55,14 +55,10 @@ implementation {
   Send = AMQueueImplP;
   AMQueueImplP.ScheduledSend = ScheduledSend;
 
-  AMQueueImplP.SimpleFloodSend 
-    -> ActiveMessageC.SimpleFloodSend;
-  AMQueueImplP.UnreliableBurstSend 
-    -> ActiveMessageC.UnreliableBurstSend;
-  AMQueueImplP.ReliableBurstSend 
-    -> ActiveMessageC.ReliableBurstSend;
+  AMQueueImplP.SubSend 
+    -> ActiveMessageC.Send;
   AMQueueImplP.AMPacket -> ActiveMessageC;
-  AMQueueImplP.Packet -> ActiveMessageC;
+  AMQueueImplP.AMPacketBody -> ActiveMessageC;
   AMQueueImplP.CXPacket -> ActiveMessageC;
   AMQueueImplP.TDMARoutingSchedule -> ActiveMessageC;
   AMQueueImplP.SlotStarted -> ActiveMessageC;

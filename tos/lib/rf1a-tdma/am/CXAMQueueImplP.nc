@@ -49,11 +49,9 @@
 
 generic module CXAMQueueImplP(int numClients) @safe() {
     provides interface Send[uint8_t client];
-    uses interface AMSend as UnreliableBurstSend[am_id_t id];
-    uses interface AMSend as SimpleFloodSend[am_id_t id];
-    uses interface AMSend as ReliableBurstSend[am_id_t id];
+    uses interface Send as SubSend[uint8_t tproto];
     uses interface AMPacket;
-    uses interface Packet;
+    uses interface Packet as AMPacketBody;
     uses interface CXPacket;
     uses interface SlotStarted;
     uses interface TDMARoutingSchedule;
@@ -152,8 +150,6 @@ implementation {
         queue[clientId].msg = msg;
         queue[clientId].sendSlot = call ScheduledSend.getSlot[clientId]();
         queue[clientId].deferred = FALSE;
-        call Packet.setPayloadLength(msg, len);
-
 //        printf_TMP("AMQ: client %u @ %u\r\n", clientId,
 //          queue[clientId].sendSlot);
         post nextPacketTask();
@@ -188,25 +184,7 @@ implementation {
         if(isSending && (nextClient == clientId)) {
             am_id_t amId = call AMPacket.type(msg);
             uint8_t tProtoId = call CXPacket.getTransportProtocol(msg);
-            error_t err;
-            switch(tProtoId){
-              case CX_TP_UNRELIABLE_BURST:
-                err = call UnreliableBurstSend.cancel[amId](msg);
-                break;
-
-              case CX_TP_SIMPLE_FLOOD:
-                err = call SimpleFloodSend.cancel[amId](msg);
-                break;
-
-              case CX_TP_RELIABLE_BURST:
-                err = call ReliableBurstSend.cancel[amId](msg);
-                break;
-
-              default:
-                err = FAIL;
-                break;
-            }
-            return err;
+            return call SubSend.cancel[tProtoId](msg);
         }
         else {
             cancelMask[clientId/8] |= 1 << clientId % 8;
@@ -297,27 +275,12 @@ implementation {
       //If we're not synched, defer initiating new transmissions.
       if (call ScheduledSend.sendReady[nextClient]()){
         message_t* nextMsg = queue[nextClient].msg;
-        am_id_t nextId = call AMPacket.type(nextMsg);
-        am_addr_t nextDest = call AMPacket.destination(nextMsg);
-        uint8_t len = call Packet.payloadLength(nextMsg);
+        uint8_t len = call AMPacketBody.payloadLength(nextMsg);
   
   //      printf_TMP("%s: \r\n", __FUNCTION__);
   //      printf_TMP("send for tp %x client %u @ %u\r\n", 
   //        call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
-        switch(call CXPacket.getTransportProtocol(nextMsg)){
-          case CX_TP_UNRELIABLE_BURST:
-            nextErr = call UnreliableBurstSend.send[nextId](nextDest, nextMsg, len);
-            break;
-          case CX_TP_SIMPLE_FLOOD:
-            nextErr = call SimpleFloodSend.send[nextId](nextDest, nextMsg, len);
-            break;
-          case CX_TP_RELIABLE_BURST:
-            nextErr = call ReliableBurstSend.send[nextId](nextDest, nextMsg, len);
-            break;
-          default:
-            nextErr = FAIL;
-            break;
-        }
+        nextErr = call SubSend.send[call CXPacket.getTransportProtocol(nextMsg)](nextMsg, len);
       }
 
       if (nextErr == ERETRY){
@@ -335,39 +298,24 @@ implementation {
       }
     }
     
-    event void ReliableBurstSend.sendDone[am_id_t id](message_t* msg, error_t err) {
+    event void SubSend.sendDone[uint8_t tProto](message_t* msg, error_t err) {
 //      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
       sendDoneEvent(msg, err);
     }
-    event void UnreliableBurstSend.sendDone[am_id_t id](message_t* msg, error_t err) {
-//      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
-      sendDoneEvent(msg, err);
-    }
-    event void SimpleFloodSend.sendDone[am_id_t id](message_t* msg, error_t err) {
-//      printf("%s: @ %u\r\n", __FUNCTION__, curSlot);
-      sendDoneEvent(msg, err);
-    }
-    
+
     command uint8_t Send.maxPayloadLength[uint8_t id]() {
-        return call SimpleFloodSend.maxPayloadLength[0]();
+        return call AMPacketBody.maxPayloadLength();
     }
 
     command void* Send.getPayload[uint8_t id](message_t* m, uint8_t len) {
-        return call SimpleFloodSend.getPayload[0](m, len);
+        return call AMPacketBody.getPayload(m, len);
     }
+
     default event void Send.sendDone[uint8_t id](message_t* msg, error_t err) {
         // Do nothing
     }
 
-    default command error_t ReliableBurstSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
-        return FAIL;
-    }
-
-    default command error_t UnreliableBurstSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
-        return FAIL;
-    }
-
-    default command error_t SimpleFloodSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
+    default command error_t SubSend.send[uint8_t tProto](message_t* msg, uint8_t len) {
         return FAIL;
     }
 

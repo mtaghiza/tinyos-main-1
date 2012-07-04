@@ -48,6 +48,7 @@ generic module CXAMQueueEntryP(am_id_t amId, uint8_t tProtoId) @safe() {
   uses interface Send;
   uses interface AMPacket;
   uses interface CXPacket;
+  uses interface Packet as AMPacketBody;
 }
 
 implementation {
@@ -56,8 +57,12 @@ implementation {
 			      message_t* msg,
 			      uint8_t len) {
     call CXPacket.setTransportProtocol(msg, tProtoId);
-    call AMPacket.setDestination(msg, dest);
+    //AM destination is stored in CX header: the 15.4 dest field will
+    //be broadcast for CX.
+    call CXPacket.setDestination(msg, dest);
+    call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
     call AMPacket.setType(msg, amId);
+    call AMPacketBody.setPayloadLength(msg, len);
     return call Send.send(msg, len);
   }
 
@@ -65,8 +70,10 @@ implementation {
     return call Send.cancel(msg);
   }
 
-  event void Send.sendDone(message_t* m, error_t err) {
-    signal AMSend.sendDone(m, err);
+  event void Send.sendDone(message_t* msg, error_t err) {
+    //restore AM destination field from CX header
+    call AMPacket.setDestination(msg, call CXPacket.destination(msg));
+    signal AMSend.sendDone(msg, err);
   }
   
   command uint8_t AMSend.maxPayloadLength() {

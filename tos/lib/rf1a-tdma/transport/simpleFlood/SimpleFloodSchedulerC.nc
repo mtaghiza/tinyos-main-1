@@ -1,6 +1,6 @@
 configuration SimpleFloodSchedulerC{
-  provides interface AMSend[am_id_t id];
-  provides interface Receive[am_id_t id];
+  provides interface Send;
+  provides interface Receive;
 
   uses interface Send as FloodSend;
   uses interface Receive as FloodReceive;
@@ -19,7 +19,7 @@ configuration SimpleFloodSchedulerC{
 
   components SimpleFloodSchedulerP;
 
-  AMSend = SimpleFloodSchedulerP;
+  Send = SimpleFloodSchedulerP;
   Receive = SimpleFloodSchedulerP;
   SimpleFloodSchedulerP.CXTransportSchedule = CXTransportSchedule;
   SimpleFloodSchedulerP.AMPacket = AMPacket;

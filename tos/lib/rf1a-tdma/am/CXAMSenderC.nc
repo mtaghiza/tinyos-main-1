@@ -65,6 +65,7 @@ implementation {
   ScheduledSend = AMQueueP.ScheduledSend[clientId];
 
   AMQueueEntryP.AMPacket -> ActiveMessageC;
+  AMQueueEntryP.AMPacketBody -> ActiveMessageC.Packet;
   AMQueueEntryP.CXPacket -> ActiveMessageC.CXPacket;
   
   AMSend = AMQueueEntryP;
