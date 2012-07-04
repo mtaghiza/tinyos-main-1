@@ -41,6 +41,7 @@ typedef struct cx_metadata_t{
   uint16_t frameNum;
   uint8_t symbolRate;
   bool requiresClear;
+  bool ackRequested;
   bool wasAcked;
 } cx_metadata_t;
 

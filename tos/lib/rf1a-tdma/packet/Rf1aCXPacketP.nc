@@ -14,14 +14,6 @@ module Rf1aCXPacketP{
   //this should probably be longer, right?
   uint16_t cxSN = 0;
   
-  rf1a_ieee154_t* phyHeader(message_t* msg){ 
-    return (rf1a_ieee154_t*)(msg->header);
-  }
-
-  ieee154_fcf_t* fcf(message_t* msg){ 
-    return (ieee154_fcf_t*)(&phyHeader(msg)->fcf);
-  }
-
   cx_header_t* getHeader(message_t* msg){
     return (cx_header_t*)(call SubPacket.getPayload(msg, sizeof(cx_header_t)));
   }
@@ -39,18 +31,18 @@ module Rf1aCXPacketP{
   }
 
   async command error_t PacketAcknowledgements.requestAck(message_t* msg){
-    fcf(msg)->ack_request = 1;
+    getMetadata(msg)->ackRequested = 1;
     return SUCCESS;
   }
   async command error_t PacketAcknowledgements.noAck(message_t* msg){
-    fcf(msg)->ack_request = 0;
+    getMetadata(msg)->ackRequested = 0;
     return SUCCESS;
   }
   async command bool PacketAcknowledgements.wasAcked(message_t* msg){
     return getMetadata(msg)->wasAcked;
   }
   command bool CXPacket.ackRequested(message_t* msg){
-    return fcf(msg)->ack_request == 1;
+    return getMetadata(msg)->ackRequested;
   }
 
   command void Packet.clear(message_t* msg) {
