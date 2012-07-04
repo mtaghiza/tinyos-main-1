@@ -119,10 +119,10 @@ configuration RouterSchedulerC {
   MasterSchedulerC.FrameStarted ->
     RouterSchedulerP.FrameStarted[CX_SCHEDULER_MASTER];
   
-  components new CXAMSenderC(AM_ID_LEAF_SCHEDULE, CX_TP_SIMPLE_FLOOD)
+  components new AMSenderC(AM_ID_LEAF_SCHEDULE)
     as MasterAnnounceSend;
   components new AMReceiverC(AM_ID_LEAF_REQUEST) as MasterRequestReceive;
-  components new CXAMSenderC(AM_ID_LEAF_RESPONSE, CX_TP_SIMPLE_FLOOD)
+  components new AMSenderC(AM_ID_LEAF_RESPONSE)
     as MasterResponseSend;
 
   MasterSchedulerC.AnnounceSend -> MasterAnnounceSend;
@@ -135,7 +135,7 @@ configuration RouterSchedulerC {
 
   components new AMReceiverC(AM_ID_ROUTER_SCHEDULE) 
     as SlaveAnnounceReceive;
-  components new CXAMSenderC(AM_ID_ROUTER_REQUEST, CX_TP_SIMPLE_FLOOD) 
+  components new AMSenderC(AM_ID_ROUTER_REQUEST) 
     as SlaveRequestSend;
   components new AMReceiverC(AM_ID_ROUTER_RESPONSE) 
     as SlaveResponseReceive;

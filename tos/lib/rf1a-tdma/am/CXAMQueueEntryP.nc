@@ -42,8 +42,9 @@
  */ 
 
 #include "AM.h"
+#include "CXTransport.h"
 
-generic module CXAMQueueEntryP(am_id_t amId, uint8_t tProtoId) @safe() {
+generic module CXAMQueueEntryP(am_id_t amId) @safe() {
   provides interface AMSend;
   uses interface Send;
   uses interface AMPacket;
@@ -56,7 +57,28 @@ implementation {
   command error_t AMSend.send(am_addr_t dest,
 			      message_t* msg,
 			      uint8_t len) {
-    call CXPacket.setTransportProtocol(msg, tProtoId);
+    //set transport protocol based on ack-requested and destination.
+    //return EINVAL if we requested bad combination or the relevant
+    //transport protocol is not defined.
+    if (dest == AM_BROADCAST_ADDR){
+      if (call CXPacket.ackRequested(msg)){
+        //requested ack for broadcast. no dice.
+        return EINVAL;
+      } else {
+        call CXPacket.setTransportProtocol(msg, CX_TP_SIMPLE_FLOOD);
+      }
+    }else{
+      //no ack requested: use unreliable burst if available
+      if (!call CXPacket.ackRequested(msg) && INCLUDE_UNRELIABLE_BURST){
+        call CXPacket.setTransportProtocol(msg, CX_TP_UNRELIABLE_BURST);
+      //fall back to reliable burst (OK if no ack requested)
+      } else if (INCLUDE_RELIABLE_BURST){
+        call CXPacket.setTransportProtocol(msg, CX_TP_RELIABLE_BURST);
+      }else{
+      //no matching transport protocol available
+        return EINVAL;
+      }
+    }
     //AM destination is stored in CX header: the 15.4 dest field will
     //be broadcast for CX.
     call CXPacket.setDestination(msg, dest);

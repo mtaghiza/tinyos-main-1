@@ -10,6 +10,7 @@ configuration CXPacketStackC{
   provides interface Packet as AMPacketBody;
 
   provides interface Rf1aPacket;
+  provides interface PacketAcknowledgements;
 
 } implementation {
   components CXTDMAPhysicalC;
@@ -41,5 +42,6 @@ configuration CXPacketStackC{
   CXPacket = Rf1aCXPacketC.CXPacket;
   CXPacketMetadata = Rf1aCXPacketC.CXPacketMetadata;
   AMPacket = AMPacketC;
+  PacketAcknowledgements = Rf1aCXPacketC.PacketAcknowledgements;
 
 }

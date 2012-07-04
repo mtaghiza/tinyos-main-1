@@ -45,18 +45,18 @@
 
 #include "AM.h"
 
-generic configuration CXAMSenderC(am_id_t AMId, uint8_t tProtoId) {
+generic configuration AMSenderC(am_id_t AMId) {
   provides interface AMSend;
   provides interface Packet;
   provides interface AMPacket;
 
-//  provides interface PacketAcknowledgements as Acks;
+  provides interface PacketAcknowledgements as Acks;
 
   uses interface ScheduledSend;
 }
 
 implementation {
-  components new CXAMQueueEntryP(AMId, tProtoId) as AMQueueEntryP;
+  components new CXAMQueueEntryP(AMId) as AMQueueEntryP;
   components CXAMQueueP as AMQueueP, ActiveMessageC;
   enum {
     clientId = unique(UQ_AMQUEUE_SEND),
@@ -71,5 +71,5 @@ implementation {
   AMSend = AMQueueEntryP;
   Packet = ActiveMessageC;
   AMPacket = ActiveMessageC;
-//  Acks = ActiveMessageC;
+  Acks = ActiveMessageC;
 }

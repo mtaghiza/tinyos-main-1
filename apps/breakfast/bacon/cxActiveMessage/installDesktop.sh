@@ -10,8 +10,9 @@ testTransportProtocol=1
 rootId="0"
 rootSender=0
 rootDest=1
-nonrootRx="1"
+nonrootRx=""
 leafDest=0
+testRequestAck=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
 nonrootTx="1"
@@ -102,6 +103,7 @@ then
     make bacon2 install,$id bsl,ref,JH00030$id \
       TDMA_ROOT=0 IS_SENDER=1 \
       TEST_DEST_ADDR=$leafDest \
+      TEST_REQUEST_ACK=$testRequestAck\
       DEBUG_AODV_STATE=$txAodvState $commonOptions\
       DEBUG_TMP=1 DEBUG_TESTBED=1
   done
@@ -112,6 +114,7 @@ then
   make bacon2 install,0 bsl,ref,JH00030$rootId \
     TDMA_ROOT=1 IS_SENDER=$rootSender \
     TEST_DEST_ADDR=$rootDest\
+    TEST_REQUEST_ACK=$testRequestAck\
     $commonOptions\
     DEBUG_TMP=1 DEBUG_TESTBED=1
 fi

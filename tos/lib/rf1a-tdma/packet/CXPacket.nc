@@ -26,4 +26,5 @@ interface CXPacket{
   command uint8_t getScheduleNum(message_t* amsg);
   command void setOriginalFrameNum(message_t* amsg, uint16_t frameNum);
   command uint16_t getOriginalFrameNum(message_t* amsg);
+  command bool ackRequested(message_t* msg);
 }

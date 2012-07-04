@@ -4,6 +4,7 @@ module Rf1aCXPacketP{
   provides interface CXPacket;
   provides interface Packet;
   provides interface CXPacketMetadata;
+  provides interface PacketAcknowledgements;
   uses interface AMPacket as AMPacket;
   uses interface Packet as SubPacket;
   uses interface Rf1aPacket; 
@@ -12,6 +13,14 @@ module Rf1aCXPacketP{
 } implementation {
   //this should probably be longer, right?
   uint16_t cxSN = 0;
+  
+  rf1a_ieee154_t* phyHeader(message_t* msg){ 
+    return (rf1a_ieee154_t*)(msg->header);
+  }
+
+  ieee154_fcf_t* fcf(message_t* msg){ 
+    return (ieee154_fcf_t*)(&phyHeader(msg)->fcf);
+  }
 
   cx_header_t* getHeader(message_t* msg){
     return (cx_header_t*)(call SubPacket.getPayload(msg, sizeof(cx_header_t)));
@@ -27,6 +36,21 @@ module Rf1aCXPacketP{
     call Ieee154Packet.setPan(msg, call Ieee154Packet.localPan());
     call CXPacket.setCount(msg, 0);
     call CXPacket.newSn(msg);
+  }
+
+  async command error_t PacketAcknowledgements.requestAck(message_t* msg){
+    fcf(msg)->ack_request = 1;
+    return SUCCESS;
+  }
+  async command error_t PacketAcknowledgements.noAck(message_t* msg){
+    fcf(msg)->ack_request = 0;
+    return SUCCESS;
+  }
+  async command bool PacketAcknowledgements.wasAcked(message_t* msg){
+    return getMetadata(msg)->wasAcked;
+  }
+  command bool CXPacket.ackRequested(message_t* msg){
+    return fcf(msg)->ack_request == 1;
   }
 
   command void Packet.clear(message_t* msg) {

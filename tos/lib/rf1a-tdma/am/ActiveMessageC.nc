@@ -15,7 +15,7 @@ configuration ActiveMessageC {
   provides interface Receive[am_id_t id];
   provides interface ReceiveNotify;
 
-//  provides interface PacketAcknowledgements;
+  provides interface PacketAcknowledgements;
   provides interface TDMARoutingSchedule;
   provides interface SlotStarted;
   provides interface ScheduledSend as DefaultScheduledSend;
@@ -64,6 +64,7 @@ configuration ActiveMessageC {
   CXPacketMetadata = CXPacketStackC.CXPacketMetadata;
   Packet = CXPacketStackC.AMPacketBody;
   Rf1aPacket = CXPacketStackC.Rf1aPacket;
+  PacketAcknowledgements = CXPacketStackC.PacketAcknowledgements;
 
   Send = CXTransportC.Send;
 

@@ -249,7 +249,6 @@ module CXScopedFloodP{
           origin_data_msg = msg;
           call CXPacket.init(msg);
           call CXPacket.setType(msg, CX_TYPE_DATA);
-          call CXPacket.setTransportProtocol(msg, t);
           //preserve pre-routed bit
           call CXPacket.setNetworkProtocol(msg, 
             ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)

@@ -2,6 +2,7 @@ configuration Rf1aCXPacketC{
   provides interface Packet;
   provides interface CXPacket;
   provides interface CXPacketMetadata;
+  provides interface PacketAcknowledgements;
   uses interface Packet as SubPacket;
   uses interface Ieee154Packet;
   uses interface AMPacket;
@@ -16,5 +17,6 @@ configuration Rf1aCXPacketC{
   Rf1aPacket = PacketP;
   AMPacket = PacketP;
   CXPacketMetadata = PacketP;
+  PacketAcknowledgements = PacketP;
   PacketP.ActiveMessageAddress = ActiveMessageAddress;
 }

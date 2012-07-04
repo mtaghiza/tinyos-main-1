@@ -31,6 +31,7 @@ module TestP {
   uses interface Timer<TMilli> as SendTimer;
 
   uses interface Random;
+  uses interface PacketAcknowledgements;
 
 } implementation {
   
@@ -146,7 +147,9 @@ module TestP {
       pl -> e = 0xee;
       pl -> f = 0xff;
       pl -> sn ++;//= (1+TOS_NODE_ID);
-  
+      #if TEST_REQUEST_ACK == 1
+      call PacketAcknowledgements.requestAck(tx_msg);
+      #endif
       error = call AMSend.send(TEST_DEST_ADDR, tx_msg,
         sizeof(test_packet_t)); 
         
