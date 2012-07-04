@@ -491,13 +491,10 @@ module CXScopedFloodP{
         // for AODV, all we really care about is whether we are
         // between the two: 
         //  src->me + me->dest  <= src->dest
-//        printf_BF("them\r\n");
         call CXRoutingTable.update(ruSrc, ruDest,
           ruDistance);
-//        printf_BF("src->me\r\n");
         call CXRoutingTable.update(ruSrc, TOS_NODE_ID, 
           ruSrcDepth);
-//        printf_BF("dest->me\r\n");
         call CXRoutingTable.update(ruDest, TOS_NODE_ID,
           ruAckDepth);
         routeUpdatePending = FALSE;
@@ -568,6 +565,7 @@ module CXScopedFloodP{
           sizeof(cx_ack_t));
 
         call CXPacket.init(origin_ack_msg);
+        call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
         call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
         call CXPacket.setNetworkProtocol(origin_ack_msg, CX_RM_SCOPEDFLOOD);
         call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
@@ -590,6 +588,7 @@ module CXScopedFloodP{
         //route update goodness
         ruSrcDepth = call CXPacket.count(rx_msg);
         ruSrc = call CXPacket.source(rx_msg);
+        ruDest = call CXPacket.source(origin_ack_msg);
         ruAckDepth = 0;
         ruDistance = ruSrcDepth;
         routeUpdatePending = TRUE;

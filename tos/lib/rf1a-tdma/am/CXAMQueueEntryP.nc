@@ -57,6 +57,7 @@ implementation {
   command error_t AMSend.send(am_addr_t dest,
 			      message_t* msg,
 			      uint8_t len) {
+    call CXPacket.setSource(msg, TOS_NODE_ID);
     //set transport protocol based on ack-requested and destination.
     //return EINVAL if we requested bad combination or the relevant
     //transport protocol is not defined.
