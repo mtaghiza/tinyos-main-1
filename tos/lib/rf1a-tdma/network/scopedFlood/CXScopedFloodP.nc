@@ -4,8 +4,8 @@
  #include "SchedulerDebug.h"
  #include "SFDebug.h"
 module CXScopedFloodP{
-  provides interface Send[am_id_t t];
-  provides interface Receive[am_id_t t];
+  provides interface Send[uint8_t t];
+  provides interface Receive[uint8_t t];
 
   uses interface CXPacket;
   uses interface CXPacketMetadata;
@@ -225,7 +225,7 @@ module CXScopedFloodP{
 
   //Buffer a packet from the transport layer if we're not already
   //holding one.
-  command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+  command error_t Send.send[uint8_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("ScopedFloodSend\r\n");
     atomic{
       if (!originDataPending){
@@ -259,7 +259,7 @@ module CXScopedFloodP{
     }
   }
   
-  command error_t Send.cancel[am_id_t t](message_t* msg){
+  command error_t Send.cancel[uint8_t t](message_t* msg){
     //TODO: this should: 
     // - free the resource. 
     // - reset originDataPending to FALSE
@@ -569,7 +569,7 @@ module CXScopedFloodP{
    */
   async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    am_id_t pType = call CXPacket.type(msg);
+    uint8_t pType = call CXPacket.type(msg);
     uint32_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
@@ -749,10 +749,10 @@ module CXScopedFloodP{
 
   event void Resource.granted(){}
 
-  command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
-  command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
-  default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
-  default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
+  command void* Send.getPayload[uint8_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
+  command uint8_t Send.maxPayloadLength[uint8_t t](){ return call LayerPacket.maxPayloadLength(); }
+  default event void Send.sendDone[uint8_t t](message_t* msg, error_t error){}
+  default event message_t* Receive.receive[uint8_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
 
   default async command bool CXTransportSchedule.isOrigin[uint8_t
   tProto](uint16_t frameNum){ 

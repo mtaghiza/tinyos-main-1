@@ -6,9 +6,8 @@
  #include "SchedulerDebug.h"
  #include "BreakfastDebug.h"
 module CXFloodP{
-  //TODO: these should be tProto's, not AM IDs
-  provides interface Send[am_id_t t];
-  provides interface Receive[am_id_t t];
+  provides interface Send[uint8_t t];
+  provides interface Receive[uint8_t t];
 
   uses interface CXPacket;
   uses interface CXPacketMetadata;
@@ -105,8 +104,7 @@ module CXFloodP{
    * Accept a packet if we're not busy and hold it until the origin
    * frame comes around.
    **/
-  //TODO transport: this type should be a cx_transport_protocol_t
-  command error_t Send.send[am_id_t t](message_t* msg, uint8_t len){
+  command error_t Send.send[uint8_t t](message_t* msg, uint8_t len){
 //    printf_TMP("floodsend.send %x\r\n", t);
     atomic{
       if (!txPending){
@@ -143,7 +141,7 @@ module CXFloodP{
   
   //TODO: yeah, we're going to have to implement this. should be just
   //clear txPending flag and go to IDLE?
-  command error_t Send.cancel[am_id_t t](message_t* msg){
+  command error_t Send.cancel[uint8_t t](message_t* msg){
     return FAIL;
   }
 
@@ -366,10 +364,10 @@ module CXFloodP{
   
   event void Resource.granted(){}
 
-  command void* Send.getPayload[am_id_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
-  command uint8_t Send.maxPayloadLength[am_id_t t](){ return call LayerPacket.maxPayloadLength(); }
-  default event void Send.sendDone[am_id_t t](message_t* msg, error_t error){}
-  default event message_t* Receive.receive[am_id_t t](message_t* msg, void* payload, uint8_t len){ 
+  command void* Send.getPayload[uint8_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
+  command uint8_t Send.maxPayloadLength[uint8_t t](){ return call LayerPacket.maxPayloadLength(); }
+  default event void Send.sendDone[uint8_t t](message_t* msg, error_t error){}
+  default event message_t* Receive.receive[uint8_t t](message_t* msg, void* payload, uint8_t len){ 
     return msg;
   }
 

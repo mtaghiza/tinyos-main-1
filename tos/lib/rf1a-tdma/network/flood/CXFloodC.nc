@@ -1,6 +1,6 @@
 configuration CXFloodC{
-  provides interface Send[am_id_t type];
-  provides interface Receive[am_id_t type];
+  provides interface Send[uint8_t tProto];
+  provides interface Receive[uint8_t tProto];
 
   uses interface CXPacket;
   uses interface CXPacketMetadata;
