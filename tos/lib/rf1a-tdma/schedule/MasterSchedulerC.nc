@@ -36,6 +36,8 @@ configuration MasterSchedulerC {
   SplitControl = MasterSchedulerP.SplitControl;
   MasterSchedulerP.SubSplitControl = SubSplitControl;
   MasterSchedulerP.CXPacket -> CXPacketStackC.CXPacket;
+  MasterSchedulerP.PacketAcknowledgements 
+    -> ActiveMessageC.PacketAcknowledgements;
 
   SlotStarted = MasterSchedulerP.SlotStarted;
   ResponseSchedule = MasterSchedulerP.ResponseSchedule;

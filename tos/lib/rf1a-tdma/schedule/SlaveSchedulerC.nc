@@ -20,6 +20,7 @@ configuration SlaveSchedulerC{
 } implementation {
   components CXPacketStackC;
   components RandomC;
+  components ActiveMessageC;
 
   components SlaveSchedulerP;
 
@@ -37,6 +38,8 @@ configuration SlaveSchedulerC{
   SlaveSchedulerP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   SlaveSchedulerP.CXPacket-> CXPacketStackC.CXPacket;
   SlaveSchedulerP.Random -> RandomC;
+  SlaveSchedulerP.PacketAcknowledgements 
+    -> ActiveMessageC.PacketAcknowledgements;
 
   SlotStarted = SlaveSchedulerP.SlotStarted;
   DefaultScheduledSend = SlaveSchedulerP.DefaultScheduledSend;

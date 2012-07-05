@@ -15,6 +15,7 @@ module MasterSchedulerP {
   provides interface ScheduledSend as AnnounceSchedule;
   uses interface Receive as RequestReceive;
   uses interface AMSend as ResponseSend;
+  uses interface PacketAcknowledgements;
   //peg to slot being granted
   provides interface ScheduledSend as ResponseSchedule;
 
@@ -310,7 +311,7 @@ module MasterSchedulerP {
                 assignments[k].notified = FALSE;
               }
             }
-             
+            call PacketAcknowledgements.requestAck(response_msg); 
             error = call ResponseSend.send(response->owner,
               response_msg, 
               sizeof(cx_response_t));
@@ -342,13 +343,19 @@ module MasterSchedulerP {
   }
 
   event void ResponseSend.sendDone(message_t* msg, error_t error){
-    if ( error == SUCCESS){
+    if ( error == SUCCESS || error == ENOACK){
       cx_response_t* response = call ResponseSend.getPayload(msg,
         sizeof(cx_response_t));
       responseSending = FALSE;
-      printf_SCHED_RXTX("Assigned %u to %u\r\n", response->owner,
-        response->slotNumber);
-      assignments[response->slotNumber].notified = TRUE;
+      if (error == SUCCESS){
+        printf_SCHED_RXTX("Assigned %u to %u\r\n", response->owner,
+          response->slotNumber);
+        assignments[response->slotNumber].notified = TRUE;
+      } else {
+        printf_SCHED_RXTX("No ack from %u @ %u\r\n", response->owner,
+          response->slotNumber);
+        assignments[response->slotNumber].owner = UNCLAIMED;
+      }
       post checkResponses();
     } else{ 
       printf("%s: %s\r\n", __FUNCTION__, decodeError(error));

@@ -76,8 +76,7 @@ configuration RouterSchedulerC {
   //make them independent of each other.
   components MasterSchedulerC;
   components SlaveSchedulerC;
-  
-  //TODO: should be SimpleFloodSenderC()'s, not direct wiring 
+  components ActiveMessageC;
   components CXTransportC;
   
   //The RouterSchedulerP deals with dispatching events based on the

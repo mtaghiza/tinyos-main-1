@@ -8,6 +8,7 @@ module SlaveSchedulerP {
   uses interface Receive as AnnounceReceive;
   uses interface AMSend as RequestSend;
   uses interface Receive as ResponseReceive;
+  uses interface PacketAcknowledgements;
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
 
@@ -149,6 +150,7 @@ module SlaveSchedulerP {
     request->slotNumber = mySlot;
     printf_SCHED_RXTX("Claim %u\r\n", mySlot);
     //call RequestSend.send
+    call PacketAcknowledgements.requestAck(request_msg);
     error = call RequestSend.send(call CXPacket.source(schedule_msg), 
       request_msg, 
       sizeof(cx_request_t));
@@ -202,8 +204,16 @@ module SlaveSchedulerP {
   }
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
-    //now we're waiting for response
-    state = S_REQUESTING;
+    if (error == SUCCESS){
+      //now we're waiting for response
+      state = S_REQUESTING;
+    } else if (error == ENOACK){
+      //try again next round.
+      mySlot = INVALID_SLOT;
+      state = S_LISTEN;
+    } else {
+      printf("%s: %s\r\n", __FUNCTION__, decodeError(error));
+    }
   }
 
   task void startDoneTask(){
