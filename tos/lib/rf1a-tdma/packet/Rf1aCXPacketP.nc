@@ -101,10 +101,8 @@ module Rf1aCXPacketP{
     return getHeader(amsg)->sn;
   }
 
-  async command void CXPacket.newSn(message_t* amsg){
-    atomic{
-      getHeader(amsg)->sn = cxSN ++;
-    }
+  command void CXPacket.newSn(message_t* amsg){
+    getHeader(amsg)->sn = cxSN ++;
   }
 
   command uint8_t CXPacket.count(message_t* amsg){

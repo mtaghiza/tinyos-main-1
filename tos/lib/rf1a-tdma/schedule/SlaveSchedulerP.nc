@@ -268,8 +268,8 @@ module SlaveSchedulerP {
       && (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
-  async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
-  async event uint8_t TDMAPhySchedule.getScheduleNum(){
+  event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
+  event uint8_t TDMAPhySchedule.getScheduleNum(){
     return scheduleNum;
   }
   
@@ -278,10 +278,10 @@ module SlaveSchedulerP {
     framesSinceSynch = 0;
   }
 
-  async event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
+  event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp){}
 
-  async command bool TDMARoutingSchedule.isSynched(){
+  command bool TDMARoutingSchedule.isSynched(){
     // we pretend that we're synched if we're requesting a slot. yugh
     if (state == S_REQUESTING 
         && call SlotStarted.currentSlot() == mySlot){
@@ -291,12 +291,12 @@ module SlaveSchedulerP {
     }
   }
   
-  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
+  command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return schedule->framesPerSlot;
   }
 
   //No retransmissions allowed if we're not in synch.
-  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
+  command uint8_t TDMARoutingSchedule.maxRetransmit(){
     if (call TDMARoutingSchedule.isSynched()){
       return schedule->maxRetransmit;
     } else {
@@ -306,16 +306,16 @@ module SlaveSchedulerP {
   uint16_t getSlot(uint16_t frameNum){
     return frameNum / call TDMARoutingSchedule.framesPerSlot();
   }
-  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
+  command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
     return getSlot(frameNum) == mySlot;
   }
 
-  async command uint16_t TDMARoutingSchedule.maxDepth(){
+  command uint16_t TDMARoutingSchedule.maxDepth(){
     //TODO: should this be in the schedule announcement?
     return SCHED_MAX_DEPTH;
   }
 
-  async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
+  command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
 

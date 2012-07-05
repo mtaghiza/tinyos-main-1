@@ -272,7 +272,7 @@ module CXScopedFloodP{
 
 
 
-  async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+  event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     //Check for (implicit) completion of SF: clearFrame is set in
     //CXTDMA.sendDone at the point where we enter the S_CLEAR_WAIT
     //state
@@ -374,7 +374,7 @@ module CXScopedFloodP{
     printf_TMP("CXSF.gp: %p @%u\r\n", rgpMsg, rgpFN);
   }
 
-  async event bool CXTDMA.getPacket(message_t** msg,
+  event bool CXTDMA.getPacket(message_t** msg,
       uint16_t frameNum){ 
     printf_SF_GP("gp");
     if (isDataFrame(frameNum)){
@@ -436,7 +436,7 @@ module CXScopedFloodP{
 //    printf_TMP("d@%ua@%u\r\n", dataReceivedFrame, ackFrame);
 //  }
 
-  async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+  event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
 //    printf_TMP("cx.sd\r\n");
 ////    dispMsg = msg;
@@ -567,7 +567,7 @@ module CXScopedFloodP{
    * acknowledgments to packets which we sent, update return code to
    * indicate ack was received.
    */
-  async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
+  event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     uint8_t pType = call CXPacket.type(msg);
     uint32_t sn = call CXPacket.sn(msg);
@@ -754,7 +754,7 @@ module CXScopedFloodP{
   default event void Send.sendDone[uint8_t t](message_t* msg, error_t error){}
   default event message_t* Receive.receive[uint8_t t](message_t* msg, void* payload, uint8_t len){ return msg;}
 
-  default async command bool CXTransportSchedule.isOrigin[uint8_t
+  default command bool CXTransportSchedule.isOrigin[uint8_t
   tProto](uint16_t frameNum){ 
     return FALSE;
   }

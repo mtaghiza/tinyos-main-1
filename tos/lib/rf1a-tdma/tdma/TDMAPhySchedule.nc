@@ -3,10 +3,10 @@ interface TDMAPhySchedule{
     uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate,
     uint8_t channel, bool isSynched);
 
-  async event int32_t getFrameAdjustment(uint16_t frameNum);
+  event int32_t getFrameAdjustment(uint16_t frameNum);
   async command uint32_t getNow();
-  async event uint8_t getScheduleNum();
-  async event void peek(message_t* msg, uint16_t frameNum, 
+  event uint8_t getScheduleNum();
+  event void peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp);
   event void resynched(uint16_t frameNum);
 

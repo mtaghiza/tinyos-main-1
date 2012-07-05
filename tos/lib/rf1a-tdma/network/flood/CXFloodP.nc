@@ -154,7 +154,7 @@ module CXFloodP{
    *   (resource should be held already)
    * - otherwise: RX (maybe we'll be in a flood soon)
    */
-  async event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
+  event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     printf_F_SCHED("f.ft %u", frameNum);
 
     if (!txSent && txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
@@ -215,7 +215,7 @@ module CXFloodP{
   }
  
   //Provide packet for transmission to TDMA/phy layers.
-  async event bool CXTDMA.getPacket(message_t** msg, 
+  event bool CXTDMA.getPacket(message_t** msg, 
       uint16_t frameNum){ 
     *msg = isOrigin? tx_msg : fwd_msg;
     return TRUE;
@@ -248,7 +248,7 @@ module CXFloodP{
 
   //decrement remaining transmissions on this packet and potentially
   //move into cleanup steps
-  async event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+  event void CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
       printf("CXFloodP sd!\r\n");
@@ -275,7 +275,7 @@ module CXFloodP{
    * decide whether or not it should be forwarded, and provide a clean
    * buffer to the lower layer.
    */
-  async event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
+  event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
     uint32_t thisSn = call CXPacket.sn(msg);
@@ -371,7 +371,7 @@ module CXFloodP{
     return msg;
   }
 
-  default async command bool CXTransportSchedule.isOrigin[uint8_t tProto](uint16_t frameNum){
+  default command bool CXTransportSchedule.isOrigin[uint8_t tProto](uint16_t frameNum){
     return FALSE;
   }
 }

@@ -224,12 +224,12 @@ module MasterSchedulerP {
   }
 
   //owns announce, data, and response frames
-  async command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
+  command bool TDMARoutingSchedule.ownsFrame(uint16_t frameNum){
     uint16_t sn = getSlot(frameNum); 
     return sn == announcementSlot || sn == dataSlot || sn == responseSlot;
   }
 
-  async command uint16_t TDMARoutingSchedule.maxDepth(){
+  command uint16_t TDMARoutingSchedule.maxDepth(){
     //TODO: should this be in the schedule announcement?
     return SCHED_MAX_DEPTH;
   }
@@ -375,26 +375,26 @@ module MasterSchedulerP {
     return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
-  async event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
-  async event uint8_t TDMAPhySchedule.getScheduleNum(){
+  event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
+  event uint8_t TDMAPhySchedule.getScheduleNum(){
     return schedule->scheduleNum;
   }
 
-  async event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
+  event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
     uint32_t timestamp){}
 
   event void TDMAPhySchedule.resynched(uint16_t frameNum){ }
   
-  async command uint16_t TDMARoutingSchedule.framesPerSlot(){
+  command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return schedule->framesPerSlot;
   }
-  async command bool TDMARoutingSchedule.isSynched(){
+  command bool TDMARoutingSchedule.isSynched(){
     return TRUE;
   }
-  async command uint8_t TDMARoutingSchedule.maxRetransmit(){
+  command uint8_t TDMARoutingSchedule.maxRetransmit(){
     return schedule->maxRetransmit;
   }
-  async command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
+  command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
     return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
   }
   

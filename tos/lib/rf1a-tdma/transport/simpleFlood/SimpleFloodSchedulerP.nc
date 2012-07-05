@@ -43,7 +43,7 @@ module SimpleFloodSchedulerP{
     signal Send.sendDone(msg, error);
   }
 
-  async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
+  command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
     if (call TDMARoutingSchedule.isSynched() && state == S_PENDING){
       if(call TDMARoutingSchedule.ownsFrame(frameNum)){
         state = S_SENDING;

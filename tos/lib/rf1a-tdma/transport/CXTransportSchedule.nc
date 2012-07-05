@@ -1,3 +1,3 @@
 interface CXTransportSchedule {
-  async command bool isOrigin(uint16_t frameNum);
+  command bool isOrigin(uint16_t frameNum);
 }

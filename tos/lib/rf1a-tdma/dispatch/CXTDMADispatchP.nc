@@ -47,7 +47,7 @@ module CXTDMADispatchP{
     return owner != INVALID_OWNER;
   }
 
-  async event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
+  event rf1a_offmode_t SubCXTDMA.frameType(uint16_t frameNum){
     lastFrame = frameNum;
     if ( isClaimed() ){
       return signal CXTDMA.frameType[owner](frameNum);
@@ -64,7 +64,7 @@ module CXTDMADispatchP{
     }
   }
 
-  async event bool SubCXTDMA.getPacket(message_t** msg,
+  event bool SubCXTDMA.getPacket(message_t** msg,
       uint16_t frameNum){ 
     if ( isClaimed() ){
       return signal CXTDMA.getPacket[owner](msg,
@@ -74,7 +74,7 @@ module CXTDMADispatchP{
     }
   }
 
-  async event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
+  event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (isClaimed()){
       signal CXTDMA.sendDone[owner](msg, len, frameNum, error);
@@ -97,22 +97,22 @@ module CXTDMADispatchP{
       call CXPacket.type(dispMsg));
    }
 
-  async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
+  event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
   }
 
   default event void Resource.granted[uint8_t np](){}
 
-  default async event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
+  default event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
     return RF1A_OM_RX;
   }
-  default async event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, 
+  default event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, 
       uint16_t frameNum){ return FALSE;}
-  default async event void CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
+  default event void CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){}
 
-  default async event message_t* CXTDMA.receive[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
+  default event message_t* CXTDMA.receive[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     printf("Unexpected RM %x: ", NetworkProtocol);
     return msg;

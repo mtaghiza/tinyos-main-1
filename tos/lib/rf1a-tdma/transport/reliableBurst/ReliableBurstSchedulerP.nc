@@ -100,7 +100,7 @@ module ReliableBurstSchedulerP{
     return signal Receive.receive(msg, payload, len);
   }
   
-  async command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
+  command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
     if (call TDMARoutingSchedule.isSynched() &&
         call TDMARoutingSchedule.ownsFrame(frameNum)){
       return TRUE;

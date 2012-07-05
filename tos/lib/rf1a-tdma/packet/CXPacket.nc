@@ -8,7 +8,7 @@ interface CXPacket{
   command void setDestination(message_t* amsg, am_addr_t addr);
   command void setSource(message_t* amsg, am_addr_t addr);
   command uint16_t sn(message_t* amsg);
-  async command void newSn(message_t* amsg);
+  command void newSn(message_t* amsg);
   command uint8_t count(message_t* amsg);
   command void setCount(message_t* amsg, uint8_t cxcount);
   command void incCount(message_t* amsg);
