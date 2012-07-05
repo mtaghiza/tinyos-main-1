@@ -134,6 +134,19 @@ module CXTDMAPhysicalP {
   uint8_t adjustmentCount = 0;
   #endif
 
+
+  //async/race resolution vars
+ 
+  //send-done: either the completeSend call in FrameStartAlarm.fired
+  //  fails or we get a normal sendDone event from the physical layer.
+  task void completeSendDone();
+  norace uint16_t sdFrameNum;
+  norace error_t sdResult;
+  norace uint8_t sdLen;
+  norace uint32_t sdTimestamp;
+  norace message_t* sdMsg;
+  bool sdPending;
+
   //forward declarations
   bool getPacket();
   void completeCleanup();
@@ -509,7 +522,16 @@ module CXTDMAPhysicalP {
       //0.5 uS
       FS_TOGGLE_PIN;
       if (SUCCESS != error){
-        signal CXTDMA.sendDone(0,0, frameNum, error);
+        if (!sdPending){
+          sdPending = TRUE;
+          sdMsg = tx_msg;
+          sdLen = 0;
+          sdFrameNum = frameNum;
+          sdResult = error;
+          post completeSendDone();
+        }else{
+          setState(S_ERROR_f);
+        }
       }
       //0.5 uS
       FS_TOGGLE_PIN;
@@ -944,6 +966,10 @@ module CXTDMAPhysicalP {
     }
   }
 
+  
+
+  task void completeSendDone();
+
   /**
    * S_TRANSMITTING:
    *   phy.sendDone / signal sendDone, set phy timestamp if origin -> S_TX_CLEANUP 
@@ -951,23 +977,35 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
     sendCount++;
-    tx_msg = NULL;
-    if(checkState(S_TRANSMITTING)){
-      message_t* msg = (message_t*)buffer;
+    if(checkState(S_TRANSMITTING) && ! sdPending && (message_t*)buffer == tx_msg){
+      sdPending = TRUE;
+      sdFrameNum = frameNum;
+      sdResult = result;
+      sdLen = len;
+      sdMsg = tx_msg;
+      tx_msg = NULL;
       setState(S_TX_CLEANUP);
-      completeCleanup();
-      //set the phy timestamp if we are the source and this is the
-      //first time we've sent it.
-      if ( call CXPacket.source(msg) == TOS_NODE_ID 
-          && call CXPacket.count(msg) == 1){
-        printf_PHY_TIME("set phy\r\n");
-        call CXPacketMetadata.setPhyTimestamp(msg,
-          lastRECapture);
-      }
-      //TODO: this could be outside of interrupt context
-      signal CXTDMA.sendDone(msg, len, frameNum, result);
+      post completeSendDone();
     } else {
       setState(S_ERROR_e);
+    }
+  }
+
+  task void completeSendDone(){
+    if (checkState(S_TX_CLEANUP)){
+      completeCleanup();
+  
+      //set the phy timestamp if we are the source and this is the
+      //first time we've sent it.
+      if ( call CXPacket.source(sdMsg) == TOS_NODE_ID 
+          && call CXPacket.count(sdMsg) == 1){
+        printf_PHY_TIME("set phy\r\n");
+        call CXPacketMetadata.setPhyTimestamp(sdMsg,
+          sdTimestamp);
+      }
+      signal CXTDMA.sendDone(sdMsg, sdLen, sdFrameNum, sdResult);
+
+      atomic sdPending = FALSE;
     }
   }
 
