@@ -273,13 +273,15 @@ module CXTDMAPhysicalP {
   }
 
   task void pfsTask(){
+    bool localFsMissed;
     error_t error;
+    PFS_CYCLE_TOGGLE_PIN;
+    PFS_CYCLE_TOGGLE_PIN;
     printf_PFS("*%u %lu (%lu)\r\n", frameNum, 
       call PrepareFrameStartAlarm.getNow(), 
       call PrepareFrameStartAlarm.getAlarm());
-    PFS_CYCLE_TOGGLE_PIN;
-    PFS_CYCLE_TOGGLE_PIN;
-    if (!fsMissed){
+    atomic localFsMissed = fsMissed;
+    if (!localFsMissed){
       if (scStopPending){
         scStopError = call Resource.release();
         if (SUCCESS == scStopError){
@@ -633,8 +635,14 @@ module CXTDMAPhysicalP {
   //retrieve packet from upper layer and store it here until requested
   //from phy.
   bool getPacket(uint16_t fn){
-    gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), fn);
-    tx_msg = (message_t*)(gpBuf);
+    uint8_t* gpBufLocal;
+    uint16_t gpLenLocal;
+    bool gpResultLocal;
+
+    atomic gpResult = FALSE;
+
+    gpResultLocal = signal CXTDMA.getPacket((message_t**)(&gpBufLocal), fn);
+    tx_msg = (message_t*)(gpBufLocal);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.
     //This looks a little funny, but we're trying to make sure that
@@ -642,7 +650,7 @@ module CXTDMAPhysicalP {
     //timestamp or not, so that we can maintain synchronization
     //between the origin and the forwarder.
     if (tx_msg != NULL){
-      gpLen = (call Rf1aPacket.metadata(tx_msg))->payload_length;
+      gpLenLocal = (call Rf1aPacket.metadata(tx_msg))->payload_length;
       call CXPacket.incCount(tx_msg);
       {
         bool amSource = call CXPacket.source(tx_msg) == TOS_NODE_ID;
@@ -671,7 +679,12 @@ module CXTDMAPhysicalP {
       }
     }
 //    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
-    return gpResult;
+    atomic{
+      gpBuf = gpBufLocal;
+      gpLen = gpLenLocal;
+      gpResult = gpResultLocal;
+    }
+    return gpResultLocal;
   }
 
   //give back pointers to the most-recently-cached TX packet from
