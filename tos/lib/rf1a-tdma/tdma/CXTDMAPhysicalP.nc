@@ -671,9 +671,10 @@ module CXTDMAPhysicalP {
   //a resynchronization event (either starting to send a packet, or
   //upon successful reception of a packet).
   void resynch(){
-    call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
-    call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
-    
+    atomic{
+      call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
+      call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
+    }
   }
 
   /**
@@ -834,21 +835,6 @@ module CXTDMAPhysicalP {
         setState(S_ERROR_b);
     }
   }
-
-  norace am_addr_t reportRXSrc;
-  norace uint32_t reportRXSn;
-
-  task void reportRX(){
-    am_addr_t tempRXSrc;
-    uint32_t tempRXSn;
-    atomic {
-      tempRXSrc = reportRXSrc;
-      tempRXSn = reportRXSn;
-    }
-    if (tempRXSrc == 0){
-      printf("RX %u %lu\r\n", tempRXSrc, tempRXSn);
-    }
-  }
   
   uint8_t lastRxBuf[64];
   uint8_t lastRxLen;
@@ -867,6 +853,65 @@ module CXTDMAPhysicalP {
     signal TDMAPhySchedule.resynched(resynchFrame);
   }
 
+  bool rdPending;
+  norace uint8_t* rdBuffer;
+  norace unsigned int rdCount;
+  norace int rdResult;
+  norace bool rdS_sr;
+  norace uint32_t rdLastRECapture;
+  norace uint16_t rdFrameNum;
+
+  task void completeReceiveDone(){
+    if(checkState(S_RECEIVING)){
+      if (SUCCESS == rdResult){
+        message_t* msg = (message_t*)rdBuffer;
+        setState(S_RX_CLEANUP);
+        //count includes the header length, so we need to subtract it
+        //here.
+        call Packet.setPayloadLength(msg,
+          rdCount-sizeof(message_header_t));
+        if (call Rf1aPacket.crcPassed(msg)){
+
+          receiveCount++;
+            //Nope, this is done during the TX process.
+  //          call CXPacket.setCount((message_t*)buffer, 
+  //            call CXPacket.count((message_t*)buffer) +1);
+          printf_PHY_TIME("R@ %lu %u\r\n", rdLastRECapture, rdFrameNum);
+          call CXPacketMetadata.setSymbolRate(msg,
+            rdS_sr);
+          printf_PHY_TIME("set phy\r\n");
+          call CXPacketMetadata.setPhyTimestamp(msg,
+            rdLastRECapture);
+          call CXPacketMetadata.setFrameNum(msg,
+            rdFrameNum);
+          call CXPacketMetadata.setReceivedCount(msg,
+            call CXPacket.count(msg));
+          rx_msg = signal CXTDMA.receive(msg, 
+            rdCount - sizeof(rf1a_ieee154_t),
+            rdFrameNum, rdLastRECapture);
+        } else {
+          printf_TESTBED_CRC("R! %u\r\n", frameNum);
+        }
+        completeCleanup();
+      } else if (ENOMEM == rdResult){
+        //this gives ENOMEM if we don't receive the entire packet, I
+        //guess due to interference or something? 
+        //anyway, nothing to be done about it so just clean up.
+        setState(S_RX_CLEANUP);
+        completeCleanup();
+      } else if (ECANCEL == rdResult){
+        //RXFIFO overflow leads to this (happens if the length field
+        //is corrupted/too long, for instance).
+        setState(S_RX_CLEANUP);
+        completeCleanup();
+      } else {
+//        printf_TESTBED("!\r\n");
+        printf("Phy.receiveDone: %s\r\n", decodeError(rdResult));
+        setState(S_ERROR_c);
+      }
+    }
+    atomic rdPending = FALSE;
+  }
 
   /**
    * S_RECEIVING: frame has started, expecting data.
@@ -875,92 +920,46 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
-    reportRXSrc = call CXPacket.source((message_t*) buffer);
-    reportRXSn = call CXPacket.sn((message_t*) buffer);
-//    printf_TMP("RD %u\r\n", frameNum);
-//    post reportRX();
-//    printf_TESTBED("RD.");
-    if (checkState(S_RECEIVING)){
-//      printf_TESTBED("r");
-      if (SUCCESS == result){
-        message_t* msg = (message_t*) buffer;
-        message_metadata_t* mmd = (message_metadata_t*)(&(msg->metadata));
-        rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
-//        printf_TESTBED("s");
-
-        setState(S_RX_CLEANUP);
-        call Rf1aPhysicalMetadata.store(rf1aMD);
-        //count includes the header length, so we need to subtract it
-        //here.
-        call Packet.setPayloadLength(msg,
-          count-sizeof(message_header_t));
-        if (call Rf1aPacket.crcPassed((message_t*)buffer)){
-          if (call CXPacket.getScheduleNum((message_t*)buffer) == 
-              signal TDMAPhySchedule.getScheduleNum()){
-            resynchFrame = frameNum;
-            resynch();
-            post reportResynch();
+    //this is only ever signalled from interrupt context, so it
+    //doesn't really need to be atomic. but otherwise the compiler
+    //complains about access to rdPending.
+    atomic{
+      if (checkState(S_RECEIVING)){
+        if (!rdPending){
+          rdBuffer = buffer;
+          rdCount = count;
+          rdResult = result;
+          rdS_sr = s_sr;
+          rdLastRECapture = lastRECapture;
+          rdFrameNum = frameNum;
+    
+          //These should be done immediately: store radio metadata, resynch
+          //  alarms
+          if (checkState(S_RECEIVING) && result == SUCCESS){
+            message_t* msg = (message_t*) buffer;
+            message_metadata_t* mmd = (message_metadata_t*)(&(msg->metadata));
+            rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
+            call Rf1aPhysicalMetadata.store(rf1aMD);
+    
+            if (call Rf1aPacket.crcPassed(msg) 
+                && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+              resynchFrame = frameNum;
+              resynch();
+              post reportResynch();
+            } 
           }
-          receiveCount++;
-          printf_TESTBED_CRC("R. %u\r\n", frameNum);
-          atomic{
-            //Nope, this is done during the TX process.
-  //          call CXPacket.setCount((message_t*)buffer, 
-  //            call CXPacket.count((message_t*)buffer) +1);
-            printf_PHY_TIME("R@ %lu %u\r\n", lastRECapture, frameNum);
-            call CXPacketMetadata.setSymbolRate((message_t*)buffer,
-              s_sr);
-            printf_PHY_TIME("set phy\r\n");
-            call CXPacketMetadata.setPhyTimestamp((message_t*)buffer,
-              lastRECapture);
-            call CXPacketMetadata.setFrameNum((message_t*)buffer,
-              frameNum);
-            call CXPacketMetadata.setReceivedCount((message_t*)buffer,
-              call CXPacket.count((message_t*)buffer));
-            signal TDMAPhySchedule.peek((message_t*) buffer, frameNum,
-              lastRECapture);
-            rx_msg = signal CXTDMA.receive((message_t*)buffer, 
-              count - sizeof(rf1a_ieee154_t),
-              frameNum, lastRECapture);
-          }
+          rdPending = TRUE;
+          post completeReceiveDone();
         } else {
-//          #if DEBUG_TESTBED_CRC == 1
-//          {
-//            uint8_t ghettoRXCRC = 0;
-//            uint8_t i;
-//            for(i = 0; i< count; i++){
-//              ghettoRXCRC ^= buffer[i];
-//            }
-//            ghettoRXCRC ^= call CXPacket.count((message_t*) buffer);
-//            printf("RC %x \r\n", ghettoRXCRC);
-//          }
-//          #endif
-          printf_TESTBED_CRC("R! %u\r\n", frameNum);
+          setState(S_ERROR_f);
         }
-        completeCleanup();
-      } else if (ENOMEM == result){
-//        printf_TESTBED("m\r\n");
-        //this gives ENOMEM if we don't receive the entire packet, I
-        //guess due to interference or something? 
-        //anyway, nothing to be done about it so just clean up.
-        setState(S_RX_CLEANUP);
-        completeCleanup();
-      } else if (ECANCEL == result){
-        //RXFIFO overflow leads to this (happens if the length field
-        //is corrupted/too long, for instance).
-        setState(S_RX_CLEANUP);
-        completeCleanup();
+      
+      }else if (checkState(S_RX_READY)){
+        //ignore it, we got a packet but didn't get the SFD event so we
+        //can't timestamp it.
       } else {
-//        printf_TESTBED("!\r\n");
-        printf("Phy.receiveDone: %s\r\n", decodeError(result));
-        setState(S_ERROR_c);
+        setState(S_ERROR_d);
       }
-    }else if (checkState(S_RX_READY)){
-//      printf_TESTBED("? %x\r\n", state);
-      //ignore it, we got a packet but didn't get the SFD event so we
-      //can't timestamp it.
-    } else {
-      setState(S_ERROR_d);
     }
   }
 

@@ -277,9 +277,6 @@ module SlaveSchedulerP {
     framesSinceSynch = 0;
   }
 
-  event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
-    uint32_t timestamp){}
-
   command bool TDMARoutingSchedule.isSynched(){
     // we pretend that we're synched if we're requesting a slot. yugh
     if (state == S_REQUESTING 

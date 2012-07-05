@@ -87,15 +87,9 @@ module RouterSchedulerP {
   event uint8_t SubTDMAPhySchedule.getScheduleNum(){
     return signal TDMAPhySchedule.getScheduleNum[CX_SCHEDULER_MASTER]();
   }
-  event void SubTDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
-    uint32_t timestamp){
-    signal TDMAPhySchedule.peek[CX_SCHEDULER_MASTER](msg, frameNum,
-      timestamp);
-  }
 
   default event bool TDMAPhySchedule.isInactive[uint8_t clientId](uint16_t frameNum){ return TRUE;}
   default event uint8_t TDMAPhySchedule.getScheduleNum[uint8_t clientId](){ return 0; }
-  default event void TDMAPhySchedule.peek[uint8_t clientId](message_t* msg, uint16_t frameNum, uint32_t timestamp){ }
   default event void TDMAPhySchedule.resynched[uint8_t clientId](uint16_t frameNum){ }
   
 

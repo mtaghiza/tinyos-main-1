@@ -5,8 +5,6 @@ interface TDMAPhySchedule{
 
   async command uint32_t getNow();
   event uint8_t getScheduleNum();
-  event void peek(message_t* msg, uint16_t frameNum, 
-    uint32_t timestamp);
   event void resynched(uint16_t frameNum);
 
   //TODO: should come from transport layer AND main schedule

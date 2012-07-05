@@ -379,9 +379,6 @@ module MasterSchedulerP {
     return schedule->scheduleNum;
   }
 
-  event void TDMAPhySchedule.peek(message_t* msg, uint16_t frameNum, 
-    uint32_t timestamp){}
-
   event void TDMAPhySchedule.resynched(uint16_t frameNum){ }
   
   command uint16_t TDMARoutingSchedule.framesPerSlot(){
