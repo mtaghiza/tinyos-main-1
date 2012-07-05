@@ -111,7 +111,7 @@ module CXFloodP{
     atomic{
       if (!txPending){
         uint16_t clearTime = 0xff;
-        if ((call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED)){
+        if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
           clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
             call CXPacket.destination(msg));
         }
@@ -131,7 +131,7 @@ module CXFloodP{
   //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
           //preserve pre-routed flag
           call CXPacket.setNetworkProtocol(msg, 
-            (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED) | CX_RM_FLOOD);
+            (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED) | CX_NP_FLOOD);
           printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
           return SUCCESS;
         }
@@ -172,7 +172,7 @@ module CXFloodP{
           //pre-routed: clear when destination reached, if distance
           //known. otherwise, max-depth + 1 (since some nodes at
           //maxDepth will rebroadcast)
-          if (call CXPacket.getNetworkProtocol(tx_msg) & CX_RM_PREROUTED){
+          if (call CXPacket.getNetworkProtocol(tx_msg) & CX_NP_PREROUTED){
             clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
               call CXPacket.destination(tx_msg));
           }
@@ -292,7 +292,7 @@ module CXFloodP{
 
         //check for routed flag: ignore it if the routed flag is
         //set, but we are not on the path.
-        if (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED){
+        if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
           bool isBetween;
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
@@ -330,7 +330,7 @@ module CXFloodP{
             //to forward it. This lets us shave one frame off the
             //inter-packet spacing.
             if (call CXPacket.isForMe(msg) && 
-                (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED)){
+                (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
               txLeft = 0;
             }
             fwd_msg = msg;

@@ -53,14 +53,14 @@ module UnreliableBurstSchedulerP{
       //Idle or ready (but for a different destination):
       //  We need to set up a new route
       if (state == S_IDLE || (state == S_READY && addr != lastDest)){
-        call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
+        call CXPacket.setNetworkProtocol(msg, CX_NP_NONE);
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
           state = S_SETUP;
         }
       //sending along an established set of paths
       } else if (state == S_READY && addr == lastDest){
-        call CXPacket.setNetworkProtocol(msg, CX_RM_PREROUTED);
+        call CXPacket.setNetworkProtocol(msg, CX_NP_PREROUTED);
         error = call FloodSend.send(msg, len);
         if (error == SUCCESS){
           state = S_SENDING;

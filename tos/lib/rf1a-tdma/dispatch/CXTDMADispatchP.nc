@@ -53,9 +53,9 @@ module CXTDMADispatchP{
       return signal CXTDMA.frameType[owner](frameNum);
     } else {
       rf1a_offmode_t ret;
-      ret = signal CXTDMA.frameType[CX_RM_FLOOD](frameNum);
+      ret = signal CXTDMA.frameType[CX_NP_FLOOD](frameNum);
       if ( ! isClaimed()){
-        ret = signal CXTDMA.frameType[CX_RM_SCOPEDFLOOD](frameNum);
+        ret = signal CXTDMA.frameType[CX_NP_SCOPEDFLOOD](frameNum);
       }
       if ( ! isClaimed()){
         ret = RF1A_OM_RX;
@@ -99,7 +99,7 @@ module CXTDMADispatchP{
 
   async event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_RM_PREROUTED](msg, len, frameNum, timestamp);
+    return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
   }
 
   default event void Resource.granted[uint8_t np](){}

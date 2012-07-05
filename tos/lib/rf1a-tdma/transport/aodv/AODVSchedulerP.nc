@@ -119,7 +119,7 @@ module AODVSchedulerP{
 //        printf_TMP("UBS: call sfs.s\r\n");
         printf_AODV_CLEAR("SF %u (%u)\r\n", lastFn, nextSlotStart);
         printf_AODV_S("S");
-        call CXPacket.setNetworkProtocol(msg, CX_RM_NONE);
+        call CXPacket.setNetworkProtocol(msg, CX_NP_NONE);
         call CXPacketMetadata.setRequiresClear(msg, TRUE);
         error = call ScopedFloodSend.send(msg, len);
         if (error == SUCCESS){
@@ -130,7 +130,7 @@ module AODVSchedulerP{
         printf_AODV_S("P");
         if (destination == lastDestination){
           printf_AODV_CLEAR("F %u (%u %x)\r\n", lastFn, nextSlotStart, state);
-          call CXPacket.setNetworkProtocol(msg, CX_RM_PREROUTED);
+          call CXPacket.setNetworkProtocol(msg, CX_NP_PREROUTED);
           call CXPacketMetadata.setRequiresClear(msg, TRUE);
           error = call FloodSend.send(msg, len);
 

@@ -18,8 +18,8 @@ configuration CXNetworkC {
   CXTDMADispatchC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
   components CXFloodC;
-  CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_FLOOD];
-  CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_FLOOD];
+  CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_NP_FLOOD];
+  CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_NP_FLOOD];
   CXFloodC.CXPacket -> CXPacketStackC.CXPacket;
   CXFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXFloodC.LayerPacket -> CXPacketStackC.CXPacketBody;
@@ -30,8 +30,8 @@ configuration CXNetworkC {
   FloodReceive = CXFloodC;
 
   components CXScopedFloodC;
-  CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_SCOPEDFLOOD];
-  CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_SCOPEDFLOOD];
+  CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_NP_SCOPEDFLOOD];
+  CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_NP_SCOPEDFLOOD];
   CXScopedFloodC.CXPacket -> CXPacketStackC.CXPacket;
   CXScopedFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXScopedFloodC.AMPacket -> CXPacketStackC.AMPacket;

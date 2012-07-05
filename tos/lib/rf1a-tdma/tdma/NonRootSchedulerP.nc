@@ -350,8 +350,8 @@ module NonRootSchedulerP{
       TOS_NODE_ID,
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
-      (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
-      ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
+      (call CXPacket.getNetworkProtocol(msg)) & ~CX_NP_PREROUTED,
+      ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)?1:0,
       error);
 
     if (startPending){
@@ -412,7 +412,7 @@ module NonRootSchedulerP{
 //  //we are origin if reply needed and this is the start of our slot.
 //  async command bool TDMARoutingSchedule.isOrigin[uint8_t rm](uint16_t frameNum){
 //    printf_SCHED_IO("io: ");
-//    if ((rm == CX_RM_FLOOD) 
+//    if ((rm == CX_NP_FLOOD) 
 //        && replyPending 
 //        && (frameNum == (TOS_NODE_ID * (curSchedDescriptor->framesPerSlot)))){
 //      printf_SCHED_IO("T\r\n");

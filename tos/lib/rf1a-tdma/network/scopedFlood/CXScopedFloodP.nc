@@ -248,8 +248,8 @@ module CXScopedFloodP{
           call CXPacket.setType(msg, CX_TYPE_DATA);
           //preserve pre-routed bit
           call CXPacket.setNetworkProtocol(msg, 
-            ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)
-            | CX_RM_SCOPEDFLOOD);
+            ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)
+            | CX_NP_SCOPEDFLOOD);
           originDataPending = TRUE;
           return SUCCESS;
         }
@@ -459,7 +459,7 @@ module CXScopedFloodP{
           //if the data we sent was pre-routed, we're done right
           //now. Might be good to wait for another frame for anything
           //left to clear.
-          if ( call CXPacket.getNetworkProtocol(origin_data_msg) & CX_RM_PREROUTED){
+          if ( call CXPacket.getNetworkProtocol(origin_data_msg) & CX_NP_PREROUTED){
             ssdFrame = frameNum;
             ssdPoster = 2;
             post signalSendDone();
@@ -540,7 +540,7 @@ module CXScopedFloodP{
       call CXPacket.init(origin_ack_msg);
       call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
       call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
-      call CXPacket.setNetworkProtocol(origin_ack_msg, CX_RM_SCOPEDFLOOD);
+      call CXPacket.setNetworkProtocol(origin_ack_msg, CX_NP_SCOPEDFLOOD);
       call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
       call CXPacket.setTransportProtocol(origin_ack_msg, 
         call CXPacket.getTransportProtocol(rx_msg));
@@ -592,7 +592,7 @@ module CXScopedFloodP{
 
       printf_SF_RX("i");
       //drop pre-routed packets for which we aren't on a route.
-      if (call CXPacket.getNetworkProtocol(msg) & CX_RM_PREROUTED){
+      if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
         bool isBetween;
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 

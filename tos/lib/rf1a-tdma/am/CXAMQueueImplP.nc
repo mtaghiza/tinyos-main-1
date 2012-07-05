@@ -202,8 +202,8 @@ implementation {
           call CXPacket.destination(msg),
           call CXPacket.sn(msg),
           call CXPacket.getOriginalFrameNum(msg),
-          (call CXPacket.getNetworkProtocol(msg)) & ~CX_RM_PREROUTED,
-          ((call CXPacket.getNetworkProtocol(msg)) & CX_RM_PREROUTED)?1:0,
+          (call CXPacket.getNetworkProtocol(msg)) & ~CX_NP_PREROUTED,
+          ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)?1:0,
           call CXPacket.getTransportProtocol(msg),
           call AMPacket.type(msg),
           err);

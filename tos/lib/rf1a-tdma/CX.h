@@ -19,11 +19,10 @@ typedef nx_struct cx_header_t {
 } cx_header_t;
 
 enum{
-  CX_RM_FLOOD = 0x01,
-  CX_RM_SCOPEDFLOOD = 0x02,
-  CX_RM_AODV = 0x03,
-  CX_RM_PREROUTED = 0x10,
-  CX_RM_NONE = 0x00,
+  CX_NP_FLOOD = 0x01,
+  CX_NP_SCOPEDFLOOD = 0x02,
+  CX_NP_PREROUTED = 0x10,
+  CX_NP_NONE = 0x00,
 };
 
 typedef nx_struct cx_ack_t{
