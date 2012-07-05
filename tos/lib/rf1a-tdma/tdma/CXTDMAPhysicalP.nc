@@ -147,8 +147,19 @@ module CXTDMAPhysicalP {
   norace message_t* sdMsg;
   bool sdPending;
 
+  norace uint8_t* rdBuffer;
+  norace unsigned int rdCount;
+  norace int rdResult;
+  norace bool rdS_sr;
+  norace uint32_t rdLastRECapture;
+  norace uint16_t rdFrameNum;
+  bool rdPending;
+
+  //protected by pfsPending
+  norace uint16_t pfsFrameNum;
+
   //forward declarations
-  bool getPacket();
+  bool getPacket(uint16_t fn);
   void completeCleanup();
   task void signalStopDone();
   task void debugConfig();
@@ -252,8 +263,13 @@ module CXTDMAPhysicalP {
     }
     PFS_SET_PIN;
     frameNum = (frameNum + 1)%(s_totalFrames);
-    pfsPending = TRUE;
-    post pfsTask();
+    atomic{
+      if (!pfsPending){
+        pfsFrameNum = frameNum;
+        pfsPending = TRUE;
+        post pfsTask();
+      }
+    }
   }
 
   task void pfsTask(){
@@ -275,14 +291,14 @@ module CXTDMAPhysicalP {
         }
         post signalStopDone();
         PFS_CLEAR_PIN;
-        pfsPending = FALSE;
+        atomic pfsPending = FALSE;
         return;
       }
-      signal FrameStarted.frameStarted(frameNum);
+      signal FrameStarted.frameStarted(pfsFrameNum);
       //0.5uS
       PFS_TOGGLE_PIN;
       
-      if (frameNum == s_totalFrames - 1){
+      if (pfsFrameNum == s_totalFrames - 1){
         post reportStats();
       }
   
@@ -290,7 +306,7 @@ module CXTDMAPhysicalP {
       //If we're currently not inactive, but this frame is unused, sleep
       //the radio.
       if (!checkState(S_INACTIVE) 
-          && signal TDMAPhySchedule.isInactive(frameNum) ){
+          && signal TDMAPhySchedule.isInactive(pfsFrameNum) ){
         if (SUCCESS == call Rf1aPhysical.sleep()){
           call FrameStartAlarm.stop();
           call FrameWaitAlarm.stop();
@@ -301,7 +317,7 @@ module CXTDMAPhysicalP {
         }
       //If we're inactive, but this frame is used, wakeup the radio
       }else if (checkState(S_INACTIVE) 
-          && ! signal TDMAPhySchedule.isInactive(frameNum)){
+          && ! signal TDMAPhySchedule.isInactive(pfsFrameNum)){
         if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
           call FrameStartAlarm.startAt(
             call PrepareFrameStartAlarm.getAlarm(), 
@@ -323,10 +339,10 @@ module CXTDMAPhysicalP {
         PFS_TOGGLE_PIN;
   
         IS_TX_CLEAR_PIN;
-        switch(signal CXTDMA.frameType(frameNum)){
+        switch(signal CXTDMA.frameType(pfsFrameNum)){
           case RF1A_OM_FSTXON:
-            printf_SW_TOPO("F %u\r\n", frameNum);
-            if (getPacket()){
+            printf_SW_TOPO("F %u\r\n", pfsFrameNum);
+            if (getPacket(pfsFrameNum)){
             IS_TX_SET_PIN;
             //0.75 uS
             PFS_TOGGLE_PIN;
@@ -383,13 +399,13 @@ module CXTDMAPhysicalP {
             break;
           default:
             setState(S_ERROR_1);
-            pfsPending = FALSE;
+            atomic pfsPending = FALSE;
             return;
         }
       } else if (checkState(S_OFF)){
         //sometimes see this after wdtpw reset
         PFS_CLEAR_PIN;
-        pfsPending = FALSE;
+        atomic pfsPending = FALSE;
         return;
       } else if (checkState(S_INACTIVE)){
         //nothing else to do, just reschedule alarm.
@@ -412,8 +428,10 @@ module CXTDMAPhysicalP {
     //16 uS
     PFS_SET_PIN;
     PFS_CLEAR_PIN;
-    pfsPending = FALSE;
-    fsMissed = FALSE;
+    atomic {
+      pfsPending = FALSE;
+      fsMissed = FALSE;
+    }
   }
 
   /**
@@ -614,8 +632,8 @@ module CXTDMAPhysicalP {
 
   //retrieve packet from upper layer and store it here until requested
   //from phy.
-  bool getPacket(){
-    gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), frameNum);
+  bool getPacket(uint16_t fn){
+    gpResult = signal CXTDMA.getPacket((message_t**)(&gpBuf), fn);
     tx_msg = (message_t*)(gpBuf);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.
@@ -649,7 +667,7 @@ module CXTDMAPhysicalP {
         call CXPacket.setScheduleNum(tx_msg,
           lastSentOrigin? mySN: curSN);
         call CXPacket.setOriginalFrameNum(tx_msg,
-          lastSentOrigin? frameNum: curOF);
+          lastSentOrigin? fn: curOF);
       }
     }
 //    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
@@ -853,13 +871,6 @@ module CXTDMAPhysicalP {
     signal TDMAPhySchedule.resynched(resynchFrame);
   }
 
-  bool rdPending;
-  norace uint8_t* rdBuffer;
-  norace unsigned int rdCount;
-  norace int rdResult;
-  norace bool rdS_sr;
-  norace uint32_t rdLastRECapture;
-  norace uint16_t rdFrameNum;
 
   task void completeReceiveDone(){
     if(checkState(S_RECEIVING)){
