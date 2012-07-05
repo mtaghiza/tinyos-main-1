@@ -628,8 +628,7 @@ module CXTDMAPhysicalP {
 
 
   bool gpResult;
-  uint8_t* gpBuf;
-  uint16_t gpLen;
+  uint16_t tx_len;
   
 
   //retrieve packet from upper layer and store it here until requested
@@ -680,8 +679,8 @@ module CXTDMAPhysicalP {
     }
 //    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
     atomic{
-      gpBuf = gpBufLocal;
-      gpLen = gpLenLocal;
+      tx_msg = (message_t*)gpBufLocal;
+      tx_len = gpLenLocal;
       gpResult = gpResultLocal;
     }
     return gpResultLocal;
@@ -691,8 +690,8 @@ module CXTDMAPhysicalP {
   //upper layers.
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){
-    *buffer = gpBuf;
-    *len = gpLen;
+    *buffer = (uint8_t*)tx_msg;
+    *len = tx_len;
     return gpResult;
   }
 
