@@ -17,11 +17,6 @@ configuration CXNetworkC {
   CXTDMADispatchC.CXPacket -> CXPacketStackC.CXPacket;
   CXTDMADispatchC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
-  //this is just used to keep the enumerated arbiter happy
-  enum{
-    CX_RM_FLOOD_UC = unique(CXTDMA_RM_RESOURCE),
-  };
-
   components CXFloodC;
   CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_FLOOD];
   CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_RM_FLOOD];
@@ -33,11 +28,6 @@ configuration CXNetworkC {
 
   FloodSend = CXFloodC;
   FloodReceive = CXFloodC;
-
-  //this is just used to keep the enumerated arbiter happy
-  enum{
-    CX_RM_SCOPEDFLOOD_UC = unique(CXTDMA_RM_RESOURCE),
-  };
 
   components CXScopedFloodC;
   CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_RM_SCOPEDFLOOD];
