@@ -65,7 +65,6 @@ module RouterSchedulerP {
     return FAIL;
   }
 
-
   command error_t TDMAPhySchedule.setSchedule[uint8_t clientId](uint32_t startAt,
       uint16_t atFrameNum, 
       uint16_t totalFrames, 
@@ -85,9 +84,6 @@ module RouterSchedulerP {
     return signal TDMAPhySchedule.isInactive[CX_SCHEDULER_MASTER](frameNum);
   }
   
-  event int32_t SubTDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ 
-    return signal TDMAPhySchedule.getFrameAdjustment[CX_SCHEDULER_MASTER](frameNum);
-  }
   event uint8_t SubTDMAPhySchedule.getScheduleNum(){
     return signal TDMAPhySchedule.getScheduleNum[CX_SCHEDULER_MASTER]();
   }
@@ -98,7 +94,6 @@ module RouterSchedulerP {
   }
 
   default event bool TDMAPhySchedule.isInactive[uint8_t clientId](uint16_t frameNum){ return TRUE;}
-  default event int32_t TDMAPhySchedule.getFrameAdjustment[uint8_t clientId](uint16_t frameNum){ return 0; }
   default event uint8_t TDMAPhySchedule.getScheduleNum[uint8_t clientId](){ return 0; }
   default event void TDMAPhySchedule.peek[uint8_t clientId](message_t* msg, uint16_t frameNum, uint32_t timestamp){ }
   default event void TDMAPhySchedule.resynched[uint8_t clientId](uint16_t frameNum){ }

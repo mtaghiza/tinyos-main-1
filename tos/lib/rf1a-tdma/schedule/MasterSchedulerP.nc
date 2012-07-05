@@ -375,7 +375,6 @@ module MasterSchedulerP {
     return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
   }
 
-  event int32_t TDMAPhySchedule.getFrameAdjustment(uint16_t frameNum){ return 0;}
   event uint8_t TDMAPhySchedule.getScheduleNum(){
     return schedule->scheduleNum;
   }

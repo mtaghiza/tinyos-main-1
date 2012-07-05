@@ -406,7 +406,7 @@ module CXTDMAPhysicalP {
 //      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), 
-      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
+      s_frameLen );
 //    printf_PFS("%lu\r\n",
 //      call PrepareFrameStartAlarm.getAlarm());
     //16 uS
@@ -598,8 +598,7 @@ module CXTDMAPhysicalP {
     FS_TOGGLE_PIN;
     if (! inError()){
       call FrameStartAlarm.startAt(lastFsa,
-        s_frameLen 
-        + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
+        s_frameLen );
     }
     //16 uS
     FS_SET_PIN;
@@ -656,7 +655,6 @@ module CXTDMAPhysicalP {
 //    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
     return gpResult;
   }
-
 
   //give back pointers to the most-recently-cached TX packet from
   //upper layers.
