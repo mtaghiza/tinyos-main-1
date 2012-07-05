@@ -637,49 +637,50 @@ module CXTDMAPhysicalP {
     uint8_t* gpBufLocal;
     uint16_t gpLenLocal;
     bool gpResultLocal;
+    message_t* tx_msgLocal;
 
     atomic gpResult = FALSE;
 
     gpResultLocal = signal CXTDMA.getPacket((message_t**)(&gpBufLocal), fn);
-    tx_msg = (message_t*)(gpBufLocal);
+    tx_msgLocal = (message_t*)(gpBufLocal);
     //set the tx timestamp if we are the origin
     //  and this is the first transmission.
     //This looks a little funny, but we're trying to make sure that
     //the same instructions are executed whether we write a new
     //timestamp or not, so that we can maintain synchronization
     //between the origin and the forwarder.
-    if (tx_msg != NULL){
-      gpLenLocal = (call Rf1aPacket.metadata(tx_msg))->payload_length;
-      call CXPacket.incCount(tx_msg);
+    if (tx_msgLocal != NULL){
+      gpLenLocal = (call Rf1aPacket.metadata(tx_msgLocal))->payload_length;
+      call CXPacket.incCount(tx_msgLocal);
       {
-        bool amSource = call CXPacket.source(tx_msg) == TOS_NODE_ID;
-        bool isFirst = call CXPacket.count(tx_msg) == 1;
+        bool amSource = call CXPacket.source(tx_msgLocal) == TOS_NODE_ID;
+        bool isFirst = call CXPacket.count(tx_msgLocal) == 1;
         uint32_t lastAlarm = call FrameStartAlarm.getAlarm();
-        uint32_t curTimestamp = call CXPacket.getTimestamp(tx_msg);
-        uint8_t curSN = call CXPacket.getScheduleNum(tx_msg);
+        uint32_t curTimestamp = call CXPacket.getTimestamp(tx_msgLocal);
+        uint8_t curSN = call CXPacket.getScheduleNum(tx_msgLocal);
         uint8_t mySN = signal TDMAPhySchedule.getScheduleNum();
-        uint16_t curOF = call CXPacket.getOriginalFrameNum(tx_msg);
+        uint16_t curOF = call CXPacket.getOriginalFrameNum(tx_msgLocal);
         bool lastSentOrigin = amSource && isFirst;
         //lastAlarm *should* be valid, AFAIK, since FSA is already set
         //up at this point.
         #if DEBUG_FEC == 1
-        call CXPacket.setTimestamp(tx_msg, 
+        call CXPacket.setTimestamp(tx_msgLocal, 
           lastSentOrigin? 0xdeadbeef : curTimestamp);
         #else
-  //      call CXPacket.setTimestamp(tx_msg, 
+  //      call CXPacket.setTimestamp(tx_msgLocal, 
   //        lastSentOrigin? 0xdeadbeef : curTimestamp);
-        call CXPacket.setTimestamp(tx_msg, 
+        call CXPacket.setTimestamp(tx_msgLocal, 
           lastSentOrigin? lastAlarm : curTimestamp);
         #endif
-        call CXPacket.setScheduleNum(tx_msg,
+        call CXPacket.setScheduleNum(tx_msgLocal,
           lastSentOrigin? mySN: curSN);
-        call CXPacket.setOriginalFrameNum(tx_msg,
+        call CXPacket.setOriginalFrameNum(tx_msgLocal,
           lastSentOrigin? fn: curOF);
       }
     }
 //    printf_TMP("buf: %p len: %u\r\n", gpBuf, gpLen);
     atomic{
-      tx_msg = (message_t*)gpBufLocal;
+      tx_msg = (message_t*)tx_msgLocal;
       tx_len = gpLenLocal;
       gpResult = gpResultLocal;
     }
