@@ -8,7 +8,7 @@ module CXTDMADispatchP{
   uses interface CXPacket;
   uses interface CXPacketMetadata;
 
-  provides interface Resource[uint8_t np];
+  provides interface TaskResource[uint8_t np];
 } implementation {
 
   enum {
@@ -18,11 +18,7 @@ module CXTDMADispatchP{
   uint16_t lastFrame;
   uint8_t owner = INVALID_OWNER;
 
-  async command error_t Resource.request[uint8_t np](){
-    return FAIL;
-  }
-
-  async command error_t Resource.immediateRequest[uint8_t np](){
+  command error_t TaskResource.immediateRequest[uint8_t np](){
     if (owner == INVALID_OWNER){
       owner = np;
       return SUCCESS;
@@ -31,7 +27,7 @@ module CXTDMADispatchP{
     }
   }
 
-  async command error_t Resource.release[uint8_t np](){
+  command error_t TaskResource.release[uint8_t np](){
     if (owner == np){
       owner = INVALID_OWNER;
       return SUCCESS;
@@ -39,7 +35,7 @@ module CXTDMADispatchP{
     return FAIL;
   }
 
-  async command bool Resource.isOwner[uint8_t np](){
+  command bool TaskResource.isOwner[uint8_t np](){
     return np == owner;
   }
 
@@ -101,8 +97,6 @@ module CXTDMADispatchP{
       uint16_t frameNum, uint32_t timestamp){
     return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
   }
-
-  default event void Resource.granted[uint8_t np](){}
 
   default event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
     return RF1A_OM_RX;

@@ -8,7 +8,7 @@ configuration CXScopedFloodC{
   uses interface Packet as LayerPacket;
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
-  uses interface Resource;
+  uses interface TaskResource;
   uses interface CXRoutingTable;
   uses interface CXTransportSchedule[uint8_t tProto];
 
@@ -22,7 +22,7 @@ configuration CXScopedFloodC{
   CXScopedFloodP.AMPacket = AMPacket;
   CXTDMA = CXScopedFloodP.CXTDMA;
   LayerPacket = CXScopedFloodP.LayerPacket;
-  CXScopedFloodP.Resource = Resource;
+  CXScopedFloodP.TaskResource = TaskResource;
   CXScopedFloodP.CXRoutingTable = CXRoutingTable;
   CXScopedFloodP.TDMARoutingSchedule = TDMARoutingSchedule;
 

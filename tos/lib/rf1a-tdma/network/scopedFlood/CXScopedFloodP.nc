@@ -16,7 +16,7 @@ module CXScopedFloodP{
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
   uses interface CXTransportSchedule[uint8_t tProto];
-  uses interface Resource;
+  uses interface TaskResource;
 
   uses interface CXRoutingTable;
 } implementation {
@@ -299,7 +299,7 @@ module CXScopedFloodP{
         routeUpdatePending = FALSE;
         lastDataSrc = 0xffff;
         lastDataSn = 0;
-        call Resource.release();
+        call TaskResource.release();
         //no ack by the end of the slot, done.
         if (originDataSent){
           sendDoneError = ENOACK;
@@ -318,7 +318,7 @@ module CXScopedFloodP{
       if (state == S_IDLE){
         //TODO: should move request/release of this resource into
         //functions that perform any necessary book-keeping.
-        if (SUCCESS == call Resource.immediateRequest()){
+        if (SUCCESS == call TaskResource.immediateRequest()){
           uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
           uint16_t dataFramesLeft = 
             call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
@@ -425,7 +425,7 @@ module CXScopedFloodP{
       originDataPending = FALSE;
       originDataSent = FALSE;
       ecwFrame = 0;
-      call Resource.release();
+      call TaskResource.release();
       setState(S_IDLE);
     }
     signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
@@ -471,7 +471,7 @@ module CXScopedFloodP{
         } else {
           ackFrame = frameNum;
 //          post printAckTiming();
-          call Resource.release();
+          call TaskResource.release();
           setState(S_IDLE);
         }
       }else{
@@ -612,7 +612,7 @@ module CXScopedFloodP{
 
         printf_SF_RX("d");
         //coming from idle: we are always going to need the resource.
-        if ( SUCCESS != call Resource.immediateRequest()){
+        if ( SUCCESS != call TaskResource.immediateRequest()){
           printf("!SF.r.RIR\r\n");
           return msg;
         }
@@ -746,8 +746,6 @@ module CXScopedFloodP{
     }
 
   }
-
-  event void Resource.granted(){}
 
   command void* Send.getPayload[uint8_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[uint8_t t](){ return call LayerPacket.maxPayloadLength(); }

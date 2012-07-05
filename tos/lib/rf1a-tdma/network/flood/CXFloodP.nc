@@ -16,7 +16,7 @@ module CXFloodP{
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
   uses interface CXTransportSchedule[uint8_t tProto];
-  uses interface Resource;
+  uses interface TaskResource;
   
   uses interface CXRoutingTable;
 
@@ -158,7 +158,7 @@ module CXFloodP{
     printf_F_SCHED("f.ft %u", frameNum);
 
     if (!txSent && txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
-      error_t error = call Resource.immediateRequest(); 
+      error_t error = call TaskResource.immediateRequest(); 
       printf_F_SCHED("o");
       if (SUCCESS == error){
         uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
@@ -191,7 +191,7 @@ module CXFloodP{
         //  know what happened.
         post txFailTask();
         printf("!F.ft.RIR %s io %x\r\n", decodeError(error), 
-          call Resource.isOwner());
+          call TaskResource.isOwner());
         return RF1A_OM_RX;
       }
     }else{
@@ -235,7 +235,7 @@ module CXFloodP{
 //      printf_TMP("CC.%u@%u", cccaller, ccfn);
       setState(S_IDLE);
       isOrigin = FALSE;
-      call Resource.release();
+      call TaskResource.release();
       if (txSent){
 //        printf_TMP("t\r\n");
         post txSuccessTask();
@@ -306,7 +306,7 @@ module CXFloodP{
           }
         }
         if (!rxOutstanding){
-          if (SUCCESS == call Resource.immediateRequest()){
+          if (SUCCESS == call TaskResource.immediateRequest()){
 //            printf_SF_TESTBED("FF\r\n");
             message_t* ret = fwd_msg;
             printf_F_RX("f\r\n");
@@ -362,8 +362,6 @@ module CXFloodP{
     }
   }
   
-  event void Resource.granted(){}
-
   command void* Send.getPayload[uint8_t t](message_t* msg, uint8_t len){ return call LayerPacket.getPayload(msg, len); }
   command uint8_t Send.maxPayloadLength[uint8_t t](){ return call LayerPacket.maxPayloadLength(); }
   default event void Send.sendDone[uint8_t t](message_t* msg, error_t error){}

@@ -8,7 +8,7 @@ configuration CXFloodC{
   uses interface CXTDMA;
   uses interface TDMARoutingSchedule;
   uses interface CXTransportSchedule[uint8_t tProto];
-  uses interface Resource;
+  uses interface TaskResource;
   uses interface CXRoutingTable;
 } implementation {
   components CXFloodP;
@@ -21,6 +21,6 @@ configuration CXFloodC{
   TDMARoutingSchedule = CXFloodP.TDMARoutingSchedule;
   CXTransportSchedule = CXFloodP.CXTransportSchedule;
   LayerPacket = CXFloodP.LayerPacket;
-  CXFloodP.Resource = Resource;
+  CXFloodP.TaskResource = TaskResource;
   CXFloodP.CXRoutingTable = CXRoutingTable;
 }

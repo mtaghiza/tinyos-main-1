@@ -19,7 +19,7 @@ configuration CXNetworkC {
 
   components CXFloodC;
   CXFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_NP_FLOOD];
-  CXFloodC.Resource -> CXTDMADispatchC.Resource[CX_NP_FLOOD];
+  CXFloodC.TaskResource -> CXTDMADispatchC.TaskResource[CX_NP_FLOOD];
   CXFloodC.CXPacket -> CXPacketStackC.CXPacket;
   CXFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXFloodC.LayerPacket -> CXPacketStackC.CXPacketBody;
@@ -31,7 +31,7 @@ configuration CXNetworkC {
 
   components CXScopedFloodC;
   CXScopedFloodC.CXTDMA -> CXTDMADispatchC.CXTDMA[CX_NP_SCOPEDFLOOD];
-  CXScopedFloodC.Resource -> CXTDMADispatchC.Resource[CX_NP_SCOPEDFLOOD];
+  CXScopedFloodC.TaskResource -> CXTDMADispatchC.TaskResource[CX_NP_SCOPEDFLOOD];
   CXScopedFloodC.CXPacket -> CXPacketStackC.CXPacket;
   CXScopedFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXScopedFloodC.AMPacket -> CXPacketStackC.AMPacket;
