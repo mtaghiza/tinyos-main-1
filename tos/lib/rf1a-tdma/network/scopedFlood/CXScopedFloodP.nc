@@ -19,9 +19,6 @@ module CXScopedFloodP{
   uses interface Resource;
 
   uses interface CXRoutingTable;
-
-  uses interface Queue<message_t*>;
-  uses interface Pool<message_t>;
 } implementation {
 
   #define ACKS_PER_DATA 2
@@ -529,78 +526,40 @@ module CXScopedFloodP{
     }
   }
 
-  task void signalReceive(){
-    message_t* msg = NULL;
-    atomic{
-      if ( !call Queue.empty()){
-        msg = call Queue.dequeue();
-      }
-    }
-
-    if (msg != NULL){
-      uint8_t tp = call CXPacket.getTransportProtocol(msg);
-      uint8_t len = call LayerPacket.payloadLength(msg);
-//      printf_TMP("len %u -> %u\r\n", 
-//        call LayerPacket.payloadLength(msg), len);
-      msg = signal Receive.receive[tp]( msg, 
-        call LayerPacket.getPayload(msg, len),
-        len);
-      atomic{
-        call Pool.put(msg);
-        if (! call Queue.empty()){
-          post signalReceive();
-        }
-      }
-    }
-
-  }
-
   //generate an ack, get a new RX buffer, and ready for sending acks.
   task void processReceive(){
-    atomic{
-      //TODO: check long atomic
-      if (state == S_ACK_PREPARE){
-        cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(origin_ack_msg, sizeof(cx_ack_t)));
-        call LayerPacket.setPayloadLength(origin_ack_msg,
-          sizeof(cx_ack_t));
+    if (state == S_ACK_PREPARE){
+      cx_ack_t* ack = (cx_ack_t*)(call LayerPacket.getPayload(origin_ack_msg, sizeof(cx_ack_t)));
+      uint8_t tp = call CXPacket.getTransportProtocol(rx_msg);
+      uint8_t pll = call LayerPacket.payloadLength(rx_msg);
+      void* pl = call LayerPacket.getPayload(rx_msg, pll);
+    
+      call LayerPacket.setPayloadLength(origin_ack_msg,
+        sizeof(cx_ack_t));
 
-        call CXPacket.init(origin_ack_msg);
-        call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
-        call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
-        call CXPacket.setNetworkProtocol(origin_ack_msg, CX_RM_SCOPEDFLOOD);
-        call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
-        call CXPacket.setTransportProtocol(origin_ack_msg, 
-          call CXPacket.getTransportProtocol(rx_msg));
-        call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
-        ack -> src = call CXPacket.source(rx_msg);
-        ack -> sn  = call CXPacket.sn(rx_msg);
-        ack -> depth = call CXPacket.count(rx_msg);
-//        printf_TMP("su ack from %p (%x %u %u): %x %u %u\r\n", 
-//          rx_msg, 
-//          call CXPacket.source(rx_msg),
-//          call CXPacket.sn(rx_msg),
-//          call CXPacket.count(rx_msg),
-//          ack->src, 
-//          ack->sn, 
-//          ack->depth);
-        isOrigin = TRUE;
+      call CXPacket.init(origin_ack_msg);
+      call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
+      call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
+      call CXPacket.setNetworkProtocol(origin_ack_msg, CX_RM_SCOPEDFLOOD);
+      call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
+      call CXPacket.setTransportProtocol(origin_ack_msg, 
+        call CXPacket.getTransportProtocol(rx_msg));
+      call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
+      ack -> src = call CXPacket.source(rx_msg);
+      ack -> sn  = call CXPacket.sn(rx_msg);
+      ack -> depth = call CXPacket.count(rx_msg);
+      isOrigin = TRUE;
 
-        //route update goodness
-        ruSrcDepth = call CXPacket.count(rx_msg);
-        ruSrc = call CXPacket.source(rx_msg);
-        ruDest = call CXPacket.source(origin_ack_msg);
-        ruAckDepth = 0;
-        ruDistance = ruSrcDepth;
-        routeUpdatePending = TRUE;
-        
-        call Queue.enqueue(rx_msg);
-        rx_msg = call Pool.get();
-        post signalReceive();
-        setState(S_ACK);
-      }
+      //route update goodness
+      ruSrcDepth = call CXPacket.count(rx_msg);
+      ruSrc = call CXPacket.source(rx_msg);
+      ruDest = call CXPacket.source(origin_ack_msg);
+      ruAckDepth = 0;
+      ruDistance = ruSrcDepth;
+      routeUpdatePending = TRUE;
+      rx_msg = signal Receive.receive[tp](rx_msg, pl, pll);
+      setState(S_ACK);
     }
-//    dispMsg = origin_ack_msg;
-//    post displayPacket();
   }
 
   /**

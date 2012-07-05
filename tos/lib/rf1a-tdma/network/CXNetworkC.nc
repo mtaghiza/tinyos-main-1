@@ -12,12 +12,6 @@ configuration CXNetworkC {
   components CXPacketStackC;
   components TDMASchedulerC;
 
-  components new QueueC(message_t*, CX_MESSAGE_POOL_SIZE)
-    as FloodQueue;
-  components new QueueC(message_t*, CX_MESSAGE_POOL_SIZE)
-    as ScopedFloodQueue;
-  components new PoolC(message_t, CX_MESSAGE_POOL_SIZE);
-
   components CXTDMADispatchC;
   CXTDMADispatchC.SubCXTDMA -> CXTDMAPhysicalC;
   CXTDMADispatchC.CXPacket -> CXPacketStackC.CXPacket;
@@ -34,8 +28,6 @@ configuration CXNetworkC {
   CXFloodC.CXPacket -> CXPacketStackC.CXPacket;
   CXFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXFloodC.LayerPacket -> CXPacketStackC.CXPacketBody;
-  CXFloodC.Pool -> PoolC;
-  CXFloodC.Queue -> FloodQueue;
   CXFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule;
   CXFloodC.CXTransportSchedule = CXTransportSchedule;
 
@@ -54,8 +46,6 @@ configuration CXNetworkC {
   CXScopedFloodC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
   CXScopedFloodC.AMPacket -> CXPacketStackC.AMPacket;
   CXScopedFloodC.LayerPacket -> CXPacketStackC.CXPacketBody;
-  CXScopedFloodC.Pool -> PoolC;
-  CXScopedFloodC.Queue -> ScopedFloodQueue;
   CXScopedFloodC.TDMARoutingSchedule -> TDMASchedulerC.TDMARoutingSchedule;
   CXScopedFloodC.CXTransportSchedule = CXTransportSchedule;
 

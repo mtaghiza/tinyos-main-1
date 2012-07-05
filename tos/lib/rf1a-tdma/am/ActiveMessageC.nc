@@ -29,6 +29,9 @@ configuration ActiveMessageC {
   components CXRoutingTableC;
 
   components CombineReceiveP;
+  components new QueueC(message_t*, CX_MESSAGE_POOL_SIZE);
+  components new PoolC(message_t, CX_MESSAGE_POOL_SIZE);
+
   CombineReceiveP.SubReceive ->
     CXTransportC.Receive;
   CombineReceiveP.CXPacket -> CXPacketStackC.CXPacket;
@@ -36,6 +39,8 @@ configuration ActiveMessageC {
   CombineReceiveP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
   CombineReceiveP.AMPacket -> CXPacketStackC.AMPacket;
   CombineReceiveP.AMPacketBody -> CXPacketStackC.AMPacketBody;
+  CombineReceiveP.Queue -> QueueC;
+  CombineReceiveP.Pool -> PoolC;
 
   Receive = CombineReceiveP.Receive;
   ReceiveNotify = CombineReceiveP.ReceiveNotify;
@@ -46,6 +51,7 @@ configuration ActiveMessageC {
   // - telling the various routing methods when they are allowed to
   //   send.
   components TDMASchedulerC;
+
 
   //Scheduler: should sit above transport layer. So it should be
   //dealing with AM packets (using CX header as needed)

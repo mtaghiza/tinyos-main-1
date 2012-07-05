@@ -21,9 +21,6 @@ module CXFloodP{
   
   uses interface CXRoutingTable;
 
-  uses interface Queue<message_t*>;
-  uses interface Pool<message_t>;
-
 } implementation {
 
   enum{
@@ -226,40 +223,12 @@ module CXFloodP{
     return TRUE;
   }
   
-  //Signal received packets upward and refill pool.
-  task void signalReceive(){
-    if (!call Queue.empty()){
-      message_t* msg = call Queue.dequeue();
-      msg = signal Receive.receive[call CXPacket.getTransportProtocol(msg)](msg, call LayerPacket.getPayload(msg, call LayerPacket.payloadLength(msg)), call LayerPacket.payloadLength(msg));
-      call Pool.put(msg);
-    }
-    if (!call Queue.empty()){
-      post signalReceive();
-    }
-  }
-  
-
-  //Enqueue the last received packet and fetch a new packet from pool
-  //to be used for next reception.
-  //Post task to signal reception upwards.
   task void reportReceive(){
-    atomic{
-      if (rxOutstanding){
-        if ( ! call Pool.empty()){
-          atomic{
-            call Queue.enqueue(fwd_msg);
-            fwd_msg = call Pool.get();
-          }
-          post signalReceive();
-          rxOutstanding = FALSE;
-        }else{
-          printf("!Message Pool empty\r\n");
-          //try again momentarily, hopefully it frees up soon.
-          post reportReceive();
-        }
-      }else{
-      }
-    }
+    uint8_t pll = call LayerPacket.payloadLength(fwd_msg);
+    void* pl = call LayerPacket.getPayload(fwd_msg, pll);
+    uint8_t tProto = call CXPacket.getTransportProtocol(fwd_msg);
+    fwd_msg = signal Receive.receive[tProto](fwd_msg, pl, pll);
+    rxOutstanding = FALSE;
   }
 
   //deal with the aftermath of a packet transmission.

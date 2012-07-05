@@ -9,6 +9,9 @@ module CombineReceiveP{
   uses interface AMPacket;
   uses interface Packet as AMPacketBody;
   provides interface ReceiveNotify;
+
+  uses interface Queue<message_t*>;
+  uses interface Pool<message_t>;
 } implementation {
   void printRX(message_t* msg){
     printf_APP("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
@@ -21,29 +24,39 @@ module CombineReceiveP{
       );
   }
 
-  message_t* handleReceive(message_t* msg, void* payload, uint8_t len){
-    //this is prettttty ugly. The pointer/len we get here include the
-    //  AM header. Since the packet access logic is not here, we're
-    //  going to call out to it.
-    // ideally this would be 
-    // signal (msg, payload + sizeof(am_header), len - sizeof(am_header))
-    uint8_t pll = call AMPacketBody.payloadLength(msg);
-    void* pl = call AMPacketBody.getPayload(msg, pll);
-    signal ReceiveNotify.received(call AMPacket.source(msg));
+  task void rxTask(){
+    if (! call Queue.empty()){
+      message_t* msg = call Queue.dequeue();
+      uint8_t pll = call AMPacketBody.payloadLength(msg);
+      void* pl = call AMPacketBody.getPayload(msg, pll);
 
-    //restore AM destination from CX header fields
-    call AMPacket.setDestination(msg, call CXPacket.destination(msg));
-    printRX(msg);
-    if (call AMPacket.isForMe(msg)){
-      return signal Receive.receive[call AMPacket.type(msg)](msg, pl, pll);
-    }else{
-      return signal Snoop.receive[call AMPacket.type(msg)](msg, pl, pll);
+      signal ReceiveNotify.received(call AMPacket.source(msg));
+  
+      //restore AM destination from CX header fields
+      call AMPacket.setDestination(msg, call CXPacket.destination(msg));
+      printRX(msg);
+      if (call AMPacket.isForMe(msg)){
+        msg = signal Receive.receive[call AMPacket.type(msg)](msg, pl, pll);
+      }else{
+        msg = signal Snoop.receive[call AMPacket.type(msg)](msg, pl, pll);
+      }
+      call Pool.put(msg);
+      if (! call Queue.empty()){
+        post rxTask();
+      }
     }
   }
 
   event message_t* SubReceive.receive[uint8_t tProto](message_t* msg, void* payload,
       uint8_t len){
-    return handleReceive(msg, payload, len);
+    if (call Pool.empty()){
+      printf("!QD\r\n");
+      return msg;
+    } else {
+      post rxTask();
+      call Queue.enqueue(msg);
+      return call Pool.get();
+    }
   }
 
   default event message_t* Receive.receive[am_id_t id](message_t* msg,
