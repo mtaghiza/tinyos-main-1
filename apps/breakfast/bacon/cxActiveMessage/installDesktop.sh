@@ -115,5 +115,5 @@ then
     TEST_DEST_ADDR=$rootDest\
     TEST_REQUEST_ACK=$testRequestAck\
     $commonOptions\
-    DEBUG_TMP=1 DEBUG_TESTBED=1
+    DEBUG_TMP=1 DEBUG_TESTBED=1 DEBUG_PFS_FREAKOUT=1
 fi

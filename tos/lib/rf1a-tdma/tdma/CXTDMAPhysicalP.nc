@@ -254,9 +254,11 @@ module CXTDMAPhysicalP {
       printf_PFS_FREAKOUT("PFS EARLY (%lu < %lu)\r\n", call
       PrepareFrameStartAlarm.getNow(), call
       PrepareFrameStartAlarm.getAlarm());
+      P1OUT ^= BIT3;
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
+      P1OUT ^= BIT3;
       return;
     }
     if(frameNum & BIT0){
@@ -429,9 +431,11 @@ module CXTDMAPhysicalP {
 //    printf_PFS("pfs1 %lu %lu: ", 
 //      call PrepareFrameStartAlarm.getAlarm(), 
 //      s_frameLen + signal TDMAPhySchedule.getFrameAdjustment(frameNum));
+      P1OUT ^= BIT3;
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), 
       s_frameLen );
+      P1OUT ^= BIT3;
 //    printf_PFS("%lu\r\n",
 //      call PrepareFrameStartAlarm.getAlarm());
     //16 uS
@@ -704,20 +708,29 @@ module CXTDMAPhysicalP {
   }
 
   uint32_t resynchFrameStart;
-  
+   
+  task void debugTxResynch(){
+    printf_TMP("TXR %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+  }
+
   //set frame start alarm and prepare frame start alarm in response to
   //a resynchronization event (either starting to send a packet, or
   //upon successful reception of a packet).
   void resynch(){
+    post debugTxResynch();
     atomic{
+      P1OUT ^= BIT3;
       call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
+      P1OUT ^= BIT3;
       call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
     }
   }
 
   void rxResynch(uint32_t fs){
     atomic{
+      P1OUT ^= BIT3;
       call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
+      P1OUT ^= BIT3;
       call FrameStartAlarm.startAt(fs, s_frameLen);
     
       if (call PrepareFrameStartAlarm.getAlarm() != fs + (s_frameLen - PFS_SLACK)){
@@ -881,8 +894,12 @@ module CXTDMAPhysicalP {
           uint32_t rp = call PrepareFrameStartAlarm.getNow();
           call PrepareFrameStartAlarm.stop();
           call FrameStartAlarm.stop();
+          //TODO: is this where the alarm is getting reset to the
+          //wrong time?
+      P1OUT ^= BIT3;
           call PrepareFrameStartAlarm.startAt(rp - PFS_SLACK,
             2*PFS_SLACK);
+      P1OUT ^= BIT3;
           call FrameStartAlarm.startAt(rp - PFS_SLACK,
             3*PFS_SLACK);
         }
@@ -1100,6 +1117,7 @@ module CXTDMAPhysicalP {
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
       uint8_t channel, bool isSynched){
+    printf_TMP("SS\r\n");
 //    post debugConfig();
     SS_SET_PIN;
     if (checkState(S_RECEIVING) || checkState(S_TRANSMITTING)){
@@ -1160,8 +1178,10 @@ module CXTDMAPhysicalP {
         //  - set base and delta to arbitrary values s.t. base +delta =
         //    target frame start
         delta = call PrepareFrameStartAlarm.getNow();
+      P1OUT ^= BIT3;
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
+      P1OUT ^= BIT3;
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
   

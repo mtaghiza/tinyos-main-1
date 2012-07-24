@@ -142,12 +142,12 @@ implementation
 
   async event void Overflow.fired()
   {
-    //TODO: remove debug code: if the width of these gets messed up,
-    //then we're missing overflow events, which would cause the
-    //+10.08ms behavior
-    if (isClockSourceAsync){   
-      P1OUT ^= BIT3;
-    }
+//    //TODO: remove debug code: if the width of these gets messed up,
+//    //then we're missing overflow events, which would cause the
+//    //+10.08ms behavior
+//    if (isClockSourceAsync){   
+//      P1OUT ^= BIT3;
+//    }
     signal Timer.overflow();
   }
 
