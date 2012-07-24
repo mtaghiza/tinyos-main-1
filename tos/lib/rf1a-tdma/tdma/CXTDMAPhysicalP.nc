@@ -710,11 +710,8 @@ module CXTDMAPhysicalP {
   }
 
   void rxResynch(uint32_t fs){
-    atomic{
       call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
       call FrameStartAlarm.startAt(fs, s_frameLen);
-      
-    }
   }
 
   /**
@@ -921,6 +918,17 @@ module CXTDMAPhysicalP {
             rdFrameNum);
           call CXPacketMetadata.setReceivedCount(msg,
             call CXPacket.count(msg));
+          if (call Rf1aPacket.crcPassed(msg) 
+              && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+            resynchFrame = frameNum;
+//              resynch();
+            rxResynch(rxResynchTime);
+            RESYNCH_CLEAR_PIN;
+            if (rxResynchTime != resynchFrameStart){
+              setState(S_ERROR_f);
+            }
+            post reportResynch();
+          } 
           rx_msg = signal CXTDMA.receive(msg, 
             rdCount - sizeof(rf1a_ieee154_t),
             rdFrameNum, rdLastRECapture);
@@ -976,17 +984,17 @@ module CXTDMAPhysicalP {
             rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
             call Rf1aPhysicalMetadata.store(rf1aMD);
     
-            if (call Rf1aPacket.crcPassed(msg) 
-                && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
-              resynchFrame = frameNum;
-//              resynch();
-              rxResynch(rxResynchTime);
-              RESYNCH_CLEAR_PIN;
-              if (rxResynchTime != resynchFrameStart){
-                setState(S_ERROR_f);
-              }
-              post reportResynch();
-            } 
+//            if (call Rf1aPacket.crcPassed(msg) 
+//                && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+//              resynchFrame = frameNum;
+////              resynch();
+//              rxResynch(rxResynchTime);
+//              RESYNCH_CLEAR_PIN;
+//              if (rxResynchTime != resynchFrameStart){
+//                setState(S_ERROR_f);
+//              }
+//              post reportResynch();
+//            } 
           }
           rdPending = TRUE;
           post completeReceiveDone();
