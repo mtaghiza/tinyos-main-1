@@ -75,6 +75,8 @@ module CXTDMAPhysicalP {
     S_TX_CLEANUP = 0x23,
   };
 
+  uint32_t schedPFS;
+
   uint8_t state = S_OFF;
   
   //GpioCapture doesn't maintain this, we need it to differentiate
@@ -413,6 +415,10 @@ module CXTDMAPhysicalP {
       } else if (checkState(S_INACTIVE)){
         //nothing else to do, just reschedule alarm.
       } else {
+        printf_TMP("!F %lu cs %lu s %lu\r\n",
+          call PrepareFrameStartAlarm.getAlarm(), 
+          rxResynchTime + s_frameLen-PFS_SLACK,
+          schedPFS);
         setState(S_ERROR_5);
         return;
       }
@@ -724,6 +730,7 @@ module CXTDMAPhysicalP {
           call FrameStartAlarm.getAlarm(), 
           fs + s_frameLen);
       }
+      schedPFS = call PrepareFrameStartAlarm.getAlarm();
     }
   }
 
