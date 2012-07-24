@@ -709,6 +709,14 @@ module CXTDMAPhysicalP {
     }
   }
 
+  void rxResynch(uint32_t fs){
+    atomic{
+      call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
+      call FrameStartAlarm.startAt(fs, s_frameLen);
+      
+    }
+  }
+
   /**
    * Indicates a packet start/end capture from the radio. We use this
    * to synch to the frame edges (immediately if in TX, deferred until
@@ -971,7 +979,8 @@ module CXTDMAPhysicalP {
             if (call Rf1aPacket.crcPassed(msg) 
                 && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
               resynchFrame = frameNum;
-              resynch();
+//              resynch();
+              rxResynch(rxResynchTime);
               RESYNCH_CLEAR_PIN;
               if (rxResynchTime != resynchFrameStart){
                 setState(S_ERROR_f);
