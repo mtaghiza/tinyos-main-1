@@ -710,8 +710,21 @@ module CXTDMAPhysicalP {
   }
 
   void rxResynch(uint32_t fs){
+    atomic{
       call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
       call FrameStartAlarm.startAt(fs, s_frameLen);
+    
+      if (call PrepareFrameStartAlarm.getAlarm() != fs + (s_frameLen - PFS_SLACK)){
+        printf("PFS set failure: ga %lu != %lu\r\n", 
+          call PrepareFrameStartAlarm.getAlarm(), 
+          fs + (s_frameLen - PFS_SLACK));
+      }
+      if (call FrameStartAlarm.getAlarm() != (fs + s_frameLen) ){
+        printf("FS set failure: ga %lu != %lu\r\n", 
+          call FrameStartAlarm.getAlarm(), 
+          fs + s_frameLen);
+      }
+    }
   }
 
   /**
