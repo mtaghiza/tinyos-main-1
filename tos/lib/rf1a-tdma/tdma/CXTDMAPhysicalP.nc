@@ -727,6 +727,10 @@ module CXTDMAPhysicalP {
     }
   }
 
+  task void reportCorrectOverflow(){
+    printf_TMP("!COF\r\n");
+  }
+
   /**
    * Indicates a packet start/end capture from the radio. We use this
    * to synch to the frame edges (immediately if in TX, deferred until
@@ -752,6 +756,7 @@ module CXTDMAPhysicalP {
     //  most once before this event runs (hopefully true, about 10 ms
     //  at 6.5 Mhz)
     if (time > (fst & 0x0000ffff)){
+      post reportCorrectOverflow();
       SYNCH_SET_PIN;
       fst  -= 0x00010000;
       SYNCH_CLEAR_PIN;
