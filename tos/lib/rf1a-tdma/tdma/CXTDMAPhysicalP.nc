@@ -85,6 +85,7 @@ module CXTDMAPhysicalP {
   uint16_t frameNum;
   //last point where we did a soft re-synch based on RX
   uint16_t resynchFrame;
+  uint32_t rxResynchTime;
 
   //used to detect cases where frame setup does not get done in time:
   //  pfsPending: PFS was scheduled but not handled yet. FS should not
@@ -766,7 +767,9 @@ module CXTDMAPhysicalP {
         adjustments[adjustmentCount] = thisFrameStart - (call FrameStartAlarm.getAlarm() - s_frameLen);
         #endif
         //Wait until CRC is validated before reysnching.
+        RESYNCH_SET_PIN;
         resynchFrameStart = thisFrameStart;
+        rxResynchTime = resynchFrameStart;
         call FrameWaitAlarm.stop();
 
         #if DEBUG_SYNCH_ADJUSTMENTS == 1
@@ -969,6 +972,10 @@ module CXTDMAPhysicalP {
                 && call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
               resynchFrame = frameNum;
               resynch();
+              RESYNCH_CLEAR_PIN;
+              if (rxResynchTime != resynchFrameStart){
+                setState(S_ERROR_f);
+              }
               post reportResynch();
             } 
           }

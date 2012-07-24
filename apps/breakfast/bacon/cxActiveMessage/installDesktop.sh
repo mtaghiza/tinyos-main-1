@@ -23,7 +23,7 @@ ipi=1024UL
 queueThreshold=1
 
 #network params
-numSlots=10
+numSlots=20
 fps=10
 md=1
 mr=1
