@@ -77,6 +77,8 @@ module CXTDMAPhysicalP {
   
   uint8_t lastSched;
   uint32_t lastScheds[6];
+  uint32_t schedSeqs[6];
+  uint32_t schedSn = 0;
 
   uint32_t schedPFS;
 
@@ -261,6 +263,7 @@ module CXTDMAPhysicalP {
         call PrepareFrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
       lastScheds[0] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[0] = schedSn++;
       lastSched = 0;
       return;
     }
@@ -438,6 +441,7 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.getAlarm(), 
       s_frameLen );
     lastScheds[1] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[1] = schedSn++;
     lastSched = 1;
 //    printf_PFS("%lu\r\n",
 //      call PrepareFrameStartAlarm.getAlarm());
@@ -724,6 +728,7 @@ module CXTDMAPhysicalP {
     atomic{
       call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
       lastScheds[2] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[2] = schedSn++;
       lastSched = 2;
       call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
     }
@@ -733,6 +738,7 @@ module CXTDMAPhysicalP {
     atomic{
       call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
       lastScheds[3] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[3] = schedSn++;
       lastSched = 3;
       call FrameStartAlarm.startAt(fs, s_frameLen);
     
@@ -902,6 +908,7 @@ module CXTDMAPhysicalP {
           call PrepareFrameStartAlarm.startAt(rp - PFS_SLACK,
             2*PFS_SLACK);
           lastScheds[4] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[4] = schedSn++;
           lastSched = 4;
           call FrameStartAlarm.startAt(rp - PFS_SLACK,
             3*PFS_SLACK);
@@ -1184,6 +1191,7 @@ module CXTDMAPhysicalP {
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
         lastScheds[5] = call PrepareFrameStartAlarm.getAlarm();
+      schedSeqs[5] = schedSn++;
         lastSched = 5;
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
@@ -1320,9 +1328,15 @@ module CXTDMAPhysicalP {
   
   task void printScheds(){
     uint8_t i;
-    printf_TMP("Last Sched: %u\r\n", lastSched);
-    for (i = 0; i < 5; i++){
-      printf_TMP("PFS %u: %lu\r\n", i, lastScheds[i]);
+    atomic{
+      printf_TMP("Last Sched: %u\r\n", lastSched);
+      printf_TMP("Last alarm: %lu\r\n", 
+        call PrepareFrameStartAlarm.getAlarm());
+      printf_TMP("FL: %lu FL-slack: %lu 2slack: %lu\r\n", 
+        s_frameLen, s_frameLen - PFS_SLACK, 2*PFS_SLACK);
+      for (i = 0; i < 5; i++){
+        printf_TMP("PFS %u: %lu %lu\r\n", i, schedSeqs[i], lastScheds[i]);
+      }
     }
   }
 
