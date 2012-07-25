@@ -69,6 +69,7 @@ CFLAGS += -I../../util/crc
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/schedule
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/link
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/tdma
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/flood
