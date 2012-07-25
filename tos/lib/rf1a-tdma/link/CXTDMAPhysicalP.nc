@@ -109,6 +109,12 @@ module CXTDMAPhysicalP {
   //Temporary RX variables
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
+  bool rdPending;
+  uint8_t* rdBuffer;
+  uint8_t rdCount;
+  uint8_t rdResult;
+  uint8_t rdS_sr;
+  uint32_t rdLastRECapture;
 
   //re-Synch variables
   bool txCapture;
@@ -460,6 +466,19 @@ module CXTDMAPhysicalP {
     }
   }
 
+  void resynch(){
+    atomic{
+      uint32_t captureFrameStart;
+      call PrepareFrameStartAlarm.stop();
+      captureFrameStart = lastCapture - fsDelays[s_sri];
+      if (!txCapture){
+        captureFrameStart -= sfdDelays[s_sri];
+      }
+      call PrepareFrameStartAlarm.startAt(captureFrameStart,
+        s_frameLen- PFS_SLACK);
+    }
+  }
+
   async event void FrameWaitAlarm.fired(){
     if (asyncState == S_RX_WAIT){
       error_t error = call Rf1aPhysical.resumeIdleMode();
@@ -488,10 +507,84 @@ module CXTDMAPhysicalP {
       setAsyncState(S_ERROR_0);
     }
   }
+  
+  task void completeReceiveDone();
 
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
-                                             int result) {}
+                                             int result) {
+    //Is this being signalled from a non-async context somewhere? I
+    //need to mark the entire thing as atomic to avoid compiler
+    //warnings
+    atomic{
+      if (asyncState == S_RX_RECEIVING){
+        //stash vars for receiveDone
+        if (!rdPending){
+          rdBuffer = buffer;
+          rdCount = count;
+          rdResult = result;
+          rdS_sr = s_sr;
+          rdLastRECapture = lastCapture;
+          rdPending = TRUE;
+          post completeReceiveDone();
+  
+          //Store packet metadata immediately
+          if (result == SUCCESS){
+            message_t* msg = (message_t*) buffer;
+            message_metadata_t* mmd = (message_metadata_t*)(&(msg->metadata));
+            rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
+            call Rf1aPhysicalMetadata.store(rf1aMD);
+          }
+          setAsyncState(S_IDLE);
+        }else{
+          //have not finished handling previous receive-done.
+          setAsyncState(S_ERROR_0);
+        }
+      } else {
+        setAsyncState(S_ERROR_0);
+      }
+    }
+  }
+
+  task void completeReceiveDone(){
+    message_t* msg;
+    uint8_t rdResultLocal;
+    uint8_t rdCountLocal;
+    uint8_t rdS_srLocal;
+    uint32_t rdLastRECaptureLocal;
+
+    atomic{
+      msg = (message_t*) rdBuffer;
+      rdResultLocal = rdResult;
+      rdCountLocal = rdCount;
+      rdS_srLocal = rdS_sr;
+      rdLastRECaptureLocal = rdLastRECapture;
+    }
+    if (SUCCESS == rdResultLocal){
+      call Packet.setPayloadLength(msg,
+        rdCountLocal-sizeof(message_header_t));
+      if (call Rf1aPacket.crcPassed(msg)){
+        call CXPacketMetadata.setSymbolRate(msg,
+          rdS_srLocal);
+        call CXPacketMetadata.setPhyTimestamp(msg,
+          rdLastRECaptureLocal);
+        call CXPacketMetadata.setFrameNum(msg,
+          frameNum);
+        call CXPacketMetadata.setReceivedCount(msg,
+          call CXPacket.count(msg));
+        if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+          resynch();
+        }
+        rx_msg = signal CXTDMA.receive(msg,
+          rdCountLocal - sizeof(rf1a_ieee154_t),
+          frameNum, rdLastRECaptureLocal);
+      }
+      setState(S_IDLE);
+      post pfsTask();
+    }
+    atomic rdPending = FALSE;
+
+  }
 
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { }
