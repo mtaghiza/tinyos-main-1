@@ -74,6 +74,9 @@ module CXTDMAPhysicalP {
     S_TRANSMITTING = 0x22,
     S_TX_CLEANUP = 0x23,
   };
+  
+  uint8_t lastSched;
+  uint32_t lastScheds[6];
 
   uint32_t schedPFS;
 
@@ -257,6 +260,8 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm() - s_frameLen, 
         s_frameLen);
+      lastScheds[0] = call PrepareFrameStartAlarm.getAlarm();
+      lastSched = 0;
       return;
     }
     if(frameNum & BIT0){
@@ -432,6 +437,8 @@ module CXTDMAPhysicalP {
     call PrepareFrameStartAlarm.startAt(
       call PrepareFrameStartAlarm.getAlarm(), 
       s_frameLen );
+    lastScheds[1] = call PrepareFrameStartAlarm.getAlarm();
+    lastSched = 1;
 //    printf_PFS("%lu\r\n",
 //      call PrepareFrameStartAlarm.getAlarm());
     //16 uS
@@ -476,7 +483,7 @@ module CXTDMAPhysicalP {
         if (error == SUCCESS){
           setState(S_IDLE);
         } else {
-          printf("fwa.srb Error: %s\r\n", decodeError(error));
+          printf("!fwa.srb Error: %s\r\n", decodeError(error));
           setState(S_ERROR_3);
         }
       } else {
@@ -613,10 +620,10 @@ module CXTDMAPhysicalP {
       } else if (checkState(S_INACTIVE)){
         //happens when we lose synch: we'll pick it up again
         //momentarily
-        printf("Inactive fsa.f\r\n");
+        printf("!Inactive fsa.f\r\n");
         return;
       } else{
-        printf("Error @fn %u\r\n", frameNum);
+        printf("!Error @fn %u\r\n", frameNum);
         setState(S_ERROR_8);
       }
     }
@@ -713,9 +720,11 @@ module CXTDMAPhysicalP {
   //a resynchronization event (either starting to send a packet, or
   //upon successful reception of a packet).
   void resynch(){
-    post debugTxResynch();
+//    post debugTxResynch();
     atomic{
       call PrepareFrameStartAlarm.startAt(resynchFrameStart, s_frameLen - PFS_SLACK);
+      lastScheds[2] = call PrepareFrameStartAlarm.getAlarm();
+      lastSched = 2;
       call FrameStartAlarm.startAt(resynchFrameStart, s_frameLen);
     }
   }
@@ -723,15 +732,17 @@ module CXTDMAPhysicalP {
   void rxResynch(uint32_t fs){
     atomic{
       call PrepareFrameStartAlarm.startAt(fs, s_frameLen - PFS_SLACK);
+      lastScheds[3] = call PrepareFrameStartAlarm.getAlarm();
+      lastSched = 3;
       call FrameStartAlarm.startAt(fs, s_frameLen);
     
       if (call PrepareFrameStartAlarm.getAlarm() != fs + (s_frameLen - PFS_SLACK)){
-        printf("PFS set failure: ga %lu != %lu\r\n", 
+        printf("!PFS set failure: ga %lu != %lu\r\n", 
           call PrepareFrameStartAlarm.getAlarm(), 
           fs + (s_frameLen - PFS_SLACK));
       }
       if (call FrameStartAlarm.getAlarm() != (fs + s_frameLen) ){
-        printf("FS set failure: ga %lu != %lu\r\n", 
+        printf("!FS set failure: ga %lu != %lu\r\n", 
           call FrameStartAlarm.getAlarm(), 
           fs + s_frameLen);
       }
@@ -890,6 +901,8 @@ module CXTDMAPhysicalP {
           //wrong time?
           call PrepareFrameStartAlarm.startAt(rp - PFS_SLACK,
             2*PFS_SLACK);
+          lastScheds[4] = call PrepareFrameStartAlarm.getAlarm();
+          lastSched = 4;
           call FrameStartAlarm.startAt(rp - PFS_SLACK,
             3*PFS_SLACK);
         }
@@ -1170,6 +1183,8 @@ module CXTDMAPhysicalP {
         delta = call PrepareFrameStartAlarm.getNow();
         call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
           delta);
+        lastScheds[5] = call PrepareFrameStartAlarm.getAlarm();
+        lastSched = 5;
         call FrameStartAlarm.startAt(pfsStartAt-delta,
           delta + PFS_SLACK);
   
@@ -1302,7 +1317,15 @@ module CXTDMAPhysicalP {
     call FrameWaitAlarm.stop();
     call SynchCapture.disable();
   }
- 
+  
+  task void printScheds(){
+    uint8_t i;
+    printf_TMP("Last Sched: %u\r\n", lastSched);
+    for (i = 0; i < 5; i++){
+      printf_TMP("PFS %u: %lu\r\n", i, lastScheds[i]);
+    }
+  }
+
   //convenience state manipulation functions
   bool checkState(uint8_t s){ atomic return (state == s); }
   void setState(uint8_t s){
@@ -1323,6 +1346,7 @@ module CXTDMAPhysicalP {
         P2OUT |= BIT4;
         stopTimers();
         printf("!ERR [%x->%x]\r\n", state, s);
+        post printScheds();
       }
       #endif
       state = s;
