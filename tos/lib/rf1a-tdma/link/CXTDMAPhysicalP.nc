@@ -94,6 +94,7 @@ module CXTDMAPhysicalP {
   
   //Internal state vars
   uint8_t state = S_OFF;
+  uint8_t asyncState;
   bool pfsTaskPending = FALSE;
   bool configureRadioPending = FALSE;
 
@@ -101,6 +102,9 @@ module CXTDMAPhysicalP {
   message_t* tx_msg;
   uint8_t tx_len;
   bool gpResult;
+  uint16_t sdFrameNum;
+  error_t sdResult;
+  bool sdPending;
 
   //Temporary RX variables
   message_t rx_msg_internal;
@@ -132,6 +136,21 @@ module CXTDMAPhysicalP {
         printf("![%x->%x]\r\n", state, s);
       }
       state = s;
+    }
+  }
+  task void syncState(){
+    atomic state = asyncState;
+  }
+
+  void setAsyncState(uint8_t s){
+    atomic{
+      if ((asyncState & M_TYPE) != M_ERROR){
+        if ((s & M_TYPE) == M_ERROR){
+          printf("!*[%x->%x]\r\n", asyncState, s);
+        }
+        asyncState = s;
+        post syncState();
+      }
     }
   }
   
@@ -197,7 +216,6 @@ module CXTDMAPhysicalP {
 
   async event void SynchCapture.captured(uint16_t time){}
   async event void FrameWaitAlarm.fired(){}
-  async event void FrameStartAlarm.fired(){}
 
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
@@ -337,6 +355,7 @@ module CXTDMAPhysicalP {
           RF1A_OM_IDLE);
         if (error == SUCCESS){
           setState(S_RX_READY);
+          setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
         }
         break;
@@ -348,6 +367,8 @@ module CXTDMAPhysicalP {
           //NB: if this becomes split-phase, we'll set the state when we
           //get the callback.
           setState(S_TX_READY);
+          setAsyncState(S_TX_READY);
+          atomic sdFrameNum = frameNum;
           //get ready to capture your own SFD for re-synch.
           call SynchCapture.captureRisingEdge();
         }else{
@@ -356,6 +377,7 @@ module CXTDMAPhysicalP {
         break;
 
       case S_IDLE:
+        setAsyncState(S_IDLE);
         //chillin'
         break;
 
@@ -365,6 +387,52 @@ module CXTDMAPhysicalP {
     }
     atomic configureRadioPending = FALSE;
   }
+
+
+  task void completeSendDone();
+  async event void FrameStartAlarm.fired(){
+    if (configureRadioPending){
+      //didn't get the radio configured in time :(
+      setAsyncState(S_ERROR_1);
+    }else{
+      //OK, complete the transmission now.
+      if (asyncState == S_TX_READY){
+        error_t error = call Rf1aPhysical.completeSend();
+        //Transmission failed: stash results for send-done and post
+        //task
+        if (error != SUCCESS){
+          if (! sdPending){
+            sdPending = TRUE;
+            sdResult = error;
+            post completeSendDone();
+          }else{
+            //still handling last sendDone (should really never
+            //happen)
+            setAsyncState(S_ERROR_0);
+          }
+          //Try to put the radio back to idle
+          error = call Rf1aPhysical.resumeIdleMode();
+          if (error != SUCCESS){
+            setAsyncState(S_ERROR_0);
+          }
+        }else{
+          setAsyncState(S_TX_TRANSMITTING);
+        }
+      }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
+        call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
+          s_fwCheckLen);
+      }
+    }
+  }
+  
+  task void completeSendDone(){
+    error_t res;
+    atomic res = sdResult;
+    signal CXTDMA.sendDone(tx_msg, tx_len, sdFrameNum, res);
+    atomic sdPending = FALSE;
+  }
+
+
 
   error_t checkSetSchedule(){
     switch(state){
