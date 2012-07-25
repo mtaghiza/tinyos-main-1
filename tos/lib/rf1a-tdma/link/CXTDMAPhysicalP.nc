@@ -98,7 +98,7 @@ module CXTDMAPhysicalP {
   bool pfsTaskPending = FALSE;
   bool configureRadioPending = FALSE;
 
-  //Temporary variables from prep->TX
+  //Temporary TX variables 
   message_t* tx_msg;
   uint8_t tx_len;
   bool gpResult;
@@ -109,6 +109,10 @@ module CXTDMAPhysicalP {
   //Temporary RX variables
   message_t rx_msg_internal;
   message_t* rx_msg = &rx_msg_internal;
+
+  //re-Synch variables
+  bool txCapture;
+  uint32_t lastCapture;
 
   //externally-facing state vars
   uint16_t frameNum;
@@ -214,7 +218,6 @@ module CXTDMAPhysicalP {
   }
 
 
-  async event void SynchCapture.captured(uint16_t time){}
   async event void FrameWaitAlarm.fired(){}
 
 
@@ -421,6 +424,9 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
+        if (asyncState == S_RX_READY){
+          setAsyncState(S_RX_WAIT);
+        }
       }
     }
   }
@@ -432,7 +438,27 @@ module CXTDMAPhysicalP {
     atomic sdPending = FALSE;
   }
 
+  async event void SynchCapture.captured(uint16_t time){
+    uint32_t fst = call FrameStartAlarm.getNow();
 
+    //overflow detected: assumes that 16-bit capture time has
+    //  overflowed at most once before this event runs
+    if (time > (fst & 0x0000ffff)){
+      fst  -= 0x00010000;
+    }
+    lastCapture = (fst & 0xffff0000) | time;
+    switch(asyncState){
+      case S_RX_WAIT:
+        txCapture = FALSE;
+        setAsyncState(S_RX_RECEIVING);
+        break;
+      case S_TX_TRANSMITTING:
+        txCapture = TRUE;
+        //no state change
+        break;
+    }
+  }
+  
 
   error_t checkSetSchedule(){
     switch(state){
