@@ -97,14 +97,51 @@ module CXTDMAPhysicalP {
   uint8_t s_sr;
   uint8_t s_channel;
 
+  //Split control vars
+  bool stopPending = FALSE;
+  
+  //SplitControl operations
+  command error_t SplitControl.start(){
+    if (state == S_OFF){
+      error_t err = call Resource.request();
+      if (err == SUCCESS){
+        state = S_STARTING;
+      }
+      return err;
+    }else{
+      return EOFF;
+    }
+    return FAIL;
+  }
+
+  event void Resource.granted(){
+    if (state == S_STARTING){
+      //NB: Phy impl starts the radio in IDLE
+      state = S_IDLE;
+      signal SplitControl.startDone(SUCCESS);
+    }
+  }
+  
+  command error_t SplitControl.stop(){ 
+    switch(state){
+      case S_OFF:
+        return EALREADY;
+      default:
+        if (stopPending){
+          return EBUSY;
+        }else{
+          stopPending = TRUE;
+          return SUCCESS;
+        }
+    }
+  }
+
+
   async event void SynchCapture.captured(uint16_t time){}
   async event void PrepareFrameStartAlarm.fired(){}
   async event void FrameWaitAlarm.fired(){}
   async event void FrameStartAlarm.fired(){}
 
-  command error_t SplitControl.start(){ return FAIL;}
-  command error_t SplitControl.stop(){ return FAIL;}
-  event void Resource.granted(){}
 
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
       uint8_t* len){return FALSE;}
