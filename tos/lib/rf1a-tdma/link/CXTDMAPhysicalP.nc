@@ -218,16 +218,13 @@ module CXTDMAPhysicalP {
   }
 
 
-  async event void FrameWaitAlarm.fired(){}
-
-
   async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
-      uint8_t* len){return FALSE;}
-  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
-                                             unsigned int count,
-                                             int result) {}
-  async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
-      uint8_t len, int result) { }
+      uint8_t* len){
+    *buffer = (uint8_t*)tx_msg;
+    *len = tx_len;
+    return gpResult;
+  }
+
   async event uint8_t Rf1aPhysical.getChannelToUse(){
     return s_channel;
   }
@@ -449,6 +446,7 @@ module CXTDMAPhysicalP {
     lastCapture = (fst & 0xffff0000) | time;
     switch(asyncState){
       case S_RX_WAIT:
+        call FrameWaitAlarm.stop();
         txCapture = FALSE;
         setAsyncState(S_RX_RECEIVING);
         break;
@@ -456,9 +454,47 @@ module CXTDMAPhysicalP {
         txCapture = TRUE;
         //no state change
         break;
+      default:
+        setAsyncState(S_ERROR_0);
+        break;
     }
   }
-  
+
+  async event void FrameWaitAlarm.fired(){
+    if (asyncState == S_RX_WAIT){
+      error_t error = call Rf1aPhysical.resumeIdleMode();
+      if (error == SUCCESS){
+        //resumeIdle alone seems to put us into a stuck state. not
+        //  sure why. Radio stays in S_IDLE when we call
+        //  setReceiveBuffer in pfs.f.
+        //looks like this is firing when we are in the middle of a
+        //receive sometimes: if this returns EBUSY, then we can assume
+        //that and pretend it never happened (except that we called
+        //resumeIdleMode above?
+        error = call Rf1aPhysical.setReceiveBuffer(0, 0,
+          RF1A_OM_IDLE);
+        if (error == SUCCESS){
+          setAsyncState(S_IDLE);
+          post pfsTask();
+        }else{
+          setAsyncState(S_ERROR_0);
+        }
+      }
+    } else if (asyncState == S_RX_RECEIVING){
+      //OK: we started receiving a packet, then FWA fired before it
+      //finished. 
+      return;
+    } else {
+      setAsyncState(S_ERROR_0);
+    }
+  }
+
+  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
+                                             unsigned int count,
+                                             int result) {}
+
+  async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
+      uint8_t len, int result) { }
 
   error_t checkSetSchedule(){
     switch(state){
