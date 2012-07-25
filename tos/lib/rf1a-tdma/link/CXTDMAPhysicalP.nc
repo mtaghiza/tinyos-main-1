@@ -95,11 +95,16 @@ module CXTDMAPhysicalP {
   //Internal state vars
   uint8_t state = S_OFF;
   bool pfsTaskPending = FALSE;
+  bool configureRadioPending = FALSE;
 
   //Temporary variables from prep->TX
   message_t* tx_msg;
   uint8_t tx_len;
   bool gpResult;
+
+  //Temporary RX variables
+  message_t rx_msg_internal;
+  message_t* rx_msg = &rx_msg_internal;
 
   //externally-facing state vars
   uint16_t frameNum;
@@ -127,6 +132,22 @@ module CXTDMAPhysicalP {
         printf("![%x->%x]\r\n", state, s);
       }
       state = s;
+    }
+  }
+  
+  //These give us a way to report errors that arise in async context
+  uint8_t asyncError;
+  bool asyncErrorPending;
+  task void setAsyncError(){
+    atomic setState(asyncError);
+  }
+  void reportAsyncError(uint8_t error){
+    atomic{
+      if (!asyncErrorPending){
+        asyncErrorPending = TRUE;
+        asyncError = error;
+        post setAsyncError();
+      }
     }
   }
 
@@ -175,7 +196,6 @@ module CXTDMAPhysicalP {
 
 
   async event void SynchCapture.captured(uint16_t time){}
-  async event void PrepareFrameStartAlarm.fired(){}
   async event void FrameWaitAlarm.fired(){}
   async event void FrameStartAlarm.fired(){}
 
@@ -282,6 +302,68 @@ module CXTDMAPhysicalP {
     return gpResultLocal;
   }
   
+  //We should already have gathered all the info we need in pfsTask.
+  //At this point, we use that information to configure the radio.
+  //We'll actually do the timing-critical steps at the
+  //FrameStartAlarm.fired event.
+  task void configureRadio();
+
+  async event void PrepareFrameStartAlarm.fired(){
+    PFS_CYCLE_TOGGLE_PIN;
+    //cool, we got the work done in time. reschedule for next frame.
+    if (!pfsTaskPending){
+      call PrepareFrameStartAlarm.startAt(
+        call PrepareFrameStartAlarm.getAlarm(), 
+        s_frameLen);
+      configureRadioPending = TRUE;
+      post configureRadio();
+    }else {
+      pfsTaskPending = FALSE;
+      reportAsyncError(S_ERROR_0);
+    }
+  }
+  
+  //actually set up the radio for the coming frame-start
+  task void configureRadio(){
+    error_t error;
+    switch(state){
+      case S_RX_PRESTART:
+        //switch radio to RX, give it a buffer.
+        error = call Rf1aPhysical.setReceiveBuffer(
+          (uint8_t*)(rx_msg->header),
+          TOSH_DATA_LENGTH + sizeof(message_header_t),
+          RF1A_OM_IDLE);
+        if (error == SUCCESS){
+          setState(S_RX_READY);
+          call SynchCapture.captureRisingEdge();
+        }
+        break;
+
+      case S_TX_PRESTART:
+        //switch radio to FSTXON.
+        error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
+        if (error == SUCCESS){
+          //NB: if this becomes split-phase, we'll set the state when we
+          //get the callback.
+          setState(S_TX_READY);
+          //get ready to capture your own SFD for re-synch.
+          call SynchCapture.captureRisingEdge();
+        }else{
+          setState(S_ERROR_0);
+        }
+        break;
+
+      case S_IDLE:
+        //chillin'
+        break;
+
+      default:
+        setState(S_ERROR_0);
+        break;
+    }
+    atomic configureRadioPending = FALSE;
+  }
+
   error_t checkSetSchedule(){
     switch(state){
       case S_IDLE:
