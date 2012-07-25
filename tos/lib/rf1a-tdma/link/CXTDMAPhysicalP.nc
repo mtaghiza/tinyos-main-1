@@ -94,7 +94,13 @@ module CXTDMAPhysicalP {
   
   //Internal state vars
   uint8_t state = S_OFF;
-  
+  bool pfsTaskPending = FALSE;
+
+  //Temporary variables from prep->TX
+  message_t* tx_msg;
+  uint8_t tx_len;
+  bool gpResult;
+
   //externally-facing state vars
   uint16_t frameNum;
 
@@ -117,6 +123,9 @@ module CXTDMAPhysicalP {
   void setState(uint8_t s){
     //once we enter error state, reject transitions
     if ((state & M_TYPE) != M_ERROR){
+      if ((s & M_TYPE) == M_ERROR){
+        printf("![%x->%x]\r\n", state, s);
+      }
       state = s;
     }
   }
@@ -194,6 +203,84 @@ module CXTDMAPhysicalP {
   async command uint32_t TDMAPhySchedule.getNow(){
     return call FrameStartAlarm.getNow();
   }
+
+  bool getPacket(uint16_t fn);
+
+  task void pfsTask(){
+    //increment frame number
+    frameNum = (frameNum+1)%(s_totalFrames);
+    signal FrameStarted.frameStarted(frameNum);
+    
+    //Sleep/wake up radio as needed.
+    if (state != S_INACTIVE 
+        && signal TDMAPhySchedule.isInactive(frameNum)){
+      if (SUCCESS == call Rf1aPhysical.sleep()){
+        stopAlarms();
+        setState(S_INACTIVE);
+      }else{
+        setState(S_ERROR_0);
+      }
+    }else if (state == S_INACTIVE 
+        && !signal TDMAPhySchedule.isInactive(frameNum)){
+      if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
+        call FrameStartAlarm.startAt(
+          call PrepareFrameStartAlarm.getAlarm(), 
+          PFS_SLACK);
+        setState(S_IDLE);
+      }else{
+        setState(S_ERROR_0);
+      }
+    }
+
+    //figure out what upper layers want to do
+    //set up state so that when PFS alarm fires, we can configure the
+    //radio as desired.
+    if (state == S_IDLE || state == S_RX_WAIT){
+      switch(signal CXTDMA.frameType(frameNum)){
+          case RF1A_OM_FSTXON:
+            if (getPacket(frameNum)){
+              setState(S_TX_PRESTART);
+            }else{
+              setState(S_ERROR_0);
+            }
+            break;
+          case RF1A_OM_RX:
+            setState(S_RX_PRESTART);
+            break;
+          default:
+            setState(S_ERROR_0);
+            break;
+      }
+    }
+
+    atomic pfsTaskPending = FALSE;
+  }
+
+  bool getPacket(uint16_t fn){
+    uint8_t* gpBufLocal;
+    message_t* tx_msgLocal;
+    uint8_t tx_lenLocal;
+    bool gpResultLocal;
+    gpResultLocal = signal CXTDMA.getPacket((message_t**)(&gpBufLocal), fn);
+    tx_msgLocal = (message_t*) gpBufLocal;
+    if (gpResultLocal && tx_msgLocal != NULL){
+      tx_lenLocal = (call Rf1aPacket.metadata(tx_msgLocal))->payload_length;
+      call CXPacket.incCount(tx_msgLocal);
+      if (call CXPacket.source(tx_msgLocal) == TOS_NODE_ID 
+          && call CXPacket.count(tx_msgLocal) == 1){
+        call CXPacket.setScheduleNum(tx_msgLocal, 
+          signal TDMAPhySchedule.getScheduleNum());
+        call CXPacket.setOriginalFrameNum(tx_msgLocal,
+          fn);
+      }
+      atomic{
+        tx_msg = tx_msgLocal;
+        tx_len = tx_lenLocal;
+        gpResult = gpResultLocal;
+      }
+    }
+    return gpResultLocal;
+  }
   
   error_t checkSetSchedule(){
     switch(state){
@@ -204,6 +291,13 @@ module CXTDMAPhysicalP {
         return EOFF;
       default:
         return ERETRY;
+    }
+  }
+
+  void postPfs(){
+    atomic {
+      pfsTaskPending = TRUE;
+      post pfsTask();
     }
   }
 
@@ -265,9 +359,10 @@ module CXTDMAPhysicalP {
       if (s_sr != last_sr || s_channel != last_channel){
         call Rf1aPhysical.reconfigure();
       }
+      postPfs();
     }
 
-    return FAIL;
+    return SUCCESS;
   }
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
