@@ -243,9 +243,6 @@ module CXTDMAPhysicalP {
     }else if (state == S_INACTIVE 
         && !signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-        call FrameStartAlarm.startAt(
-          call PrepareFrameStartAlarm.getAlarm(), 
-          PFS_SLACK);
         setState(S_IDLE);
       }else{
         setState(S_ERROR_0);
@@ -312,6 +309,11 @@ module CXTDMAPhysicalP {
     PFS_CYCLE_TOGGLE_PIN;
     //cool, we got the work done in time. reschedule for next frame.
     if (!pfsTaskPending){
+      //first, set up for FSA (soon)
+      call FrameStartAlarm.startAt(
+        call PrepareFrameStartAlarm.getAlarm(), 
+        PFS_SLACK);
+      //now, set up for next PFSA (next frame)
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
@@ -432,8 +434,6 @@ module CXTDMAPhysicalP {
       delta = call PrepareFrameStartAlarm.getNow();
       call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
         delta);
-      call FrameStartAlarm.startAt(pfsStartAt-delta,
-        delta + PFS_SLACK);
       s_isSynched = isSynched;
 
       //If channel or symbol rate changes, need to reconfigure
