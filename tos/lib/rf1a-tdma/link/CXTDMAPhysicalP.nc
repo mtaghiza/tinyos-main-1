@@ -40,6 +40,59 @@ module CXTDMAPhysicalP {
   uses interface Rf1aDumpConfig;
   uses interface StateTiming;
 } implementation {
+  enum{
+    M_TYPE = 0xf0,
+
+    //split control states
+    M_SPLITCONTROL = 0x00,
+    S_OFF = 0x00,
+    S_STARTING = 0x01,
+    S_STOPPING = 0x02,
+    
+    //mid-frame states:
+    // Following frame-prep, we should be in one of these states.
+    M_MIDFRAME = 0x10,
+    S_INACTIVE = 0x10,
+    S_IDLE = 0x11,
+    S_RX_PRESTART = 0x12,
+    S_TX_PRESTART = 0x13,
+    
+    //RX intermediate states
+    M_RX = 0x20,
+    S_RX_START = 0x20,
+    S_RX_READY = 0x21,
+    S_RX_WAIT = 0x22,
+    S_RX_RECEIVING = 0x23,
+    S_RX_CLEANUP = 0x24,
+
+    //TX intermediate states
+    M_TX = 0x30, 
+    S_TX_START = 0x30,
+    S_TX_READY = 0x31,
+    S_TX_WAIT = 0x32,
+    S_TX_TRANSMITTING = 0x33,
+    S_TX_CLEANUP = 0x34,
+
+    S_ERROR_0 = 0xf0,
+    S_ERROR_1 = 0xf1,
+    S_ERROR_2 = 0xf2,
+    S_ERROR_3 = 0xf3,
+    S_ERROR_4 = 0xf4,
+    S_ERROR_5 = 0xf5,
+    S_ERROR_6 = 0xf6,
+    S_ERROR_7 = 0xf7,
+    S_ERROR_8 = 0xf8,
+    S_ERROR_9 = 0xf9,
+    S_ERROR_a = 0xfa,
+    S_ERROR_b = 0xfb,
+    S_ERROR_c = 0xfc,
+    S_ERROR_d = 0xfd,
+    S_ERROR_e = 0xfe,
+    S_ERROR_f = 0xff,
+  };
+
+  uint8_t state = S_OFF;
+
   //Current radio settings
   uint8_t s_sr;
   uint8_t s_channel;
