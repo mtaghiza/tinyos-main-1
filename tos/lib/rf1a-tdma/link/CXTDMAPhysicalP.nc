@@ -105,6 +105,7 @@ module CXTDMAPhysicalP {
   uint16_t sdFrameNum;
   error_t sdResult;
   bool sdPending;
+  uint8_t sdLen;
 
   //Temporary RX variables
   message_t rx_msg_internal;
@@ -410,6 +411,7 @@ module CXTDMAPhysicalP {
           if (! sdPending){
             sdPending = TRUE;
             sdResult = error;
+            sdLen = 0;
             post completeSendDone();
           }else{
             //still handling last sendDone (should really never
@@ -434,12 +436,6 @@ module CXTDMAPhysicalP {
     }
   }
   
-  task void completeSendDone(){
-    error_t res;
-    atomic res = sdResult;
-    signal CXTDMA.sendDone(tx_msg, tx_len, sdFrameNum, res);
-    atomic sdPending = FALSE;
-  }
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
@@ -587,7 +583,42 @@ module CXTDMAPhysicalP {
   }
 
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
-      uint8_t len, int result) { }
+      uint8_t len, int result) { 
+    if (asyncState == S_TX_TRANSMITTING){
+      if (sdPending || (message_t*)buffer != tx_msg){
+        setAsyncState(S_ERROR_0);
+      }else {
+        sdPending = TRUE;
+        sdResult = result;
+        sdLen = len;
+        post completeSendDone();
+      }
+    }
+  }
+
+  task void completeSendDone(){
+    message_t* sdMsgLocal;
+    uint8_t sdLenLocal;
+    error_t sdResultLocal;
+    uint32_t sdRECaptureLocal;
+    atomic{
+      sdMsgLocal = tx_msg;
+      sdLenLocal = sdLen;
+      sdResultLocal = sdResult;
+      sdRECaptureLocal = lastCapture;
+    }
+    if ( call CXPacket.source(sdMsgLocal) == TOS_NODE_ID 
+        && call CXPacket.count(sdMsgLocal) == 1){
+      call CXPacketMetadata.setPhyTimestamp(sdMsgLocal,
+        sdRECaptureLocal);
+    }
+    signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
+      sdResultLocal);
+
+    setState(S_IDLE);
+    post pfsTask();
+    atomic sdPending = FALSE;
+  }
 
   error_t checkSetSchedule(){
     switch(state){
