@@ -72,7 +72,8 @@ module CXTDMAPhysicalP {
     S_TX_WAIT = 0x32,
     S_TX_TRANSMITTING = 0x33,
     S_TX_CLEANUP = 0x34,
-
+    
+    M_ERROR = 0xf0,
     S_ERROR_0 = 0xf0,
     S_ERROR_1 = 0xf1,
     S_ERROR_2 = 0xf2,
@@ -90,35 +91,62 @@ module CXTDMAPhysicalP {
     S_ERROR_e = 0xfe,
     S_ERROR_f = 0xff,
   };
-
+  
+  //Internal state vars
   uint8_t state = S_OFF;
+  
+  //externally-facing state vars
+  uint16_t frameNum;
 
   //Current radio settings
-  uint8_t s_sr;
-  uint8_t s_channel;
+  uint8_t s_sr = SCHED_INIT_SYMBOLRATE;
+  uint8_t s_channel = TEST_CHANNEL;
+
+  //other schedule settings
+  uint32_t s_totalFrames;
+  uint8_t s_sri = 0xff;
+  uint32_t s_frameLen;
+  uint32_t s_fwCheckLen;
+  bool s_isSynched = FALSE;
+
 
   //Split control vars
   bool stopPending = FALSE;
   
+  //Utility functions
+  void setState(uint8_t s){
+    //once we enter error state, reject transitions
+    if ((state & M_TYPE) != M_ERROR){
+      state = s;
+    }
+  }
+
+  void stopAlarms(){
+    call PrepareFrameStartAlarm.stop();
+    call FrameStartAlarm.stop();
+    call FrameWaitAlarm.stop();
+  }
+
   //SplitControl operations
   command error_t SplitControl.start(){
     if (state == S_OFF){
       error_t err = call Resource.request();
       if (err == SUCCESS){
-        state = S_STARTING;
+        setState(S_STARTING);
       }
       return err;
     }else{
       return EOFF;
     }
-    return FAIL;
   }
 
   event void Resource.granted(){
     if (state == S_STARTING){
       //NB: Phy impl starts the radio in IDLE
-      state = S_IDLE;
+      setState(S_IDLE);
       signal SplitControl.startDone(SUCCESS);
+    }else{
+      setState(S_ERROR_0);
     }
   }
   
@@ -166,10 +194,79 @@ module CXTDMAPhysicalP {
   async command uint32_t TDMAPhySchedule.getNow(){
     return call FrameStartAlarm.getNow();
   }
+  
+  error_t checkSetSchedule(){
+    switch(state){
+      case S_IDLE:
+      case S_INACTIVE:
+        return SUCCESS;
+      case S_OFF:
+        return EOFF;
+      default:
+        return ERETRY;
+    }
+  }
 
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
       uint8_t channel, bool isSynched){
+    error_t err = checkSetSchedule();
+    if (err != SUCCESS){
+      return err;
+    }
+    atomic{
+      uint32_t pfsStartAt;
+      uint32_t delta;
+      uint8_t last_sr = s_sr;
+      uint8_t last_channel = s_channel;
+      s_totalFrames = totalFrames;
+      s_sr = symbolRate;
+      s_sri = srIndex(s_sr);
+      s_frameLen = frameLens[s_sri];
+      s_fwCheckLen = fwCheckLens[s_sri];
+
+      stopAlarms();
+      call SynchCapture.disable();
+
+      //not synched: set the frame wait timeout to 2x frame len
+      if (!isSynched){
+        s_frameLen *= 10;
+        s_fwCheckLen = 2*s_frameLen;
+      }
+
+      //while target frameStart is in the past
+      // - add 1 to target frameNum, add framelen to target frameStart
+      //TODO: fix issue with PFS_SLACK causing numbers to wrap
+      pfsStartAt = startAt - PFS_SLACK ;
+      while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
+        pfsStartAt += s_frameLen;
+        atFrameNum = (atFrameNum + 1)%(s_totalFrames);
+      }
+
+      //now that target is in the future: 
+      //  - set frameNum to target framenum - 1 (so that pfs counts to
+      //    correct frame num when it fires).
+      if (atFrameNum == 0){
+        frameNum = s_totalFrames;
+      }else{
+        frameNum = atFrameNum - 1;
+      }
+      //  - set base and delta to arbitrary values s.t. base +delta =
+      //    target frame start
+      delta = call PrepareFrameStartAlarm.getNow();
+      call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
+        delta);
+      call FrameStartAlarm.startAt(pfsStartAt-delta,
+        delta + PFS_SLACK);
+      s_isSynched = isSynched;
+
+      //If channel or symbol rate changes, need to reconfigure
+      //  radio.
+      if (s_sr != last_sr || s_channel != last_channel){
+        call Rf1aPhysical.reconfigure();
+      }
+    }
+
     return FAIL;
   }
 
