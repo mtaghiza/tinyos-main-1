@@ -573,7 +573,7 @@ module CXScopedFloodP{
     uint32_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
-    printf_SF_RX("rx %p %x ", msg, state);
+    printf_SF_RX("#rx %p %x ", msg, state);
     if ( (pType == CX_TYPE_DATA && 
            (src == lastDataSrc && sn == lastDataSn))
        ||(pType == CX_TYPE_ACK &&
