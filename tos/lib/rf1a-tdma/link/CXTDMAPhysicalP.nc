@@ -688,6 +688,7 @@ module CXTDMAPhysicalP {
     switch(state){
       case S_IDLE:
       case S_INACTIVE:
+
         return SUCCESS;
       case S_OFF:
         return EOFF;
@@ -706,73 +707,72 @@ module CXTDMAPhysicalP {
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
       uint8_t channel, bool isSynched){
-    error_t err = checkSetSchedule();
-    if (err != SUCCESS){
-      return err;
-    }
+    error_t err;
     atomic{
-      uint32_t pfsStartAt;
-      uint8_t last_sr = s_sr;
-      uint8_t last_channel = s_channel;
-      uint32_t t0;
-      uint32_t dt;
-      s_totalFrames = totalFrames;
-      s_sr = symbolRate;
-      s_sri = srIndex(s_sr);
-      s_frameLen = frameLens[s_sri];
-      s_fwCheckLen = fwCheckLens[s_sri];
-
-      stopAlarms();
-      call SynchCapture.disable();
-
-      //not synched: set the frame wait timeout to almost-frame len
-      if (!isSynched){
-        s_frameLen *= 20;
-        s_fwCheckLen = s_frameLen-2*PFS_SLACK;
-        printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
-          frameLens[s_sri], s_frameLen, s_fwCheckLen);
+      err = checkSetSchedule();
+      if (err == SUCCESS){
+        uint32_t pfsStartAt;
+        uint8_t last_sr = s_sr;
+        uint8_t last_channel = s_channel;
+        uint32_t t0;
+        uint32_t dt;
+        s_totalFrames = totalFrames;
+        s_sr = symbolRate;
+        s_sri = srIndex(s_sr);
+        s_frameLen = frameLens[s_sri];
+        s_fwCheckLen = fwCheckLens[s_sri];
+  
+        stopAlarms();
+        call SynchCapture.disable();
+  
+        //not synched: set the frame wait timeout to almost-frame len
+        if (!isSynched){
+          s_frameLen *= 20;
+          s_fwCheckLen = s_frameLen-2*PFS_SLACK;
+          printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
+            frameLens[s_sri], s_frameLen, s_fwCheckLen);
+        }
+  
+        //while target frameStart is in the past
+        // - add 1 to target frameNum, add framelen to target frameStart
+        //TODO: fix issue with PFS_SLACK causing numbers to wrap
+        pfsStartAt = startAt - PFS_SLACK ;
+        while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
+          pfsStartAt += s_frameLen;
+          atFrameNum = (atFrameNum + 1)%(s_totalFrames);
+        }
+  
+        //now that target is in the future: 
+        //  - set frameNum to target framenum - 1 (so that pfs counts to
+        //    correct frame num when it fires).
+        if (atFrameNum == 0){
+          frameNum = s_totalFrames;
+        }else{
+          frameNum = atFrameNum - 1;
+        }
+  
+        //  - set t0 and dt to arbitrary values s.t t0 + dt =
+        //    target frame start AND t0 is in the past
+        t0 = call PrepareFrameStartAlarm.getNow();
+        dt = pfsStartAt - t0;
+        ////TODO: remove debug
+  //      printf("t0 %lu dt %lu\r\n", t0, dt);
+        call PrepareFrameStartAlarm.startAt(t0,
+          dt);
+        ////TODO: remove debug
+  //      atomic pt = 3;
+  //      post printTimers();
+        s_isSynched = isSynched;
+  
+        //If channel or symbol rate changes, need to reconfigure
+        //  radio.
+        if (s_sr != last_sr || s_channel != last_channel){
+          call Rf1aPhysical.reconfigure();
+        }
+        postPfs();      
       }
-
-      //while target frameStart is in the past
-      // - add 1 to target frameNum, add framelen to target frameStart
-      //TODO: fix issue with PFS_SLACK causing numbers to wrap
-      pfsStartAt = startAt - PFS_SLACK ;
-      while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
-        pfsStartAt += s_frameLen;
-        atFrameNum = (atFrameNum + 1)%(s_totalFrames);
-      }
-
-      //now that target is in the future: 
-      //  - set frameNum to target framenum - 1 (so that pfs counts to
-      //    correct frame num when it fires).
-      if (atFrameNum == 0){
-        frameNum = s_totalFrames;
-      }else{
-        frameNum = atFrameNum - 1;
-      }
-
-      //  - set t0 and dt to arbitrary values s.t t0 + dt =
-      //    target frame start AND t0 is in the past
-      t0 = call PrepareFrameStartAlarm.getNow();
-      dt = pfsStartAt - t0;
-      ////TODO: remove debug
-//      printf("t0 %lu dt %lu\r\n", t0, dt);
-      call PrepareFrameStartAlarm.startAt(t0,
-        dt);
-      ////TODO: remove debug
-//      atomic pt = 3;
-//      post printTimers();
-      s_isSynched = isSynched;
-
-      //If channel or symbol rate changes, need to reconfigure
-      //  radio.
-      if (s_sr != last_sr || s_channel != last_channel){
-        call Rf1aPhysical.reconfigure();
-      }
-      postPfs();
     }
-
-    return SUCCESS;
+    return err;
   }
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
