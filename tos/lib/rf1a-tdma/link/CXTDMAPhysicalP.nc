@@ -395,8 +395,9 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
-      atomic pt = 0;
-      post printTimers();
+      ////TODO: remove debug
+//      atomic pt = 0;
+//      post printTimers();
       configureRadioPending = TRUE;
       post configureRadio();
     }else {
@@ -486,8 +487,9 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
-        atomic pt = 1;
-        post printTimers();
+      ////TODO: remove debug
+//        atomic pt = 1;
+//        post printTimers();
         if (asyncState == S_RX_READY){
           setAsyncState(S_RX_WAIT);
         }
@@ -531,8 +533,9 @@ module CXTDMAPhysicalP {
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- PFS_SLACK);
-      atomic pt = 2;
-      post printTimers();
+      ////TODO: remove debug
+//      atomic pt = 2;
+//      post printTimers();
     }
   }
 
@@ -752,11 +755,13 @@ module CXTDMAPhysicalP {
       //    target frame start AND t0 is in the past
       t0 = call PrepareFrameStartAlarm.getNow();
       dt = pfsStartAt - t0;
-      printf("t0 %lu dt %lu\r\n", t0, dt);
+      ////TODO: remove debug
+//      printf("t0 %lu dt %lu\r\n", t0, dt);
       call PrepareFrameStartAlarm.startAt(t0,
         dt);
-      atomic pt = 3;
-      post printTimers();
+      ////TODO: remove debug
+//      atomic pt = 3;
+//      post printTimers();
       s_isSynched = isSynched;
 
       //If channel or symbol rate changes, need to reconfigure

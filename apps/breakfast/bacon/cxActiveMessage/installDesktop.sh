@@ -6,8 +6,8 @@ tc=0
 debugScale=4UL
 
 #test setup
-#rootId="0"
-rootId=""
+rootId="0"
+#rootId=""
 rootSender=0
 rootDest=1
 nonrootRx="1"
