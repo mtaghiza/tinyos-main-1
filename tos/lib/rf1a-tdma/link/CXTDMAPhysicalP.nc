@@ -539,6 +539,7 @@ module CXTDMAPhysicalP {
 //      atomic pt = 2;
 //      post printTimers();
     }
+    signal TDMAPhySchedule.resynched(frameNum);
   }
 
   async event void FrameWaitAlarm.fired(){
@@ -665,6 +666,13 @@ module CXTDMAPhysicalP {
     }
   }
 
+  void postPfs(){
+    atomic {
+      pfsTaskPending = TRUE;
+      post pfsTask();
+    }
+  }
+
   task void completeSendDone(){
     message_t* sdMsgLocal;
     uint8_t sdLenLocal;
@@ -682,11 +690,12 @@ module CXTDMAPhysicalP {
       call CXPacketMetadata.setPhyTimestamp(sdMsgLocal,
         sdRECaptureLocal);
     }
+    resynch();
     signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
       sdResultLocal);
 
     setState(S_IDLE);
-    post pfsTask();
+    postPfs();
     atomic sdPending = FALSE;
   }
 
@@ -706,13 +715,6 @@ module CXTDMAPhysicalP {
         return EOFF;
       default:
         return ERETRY;
-    }
-  }
-
-  void postPfs(){
-    atomic {
-      pfsTaskPending = TRUE;
-      post pfsTask();
     }
   }
 
