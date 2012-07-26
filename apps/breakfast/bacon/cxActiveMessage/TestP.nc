@@ -87,14 +87,7 @@ module TestP {
     }
     call UartControl.start();
     printf_APP("Booted.\r\n");
-    #if DESKTOP_TEST == 0
-//    printf("starting\r\n");
-    post startTask();
-    #else
-    if (TOS_NODE_ID != 0){
-      post startTask();
-    }
-    #endif
+    call StartupTimer.startOneShot((call Random.rand32())%5120);
   }
   
   event void SendTimer.fired(){
@@ -112,9 +105,8 @@ module TestP {
   }
 
   event void StartupTimer.fired(){
-    printf_TESTBED("Begin transmissions\r\n");
-    call SendTimer.startOneShot((TEST_IPI/2) + 
-      (call Random.rand32())%TEST_IPI );
+    printf_TESTBED("Starting.\r\n");
+    call SplitControl.start();
   }
 
   event void SplitControl.startDone(error_t error){
@@ -123,11 +115,8 @@ module TestP {
     printf_APP("Started.\r\n");
     call Leds.led0On();
     #if IS_SENDER == 1
-      #if DESKTOP_TEST == 0
-      call StartupTimer.startOneShot(TESTBED_START_TIME);
-      #else
-      call StartupTimer.startOneShot(DESKTOP_START_TIME);
-      #endif
+      call SendTimer.startOneShot((TEST_IPI/2) + 
+        (call Random.rand32())%TEST_IPI );
     #endif
   }
 
