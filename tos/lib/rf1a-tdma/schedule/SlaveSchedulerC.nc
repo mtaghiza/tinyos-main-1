@@ -22,7 +22,11 @@ configuration SlaveSchedulerC{
   components RandomC;
   components ActiveMessageC;
 
+  #if STATIC_SCHEDULER == 1
+  components SlaveSchedulerStaticP as SlaveSchedulerP;
+  #else
   components SlaveSchedulerP;
+  #endif
 
   SlaveSchedulerP.AnnounceReceive = AnnounceReceive;
   SlaveSchedulerP.RequestSend = RequestSend;
