@@ -146,6 +146,7 @@ module CXTDMAPhysicalP {
   uint8_t stateTransitions[STATE_HISTORY];
   uint8_t sts = 0;
   uint8_t stl = 0;
+  uint8_t pt;
 
   task void printTransitions(){
     //OK to do atomic: we only do this when we hit an error
@@ -159,17 +160,18 @@ module CXTDMAPhysicalP {
   }
 
   task void printTimers(){
-//    atomic{
-      if (call PrepareFrameStartAlarm.isRunning()){
-        printf("P %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
-      }
-      if (call FrameStartAlarm.isRunning()){
-        printf("F %lu\r\n", call FrameStartAlarm.getAlarm());
-      }
-      if (call FrameWaitAlarm.isRunning()){
-        printf("W %lu\r\n", call FrameStartAlarm.getAlarm());
-      }
-//    }
+    atomic{
+      printf("@ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
+      printf("P %x %lu\r\n", 
+        (call PrepareFrameStartAlarm.isRunning())?1:0, 
+        call PrepareFrameStartAlarm.getAlarm());
+      printf("F %x %lu\r\n", 
+        (call FrameStartAlarm.isRunning())?1:0, 
+        call FrameStartAlarm.getAlarm());
+      printf("W %x %lu\r\n", 
+        (call FrameWaitAlarm.isRunning())?1:0, 
+        call FrameWaitAlarm.getAlarm());
+    }
   }
 
   //Utility functions
@@ -386,6 +388,7 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
+      atomic pt = 0;
       post printTimers();
       configureRadioPending = TRUE;
       post configureRadio();
@@ -476,6 +479,7 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
+        atomic pt = 1;
         post printTimers();
         if (asyncState == S_RX_READY){
           setAsyncState(S_RX_WAIT);
@@ -520,6 +524,7 @@ module CXTDMAPhysicalP {
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- PFS_SLACK);
+      atomic pt = 2;
       post printTimers();
     }
   }
@@ -739,6 +744,7 @@ module CXTDMAPhysicalP {
       delta = call PrepareFrameStartAlarm.getNow();
       call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
         delta);
+      atomic pt = 3;
       post printTimers();
       s_isSynched = isSynched;
 
