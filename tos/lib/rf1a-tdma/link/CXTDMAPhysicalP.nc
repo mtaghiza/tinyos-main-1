@@ -690,7 +690,12 @@ module CXTDMAPhysicalP {
       case S_INACTIVE:
       case S_RX_PRESTART:
       case S_TX_PRESTART:
-        return SUCCESS;
+        if (call Rf1aStatus.get() == RF1A_S_IDLE 
+            || call Rf1aStatus.get() == RF1A_S_CALIBRATE){
+          return SUCCESS;
+        } else{
+          return ERETRY;
+        }
       case S_OFF:
         return EOFF;
       default:
@@ -726,8 +731,7 @@ module CXTDMAPhysicalP {
         stopAlarms();
         setState(S_IDLE);
         call SynchCapture.disable();
-////TODO: if we passed the checks above,  the radio *should* be idle.
-////Attempts to force it into an idle state made it hang...
+////if we passed the checks above,  the radio *should* already be idle.
 //        err = call Rf1aPhysical.resumeIdleMode();
 //        if (err == SUCCESS){
 //          err = call
@@ -789,8 +793,8 @@ module CXTDMAPhysicalP {
           postPfs();      
         }
       }else{
-        printf_TMP("CheckSchedule: %x %s\r\n", 
-          state, decodeError(err));
+        printf_TMP("CheckSchedule: %x %x %s\r\n", 
+          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
     return err;
