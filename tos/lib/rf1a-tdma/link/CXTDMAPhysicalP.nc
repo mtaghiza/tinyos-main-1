@@ -139,18 +139,62 @@ module CXTDMAPhysicalP {
   //Split control vars
   bool stopPending = FALSE;
   
+  #ifndef STATE_HISTORY
+  #define STATE_HISTORY 16
+  #endif
+
+  uint8_t stateTransitions[STATE_HISTORY];
+  uint8_t sts = 0;
+  uint8_t stl = 0;
+
+  task void printTransitions(){
+    //OK to do atomic: we only do this when we hit an error
+    atomic{
+      uint8_t i;
+      printf("STATE TRANSITIONS: sts: %u stl: %u\r\n", sts, stl);
+      for (i = 0; i < ((stl < STATE_HISTORY)? stl: STATE_HISTORY); i++){
+        printf("# %x\r\n", stateTransitions[(i+sts)%STATE_HISTORY]);
+      }
+    }
+  }
+
+  task void printTimers(){
+//    atomic{
+      if (call PrepareFrameStartAlarm.isRunning()){
+        printf("P %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+      }
+      if (call FrameStartAlarm.isRunning()){
+        printf("F %lu\r\n", call FrameStartAlarm.getAlarm());
+      }
+      if (call FrameWaitAlarm.isRunning()){
+        printf("W %lu\r\n", call FrameStartAlarm.getAlarm());
+      }
+//    }
+  }
+
   //Utility functions
   void setState(uint8_t s){
     //once we enter error state, reject transitions
     if ((state & M_TYPE) != M_ERROR){
       if ((s & M_TYPE) == M_ERROR){
         printf("![%x->%x]\r\n", state, s);
+        P2OUT |= BIT4;
+        post printTransitions();
       }
       state = s;
+      stateTransitions[(sts+stl)%STATE_HISTORY] = state;
+      if (stl < STATE_HISTORY){
+        stl++;
+      }else{
+        sts++;
+      }
     }
   }
+
   task void syncState(){
-    atomic state = asyncState;
+    atomic {
+      setState(asyncState);
+    }
   }
 
   void setAsyncState(uint8_t s){
@@ -290,7 +334,7 @@ module CXTDMAPhysicalP {
             setState(S_RX_PRESTART);
             break;
           default:
-            setState(S_ERROR_0);
+            setState(S_ERROR_1);
             break;
       }
     }
@@ -334,7 +378,7 @@ module CXTDMAPhysicalP {
     PFS_CYCLE_TOGGLE_PIN;
     //cool, we got the work done in time. reschedule for next frame.
     if (!pfsTaskPending){
-      //first, set up for FSA (soon)
+      //first, set up for FSA (this frame)
       call FrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         PFS_SLACK);
@@ -342,11 +386,12 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
+      post printTimers();
       configureRadioPending = TRUE;
       post configureRadio();
     }else {
       pfsTaskPending = FALSE;
-      reportAsyncError(S_ERROR_0);
+      reportAsyncError(S_ERROR_2);
     }
   }
   
@@ -361,8 +406,10 @@ module CXTDMAPhysicalP {
           TOSH_DATA_LENGTH + sizeof(message_header_t),
           RF1A_OM_IDLE);
         if (error == SUCCESS){
-          setState(S_RX_READY);
-          setAsyncState(S_RX_READY);
+          atomic{
+            setState(S_RX_READY);
+            setAsyncState(S_RX_READY);
+          }
           call SynchCapture.captureRisingEdge();
         }
         break;
@@ -389,7 +436,7 @@ module CXTDMAPhysicalP {
         break;
 
       default:
-        setState(S_ERROR_0);
+        setState(S_ERROR_3);
         break;
     }
     atomic configureRadioPending = FALSE;
@@ -429,6 +476,7 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
+        post printTimers();
         if (asyncState == S_RX_READY){
           setAsyncState(S_RX_WAIT);
         }
@@ -457,7 +505,7 @@ module CXTDMAPhysicalP {
         //no state change
         break;
       default:
-        setAsyncState(S_ERROR_0);
+        setAsyncState(S_ERROR_4);
         break;
     }
   }
@@ -472,6 +520,7 @@ module CXTDMAPhysicalP {
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- PFS_SLACK);
+      post printTimers();
     }
   }
 
@@ -492,7 +541,7 @@ module CXTDMAPhysicalP {
           setAsyncState(S_IDLE);
           post pfsTask();
         }else{
-          setAsyncState(S_ERROR_0);
+          setAsyncState(S_ERROR_5);
         }
       }
     } else if (asyncState == S_RX_RECEIVING){
@@ -500,7 +549,7 @@ module CXTDMAPhysicalP {
       //finished. 
       return;
     } else {
-      setAsyncState(S_ERROR_0);
+      setAsyncState(S_ERROR_6);
     }
   }
   
@@ -537,7 +586,7 @@ module CXTDMAPhysicalP {
           setAsyncState(S_ERROR_0);
         }
       } else {
-        setAsyncState(S_ERROR_0);
+        setAsyncState(S_ERROR_7);
       }
     }
   }
@@ -586,7 +635,7 @@ module CXTDMAPhysicalP {
       uint8_t len, int result) { 
     if (asyncState == S_TX_TRANSMITTING){
       if (sdPending || (message_t*)buffer != tx_msg){
-        setAsyncState(S_ERROR_0);
+        setAsyncState(S_ERROR_9);
       }else {
         sdPending = TRUE;
         sdResult = result;
@@ -660,10 +709,12 @@ module CXTDMAPhysicalP {
       stopAlarms();
       call SynchCapture.disable();
 
-      //not synched: set the frame wait timeout to 2x frame len
+      //not synched: set the frame wait timeout to almost-frame len
       if (!isSynched){
-        s_frameLen *= 10;
-        s_fwCheckLen = 2*s_frameLen;
+        s_frameLen *= 20;
+        s_fwCheckLen = s_frameLen-2*PFS_SLACK;
+        printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
+          frameLens[s_sri], s_frameLen, s_fwCheckLen);
       }
 
       //while target frameStart is in the past
@@ -688,6 +739,7 @@ module CXTDMAPhysicalP {
       delta = call PrepareFrameStartAlarm.getNow();
       call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
         delta);
+      post printTimers();
       s_isSynched = isSynched;
 
       //If channel or symbol rate changes, need to reconfigure

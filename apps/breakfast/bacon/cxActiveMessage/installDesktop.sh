@@ -6,15 +6,17 @@ tc=0
 debugScale=4UL
 
 #test setup
-rootId="0"
+#rootId="0"
+rootId=""
 rootSender=0
 rootDest=1
-nonrootRx=""
+nonrootRx="1"
 leafDest=0
 testRequestAck=1
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
-nonrootTx="1"
+#allPlugged="0"
+#nonrootTx="1"
 
 fecEnabled=0
 fecHamming74=1
@@ -23,7 +25,7 @@ ipi=1024UL
 queueThreshold=1
 
 #network params
-numSlots=20
+numSlots=10
 fps=10
 md=1
 mr=1
