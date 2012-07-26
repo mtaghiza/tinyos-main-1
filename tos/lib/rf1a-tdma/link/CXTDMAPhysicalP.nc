@@ -306,7 +306,6 @@ module CXTDMAPhysicalP {
     if (state != S_INACTIVE 
         && signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.sleep()){
-        stopAlarms();
         setState(S_INACTIVE);
       }else{
         setState(S_ERROR_0);
@@ -344,7 +343,16 @@ module CXTDMAPhysicalP {
     }
 
     atomic pfsTaskPending = FALSE;
+  } 
+
+  void postPfs(){
+    atomic {
+      pfsTaskPending = TRUE;
+      post pfsTask();
+    }
   }
+
+
 
   bool getPacket(uint16_t fn){
     uint8_t* gpBufLocal;
@@ -443,9 +451,8 @@ module CXTDMAPhysicalP {
         }
         break;
 
-      case S_IDLE:
-        setAsyncState(S_IDLE);
-        //chillin'
+      case S_INACTIVE:
+        setAsyncState(S_INACTIVE);
         break;
 
       default:
@@ -486,7 +493,7 @@ module CXTDMAPhysicalP {
         }else{
           setAsyncState(S_TX_TRANSMITTING);
         }
-      }else if (asyncState == S_RX_READY || asyncState == S_IDLE){
+      }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
       ////TODO: remove debug
@@ -557,7 +564,7 @@ module CXTDMAPhysicalP {
           RF1A_OM_IDLE);
         if (error == SUCCESS){
           setAsyncState(S_IDLE);
-          post pfsTask();
+          postPfs();
         }else{
           setAsyncState(S_ERROR_5);
         }
@@ -566,6 +573,9 @@ module CXTDMAPhysicalP {
       //OK: we started receiving a packet, then FWA fired before it
       //finished. 
       return;
+    } else if (asyncState == S_INACTIVE){
+      //OK, we were inactive. nobigs. 
+      postPfs();
     } else {
       setAsyncState(S_ERROR_6);
     }
@@ -646,7 +656,7 @@ module CXTDMAPhysicalP {
           frameNum, rdLastRECaptureLocal);
       }
       setState(S_IDLE);
-      post pfsTask();
+      postPfs();
     }
     atomic rdPending = FALSE;
 
@@ -663,13 +673,6 @@ module CXTDMAPhysicalP {
         sdLen = len;
         post completeSendDone();
       }
-    }
-  }
-
-  void postPfs(){
-    atomic {
-      pfsTaskPending = TRUE;
-      post pfsTask();
     }
   }
 

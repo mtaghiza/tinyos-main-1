@@ -10,13 +10,13 @@ rootId="0"
 #rootId=""
 rootSender=0
 rootDest=1
-nonrootRx="1"
+#nonrootRx="1"
 leafDest=0
-testRequestAck=1
+testRequestAck=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
 #allPlugged="0"
-#nonrootTx="1"
+nonrootTx="1"
 
 fecEnabled=0
 fecHamming74=1
@@ -25,7 +25,7 @@ ipi=1024UL
 queueThreshold=1
 
 #network params
-numSlots=10
+numSlots=30
 fps=10
 md=1
 mr=1
