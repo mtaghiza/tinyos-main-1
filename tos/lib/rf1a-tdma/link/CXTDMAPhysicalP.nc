@@ -378,6 +378,13 @@ module CXTDMAPhysicalP {
 
   async event void PrepareFrameStartAlarm.fired(){
     PFS_CYCLE_TOGGLE_PIN;
+    if (call PrepareFrameStartAlarm.getNow() < 
+        call PrepareFrameStartAlarm.getAlarm()){
+      printf("!PFS early: %lu < %lu\r\n", 
+        call PrepareFrameStartAlarm.getNow(),  
+        call PrepareFrameStartAlarm.getAlarm());
+      return;
+    }
     //cool, we got the work done in time. reschedule for next frame.
     if (!pfsTaskPending){
       //first, set up for FSA (this frame)
