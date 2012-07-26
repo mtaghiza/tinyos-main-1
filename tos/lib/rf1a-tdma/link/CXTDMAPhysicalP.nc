@@ -724,19 +724,23 @@ module CXTDMAPhysicalP {
         s_fwCheckLen = fwCheckLens[s_sri];
   
         stopAlarms();
-        err = call Rf1aPhysical.resumeIdleMode();
-        if (err == SUCCESS){
-          err = call Rf1aPhysical.setReceiveBuffer(0, 0,
-            RF1A_OM_IDLE);
-          if (err == SUCCESS){
-            setState(S_IDLE);
-            call SynchCapture.disable();
-          }else{
-            setState(S_ERROR_8);
-          }
-        }else{
-          setState(S_ERROR_9);
-        }
+        setState(S_IDLE);
+        call SynchCapture.disable();
+////TODO: if we passed the checks above,  the radio *should* be idle.
+////Attempts to force it into an idle state made it hang...
+//        err = call Rf1aPhysical.resumeIdleMode();
+//        if (err == SUCCESS){
+//          err = call
+//          Rf1aPhysical.setReceiveBuffer((uint8_t*)rx_msg->header,
+//            TOSH_DATA_LENGTH+sizeof(message_header_t), 
+//            RF1A_OM_IDLE);
+//          if (err == SUCCESS){
+//          }else{
+//            setState(S_ERROR_8);
+//          }
+//        }else{
+//          setState(S_ERROR_9);
+//        }
         if (err == SUCCESS){
           //not synched: set the frame wait timeout to almost-frame len
           if (!isSynched){
@@ -784,6 +788,9 @@ module CXTDMAPhysicalP {
           }
           postPfs();      
         }
+      }else{
+        printf_TMP("CheckSchedule: %x %s\r\n", 
+          state, decodeError(err));
       }
     }
     return err;
