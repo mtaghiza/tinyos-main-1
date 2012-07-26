@@ -709,9 +709,10 @@ module CXTDMAPhysicalP {
     }
     atomic{
       uint32_t pfsStartAt;
-      uint32_t delta;
       uint8_t last_sr = s_sr;
       uint8_t last_channel = s_channel;
+      uint32_t t0;
+      uint32_t dt;
       s_totalFrames = totalFrames;
       s_sr = symbolRate;
       s_sri = srIndex(s_sr);
@@ -746,11 +747,14 @@ module CXTDMAPhysicalP {
       }else{
         frameNum = atFrameNum - 1;
       }
-      //  - set base and delta to arbitrary values s.t. base +delta =
-      //    target frame start
-      delta = call PrepareFrameStartAlarm.getNow();
-      call PrepareFrameStartAlarm.startAt(pfsStartAt-delta,
-        delta);
+
+      //  - set t0 and dt to arbitrary values s.t t0 + dt =
+      //    target frame start AND t0 is in the past
+      t0 = call PrepareFrameStartAlarm.getNow();
+      dt = pfsStartAt - t0;
+      printf("t0 %lu dt %lu\r\n", t0, dt);
+      call PrepareFrameStartAlarm.startAt(t0,
+        dt);
       atomic pt = 3;
       post printTimers();
       s_isSynched = isSynched;
