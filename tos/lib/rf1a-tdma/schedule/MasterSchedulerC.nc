@@ -18,7 +18,11 @@ configuration MasterSchedulerC {
   provides interface ScheduledSend as AnnounceSchedule;
   provides interface ScheduledSend as DefaultScheduledSend;
 } implementation {
+  #if STATIC_SCHEDULER == 1
+  components MasterSchedulerStaticP as MasterSchedulerP;
+  #else
   components MasterSchedulerP;
+  #endif
   components CXPacketStackC;
   components ActiveMessageC;
 
