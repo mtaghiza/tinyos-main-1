@@ -14,10 +14,11 @@ module CombineReceiveP{
   uses interface Pool<message_t>;
 } implementation {
   void printRX(message_t* msg){
-    printf_APP("RX s: %u d: %u sn: %u c: %u r: %d l: %u\r\n", 
+    printf_APP("RX s: %u d: %u sn: %u o: %u c: %u r: %d l: %u\r\n", 
       call CXPacket.source(msg),
       call CXPacket.destination(msg),
       call CXPacket.sn(msg),
+      call CXPacket.getOriginalFrameNum(msg),
       call CXPacketMetadata.getReceivedCount(msg),
       call Rf1aPacket.rssi(msg),
       call Rf1aPacket.lqi(msg)

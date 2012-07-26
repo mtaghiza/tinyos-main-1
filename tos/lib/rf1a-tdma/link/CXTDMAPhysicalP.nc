@@ -326,7 +326,9 @@ module CXTDMAPhysicalP {
     if (state == S_IDLE || state == S_RX_WAIT){
       switch(signal CXTDMA.frameType(frameNum)){
           case RF1A_OM_FSTXON:
+            IS_TX_SET_PIN;
             if (getPacket(frameNum)){
+              printf_TMP("#TX @%u\r\n", frameNum);
               setState(S_TX_PRESTART);
             }else{
               setState(S_ERROR_0);
@@ -635,6 +637,9 @@ module CXTDMAPhysicalP {
         if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
           resynch();
         }
+        printf_TMP("#RX %u @ %u\r\n", 
+          call CXPacket.sn(msg),
+          frameNum);
         rx_msg = signal CXTDMA.receive(msg,
           rdCountLocal - sizeof(rf1a_ieee154_t),
           frameNum, rdLastRECaptureLocal);
@@ -665,6 +670,7 @@ module CXTDMAPhysicalP {
     uint8_t sdLenLocal;
     error_t sdResultLocal;
     uint32_t sdRECaptureLocal;
+    IS_TX_CLEAR_PIN;
     atomic{
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
@@ -776,13 +782,13 @@ module CXTDMAPhysicalP {
           //    target frame start AND t0 is in the past
           t0 = call PrepareFrameStartAlarm.getNow();
           dt = pfsStartAt - t0;
-          ////TODO: remove debug
-    //      printf("t0 %lu dt %lu\r\n", t0, dt);
           call PrepareFrameStartAlarm.startAt(t0,
             dt);
+
           ////TODO: remove debug
     //      atomic pt = 3;
     //      post printTimers();
+
           s_isSynched = isSynched;
     
           //If channel or symbol rate changes, need to reconfigure

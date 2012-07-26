@@ -579,6 +579,11 @@ module CXScopedFloodP{
        ||(pType == CX_TYPE_ACK &&
            (src == lastAckSrc && sn == lastAckSn)) 
        || (!call TDMARoutingSchedule.isSynched())){
+      if ( call TDMARoutingSchedule.isSynched()){
+        printf_SF_RX("DUP\r\n");
+      } else{
+        printf_SF_RX("NS\r\n");
+      }
       //duplicate, or non-synched, drop it.
       return msg;
     }
