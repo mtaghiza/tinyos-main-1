@@ -53,7 +53,7 @@ txAodvState=0
 rxAodvState=0
 aodvClear=0
 debugFEC=0
-debugSFRX=1
+debugSFRX=0
 debugSS=0
 debugTestbedResource=0
 #debug RXREADY error messages

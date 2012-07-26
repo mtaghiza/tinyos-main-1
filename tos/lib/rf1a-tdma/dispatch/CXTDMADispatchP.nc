@@ -95,8 +95,8 @@ module CXTDMADispatchP{
 
   event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    printf_TMP("#D %x\r\n",
-      call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED);
+//    printf_TMP("#D %x\r\n",
+//      call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED);
     return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
   }
 

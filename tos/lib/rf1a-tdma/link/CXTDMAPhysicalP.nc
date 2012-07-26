@@ -328,7 +328,7 @@ module CXTDMAPhysicalP {
           case RF1A_OM_FSTXON:
             IS_TX_SET_PIN;
             if (getPacket(frameNum)){
-              printf_TMP("#TX @%u\r\n", frameNum);
+//              printf_TMP("#TX @%u\r\n", frameNum);
               setState(S_TX_PRESTART);
             }else{
               setState(S_ERROR_0);
@@ -638,9 +638,9 @@ module CXTDMAPhysicalP {
         if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
           resynch();
         }
-        printf_TMP("#RX %u @ %u\r\n", 
-          call CXPacket.sn(msg),
-          frameNum);
+//        printf_TMP("#RX %u @ %u\r\n", 
+//          call CXPacket.sn(msg),
+//          frameNum);
         rx_msg = signal CXTDMA.receive(msg,
           rdCountLocal - sizeof(rf1a_ieee154_t),
           frameNum, rdLastRECaptureLocal);
@@ -758,8 +758,8 @@ module CXTDMAPhysicalP {
           if (!isSynched){
             s_frameLen *= 20;
             s_fwCheckLen = s_frameLen-2*PFS_SLACK;
-            printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
-              frameLens[s_sri], s_frameLen, s_fwCheckLen);
+//            printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
+//              frameLens[s_sri], s_frameLen, s_fwCheckLen);
           }
     
           //while target frameStart is in the past
@@ -801,8 +801,8 @@ module CXTDMAPhysicalP {
           postPfs();      
         }
       }else{
-        printf_TMP("CheckSchedule: %x %x %s\r\n", 
-          state, call Rf1aStatus.get(), decodeError(err));
+//        printf_TMP("CheckSchedule: %x %x %s\r\n", 
+//          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
     return err;
