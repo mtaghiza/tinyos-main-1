@@ -97,6 +97,7 @@ module SlaveSchedulerStaticP {
       state = S_READY;
       post startDoneTask();
     }
+    mySlot = TOS_NODE_ID;
   }
 
   event message_t* AnnounceReceive.receive(message_t* msg, void* pl, uint8_t len){
