@@ -338,7 +338,9 @@ module CXTDMAPhysicalP {
  
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { 
     atomic{
-      if (asyncState != S_RX_RECEIVING){
+      if (asyncState == S_RX_READY || asyncState == S_RX_WAIT){
+        setAsyncState(S_RX_RECEIVING);
+      }else{
         setAsyncState(S_ERROR_d);
       }
     }
@@ -601,8 +603,9 @@ module CXTDMAPhysicalP {
     call SynchCapture.disable();
     switch(asyncState){
       case S_RX_WAIT:
+      case S_RX_READY:
         txCapture = FALSE;
-        setAsyncState(S_RX_RECEIVING);
+//        setAsyncState(S_RX_RECEIVING);
         break;
       case S_TX_TRANSMITTING:
         txCapture = TRUE;
