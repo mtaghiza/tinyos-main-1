@@ -590,6 +590,9 @@ module CXTDMAPhysicalP {
     } else if (asyncState == S_INACTIVE){
       //OK, we were inactive. nobigs. 
       postPfs();
+    } else if (asyncState == S_RX_CLEANUP){
+      //Ignore: this happens if we, for instance, postponed FWA, then
+      //FWA expires while we're handling the end of the reception
     } else {
       setAsyncState(S_ERROR_6);
     }
