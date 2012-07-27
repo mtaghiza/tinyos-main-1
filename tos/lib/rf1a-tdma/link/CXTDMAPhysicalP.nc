@@ -149,6 +149,10 @@ module CXTDMAPhysicalP {
   uint8_t stl = 0;
   uint8_t pt;
 
+  uint32_t pfsHandled;
+  uint32_t fsHandled;
+  uint32_t fwHandled;
+
   task void printTransitions(){
     //OK to do atomic: we only do this when we hit an error
     atomic{
@@ -162,16 +166,19 @@ module CXTDMAPhysicalP {
 
   task void printTimers(){
     atomic{
-      printf("@ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
-      printf("P %x %lu\r\n", 
+      printf("# @ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
+      printf("# P %x %lu last %lu\r\n", 
         (call PrepareFrameStartAlarm.isRunning())?1:0, 
-        call PrepareFrameStartAlarm.getAlarm());
-      printf("F %x %lu\r\n", 
+        call PrepareFrameStartAlarm.getAlarm(),
+        pfsHandled);
+      printf("# F %x %lu last %lu\r\n", 
         (call FrameStartAlarm.isRunning())?1:0, 
-        call FrameStartAlarm.getAlarm());
-      printf("W %x %lu\r\n", 
+        call FrameStartAlarm.getAlarm(),
+        fsHandled);
+      printf("# W %x %lu last %lu\r\n", 
         (call FrameWaitAlarm.isRunning())?1:0, 
-        call FrameWaitAlarm.getAlarm());
+        call FrameWaitAlarm.getAlarm(),
+        fwHandled);
     }
   }
 
@@ -389,6 +396,7 @@ module CXTDMAPhysicalP {
   task void configureRadio();
 
   async event void PrepareFrameStartAlarm.fired(){
+    pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
     if (call PrepareFrameStartAlarm.getNow() < 
         call PrepareFrameStartAlarm.getAlarm()){
@@ -408,7 +416,7 @@ module CXTDMAPhysicalP {
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
       ////TODO: remove debug
-//      atomic pt = 0;
+      atomic pt = 0;
 //      post printTimers();
       configureRadioPending = TRUE;
       post configureRadio();
@@ -467,6 +475,9 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
+    //TODO: this is probably not safe: non-deterministic completion
+    //time!
+    fsHandled = call FrameStartAlarm.getNow();
     if (configureRadioPending){
       if (call FrameStartAlarm.getNow() < 
           call FrameStartAlarm.getAlarm()){
@@ -506,7 +517,7 @@ module CXTDMAPhysicalP {
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
       ////TODO: remove debug
-//        atomic pt = 1;
+        atomic pt = 1;
 //        post printTimers();
         if (asyncState == S_RX_READY){
           setAsyncState(S_RX_WAIT);
@@ -551,13 +562,14 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- PFS_SLACK);
       ////TODO: remove debug
-//      atomic pt = 2;
+      atomic pt = 2;
 //      post printTimers();
     }
     signal TDMAPhySchedule.resynched(frameNum);
   }
 
   async event void FrameWaitAlarm.fired(){
+    fwHandled = call FrameWaitAlarm.getNow();
     if (asyncState == S_RX_WAIT){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       if (error == SUCCESS){
@@ -582,6 +594,7 @@ module CXTDMAPhysicalP {
       //half-frame-length is probably too long.
       call FrameWaitAlarm.startAt(call FrameWaitAlarm.getAlarm(),
         s_frameLen/2);
+      atomic pt = 3;
       setAsyncState(S_RX_RECEIVING_FINAL);
       return;
     } else if (asyncState == S_RX_RECEIVING_FINAL){
@@ -814,7 +827,7 @@ module CXTDMAPhysicalP {
             dt);
 
           ////TODO: remove debug
-    //      atomic pt = 3;
+          atomic pt = 4;
     //      post printTimers();
 
           s_isSynched = isSynched;
