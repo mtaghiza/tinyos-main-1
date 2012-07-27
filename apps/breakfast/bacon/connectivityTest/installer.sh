@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 TEST_CHANNEL=0
-TEST_POWER=0xC3
+TEST_POWER=0x8D
 TEST_SR=125
 PAYLOAD_LEN=35
 MAP=map.bacon2

@@ -63,7 +63,8 @@ module CXTDMAPhysicalP {
     S_RX_READY = 0x21,
     S_RX_WAIT = 0x22,
     S_RX_RECEIVING = 0x23,
-    S_RX_CLEANUP = 0x24,
+    S_RX_RECEIVING_FINAL = 0x24,
+    S_RX_CLEANUP = 0x25,
 
     //TX intermediate states
     M_TX = 0x30, 
@@ -182,6 +183,7 @@ module CXTDMAPhysicalP {
         printf("![%x->%x]\r\n", state, s);
         P2OUT |= BIT4;
         post printTransitions();
+        post printTimers();
       }
       state = s;
       stateTransitions[(sts+stl)%STATE_HISTORY] = state;
@@ -466,6 +468,13 @@ module CXTDMAPhysicalP {
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
     if (configureRadioPending){
+      if (call FrameStartAlarm.getNow() < 
+          call FrameStartAlarm.getAlarm()){
+        printf("!FS early: %lu < %lu\r\n", 
+          call FrameStartAlarm.getNow(),  
+          call FrameStartAlarm.getAlarm());
+        return;
+      }
       //didn't get the radio configured in time :(
       setAsyncState(S_ERROR_a);
     }else{
@@ -518,7 +527,6 @@ module CXTDMAPhysicalP {
     lastCapture = (fst & 0xffff0000) | time;
     switch(asyncState){
       case S_RX_WAIT:
-        call FrameWaitAlarm.stop();
         txCapture = FALSE;
         setAsyncState(S_RX_RECEIVING);
         break;
@@ -570,9 +578,15 @@ module CXTDMAPhysicalP {
         }
       }
     } else if (asyncState == S_RX_RECEIVING){
-      //OK: we started receiving a packet, then FWA fired before it
-      //finished. 
+      //TODO:extend the wait time for max-length packet. 
+      //half-frame-length is probably too long.
+      call FrameWaitAlarm.startAt(call FrameWaitAlarm.getAlarm(),
+        s_frameLen/2);
+      setAsyncState(S_RX_RECEIVING_FINAL);
       return;
+    } else if (asyncState == S_RX_RECEIVING_FINAL){
+      //We started receiving a packet but didn't get a receiveDone.
+      setAsyncState(S_ERROR_b);
     } else if (asyncState == S_INACTIVE){
       //OK, we were inactive. nobigs. 
       postPfs();
@@ -590,7 +604,8 @@ module CXTDMAPhysicalP {
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
     atomic{
-      if (asyncState == S_RX_RECEIVING){
+      if (asyncState == S_RX_RECEIVING 
+          || asyncState == S_RX_RECEIVING_FINAL){
         //stash vars for receiveDone
         if (!rdPending){
           rdBuffer = buffer;
