@@ -413,8 +413,10 @@ module CXTDMAPhysicalP {
 
   void postPfs(){
     atomic {
-      pfsTaskPending = TRUE;
-      post pfsTask();
+      if (!pfsTaskPending){
+        pfsTaskPending = TRUE;
+        post pfsTask();
+      }
     }
   }
 
