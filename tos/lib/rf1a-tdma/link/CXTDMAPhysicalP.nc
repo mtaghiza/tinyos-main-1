@@ -604,6 +604,7 @@ module CXTDMAPhysicalP {
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
     atomic{
+      call FrameWaitAlarm.stop();
       if (asyncState == S_RX_RECEIVING 
           || asyncState == S_RX_RECEIVING_FINAL){
         //stash vars for receiveDone
@@ -614,6 +615,7 @@ module CXTDMAPhysicalP {
           rdS_sr = s_sr;
           rdLastRECapture = lastCapture;
           rdPending = TRUE;
+          setAsyncState(S_RX_CLEANUP);
           post completeReceiveDone();
   
           //Store packet metadata immediately
@@ -623,7 +625,6 @@ module CXTDMAPhysicalP {
             rf1a_metadata_t* rf1aMD = &(mmd->rf1a);
             call Rf1aPhysicalMetadata.store(rf1aMD);
           }
-          setAsyncState(S_IDLE);
         }else{
           //have not finished handling previous receive-done.
           setAsyncState(S_ERROR_0);
@@ -648,30 +649,34 @@ module CXTDMAPhysicalP {
       rdS_srLocal = rdS_sr;
       rdLastRECaptureLocal = rdLastRECapture;
     }
-    if (SUCCESS == rdResultLocal){
-      call Packet.setPayloadLength(msg,
-        rdCountLocal-sizeof(message_header_t));
-      if (call Rf1aPacket.crcPassed(msg)){
-        call CXPacketMetadata.setSymbolRate(msg,
-          rdS_srLocal);
-        call CXPacketMetadata.setPhyTimestamp(msg,
-          rdLastRECaptureLocal);
-        call CXPacketMetadata.setFrameNum(msg,
-          frameNum);
-        call CXPacketMetadata.setReceivedCount(msg,
-          call CXPacket.count(msg));
-        if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
-          resynch();
+    if (state == S_RX_CLEANUP){
+      if (SUCCESS == rdResultLocal){
+        call Packet.setPayloadLength(msg,
+          rdCountLocal-sizeof(message_header_t));
+        if (call Rf1aPacket.crcPassed(msg)){
+          call CXPacketMetadata.setSymbolRate(msg,
+            rdS_srLocal);
+          call CXPacketMetadata.setPhyTimestamp(msg,
+            rdLastRECaptureLocal);
+          call CXPacketMetadata.setFrameNum(msg,
+            frameNum);
+          call CXPacketMetadata.setReceivedCount(msg,
+            call CXPacket.count(msg));
+          if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+            resynch();
+          }
+  //        printf_TMP("#RX %u @ %u\r\n", 
+  //          call CXPacket.sn(msg),
+  //          frameNum);
+          rx_msg = signal CXTDMA.receive(msg,
+            rdCountLocal - sizeof(rf1a_ieee154_t),
+            frameNum, rdLastRECaptureLocal);
         }
-//        printf_TMP("#RX %u @ %u\r\n", 
-//          call CXPacket.sn(msg),
-//          frameNum);
-        rx_msg = signal CXTDMA.receive(msg,
-          rdCountLocal - sizeof(rf1a_ieee154_t),
-          frameNum, rdLastRECaptureLocal);
+        setState(S_IDLE);
+        postPfs();
       }
-      setState(S_IDLE);
-      postPfs();
+    }else{
+      setState(S_ERROR_c);
     }
     atomic rdPending = FALSE;
 
