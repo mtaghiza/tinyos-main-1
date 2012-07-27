@@ -24,7 +24,7 @@
 //this was too short at full speed.
 //#define PFS_SLACK_BASE (110UL * (TA_SCALE))
 //#define PFS_SLACK_BASE (200UL * (TA_SCALE))
-#define PFS_SLACK_BASE (400UL * (TA_SCALE))
+#define PFS_SLACK_BASE (600UL * (TA_SCALE))
 #endif
 
 //10 ms at 26mhz/24

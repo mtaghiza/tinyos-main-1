@@ -141,7 +141,7 @@ module CXTDMAPhysicalP {
   bool stopPending = FALSE;
   
   #ifndef STATE_HISTORY
-  #define STATE_HISTORY 16
+  #define STATE_HISTORY 8
   #endif
 
   uint8_t stateTransitions[STATE_HISTORY];
@@ -156,7 +156,7 @@ module CXTDMAPhysicalP {
   uint32_t rxd;
 
   #ifndef EVENT_HISTORY
-  #define EVENT_HISTORY 16
+  #define EVENT_HISTORY 32
   #endif
   uint8_t es = 0;
   uint8_t el = 0;
@@ -171,7 +171,7 @@ module CXTDMAPhysicalP {
       stateOrdering[i] = state;
       eventOrdering[i] = eventId;
       asyncStateOrdering[i] = asyncState;
-      if (el < STATE_HISTORY){
+      if (el < EVENT_HISTORY){
         el++;
       }else{
         es++;
@@ -186,9 +186,9 @@ module CXTDMAPhysicalP {
       printf("EVENTS:\r\n");
       for (i = 0; i < ((el < EVENT_HISTORY)? el: EVENT_HISTORY); i++){
         j = (i+es)%EVENT_HISTORY;
-        printf("# e %x s %x a %x\r\n",
+        printf("# e %x s %x a %x (%u)\r\n",
           eventOrdering[j], stateOrdering[j],
-          asyncStateOrdering[j]);
+          asyncStateOrdering[j], j);
       }
     }
   }
@@ -356,6 +356,13 @@ module CXTDMAPhysicalP {
   bool getPacket(uint16_t fn);
 
   task void pfsTask(){
+    atomic{
+      //I'm seeing this task run twice in a row sometimes. how can
+      //this happen?
+      if (!pfsTaskPending){
+        return;
+      }
+    }
     recordEvent(1);
     //increment frame number
     frameNum = (frameNum+1)%(s_totalFrames);
@@ -451,6 +458,11 @@ module CXTDMAPhysicalP {
     PFS_CYCLE_TOGGLE_PIN;
     if (call PrepareFrameStartAlarm.getNow() < 
         call PrepareFrameStartAlarm.getAlarm()){
+      //set it again? 
+      //TODO: this has to be fixed at some point: otherwise when
+      //the 32-bit timer wraps around, it will appear to be "early"
+      call PrepareFrameStartAlarm.startAt(call PrepareFrameStartAlarm.getAlarm() - pfsHandled, 
+       pfsHandled);
       printf("!PFS early: %lu < %lu\r\n", 
         call PrepareFrameStartAlarm.getNow(),  
         call PrepareFrameStartAlarm.getAlarm());
@@ -590,6 +602,7 @@ module CXTDMAPhysicalP {
       fst  -= 0x00010000;
     }
     lastCapture = (fst & 0xffff0000) | time;
+    call SynchCapture.disable();
     switch(asyncState){
       case S_RX_WAIT:
         txCapture = FALSE;
@@ -621,6 +634,12 @@ module CXTDMAPhysicalP {
     }
     signal TDMAPhySchedule.resynched(frameNum);
   }
+  
+  uint32_t lastFw;
+  task void reportPushback(){
+    printf("#pb %lu -> %lu @ %lu\r\n", lastFw, 
+      call FrameWaitAlarm.getAlarm(), fwHandled);
+  }
 
   async event void FrameWaitAlarm.fired(){
     recordEvent(7);
@@ -646,9 +665,11 @@ module CXTDMAPhysicalP {
       }
     } else if (asyncState == S_RX_RECEIVING){
       //TODO:extend the wait time for max-length packet. 
-      //half-frame-length is probably too long.
+      //half-frame-length is probably too long?
+      lastFw = call FrameWaitAlarm.getAlarm();
       call FrameWaitAlarm.startAt(call FrameWaitAlarm.getAlarm(),
         s_frameLen/2);
+      post reportPushback();
       atomic pt = 3;
       setAsyncState(S_RX_RECEIVING_FINAL);
       return;
@@ -656,6 +677,8 @@ module CXTDMAPhysicalP {
       //We started receiving a packet but didn't get a receiveDone.
       //TODO: this comes up prettty often. correct?
       setAsyncState(S_ERROR_b);
+      //TODO: we should force the radio to IDLE at this point and get
+      //ready for next frame, assuming we've got the above timeout correct.
     } else if (asyncState == S_INACTIVE){
       //OK, we were inactive. nobigs. 
       postPfs();
