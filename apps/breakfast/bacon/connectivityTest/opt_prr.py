@@ -22,7 +22,7 @@ def sp(root):
             cur = sorted([(d[n], n) for n in u])[0][1]
    
 def usage():
-    print >>sys.stderr, """Usage: python %s <db_file> [prr_threshold=0.0]
+    print >>sys.stderr, """Usage: python %s <db_file> <txpower> [prr_threshold=0.0]
   Compute the shortest path (using ETX) between node 0 and each leaf
   (and reverse), considering only links with PRR above given threshold.
   Output is 
@@ -33,16 +33,17 @@ def usage():
   (e.g. if ETX is 4 and the path length is 2, the end-to-end PRR is 0.5)"""%(sys.argv[0])
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         usage()
         sys.exit(1)
     dbName = sys.argv[1]
+    txPower = int(sys.argv[2])
     c = sqlite3.connect(dbName)
     threshold = 0.0
     if len(sys.argv) > 2:
-        threshold = float(sys.argv[2])
+        threshold = float(sys.argv[3])
     nodes = [node for (node,) in c.execute('SELECT DISTINCT src FROM TX').fetchall()]
-    edges = c.execute('SELECT src, dest, prr from LINK WHERE prr >=?',(threshold,)).fetchall()
+    edges = c.execute('SELECT src, dest, prr from LINK WHERE prr >=?  and txPower == ?',(threshold, txPower)).fetchall()
     adj = dict([(node,{}) for node in nodes])
     for (n0, n1, prr) in edges:
         adj[n0][n1] = prr**-1

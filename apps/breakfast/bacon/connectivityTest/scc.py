@@ -6,7 +6,7 @@ def usage():
     print >>sys.stderr, """Outputs the number and members of the
 strongly-connected components in the network, for a given PRR
 threshold"""
-    print >> sys.stderr, "USAGE: python %s <db_file> [threshold...]"%(sys.argv[0])
+    print >> sys.stderr, "USAGE: python %s <db_file> <txpower> [threshold...]"%(sys.argv[0])
 
 color = {}
 p = {}
@@ -57,16 +57,17 @@ def createAdj(edges):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         usage()
         sys.exit(1)
     dbName = sys.argv[1]
+    txpower = int(sys.argv[2])
     c = sqlite3.connect(dbName)
     nodes = [node for (node,) in c.execute('SELECT DISTINCT src FROM TX').fetchall()]
-    for prr in map(float, sys.argv[2:]):
+    for prr in map(float, sys.argv[3:]):
         edges = c.execute(
-          'SELECT src, dest from LINK WHERE prr >= ?', 
-          (prr,)).fetchall()
+          'SELECT src, dest from LINK WHERE prr >= ? AND txPower == ?', 
+          (prr, txpower)).fetchall()
         adj = createAdj(edges)
         dfs(nodes)
         i_edges = [(n1,n0) for (n0,n1) in edges]

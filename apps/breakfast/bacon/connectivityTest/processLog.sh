@@ -1,9 +1,9 @@
 #!/bin/bash
-set -x
+#set -x
 if [ $# -lt 1 ]
 then
   echo "Usage: $0 <logFile> [-r]" 1>&2
-  echo " -c: drop/recreate tables" 1>&2
+  echo " -r: drop/recreate tables" 1>&2
   exit 1
 fi
 logFile=$1
