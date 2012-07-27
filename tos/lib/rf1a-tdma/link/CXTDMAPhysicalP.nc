@@ -599,6 +599,7 @@ module CXTDMAPhysicalP {
       return;
     } else if (asyncState == S_RX_RECEIVING_FINAL){
       //We started receiving a packet but didn't get a receiveDone.
+      //TODO: this comes up prettty often. correct?
       setAsyncState(S_ERROR_b);
     } else if (asyncState == S_INACTIVE){
       //OK, we were inactive. nobigs. 
@@ -645,6 +646,8 @@ module CXTDMAPhysicalP {
           //have not finished handling previous receive-done.
           setAsyncState(S_ERROR_0);
         }
+      } else if(asyncState == S_ERROR_b){
+        printf("RX gave up too early!\r\n");
       } else {
         setAsyncState(S_ERROR_7);
       }
