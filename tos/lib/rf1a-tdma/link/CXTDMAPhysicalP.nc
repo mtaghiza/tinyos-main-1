@@ -467,7 +467,7 @@ module CXTDMAPhysicalP {
   async event void FrameStartAlarm.fired(){
     if (configureRadioPending){
       //didn't get the radio configured in time :(
-      setAsyncState(S_ERROR_1);
+      setAsyncState(S_ERROR_a);
     }else{
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
