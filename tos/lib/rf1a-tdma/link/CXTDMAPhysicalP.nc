@@ -925,6 +925,9 @@ module CXTDMAPhysicalP {
           if (s_sr != last_sr || s_channel != last_channel){
             call Rf1aPhysical.reconfigure();
           }
+          //TODO: careful about duplicate posting: if we were in
+          // *_PRESTART, then we can adjust timers but SHOULD NOT re-post
+          // the task.
           postPfs();      
         }
       }else{
