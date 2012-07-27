@@ -97,7 +97,6 @@ module CXTDMAPhysicalP {
   uint8_t state = S_OFF;
   uint8_t asyncState;
   bool pfsTaskPending = FALSE;
-  bool configureRadioPending = FALSE;
 
   //Temporary TX variables 
   message_t* tx_msg;
@@ -124,6 +123,7 @@ module CXTDMAPhysicalP {
 
   //externally-facing state vars
   uint16_t frameNum;
+  uint16_t asyncFrameNum;
 
   //Current radio settings
   uint8_t s_sr = SCHED_INIT_SYMBOLRATE;
@@ -165,7 +165,8 @@ module CXTDMAPhysicalP {
   uint8_t asyncStateOrdering[EVENT_HISTORY];
   
   //This should be removed when debugging is done!
-  void recordEvent(uint8_t eventId){
+  void recordEvent(uint8_t eventId){}
+  void recordEventX(uint8_t eventId){
     atomic{
       uint8_t i = (es+el)%EVENT_HISTORY;
       stateOrdering[i] = state;
@@ -365,21 +366,24 @@ module CXTDMAPhysicalP {
     }
     recordEvent(1);
     //increment frame number
-    frameNum = (frameNum+1)%(s_totalFrames);
+    atomic{
+      frameNum = (frameNum+1)%(s_totalFrames);
+      asyncFrameNum = frameNum;
+    }
     signal FrameStarted.frameStarted(frameNum);
     
     //Sleep/wake up radio as needed.
     if (state != S_INACTIVE 
         && signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.sleep()){
-        setState(S_INACTIVE);
+        setAsyncState(S_INACTIVE);
       }else{
         setState(S_ERROR_0);
       }
     }else if (state == S_INACTIVE 
         && !signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-        setState(S_IDLE);
+        setAsyncState(S_IDLE);
       }else{
         setState(S_ERROR_0);
       }
@@ -394,13 +398,13 @@ module CXTDMAPhysicalP {
             IS_TX_SET_PIN;
             if (getPacket(frameNum)){
 //              printf_TMP("#TX @%u\r\n", frameNum);
-              setState(S_TX_PRESTART);
+              setAsyncState(S_TX_PRESTART);
             }else{
               setState(S_ERROR_0);
             }
             break;
           case RF1A_OM_RX:
-            setState(S_RX_PRESTART);
+            setAsyncState(S_RX_PRESTART);
             break;
           default:
             setState(S_ERROR_1);
@@ -452,8 +456,7 @@ module CXTDMAPhysicalP {
   //At this point, we use that information to configure the radio.
   //We'll actually do the timing-critical steps at the
   //FrameStartAlarm.fired event.
-  task void configureRadio();
-
+  void configureRadio();
   async event void PrepareFrameStartAlarm.fired(){
     recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
@@ -483,8 +486,7 @@ module CXTDMAPhysicalP {
       ////TODO: remove debug
       atomic pt = 0;
 //      post printTimers();
-      configureRadioPending = TRUE;
-      post configureRadio();
+      configureRadio();
     }else {
       pfsTaskPending = FALSE;
       reportAsyncError(S_ERROR_2);
@@ -492,10 +494,10 @@ module CXTDMAPhysicalP {
   }
   
   //actually set up the radio for the coming frame-start
-  task void configureRadio(){
+  void configureRadio(){
     error_t error;
     recordEvent(3);
-    switch(state){
+    switch(asyncState){
       case S_RX_PRESTART:
         //switch radio to RX, give it a buffer.
         error = call Rf1aPhysical.setReceiveBuffer(
@@ -503,10 +505,7 @@ module CXTDMAPhysicalP {
           TOSH_DATA_LENGTH + sizeof(message_header_t),
           RF1A_OM_IDLE);
         if (error == SUCCESS){
-          atomic{
-            setState(S_RX_READY);
-            setAsyncState(S_RX_READY);
-          }
+          setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
         }
         break;
@@ -517,13 +516,12 @@ module CXTDMAPhysicalP {
         if (error == SUCCESS){
           //NB: if this becomes split-phase, we'll set the state when we
           //get the callback.
-          setState(S_TX_READY);
           setAsyncState(S_TX_READY);
-          atomic sdFrameNum = frameNum;
+          sdFrameNum = asyncFrameNum;
           //get ready to capture your own SFD for re-synch.
           call SynchCapture.captureRisingEdge();
         }else{
-          setState(S_ERROR_0);
+          setAsyncState(S_ERROR_0);
         }
         break;
 
@@ -532,10 +530,9 @@ module CXTDMAPhysicalP {
         break;
 
       default:
-        setState(S_ERROR_3);
+        setAsyncState(S_ERROR_3);
         break;
     }
-    atomic configureRadioPending = FALSE;
   }
 
 
@@ -545,16 +542,13 @@ module CXTDMAPhysicalP {
     //TODO: this is probably not safe: non-deterministic completion
     //time!
     fsHandled = call FrameStartAlarm.getNow();
-    if (configureRadioPending){
-      if (call FrameStartAlarm.getNow() < 
-          call FrameStartAlarm.getAlarm()){
-        printf("!FS early: %lu < %lu\r\n", 
-          call FrameStartAlarm.getNow(),  
-          call FrameStartAlarm.getAlarm());
-        return;
-      }
-      //didn't get the radio configured in time :(
+    if (fsHandled < 
+        call FrameStartAlarm.getAlarm()){
+      printf("!FS early: %lu < %lu\r\n", 
+        fsHandled,  
+        call FrameStartAlarm.getAlarm());
       setAsyncState(S_ERROR_a);
+      return;
     }else{
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
@@ -774,7 +768,7 @@ module CXTDMAPhysicalP {
             rdCountLocal - sizeof(rf1a_ieee154_t),
             frameNum, rdLastRECaptureLocal);
         }
-        setState(S_IDLE);
+        setAsyncState(S_IDLE);
         postPfs();
       }
     }else{
@@ -821,7 +815,7 @@ module CXTDMAPhysicalP {
     signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
       sdResultLocal);
 
-    setState(S_IDLE);
+    setAsyncState(S_IDLE);
     postPfs();
     atomic sdPending = FALSE;
   }
