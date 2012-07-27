@@ -152,6 +152,8 @@ module CXTDMAPhysicalP {
   uint32_t pfsHandled;
   uint32_t fsHandled;
   uint32_t fwHandled;
+  //appx. time of last receiveDone event.
+  uint32_t rxd;
 
   task void printTransitions(){
     //OK to do atomic: we only do this when we hit an error
@@ -167,6 +169,7 @@ module CXTDMAPhysicalP {
   task void printTimers(){
     atomic{
       printf("# @ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
+      printf("# last capture: %lu last rxd: %lu\r\n", lastCapture, rxd);
       printf("# P %x %lu last %lu\r\n", 
         (call PrepareFrameStartAlarm.isRunning())?1:0, 
         call PrepareFrameStartAlarm.getAlarm(),
@@ -187,10 +190,11 @@ module CXTDMAPhysicalP {
     //once we enter error state, reject transitions
     if ((state & M_TYPE) != M_ERROR){
       if ((s & M_TYPE) == M_ERROR){
-        printf("![%x->%x]\r\n", state, s);
+      //TODO: restore!
+//        printf("![%x->%x]\r\n", state, s);
         P2OUT |= BIT4;
-        post printTransitions();
-        post printTimers();
+//        post printTransitions();
+//        post printTimers();
       }
       state = s;
       stateTransitions[(sts+stl)%STATE_HISTORY] = state;
@@ -212,7 +216,8 @@ module CXTDMAPhysicalP {
     atomic{
       if ((asyncState & M_TYPE) != M_ERROR){
         if ((s & M_TYPE) == M_ERROR){
-          printf("!*[%x->%x]\r\n", asyncState, s);
+      //TODO: restore!
+//          printf("!*[%x->%x]\r\n", asyncState, s);
         }
         asyncState = s;
         post syncState();
@@ -292,7 +297,14 @@ module CXTDMAPhysicalP {
   }
   async event void Rf1aPhysical.frameStarted () { }
   async event void Rf1aPhysical.carrierSense () { }
-  async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
+ 
+  async event void Rf1aPhysical.receiveStarted (unsigned int length) { 
+    atomic{
+      if (asyncState != S_RX_RECEIVING){
+        setAsyncState(S_ERROR_d);
+      }
+    }
+  }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
                                                      unsigned int count) { }
   async event void Rf1aPhysical.clearChannel () { }
@@ -621,6 +633,7 @@ module CXTDMAPhysicalP {
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
     atomic{
+      rxd = call FrameStartAlarm.getNow();
       call FrameWaitAlarm.stop();
       if (asyncState == S_RX_RECEIVING 
           || asyncState == S_RX_RECEIVING_FINAL){
@@ -647,7 +660,9 @@ module CXTDMAPhysicalP {
           setAsyncState(S_ERROR_0);
         }
       } else if(asyncState == S_ERROR_b){
-        printf("RX gave up too early!\r\n");
+//        printf("RX gave up too early!\r\n");
+        printf("!synch %lu fwa %lu rxd %lu\r\n",
+          lastCapture, call FrameWaitAlarm.getAlarm(), rxd);
       } else {
         setAsyncState(S_ERROR_7);
       }
