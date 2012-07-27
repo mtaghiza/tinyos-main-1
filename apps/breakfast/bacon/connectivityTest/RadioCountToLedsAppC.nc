@@ -63,7 +63,10 @@ implementation {
 
   components Rf1aActiveMessageC;
   #if TEST_SR == 100
-  components SRFS7_915_GFSK_100K_SENS_HC as Rf1aSettings;
+  components Rf1aConfig100KC as Rf1aSettings;
+  #elif TEST_SR == 125
+  //components Rf1aConfig125KC as Rf1aSettings;
+  components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
   #else
   //TODO: other symbol rates
   #error Unknown symbol rate

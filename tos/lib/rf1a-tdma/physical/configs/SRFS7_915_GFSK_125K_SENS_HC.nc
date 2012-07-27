@@ -14,7 +14,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     //sync1 default from Rf1aConfigure.h 
     sync1:   0xd3,
     //sync0 default from Rf1aConfigure.h 
-    sync1:   0x91,
+    sync0:   0x91,
     //TODO: this does get set in sw, right?
     pktlen:  0x3D,    // PKTLEN    Packet length.
     pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
@@ -38,7 +38,14 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     mcsm2:   0x07,
     //mcsm1 default from Rf1aConfigure.h
     mcsm1:   0x00,
+    #ifndef RF1A_AUTOCAL
+    #define RF1A_AUTOCAL 0
+    #endif
+    #if RF1A_AUTOCAL == 1
+    mcsm0:   0x10,   // MCSM0     Main Radio Control State Machine configuration.
+    #else
     mcsm0:   0x00,   // MCSM0     Main Radio Control State Machine configuration.
+    #endif
     foccfg:  0x1D,   // FOCCFG    Frequency Offset Compensation Configuration.
     bscfg:   0x1C,   // BSCFG     Bit synchronization Configuration.
     agcctrl2:0xC7,   // AGCCTRL2  AGC control.

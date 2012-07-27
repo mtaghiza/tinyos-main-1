@@ -2,7 +2,7 @@
 set -x
 TEST_CHANNEL=0
 TEST_POWER=0xC3
-TEST_SR=100
+TEST_SR=125
 PAYLOAD_LEN=35
 MAP=map.bacon2
 #MAP=map.small

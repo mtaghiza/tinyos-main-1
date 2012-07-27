@@ -143,12 +143,12 @@ implementation {
     if (len != sizeof(radio_count_msg_t)) {return bufPtr;}
     else {
       radio_count_msg_t* rcm = (radio_count_msg_t*)payload;
-//      printf("RX %u %u %lu %d %d \r\n", 
-//        call AMPacket.source(bufPtr),
-//        TOS_NODE_ID,
-//        rcm->counter, 
-//        call Rf1aPacket.rssi(bufPtr),
-//        call Rf1aPacket.lqi(bufPtr));
+      printf("RX %u %u %lu %d %d \r\n", 
+        call AMPacket.source(bufPtr),
+        TOS_NODE_ID,
+        rcm->counter, 
+        call Rf1aPacket.rssi(bufPtr),
+        call Rf1aPacket.lqi(bufPtr));
       if (rcm->counter & 0x1) {
 	call Leds.led0On();
       }
