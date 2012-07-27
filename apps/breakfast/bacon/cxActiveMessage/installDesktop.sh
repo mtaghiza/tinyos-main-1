@@ -25,10 +25,12 @@ ipi=1024UL
 queueThreshold=1
 
 #network params
-numSlots=30
+numSlots=10
 fps=10
 md=1
 mr=1
+staticScheduler=1
+firstIdleSlot=4
 
 #radio logging
 rl=0
@@ -70,7 +72,7 @@ do
 done
 popd
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot"
 
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 
