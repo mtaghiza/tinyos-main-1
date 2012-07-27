@@ -155,6 +155,44 @@ module CXTDMAPhysicalP {
   //appx. time of last receiveDone event.
   uint32_t rxd;
 
+  #ifndef EVENT_HISTORY
+  #define EVENT_HISTORY 16
+  #endif
+  uint8_t es = 0;
+  uint8_t el = 0;
+  uint8_t eventOrdering[EVENT_HISTORY];
+  uint8_t stateOrdering[EVENT_HISTORY];
+  uint8_t asyncStateOrdering[EVENT_HISTORY];
+  
+  //This should be removed when debugging is done!
+  void recordEvent(uint8_t eventId){
+    atomic{
+      uint8_t i = (es+el)%EVENT_HISTORY;
+      stateOrdering[i] = state;
+      eventOrdering[i] = eventId;
+      asyncStateOrdering[i] = asyncState;
+      if (el < STATE_HISTORY){
+        el++;
+      }else{
+        es++;
+      }    
+    }
+  }
+
+  task void printEvents(){
+    //OK to do atomic: we only do this when we hit an error
+    atomic{
+      uint8_t i,j;
+      printf("EVENTS:\r\n");
+      for (i = 0; i < ((el < EVENT_HISTORY)? el: EVENT_HISTORY); i++){
+        j = (i+es)%EVENT_HISTORY;
+        printf("# e %x s %x a %x\r\n",
+          eventOrdering[j], stateOrdering[j],
+          asyncStateOrdering[j]);
+      }
+    }
+  }
+
   task void printTransitions(){
     //OK to do atomic: we only do this when we hit an error
     atomic{
@@ -190,11 +228,11 @@ module CXTDMAPhysicalP {
     //once we enter error state, reject transitions
     if ((state & M_TYPE) != M_ERROR){
       if ((s & M_TYPE) == M_ERROR){
-      //TODO: restore!
-//        printf("![%x->%x]\r\n", state, s);
+        printf("![%x->%x]\r\n", state, s);
         P2OUT |= BIT4;
-//        post printTransitions();
-//        post printTimers();
+        post printEvents();
+        post printTransitions();
+        post printTimers();
       }
       state = s;
       stateTransitions[(sts+stl)%STATE_HISTORY] = state;
@@ -216,8 +254,7 @@ module CXTDMAPhysicalP {
     atomic{
       if ((asyncState & M_TYPE) != M_ERROR){
         if ((s & M_TYPE) == M_ERROR){
-      //TODO: restore!
-//          printf("!*[%x->%x]\r\n", asyncState, s);
+          printf("!*[%x->%x]\r\n", asyncState, s);
         }
         asyncState = s;
         post syncState();
@@ -319,6 +356,7 @@ module CXTDMAPhysicalP {
   bool getPacket(uint16_t fn);
 
   task void pfsTask(){
+    recordEvent(1);
     //increment frame number
     frameNum = (frameNum+1)%(s_totalFrames);
     signal FrameStarted.frameStarted(frameNum);
@@ -408,6 +446,7 @@ module CXTDMAPhysicalP {
   task void configureRadio();
 
   async event void PrepareFrameStartAlarm.fired(){
+    recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
     if (call PrepareFrameStartAlarm.getNow() < 
@@ -441,6 +480,7 @@ module CXTDMAPhysicalP {
   //actually set up the radio for the coming frame-start
   task void configureRadio(){
     error_t error;
+    recordEvent(3);
     switch(state){
       case S_RX_PRESTART:
         //switch radio to RX, give it a buffer.
@@ -487,6 +527,7 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
+    recordEvent(4);
     //TODO: this is probably not safe: non-deterministic completion
     //time!
     fsHandled = call FrameStartAlarm.getNow();
@@ -541,6 +582,7 @@ module CXTDMAPhysicalP {
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
+    recordEvent(5);
 
     //overflow detected: assumes that 16-bit capture time has
     //  overflowed at most once before this event runs
@@ -581,6 +623,7 @@ module CXTDMAPhysicalP {
   }
 
   async event void FrameWaitAlarm.fired(){
+    recordEvent(7);
     fwHandled = call FrameWaitAlarm.getNow();
     if (asyncState == S_RX_WAIT){
       error_t error = call Rf1aPhysical.resumeIdleMode();
@@ -629,6 +672,7 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    recordEvent(6);
     //Is this being signalled from a non-async context somewhere? I
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
@@ -660,9 +704,8 @@ module CXTDMAPhysicalP {
           setAsyncState(S_ERROR_0);
         }
       } else if(asyncState == S_ERROR_b){
-//        printf("RX gave up too early!\r\n");
-        printf("!synch %lu fwa %lu rxd %lu\r\n",
-          lastCapture, call FrameWaitAlarm.getAlarm(), rxd);
+        printf("RX gave up too early!\r\n");
+        post printTimers();
       } else {
         setAsyncState(S_ERROR_7);
       }
@@ -675,7 +718,7 @@ module CXTDMAPhysicalP {
     uint8_t rdCountLocal;
     uint8_t rdS_srLocal;
     uint32_t rdLastRECaptureLocal;
-
+    recordEvent(8);
     atomic{
       msg = (message_t*) rdBuffer;
       rdResultLocal = rdResult;
@@ -718,6 +761,7 @@ module CXTDMAPhysicalP {
 
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
+    recordEvent(9);
     if (asyncState == S_TX_TRANSMITTING){
       if (sdPending || (message_t*)buffer != tx_msg){
         setAsyncState(S_ERROR_9);
@@ -736,6 +780,7 @@ module CXTDMAPhysicalP {
     error_t sdResultLocal;
     uint32_t sdRECaptureLocal;
     IS_TX_CLEAR_PIN;
+    recordEvent(10);
     atomic{
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
