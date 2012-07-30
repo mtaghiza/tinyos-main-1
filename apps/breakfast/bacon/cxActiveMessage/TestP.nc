@@ -115,6 +115,7 @@ module TestP {
     printf_APP("Started.\r\n");
     call Leds.led0On();
     #if IS_SENDER == 1
+      printf_APP("Start sending.\r\n");
       call SendTimer.startOneShot((TEST_IPI/2) + 
         (call Random.rand32())%TEST_IPI );
     #endif

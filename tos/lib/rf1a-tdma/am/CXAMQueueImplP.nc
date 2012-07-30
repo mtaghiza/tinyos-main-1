@@ -84,12 +84,12 @@ implementation {
         curSlot = call SlotStarted.currentSlot();
       }
 
-//      printf_TMP("NP curSlot: %u\r\n", curSlot);
       //this is where the scheduled-send logic comes in:
       //iterate through clients, check for next claimed slot 
       if (!isSending && curSlot != INVALID_SLOT){
         uint8_t i;
         uint16_t closestSend = 0xffff;
+//        printf_TMP("NP curSlot: %u\r\n", curSlot);
 //        printf_TMP("not sending\r\n");
         //start with next client and loop around
         for(i = 1; i < numClients+1; i++){
@@ -277,23 +277,25 @@ implementation {
         message_t* nextMsg = queue[nextClient].msg;
         uint8_t len = call AMPacketBody.payloadLength(nextMsg);
   
-  //      printf_TMP("%s: \r\n", __FUNCTION__);
-  //      printf_TMP("send for tp %x client %u @ %u\r\n", 
-  //        call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
+//      printf_TMP("%s: \r\n", __FUNCTION__);
+//        printf_TMP("send for tp %x client %u @ %u\r\n", 
+//          call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
         nextErr = call SubSend.send[call CXPacket.getTransportProtocol(nextMsg)](nextMsg, len);
       }
 
       if (nextErr == ERETRY){
           //defer for now: nextPacket will skip any deferred clients
           //deferred flags cleared at slot boundary.
+//          printf_TMP("deferred.\r\n");
           queue[nextClient].deferred = TRUE;
           someDeferred = TRUE;
           nextSlot = INVALID_SLOT;
           post nextPacketTask();
       } else if(nextErr != SUCCESS) {
-          printf("%s: %s\r\n", __FUNCTION__, decodeError(nextErr));
-          post errorTask();
+        printf("%s: %s\r\n", __FUNCTION__, decodeError(nextErr));
+        post errorTask();
       }else{
+//        printf_TMP("sending.\r\n");
         isSending = TRUE;
       }
     }
