@@ -602,9 +602,13 @@ module CXScopedFloodP{
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
             call CXPacket.destination(msg), &isBetween)) || !isBetween){
+          uint8_t tp = call CXPacket.getTransportProtocol(msg);
+          uint8_t pll = call LayerPacket.payloadLength(msg);
+          void* pl = call LayerPacket.getPayload(msg, pll);
           printf_SF_TESTBED_PR("PRD %lu\r\n", sn);
           printf_SF_RX("x*\r\n");
-          return msg;
+          //no need to forward it, but report up for snooping.
+          return signal Receive.receive[tp](msg, pl, pll);
         }else{
           printf_SF_TESTBED_PR("PRK %lu\r\n", sn);
         }
