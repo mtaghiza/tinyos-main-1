@@ -297,7 +297,6 @@ module CXScopedFloodP{
         routeUpdatePending = FALSE;
         lastDataSrc = 0xffff;
         lastDataSn = 0;
-        printf_TMP("#r 1\r\n");
         //no ack by the end of the slot, done.
         if (originDataSent){
           sendDoneError = ENOACK;
@@ -329,7 +328,7 @@ module CXScopedFloodP{
           setState(S_DATA);
           isOrigin = TRUE;
           originFrame = frameNum;
-          printf_TMP("#O@ %u\r\n", frameNum);
+//          printf_TMP("#O@ %u\r\n", frameNum);
           return RF1A_OM_FSTXON;
         } else {
           printf("!SF.ft.RIR\r\n");
@@ -345,7 +344,7 @@ module CXScopedFloodP{
       case S_DATA:
         if (isDataFrame(frameNum)){
           if ( call TaskResource.isOwner()){
-            printf_TMP("#D@ %u\r\n", frameNum);
+//            printf_TMP("#D@ %u\r\n", frameNum);
             return RF1A_OM_FSTXON;
           } else {
             printf("!in s_data, but resource not held.\r\n");
@@ -435,7 +434,6 @@ module CXScopedFloodP{
     originDataPending = FALSE;
     originDataSent = FALSE;
     ecwFrame = 0;
-    printf_TMP("#r 2\r\n");
     call TaskResource.release();
     setState(S_IDLE);
     signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
@@ -481,7 +479,6 @@ module CXScopedFloodP{
         } else {
           ackFrame = frameNum;
 //          post printAckTiming();
-          printf_TMP("#r 3\r\n");
           call TaskResource.release();
           setState(S_IDLE);
         }
