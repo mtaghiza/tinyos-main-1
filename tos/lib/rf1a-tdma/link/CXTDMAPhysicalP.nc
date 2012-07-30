@@ -937,9 +937,23 @@ module CXTDMAPhysicalP {
           if (s_sr != last_sr || s_channel != last_channel){
             call Rf1aPhysical.reconfigure();
           }
-          //TODO: careful about duplicate posting: if we were in
-          // *_PRESTART, then we can adjust timers but SHOULD NOT re-post
-          // the task.
+          //setSchedule may update frame number and adjust timers. we
+          //  only signal CXTDMA.frameType from pfsTask if we're
+          //  in IDLE or RX_WAIT. So, SS updates frameNum/next alarm
+          //  to be consistent, upper layers *may* see discontinuity in
+          //  frame numbers. 
+          //However,this seems unlikely to cause a problem. For a
+          //  discontinuity to show up that actually matters (i.e.
+          //  interferes with a pending transmission/wait-for-clear at
+          //  the network layer), the network layer would have to
+          //  think that we are in synch while the link layer has
+          //  drifted by enough to cause a jump (because it's
+          //  really drifted past a frame boundary (which should 
+          //  be detected as a synch-loss)). Assuming that the logic
+          //  for setting the next-frame boundary and next-frame
+          //  number is correct, it should be safe to delay this
+          //  arbitrarily long (though it will work best if it's
+          //  handled just after the forwarding has concluded).
           postPfs();      
         }
       }else{
