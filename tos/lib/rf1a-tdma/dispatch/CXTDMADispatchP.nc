@@ -112,7 +112,7 @@ module CXTDMADispatchP{
 
   default event message_t* CXTDMA.receive[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    printf("Unexpected RM %x: ", NetworkProtocol);
+    printf("!Unhandled np %x @%u\r\n", NetworkProtocol, frameNum);
     return msg;
   }
 
