@@ -12,6 +12,7 @@ keepTemp=$3
 db=$label.db
 tfDir=tmp
 mkdir -p $tfDir
+mkdir -p $(dirname $db)
 
 tickLen="4/26e6"
 RXREADY_FAULT_WINDOW=3.0
