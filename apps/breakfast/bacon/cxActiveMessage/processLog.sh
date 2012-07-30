@@ -94,7 +94,7 @@ SELECT TX_ALL.src,
 FROM TX_ALL
   JOIN (SELECT DISTINCT RX_ALL.dest FROM RX_ALL) nodes 
   ON TX_ALL.dest == nodes.dest 
-     OR TX_ALL.dest == 65535
+     OR (TX_ALL.dest == 65535 AND TX_ALL.src != nodes.dest)
 EXCEPT SELECT RX_ALL.src, RX_ALL.dest, RX_ALL.sn FROM RX_ALL;
 
 select "Computing PRRs";
@@ -112,12 +112,30 @@ LEFT JOIN (
   SELECT src, dest, sn, 0 as received FROM MISSING_RX) RX_AND_MISSING ON
   TX_ALL.src == RX_AND_MISSING.src AND
   TX_ALL.sn == RX_AND_MISSING.sn 
-WHERE TX_ALL.ts > 300+(SELECT min(ts) from TX_ALL)
 GROUP BY TX_ALL.src,
   RX_AND_MISSING.dest,
   TX_ALL.tp
 ORDER BY prr;
 
+DROP TABLE IF EXISTS PRR_NO_STARTUP;
+CREATE TABLE PRR_NO_STARTUP AS 
+SELECT
+  TX_ALL.src as src,
+  RX_AND_MISSING.dest as dest,
+  TX_ALL.tp as tp,
+  avg(RX_AND_MISSING.received) as prr
+FROM TX_ALL
+LEFT JOIN (
+  SELECT src, dest, sn, received FROM RX_ALL 
+  UNION 
+  SELECT src, dest, sn, 0 as received FROM MISSING_RX) RX_AND_MISSING ON
+  TX_ALL.src == RX_AND_MISSING.src AND
+  TX_ALL.sn == RX_AND_MISSING.sn 
+WHERE TX_ALL.ts > 300+(SELECT min(ts) from TX_ALL)
+GROUP BY TX_ALL.src,
+  RX_AND_MISSING.dest,
+  TX_ALL.tp
+ORDER BY prr;
 EOF
 
 if [ "$keepTemp" != "-k" ]
