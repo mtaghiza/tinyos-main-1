@@ -227,35 +227,33 @@ module CXScopedFloodP{
   //holding one.
   command error_t Send.send[uint8_t t](message_t* msg, uint8_t len){
 //    printf_TESTBED("ScopedFloodSend\r\n");
-    atomic{
-      if (!originDataPending){
-        //compute clear time and compare to frames left in slot
-        //if there's not enough time, return ERETRY
-       uint8_t distance = call CXRoutingTable.distance(TOS_NODE_ID,
-          call CXPacket.destination(msg));
-        uint8_t ct;
-        if (distance > call TDMARoutingSchedule.maxDepth()){
-          distance = call TDMARoutingSchedule.maxDepth();
-        }
-        ct = clearTime(distance)+1;
-        if (ct > 
-            call TDMARoutingSchedule.framesLeftInSlot(call
-            TDMARoutingSchedule.currentFrame())){
-          return ERETRY;
-        } else{
-          origin_data_msg = msg;
-          call CXPacket.init(msg);
-          call CXPacket.setType(msg, CX_TYPE_DATA);
-          //preserve pre-routed bit
-          call CXPacket.setNetworkProtocol(msg, 
-            ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)
-            | CX_NP_SCOPEDFLOOD);
-          originDataPending = TRUE;
-          return SUCCESS;
-        }
-      } else {
-        return EBUSY;
+    if (!originDataPending){
+      //compute clear time and compare to frames left in slot
+      //if there's not enough time, return ERETRY
+     uint8_t distance = call CXRoutingTable.distance(TOS_NODE_ID,
+        call CXPacket.destination(msg));
+      uint8_t ct;
+      if (distance > call TDMARoutingSchedule.maxDepth()){
+        distance = call TDMARoutingSchedule.maxDepth();
       }
+      ct = clearTime(distance)+1;
+      if (ct > 
+          call TDMARoutingSchedule.framesLeftInSlot(call
+          TDMARoutingSchedule.currentFrame())){
+        return ERETRY;
+      } else{
+        origin_data_msg = msg;
+        call CXPacket.init(msg);
+        call CXPacket.setType(msg, CX_TYPE_DATA);
+        //preserve pre-routed bit
+        call CXPacket.setNetworkProtocol(msg, 
+          ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)
+          | CX_NP_SCOPEDFLOOD);
+        originDataPending = TRUE;
+        return SUCCESS;
+      }
+    } else {
+      return EBUSY;
     }
   }
   
@@ -420,14 +418,11 @@ module CXScopedFloodP{
   }
 
   task void signalSendDone(){
-    atomic{
-      //TODO: check long atomic
-      originDataPending = FALSE;
-      originDataSent = FALSE;
-      ecwFrame = 0;
-      call TaskResource.release();
-      setState(S_IDLE);
-    }
+    originDataPending = FALSE;
+    originDataSent = FALSE;
+    ecwFrame = 0;
+    call TaskResource.release();
+    setState(S_IDLE);
     signal Send.sendDone[call CXPacket.getTransportProtocol(origin_data_msg)](origin_data_msg, sendDoneError);
 //    printf_TMP("ssd.%u@%u(%u,%u)\r\n", ssdPoster, ssdFrame, ackFrame, ecwFrame);
   }
@@ -436,7 +431,7 @@ module CXScopedFloodP{
 //    printf_TMP("d@%ua@%u\r\n", dataReceivedFrame, ackFrame);
 //  }
 
-  event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+  event error_t CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
 //    printf_TMP("cx.sd\r\n");
 ////    dispMsg = msg;
@@ -478,27 +473,26 @@ module CXScopedFloodP{
         printf("!Unexpected state %x at sf.cxtdma.sendDone\r\n", state);
       }
     }
+    return SUCCESS;
   }
 
 
   task void routeUpdate(){
-    atomic{
-      if (routeUpdatePending){
-        //up to the routing table to do what it wants with it.
-        // for AODV, all we really care about is whether we are
-        // between the two: 
-        //  src->me + me->dest  <= src->dest
-        call CXRoutingTable.update(ruSrc, ruDest,
-          ruDistance);
-        call CXRoutingTable.update(ruSrc, TOS_NODE_ID, 
-          ruSrcDepth);
-        call CXRoutingTable.update(ruDest, TOS_NODE_ID,
-          ruAckDepth);
-        routeUpdatePending = FALSE;
-      }
-      if (clearTimePending){
-        post clearTimeUpdate();
-      }
+    if (routeUpdatePending){
+      //up to the routing table to do what it wants with it.
+      // for AODV, all we really care about is whether we are
+      // between the two: 
+      //  src->me + me->dest  <= src->dest
+      call CXRoutingTable.update(ruSrc, ruDest,
+        ruDistance);
+      call CXRoutingTable.update(ruSrc, TOS_NODE_ID, 
+        ruSrcDepth);
+      call CXRoutingTable.update(ruDest, TOS_NODE_ID,
+        ruAckDepth);
+      routeUpdatePending = FALSE;
+    }
+    if (clearTimePending){
+      post clearTimeUpdate();
     }
   }
 

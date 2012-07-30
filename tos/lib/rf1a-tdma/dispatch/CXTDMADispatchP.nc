@@ -72,12 +72,13 @@ module CXTDMADispatchP{
     }
   }
 
-  event void SubCXTDMA.sendDone(message_t* msg, uint8_t len,
+  event error_t SubCXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (isClaimed()){
-      signal CXTDMA.sendDone[owner](msg, len, frameNum, error);
+      return signal CXTDMA.sendDone[owner](msg, len, frameNum, error);
     } else {
       printf("!Unclaimed SD@ %u (last: %x)\r\n", frameNum, lastOwner);
+      return FAIL;
     }
   }
 
@@ -107,8 +108,8 @@ module CXTDMADispatchP{
   }
   default event bool CXTDMA.getPacket[uint8_t NetworkProtocol](message_t** msg, 
       uint16_t frameNum){ return FALSE;}
-  default event void CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
-      uint16_t frameNum, error_t error){}
+  default event error_t CXTDMA.sendDone[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
+      uint16_t frameNum, error_t error){ return SUCCESS;}
 
   default event message_t* CXTDMA.receive[uint8_t NetworkProtocol](message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){

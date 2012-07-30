@@ -62,20 +62,12 @@ module CXFloodP{
   uint16_t ccfn;
   uint8_t cccaller;
 
-  //This could be incorporated into the general message pool shared by
-  //CX routing methods, but then we'd end up having to deal with a lot
-  //of async accesses to it. Done like this, all of our interaction
-  //with the pool can be done in the task context.
   message_t fwd_msg_internal;
-  norace message_t* fwd_msg = &fwd_msg_internal;
+  message_t* fwd_msg = &fwd_msg_internal;
   
   bool rxOutstanding;
 
-  //distinguish between tx_msg and fwd_msg
-  //when this is set, it's in atomic context (during cleanup) or during the frameType
-  //async event. We check it just at the getPacket, which will never
-  //intersect with either of these times, if all is well.
-  norace bool isOrigin;
+  bool isOrigin;
 
   void checkAndCleanup();
 
@@ -85,18 +77,14 @@ module CXFloodP{
   }
 
   task void txSuccessTask(){
-    atomic {
-      txPending = FALSE;
-      txSent = FALSE;
-    }
+    txPending = FALSE;
+    txSent = FALSE;
     signal Send.sendDone[call CXPacket.getTransportProtocol(tx_msg)](tx_msg, SUCCESS);
   }
 
   task void txFailTask(){
-    atomic{
-      txPending = FALSE;
-      txSent = FALSE;
-    }
+    txPending = FALSE;
+    txSent = FALSE;
     signal Send.sendDone[call CXPacket.getTransportProtocol(tx_msg)](tx_msg, FAIL);
   }
 
@@ -106,36 +94,34 @@ module CXFloodP{
    **/
   command error_t Send.send[uint8_t t](message_t* msg, uint8_t len){
 //    printf_TMP("floodsend.send %x\r\n", t);
-    atomic{
-      if (!txPending){
-        uint16_t clearTime = 0xff;
-        if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
-          clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
-            call CXPacket.destination(msg));
-        }
-        clearTime = clearTime == 0xff ? call
-          TDMARoutingSchedule.maxDepth(): clearTime;
-        // have to add 1 here: if we're in the last frame now and the
-        // clear time is 1, then we don't have time to send it.
-        if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
-//          printf_TMP("RETRY\r\n");
-          return ERETRY;
-        }else{
-//          printf_TMP("clear time OK: %u\r\n", clearTime);
-          tx_msg = msg;
-          txPending = TRUE;
-          call CXPacket.init(msg);
-          call CXPacket.setType(msg, CX_TYPE_DATA);
-  //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
-          //preserve pre-routed flag
-          call CXPacket.setNetworkProtocol(msg, 
-            (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED) | CX_NP_FLOOD);
-          printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
-          return SUCCESS;
-        }
-      }else{
-        return EBUSY;
+    if (!txPending){
+      uint16_t clearTime = 0xff;
+      if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
+        clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
+          call CXPacket.destination(msg));
       }
+      clearTime = clearTime == 0xff ? call
+        TDMARoutingSchedule.maxDepth(): clearTime;
+      // have to add 1 here: if we're in the last frame now and the
+      // clear time is 1, then we don't have time to send it.
+      if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
+//          printf_TMP("RETRY\r\n");
+        return ERETRY;
+      }else{
+//          printf_TMP("clear time OK: %u\r\n", clearTime);
+        tx_msg = msg;
+        txPending = TRUE;
+        call CXPacket.init(msg);
+        call CXPacket.setType(msg, CX_TYPE_DATA);
+//        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
+        //preserve pre-routed flag
+        call CXPacket.setNetworkProtocol(msg, 
+          (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED) | CX_NP_FLOOD);
+        printf_F_SCHED("fs.s %p %u\r\n", msg, call CXPacket.count(msg));
+        return SUCCESS;
+      }
+    }else{
+      return EBUSY;
     }
   }
   
@@ -252,7 +238,7 @@ module CXFloodP{
 
   //decrement remaining transmissions on this packet and potentially
   //move into cleanup steps
-  event void CXTDMA.sendDone(message_t* msg, uint8_t len,
+  event error_t CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
       printf("CXFloodP sd!\r\n");
@@ -271,6 +257,7 @@ module CXFloodP{
     ccfn = frameNum;
     cccaller = 1;
     checkAndCleanup();
+    return SUCCESS;
   }
 
 

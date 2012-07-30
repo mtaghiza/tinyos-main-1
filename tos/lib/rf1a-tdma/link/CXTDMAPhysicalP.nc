@@ -831,11 +831,13 @@ module CXTDMAPhysicalP {
         sdRECaptureLocal);
     }
     resynch();
-    signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
-      sdResultLocal);
-
-    setAsyncState(S_IDLE);
-    postPfs();
+    if (SUCCESS == signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
+        sdResultLocal)){
+      setAsyncState(S_IDLE);
+      postPfs();
+    }else{
+      setAsyncState(S_ERROR_e);
+    }
     atomic sdPending = FALSE;
   }
 
