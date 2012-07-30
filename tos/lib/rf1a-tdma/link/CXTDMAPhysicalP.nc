@@ -227,6 +227,7 @@ module CXTDMAPhysicalP {
         (call FrameWaitAlarm.isRunning())?1:0, 
         call FrameWaitAlarm.getAlarm(),
         fwHandled);
+      printf("#fl: %lu fw: %lu\r\n", s_frameLen, s_fwCheckLen);
     }
   }
 
