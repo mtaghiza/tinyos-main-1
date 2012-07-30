@@ -24,7 +24,7 @@ ipi=1024UL
 queueThreshold=10
 
 #network params
-fps=10
+fps=40
 md=5
 mr=1
 staticScheduler=1
