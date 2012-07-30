@@ -464,18 +464,18 @@ module CXTDMAPhysicalP {
     recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
-    if (call PrepareFrameStartAlarm.getNow() < 
-        call PrepareFrameStartAlarm.getAlarm()){
-      //set it again? 
-      //TODO: this has to be fixed at some point: otherwise when
-      //the 32-bit timer wraps around, it will appear to be "early"
-      call PrepareFrameStartAlarm.startAt(call PrepareFrameStartAlarm.getAlarm() - pfsHandled, 
-       pfsHandled);
-      printf("!PFS early: %lu < %lu\r\n", 
-        call PrepareFrameStartAlarm.getNow(),  
-        call PrepareFrameStartAlarm.getAlarm());
-      return;
-    }
+//    if (call PrepareFrameStartAlarm.getNow() < 
+//        call PrepareFrameStartAlarm.getAlarm()){
+//      //set it again? 
+//      //TODO: this has to be fixed at some point: otherwise when
+//      //the 32-bit timer wraps around, it will appear to be "early"
+//      call PrepareFrameStartAlarm.startAt(call PrepareFrameStartAlarm.getAlarm() - pfsHandled, 
+//       pfsHandled);
+//      printf("!PFS early: %lu < %lu\r\n", 
+//        call PrepareFrameStartAlarm.getNow(),  
+//        call PrepareFrameStartAlarm.getAlarm());
+//      return;
+//    }
     //cool, we got the work done in time. reschedule for next frame.
     if (!pfsTaskPending){
       //first, set up for FSA (this frame)
@@ -546,14 +546,15 @@ module CXTDMAPhysicalP {
     //TODO: this is probably not safe: non-deterministic completion
     //time!
     fsHandled = call FrameStartAlarm.getNow();
-    if (fsHandled < 
-        call FrameStartAlarm.getAlarm()){
-      printf("!FS early: %lu < %lu\r\n", 
-        fsHandled,  
-        call FrameStartAlarm.getAlarm());
-      setAsyncState(S_ERROR_a);
-      return;
-    }else{
+//    if (fsHandled < 
+//        call FrameStartAlarm.getAlarm()){
+//      printf("!FS early: %lu < %lu\r\n", 
+//        fsHandled,  
+//        call FrameStartAlarm.getAlarm());
+//      setAsyncState(S_ERROR_a);
+//      return;
+//    }else{
+    {
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
         error_t error = call Rf1aPhysical.completeSend();
@@ -676,7 +677,6 @@ module CXTDMAPhysicalP {
       return;
     } else if (asyncState == S_RX_RECEIVING_FINAL){
       //We started receiving a packet but didn't get a receiveDone.
-      //TODO: this comes up prettty often. correct?
       setAsyncState(S_ERROR_b);
       //TODO: we should force the radio to IDLE at this point and get
       //ready for next frame, assuming we've got the above timeout correct.
