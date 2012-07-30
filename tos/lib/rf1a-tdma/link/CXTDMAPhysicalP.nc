@@ -155,6 +155,10 @@ module CXTDMAPhysicalP {
   //appx. time of last receiveDone event.
   uint32_t rxd;
 
+  uint32_t rxsCount;
+  uint32_t rxyCount;
+  uint32_t rxdCount;
+
   #ifndef EVENT_HISTORY
   #define EVENT_HISTORY 32
   #endif
@@ -191,6 +195,8 @@ module CXTDMAPhysicalP {
           eventOrdering[j], stateOrdering[j],
           asyncStateOrdering[j], j);
       }
+      printf("RXS: %lu RXY: %lu RXD: %lu\r\n", rxsCount, rxyCount,
+        rxdCount);
     }
   }
 
@@ -339,6 +345,7 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { 
     atomic{
       recordEvent(6);
+      rxsCount++;
       if (asyncState == S_RX_READY || asyncState == S_RX_WAIT){
         setAsyncState(S_RX_RECEIVING);
       }else{
@@ -607,6 +614,7 @@ module CXTDMAPhysicalP {
     switch(asyncState){
       case S_RX_WAIT:
       case S_RX_READY:
+        rxyCount++;
         txCapture = FALSE;
 //        setAsyncState(S_RX_RECEIVING);
         break;
@@ -697,6 +705,7 @@ module CXTDMAPhysicalP {
                                              unsigned int count,
                                              int result) {
     recordEvent(8);
+    rxdCount++;
     //Is this being signalled from a non-async context somewhere? I
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
