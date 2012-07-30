@@ -342,13 +342,23 @@ module CXScopedFloodP{
     switch (state){
       case S_DATA:
         if (isDataFrame(frameNum)){
-          return RF1A_OM_FSTXON;
+          if ( call TaskResource.isOwner()){
+            return RF1A_OM_FSTXON;
+          } else {
+            printf("!in s_data, but resource not held.\r\n");
+            return RF1A_OM_UNDEFINED; 
+          }
         } else {
           return RF1A_OM_RX;
         }
       case S_ACK:
         if (isAckFrame(frameNum)){
-          return RF1A_OM_FSTXON;
+          if (call TaskResource.isOwner()){
+            return RF1A_OM_FSTXON;
+          }else{
+            printf("!in s_ack, but resource not held.\r\n");
+            return RF1A_OM_UNDEFINED;
+          }
         } else {
           return RF1A_OM_RX;
         }

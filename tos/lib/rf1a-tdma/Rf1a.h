@@ -76,6 +76,7 @@ typedef enum rf1a_offmode_e {
   RF1A_OM_FSTXON = 0x01,
   RF1A_OM_TX = 0x02,
   RF1A_OM_RX = 0x03,
+  RF1A_OM_UNDEFINED = 0x04,
 } rf1a_offmode_e;
 
 #endif // _Rf1a_h_
