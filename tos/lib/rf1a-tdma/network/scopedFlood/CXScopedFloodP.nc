@@ -356,7 +356,7 @@ module CXScopedFloodP{
       case S_ACK:
         if (isAckFrame(frameNum)){
           if (call TaskResource.isOwner()){
-            printf("#A@ %u\r\n", frameNum);
+//            printf_TMP("#A@ %u\r\n", frameNum);
             return RF1A_OM_FSTXON;
           }else{
             printf("!in s_ack, but resource not held.\r\n");

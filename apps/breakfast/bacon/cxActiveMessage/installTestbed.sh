@@ -15,7 +15,7 @@ debugScale=4UL
 testRequestAck=0
 rootSender=0
 rootDest=1
-leafDest=99
+leafDest=0
 
 fecEnabled=0
 fecHamming74=1
