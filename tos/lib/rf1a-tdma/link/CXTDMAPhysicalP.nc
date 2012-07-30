@@ -616,6 +616,9 @@ module CXTDMAPhysicalP {
       case S_RX_READY:
         rxyCount++;
         txCapture = FALSE;
+        if (call FrameWaitAlarm.isRunning()){
+          call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+        }
 //        setAsyncState(S_RX_RECEIVING);
         break;
       case S_TX_TRANSMITTING:
@@ -869,7 +872,8 @@ module CXTDMAPhysicalP {
         s_sr = symbolRate;
         s_sri = srIndex(s_sr);
         s_frameLen = frameLens[s_sri];
-        s_fwCheckLen = fwCheckLens[s_sri];
+        //TODO: update fwCheckLen if this really needs to be doubled
+        s_fwCheckLen = 2*fwCheckLens[s_sri];
   
         stopAlarms();
         setState(S_IDLE);
