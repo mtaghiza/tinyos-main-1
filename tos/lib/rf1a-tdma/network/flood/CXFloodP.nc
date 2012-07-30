@@ -220,13 +220,17 @@ module CXFloodP{
     *msg = isOrigin? tx_msg : fwd_msg;
     return TRUE;
   }
-  
-  task void reportReceive(){
+
+  void doReceive(){
     uint8_t pll = call LayerPacket.payloadLength(fwd_msg);
     void* pl = call LayerPacket.getPayload(fwd_msg, pll);
     uint8_t tProto = call CXPacket.getTransportProtocol(fwd_msg);
     fwd_msg = signal Receive.receive[tProto](fwd_msg, pl, pll);
     rxOutstanding = FALSE;
+  }
+  
+  task void reportReceive(){
+    doReceive();
   }
 
   //deal with the aftermath of a packet transmission.
@@ -295,11 +299,18 @@ module CXFloodP{
           printf_F_RX("p");
           if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
               call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+            uint8_t pll = call LayerPacket.payloadLength(msg);
+            void* pl = call LayerPacket.getPayload(msg, pll);
+            uint8_t tProto = call CXPacket.getTransportProtocol(msg);
+
             printf_SF_TESTBED_PR("PRD %lu\r\n", thisSn);
             lastSn = thisSn;
             lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
-            return msg;
+
+            //no need to forward it, but we should report it up for
+            //snooping
+            return signal Receive.receive[tProto](msg, pl, pll);
           }else{
             printf_SF_TESTBED_PR("PRK %lu\r\n", thisSn);
             printf_F_RX("b");

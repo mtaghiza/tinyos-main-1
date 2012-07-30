@@ -17,6 +17,7 @@ module CXTDMADispatchP{
 
   uint16_t lastFrame;
   uint8_t owner = INVALID_OWNER;
+  uint8_t lastOwner;
 
   command error_t TaskResource.immediateRequest[uint8_t np](){
     if (owner == INVALID_OWNER){
@@ -29,6 +30,7 @@ module CXTDMADispatchP{
 
   command error_t TaskResource.release[uint8_t np](){
     if (owner == np){
+      lastOwner = owner;
       owner = INVALID_OWNER;
       return SUCCESS;
     }
@@ -75,7 +77,7 @@ module CXTDMADispatchP{
     if (isClaimed()){
       signal CXTDMA.sendDone[owner](msg, len, frameNum, error);
     } else {
-      printf("!Unclaimed SD\r\n");
+      printf("!Unclaimed SD@ %u (last: %x)\r\n", frameNum, lastOwner);
     }
   }
 
