@@ -165,8 +165,8 @@ module CXTDMAPhysicalP {
   uint8_t asyncStateOrdering[EVENT_HISTORY];
   
   //This should be removed when debugging is done!
-  void recordEvent(uint8_t eventId){}
-  void recordEventX(uint8_t eventId){
+  void recordEventX(uint8_t eventId){}
+  void recordEvent(uint8_t eventId){
     atomic{
       uint8_t i = (es+el)%EVENT_HISTORY;
       stateOrdering[i] = state;
@@ -338,6 +338,7 @@ module CXTDMAPhysicalP {
  
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { 
     atomic{
+      recordEvent(6);
       if (asyncState == S_RX_READY || asyncState == S_RX_WAIT){
         setAsyncState(S_RX_RECEIVING);
       }else{
@@ -490,6 +491,7 @@ module CXTDMAPhysicalP {
 //      post printTimers();
       configureRadio();
     }else {
+      //pfs task was still pending: did not get ready in time.
       pfsTaskPending = FALSE;
       reportAsyncError(S_ERROR_2);
     }
@@ -694,7 +696,7 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
-    recordEvent(6);
+    recordEvent(8);
     //Is this being signalled from a non-async context somewhere? I
     //need to mark the entire thing as atomic to avoid compiler
     //warnings
@@ -740,7 +742,7 @@ module CXTDMAPhysicalP {
     uint8_t rdCountLocal;
     uint8_t rdS_srLocal;
     uint32_t rdLastRECaptureLocal;
-    recordEvent(8);
+    recordEvent(9);
     atomic{
       msg = (message_t*) rdBuffer;
       rdResultLocal = rdResult;
@@ -783,7 +785,7 @@ module CXTDMAPhysicalP {
 
   async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
       uint8_t len, int result) { 
-    recordEvent(9);
+    recordEvent(10);
     if (asyncState == S_TX_TRANSMITTING){
       if (sdPending || (message_t*)buffer != tx_msg){
         setAsyncState(S_ERROR_9);
@@ -802,7 +804,7 @@ module CXTDMAPhysicalP {
     error_t sdResultLocal;
     uint32_t sdRECaptureLocal;
     IS_TX_CLEAR_PIN;
-    recordEvent(10);
+    recordEvent(11);
     atomic{
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
