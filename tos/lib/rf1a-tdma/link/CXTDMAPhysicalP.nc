@@ -784,6 +784,12 @@ module CXTDMAPhysicalP {
   //        printf_TMP("#RX %u @ %u\r\n", 
   //          call CXPacket.sn(msg),
   //          frameNum);
+          printf_TMP("RD %u %u %u %u %u\r\n",
+            call CXPacket.getNetworkProtocol(msg),
+            call CXPacket.source(msg),
+            call CXPacket.sn(msg),
+            call CXPacket.count(msg),
+            frameNum);
           rx_msg = signal CXTDMA.receive(msg,
             rdCountLocal - sizeof(rf1a_ieee154_t),
             frameNum, rdLastRECaptureLocal);

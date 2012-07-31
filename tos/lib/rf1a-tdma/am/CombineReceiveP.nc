@@ -35,8 +35,8 @@ module CombineReceiveP{
   
       //restore AM destination from CX header fields
       call AMPacket.setDestination(msg, call CXPacket.destination(msg));
-      printRX(msg);
       if (call AMPacket.isForMe(msg)){
+        printRX(msg);
         msg = signal Receive.receive[call AMPacket.type(msg)](msg, pl, pll);
       }else{
         msg = signal Snoop.receive[call AMPacket.type(msg)](msg, pl, pll);
