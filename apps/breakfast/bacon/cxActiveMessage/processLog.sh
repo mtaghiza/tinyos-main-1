@@ -83,9 +83,9 @@ CREATE TABLE RX_ALL (
 select "Importing RX_ALL from $rxTf";
 .import $rxTf RX_ALL
 
-select "Removing non-root-involving receptions";
-DELETE FROM RX_ALL
-WHERE src !=0 and dest !=0;
+--select "Removing non-root-involving receptions";
+--DELETE FROM RX_ALL
+--WHERE src !=0 and dest !=0;
 
 DROP TABLE IF EXISTS ERROR_EVENTS;
 CREATE TABLE ERROR_EVENTS (
@@ -130,6 +130,8 @@ SELECT
   TX_ALL.src as src,
   RX_AND_MISSING.dest as dest,
   TX_ALL.tp as tp,
+  TX_ALL.np as np,
+  TX_ALL.pr as pr,
   avg(RX_AND_MISSING.received) as prr
 FROM TX_ALL
 LEFT JOIN (
@@ -140,7 +142,9 @@ LEFT JOIN (
   TX_ALL.sn == RX_AND_MISSING.sn 
 GROUP BY TX_ALL.src,
   RX_AND_MISSING.dest,
-  TX_ALL.tp
+  TX_ALL.tp,
+  TX_ALL.np,
+  TX_ALL.pr
 ORDER BY prr;
 
 DROP TABLE IF EXISTS PRR_NO_STARTUP;
@@ -149,6 +153,8 @@ SELECT
   TX_ALL.src as src,
   RX_AND_MISSING.dest as dest,
   TX_ALL.tp as tp,
+  TX_ALL.np as np,
+  TX_ALL.pr as pr,
   avg(RX_AND_MISSING.received) as prr
 FROM TX_ALL
 LEFT JOIN (
@@ -160,7 +166,9 @@ LEFT JOIN (
 WHERE TX_ALL.ts > 300+(SELECT min(ts) from TX_ALL)
 GROUP BY TX_ALL.src,
   RX_AND_MISSING.dest,
-  TX_ALL.tp
+  TX_ALL.tp,
+  TX_ALL.np,
+  TX_ALL.pr
 ORDER BY prr;
 EOF
 
