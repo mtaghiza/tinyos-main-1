@@ -208,10 +208,13 @@ module CXFloodP{
   }
 
   void doReceive(){
-    uint8_t pll = call LayerPacket.payloadLength(fwd_msg);
-    void* pl = call LayerPacket.getPayload(fwd_msg, pll);
-    uint8_t tProto = call CXPacket.getTransportProtocol(fwd_msg);
-    fwd_msg = signal Receive.receive[tProto](fwd_msg, pl, pll);
+    //do not report self-receptions
+    if (call CXPacket.source(fwd_msg) != TOS_NODE_ID){
+      uint8_t pll = call LayerPacket.payloadLength(fwd_msg);
+      void* pl = call LayerPacket.getPayload(fwd_msg, pll);
+      uint8_t tProto = call CXPacket.getTransportProtocol(fwd_msg);
+      fwd_msg = signal Receive.receive[tProto](fwd_msg, pl, pll);
+    }
     rxOutstanding = FALSE;
   }
   
