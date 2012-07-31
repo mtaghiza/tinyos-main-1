@@ -550,10 +550,6 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
-    recordEvent(4);
-    //TODO: this is probably not safe: non-deterministic completion
-    //time!
-    fsHandled = call FrameStartAlarm.getNow();
 //    if (fsHandled < 
 //        call FrameStartAlarm.getAlarm()){
 //      printf("!FS early: %lu < %lu\r\n", 
@@ -566,6 +562,7 @@ module CXTDMAPhysicalP {
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
         error_t error = call Rf1aPhysical.completeSend();
+        recordEvent(4);
         //Transmission failed: stash results for send-done and post
         //task
         if (error != SUCCESS){
@@ -587,7 +584,11 @@ module CXTDMAPhysicalP {
         }else{
           setAsyncState(S_TX_TRANSMITTING);
         }
+        //non-deterministic completion: delay until send has started.
+        //time!
+        fsHandled = call FrameStartAlarm.getNow();
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
+        recordEvent(4);
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
       ////TODO: remove debug
@@ -831,6 +832,14 @@ module CXTDMAPhysicalP {
         sdRECaptureLocal);
     }
     resynch();
+
+    printf_TMP("SD %u %u %u %u %u\r\n",
+      call CXPacket.getNetworkProtocol(sdMsgLocal),
+      call CXPacket.source(sdMsgLocal),
+      call CXPacket.sn(sdMsgLocal),
+      call CXPacket.count(sdMsgLocal),
+      frameNum);
+    
     if (SUCCESS == signal CXTDMA.sendDone(sdMsgLocal, sdLenLocal, frameNum,
         sdResultLocal)){
       setAsyncState(S_IDLE);
