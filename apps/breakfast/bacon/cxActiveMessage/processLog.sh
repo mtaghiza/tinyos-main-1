@@ -15,7 +15,6 @@ mkdir -p $tfDir
 mkdir -p $(dirname $db)
 
 tickLen="4/26e6"
-RXREADY_FAULT_WINDOW=3.0
 
 #dos2unix $logFile
 
@@ -24,18 +23,29 @@ tfb=$(tempfile -d $tfDir)
 #tfb=tmp/tmp
 rxTf=$tfb.rx
 txTf=$tfb.tx
+errTf=$tfb.err
+
+if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
+then
+  echo "convert line endings"
+  dos2unix $logFile
+else 
+  echo "skip convert line endings"
+fi
 
 #set -x 
 echo "extracting RX"
 #1             2  3  4  5 6  7     8   9 10 11 12 13 14 15  16 17
 #1343662476.53 21 RX s: 0 d: 65535 sn: 0 o: 0  c: 1  r: -55 l: 0
 #pv $logFile | awk '($3 == "RX"){print $1,$5,$2,$7,$9,$11,$13,$15,$17,1}' > $rxTf
-dos2unix $logFile
 pv $logFile | awk '($3 == "RX"){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
 echo "extracting TX"
 #1      2 3  4  5 6  7     8   9 10  11 12 13 14 15 16 17 18 19   20 21
 #1...71 0 TX s: 0 d: 65535 sn: 0 ofn: 0 np: 1 pr: 0 tp: 1 am: 224 e: 0
 pv $logFile | awk '($3 == "TX"){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
+
+echo "extracting errors"
+pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -72,6 +82,21 @@ CREATE TABLE RX_ALL (
 );
 select "Importing RX_ALL from $rxTf";
 .import $rxTf RX_ALL
+
+select "Removing non-root-involving receptions";
+DELETE FROM RX_ALL
+WHERE src !=0 and dest !=0;
+
+DROP TABLE IF EXISTS ERROR_EVENTS;
+CREATE TABLE ERROR_EVENTS (
+  ts REAL,
+  node INTEGER,
+  fromState TEXT,
+  toState TEXT
+);
+
+select "Importing error events";
+.import $errTf ERROR_EVENTS
 
 select "Aggregating depth info";
 DROP TABLE IF EXISTS AGG_DEPTH;
