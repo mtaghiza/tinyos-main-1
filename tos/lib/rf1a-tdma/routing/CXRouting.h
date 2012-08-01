@@ -12,4 +12,8 @@ typedef struct cx_route_entry_t{
 #define CX_ROUTING_TABLE_ENTRIES 16
 #endif
 
+#ifndef CX_BUFFER_WIDTH
+#define CX_BUFFER_WIDTH 0
+#endif
+
 #endif

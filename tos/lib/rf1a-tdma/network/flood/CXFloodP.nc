@@ -158,7 +158,8 @@ module CXFloodP{
           //maxDepth will rebroadcast)
           if (call CXPacket.getNetworkProtocol(tx_msg) & CX_NP_PREROUTED){
             clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
-              call CXPacket.destination(tx_msg));
+              call CXPacket.destination(tx_msg)) 
+              + call CXRoutingTable.getBufferWidth();
           }
           if (call TDMARoutingSchedule.maxDepth() < clearLeft){
             clearLeft = call TDMARoutingSchedule.maxDepth() + 1;

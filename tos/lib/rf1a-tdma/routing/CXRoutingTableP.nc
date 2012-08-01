@@ -76,6 +76,10 @@ generic module CXRoutingTableP(uint8_t numEntries){
     return SUCCESS;
   }
 
+  command uint8_t CXRoutingTable.getBufferWidth(){
+    return CX_BUFFER_WIDTH;
+  }
+
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool* result){
     cx_route_entry_t* re; 
@@ -88,7 +92,8 @@ generic module CXRoutingTableP(uint8_t numEntries){
       if (getEntry(&re, n1, TOS_NODE_ID)){
         uint8_t md = re->distance;
         if (getEntry(&re, n0, n1)){
-          *result = sm + md <= re->distance;
+          *result = sm + md <= (re->distance 
+            + call CXRoutingTable.getBufferWidth());
           if (! *result){
             printf_ROUTING_TABLE("~");
           }
