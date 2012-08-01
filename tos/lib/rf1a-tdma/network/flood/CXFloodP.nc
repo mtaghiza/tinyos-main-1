@@ -293,7 +293,7 @@ module CXFloodP{
             void* pl = call LayerPacket.getPayload(msg, pll);
             uint8_t tProto = call CXPacket.getTransportProtocol(msg);
 
-            printf_SF_TESTBED_PR("PRD %lu\r\n", thisSn);
+            printf_SF_TESTBED_PR("PRD %u %lu\r\n", thisSrc, thisSn);
             lastSn = thisSn;
             lastSrc = thisSrc;
             printf_F_RX("~b\r\n");
@@ -302,7 +302,7 @@ module CXFloodP{
             //snooping
             return signal Receive.receive[tProto](msg, pl, pll);
           }else{
-            printf_SF_TESTBED_PR("PRK %lu\r\n", thisSn);
+            printf_SF_TESTBED_PR("PRK %u %lu\r\n", thisSrc, thisSn);
             printf_F_RX("b");
           }
         }

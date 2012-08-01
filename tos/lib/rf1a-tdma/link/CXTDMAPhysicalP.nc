@@ -793,6 +793,8 @@ module CXTDMAPhysicalP {
           rx_msg = signal CXTDMA.receive(msg,
             rdCountLocal - sizeof(rf1a_ieee154_t),
             frameNum, rdLastRECaptureLocal);
+        }else{
+          printf_TMP("Bad CRC %u\r\n", frameNum);
         }
         setAsyncState(S_IDLE);
         postPfs();

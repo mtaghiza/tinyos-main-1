@@ -38,11 +38,11 @@ echo "extracting RX"
 #1             2  3  4  5 6  7     8   9 10 11 12 13 14 15  16 17
 #1343662476.53 21 RX s: 0 d: 65535 sn: 0 o: 0  c: 1  r: -55 l: 0
 #pv $logFile | awk '($3 == "RX"){print $1,$5,$2,$7,$9,$11,$13,$15,$17,1}' > $rxTf
-pv $logFile | awk '($3 == "RX"){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
+pv $logFile | awk '($3 == "RX" && NF == 17){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
 echo "extracting TX"
 #1      2 3  4  5 6  7     8   9 10  11 12 13 14 15 16 17 18 19   20 21
 #1...71 0 TX s: 0 d: 65535 sn: 0 ofn: 0 np: 1 pr: 0 tp: 1 am: 224 e: 0
-pv $logFile | awk '($3 == "TX"){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
+pv $logFile | awk '($3 == "TX" && NF == 21){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
 
 echo "extracting errors"
 pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
@@ -50,6 +50,8 @@ pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3,
 sqlite3 $db << EOF
 .headers OFF
 .separator ' '
+
+SELECT load_extension('/home/carlson/local/bin/libsqlitefunctions.so');
 
 DROP TABLE IF EXISTS TX_ALL;
 CREATE TABLE TX_ALL (
@@ -106,6 +108,7 @@ SELECT src,
   min(depth) as minDepth,
   max(depth) as maxDepth,
   avg(depth) as avgDepth,
+  stdev(depth) as sdDepth,
   count(*) as cnt
 FROM RX_ALL
 GROUP BY src, dest
