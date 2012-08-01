@@ -61,6 +61,14 @@ then
       lqi INTEGER,
       crc INTEGER
     );
+    DROP TABLE IF EXISTS DEPTH;
+    CREATE TABLE DEPTH ( 
+      src INTEGER,
+      dest INTEGER,
+      avgDepth INTEGER,
+      prrThreshold REAL,
+      txPower INTEGER
+    );
 EOF
 
 fi
@@ -129,4 +137,5 @@ JOIN LINK b
 ON a.src==b.dest AND b.src == a.dest 
 ;
 EOF
+echo "Run depths.py <db> <txpower> [prr threshold...] to extract depth information"
 #rm $txFile $rxFile
