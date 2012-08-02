@@ -589,6 +589,7 @@ module CXTDMAPhysicalP {
         fsHandled = call FrameStartAlarm.getNow();
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         recordEvent(4);
+        fsHandled = call FrameStartAlarm.getNow();
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
       ////TODO: remove debug
@@ -619,8 +620,17 @@ module CXTDMAPhysicalP {
         rxyCount++;
         txCapture = FALSE;
         if (call FrameWaitAlarm.isRunning()){
-          //extend the alarm if we got a capture.
-          call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+          if (s_isSynched){
+            //extend the alarm if we got a capture.
+            call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+          }else{
+            //TODO: if non-synched, FWA is already pushed back close
+            //to boundary. We should push back both FWA and PFSA in
+            //this case.
+            printf_TMP("~pb\r\n");
+          }
+        }else{
+          setAsyncState(S_ERROR_f);
         }
 //        setAsyncState(S_RX_RECEIVING);
         break;
