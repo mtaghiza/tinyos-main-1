@@ -599,11 +599,11 @@ module CXTDMAPhysicalP {
         }
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
-        if (! s_isSynched){
-          printf_TMP("# fwa: %lu pfsa: %lu\r\n", 
-            call FrameWaitAlarm.getAlarm(), 
-            call PrepareFrameStartAlarm.getAlarm());
-        }
+//        if (! s_isSynched){
+//          printf_TMP("# fwa: %lu pfsa: %lu\r\n", 
+//            call FrameWaitAlarm.getAlarm(), 
+//            call PrepareFrameStartAlarm.getAlarm());
+//        }
       ////TODO: remove debug
         atomic pt = 1;
 //        post printTimers();
