@@ -51,11 +51,6 @@ module CXFloodP{
   bool txSent;
   uint16_t txLeft;
   uint16_t clearLeft;
-  
-  #define PACKET_HISTORY 4
-  am_addr_t recentSrc[PACKET_HISTORY] = {0xffff, 0xffff, 0xffff, 0xffff};
-  uint16_t recentSn[PACKET_HISTORY];
-  uint8_t lastIndex = 0;
 
   uint8_t state;
 
@@ -75,27 +70,6 @@ module CXFloodP{
   void setState(uint8_t s){
     printf_F_STATE("(%x->%x)\r\n", state, s);
     state = s;
-  }
-
-  //tracking duplicates
-  bool seenRecently(am_addr_t src, uint16_t sn){
-    uint8_t i;
-//    printf_TMP("SR %u %u ", src, sn);
-    for (i = 0; i < PACKET_HISTORY; i++){
-      if (src == recentSrc[i] && sn == recentSn[i]){
-//        printf_TMP("@%u\r\n", i);
-        return TRUE;
-      }
-    }
-//    printf_TMP("F\r\n");
-    return FALSE;
-  }
-
-  void recordReception(am_addr_t src, uint16_t sn){
-//    printf_TMP("RR %u %u @%u\r\n", src, sn, lastIndex);
-    recentSrc[lastIndex] = src;
-    recentSn[lastIndex] = sn;
-    lastIndex = ((lastIndex+1) % PACKET_HISTORY);
   }
 
   task void txSuccessTask(){
@@ -211,7 +185,6 @@ module CXFloodP{
         //  broadcast at each depth. retransmits*(depth+width)
         clearLeft *= call TDMARoutingSchedule.maxRetransmit();
 
-        recordReception(TOS_NODE_ID, call CXPacket.sn(tx_msg));
         txSent = TRUE;
         isOrigin = TRUE;
         setState(S_FWD);
@@ -319,89 +292,74 @@ module CXFloodP{
     uint32_t thisSn = call CXPacket.sn(msg);
     printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
     if (state == S_IDLE){
-
-      //TODO: this should track last few received in order to handle
-      //cases where conflicts arise and multiple packets are in the
-      //air at once (e.g. during startup)
-
-      //new packet
-      if (! seenRecently(thisSrc, thisSn)){
 //        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
-        call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
-          call CXPacket.count(msg));
-        printf_F_RX("n");
+      call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
+        call CXPacket.count(msg));
+      printf_F_RX("n");
 
-        //check for routed flag: ignore it if the routed flag is
-        //set, but we are not on the path.
-        if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
-          bool isBetween;
-          printf_F_RX("p");
-          if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
-              call CXPacket.destination(msg), &isBetween)) || !isBetween ){
-            uint8_t pll = call LayerPacket.payloadLength(msg);
-            void* pl = call LayerPacket.getPayload(msg, pll);
-            uint8_t tProto = call CXPacket.getTransportProtocol(msg);
+      //check for routed flag: ignore it if the routed flag is
+      //set, but we are not on the path.
+      if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
+        bool isBetween;
+        printf_F_RX("p");
+        if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
+            call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+          uint8_t pll = call LayerPacket.payloadLength(msg);
+          void* pl = call LayerPacket.getPayload(msg, pll);
+          uint8_t tProto = call CXPacket.getTransportProtocol(msg);
 
-            printf_SF_TESTBED_PR("PRD %u %lu\r\n", thisSrc, thisSn);
-            recordReception(thisSrc, thisSn);
-            printf_F_RX("~b\r\n");
+          printf_SF_TESTBED_PR("PRD %u %lu\r\n", thisSrc, thisSn);
+          printf_F_RX("~b\r\n");
 
-            //no need to forward it, but we should report it up for
-            //snooping
-            return signal Receive.receive[tProto](msg, pl, pll);
-          }else{
-            printf_SF_TESTBED_PR("PRK %u %lu\r\n", thisSrc, thisSn);
-            printf_F_RX("b");
-          }
-        }
-        if (!rxOutstanding){
-          if (SUCCESS == call TaskResource.immediateRequest()){
-//            printf_SF_TESTBED("FF\r\n");
-            message_t* ret = fwd_msg;
-            printf_F_RX("f\r\n");
-            recordReception(thisSrc, thisSn);
-            //avoid slot violation w. txLeft 
-            // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
-            // This will prevent slot violations from happening and
-            // doesn't require deep knowledge of the schedule.
-            if ( call TDMARoutingSchedule.isSynched()){
-              uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
-              uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
-              txLeft = (mr < framesLeft)? mr : framesLeft;
-            }else{
-              txLeft = 0;
-            }
-            //if it's pre-routed and ends with us, then we don't need
-            //to forward it. This lets us shave one frame off the
-            //inter-packet spacing.
-            if (call CXPacket.isForMe(msg) && 
-                (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
-              txLeft = 0;
-            }
-            fwd_msg = msg;
-            rxOutstanding = TRUE;
-            setState(S_FWD);
-            //to handle the case where retx = 0
-            ccfn = frameNum;
-            cccaller = 2;
-            checkAndCleanup();
-            return ret;
-  
-          //couldn't get the resource, ignore this packet.
-          } else {
-            printf("!F.r.RIR\r\n");
-            return msg;
-          }
+          //no need to forward it, but we should report it up for
+          //snooping
+          return signal Receive.receive[tProto](msg, pl, pll);
         }else{
-          printf_TESTBED("QD\r\n");
+          printf_SF_TESTBED_PR("PRK %u %lu\r\n", thisSrc, thisSn);
+          printf_F_RX("b");
+        }
+      }
+      if (!rxOutstanding){
+        if (SUCCESS == call TaskResource.immediateRequest()){
+//            printf_SF_TESTBED("FF\r\n");
+          message_t* ret = fwd_msg;
+          printf_F_RX("f\r\n");
+          //avoid slot violation w. txLeft 
+          // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
+          // This will prevent slot violations from happening and
+          // doesn't require deep knowledge of the schedule.
+          if ( call TDMARoutingSchedule.isSynched()){
+            uint8_t mr = call TDMARoutingSchedule.maxRetransmit();
+            uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
+            txLeft = (mr < framesLeft)? mr : framesLeft;
+          }else{
+            txLeft = 0;
+          }
+          //if it's pre-routed and ends with us, then we don't need
+          //to forward it. This lets us shave one frame off the
+          //inter-packet spacing.
+          if (call CXPacket.isForMe(msg) && 
+              (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
+            txLeft = 0;
+          }
+          fwd_msg = msg;
+          rxOutstanding = TRUE;
+          setState(S_FWD);
+          //to handle the case where retx = 0
+          ccfn = frameNum;
+          cccaller = 2;
+          checkAndCleanup();
+          return ret;
+
+        //couldn't get the resource, ignore this packet.
+        } else {
+          printf("!F.r.RIR\r\n");
           return msg;
         }
-      //duplicate, ignore
-      } else {
-        printf_F_RX("d\r\n");
+      }else{
+        printf_TESTBED("QD\r\n");
         return msg;
       }
-
     //busy forwarding, ignore it.
     } else {
       printf_F_RX("b\r\n");

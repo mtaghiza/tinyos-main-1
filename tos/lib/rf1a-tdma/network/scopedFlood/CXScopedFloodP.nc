@@ -84,10 +84,6 @@ module CXScopedFloodP{
   uint16_t lastDataSrc;
   uint32_t lastDataSn;
   
-  //for suppressing duplicate ack receptions.
-  uint16_t lastAckSrc;
-  uint32_t lastAckSn;
-
   //route update variables
   uint8_t ruSrcDepth;
   uint8_t ruAckDepth;
@@ -194,11 +190,17 @@ module CXScopedFloodP{
 //    printf_TMP("\r\n");
   }
 
-  uint8_t clearTime(uint8_t distance){
-    int8_t ackEdge = -1*distance;
+  uint8_t clearTime(uint8_t distance, bool isPrerouted){
+    int8_t ackEdge; 
     int8_t dataEdge;
     uint8_t time=0;
     dataEdge = 0;
+    //buffer zone width should be added to distance in either
+    //  direction, but only if it's pre-routed
+    if (isPrerouted){
+      distance += 2*(call CXRoutingTable.getBufferWidth());
+    }
+    ackEdge = -1*distance;
     while (dataEdge < distance){
       if (time % (ACKS_PER_DATA+1) == 0){
         dataEdge++;
@@ -213,7 +215,10 @@ module CXScopedFloodP{
       }
       time++;
     }
-    return time;
+    //conservatively, this should be 2*maxRetransmit*time
+    //  because in worst-case, it takes maxRetransmit*data_time +
+    //  maxRetransmit*ack_time. yeeesh
+    return time*2*(call TDMARoutingSchedule.maxRetransmit());
   }
 
 //  uint16_t tempCt;
@@ -236,7 +241,8 @@ module CXScopedFloodP{
       if (distance > call TDMARoutingSchedule.maxDepth()){
         distance = call TDMARoutingSchedule.maxDepth();
       }
-      ct = clearTime(distance)+1;
+      ct = clearTime(distance, 
+        call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)+1;
       if (ct > 
           call TDMARoutingSchedule.framesLeftInSlot(call
           TDMARoutingSchedule.currentFrame())){
@@ -520,7 +526,9 @@ module CXScopedFloodP{
       //  the air is clear. So, we should signal completion after the
       //  transmission in frame ct+origin - 1
       clearFrame = clearTime(
-        call CXRoutingTable.distance(TOS_NODE_ID, call CXPacket.destination(origin_data_msg))) 
+        call CXRoutingTable.distance(TOS_NODE_ID, 
+          call CXPacket.destination(origin_data_msg)), 
+        call CXPacket.getNetworkProtocol(origin_data_msg)&CX_NP_PREROUTED) 
         + originFrame - 1;
 //      printf_TMP("c@%u\r\n", clearFrame);
       //For the case where it's already done
@@ -581,17 +589,11 @@ module CXScopedFloodP{
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
     printf_SF_RX("#rx %p %x ", msg, state);
-    if ( (pType == CX_TYPE_DATA && 
-           (src == lastDataSrc && sn == lastDataSn))
-       ||(pType == CX_TYPE_ACK &&
-           (src == lastAckSrc && sn == lastAckSn)) 
-       || (!call TDMARoutingSchedule.isSynched())){
-      if ( call TDMARoutingSchedule.isSynched()){
-        printf_SF_RX("DUP\r\n");
-      } else{
-        printf_SF_RX("NS\r\n");
-      }
-      //duplicate, or non-synched, drop it.
+
+    //TODO: better duplicate-handling as in flood
+    if (!call TDMARoutingSchedule.isSynched()){
+      printf_SF_RX("NS\r\n");
+      //non-synched, drop it.
       return msg;
     }
     if (state == S_IDLE){
@@ -708,8 +710,6 @@ module CXScopedFloodP{
           uint16_t ackFramesLeft = 
             (call TDMARoutingSchedule.framesLeftInSlot(frameNum) /
             (ACKS_PER_DATA + 1)) * ACKS_PER_DATA;
-          lastAckSrc = src;
-          lastAckSn = sn;
           printf_SF_RX("m");
           fwd_msg = msg;
           fwd_len = len;

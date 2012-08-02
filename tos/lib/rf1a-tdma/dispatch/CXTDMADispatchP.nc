@@ -19,6 +19,34 @@ module CXTDMADispatchP{
   uint8_t owner = INVALID_OWNER;
   uint8_t lastOwner;
 
+  
+  #define PACKET_HISTORY 4
+  am_addr_t recentSrc[PACKET_HISTORY] = {0xffff, 0xffff, 0xffff, 0xffff};
+  uint16_t recentSn[PACKET_HISTORY];
+  uint8_t lastIndex = 0;
+
+  //tracking duplicates
+  bool seenRecently(am_addr_t src, uint16_t sn){
+    uint8_t i;
+//    printf_TMP("SR %u %u ", src, sn);
+    for (i = 0; i < PACKET_HISTORY; i++){
+      if (src == recentSrc[i] && sn == recentSn[i]){
+//        printf_TMP("@%u\r\n", i);
+        return TRUE;
+      }
+    }
+//    printf_TMP("F\r\n");
+    return FALSE;
+  }
+
+  void recordReception(am_addr_t src, uint16_t sn){
+//    printf_TMP("RR %u %u @%u\r\n", src, sn, lastIndex);
+    recentSrc[lastIndex] = src;
+    recentSn[lastIndex] = sn;
+    lastIndex = ((lastIndex+1) % PACKET_HISTORY);
+  }
+
+
   command error_t TaskResource.immediateRequest[uint8_t np](){
     if (owner == INVALID_OWNER){
       owner = np;
@@ -65,8 +93,13 @@ module CXTDMADispatchP{
   event bool SubCXTDMA.getPacket(message_t** msg,
       uint16_t frameNum){ 
     if ( isClaimed() ){
-      return signal CXTDMA.getPacket[owner](msg,
+      bool r = signal CXTDMA.getPacket[owner](msg,
         frameNum);
+      if (msg != NULL){
+        recordReception(call CXPacket.source(*msg), 
+          call CXPacket.sn(*msg));
+      }
+      return r;
     } else {
       return FALSE;
     }
@@ -100,7 +133,14 @@ module CXTDMADispatchP{
       uint16_t frameNum, uint32_t timestamp){
 //    printf_TMP("#D %x\r\n",
 //      call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED);
-    return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
+
+    //check for duplicates 
+    if (!seenRecently(call CXPacket.source(msg), call CXPacket.sn(msg))){
+      recordReception(call CXPacket.source(msg), call CXPacket.sn(msg));
+      return signal CXTDMA.receive[ call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED](msg, len, frameNum, timestamp);
+    }else{
+      return msg;
+    }
   }
 
   default event rf1a_offmode_t CXTDMA.frameType[uint8_t NetworkProtocol](uint16_t frameNum){
