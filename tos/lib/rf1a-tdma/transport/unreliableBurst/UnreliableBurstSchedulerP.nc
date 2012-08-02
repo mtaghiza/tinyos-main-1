@@ -79,6 +79,7 @@ module UnreliableBurstSchedulerP{
         state = S_ERROR_0;
         printf("!UB.S: Error: %s\r\n", decodeError(error));
       }
+      printf_TMP("UB.S: %s\r\n", decodeError(error));
       return error;
     }
   }

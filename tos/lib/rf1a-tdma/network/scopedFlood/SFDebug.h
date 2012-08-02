@@ -49,6 +49,12 @@
 #define printf_SF_ROUTE(...) 
 #endif
 
+#if DEBUG_SF_CLEARTIME == 1
+#define printf_SF_CLEARTIME(...) printf(__VA_ARGS__)
+#else
+#define printf_SF_CLEARTIME(...) 
+#endif
+
 #if defined PORT_SF_GPO && defined PIN_SF_GPO
 #define SF_GPO_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_SF_GPO, PIN_SF_GPO)
 #define SF_GPO_CLEAR_PIN TDMA_CLEAR_PIN(PORT_SF_GPO, PIN_SF_GPO)

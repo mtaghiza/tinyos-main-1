@@ -195,10 +195,12 @@ module CXScopedFloodP{
     int8_t dataEdge;
     uint8_t time=0;
     dataEdge = 0;
+    printf_SF_CLEARTIME("#SF CT: d %u ", distance);
     //buffer zone width should be added to distance in either
     //  direction, but only if it's pre-routed
     if (isPrerouted){
       distance += 2*(call CXRoutingTable.getBufferWidth());
+      printf_SF_CLEARTIME("pr -> %u ", distance);
     }
     ackEdge = -1*distance;
     while (dataEdge < distance){
@@ -215,10 +217,17 @@ module CXScopedFloodP{
       }
       time++;
     }
+    printf_SF_CLEARTIME("%u -> ", time);
     //conservatively, this should be 2*maxRetransmit*time
     //  because in worst-case, it takes maxRetransmit*data_time +
     //  maxRetransmit*ack_time. yeeesh
-    return time*2*(call TDMARoutingSchedule.maxRetransmit());
+    //for reference, in a 5-hop network, worst case completion time
+    //  with a single extra retx is 78 frames. 
+    if (call TDMARoutingSchedule.maxRetransmit()){
+      time = time*2*(call TDMARoutingSchedule.maxRetransmit()-1);
+    }
+    printf_SF_CLEARTIME("%u\r\n", time);
+    return time;
   }
 
 //  uint16_t tempCt;
@@ -246,8 +255,10 @@ module CXScopedFloodP{
       if (ct > 
           call TDMARoutingSchedule.framesLeftInSlot(call
           TDMARoutingSchedule.currentFrame())){
+        printf_SF_CLEARTIME("#SF CT RETRY\r\n");
         return ERETRY;
       } else{
+        printf_SF_CLEARTIME("#SF CT OK\r\n");
         origin_data_msg = msg;
         call CXPacket.init(msg);
         call CXPacket.setType(msg, CX_TYPE_DATA);
