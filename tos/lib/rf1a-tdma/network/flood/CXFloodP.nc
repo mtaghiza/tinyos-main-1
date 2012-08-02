@@ -51,10 +51,12 @@ module CXFloodP{
   bool txSent;
   uint16_t txLeft;
   uint16_t clearLeft;
-
-  am_addr_t lastSrc = 0xff;
-  uint32_t lastSn;
   
+  #define PACKET_HISTORY 4
+  am_addr_t recentSrc[PACKET_HISTORY] = {0xffff, 0xffff, 0xffff, 0xffff};
+  uint16_t recentSn[PACKET_HISTORY];
+  uint8_t lastIndex = 0;
+
   uint8_t state;
 
   //for debugging completion reporting
@@ -73,6 +75,23 @@ module CXFloodP{
   void setState(uint8_t s){
     printf_F_STATE("(%x->%x)\r\n", state, s);
     state = s;
+  }
+
+  //tracking duplicates
+  bool seenRecently(am_addr_t src, uint16_t sn){
+    uint8_t i;
+    for (i = 0; i < PACKET_HISTORY; i++){
+      if (src == recentSrc[i] && sn == recentSn[i]){
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  void recordReception(am_addr_t src, uint16_t sn){
+    recentSrc[lastIndex] = src;
+    recentSn[lastIndex] = sn;
+    lastIndex = (lastIndex+1 % PACKET_HISTORY);
   }
 
   task void txSuccessTask(){
@@ -178,8 +197,7 @@ module CXFloodP{
         //  broadcast at each depth. retransmits*(depth+width)
         clearLeft *= call TDMARoutingSchedule.maxRetransmit();
 
-        lastSn = call CXPacket.sn(tx_msg);
-        lastSrc = TOS_NODE_ID;
+        recordReception(TOS_NODE_ID, call CXPacket.sn(tx_msg));
         txSent = TRUE;
         isOrigin = TRUE;
         setState(S_FWD);
@@ -274,6 +292,7 @@ module CXFloodP{
     checkAndCleanup();
     return SUCCESS;
   }
+  
 
   /**
    * Check a received packet from the lower layer for duplicates,
@@ -292,7 +311,7 @@ module CXFloodP{
       //air at once (e.g. during startup)
 
       //new packet
-      if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
+      if (! seenRecently(thisSrc, thisSn)){
 //        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
         call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
           call CXPacket.count(msg));
@@ -310,8 +329,7 @@ module CXFloodP{
             uint8_t tProto = call CXPacket.getTransportProtocol(msg);
 
             printf_SF_TESTBED_PR("PRD %u %lu\r\n", thisSrc, thisSn);
-            lastSn = thisSn;
-            lastSrc = thisSrc;
+            recordReception(thisSrc, thisSn);
             printf_F_RX("~b\r\n");
 
             //no need to forward it, but we should report it up for
@@ -327,8 +345,7 @@ module CXFloodP{
 //            printf_SF_TESTBED("FF\r\n");
             message_t* ret = fwd_msg;
             printf_F_RX("f\r\n");
-            lastSn = thisSn;
-            lastSrc = thisSrc;
+            recordReception(thisSrc, thisSn);
             //avoid slot violation w. txLeft 
             // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
             // This will prevent slot violations from happening and
