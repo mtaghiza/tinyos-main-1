@@ -123,19 +123,19 @@ module CXFloodP{
         clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
           call CXPacket.destination(msg));
 
-        printf_TMP("#CT: %u ->", clearTime);
+        printf_F_CLEARTIME("#CT: %u ->", clearTime);
         clearTime += call CXRoutingTable.getBufferWidth();
-        printf_TMP(" %u ->", clearTime);
+        printf_F_CLEARTIME(" %u ->", clearTime);
       }else{
-        printf_TMP("#CT: %u ->", clearTime);
+        printf_F_CLEARTIME("#CT: %u ->", clearTime);
       }
       clearTime = (clearTime == 0xff)? call
         TDMARoutingSchedule.maxDepth(): clearTime;
-      printf_TMP(" %u ->", clearTime);
+      printf_F_CLEARTIME(" %u ->", clearTime);
 
       //account for retransmissions (worst case)
       clearTime *= call TDMARoutingSchedule.maxRetransmit();
-      printf_TMP(" %u (%u: %u) ", clearTime, 
+      printf_F_CLEARTIME(" %u (%u: %u) ", clearTime, 
         call TDMARoutingSchedule.currentFrame(),
         call TDMARoutingSchedule.framesLeftInSlot(
           call TDMARoutingSchedule.currentFrame()));
@@ -143,10 +143,10 @@ module CXFloodP{
       // have to add 1 here: if we're in the last frame now and the
       // clear time is 1, then we don't have time to send it.
       if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
-        printf_TMP("RETRY\r\n");
+        printf_F_CLEARTIME("RETRY\r\n");
         return ERETRY;
       }else{
-        printf_TMP("OK\r\n");
+        printf_F_CLEARTIME("OK\r\n");
         tx_msg = msg;
         txPending = TRUE;
         call CXPacket.init(msg);
