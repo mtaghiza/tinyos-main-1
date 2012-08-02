@@ -629,8 +629,6 @@ module CXTDMAPhysicalP {
             //this case.
             printf_TMP("~pb\r\n");
           }
-        }else{
-          setAsyncState(S_ERROR_f);
         }
 //        setAsyncState(S_RX_RECEIVING);
         break;
