@@ -15,7 +15,7 @@ debugScale=4UL
 testRequestAck=0
 rootSender=0
 rootDest=1
-leafDest=0
+leafDest=65535UL
 
 fecEnabled=0
 fecHamming74=1
@@ -26,7 +26,7 @@ queueThreshold=10
 #network params
 fps=40
 md=5
-mr=1
+mr=2
 staticScheduler=1
 firstIdleSlot=48
 cxBufferWidth=1
