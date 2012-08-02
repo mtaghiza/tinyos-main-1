@@ -19,6 +19,7 @@ module UnreliableBurstSchedulerP{
   uses interface CXPacketMetadata;
 } implementation {
   enum {
+    M_ERROR = 0x10,
     S_ERROR_0 = 0x10,
     S_ERROR_1 = 0x11,
     S_ERROR_2 = 0x12,
@@ -42,6 +43,9 @@ module UnreliableBurstSchedulerP{
     //SlotStarted event has fired and set up for the new slot.
     am_addr_t addr = call CXPacket.destination(msg);
 //    printf_TMP("am\r\n");
+    if (state & M_ERROR){
+      return FAIL;
+    }
     newSlot(call SlotStarted.currentSlot());
     //unicast only
     if (addr == AM_BROADCAST_ADDR){
