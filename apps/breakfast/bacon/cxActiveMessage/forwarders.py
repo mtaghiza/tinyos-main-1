@@ -44,8 +44,6 @@ CREATE TEMP TABLE tmp_depth AS
 def forwarders(c, src, dest, bw, fwd_q, depth_q):
     sd = c.execute(fwd_q, (src, dest, src, bw, dest, src, dest, bw))
     fwd = set([ node for (node, sdd, dsd, tot) in sd])
-    fwd.add(int(src))
-    fwd.add(int(dest))
     d_sd = c.execute(depth_q, (src, dest)).fetchone()
     if not d_sd:
         d_sd = -1
@@ -56,6 +54,9 @@ def forwarders(c, src, dest, bw, fwd_q, depth_q):
         d_ds = -1
     else:
         d_ds = d_ds[0]
+    if (d_ds != -1) and (d_sd != -1):
+        fwd.add(int(src))
+        fwd.add(int(dest))
     return (d_sd, d_ds, fwd)
 
 def aggForwarders(c, src, dest, bw):
@@ -103,7 +104,7 @@ def usage():
 
   Output (both -c and -S supplied):
   
-    "comp", src, dest, similarity
+    "comp", src, dest, similarity, [sp forwarders], [cx forwarders]
 
   where similarity is given using Jaccard's similarity index.
 """%(sys.argv[0])
@@ -151,7 +152,11 @@ def clForwarders(args):
             si = -1
         else:
             si = float(len(spFwd & cxFwd))/len(spFwd | cxFwd)
-        print "comp, %s, %s, %f, %s, %s"%(src, dest, si, spFwd, cxFwd)
+        print "comp, %s, %s, %f, %d, %d"%(src, dest, si, len(spFwd), len(cxFwd)),
+        if '-v' in args:
+            print ", %s, %s"%(sorted(spFwd), sorted(cxFwd))
+        else:
+            print ""
     else:
         t =""
         if spResults:
