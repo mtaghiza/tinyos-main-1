@@ -15,7 +15,7 @@ debugScale=4UL
 testRequestAck=0
 rootSender=0
 rootDest=1
-leafDest=0
+leafDest=65535UL
 
 fecEnabled=0
 fecHamming74=1
@@ -24,7 +24,7 @@ ipi=1024UL
 queueThreshold=10
 
 #network params
-fps=80
+fps=40
 md=5
 mr=2
 staticScheduler=1
@@ -44,7 +44,7 @@ sp=1
 #pool size
 ps=3
 
-debugLinkRXTX=0
+debugLinkRXTX=1
 debugFCleartime=0
 debugSFCleartime=0
 debugTestbed=1
