@@ -590,6 +590,13 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         recordEvent(4);
         fsHandled = call FrameStartAlarm.getNow();
+        if ((call FrameStartAlarm.getAlarm() + s_fwCheckLen) > call PrepareFrameStartAlarm.getAlarm()){
+          printf_TMP("FWA: %lu + %lu (%lu) > PFSA: %lu\r\n", 
+            call FrameStartAlarm.getAlarm(), 
+            s_fwCheckLen,
+            call FrameStartAlarm.getAlarm() + s_fwCheckLen,
+            call PrepareFrameStartAlarm.getAlarm());
+        }
         call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
           s_fwCheckLen);
       ////TODO: remove debug
