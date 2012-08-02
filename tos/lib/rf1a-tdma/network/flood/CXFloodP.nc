@@ -136,7 +136,8 @@ module CXFloodP{
 //          printf_TMP("RETRY\r\n");
         return ERETRY;
       }else{
-//          printf_TMP("clear time OK: %u\r\n", clearTime);
+        printf_TMP("#CT: %u (cf: %u)\r\n", clearTime, 
+          call TDMARoutingSchedule.currentFrame());
         tx_msg = msg;
         txPending = TRUE;
         call CXPacket.init(msg);
