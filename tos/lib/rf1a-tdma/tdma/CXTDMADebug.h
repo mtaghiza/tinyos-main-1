@@ -161,6 +161,12 @@
 #define printf_RXREADY_ERROR(...) 
 #endif
 
+#if DEBUG_LINK_RXTX == 1
+#define printf_LINK_RXTX(...) printf(__VA_ARGS__)
+#else
+#define printf_LINK_RXTX(...) 
+#endif
+
 #if defined PORT_FS_STROBE && defined PIN_FS_STROBE 
 #define FS_STROBE_TOGGLE_PIN TDMA_TOGGLE_PIN(PORT_FS_STROBE, PIN_FS_STROBE)
 #define FS_STROBE_CLEAR_PIN TDMA_CLEAR_PIN(PORT_FS_STROBE, PIN_FS_STROBE)

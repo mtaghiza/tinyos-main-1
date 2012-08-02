@@ -784,7 +784,7 @@ module CXTDMAPhysicalP {
   //        printf_TMP("#RX %u @ %u\r\n", 
   //          call CXPacket.sn(msg),
   //          frameNum);
-          printf_TMP("RD %u %u %u %u %u\r\n",
+          printf_LINK_RXTX("RD %u %u %u %u %u\r\n",
             call CXPacket.getNetworkProtocol(msg),
             call CXPacket.source(msg),
             call CXPacket.sn(msg),
@@ -794,7 +794,7 @@ module CXTDMAPhysicalP {
             rdCountLocal - sizeof(rf1a_ieee154_t),
             frameNum, rdLastRECaptureLocal);
         }else{
-          printf_TMP("Bad CRC %u\r\n", frameNum);
+          printf_LINK_RXTX("Bad CRC %u\r\n", frameNum);
         }
         setAsyncState(S_IDLE);
         postPfs();
@@ -841,7 +841,7 @@ module CXTDMAPhysicalP {
     }
     resynch();
 
-    printf_TMP("SD %u %u %u %u %u\r\n",
+    printf_LINK_RXTX("SD %u %u %u %u %u\r\n",
       call CXPacket.getNetworkProtocol(sdMsgLocal),
       call CXPacket.source(sdMsgLocal),
       call CXPacket.sn(sdMsgLocal),
