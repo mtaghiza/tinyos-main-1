@@ -54,7 +54,6 @@ module CXFloodP{
 
   am_addr_t lastSrc = 0xff;
   uint32_t lastSn;
-  uint8_t lastDepth;
   
   uint8_t state;
 
@@ -97,11 +96,17 @@ module CXFloodP{
     if (!txPending){
       uint16_t clearTime = 0xff;
       if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
+        //distance + width of buffer region
         clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
-          call CXPacket.destination(msg));
+          call CXPacket.destination(msg)
+          + call CXRoutingTable.getBufferWidth());
       }
-      clearTime = clearTime == 0xff ? call
+      clearTime = (clearTime == 0xff)? call
         TDMARoutingSchedule.maxDepth(): clearTime;
+
+      //account for retransmissions (worst case)
+      clearTime *= call TDMARoutingSchedule.maxRetransmit();
+
       // have to add 1 here: if we're in the last frame now and the
       // clear time is 1, then we don't have time to send it.
       if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
@@ -151,6 +156,7 @@ module CXFloodP{
         uint16_t framesLeft = call TDMARoutingSchedule.framesLeftInSlot(frameNum);
         printf_F_SCHED(" tx\r\n");
         txLeft = (mr < framesLeft)? mr : framesLeft;
+
         if (call CXPacketMetadata.getRequiresClear(tx_msg)){
           clearLeft = 0xffff;
           //pre-routed: clear when destination reached, if distance
@@ -167,6 +173,11 @@ module CXFloodP{
         }else{
           clearLeft = 0;
         }
+
+        //worst-case: nodes only receive the packet on its last
+        //  broadcast at each depth. retransmits*(depth+width)
+        clearLeft *= call TDMARoutingSchedule.maxRetransmit();
+
         lastSn = call CXPacket.sn(tx_msg);
         lastSrc = TOS_NODE_ID;
         txSent = TRUE;
@@ -264,7 +275,6 @@ module CXFloodP{
     return SUCCESS;
   }
 
-
   /**
    * Check a received packet from the lower layer for duplicates,
    * decide whether or not it should be forwarded, and provide a clean
@@ -276,6 +286,11 @@ module CXFloodP{
     uint32_t thisSn = call CXPacket.sn(msg);
     printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
     if (state == S_IDLE){
+
+      //TODO: this should track last few received in order to handle
+      //cases where conflicts arise and multiple packets are in the
+      //air at once (e.g. during startup)
+
       //new packet
       if (! ((thisSn == lastSn) && (thisSrc == lastSrc))){
 //        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
@@ -314,7 +329,6 @@ module CXFloodP{
             printf_F_RX("f\r\n");
             lastSn = thisSn;
             lastSrc = thisSrc;
-            lastDepth = call CXPacket.count(msg);
             //avoid slot violation w. txLeft 
             // txLeft should be min(sched.maxRetransmit, (nextSlotStart - 1) - frameNum )
             // This will prevent slot violations from happening and
