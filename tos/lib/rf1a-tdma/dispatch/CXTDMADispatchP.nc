@@ -135,16 +135,6 @@ module CXTDMADispatchP{
 //    printf_TMP("#D %x\r\n",
 //      call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED);
 
-    //make sure that the numbering is legit.
-    if (frameNum != (call CXPacket.getOriginalFrameNum(msg) + call CXPacket.count(msg) + 1)){
-      printf_TMP("~R %u %u: %u + %u + 1 <> %u\r\n", 
-        call CXPacket.source(msg),
-        call CXPacket.sn(msg),
-        call CXPacket.getOriginalFrameNum(msg), 
-        call CXPacket.count(msg),
-        frameNum);
-      return msg;
-    }
     //check for duplicates 
     if (!seenRecently(call CXPacket.source(msg), call CXPacket.sn(msg))){
       recordReception(call CXPacket.source(msg), call CXPacket.sn(msg));

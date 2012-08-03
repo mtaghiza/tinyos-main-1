@@ -790,29 +790,42 @@ module CXTDMAPhysicalP {
         call Packet.setPayloadLength(msg,
           rdCountLocal-sizeof(message_header_t));
         if (call Rf1aPacket.crcPassed(msg)){
-          call CXPacketMetadata.setSymbolRate(msg,
-            rdS_srLocal);
-          call CXPacketMetadata.setPhyTimestamp(msg,
-            rdLastRECaptureLocal);
-          call CXPacketMetadata.setFrameNum(msg,
-            frameNum);
-          call CXPacketMetadata.setReceivedCount(msg,
-            call CXPacket.count(msg));
-          if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
-            resynch();
+          uint16_t expectedFn = call CXPacket.getOriginalFrameNum(msg) 
+            + call CXPacket.count(msg) - 1;
+          //filter out bad frame numbers here: only if we're
+          //synched!
+          if (s_isSynched && (expectedFn != frameNum)){
+            printf_TMP("~R %u %u: %u + %u + 1 <> %u\r\n", 
+              call CXPacket.source(msg),
+              call CXPacket.sn(msg),
+              call CXPacket.getOriginalFrameNum(msg), 
+              call CXPacket.count(msg),
+              frameNum);  
+          }else{ 
+            call CXPacketMetadata.setSymbolRate(msg,
+              rdS_srLocal);
+            call CXPacketMetadata.setPhyTimestamp(msg,
+              rdLastRECaptureLocal);
+            call CXPacketMetadata.setFrameNum(msg,
+              frameNum);
+            call CXPacketMetadata.setReceivedCount(msg,
+              call CXPacket.count(msg));
+            if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+              resynch();
+            }
+    //        printf_TMP("#RX %u @ %u\r\n", 
+    //          call CXPacket.sn(msg),
+    //          frameNum);
+            printf_LINK_RXTX("RD %u %u %u %u %u\r\n",
+              call CXPacket.getNetworkProtocol(msg),
+              call CXPacket.source(msg),
+              call CXPacket.sn(msg),
+              call CXPacket.count(msg),
+              frameNum);
+            rx_msg = signal CXTDMA.receive(msg,
+              rdCountLocal - sizeof(rf1a_ieee154_t),
+              frameNum, rdLastRECaptureLocal);
           }
-  //        printf_TMP("#RX %u @ %u\r\n", 
-  //          call CXPacket.sn(msg),
-  //          frameNum);
-          printf_LINK_RXTX("RD %u %u %u %u %u\r\n",
-            call CXPacket.getNetworkProtocol(msg),
-            call CXPacket.source(msg),
-            call CXPacket.sn(msg),
-            call CXPacket.count(msg),
-            frameNum);
-          rx_msg = signal CXTDMA.receive(msg,
-            rdCountLocal - sizeof(rf1a_ieee154_t),
-            frameNum, rdLastRECaptureLocal);
         }else{
           printf_LINK_RXTX("Bad CRC %u\r\n", frameNum);
         }
