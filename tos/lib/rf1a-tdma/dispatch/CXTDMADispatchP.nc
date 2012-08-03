@@ -20,27 +20,28 @@ module CXTDMADispatchP{
   uint8_t lastOwner;
 
   
-  #define PACKET_HISTORY 4
-  am_addr_t recentSrc[PACKET_HISTORY] = {0xffff, 0xffff, 0xffff, 0xffff};
+  #define PACKET_HISTORY 8
+  am_addr_t recentSrc[PACKET_HISTORY] = {0xffff, 0xffff, 0xffff, 0xffff, 
+    0xffff, 0xffff, 0xffff, 0xffff};
   uint16_t recentSn[PACKET_HISTORY];
   uint8_t lastIndex = 0;
 
   //tracking duplicates
   bool seenRecently(am_addr_t src, uint16_t sn){
     uint8_t i;
-//    printf_TMP("SR %u %u ", src, sn);
+    printf_TMP("SR %u %u ", src, sn);
     for (i = 0; i < PACKET_HISTORY; i++){
-      if (src == recentSrc[i] && sn == recentSn[i]){
-//        printf_TMP("@%u\r\n", i);
+      if ((src == recentSrc[i]) && (sn == recentSn[i])){
+        printf_TMP("@%u\r\n", i);
         return TRUE;
       }
     }
-//    printf_TMP("F\r\n");
+    printf_TMP("F\r\n");
     return FALSE;
   }
 
   void recordReception(am_addr_t src, uint16_t sn){
-//    printf_TMP("RR %u %u @%u\r\n", src, sn, lastIndex);
+    printf_TMP("RR %u %u @%u\r\n", src, sn, lastIndex);
     recentSrc[lastIndex] = src;
     recentSn[lastIndex] = sn;
     lastIndex = ((lastIndex+1) % PACKET_HISTORY);
@@ -134,6 +135,16 @@ module CXTDMADispatchP{
 //    printf_TMP("#D %x\r\n",
 //      call CXPacket.getNetworkProtocol(msg) & ~CX_NP_PREROUTED);
 
+    //make sure that the numbering is legit.
+    if (frameNum != (call CXPacket.getOriginalFrameNum(msg) + call CXPacket.count(msg) + 1)){
+      printf_TMP("~R %u %u: %u + %u + 1 <> %u\r\n", 
+        call CXPacket.source(msg),
+        call CXPacket.sn(msg),
+        call CXPacket.getOriginalFrameNum(msg), 
+        call CXPacket.count(msg),
+        frameNum);
+      return msg;
+    }
     //check for duplicates 
     if (!seenRecently(call CXPacket.source(msg), call CXPacket.sn(msg))){
       recordReception(call CXPacket.source(msg), call CXPacket.sn(msg));
