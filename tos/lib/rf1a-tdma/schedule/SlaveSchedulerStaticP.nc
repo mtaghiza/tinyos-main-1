@@ -189,7 +189,10 @@ module SlaveSchedulerStaticP {
   }
   
   event void TDMAPhySchedule.resynched(uint16_t resynchFrame){
-    isSynched = TRUE;
+    if ( !isSynched){
+      printf_TMP("#Fast resynch@ %u\r\n", resynchFrame);
+      isSynched = TRUE;
+    }
     framesSinceSynch = 0;
   }
 

@@ -120,6 +120,7 @@ module CXTDMAPhysicalP {
   //re-Synch variables
   bool txCapture;
   uint32_t lastCapture;
+  uint16_t captureFrameNum;
 
   //externally-facing state vars
   uint16_t frameNum;
@@ -662,6 +663,16 @@ module CXTDMAPhysicalP {
       if (!txCapture){
         captureFrameStart -= sfdDelays[s_sri];
       }
+      //if we're resynching, 
+      // - mark ourselves synched
+      // - restore timeouts
+      // - restore frame number
+      if (!s_isSynched){
+        s_isSynched = TRUE;
+        s_frameLen = frameLens[s_sri];
+        s_fwCheckLen = fwCheckLens[s_sri];
+        frameNum = captureFrameNum;
+      }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- PFS_SLACK);
       ////TODO: remove debug
@@ -811,6 +822,8 @@ module CXTDMAPhysicalP {
             call CXPacketMetadata.setReceivedCount(msg,
               call CXPacket.count(msg));
             if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
+              captureFrameNum = call CXPacket.getOriginalFrameNum(msg)
+                + call CXPacket.count(msg) - 1;
               resynch();
             }
     //        printf_TMP("#RX %u @ %u\r\n", 
@@ -872,6 +885,7 @@ module CXTDMAPhysicalP {
       call CXPacketMetadata.setPhyTimestamp(sdMsgLocal,
         sdRECaptureLocal);
     }
+    captureFrameNum = frameNum;
     resynch();
 
     printf_LINK_RXTX("SD %u %u %u %u %u\r\n",
