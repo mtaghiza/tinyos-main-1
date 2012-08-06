@@ -12,6 +12,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
     uint8_t i;
     for(i = 0; i < numEntries; i++){
       rt[i].used = FALSE;
+      rt[i].pinned = FALSE;
     }
     return SUCCESS;
   }
@@ -40,6 +41,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
       uint8_t distance){
     uint8_t i;
+    uint8_t checked = 0;
     cx_route_entry_t* re;
     //update and mark used-recently if it's already in the table.
     if (getEntry(&re, n0, n1)){
@@ -61,9 +63,16 @@ generic module CXRoutingTableP(uint8_t numEntries){
     //look for one that hasn't been used recently, clearing LRU flag
     //as you go. Eventually we'll either find an unused slot or we'll
     //wrap around.
-    while (rt[i].used){
-      rt[i].used = FALSE;
+    while (rt[i].used && checked < CX_ROUTING_TABLE_ENTRIES + 1){
+      if (!rt[i].pinned){
+        rt[i].used = FALSE;
+      }
+      checked++;
       i = (i+1)%numEntries;
+    }
+    //Fail if there are no un-pinned entries.
+    if (checked == CX_ROUTING_TABLE_ENTRIES + 1){
+      return FAIL;
     }
     //save it
     printf_ROUTING_TABLE("NR %u->%u %u\r\n", n0, n1, distance);
@@ -74,6 +83,15 @@ generic module CXRoutingTableP(uint8_t numEntries){
     //update for next time.
     lastEvicted = i;
     return SUCCESS;
+  }
+
+  command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1, bool pinned){
+    cx_route_entry_t* re;
+    if (getEntry(&re, n0, n1)){
+      re->pinned = pinned;
+      return SUCCESS;
+    }
+    return FAIL;
   }
 
   command uint8_t CXRoutingTable.getBufferWidth(){

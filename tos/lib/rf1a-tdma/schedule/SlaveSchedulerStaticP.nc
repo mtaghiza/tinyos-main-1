@@ -16,6 +16,9 @@ module SlaveSchedulerStaticP {
   uses interface CXPacket;
   uses interface Random;
 
+  uses interface AMPacket;
+  uses interface CXRoutingTable;
+
   provides interface SlotStarted;
 
   provides interface ScheduledSend as RequestScheduledSend;
@@ -103,6 +106,9 @@ module SlaveSchedulerStaticP {
   event message_t* AnnounceReceive.receive(message_t* msg, void* pl, uint8_t len){
     message_t* ret = schedule_msg;
     schedule_msg = msg;
+    //make sure that root -> self distance retained.
+    call CXRoutingTable.setPinned(call AMPacket.source(msg),
+      TOS_NODE_ID, TRUE);
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
     cyclesSinceSchedule = 0;

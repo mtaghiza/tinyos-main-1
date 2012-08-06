@@ -6,6 +6,7 @@ typedef struct cx_route_entry_t{
   am_addr_t n1;
   uint8_t distance;
   bool used;
+  bool pinned;
 } cx_route_entry_t;
 
 #ifndef CX_ROUTING_TABLE_ENTRIES

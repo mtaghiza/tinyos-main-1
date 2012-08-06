@@ -21,6 +21,7 @@ configuration SlaveSchedulerC{
   components CXPacketStackC;
   components RandomC;
   components ActiveMessageC;
+  components CXRoutingTableC;
 
   #if STATIC_SCHEDULER == 1
   components SlaveSchedulerStaticP as SlaveSchedulerP;
@@ -44,9 +45,12 @@ configuration SlaveSchedulerC{
   SlaveSchedulerP.Random -> RandomC;
   SlaveSchedulerP.PacketAcknowledgements 
     -> ActiveMessageC.PacketAcknowledgements;
+  SlaveSchedulerP.AMPacket -> ActiveMessageC;
+  SlaveSchedulerP.CXRoutingTable -> CXRoutingTableC;
 
   SlotStarted = SlaveSchedulerP.SlotStarted;
   DefaultScheduledSend = SlaveSchedulerP.DefaultScheduledSend;
   RequestScheduledSend = SlaveSchedulerP.RequestScheduledSend;
+
 
 }
