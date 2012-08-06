@@ -302,6 +302,14 @@ module CXFloodP{
       if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
         bool isBetween;
         printf_F_RX("p");
+//        //TODO: this should go up into transport if we're keeping things
+//        //clean. 
+//        if (call CXPacket.type(msg) == CX_TYPE_ROUTE_SETUP){
+//          cx_route_t* pl = (cx_route_t*)call Packet.getPayload(msg);
+//          call CXRoutingTable.update(call CXPacket.destination(msg),
+//            thisSrc,
+//            pl->distance);
+//        }
         if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
             call CXPacket.destination(msg), &isBetween)) || !isBetween ){
           uint8_t pll = call LayerPacket.payloadLength(msg);
