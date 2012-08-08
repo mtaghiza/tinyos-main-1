@@ -14,8 +14,11 @@ interface CXPacket{
   command void incCount(message_t* amsg);
   command bool isForMe(message_t* amsg);
   //Type = ACK or DATA (used at network layer)
-  command uint8_t type(message_t* amsg);
-  command void setType(message_t* amsg, am_id_t t);
+  command uint8_t getNetworkType(message_t* amsg);
+  command void setNetworkType(message_t* amsg, am_id_t t);
+  //Type = SETUP or DATA (used at transport layer)
+  command uint8_t getTransportType(message_t* amsg);
+  command void setTransportType(message_t* amsg, am_id_t t);
   command void setNetworkProtocol(message_t* amsg, uint8_t t);
   command uint8_t getNetworkProtocol(message_t* amsg);
   command void setTransportProtocol(message_t* amsg, uint8_t t);

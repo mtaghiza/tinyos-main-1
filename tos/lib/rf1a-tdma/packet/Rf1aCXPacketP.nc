@@ -1,5 +1,7 @@
  #include "CX.h"
  #include "CXPacketDebug.h"
+ #include "CXPacket.h"
+
 module Rf1aCXPacketP{
   provides interface CXPacket;
   provides interface Packet;
@@ -131,13 +133,24 @@ module Rf1aCXPacketP{
     getHeader(amsg)->nProto = t;
   }
 
-  command uint8_t CXPacket.type(message_t* amsg){
-    return getHeader(amsg)->type;
+  command uint8_t CXPacket.getNetworkType(message_t* amsg){
+    return (getHeader(amsg)->type) & CX_NETWORK_TYPE_MASK;
   }
-  command void CXPacket.setType(message_t* amsg,
+  command void CXPacket.setNetworkType(message_t* amsg,
       uint8_t t){
-    getHeader(amsg)->type = t;
+    getHeader(amsg)->type &= ~CX_NETWORK_TYPE_MASK;
+    getHeader(amsg)->type |= (t & CX_NETWORK_TYPE_MASK);
   }
+
+  command uint8_t CXPacket.getTransportType(message_t* amsg){
+    return (getHeader(amsg)->type) & CX_TRANSPORT_TYPE_MASK;
+  }
+  command void CXPacket.setTransportType(message_t* amsg,
+      uint8_t t){
+    getHeader(amsg)->type &= ~CX_TRANSPORT_TYPE_MASK;
+    getHeader(amsg)->type |= (t & CX_TRANSPORT_TYPE_MASK);
+  }
+
 
   command uint8_t CXPacket.getTransportProtocol(message_t* amsg){
     return getHeader(amsg)->tProto;

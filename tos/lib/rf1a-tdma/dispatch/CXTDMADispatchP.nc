@@ -118,7 +118,7 @@ module CXTDMADispatchP{
 
   message_t* dispMsg;
   task void displayPacket(){
-    printf(" CX d: %x sn: %x count: %x sched: %x of: %x ts: %lx np: %x tp: %x type: %x\r\n", 
+    printf(" CX d: %x sn: %x count: %x sched: %x of: %x ts: %lx np: %x tp: %x ntype: %x ptype: %x\r\n", 
       call CXPacket.destination(dispMsg),
       call CXPacket.sn(dispMsg),
       call CXPacket.count(dispMsg),
@@ -127,7 +127,8 @@ module CXTDMADispatchP{
       call CXPacket.getTimestamp(dispMsg),
       call CXPacket.getNetworkProtocol(dispMsg),
       call CXPacket.getTransportProtocol(dispMsg),
-      call CXPacket.type(dispMsg));
+      call CXPacket.getNetworkType(dispMsg),
+      call CXPacket.getTransportType(dispMsg));
    }
 
   event message_t* SubCXTDMA.receive(message_t* msg, uint8_t len,

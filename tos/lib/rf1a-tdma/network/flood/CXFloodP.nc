@@ -124,7 +124,7 @@ module CXFloodP{
         tx_msg = msg;
         txPending = TRUE;
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, CX_TYPE_DATA);
+        call CXPacket.setNetworkType(msg, CX_TYPE_DATA);
 //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed flag
         call CXPacket.setNetworkProtocol(msg, 

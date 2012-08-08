@@ -152,7 +152,7 @@ module CXScopedFloodP{
       printf("%2X ", dispMsg->data[i]);
     }
     printf("\r\n");
-    printf(" CX d: %x sn: %x count: %x sched: %x of: %x ts: %lx np: %x tp: %x type: %x\r\n", 
+    printf(" CX d: %x sn: %x count: %x sched: %x of: %x ts: %lx np: %x tp: %x ntype: %x ttype: %x\r\n", 
       call CXPacket.destination(dispMsg),
       call CXPacket.sn(dispMsg),
       call CXPacket.count(dispMsg),
@@ -161,9 +161,10 @@ module CXScopedFloodP{
       call CXPacket.getTimestamp(dispMsg),
       call CXPacket.getNetworkProtocol(dispMsg),
       call CXPacket.getTransportProtocol(dispMsg),
-      call CXPacket.type(dispMsg));
+      call CXPacket.getNetworkType(dispMsg),
+      call CXPacket.getTransportType(dispMsg));
 
-    if (call CXPacket.type(dispMsg) == CX_TYPE_DATA){
+    if (call CXPacket.getNetworkType(dispMsg) == CX_TYPE_DATA){
       printf("  Raw AM   ");
       for (i=0; i < sizeof(rf1a_nalp_am_t); i++){
         printf("%2X ",
@@ -261,7 +262,7 @@ module CXScopedFloodP{
         printf_SF_CLEARTIME("#SF CT OK\r\n");
         origin_data_msg = msg;
         call CXPacket.init(msg);
-        call CXPacket.setType(msg, CX_TYPE_DATA);
+        call CXPacket.setNetworkType(msg, CX_TYPE_DATA);
         //preserve pre-routed bit
         call CXPacket.setNetworkProtocol(msg, 
           ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)
@@ -565,7 +566,7 @@ module CXScopedFloodP{
 
       call CXPacket.init(origin_ack_msg);
       call CXPacket.setSource(origin_ack_msg, TOS_NODE_ID);
-      call CXPacket.setType(origin_ack_msg, CX_TYPE_ACK);
+      call CXPacket.setNetworkType(origin_ack_msg, CX_TYPE_ACK);
       call CXPacket.setNetworkProtocol(origin_ack_msg, CX_NP_SCOPEDFLOOD);
       call CXPacket.setDestination(origin_ack_msg, call CXPacket.source(rx_msg));
       call CXPacket.setTransportProtocol(origin_ack_msg, 
@@ -595,7 +596,7 @@ module CXScopedFloodP{
    */
   event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
-    uint8_t pType = call CXPacket.type(msg);
+    uint8_t pType = call CXPacket.getNetworkType(msg);
     uint32_t sn = call CXPacket.sn(msg);
     am_addr_t src = call CXPacket.source(msg);
     am_addr_t dest = call CXPacket.destination(msg);
