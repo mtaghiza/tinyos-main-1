@@ -53,6 +53,7 @@ module UnreliableBurstSchedulerP{
     } else {
       error_t error;
       call CXPacketMetadata.setRequiresClear(msg, TRUE);
+      call CXPacket.setTransportType(msg, CX_TYPE_DATA);
 
       //Idle or ready (but for a different destination):
       //  We need to set up a new route

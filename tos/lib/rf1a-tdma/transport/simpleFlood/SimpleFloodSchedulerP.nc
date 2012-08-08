@@ -28,6 +28,7 @@ module SimpleFloodSchedulerP{
     if (state == S_IDLE){
       error_t error ;
       call CXPacketMetadata.setRequiresClear(msg, TRUE);
+      call CXPacket.setTransportType(msg, CX_TYPE_DATA);
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
         state = S_PENDING;
