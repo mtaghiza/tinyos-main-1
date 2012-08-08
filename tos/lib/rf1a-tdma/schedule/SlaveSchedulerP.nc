@@ -21,6 +21,9 @@ module SlaveSchedulerP {
   provides interface ScheduledSend as RequestScheduledSend;
   provides interface ScheduledSend as DefaultScheduledSend;
 
+  uses interface AMPacket;
+  uses interface CXRoutingTable;
+
 } implementation {
   message_t schedule_msg_internal;
   message_t* schedule_msg = &schedule_msg_internal;
