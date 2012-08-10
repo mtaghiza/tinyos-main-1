@@ -48,6 +48,8 @@ configuration CXTransportC{
   UnreliableBurstSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
   UnreliableBurstSchedulerC.AMPacketBody 
     -> CXPacketStackC.AMPacketBody;
+  UnreliableBurstSchedulerC.CXPacketBody 
+    -> CXPacketStackC.CXPacketBody;
   UnreliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
   UnreliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 

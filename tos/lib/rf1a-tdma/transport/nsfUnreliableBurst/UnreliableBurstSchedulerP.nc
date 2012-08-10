@@ -17,6 +17,7 @@ module UnreliableBurstSchedulerP{
 
   uses interface AMPacket;
   uses interface Packet as AMPacketBody;
+  uses interface Packet as CXPacketBody;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
   uses interface CXRoutingTable;
@@ -73,7 +74,7 @@ module UnreliableBurstSchedulerP{
       if (state == S_IDLE || (state == S_READY && addr != lastDest)){
         //TODO: this may be off by the size of the AM header, check
         //  layering
-        nsf_setup_t* pl = (nsf_setup_t*) (call AMPacketBody.getPayload(setup_msg, sizeof(nsf_setup_t)));
+        nsf_setup_t* pl = (nsf_setup_t*) (call CXPacketBody.getPayload(setup_msg, sizeof(nsf_setup_t)));
         pl -> src = call CXPacket.destination(msg);
         pl -> dest = TOS_NODE_ID;
         pl -> distance = call CXRoutingTable.distance(pl->src,
@@ -82,9 +83,12 @@ module UnreliableBurstSchedulerP{
         call CXPacket.setTransportType(setup_msg, CX_TYPE_SETUP);
         call CXPacket.setDestination(setup_msg, addr);
         call AMPacket.setDestination(setup_msg, AM_BROADCAST_ADDR);
-        call AMPacketBody.setPayloadLength(setup_msg,
+        call CXPacketBody.setPayloadLength(setup_msg,
           sizeof(nsf_setup_t));
         error = call FloodSend.send(setup_msg, sizeof(nsf_setup_t));
+//        printf_TMP("SU msg: %p PL: %p src: %d dest: %d dist: %d\r\n",
+//          setup_msg, pl, 
+//          pl->src, pl->dest, pl->distance);
         if (error == SUCCESS){
           pendingMsg = msg;
           pendingLen = len;
@@ -172,6 +176,9 @@ module UnreliableBurstSchedulerP{
       return signal Receive.receive(msg, payload, len);
     }else if (call CXPacket.getTransportType(msg) == CX_TYPE_SETUP){
       nsf_setup_t* pl = (nsf_setup_t*)payload;
+//      printf_TMP("SU msg: %p PL: %p src: %d dest: %d dist: %d\r\n",
+//        msg, pl, 
+//        pl->src, pl->dest, pl->distance);
       call CXRoutingTable.update(pl->src, pl->dest, pl->distance);
       return msg;
     }else{
@@ -228,6 +235,7 @@ module UnreliableBurstSchedulerP{
   }
 
   command uint8_t Send.maxPayloadLength(){
+    //TODO: shouldn't this be CXPacketBody?
     return call AMPacketBody.maxPayloadLength();
   }
 

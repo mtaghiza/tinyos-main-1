@@ -14,6 +14,7 @@ configuration UnreliableBurstSchedulerC{
 
   uses interface AMPacket;
   uses interface Packet as AMPacketBody;
+  uses interface Packet as CXPacketBody;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
 
@@ -36,6 +37,7 @@ configuration UnreliableBurstSchedulerC{
 
   UnreliableBurstSchedulerP.AMPacket = AMPacket;
   UnreliableBurstSchedulerP.AMPacketBody = AMPacketBody;
+  UnreliableBurstSchedulerP.CXPacketBody = CXPacketBody;
   UnreliableBurstSchedulerP.CXPacket = CXPacket;
   UnreliableBurstSchedulerP.CXPacketMetadata = CXPacketMetadata;
 
