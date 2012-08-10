@@ -82,7 +82,8 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/flood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/network/scopedFlood
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/simpleFlood
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/unreliableBurst
+#CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/unreliableBurst
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/nsfUnreliableBurst
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/reliableBurst
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
@@ -97,6 +98,8 @@ CFLAGS+=-DCX_RADIO_LOGGING=$(CX_RADIO_LOGGING)
 
 DEBUG_SW_TOPO?=0
 CFLAGS += -DDEBUG_SW_TOPO=$(DEBUG_SW_TOPO)
+DEBUG_DUP?=0
+CFLAGS += -DDEBUG_DUP=$(DEBUG_DUP)
 DEBUG_TESTBED_RESOURCE?=0
 CFLAGS += -DDEBUG_TESTBED_RESOURCE=$(DEBUG_TESTBED_RESOURCE)
 

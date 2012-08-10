@@ -124,6 +124,7 @@ module CXFloodP{
         tx_msg = msg;
         txPending = TRUE;
         call CXPacket.init(msg);
+        call CXPacket.setTransportProtocol(msg, t);
         call CXPacket.setNetworkType(msg, CX_TYPE_DATA);
 //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed flag
@@ -261,7 +262,7 @@ module CXFloodP{
   event error_t CXTDMA.sendDone(message_t* msg, uint8_t len,
       uint16_t frameNum, error_t error){
     if (error != SUCCESS){
-      printf("CXFloodP sd!\r\n");
+      printf("!CXFloodP sd: %s\r\n", decodeError(error));
       setState(S_ERROR_1);
     }
     if (txLeft > 0){

@@ -1,4 +1,6 @@
  #include "schedule.h"
+ #include "NSFUnreliableBurst.h"
+ #include "CX.h"
 module UnreliableBurstSchedulerP{
   provides interface CXTransportSchedule;
   uses interface TDMARoutingSchedule;
@@ -17,7 +19,6 @@ module UnreliableBurstSchedulerP{
   uses interface Packet as AMPacketBody;
   uses interface CXPacket;
   uses interface CXPacketMetadata;
-  
   uses interface CXRoutingTable;
 } implementation {
   enum {
@@ -26,16 +27,26 @@ module UnreliableBurstSchedulerP{
     S_ERROR_1 = 0x11,
     S_ERROR_2 = 0x12,
     S_ERROR_3 = 0x13,
+    S_ERROR_4 = 0x14,
+    S_ERROR_5 = 0x15,
+    S_ERROR_6 = 0x16,
+    S_ERROR_7 = 0x17,
 
     S_IDLE = 0x00,
     S_SETUP = 0x01,
+    S_SETUP_SENDING = 0x01,
     S_READY = 0x02,
-    S_SENDING = 0x03,
+    S_SENDING = 0x03
   };
 
   uint8_t state = S_IDLE;
   am_addr_t lastDest = AM_BROADCAST_ADDR;
   uint16_t curSlot = INVALID_SLOT;
+
+  message_t setup_msg_internal;
+  message_t* setup_msg = &setup_msg_internal;
+  message_t* pendingMsg;
+  uint8_t pendingLen;
   
   void newSlot(uint16_t slotNum);
 
@@ -60,14 +71,30 @@ module UnreliableBurstSchedulerP{
       //Idle or ready (but for a different destination):
       //  We need to set up a new route
       if (state == S_IDLE || (state == S_READY && addr != lastDest)){
-        call CXPacket.setNetworkProtocol(msg, CX_NP_NONE);
-        error = call ScopedFloodSend.send(msg, len);
+        //TODO: this may be off by the size of the AM header, check
+        //  layering
+        nsf_setup_t* pl = (nsf_setup_t*) (call AMPacketBody.getPayload(setup_msg, sizeof(nsf_setup_t)));
+        pl -> src = call CXPacket.destination(msg);
+        pl -> dest = TOS_NODE_ID;
+        pl -> distance = call CXRoutingTable.distance(pl->src,
+          pl->dest);
+        call CXPacket.setNetworkProtocol(setup_msg, CX_NP_NONE);
+        call CXPacket.setTransportType(setup_msg, CX_TYPE_SETUP);
+        call CXPacket.setDestination(setup_msg, addr);
+        call AMPacket.setDestination(setup_msg, AM_BROADCAST_ADDR);
+        call AMPacketBody.setPayloadLength(setup_msg,
+          sizeof(nsf_setup_t));
+        error = call FloodSend.send(setup_msg, sizeof(nsf_setup_t));
         if (error == SUCCESS){
-          state = S_SETUP;
+          pendingMsg = msg;
+          pendingLen = len;
+          state = S_SETUP_SENDING;
+          lastDest = addr;
         }
       //sending along an established set of paths
       } else if (state == S_READY && addr == lastDest){
         call CXPacket.setNetworkProtocol(msg, CX_NP_PREROUTED);
+        pendingMsg = msg;
         error = call FloodSend.send(msg, len);
         if (error == SUCCESS){
           state = S_SENDING;
@@ -76,50 +103,86 @@ module UnreliableBurstSchedulerP{
         printf("!UB.S: sending\r\n");
         error = EBUSY;
       }
+
       //SUCCESS: OK, we're going to send it. 
       //RETRY: not enough time in this slot
       if (error != SUCCESS && error != ERETRY){
         state = S_ERROR_0;
         printf("!UB.S: Error: %s\r\n", decodeError(error));
       }
-      printf_TMP("UB.S: %s\r\n", decodeError(error));
+//      printf_TMP("UB.S: %s\r\n", decodeError(error));
       return error;
     }
   }
   
   event void ScopedFloodSend.sendDone(message_t* msg, error_t error){
-    if (state != S_SETUP){
-      printf("!UB.SFS.sd: in %x expected %x\r\n", state, S_SETUP);
-      state = S_ERROR_1;
-    } else {
-      if (ENOACK == error){
-        lastDest = AM_BROADCAST_ADDR;
-        state = S_IDLE;
-      }else {
-        lastDest = call CXPacket.destination(msg);
-        state = S_READY;
+    printf("!UB.SFS.sd: should not be signalled.\r\n");
+    state = S_ERROR_1;
+  }
+
+  task void sendPendingTask(){
+    if (state == S_READY && pendingMsg != NULL){
+      error_t err;
+      call CXPacket.setNetworkProtocol(pendingMsg, CX_NP_PREROUTED);
+      err = call FloodSend.send(pendingMsg, pendingLen);
+      if (err == SUCCESS){
+        state = S_SENDING;
+      }else{ 
+        //RETRY is handled by AM queuing layer.
+        if (err != ERETRY){
+          state = S_ERROR_2;
+        }
+        signal Send.sendDone(pendingMsg, err);
       }
     }
-    signal Send.sendDone(msg, error);
   }
 
   event void FloodSend.sendDone(message_t* msg, error_t error){
-    if (state != S_SENDING){
-      printf("!UB.FS.sd: in %x expected %x\r\n", state, S_SENDING);
-      state = S_ERROR_2;
-    } else {
-      state = S_READY;
+//    printf_TMP("fs.sd\r\n");
+    if (error != SUCCESS){
+      printf("!UB.FS.sd: %s\r\n", decodeError(error));
+      state = S_ERROR_3;
+      return;
     }
-    signal Send.sendDone(msg, error);
+    
+    //setup sent: go to ready and try to send pending data.
+    if (state == S_SETUP_SENDING && 
+        call CXPacket.getTransportType(msg) == CX_TYPE_SETUP){
+      state = S_READY;
+      post sendPendingTask();
+
+    //data sent: go to ready and signal up
+    } else if (state == S_SENDING && 
+        call CXPacket.getTransportType(msg) == CX_TYPE_DATA){
+      state = S_READY;
+      pendingMsg = NULL;
+      signal Send.sendDone(msg, error);
+    
+    //something else: error.
+    } else{
+      printf("!UB.FS.sd: in %x\r\n", state);
+      state = S_ERROR_4;
+      return;
+    }
   }
 
   event message_t* FloodReceive.receive(message_t* msg, void* payload,
       uint8_t len){
-    return signal Receive.receive(msg, payload, len);
+    if (call CXPacket.getTransportType(msg) == CX_TYPE_DATA){
+      return signal Receive.receive(msg, payload, len);
+    }else if (call CXPacket.getTransportType(msg) == CX_TYPE_SETUP){
+      nsf_setup_t* pl = (nsf_setup_t*)payload;
+      call CXRoutingTable.update(pl->src, pl->dest, pl->distance);
+      return msg;
+    }else{
+      state = S_ERROR_5;
+      return msg;
+    }
   }
 
   event message_t* ScopedFloodReceive.receive(message_t* msg, void* payload, uint8_t len){
-    return signal Receive.receive(msg, payload, len);
+    state = S_ERROR_6;
+    return msg;
   }
 
   command bool CXTransportSchedule.isOrigin(uint16_t frameNum){
@@ -148,7 +211,7 @@ module UnreliableBurstSchedulerP{
         if (state != S_ERROR_3){
           printf("!SS.SS in %x\r\n", state);
         }
-        state = S_ERROR_3;
+        state = S_ERROR_7;
       }
     }else{
 //      printf_TMP("\r\n");

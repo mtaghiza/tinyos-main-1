@@ -143,12 +143,12 @@ module Rf1aCXPacketP{
   }
 
   command uint8_t CXPacket.getTransportType(message_t* amsg){
-    return (getHeader(amsg)->type) & CX_TRANSPORT_TYPE_MASK;
+    return ((getHeader(amsg)->type) & CX_TRANSPORT_TYPE_MASK) >> 4;
   }
   command void CXPacket.setTransportType(message_t* amsg,
       uint8_t t){
     getHeader(amsg)->type &= ~CX_TRANSPORT_TYPE_MASK;
-    getHeader(amsg)->type |= (t & CX_TRANSPORT_TYPE_MASK);
+    getHeader(amsg)->type |= ((t << 4) & CX_TRANSPORT_TYPE_MASK);
   }
 
 

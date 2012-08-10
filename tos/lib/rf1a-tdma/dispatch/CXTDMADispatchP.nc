@@ -29,19 +29,19 @@ module CXTDMADispatchP{
   //tracking duplicates
   bool seenRecently(am_addr_t src, uint16_t sn){
     uint8_t i;
-    printf_TMP("SR %u %u ", src, sn);
+    printf_DUP("SR %u %u ", src, sn);
     for (i = 0; i < PACKET_HISTORY; i++){
       if ((src == recentSrc[i]) && (sn == recentSn[i])){
-        printf_TMP("@%u\r\n", i);
+        printf_DUP("@%u\r\n", i);
         return TRUE;
       }
     }
-    printf_TMP("F\r\n");
+    printf_DUP("F\r\n");
     return FALSE;
   }
 
   void recordReception(am_addr_t src, uint16_t sn){
-    printf_TMP("RR %u %u @%u\r\n", src, sn, lastIndex);
+    printf_DUP("RR %u %u @%u\r\n", src, sn, lastIndex);
     recentSrc[lastIndex] = src;
     recentSn[lastIndex] = sn;
     lastIndex = ((lastIndex+1) % PACKET_HISTORY);

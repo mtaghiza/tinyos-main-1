@@ -194,6 +194,12 @@ implementation {
     }
 
     void sendDone(uint8_t last, message_t * ONE msg, error_t err) {
+      if (err == ERETRY){
+        queue[last].deferred = TRUE;
+        someDeferred = TRUE;
+        nextSlot = INVALID_SLOT;
+        post nextPacketTask();
+      }else{
         queue[last].msg = NULL;
         nextSlot = INVALID_SLOT;
         post nextPacketTask();
@@ -208,6 +214,7 @@ implementation {
           call AMPacket.type(msg),
           err);
         signal Send.sendDone[last](msg, err);
+      }
     }
 
     task void errorTask() {

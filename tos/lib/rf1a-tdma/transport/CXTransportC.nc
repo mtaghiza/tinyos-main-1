@@ -51,6 +51,8 @@ configuration CXTransportC{
   UnreliableBurstSchedulerC.CXPacket -> CXPacketStackC.CXPacket;
   UnreliableBurstSchedulerC.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
 
+  UnreliableBurstSchedulerC.CXRoutingTable -> CXRoutingTableC;
+
   Send[CX_TP_UNRELIABLE_BURST] = UnreliableBurstSchedulerC.Send;
   Receive[CX_TP_UNRELIABLE_BURST] = UnreliableBurstSchedulerC.Receive;
   CXNetworkC.CXTransportSchedule[CX_TP_UNRELIABLE_BURST] 

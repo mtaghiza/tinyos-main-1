@@ -44,8 +44,9 @@ typedef struct cx_metadata_t{
   bool wasAcked;
 } cx_metadata_t;
 
-#define CX_TYPE_DATA 0xaa
-#define CX_TYPE_ACK  0xab
+#define CX_TYPE_DATA 0x01
+#define CX_TYPE_ACK  0x02
+#define CX_TYPE_SETUP 0x03
 #define CXTDMA_RM_RESOURCE "CXTDMA.RM.Resource"
 
 #ifndef CX_MESSAGE_POOL_SIZE
