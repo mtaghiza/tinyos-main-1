@@ -1,11 +1,17 @@
 #!/bin/bash
 autoRun=0
+programDelay=60
 if [ $# -eq 0 ]
 then 
   echo "No test name provided." 1>&2
   exit 1
 fi
 testDesc=\\\"$1\\\"
+
+if [ $# -gt 1 ]
+then
+  autoRun=$2
+fi
 
 root=map.root
 nonrootRx=map.nonroot.rx
