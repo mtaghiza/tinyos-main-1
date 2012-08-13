@@ -246,7 +246,7 @@ module CXScopedFloodP{
       //compute clear time and compare to frames left in slot
       //if there's not enough time, return ERETRY
      uint8_t distance = call CXRoutingTable.distance(TOS_NODE_ID,
-        call CXPacket.destination(msg));
+        call CXPacket.destination(msg), TRUE);
       uint8_t ct;
       if (distance > call TDMARoutingSchedule.maxDepth()){
         distance = call TDMARoutingSchedule.maxDepth();
@@ -539,7 +539,7 @@ module CXScopedFloodP{
       //  transmission in frame ct+origin - 1
       clearFrame = clearTime(
         call CXRoutingTable.distance(TOS_NODE_ID, 
-          call CXPacket.destination(origin_data_msg)), 
+          call CXPacket.destination(origin_data_msg), TRUE), 
         call CXPacket.getNetworkProtocol(origin_data_msg)&CX_NP_PREROUTED) 
         + originFrame - 1;
 //      printf_TMP("c@%u\r\n", clearFrame);
@@ -622,7 +622,7 @@ module CXScopedFloodP{
         bool isBetween;
         printf_SF_RX("p");
         if ((SUCCESS != call CXRoutingTable.isBetween(src, 
-            call CXPacket.destination(msg), &isBetween)) || !isBetween){
+            call CXPacket.destination(msg), TRUE, &isBetween)) || !isBetween){
           uint8_t tp = call CXPacket.getTransportProtocol(msg);
           uint8_t pll = call LayerPacket.payloadLength(msg);
           void* pl = call LayerPacket.getPayload(msg, pll);

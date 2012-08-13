@@ -76,7 +76,7 @@ module UnreliableBurstSchedulerP{
         pl -> src = call CXPacket.destination(msg);
         pl -> dest = TOS_NODE_ID;
         pl -> distance = call CXRoutingTable.distance(pl->src,
-          pl->dest);
+          pl->dest, FALSE);
         call CXPacket.setNetworkProtocol(setup_msg, CX_NP_NONE);
         call CXPacket.setTransportType(setup_msg, CX_TYPE_SETUP);
         call CXPacket.setDestination(setup_msg, addr);

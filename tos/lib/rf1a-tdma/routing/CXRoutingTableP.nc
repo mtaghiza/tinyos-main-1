@@ -17,8 +17,8 @@ generic module CXRoutingTableP(uint8_t numEntries){
     return SUCCESS;
   }
 
-  //TODO: bidirectionality?
-  bool getEntry(cx_route_entry_t** re, am_addr_t n0, am_addr_t n1){
+  bool getEntry(cx_route_entry_t** re, am_addr_t n0, am_addr_t n1,
+      bool bdOK){
     uint8_t i = 0;
     for (i = 0; i < numEntries; i++){
       if ((rt[i].n0 == n0) && (rt[i].n1 == n1)){
@@ -26,12 +26,21 @@ generic module CXRoutingTableP(uint8_t numEntries){
         return TRUE;
       }
     }
+    if (bdOK){
+      for (i = 0; i < numEntries; i++){
+        if ((rt[i].n0 == n1) && (rt[i].n1 == n0)){
+          *re = &rt[i];
+          return TRUE;
+        }
+      }
+    }
     return FALSE;
   }
 
-  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to){
+  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
+      bool bdOK){
     cx_route_entry_t* re;
-    if (getEntry(&re, from, to)){
+    if (getEntry(&re, from, to, bdOK)){
       return re->distance;
     }else{
       return 0xff;
@@ -44,7 +53,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
     uint8_t checked = 0;
     cx_route_entry_t* re;
     //update and mark used-recently if it's already in the table.
-    if (getEntry(&re, n0, n1)){
+    if (getEntry(&re, n0, n1, FALSE)){
       #ifdef DEBUG_SF_TESTBED
       if (re->distance != distance){
         printf_ROUTING_TABLE("UR %u->%u %u \r\n", 
@@ -87,7 +96,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1, bool pinned){
     cx_route_entry_t* re;
-    if (getEntry(&re, n0, n1)){
+    if (getEntry(&re, n0, n1, FALSE)){
       re->pinned = pinned;
       return SUCCESS;
     }
@@ -99,17 +108,17 @@ generic module CXRoutingTableP(uint8_t numEntries){
   }
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
-      bool* result){
+      bool bdOK, bool* result){
     cx_route_entry_t* re; 
     if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR){
       *result = TRUE;
       return SUCCESS;
     }
-    if (getEntry(&re, n0, TOS_NODE_ID)){
+    if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
       uint8_t sm = re->distance;
-      if (getEntry(&re, n1, TOS_NODE_ID)){
+      if (getEntry(&re, n1, TOS_NODE_ID, bdOK)){
         uint8_t md = re->distance;
-        if (getEntry(&re, n0, n1)){
+        if (getEntry(&re, n0, n1, bdOK)){
           *result = sm + md <= (re->distance 
             + call CXRoutingTable.getBufferWidth());
           if (! *result){

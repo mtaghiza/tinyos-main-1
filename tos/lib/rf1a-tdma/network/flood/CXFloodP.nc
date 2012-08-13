@@ -95,7 +95,7 @@ module CXFloodP{
       if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
         //distance + width of buffer region
         clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
-          call CXPacket.destination(msg));
+          call CXPacket.destination(msg), TRUE);
 
         printf_F_CLEARTIME("#CT: %u ->", clearTime);
         clearTime += call CXRoutingTable.getBufferWidth();
@@ -172,7 +172,7 @@ module CXFloodP{
           //maxDepth will rebroadcast)
           if (call CXPacket.getNetworkProtocol(tx_msg) & CX_NP_PREROUTED){
             clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
-              call CXPacket.destination(tx_msg)) 
+              call CXPacket.destination(tx_msg), TRUE) 
               + call CXRoutingTable.getBufferWidth();
           }
           if (call TDMARoutingSchedule.maxDepth() < clearLeft){
@@ -312,7 +312,7 @@ module CXFloodP{
 //            pl->distance);
 //        }
         if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
-            call CXPacket.destination(msg), &isBetween)) || !isBetween ){
+            call CXPacket.destination(msg), TRUE, &isBetween)) || !isBetween ){
           uint8_t pll = call LayerPacket.payloadLength(msg);
           void* pl = call LayerPacket.getPayload(msg, pll);
           uint8_t tProto = call CXPacket.getTransportProtocol(msg);
