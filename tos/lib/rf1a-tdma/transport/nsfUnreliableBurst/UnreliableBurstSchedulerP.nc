@@ -83,6 +83,7 @@ module UnreliableBurstSchedulerP{
         call AMPacket.setDestination(setup_msg, AM_BROADCAST_ADDR);
         call CXPacketBody.setPayloadLength(setup_msg,
           sizeof(nsf_setup_t));
+        call CXPacketMetadata.setRequiresClear(setup_msg, TRUE);
         error = call FloodSend.send(setup_msg, sizeof(nsf_setup_t));
 //        printf_TMP("SU msg: %p PL: %p src: %d dest: %d dist: %d\r\n",
 //          setup_msg, pl, 
