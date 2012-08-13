@@ -1,5 +1,11 @@
 #!/bin/bash
 autoRun=0
+if [ $# -eq 0 ]
+then 
+  echo "No test name provided." 1>&2
+  exit 1
+fi
+testDesc=\\\"$1\\\"
 
 root=map.root
 nonrootRx=map.nonroot.rx
@@ -81,7 +87,7 @@ debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$s
 
 
 testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
-miscSettings="ENABLE_SKEW_CORRECTION=0"
+miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
 

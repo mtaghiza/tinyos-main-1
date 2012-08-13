@@ -1,4 +1,10 @@
 COMPONENT=TestAppC
+
+#NOTE: to specify from command line:
+# TEST_DESC=\\\"TEST_INFO\\\"
+TEST_DESC?=\"NO_INFO\"
+CFLAGS+=-DTEST_DESC=$(TEST_DESC)
+
 #CFLAGS+=-fno-inline
 #
 WAIT_FOR_PACKET?=1
