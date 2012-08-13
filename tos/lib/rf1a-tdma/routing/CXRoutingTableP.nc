@@ -122,8 +122,14 @@ generic module CXRoutingTableP(uint8_t numEntries){
             md,
             re->distance);
           return SUCCESS;
+        }else{
+          printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
         }
+      }else{
+        printf_ROUTING_TABLE("~IB %u -> %u dm UNK\r\n", n0, n1);
       }
+    }else{
+      printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
     }
     return FAIL;
   }
