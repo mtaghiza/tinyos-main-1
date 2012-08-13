@@ -72,11 +72,18 @@ rxr=0
 debugDup=0
 debugFSched=0
 
-numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
-numSlots=$(($numNodes + 5))
+set -x 
+if [ $staticScheduler -eq 1 ]
+then
+  maxNodeId=$(cat $root $nonrootRx $nonrootTx | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
+  numSlots=$(($maxNodeId + 5))
+else
+  numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
+  numSlots=$(($numNodes + 5))
+fi
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth"
-
+set +x
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 
 memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
