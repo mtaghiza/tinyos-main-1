@@ -72,8 +72,6 @@ module UnreliableBurstSchedulerP{
       //Idle or ready (but for a different destination):
       //  We need to set up a new route
       if (state == S_IDLE || (state == S_READY && addr != lastDest)){
-        //TODO: this may be off by the size of the AM header, check
-        //  layering
         nsf_setup_t* pl = (nsf_setup_t*) (call CXPacketBody.getPayload(setup_msg, sizeof(nsf_setup_t)));
         pl -> src = call CXPacket.destination(msg);
         pl -> dest = TOS_NODE_ID;

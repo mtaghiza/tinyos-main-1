@@ -15,7 +15,7 @@ debugScale=4UL
 testRequestAck=0
 rootSender=0
 rootDest=1
-leafDest=65535UL
+leafDest=0
 
 fecEnabled=0
 fecHamming74=1
@@ -26,10 +26,10 @@ queueThreshold=10
 #network params
 fps=40
 md=5
-mr=2
+mr=1
 staticScheduler=1
 firstIdleSlot=48
-cxBufferWidth=1
+cxBufferWidth=0
 
 #radio logging
 rl=0
@@ -64,6 +64,7 @@ debugTestbedResource=0
 #debug RXREADY error messages
 rxr=0
 debugDup=0
+debugFSched=0
 
 numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
 numSlots=$(($numNodes + 5))
@@ -76,7 +77,7 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched" 
 
 
 testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
