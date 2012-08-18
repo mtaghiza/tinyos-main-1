@@ -1,5 +1,5 @@
 #!/bin/bash
-autoRun=0
+autoRun=1
 programDelay=60
 if [ $# -eq 0 ]
 then 
@@ -7,11 +7,7 @@ then
   exit 1
 fi
 testDesc=\\\"$1\\\"
-
-if [ $# -gt 1 ]
-then
-  autoRun=$2
-fi
+shift 1
 
 root=map.root
 nonrootRx=map.nonroot.rx
@@ -40,7 +36,7 @@ fps=40
 md=5
 mr=1
 staticScheduler=1
-firstIdleSlot=48
+firstIdleSlot=50
 cxBufferWidth=0
 
 #radio logging
@@ -57,12 +53,12 @@ sp=1
 ps=3
 
 debugLinkRXTX=1
-debugFCleartime=1
+debugFCleartime=0
 debugSFCleartime=0
 debugTestbed=1
 debugPacket=0
 sv=0
-pr=1
+pr=0
 sfr=0
 crc=0
 debugConfig=0
@@ -77,13 +73,53 @@ debugTestbedResource=0
 rxr=0
 debugDup=0
 debugFSched=0
-debugRoutingTable=1
+debugRoutingTable=0
+debugUB=1
+
+while [ $# -gt 1 ]
+do
+  case $1 in
+   staticScheduler)
+     staticScheduler=$2
+     shift 2
+   ;;
+   nonrootTx)
+     nonrootTx=$2
+     shift 2
+     ;;
+   nonrootRx)
+     nonrootRx=$2
+     shift 2
+     ;;
+   testRequestAck)
+     testRequestAck=$2
+     shift 2
+     ;;
+   cxBufferWidth)
+     cxBufferWidth=$2
+     shift 2
+     ;;
+   mr)
+     mr=$2
+     shift 2
+     ;;
+   leafDest)
+     leafDest=$2
+     shift 2
+     ;;
+   *)
+     echo "unrecognized: $1"
+     shift 1
+   ;;
+  esac
+done
+
 
 set -x 
 if [ $staticScheduler -eq 1 ]
 then
   maxNodeId=$(cat $root $nonrootRx $nonrootTx | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
-  numSlots=$(($maxNodeId + 5))
+  numSlots=$(($maxNodeId + 10))
 else
   numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
   numSlots=$(($numNodes + 5))
@@ -97,7 +133,7 @@ memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable DEBUG_UB=$debugUB" 
 
 
 testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
