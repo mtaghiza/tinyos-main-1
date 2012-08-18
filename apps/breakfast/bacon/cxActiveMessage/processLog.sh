@@ -23,6 +23,7 @@ tfb=$(tempfile -d $tfDir)
 #tfb=tmp/tmp
 rxTf=$tfb.rx
 txTf=$tfb.tx
+rTf=$tfb.r
 errTf=$tfb.err
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
@@ -39,10 +40,16 @@ echo "extracting RX"
 #1343662476.53 21 RX s: 0 d: 65535 sn: 0 o: 0  c: 1  r: -55 l: 0
 #pv $logFile | awk '($3 == "RX"){print $1,$5,$2,$7,$9,$11,$13,$15,$17,1}' > $rxTf
 pv $logFile | awk '($3 == "RX" && NF == 17){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
+
 echo "extracting TX"
 #1      2 3  4  5 6  7     8   9 10  11 12 13 14 15 16 17 18 19   20 21
 #1...71 0 TX s: 0 d: 65535 sn: 0 ofn: 0 np: 1 pr: 0 tp: 1 am: 224 e: 0
 pv $logFile | awk '($3 == "TX" && NF == 21){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
+
+echo "extracting routing decisions"
+#1             2 3   4  5  6  7 8   9 10 11 12 13 14 15 16 17 18 19
+#1344892228.29 3 UBF s: 31 d: 0 sn: 0 sm: 4 md: 4 sd: 3 bw: 0 f: 0
+pv $logFile | awk '($3 == "UBF" && NF == 19){print $1, $2, $5, $7, $9, $11, $13, $15, $17, $19}' > $rTf
 
 echo "extracting errors"
 pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
@@ -99,6 +106,23 @@ CREATE TABLE ERROR_EVENTS (
 
 select "Importing error events";
 .import $errTf ERROR_EVENTS
+
+DROP TABLE IF EXISTS ROUTES;
+CREATE TABLE ROUTES (
+  ts REAL, 
+  fwd INTEGER,
+  src INTEGER,
+  dest INTEGER,
+  sn INTEGER,
+  sm INTEGER,
+  md INTEGER,
+  sd INTEGER,
+  bw INTEGER,
+  f  INTEGER
+);
+
+select "Importing routing decisions";
+.import $rTf ROUTES
 
 select "Aggregating depth info";
 DROP TABLE IF EXISTS AGG_DEPTH;
