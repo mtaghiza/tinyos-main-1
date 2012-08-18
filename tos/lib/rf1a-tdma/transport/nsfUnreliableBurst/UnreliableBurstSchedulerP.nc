@@ -1,5 +1,6 @@
  #include "schedule.h"
  #include "NSFUnreliableBurst.h"
+ #include "NSFUnreliableBurstDebug.h"
  #include "CX.h"
 module UnreliableBurstSchedulerP{
   provides interface CXTransportSchedule;
@@ -21,6 +22,7 @@ module UnreliableBurstSchedulerP{
   uses interface CXPacket;
   uses interface CXPacketMetadata;
   uses interface CXRoutingTable;
+  uses interface Rf1aPacket;
 } implementation {
   enum {
     M_ERROR = 0x10,
@@ -152,6 +154,20 @@ module UnreliableBurstSchedulerP{
     if (state == S_SETUP_SENDING && 
         call CXPacket.getTransportType(msg) == CX_TYPE_SETUP){
       state = S_READY;
+      printf_UB("UBS s: %d d: %d sn: %d\r\n",
+        call CXPacket.source(msg),
+        call CXPacket.destination(msg),
+        call CXPacket.sn(msg));
+      printf_APP("TX s: %u d: %u sn: %u ofn: %u np: %u pr: %u tp: %u am: %u e: %u\r\n",
+        TOS_NODE_ID,
+        call CXPacket.destination(msg),
+        call CXPacket.sn(msg),
+        call CXPacket.getOriginalFrameNum(msg),
+        (call CXPacket.getNetworkProtocol(msg)) & ~CX_NP_PREROUTED,
+        ((call CXPacket.getNetworkProtocol(msg)) & CX_NP_PREROUTED)?1:0,
+        call CXPacket.getTransportProtocol(msg),
+        call AMPacket.type(msg),
+        error);
       post sendPendingTask();
 
     //data sent: go to ready and signal up
@@ -169,16 +185,54 @@ module UnreliableBurstSchedulerP{
     }
   }
 
+  void printRX(message_t* msg){
+    printf_APP("RX s: %u d: %u sn: %u o: %u c: %u r: %d l: %u\r\n", 
+      call CXPacket.source(msg),
+      call CXPacket.destination(msg),
+      call CXPacket.sn(msg),
+      call CXPacket.getOriginalFrameNum(msg),
+      call CXPacketMetadata.getReceivedCount(msg),
+      call Rf1aPacket.rssi(msg),
+      call Rf1aPacket.lqi(msg)
+      );
+  }
+
   event message_t* FloodReceive.receive(message_t* msg, void* payload,
       uint8_t len){
     if (call CXPacket.getTransportType(msg) == CX_TYPE_DATA){
       return signal Receive.receive(msg, payload, len);
     }else if (call CXPacket.getTransportType(msg) == CX_TYPE_SETUP){
       nsf_setup_t* pl = (nsf_setup_t*)payload;
+      bool isBetween;
+      am_addr_t src = call CXPacket.source(msg);
+      am_addr_t dest = call CXPacket.destination(msg);
+      uint8_t sm;
+      uint8_t md;
+      uint8_t sd;
+      uint8_t bw = call CXRoutingTable.getBufferWidth();
 //      printf_TMP("SU msg: %p PL: %p src: %d dest: %d dist: %d\r\n",
 //        msg, pl, 
 //        pl->src, pl->dest, pl->distance);
       call CXRoutingTable.update(pl->src, pl->dest, pl->distance);
+      sm = call CXRoutingTable.distance(src, TOS_NODE_ID, TRUE);
+      md = call CXRoutingTable.distance(TOS_NODE_ID, dest, TRUE);
+      sd = call CXRoutingTable.distance(src, dest, TRUE);
+      if ( SUCCESS != 
+          call CXRoutingTable.isBetween(src, dest, TRUE, &isBetween)){
+        isBetween = FALSE;
+      }
+
+      printRX(msg);
+      //diagnostic info: did we receive / are we on circuit?
+      printf_UB("UBF s: %d d: %d sn: %d sm: %d md: %d sd: %d bw: %d f: %d\r\n", 
+        src, 
+        dest, 
+        call CXPacket.sn(msg), 
+        sm,
+        md,
+        sd,
+        bw,
+        isBetween);
       return msg;
     }else{
       state = S_ERROR_5;

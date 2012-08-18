@@ -21,6 +21,7 @@ configuration UnreliableBurstSchedulerC{
   uses interface CXRoutingTable;
 } implementation {
   components UnreliableBurstSchedulerP;
+  components CXPacketStackC;
 
   CXTransportSchedule = UnreliableBurstSchedulerP.CXTransportSchedule;
   UnreliableBurstSchedulerP.TDMARoutingSchedule = TDMARoutingSchedule;
@@ -42,4 +43,5 @@ configuration UnreliableBurstSchedulerC{
   UnreliableBurstSchedulerP.CXPacketMetadata = CXPacketMetadata;
 
   UnreliableBurstSchedulerP.CXRoutingTable = CXRoutingTable;
+  UnreliableBurstSchedulerP.Rf1aPacket -> CXPacketStackC.Rf1aPacket;
 }
