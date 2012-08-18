@@ -91,7 +91,8 @@ implementation {
     P2DIR |= BIT4;
     call AMControl.start();
     call SerialControl.start();
-    printf("Booted\r\n");
+    printf("CONNECTIVITY TEST \r\n");
+    //TODO: set up GDO pins
   }
 
   event void AMControl.startDone(error_t err) {
