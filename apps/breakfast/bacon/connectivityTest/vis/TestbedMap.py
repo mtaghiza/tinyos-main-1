@@ -27,7 +27,7 @@ def mapSetup(nsluFile='nslu_locations.txt',
         if not l.startswith("#"):
             [nslu, port, nodeId] = [int(v) for v in l.split()]
             if nslu in nslus:
-                nodes[nodeId] = {'pos':nslus[nslu][port]}
+                nodes[nodeId] = {'pos':nslus[nslu][port], 'nslu':nslu}
             else:
                 #TODO: log missing node error
                 pass
@@ -89,11 +89,12 @@ def drawLabels(G, labelMap=None):
       labels=labelMap)
 
 if __name__ == '__main__':
-    G = mapSetup('nslu_locations.txt', 'node_map.txt', 'map.png')
+    G = mapSetup('nslu_locations.txt', 'node_map.txt', 'floorplan.png')
     addPrrEdges(G, 'prr_links.csv', prr_threshold=0.95)
     sp = computeSPs(G, 0, -1)
     drawCMapNodes(G, sp)
     drawLabels(G, sp)
+    #drawLabels(G, nx.get_node_attributes(G, 'nslu'))
     drawEdges(G)
     #display the plot
     plt.show()
