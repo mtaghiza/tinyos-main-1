@@ -35,15 +35,17 @@ class TestbedMap(object):
         
         self.G = nx.DiGraph()
         self.G.add_nodes_from([(n, nodes[n]) for n in nodes])
+        self.labelMap = None
+        
 
-    def drawCMapNodes(self):
+    def drawCMapNodes(self, node_size, palette):
         """ Draw nodes, color according to palette/colorMap"""
         nx.draw_networkx_nodes(self.G, 
           pos=nx.get_node_attributes(self.G, 'pos'),
-          node_size=200,
+          node_size=node_size,
           nodelist = self.G.nodes()
-          , node_color=[self.colorMap[n] for n in self.G.nodes()]
-          , cmap = self.palette
+          , node_color=[self.G.node[n][self.colAttr] for n in self.G.nodes()]
+          , cmap = palette
         )
 
     def drawEdges(self, alpha=0.2):
@@ -61,15 +63,23 @@ class TestbedMap(object):
           font_size=10,
           labels=self.labelMap)
 
-    def setColors(self, colorMap, palette=None):
-        self.colorMap = colorMap
-        self.palette = palette
+    def setAttr(self, attr, attrMap, defaultVal=None):
+        #ugly: we want to have a way to enforce that every node has a
+        #  value in this map.
+        if defaultVal:
+            for n in self.G.nodes():
+                if n not in attrMap:
+                    attrMap[n] = defaultVal
+        nx.set_node_attributes(self.G, attr, attrMap)
+    
+    def setColAttr(self, colAttr):
+        self.colAttr = colAttr
 
     def setLabels(self, labelMap):
         self.labelMap = labelMap
 
-    def draw(self, outFile=None):
-        self.drawCMapNodes()
+    def draw(self, outFile=None, node_size=200, palette=plt.cm.hot):
+        self.drawCMapNodes(node_size, palette)
         self.drawEdges()
         self.drawLabels()
         if not outFile:
@@ -82,9 +92,10 @@ class SingleTXDepth(TestbedMap):
     def __init__(self, root, edgeFile, prr_threshold=0.0, **kwargs):
         super(SingleTXDepth, self).__init__(*kwargs)
         self.addPrrEdges(edgeFile, prr_threshold)
-        self.depths = self.computeSPs(root)
-        self.setColors(self.depths, plt.cm.hot)
-        self.setLabels(self.depths)
+        self.distances = self.computeSPs(root)
+        self.setAttr('distance', self.distances)
+        self.setColAttr('distance')
+        self.setLabels(self.distances)
 
     def addPrrEdges(self, edgeFile, prr_threshold):
         """ Add edges to a graph from PRR file, where PRR is above some
@@ -102,7 +113,7 @@ class SingleTXDepth(TestbedMap):
                     self.G.add_edge(int(r[0]), int(r[1]), prr=float(r[2]))
     
     def computeSPs(self, root, unreachableVal=-1):
-        """ """
+        """Compute length of shortest paths from root to each other node"""
         p = nx.single_source_shortest_path_length(self.G, root)
         
         #fill in unreachable node values
@@ -112,9 +123,33 @@ class SingleTXDepth(TestbedMap):
                 p[nodeId] = unreachableVal
         return p
 
+class CXDistance(TestbedMap):
+    def __init__(self, root, distanceFile, **kwargs):
+        super(CXDistance, self).__init__(*kwargs)
+        self.loadDistances(root, distanceFile)
+        self.setAttr('distance', self.distances)
+        self.setColAttr('distance')
+
+        rounded = dict( [ (k, "%.1f"%self.distances[k]) for k in
+          self.distances])
+        self.setLabels(rounded)
+
+    def loadDistances(self, root, distanceFile, unreachableVal=-1):
+        self.distances={}
+        f = open(distanceFile, 'r')
+        for l in f.readlines():
+            r = l.split(',')
+            if int(r[0]) == root:
+                self.distances[int(r[1])] = float(r[2])
+        self.distances[root] = 0
+        for nodeId in self.G.nodes():
+            if nodeId not in self.distances:
+                self.distances[nodeId] = unreachableVal
+
 if __name__ == '__main__':
-    tbm = SingleTXDepth(0, 'prr_links.csv', 0.95)
-    tbm.draw()
+    #tbm = SingleTXDepth(0, 'prr_links.csv', 0.95)
+    tbm = CXDistance(0, 'cxDepth.csv')
+    tbm.draw(node_size=300)
 
 #TODO: OO-ify
 # - common internal state: Graph, edges, labels, colors
