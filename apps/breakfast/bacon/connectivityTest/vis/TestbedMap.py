@@ -98,23 +98,31 @@ if __name__ == '__main__':
     #display the plot
     plt.show()
 
-
-##example of using map of colors
-#G.node[1]['color']='blue'
-#
-#colors = nx.get_node_attributes(G, 'color')
-#defaultColor = 'red'
-##draw specified nodes, extracting attributes as needed
-#nx.draw_networkx_nodes(G, 
-#  pos=nx.get_node_attributes(G, 'pos'),
-#  node_size=20,
-#  nodelist = nl,
-#  node_color=[colors.get(n, defaultColor) for n in nl]
-#)
-
-##label by node id
-#nx.draw_networkx_labels(G, 
-#  pos=nx.get_node_attributes(G, 'pos'),
-#  font_size=10
-#)
-
+#TODO: OO-ify
+# - common internal state: Graph, edges, labels, colors
+# - common behavior: construct, draw (to file or screen)
+# - subclasses define rules for what constitutes edge, label, color.
+# - single-tx connectivity subclass:
+#   - edges are PRR > threshold
+#   - label is depth
+#   - color is depth
+# - CX distance subclass
+#   - no edges
+#   - label is depth
+#   - color is depth
+# - CX forwarder rates
+#   - no edges
+#   - color for src, dest fixed
+#   - other nodes: fraction of bursts for which node is forwarder
+#   - label is node id?
+# - CX PRR
+#   - no edges
+#   - color is PRR (mark source)
+#   - label is node ID
+# - CX trace
+#   - no edges
+#   - burst setup info to gray out non-forwarders
+#   - for each frame in transmission, color as:
+#     - received this frame
+#     - sent this frame
+#     - sent in some earlier frame of this burst
