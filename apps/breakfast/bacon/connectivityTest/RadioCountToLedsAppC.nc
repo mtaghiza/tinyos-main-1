@@ -58,7 +58,7 @@ implementation {
   components MainC, RadioCountToLedsC as App, LedsC;
   components new AMSenderC(AM_RADIO_COUNT_MSG);// as AMSenderC;
   components new AMReceiverC(AM_RADIO_COUNT_MSG);
-  components new TimerMilliC();
+  components new TimerMilliC() as SendTimer;
   components ActiveMessageC;
 
   components Rf1aActiveMessageC;
@@ -98,6 +98,7 @@ implementation {
   App.Rf1aPhysical -> Rf1aActiveMessageC;
   App.Rf1aPacket -> Rf1aActiveMessageC;
   App.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
+  App.SendTimer -> SendTimer;
 //  App.Rf1aConfigure -> Rf1aSettings;
 }
 

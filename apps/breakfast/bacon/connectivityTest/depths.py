@@ -35,6 +35,14 @@ def computeDepths(m):
                 m[i][j] = min(m[i][j], m[i][k] + m[k][j])
     return m
 
+def usage():
+    print >> sys.stderr, """Usage: %s <dbName> <txPower> [threshold...]
+
+  Fills in the DEPTH table of specified DB using the point-to-point
+  distances for all pairs of nodes, considering edges with PRR >
+  specified thresholds.
+"""%sys.argv[0]
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:

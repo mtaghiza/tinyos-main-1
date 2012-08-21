@@ -67,6 +67,7 @@ module RadioCountToLedsC @safe() {
 //    interface DelayedSend;
 //    interface Timer<TMilli> as DelayTimer;
   }
+  uses interface Timer<TMilli> as SendTimer;
   uses interface StdControl as SerialControl;
   uses interface UartStream;
   uses interface Rf1aDumpConfig;
@@ -76,6 +77,13 @@ module RadioCountToLedsC @safe() {
 //  uses interface Rf1aConfigure;
 }
 implementation {
+  #ifndef AUTOSEND
+  #define AUTOSEND 0
+  #endif
+
+  #ifndef SEND_INTERVAL
+  #define SEND_INTERVAL 100
+  #endif
 
   message_t packet;
 
@@ -103,6 +111,9 @@ implementation {
     call Rf1aDumpConfig.display(&config);
     if (err == SUCCESS) {
       printf("Started\r\n");
+      if (AUTOSEND){
+        call SendTimer.startOneShot(SEND_INTERVAL);
+      }
     }
     else {
       call AMControl.start();
@@ -176,6 +187,9 @@ implementation {
     if (&packet == bufPtr) {
       locked = FALSE;
     }
+    if (AUTOSEND){
+      call SendTimer.startOneShot(SEND_INTERVAL);
+    }
 //    printf("+");
 //    printf("Send Done: %x\n\r", error);
 //    printf("\n\r\n\r");
@@ -210,6 +224,10 @@ implementation {
         printf("%c", byte);
         break;
     }
+  }
+
+  event void SendTimer.fired(){
+    post doSend();
   }
 
   //unused events

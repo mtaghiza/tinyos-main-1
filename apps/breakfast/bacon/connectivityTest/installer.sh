@@ -1,11 +1,13 @@
 #!/bin/bash
 set -x
 TEST_CHANNEL=0
-TEST_POWER=0x8D
+#8D: +0
+#C3: +10
+TEST_POWER=0xC3
 TEST_SR=125
 PAYLOAD_LEN=35
-MAP=map.bacon2
-#MAP=map.small
+#MAP=map.bacon2
+MAP=map.all
 BURN_TIME=30
 
 make bacon2 TEST_CHANNEL=$TEST_CHANNEL TEST_POWER=$TEST_POWER\
