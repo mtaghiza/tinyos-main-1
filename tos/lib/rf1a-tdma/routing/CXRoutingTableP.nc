@@ -40,6 +40,9 @@ generic module CXRoutingTableP(uint8_t numEntries){
   command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
       bool bdOK){
     cx_route_entry_t* re;
+    if (from == TOS_NODE_ID && to == TOS_NODE_ID){
+      return 0;
+    }
     if (getEntry(&re, from, to, bdOK)){
       return re->distance;
     }else{
@@ -110,7 +113,8 @@ generic module CXRoutingTableP(uint8_t numEntries){
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool bdOK, bool* result){
     cx_route_entry_t* re; 
-    if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR){
+    if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR 
+        || n0 == TOS_NODE_ID || n1== TOS_NODE_ID){
       *result = TRUE;
       return SUCCESS;
     }
