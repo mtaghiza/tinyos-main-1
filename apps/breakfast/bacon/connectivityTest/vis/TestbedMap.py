@@ -9,6 +9,7 @@ class TestbedMap(object):
             nodeFile='node_map.txt',
             mapFile='floorplan.png'):
         """Set up a floorplan map of testbed nodes"""
+        print "map file:", mapFile
         #add background image
         im = plt.imread(mapFile)
         implot = plt.imshow(im)
@@ -100,10 +101,10 @@ class TestbedMap(object):
         pass
 
 class SingleTXDepth(TestbedMap):
-    def __init__(self, root, edgeFile, prr_threshold=0.0,
+    def __init__(self, root, dbFile, sr, txp, packetLen, prr_threshold=0.0,
             distanceLabels = False, **kwargs):
-        super(SingleTXDepth, self).__init__(*kwargs)
-        self.addPrrEdges(edgeFile, prr_threshold)
+        super(SingleTXDepth, self).__init__(**kwargs)
+        self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold)
         self.distances = self.computeSPs(root)
         self.setAttr('distance', self.distances)
         self.setColAttr('distance')
@@ -111,20 +112,11 @@ class SingleTXDepth(TestbedMap):
         if distanceLabels:
             self.setLabels(self.distances)
 
-    def addPrrEdges(self, edgeFile, prr_threshold):
-        """ Add edges to a graph from PRR file, where PRR is above some
-        threshold. Lines in file should be formatted as: 
-    
-        src,dest,prr
-    
-        By default, all edges are added (prr threshold is 0.0)
-        """
-        f = open(edgeFile)
-        for l in f.readlines():
-            if not l.startswith("#"):
-                r = l.split(',')
-                if float(r[2]) >= prr_threshold:
-                    self.G.add_edge(int(r[0]), int(r[1]), prr=float(r[2]))
+    def loadPrrEdges(self, dbFile, sr, txp, packetLen, prr_threshold):
+        c = sqlite3.connect(dbFile)
+        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=? AND txPower=? AND len=? AND prr >=?', (sr, txp, packetLen, prr_threshold)).fetchall()
+        for (src, dest, prr) in links:
+            self.G.add_edge(src, dest, prr=prr)
     
     def computeSPs(self, root, unreachableVal=-1):
         """Compute length of shortest paths from root to each other node"""
@@ -139,7 +131,7 @@ class SingleTXDepth(TestbedMap):
 
 class CXDistance(TestbedMap):
     def __init__(self, root, distanceFile, **kwargs):
-        super(CXDistance, self).__init__(*kwargs)
+        super(CXDistance, self).__init__(**kwargs)
         self.loadDistances(root, distanceFile)
         self.setAttr('distance', self.distances)
         self.setColAttr('distance')
@@ -162,7 +154,7 @@ class CXDistance(TestbedMap):
 
 class CXForwarders(TestbedMap):
     def __init__(self, src, dest, dbFile, **kwargs):
-        super(CXForwarders, self).__init__(*kwargs)
+        super(CXForwarders, self).__init__(**kwargs)
         self.loadForwarders(src, dest, dbFile)
         self.fwdRatio[src]=1.0
         self.fwdRatio[dest]=1.0
@@ -181,7 +173,7 @@ class CXForwarders(TestbedMap):
 
 class CXPrr(TestbedMap):
     def __init__(self, src, dbFile, **kwargs):
-        super(CXPrr, self).__init__(*kwargs)
+        super(CXPrr, self).__init__(**kwargs)
         self.loadPrrs(src, dbFile)
         self.prrs[src]=1.0
         self.setAttr('prr', self.prrs, 0.0)
@@ -198,7 +190,7 @@ class CXPrr(TestbedMap):
 
 class SinglePrr(TestbedMap):
     def __init__(self, src, dbFile, **kwargs):
-        super(SinglePrr, self).__init__(*kwargs)
+        super(SinglePrr, self).__init__(**kwargs)
         self.loadPrrs(src, dbFile)
         self.prrs[src]=1.0
         self.setAttr('prr', self.prrs, 0.0)
@@ -216,8 +208,18 @@ class SinglePrr(TestbedMap):
 if __name__ == '__main__':
     t = sys.argv[1]
     if t == '--simple':
-        src = int(sys.argv[2])
-        tbm = SingleTXDepth(src, 'prr_links.csv', 0.95)
+        fn = sys.argv[2]
+        src = int(sys.argv[3])
+        thresh = float(sys.argv[4])
+        sr = 125
+        #0xC3= +10
+        txp = 0xC3
+        packetLen = 35
+        if len(sys.argv) > 5:
+            sr = int(sys.argv[6])
+            txp = int(sys.argv[7])
+            packetLen = int(sys.argv[8])
+        tbm = SingleTXDepth(src, fn, sr, txp, packetLen, thresh)
     elif t == '--cxd':
         tbm = CXDistance(0, 'cxDepth.csv')
     elif t == '--cxf':
