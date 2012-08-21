@@ -375,8 +375,7 @@ module CXTDMAPhysicalP {
   bool getPacket(uint16_t fn);
 
   void reportDutyCycle(){
-    //TODO: deal with wrap. Should also distinguish sleep (100uA),
-    //      idle (1.7mA), and FSTXON (9 mA).
+    //TODO: deal with wrap.
     printf_RADIO_STATS("T_rx: %lu T_tx: %lu T_tot: %lu", 
       rxTotal,
       txTotal, 
