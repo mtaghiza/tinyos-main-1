@@ -24,7 +24,7 @@ testRequestAck=0
 #allPlugged="0 1 2 3"
 allPlugged="0 1"
 #allPlugged="0"
-nonrootTx="1"
+nonrootTx=""
 
 fecEnabled=0
 fecHamming74=1
@@ -33,17 +33,17 @@ ipi=1024UL
 queueThreshold=1
 
 #network params
-numSlots=10
-fps=10
+numSlots=20
+fps=5
 md=1
 mr=1
 staticScheduler=1
-firstIdleSlot=4
+firstIdleSlot=$2
 cxBufferWidth=0
 
 #radio logging
 rl=0
-rs=0
+rs=1
 
 #schedule config
 #init symbol rate

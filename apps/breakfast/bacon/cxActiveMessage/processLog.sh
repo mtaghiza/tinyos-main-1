@@ -24,6 +24,7 @@ tfb=$(tempfile -d $tfDir)
 rxTf=$tfb.rx
 txTf=$tfb.tx
 rTf=$tfb.r
+rsTf=$tfb.rs
 errTf=$tfb.err
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
@@ -53,6 +54,19 @@ pv $logFile | awk '($3 == "UBF" && NF == 19){print $1, $2, $5, $7, $9, $11, $13,
 
 echo "extracting errors"
 pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
+
+echo "extracting radio stats"
+#1      2 3  4 5 6        7 ...
+#123.45 1 RS o 0 30820222 s 0 0 i 0 20882649 f 0 0 t 0 0 r 0 4433067
+pv $logFile | awk '($3 == "RS"){ 
+  tot=0
+  for (k=4; k < NF; k+=3){
+    thisTot = $(k+1)*(2**32) + $(k+2)
+    print $1, $2, $k, thisTot
+    tot += thisTot
+  }
+  print $1, $2, "A", tot
+}' > $rsTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -253,6 +267,57 @@ ORDER BY prr;
 --   TX_ALL.np,
 --   TX_ALL.pr
 -- ORDER BY prr;
+
+DROP TABLE IF EXISTS RADIO_STATS_RAW;
+CREATE TABLE RADIO_STATS_RAW (
+  ts REAL,
+  node INTEGER,
+  state TEXT,
+  total INTEGER);
+
+.import $rsTf RADIO_STATS_RAW
+
+DROP TABLE IF EXISTS RADIO_STATS_TOTALS;
+CREATE TABLE RADIO_STATS_TOTALS as
+SELECT node, 
+  state, 
+  max(total) as total 
+FROM radio_stats_raw GROUP BY node, state;
+
+INSERT INTO radio_stats_totals (node, state, total) 
+SELECT ra.node, 'a', ra.total - ro.total 
+FROM radio_stats_totals as ra 
+JOIN radio_stats_totals as ro 
+  ON ra.node = ro.node 
+  AND ra.state='A' 
+  AND ro.state = 'o';
+
+DROP TABLE IF EXISTS RADIO_STATS;
+CREATE TABLE RADIO_STATS as 
+SELECT radio_stats_totals.node, 
+  radio_stats_totals.state, 
+  (1.0*radio_stats_totals.total/ra.total) as frac
+FROM radio_stats_totals 
+JOIN radio_stats_totals as ra 
+  ON ra.node = radio_stats_totals.node 
+WHERE ra.state='a';
+
+DROP TABLE IF EXISTS ACTIVE_STATES;
+CREATE TABLE ACTIVE_STATES (
+  state TEXT);
+INSERT INTO ACTIVE_STATES (state) values ('f');
+INSERT INTO ACTIVE_STATES (state) values ('r');
+INSERT INTO ACTIVE_STATES (state) values ('t');
+
+DROP TABLE IF EXISTS DUTY_CYCLE;
+CREATE TABLE DUTY_CYCLE
+AS 
+  SELECT node, sum(frac) as dc
+  FROM radio_stats 
+  JOIN active_states 
+  ON active_states.state = radio_stats.state 
+  GROUP BY node;
+
 EOF
 
 if [ "$keepTemp" != "-k" ]
@@ -260,6 +325,9 @@ then
   rm $rxTf
   rm $txTf
   rm $tfb
+  rm $rTf
+  rm $errTf
+  rm $rsTf
 else
   echo "keeping temp files"
 fi

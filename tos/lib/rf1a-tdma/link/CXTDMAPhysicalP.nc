@@ -177,18 +177,20 @@ module CXTDMAPhysicalP {
     R_IDLE = 2, 
     R_FSTXON = 3,
     R_TX = 4,
-    R_RX = 5
+    R_RX = 5,
+    R_NUMSTATES = 6
   };
 
   bool captureRising = FALSE;
 
   #if DEBUG_RADIO_STATS == 1
+  const char labels[R_NUMSTATES] = {'o', 's', 'i', 'f', 't', 'r'};
   uint8_t  curRadioState = R_OFF;
   uint32_t lastRadioStateChange;
   //because 64 bit arithmetic is no-go, keep 16-bit rollover counter
   //  as well as 32-bit time. units are ticks (e.g. 1/(6.5e6)) seconds.
-  uint32_t radioStateTimes[6];
-  uint16_t rollOvers[6];
+  uint32_t radioStateTimes[R_NUMSTATES];
+  uint16_t rollOvers[R_NUMSTATES];
   
   //update running total of time spent in each radio state.
   void radioStateChange(uint8_t newState, uint32_t changeTime){
@@ -200,25 +202,33 @@ module CXTDMAPhysicalP {
         rollOvers[curRadioState]++;
       }
 
-      curRadioState = state;
+      curRadioState = newState;
       lastRadioStateChange = changeTime;
     }
   }
+
+  task void logDutyCycle(){
+    uint32_t rst[R_NUMSTATES];
+    uint16_t ro[R_NUMSTATES];
+    int k;
+    atomic{
+      for (k=0; k < R_NUMSTATES; k++){
+        rst[k] = radioStateTimes[k];
+        ro[k] = rollOvers[k];
+      }
+    }
+    printf_RADIO_STATS("RS");
+    for (k=0; k < R_NUMSTATES; k++){
+      printf_RADIO_STATS(" %c %u %lu", labels[k], ro[k], rst[k]);
+    }
+    printf_RADIO_STATS("\r\n");
+  }
+
   #else
   void radioStateChange(uint8_t newState, uint32_t changeTime){ }
+  task void logDutyCycle(){ }
   #endif
 
-  void logDutyCycle(){
-    if (DEBUG_RADIO_STATS){
-      printf_RADIO_STATS("RS o: %u %lu s: %u %lu i: %u %lu f: %u %lu t: %u %lu r: %u %lu\r\n",
-        rollOvers[R_OFF], radioStateTimes[R_OFF],
-        rollOvers[R_SLEEP], radioStateTimes[R_SLEEP],
-        rollOvers[R_IDLE], radioStateTimes[R_IDLE],
-        rollOvers[R_FSTXON], radioStateTimes[R_FSTXON],
-        rollOvers[R_TX], radioStateTimes[R_TX],
-        rollOvers[R_RX], radioStateTimes[R_RX]);
-    }
-  }
   
   //This should be removed when debugging is done!
   void recordEventX(uint8_t eventId){}
@@ -360,6 +370,7 @@ module CXTDMAPhysicalP {
 
   event void Resource.granted(){
     if (state == S_STARTING){
+      atomic radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
       //NB: Phy impl starts the radio in IDLE
       setState(S_IDLE);
       signal SplitControl.startDone(SUCCESS);
@@ -421,6 +432,8 @@ module CXTDMAPhysicalP {
   bool getPacket(uint16_t fn);
 
   task void pfsTask(){
+    //TODO: handle splitControl.stop: if stopPending, then we need to
+    //quit duty cycling, release resource, etc.
     atomic{
       //I'm seeing this task run twice in a row sometimes. how can
       //this happen?
@@ -434,26 +447,38 @@ module CXTDMAPhysicalP {
       frameNum = (frameNum+1)%(s_totalFrames);
       asyncFrameNum = frameNum;
     }
+    if (s_isSynched && (frameNum == s_totalFrames-1)){
+      post logDutyCycle();
+    }
     signal FrameStarted.frameStarted(frameNum);
-    
+//    printf_TMP("F %u s %x ia %u\r\n", 
+//      frameNum, 
+//      state, 
+//      signal TDMAPhySchedule.isInactive(frameNum));
     //Sleep/wake up radio as needed.
     if (state != S_INACTIVE 
         && signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.sleep()){
         atomic{
-          radioStateChange(R_OFF, call TDMAPhySchedule.getNow());
+          radioStateChange(R_SLEEP, call TDMAPhySchedule.getNow());
           setAsyncState(S_INACTIVE);
         }
+        printf_TMP("I@%u\r\n", frameNum);
       }else{
         setState(S_ERROR_0);
       }
+      atomic pfsTaskPending = FALSE;
+      //inactive, so return immediately (don't signal frameType to
+      //upper layers)
+      return;
     }else if (state == S_INACTIVE 
         && !signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
         atomic{
           radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
-          setAsyncState(S_IDLE);
+          setState(S_IDLE);
         }
+        printf_TMP("A@%u\r\n", frameNum);
       }else{
         setState(S_ERROR_0);
       }
@@ -579,6 +604,7 @@ module CXTDMAPhysicalP {
         if (error == SUCCESS){
           setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
+          captureRising = TRUE;
         }
         break;
 
@@ -593,6 +619,7 @@ module CXTDMAPhysicalP {
           sdFrameNum = asyncFrameNum;
           //get ready to capture your own SFD for re-synch.
           call SynchCapture.captureRisingEdge();
+          captureRising = TRUE;
         }else{
           setAsyncState(S_ERROR_0);
         }
@@ -661,18 +688,22 @@ module CXTDMAPhysicalP {
             call FrameStartAlarm.getAlarm() + s_fwCheckLen,
             call PrepareFrameStartAlarm.getAlarm());
         }
-        call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
-          s_fwCheckLen);
-//        if (! s_isSynched){
-//          printf_TMP("# fwa: %lu pfsa: %lu\r\n", 
-//            call FrameWaitAlarm.getAlarm(), 
-//            call PrepareFrameStartAlarm.getAlarm());
-//        }
-      ////TODO: remove debug
-        atomic pt = 1;
-//        post printTimers();
         if (asyncState == S_RX_READY){
-          setAsyncState(S_RX_WAIT);
+          call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
+            s_fwCheckLen);
+  //        if (! s_isSynched){
+  //          printf_TMP("# fwa: %lu pfsa: %lu\r\n", 
+  //            call FrameWaitAlarm.getAlarm(), 
+  //            call PrepareFrameStartAlarm.getAlarm());
+  //        }
+        ////TODO: remove debug
+          atomic pt = 1;
+  //        post printTimers();
+          if (asyncState == S_RX_READY){
+            setAsyncState(S_RX_WAIT);
+          }
+        }else if (asyncState == S_INACTIVE){
+          postPfs();
         }
       }
     }
