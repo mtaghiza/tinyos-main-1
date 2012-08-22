@@ -9,7 +9,6 @@ class TestbedMap(object):
             nodeFile='node_map.txt',
             mapFile='floorplan.png'):
         """Set up a floorplan map of testbed nodes"""
-        print "map file:", mapFile
         #add background image
         im = plt.imread(mapFile)
         implot = plt.imshow(im)
@@ -108,7 +107,7 @@ class SingleTXDepth(TestbedMap):
         self.distances = self.computeSPs(root)
         self.setAttr('distance', self.distances)
         self.setColAttr('distance')
-        self.addOutlined(root, 3)
+        self.addOutlined(root, 10)
         if distanceLabels:
             self.setLabels(self.distances)
 
@@ -118,7 +117,7 @@ class SingleTXDepth(TestbedMap):
         for (src, dest, prr) in links:
             self.G.add_edge(src, dest, prr=prr)
     
-    def computeSPs(self, root, unreachableVal=-1):
+    def computeSPs(self, root, unreachableVal=0):
         """Compute length of shortest paths from root to each other node"""
         p = nx.single_source_shortest_path_length(self.G, root)
         
@@ -130,38 +129,46 @@ class SingleTXDepth(TestbedMap):
         return p
 
 class CXDistance(TestbedMap):
-    def __init__(self, root, distanceFile, **kwargs):
+    def __init__(self, node, distanceFrom, dbFile, **kwargs):
         super(CXDistance, self).__init__(**kwargs)
-        self.loadDistances(root, distanceFile)
-        self.setAttr('distance', self.distances)
+        self.loadDistances(node, distanceFrom, dbFile)
+        self.loadErrors(dbFile)
+        self.setAttr('distance', self.distances, -1)
         self.setColAttr('distance')
+        self.addOutlined(node, 10)
 
+        for nodeId in self.errors:
+            self.addOutlined(nodeId, 3)
         rounded = dict( [ (k, "%.1f"%self.distances[k]) 
           for k in self.distances])
         self.setLabels(rounded)
 
-    def loadDistances(self, root, distanceFile, unreachableVal=-1):
-        self.distances={}
-        f = open(distanceFile, 'r')
-        for l in f.readlines():
-            r = l.split(',')
-            if int(r[0]) == root:
-                self.distances[int(r[1])] = float(r[2])
-        self.distances[root] = 0
-        for nodeId in self.G.nodes():
-            if nodeId not in self.distances:
-                self.distances[nodeId] = unreachableVal
+    def loadDistances(self, node, distanceFrom, dbFile):
+        c = sqlite3.connect(dbFile)
+        if distanceFrom:
+            self.distances = dict(c.execute('SELECT dest, avgDepth FROM agg_depth WHERE src=?', (node,)))
+        else:
+            self.distances = dict(c.execute('SELECT src, avgDepth FROM agg_depth WHERE dest=?', (node,)))
+        self.distances[node] = 0
+        c.close()
+
+    def loadErrors(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        self.errors = [ nodeId for (nodeId,) in c.execute('SELECT node from error_events')]
 
 class CXForwarders(TestbedMap):
     def __init__(self, src, dest, dbFile, **kwargs):
         super(CXForwarders, self).__init__(**kwargs)
         self.loadForwarders(src, dest, dbFile)
+        self.loadErrors(dbFile)
         self.fwdRatio[src]=1.0
         self.fwdRatio[dest]=1.0
         self.setAttr('fwdRatio', self.fwdRatio, 0)
         self.setColAttr('fwdRatio')
-        self.addOutlined(src, 3)
-        self.addOutlined(dest, 3)
+        self.addOutlined(src, 10)
+        self.addOutlined(dest, 10)
+        for nodeId in self.errors:
+            self.addOutlined(nodeId, 3)
         rounded = dict([ (k, "%.2f"%self.fwdRatio[k]) 
           for k in self.fwdRatio])
         self.setLabels(rounded)
@@ -171,22 +178,40 @@ class CXForwarders(TestbedMap):
         self.fwdRatio = dict(c.execute('SELECT fwd, avg(f) FROM routes where src=? and dest=? group by src, fwd, dest', (src, dest)))
         c.close()
 
+    def loadErrors(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        self.errors = [ nodeId for (nodeId,) in c.execute('SELECT node from error_events')]
+
 class CXPrr(TestbedMap):
-    def __init__(self, src, dbFile, **kwargs):
+    def __init__(self, node, prrFrom, dbFile, **kwargs):
         super(CXPrr, self).__init__(**kwargs)
-        self.loadPrrs(src, dbFile)
-        self.prrs[src]=1.0
+        self.loadPrrs(node, prrFrom, dbFile)
+        self.loadErrors(dbFile)
+        self.prrs[node]=1.0
         self.setAttr('prr', self.prrs, 0.0)
         self.setColAttr('prr')
-        self.addOutlined(src, 3)
+        self.addOutlined(node, 10)
+        for nodeId in self.errors:
+            self.addOutlined(nodeId, 3)
         rounded = dict([ (k, "%.2f"%self.prrs[k]) 
           for k in self.prrs])
         self.setLabels(rounded)
 
-    def loadPrrs(self, src, dbFile):
+    def loadPrrs(self, node, prrFrom, dbFile):
         c = sqlite3.connect(dbFile)
-        self.prrs = dict(c.execute('SELECT dest, prr from prr_no_startup where src=?', (src,)))
+        if prrFrom:
+            #weighted average of PR + non-PR packets
+            q = 'SELECT dest, sum(cnt*prr)/sum(cnt) from prr_clean where src=? group by dest'
+        else:
+            q = 'SELECT src, sum(cnt*prr)/sum(cnt) from prr_clean where dest=? group by src'
+        print "Using query:",q, node
+        self.prrs = dict(c.execute(q, (node,)))
         c.close()
+
+    def loadErrors(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        self.errors = [ nodeId for (nodeId,) in c.execute('SELECT node from error_events')]
+        
 
 class SinglePrr(TestbedMap):
     def __init__(self, src, dbFile, **kwargs):
@@ -195,7 +220,7 @@ class SinglePrr(TestbedMap):
         self.prrs[src]=1.0
         self.setAttr('prr', self.prrs, 0.0)
         self.setColAttr('prr')
-        self.addOutlined(src, 3)
+        self.addOutlined(src, 10)
         rounded = dict([ (k, "%.2f"%self.prrs[k]) 
           for k in self.prrs])
         self.setLabels(rounded)
@@ -221,16 +246,18 @@ if __name__ == '__main__':
             packetLen = int(sys.argv[8])
         tbm = SingleTXDepth(src, fn, sr, txp, packetLen, thresh)
     elif t == '--cxd':
-        tbm = CXDistance(0, 'cxDepth.csv')
+        distanceFrom = (sys.argv[2] == '--from')
+        tbm = CXDistance(int(sys.argv[3]), distanceFrom, sys.argv[4])
     elif t == '--cxf':
         src = int(sys.argv[2])
         dest = int(sys.argv[3])
         fn = sys.argv[4]
         tbm = CXForwarders(src, dest, fn)
     elif t == '--cxp':
-        src = int(sys.argv[2])
-        fn = sys.argv[3]
-        tbm = CXPrr(src, fn)
+        prrFrom = (sys.argv[2] == '--from')
+        node = int(sys.argv[3])
+        fn = sys.argv[4]
+        tbm = CXPrr(node, prrFrom, fn)
     elif t == '--sp':
         src = int(sys.argv[2])
         fn = sys.argv[3]

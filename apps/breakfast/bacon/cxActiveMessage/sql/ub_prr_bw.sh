@@ -1,4 +1,5 @@
 #!/bin/bash
+#TODO: paramterize db directory
 echo "src,dest,bw,prr_lr"
 for db in db/nsfb_ub_all_1_*.db
 do

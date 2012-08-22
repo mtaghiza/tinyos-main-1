@@ -150,7 +150,7 @@ FROM TX_ALL
      OR (TX_ALL.dest == 65535 AND TX_ALL.src != nodes.dest)
 EXCEPT SELECT RX_ALL.src, RX_ALL.dest, RX_ALL.sn FROM RX_ALL;
 
-select "Computing PRRs";
+select "Computing Raw PRRs";
 DROP TABLE IF EXISTS PRR;
 CREATE TABLE PRR AS 
 SELECT
@@ -174,15 +174,42 @@ GROUP BY TX_ALL.src,
   TX_ALL.pr
 ORDER BY prr;
 
-DROP TABLE IF EXISTS PRR_NO_STARTUP;
-CREATE TABLE PRR_NO_STARTUP AS 
+select "Finding node startups";
+DROP TABLE IF EXISTS FIRST_RX;
+CREATE TABLE FIRST_RX AS
+SELECT RX_ALL.* 
+FROM RX_ALL 
+JOIN (SELECT src, dest, min(ts) as fts FROM RX_ALL WHERE src=0 GROUP BY dest) frx
+ON frx.dest = RX_ALL.dest 
+   AND frx.src = RX_ALL.src 
+   AND frx.fts = RX_ALL.ts;
+
+select "Finding good data periods";
+--Some NSLUs have serious lag in printing: nslu15 (nodes 22 and 23)
+-- seems to report events up to ~60s late in some cases. 
+DROP TABLE IF EXISTS PRR_BOUNDS;
+CREATE TABLE PRR_BOUNDS AS
+SELECT first_rx.dest as node,
+  first_rx.ts - 60 as startTS,
+  coalesce(error_events.ts, (SELECT max(ts) FROM TX_ALL)) - 60 as endTS
+FROM first_rx 
+LEFT JOIN error_events 
+ON error_events.node = first_rx.dest;
+
+--deal with root node
+INSERT INTO PRR_BOUNDS (node, startTS, endTS) VALUES (0, 0, (select max(ts) from TX_ALL));
+
+select "computing cleaned prr";
+DROP TABLE IF EXISTS PRR_CLEAN;
+CREATE TABLE PRR_CLEAN AS 
 SELECT
   TX_ALL.src as src,
   RX_AND_MISSING.dest as dest,
   TX_ALL.tp as tp,
   TX_ALL.np as np,
   TX_ALL.pr as pr,
-  avg(RX_AND_MISSING.received) as prr
+  avg(RX_AND_MISSING.received) as prr,
+  count(RX_AND_MISSING.received) as cnt
 FROM TX_ALL
 LEFT JOIN (
   SELECT src, dest, sn, received FROM RX_ALL 
@@ -190,13 +217,42 @@ LEFT JOIN (
   SELECT src, dest, sn, 0 as received FROM MISSING_RX) RX_AND_MISSING ON
   TX_ALL.src == RX_AND_MISSING.src AND
   TX_ALL.sn == RX_AND_MISSING.sn 
-WHERE TX_ALL.ts > 300+(SELECT min(ts) from TX_ALL)
+JOIN PRR_BOUNDS ON PRR_BOUNDS.node = RX_AND_MISSING.dest
+WHERE TX_ALL.ts >= PRR_BOUNDS.startTS
+  AND TX_ALL.ts <= PRR_BOUNDS.endTS
 GROUP BY TX_ALL.src,
   RX_AND_MISSING.dest,
   TX_ALL.tp,
   TX_ALL.np,
   TX_ALL.pr
 ORDER BY prr;
+
+-- DROP TABLE IF EXISTS PRR_NO_STARTUP;
+-- CREATE TABLE PRR_NO_STARTUP AS 
+-- SELECT
+--   TX_ALL.src as src,
+--   RX_AND_MISSING.dest as dest,
+--   TX_ALL.tp as tp,
+--   TX_ALL.np as np,
+--   TX_ALL.pr as pr,
+--   avg(RX_AND_MISSING.received) as prr
+-- FROM TX_ALL
+-- LEFT JOIN (
+--   SELECT src, dest, sn, received FROM RX_ALL 
+--   UNION 
+--   SELECT src, dest, sn, 0 as received FROM MISSING_RX) RX_AND_MISSING ON
+--   TX_ALL.src == RX_AND_MISSING.src AND
+--   TX_ALL.sn == RX_AND_MISSING.sn 
+-- LEFT JOIN error_events 
+--   ON error_events.node == RX_AND_MISSING.dest
+-- WHERE TX_ALL.ts >= (SELECT max(ts) from FIRST_RX)
+--   AND TX_ALL.ts <= coalesce(error_events.ts, (select max(ts) from TX_ALL))
+-- GROUP BY TX_ALL.src,
+--   RX_AND_MISSING.dest,
+--   TX_ALL.tp,
+--   TX_ALL.np,
+--   TX_ALL.pr
+-- ORDER BY prr;
 EOF
 
 if [ "$keepTemp" != "-k" ]

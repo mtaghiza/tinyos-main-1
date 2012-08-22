@@ -36,7 +36,7 @@ fps=40
 md=5
 mr=1
 staticScheduler=1
-firstIdleSlot=50
+firstIdleSlot=67
 cxBufferWidth=0
 
 #radio logging

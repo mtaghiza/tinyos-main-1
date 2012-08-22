@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ $# -lt 2 ]
 then
-  echo "Usage: $0 <logfile> <outputDir" 2>&1
+  echo "Usage: $0 <logfile> <outputDir>" 2>&1
   exit 1
 fi
 
