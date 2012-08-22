@@ -8,4 +8,5 @@ interface TDMARoutingSchedule{
   command uint16_t maxDepth();
   command uint16_t currentFrame();
   command uint16_t getNumSlots();
+  command error_t inactiveSlot();
 }

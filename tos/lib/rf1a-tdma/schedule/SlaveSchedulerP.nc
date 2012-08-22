@@ -46,6 +46,7 @@ module SlaveSchedulerP {
 
   uint8_t cyclesSinceSchedule = 0;
   uint16_t framesSinceSynch = 0;
+  bool inactiveSlot = FALSE;
 
   enum {
     S_OFF = 0x00,
@@ -202,6 +203,7 @@ module SlaveSchedulerP {
 
     if (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot())){
       curSlot = getSlot(frameNum);
+      inactiveSlot = FALSE;
       signal SlotStarted.slotStarted(curSlot);
     }
   }
@@ -267,8 +269,13 @@ module SlaveSchedulerP {
   // -> S_LISTEN
 
   event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-    return (state != S_LISTEN) && (schedule != NULL) 
-      && (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+    return inactiveSlot || ((state != S_LISTEN) && (schedule != NULL) 
+      && (frameNum > firstIdleFrame && frameNum < lastIdleFrame));
+  }
+
+  command error_t TDMARoutingSchedule.inactiveSlot(){
+    inactiveSlot = TRUE;
+    return SUCCESS;
   }
 
   event uint8_t TDMAPhySchedule.getScheduleNum(){

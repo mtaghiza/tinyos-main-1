@@ -44,6 +44,7 @@ module MasterSchedulerStaticP {
   uint16_t responseSlot = INVALID_SLOT;
   uint16_t dataSlot = 1;
 
+  bool inactiveSlot = FALSE;
   uint16_t totalFrames;
 
   //pre-compute for faster idle-check
@@ -206,6 +207,7 @@ module MasterSchedulerStaticP {
     if (curSlot == INVALID_SLOT || 
         0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot())) ){
       curSlot = getSlot(frameNum); 
+      inactiveSlot = FALSE;
       signal SlotStarted.slotStarted(curSlot);
     }
     if (cycleStart){
@@ -237,7 +239,12 @@ module MasterSchedulerStaticP {
   }
   
   event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-    return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+    return inactiveSlot || (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+  }
+
+  command error_t TDMARoutingSchedule.inactiveSlot(){
+    inactiveSlot = TRUE;
+    return SUCCESS;
   }
 
   event uint8_t TDMAPhySchedule.getScheduleNum(){

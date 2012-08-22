@@ -233,6 +233,10 @@ module UnreliableBurstSchedulerP{
         sd,
         bw,
         isBetween);
+      //shut 'er down
+      if (! isBetween){
+        call TDMARoutingSchedule.inactiveSlot();
+      }
       return msg;
     }else{
       state = S_ERROR_5;

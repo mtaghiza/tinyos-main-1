@@ -37,6 +37,7 @@ module MasterSchedulerP {
   message_t* response_msg = &response_msg_internal;
 
   cx_schedule_t* schedule;
+  bool inactiveSlot = FALSE;
   
   //state variables
   //These can actually be checked implicitly from the assignments
@@ -271,6 +272,7 @@ module MasterSchedulerP {
     if (curSlot == INVALID_SLOT || 
         0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot())) ){
       curSlot = getSlot(frameNum); 
+      inactiveSlot = FALSE;
       signal SlotStarted.slotStarted(curSlot);
     }
     if (cycleStart){
@@ -372,7 +374,12 @@ module MasterSchedulerP {
   }
   
   event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-    return (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+    return inactiveSlot || (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+  }
+
+  command error_t TDMARoutingSchedule.inactiveSlot(){
+    inactiveSlot = TRUE;
+    return SUCCESS;
   }
 
   event uint8_t TDMAPhySchedule.getScheduleNum(){

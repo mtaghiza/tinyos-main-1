@@ -100,6 +100,9 @@ module RouterSchedulerP {
   command uint16_t TDMARoutingSchedule.framesPerSlot(){
     return call SubTDMARoutingSchedule.framesPerSlot[CX_SCHEDULER_MASTER]();
   }
+  command error_t TDMARoutingSchedule.inactiveSlot(){
+    return call SubTDMARoutingSchedule.inactiveSlot[CX_SCHEDULER_MASTER]();
+  }
 
   command uint16_t TDMARoutingSchedule.maxDepth(){
     return call SubTDMARoutingSchedule.maxDepth[CX_SCHEDULER_MASTER]();
@@ -157,4 +160,5 @@ module RouterSchedulerP {
   default command uint8_t SubTDMARoutingSchedule.maxRetransmit[uint8_t clientId](){ return 0;}
   default command bool SubTDMARoutingSchedule.ownsFrame[uint8_t clientId](uint16_t frameNum){ return FALSE;}
   default command uint16_t SubTDMARoutingSchedule.framesLeftInSlot[uint8_t clientId](uint16_t frameNum){ return 0;}
+  default command error_t SubTDMARoutingSchedule.inactiveSlot[uint8_t clientId](){ return FAIL;}
 }
