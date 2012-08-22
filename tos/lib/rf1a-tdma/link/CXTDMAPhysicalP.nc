@@ -168,6 +168,40 @@ module CXTDMAPhysicalP {
   uint8_t eventOrdering[EVENT_HISTORY];
   uint8_t stateOrdering[EVENT_HISTORY];
   uint8_t asyncStateOrdering[EVENT_HISTORY];
+
+
+  //Radio duty cycle tracking vars
+  enum{
+    R_OFF = 0,
+    R_SLEEP = 1,
+    R_IDLE = 2, 
+    R_FSTXON = 3,
+    R_TX = 4,
+    R_RX = 5
+  };
+
+  uint8_t  curRadioState = R_OFF;
+  uint32_t lastRadioStateChange;
+  //because 64 bit arithmetic is no-go, keep 16-bit rollover counter
+  //  as well as 32-bit time. units are ticks (e.g. 1/(6.5e6)) seconds.
+  uint32_t radioStateTimes[6];
+  uint16_t rollOvers[6];
+  bool captureRising = FALSE;
+
+  //update running total of time spent in each radio state.
+  void radioStateChange(uint8_t state, uint32_t changeTime){
+    if (state != curRadioState){
+      uint32_t lastTotal = radioStateTimes[curRadioState];
+      radioStateTimes[curRadioState] +=
+        (changeTime-lastRadioStateChange);
+      if (lastTotal > radioStateTimes[curRadioState]){
+        rollOvers[curRadioState]++;
+      }
+
+      curRadioState = state;
+      lastRadioStateChange = changeTime;
+    }
+  }
   
   //This should be removed when debugging is done!
   void recordEventX(uint8_t eventId){}
@@ -388,14 +422,20 @@ module CXTDMAPhysicalP {
     if (state != S_INACTIVE 
         && signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.sleep()){
-        setAsyncState(S_INACTIVE);
+        atomic{
+          radioStateChange(R_OFF, call TDMAPhySchedule.getNow());
+          setAsyncState(S_INACTIVE);
+        }
       }else{
         setState(S_ERROR_0);
       }
     }else if (state == S_INACTIVE 
         && !signal TDMAPhySchedule.isInactive(frameNum)){
       if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
-        setAsyncState(S_IDLE);
+        atomic{
+          radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
+          setAsyncState(S_IDLE);
+        }
       }else{
         setState(S_ERROR_0);
       }
@@ -513,6 +553,7 @@ module CXTDMAPhysicalP {
     switch(asyncState){
       case S_RX_PRESTART:
         //switch radio to RX, give it a buffer.
+        radioStateChange(R_RX, call TDMAPhySchedule.getNow());
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
           TOSH_DATA_LENGTH + sizeof(message_header_t),
@@ -524,6 +565,7 @@ module CXTDMAPhysicalP {
         break;
 
       case S_TX_PRESTART:
+        radioStateChange(R_FSTXON, call TDMAPhySchedule.getNow());
         //switch radio to FSTXON.
         error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
         if (error == SUCCESS){
@@ -564,6 +606,7 @@ module CXTDMAPhysicalP {
       if (asyncState == S_TX_READY){
         error_t error = call Rf1aPhysical.completeSend();
         recordEvent(4);
+        radioStateChange(R_TX, call FrameStartAlarm.getAlarm());
         //Transmission failed: stash results for send-done and post
         //task
         if (error != SUCCESS){
@@ -581,6 +624,8 @@ module CXTDMAPhysicalP {
           error = call Rf1aPhysical.resumeIdleMode();
           if (error != SUCCESS){
             setAsyncState(S_ERROR_0);
+          }else{
+            radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
           }
         }else{
           setAsyncState(S_TX_TRANSMITTING);
@@ -615,7 +660,6 @@ module CXTDMAPhysicalP {
     }
   }
   
-
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
     recordEvent(5);
@@ -626,32 +670,39 @@ module CXTDMAPhysicalP {
       fst  -= 0x00010000;
     }
     lastCapture = (fst & 0xffff0000) | time;
-    call SynchCapture.disable();
-    switch(asyncState){
-      case S_RX_WAIT:
-      case S_RX_READY:
-        rxyCount++;
-        txCapture = FALSE;
-        if (call FrameWaitAlarm.isRunning()){
-          if (s_isSynched){
-            //extend the alarm if we got a capture.
-            call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
-          }else{
-            //TODO: if non-synched, FWA is already pushed back close
-            //to boundary. We should push back both FWA and PFSA in
-            //this case.
-            printf_TMP("~pb\r\n");
+    if (captureRising){
+      captureRising = FALSE;
+      call SynchCapture.captureFallingEdge();
+      switch(asyncState){
+        case S_RX_WAIT:
+        case S_RX_READY:
+          rxyCount++;
+          txCapture = FALSE;
+          if (call FrameWaitAlarm.isRunning()){
+            if (s_isSynched){
+              //extend the alarm if we got a capture.
+              call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+            }else{
+              //TODO: if non-synched, FWA is already pushed back close
+              //to boundary. We should push back both FWA and PFSA in
+              //this case.
+              printf_TMP("~pb\r\n");
+            }
           }
-        }
-//        setAsyncState(S_RX_RECEIVING);
-        break;
-      case S_TX_TRANSMITTING:
-        txCapture = TRUE;
-        //no state change
-        break;
-      default:
-        setAsyncState(S_ERROR_4);
-        break;
+  //        setAsyncState(S_RX_RECEIVING);
+          break;
+        case S_TX_TRANSMITTING:
+          txCapture = TRUE;
+          //no state change
+          break;
+        default:
+          setAsyncState(S_ERROR_4);
+          break;
+      } 
+    }else{
+      //Falling edge: return to IDLE
+      radioStateChange(R_IDLE, lastCapture);
+      call SynchCapture.disable();
     }
   }
 
@@ -694,6 +745,7 @@ module CXTDMAPhysicalP {
     if (asyncState == S_RX_WAIT){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       if (error == SUCCESS){
+        radioStateChange(R_IDLE, call FrameWaitAlarm.getAlarm());
         //resumeIdle alone seems to put us into a stuck state. not
         //  sure why. Radio stays in S_IDLE when we call
         //  setReceiveBuffer in pfs.f.
@@ -709,6 +761,8 @@ module CXTDMAPhysicalP {
         }else{
           setAsyncState(S_ERROR_5);
         }
+      }else{
+        setAsyncState(S_ERROR_f);
       }
     } else if (asyncState == S_RX_RECEIVING){
       //TODO:extend the wait time for max-length packet. 
