@@ -137,12 +137,6 @@ module CXTDMAPhysicalP {
   uint32_t s_fwCheckLen;
   bool s_isSynched = FALSE;
 
-  //Duty cycle tracking
-  bool captureRising;
-  uint32_t activeStart;
-  uint32_t activeEnd;
-  uint32_t rxTotal;
-  uint32_t txTotal;
 
   //Split control vars
   bool stopPending = FALSE;
@@ -374,14 +368,6 @@ module CXTDMAPhysicalP {
 
   bool getPacket(uint16_t fn);
 
-  void reportDutyCycle(){
-    //TODO: deal with wrap.
-    printf_RADIO_STATS("T_rx: %lu T_tx: %lu T_tot: %lu", 
-      rxTotal,
-      txTotal, 
-      call FrameStartAlarm.getNow());
-  }
-
   task void pfsTask(){
     atomic{
       //I'm seeing this task run twice in a row sometimes. how can
@@ -395,9 +381,6 @@ module CXTDMAPhysicalP {
     atomic{
       frameNum = (frameNum+1)%(s_totalFrames);
       asyncFrameNum = frameNum;
-    }
-    if (frameNum == s_totalFrames){
-      reportDutyCycle();
     }
     signal FrameStarted.frameStarted(frameNum);
     
@@ -490,7 +473,6 @@ module CXTDMAPhysicalP {
     recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
-    activeStart = call PrepareFrameStartAlarm.getAlarm();
 //    if (call PrepareFrameStartAlarm.getNow() < 
 //        call PrepareFrameStartAlarm.getAlarm()){
 //      //set it again? 
@@ -538,7 +520,6 @@ module CXTDMAPhysicalP {
         if (error == SUCCESS){
           setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
-          captureRising = TRUE;
         }
         break;
 
@@ -552,7 +533,6 @@ module CXTDMAPhysicalP {
           sdFrameNum = asyncFrameNum;
           //get ready to capture your own SFD for re-synch.
           call SynchCapture.captureRisingEdge();
-          captureRising = TRUE;
         }else{
           setAsyncState(S_ERROR_0);
         }
@@ -634,18 +614,7 @@ module CXTDMAPhysicalP {
       }
     }
   }
-
-  void recordActivePeriod(){
-    switch(asyncState){
-      case S_RX_WAIT:
-      case S_RX_READY:
-        rxTotal += activeEnd - activeStart;
-        break;
-      case S_TX_TRANSMITTING:
-        txTotal += activeEnd - activeStart;
-        break;
-    }
-  }
+  
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
@@ -657,39 +626,32 @@ module CXTDMAPhysicalP {
       fst  -= 0x00010000;
     }
     lastCapture = (fst & 0xffff0000) | time;
-    if (captureRising){
-      call SynchCapture.captureFallingEdge();
-      captureRising = FALSE;
-      switch(asyncState){
-        case S_RX_WAIT:
-        case S_RX_READY:
-          rxyCount++;
-          txCapture = FALSE;
-          if (call FrameWaitAlarm.isRunning()){
-            if (s_isSynched){
-              //extend the alarm if we got a capture.
-              call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
-            }else{
-              //TODO: if non-synched, FWA is already pushed back close
-              //to boundary. We should push back both FWA and PFSA in
-              //this case.
-              printf_TMP("~pb\r\n");
-            }
+    call SynchCapture.disable();
+    switch(asyncState){
+      case S_RX_WAIT:
+      case S_RX_READY:
+        rxyCount++;
+        txCapture = FALSE;
+        if (call FrameWaitAlarm.isRunning()){
+          if (s_isSynched){
+            //extend the alarm if we got a capture.
+            call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+          }else{
+            //TODO: if non-synched, FWA is already pushed back close
+            //to boundary. We should push back both FWA and PFSA in
+            //this case.
+            printf_TMP("~pb\r\n");
           }
-  //        setAsyncState(S_RX_RECEIVING);
-          break;
-        case S_TX_TRANSMITTING:
-          txCapture = TRUE;
-          //no state change
-          break;
-        default:
-          setAsyncState(S_ERROR_4);
-          break;
-      }
-    }else{
-      call SynchCapture.disable();
-      activeEnd = lastCapture;
-      recordActivePeriod();
+        }
+//        setAsyncState(S_RX_RECEIVING);
+        break;
+      case S_TX_TRANSMITTING:
+        txCapture = TRUE;
+        //no state change
+        break;
+      default:
+        setAsyncState(S_ERROR_4);
+        break;
     }
   }
 
@@ -731,8 +693,6 @@ module CXTDMAPhysicalP {
     fwHandled = call FrameWaitAlarm.getNow();
     if (asyncState == S_RX_WAIT){
       error_t error = call Rf1aPhysical.resumeIdleMode();
-      activeEnd = call FrameWaitAlarm.getAlarm();
-      recordActivePeriod();
       if (error == SUCCESS){
         //resumeIdle alone seems to put us into a stuck state. not
         //  sure why. Radio stays in S_IDLE when we call
