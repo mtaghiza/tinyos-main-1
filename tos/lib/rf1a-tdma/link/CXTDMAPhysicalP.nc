@@ -180,17 +180,19 @@ module CXTDMAPhysicalP {
     R_RX = 5
   };
 
+  bool captureRising = FALSE;
+
+  #if DEBUG_RADIO_STATS == 1
   uint8_t  curRadioState = R_OFF;
   uint32_t lastRadioStateChange;
   //because 64 bit arithmetic is no-go, keep 16-bit rollover counter
   //  as well as 32-bit time. units are ticks (e.g. 1/(6.5e6)) seconds.
   uint32_t radioStateTimes[6];
   uint16_t rollOvers[6];
-  bool captureRising = FALSE;
-
+  
   //update running total of time spent in each radio state.
-  void radioStateChange(uint8_t state, uint32_t changeTime){
-    if (state != curRadioState){
+  void radioStateChange(uint8_t newState, uint32_t changeTime){
+    if (newState != curRadioState){
       uint32_t lastTotal = radioStateTimes[curRadioState];
       radioStateTimes[curRadioState] +=
         (changeTime-lastRadioStateChange);
@@ -200,6 +202,21 @@ module CXTDMAPhysicalP {
 
       curRadioState = state;
       lastRadioStateChange = changeTime;
+    }
+  }
+  #else
+  void radioStateChange(uint8_t newState, uint32_t changeTime){ }
+  #endif
+
+  void logDutyCycle(){
+    if (DEBUG_RADIO_STATS){
+      printf_RADIO_STATS("RS o: %u %lu s: %u %lu i: %u %lu f: %u %lu t: %u %lu r: %u %lu\r\n",
+        rollOvers[R_OFF], radioStateTimes[R_OFF],
+        rollOvers[R_SLEEP], radioStateTimes[R_SLEEP],
+        rollOvers[R_IDLE], radioStateTimes[R_IDLE],
+        rollOvers[R_FSTXON], radioStateTimes[R_FSTXON],
+        rollOvers[R_TX], radioStateTimes[R_TX],
+        rollOvers[R_RX], radioStateTimes[R_RX]);
     }
   }
   
@@ -218,6 +235,7 @@ module CXTDMAPhysicalP {
       }    
     }
   }
+
 
   task void printEvents(){
     //OK to do atomic: we only do this when we hit an error
