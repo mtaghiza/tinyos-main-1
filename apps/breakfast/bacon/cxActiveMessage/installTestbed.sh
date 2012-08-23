@@ -36,7 +36,6 @@ fps=40
 md=5
 mr=1
 staticScheduler=1
-firstIdleSlot=67
 cxBufferWidth=0
 
 #radio logging
@@ -107,6 +106,10 @@ do
      leafDest=$2
      shift 2
      ;;
+   fps)
+     fps=$2
+     shift 2
+     ;;
    *)
      echo "unrecognized: $1"
      shift 1
@@ -120,9 +123,11 @@ if [ $staticScheduler -eq 1 ]
 then
   maxNodeId=$(cat $root $nonrootRx $nonrootTx | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
   numSlots=$(($maxNodeId + 10))
+  firstIdleSlot=$(($maxNodeId + 5))
 else
   numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
   numSlots=$(($numNodes + 5))
+  firstIdleSlot=0
 fi
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth"
