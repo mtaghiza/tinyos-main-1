@@ -239,7 +239,8 @@ module MasterSchedulerStaticP {
   }
   
   event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-    return inactiveSlot || (frameNum > firstIdleFrame && frameNum < lastIdleFrame);
+    return CX_DUTY_CYCLE_ENABLED 
+      && (inactiveSlot || (frameNum > firstIdleFrame && frameNum < lastIdleFrame));
   }
 
   command error_t TDMARoutingSchedule.inactiveSlot(){

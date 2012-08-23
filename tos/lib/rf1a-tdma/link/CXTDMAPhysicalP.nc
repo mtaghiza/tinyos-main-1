@@ -119,7 +119,8 @@ module CXTDMAPhysicalP {
 
   //re-Synch variables
   bool txCapture;
-  uint32_t lastCapture;
+  uint32_t lastRECapture;
+  uint32_t lastFECapture;
   uint16_t captureFrameNum;
 
   //externally-facing state vars
@@ -220,11 +221,14 @@ module CXTDMAPhysicalP {
         logBatch, labels[dc_i], ro[dc_i], rst[dc_i]);
       dc_i++;
       post logNextStat();
+    }else{
+      logging = FALSE;
     }
   }
 
   task void logDutyCycle(){
     if (!logging){
+      logging = TRUE;
       logBatch ++;
       dc_i = 0;
       atomic{
@@ -291,7 +295,8 @@ module CXTDMAPhysicalP {
   task void printTimers(){
     atomic{
       printf("# @ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
-      printf("# last capture: %lu last rxd: %lu\r\n", lastCapture, rxd);
+      printf("# last RE capture: %lu last FE capture: %lu last rxd: %lu\r\n", 
+        lastRECapture, lastFECapture, rxd);
       printf("# P %x %lu last %lu\r\n", 
         (call PrepareFrameStartAlarm.isRunning())?1:0, 
         call PrepareFrameStartAlarm.getAlarm(),
@@ -652,6 +657,7 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
+    FS_CYCLE_TOGGLE_PIN;
 //    if (fsHandled < 
 //        call FrameStartAlarm.getAlarm()){
 //      printf("!FS early: %lu < %lu\r\n", 
@@ -725,6 +731,7 @@ module CXTDMAPhysicalP {
   
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
+    uint32_t lastCapture;
     recordEvent(5);
 
     //overflow detected: assumes that 16-bit capture time has
@@ -734,6 +741,7 @@ module CXTDMAPhysicalP {
     }
     lastCapture = (fst & 0xffff0000) | time;
     if (captureRising){
+      lastRECapture = lastCapture;
       captureRising = FALSE;
       call SynchCapture.captureFallingEdge();
       switch(asyncState){
@@ -744,7 +752,7 @@ module CXTDMAPhysicalP {
           if (call FrameWaitAlarm.isRunning()){
             if (s_isSynched){
               //extend the alarm if we got a capture.
-              call FrameWaitAlarm.startAt(lastCapture, s_fwCheckLen);
+              call FrameWaitAlarm.startAt(lastRECapture, s_fwCheckLen);
             }else{
               //TODO: if non-synched, FWA is already pushed back close
               //to boundary. We should push back both FWA and PFSA in
@@ -763,9 +771,12 @@ module CXTDMAPhysicalP {
           break;
       } 
     }else{
+      lastFECapture = lastCapture;
       //Falling edge: return to IDLE
-      radioStateChange(R_IDLE, lastCapture);
-      call SynchCapture.disable();
+      radioStateChange(R_IDLE, lastFECapture);
+
+      captureRising = TRUE;
+      call SynchCapture.captureRisingEdge();
     }
   }
 
@@ -773,7 +784,7 @@ module CXTDMAPhysicalP {
     atomic{
       uint32_t captureFrameStart;
       call PrepareFrameStartAlarm.stop();
-      captureFrameStart = lastCapture - fsDelays[s_sri];
+      captureFrameStart = lastRECapture - fsDelays[s_sri];
       if (!txCapture){
         captureFrameStart -= sfdDelays[s_sri];
       }
@@ -876,7 +887,7 @@ module CXTDMAPhysicalP {
           rdCount = count;
           rdResult = result;
           rdS_sr = s_sr;
-          rdLastRECapture = lastCapture;
+          rdLastRECapture = lastRECapture;
           rdPending = TRUE;
           setAsyncState(S_RX_CLEANUP);
           post completeReceiveDone();
@@ -998,7 +1009,7 @@ module CXTDMAPhysicalP {
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
       sdResultLocal = sdResult;
-      sdRECaptureLocal = lastCapture;
+      sdRECaptureLocal = lastRECapture;
     }
     if ( call CXPacket.source(sdMsgLocal) == TOS_NODE_ID 
         && call CXPacket.count(sdMsgLocal) == 1){

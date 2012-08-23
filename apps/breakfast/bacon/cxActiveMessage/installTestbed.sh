@@ -37,6 +37,7 @@ md=5
 mr=1
 staticScheduler=1
 cxBufferWidth=0
+cxDutyCycleEnabled=1
 
 #radio logging
 rl=0
@@ -51,7 +52,7 @@ sp=1
 #pool size
 ps=3
 
-debugLinkRXTX=1
+debugLinkRXTX=0
 debugFCleartime=0
 debugSFCleartime=0
 debugTestbed=1
@@ -110,6 +111,10 @@ do
      fps=$2
      shift 2
      ;;
+   cxDutyCycleEnabled)
+     cxDutyCycleEnabled=$2
+     shift 2
+     ;;
    *)
      echo "unrecognized: $1"
      shift 1
@@ -130,7 +135,7 @@ else
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth CX_DUTY_CYCLE_ENABLED=$cxDutyCycleEnabled"
 set +x
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 

@@ -192,8 +192,9 @@ module SlaveSchedulerStaticP {
   // -> S_LISTEN
 
   event bool TDMAPhySchedule.isInactive(uint16_t frameNum){
-      return inactiveSlot || ((state != S_LISTEN) && (schedule != NULL) 
-        && (frameNum > firstIdleFrame && frameNum < lastIdleFrame));
+      return CX_DUTY_CYCLE_ENABLED 
+        && (inactiveSlot || ((state != S_LISTEN) && (schedule != NULL) 
+        && (frameNum > firstIdleFrame && frameNum < lastIdleFrame)));
   }
 
   command error_t TDMARoutingSchedule.inactiveSlot(){
