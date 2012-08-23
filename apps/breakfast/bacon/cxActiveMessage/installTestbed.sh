@@ -41,7 +41,7 @@ cxDutyCycleEnabled=1
 
 #radio logging
 rl=0
-rs=0
+rs=1
 
 #schedule config
 #init symbol rate
@@ -52,7 +52,7 @@ sp=1
 #pool size
 ps=3
 
-debugLinkRXTX=0
+debugLinkRXTX=1
 debugFCleartime=0
 debugSFCleartime=0
 debugTestbed=1
