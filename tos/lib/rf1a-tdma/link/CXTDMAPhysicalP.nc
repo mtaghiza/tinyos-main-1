@@ -132,6 +132,7 @@ module CXTDMAPhysicalP {
 
   //other schedule settings
   uint32_t s_totalFrames;
+  uint32_t s_totalFrames_last;
   uint8_t s_sri = 0xff;
   uint32_t s_frameLen;
   uint32_t s_fwCheckLen;
@@ -207,21 +208,34 @@ module CXTDMAPhysicalP {
     }
   }
 
+  uint32_t rst[R_NUMSTATES];
+  uint16_t ro[R_NUMSTATES];
+  uint8_t dc_i;
+  uint16_t logBatch = 0;
+  bool logging = FALSE;
+  
+  task void logNextStat(){
+    if (dc_i < R_NUMSTATES){
+      printf_RADIO_STATS("RS %u %c %u %lu\r\n", 
+        logBatch, labels[dc_i], ro[dc_i], rst[dc_i]);
+      dc_i++;
+      post logNextStat();
+    }
+  }
+
   task void logDutyCycle(){
-    uint32_t rst[R_NUMSTATES];
-    uint16_t ro[R_NUMSTATES];
-    int k;
-    atomic{
-      for (k=0; k < R_NUMSTATES; k++){
-        rst[k] = radioStateTimes[k];
-        ro[k] = rollOvers[k];
+    if (!logging){
+      logBatch ++;
+      dc_i = 0;
+      atomic{
+        int k;
+        for (k=0; k < R_NUMSTATES; k++){
+          rst[k] = radioStateTimes[k];
+          ro[k] = rollOvers[k];
+        }
       }
+      post logNextStat();
     }
-    printf_RADIO_STATS("RS");
-    for (k=0; k < R_NUMSTATES; k++){
-      printf_RADIO_STATS(" %c %u %lu", labels[k], ro[k], rst[k]);
-    }
-    printf_RADIO_STATS("\r\n");
   }
 
   #else
@@ -767,10 +781,12 @@ module CXTDMAPhysicalP {
       // - mark ourselves synched
       // - restore timeouts
       // - restore frame number
+      // - restore s_totalFrames
       if (!s_isSynched){
         s_isSynched = TRUE;
         s_frameLen = frameLens[s_sri];
         s_fwCheckLen = fwCheckLens[s_sri];
+        s_totalFrames = s_totalFrames_last;
         frameNum = captureFrameNum;
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
@@ -909,11 +925,12 @@ module CXTDMAPhysicalP {
           //filter out bad frame numbers here: only if we're
           //synched!
           if (s_isSynched && (expectedFn != frameNum)){
-            printf_TMP("~R %u %u: %u + %u + 1 <> %u\r\n", 
+            printf_TMP("~R %u %u: %u + %u - 1 = %u <> %u\r\n", 
               call CXPacket.source(msg),
               call CXPacket.sn(msg),
               call CXPacket.getOriginalFrameNum(msg), 
               call CXPacket.count(msg),
+              expectedFn,
               frameNum);  
           }else{ 
             call CXPacketMetadata.setSymbolRate(msg,
@@ -1040,6 +1057,11 @@ module CXTDMAPhysicalP {
         uint32_t t0;
         uint32_t dt;
         s_totalFrames = totalFrames;
+        //need to hang onto this for the case where we can do a fast
+        //resynch.
+        if (isSynched){
+          s_totalFrames_last = s_totalFrames;
+        }
         s_sr = symbolRate;
         s_sri = srIndex(s_sr);
         s_frameLen = frameLens[s_sri];

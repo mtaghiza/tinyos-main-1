@@ -126,6 +126,7 @@ module SlaveSchedulerStaticP {
   }
 
   event void FrameStarted.frameStarted(uint16_t frameNum){
+    bool newSlot = (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot()));
     curFrame = frameNum;
     framesSinceSynch++;
     
@@ -138,16 +139,19 @@ module SlaveSchedulerStaticP {
       }
     }
 
-    //no synch since the cycle started: so, we shouldn't be initiating
-    //  any communications.
-    if (isSynched && (framesSinceSynch > frameNum)){
-//      printf_TMP("@%u fss %u > fn\r\n", frameNum, framesSinceSynch);
-      isSynched = FALSE;
-    }
 
-    if (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot())){
+    if (newSlot){
       curSlot = getSlot(frameNum);
       inactiveSlot = FALSE;
+    }
+
+    //TODO: this assumes that the schedule is always in slot 0
+    //If we haven't gotten schedule yet this cycle, stay unsynched.
+    if ((curSlot > 0) 
+        && (isSynched && (framesSinceSynch > frameNum))){
+      isSynched = FALSE;
+    }
+    if (newSlot){
       signal SlotStarted.slotStarted(curSlot);
     }
   }
