@@ -30,7 +30,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     freq0:   0x3B,   // FREQ0     Frequency control word, low byte.
     mdmcfg4: 0x2C,   // MDMCFG4   Modem configuration.
     mdmcfg3: 0x3B,   // MDMCFG3   Modem configuration.
-    mdmcfg2: 0x07,   // MDMCFG2   Modem configuration.
+    mdmcfg2: 0x03,   // MDMCFG2   Modem configuration.
     mdmcfg1: 0x22,   // MDMCFG1   Modem configuration.
     mdmcfg0: 0xF8,   // MDMCFG0   Modem configuration.
     deviatn: 0x62,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).

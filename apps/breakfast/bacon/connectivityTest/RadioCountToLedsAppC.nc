@@ -99,6 +99,10 @@ implementation {
   App.Rf1aPacket -> Rf1aActiveMessageC;
   App.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
   App.SendTimer -> SendTimer;
+
+  components CC1190C;
+  App.CC1190 -> CC1190C;
+  App.CC1190Control -> CC1190C;
 //  App.Rf1aConfigure -> Rf1aSettings;
 }
 

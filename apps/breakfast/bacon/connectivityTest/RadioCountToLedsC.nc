@@ -74,6 +74,8 @@ module RadioCountToLedsC @safe() {
   uses interface Rf1aPhysical;
   uses interface Rf1aPacket;
   uses interface HplMsp430Rf1aIf;
+  uses interface StdControl as CC1190Control;
+  uses interface CC1190;
 //  uses interface Rf1aConfigure;
 }
 implementation {
@@ -105,6 +107,15 @@ implementation {
 
   event void AMControl.startDone(error_t err) {
     rf1a_config_t config;
+    //Assume the amp is present, power + HGM
+    call CC1190Control.start();
+    //Set amp to TX mode if autosend is on.
+    if (AUTOSEND == 1){
+      call CC1190.TXMode(TRUE);
+    }else{
+      call CC1190.RXMode(TRUE);
+    }
+
     call Rf1aPhysical.setChannel(TEST_CHANNEL);
     call HplMsp430Rf1aIf.writeSinglePATable(TEST_POWER);
     call Rf1aPhysical.readConfiguration(&config);
@@ -188,8 +199,26 @@ implementation {
       locked = FALSE;
     }
     if (AUTOSEND){
-      call SendTimer.startOneShot(SEND_INTERVAL);
+      call SendTimer.startOneShot(TEST_IPI);
     }
+      if (counter & 0x1) {
+	call Leds.led0On();
+      }
+      else {
+	call Leds.led0Off();
+      }
+      if (counter & 0x2) {
+	call Leds.led1On();
+      }
+      else {
+	call Leds.led1Off();
+      }
+      if (counter & 0x4) {
+	call Leds.led2On();
+      }
+      else {
+	call Leds.led2Off();
+      }
 //    printf("+");
 //    printf("Send Done: %x\n\r", error);
 //    printf("\n\r\n\r");

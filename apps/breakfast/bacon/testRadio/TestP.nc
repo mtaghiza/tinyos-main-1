@@ -18,6 +18,7 @@ module TestP{
   uses interface HplMsp430Rf1aIf as Rf1aIf;
   uses interface Rf1aPhysicalMetadata;
   uses interface Rf1aPhysical;
+  uses interface Rf1aDumpConfig;
 
   uses interface CC1190;
   uses interface StdControl as AmpControl;
@@ -40,6 +41,7 @@ module TestP{
   const char* test_desc= TEST_DESC;
 
   void printSettings(test_settings_t* s){
+    rf1a_config_t config;
     printf(" (testNum, %u)", s->testNum);
     printf(" (seqNum, %lu)", s->seqNum);
     printf(" (isSender, %x)", s->isSender);
@@ -49,7 +51,9 @@ module TestP{
     printf(" (report, %x)", s->report);
     printf(" (ipi, %u)", s->ipi);
     printf(" (hasFe, %x)", s->hasFe);
-    printf("\n\r");
+    printf("\r\n");
+    call Rf1aPhysical.readConfiguration(&config);
+    call Rf1aDumpConfig.display(&config);
   }
 
   void printMinimal(test_settings_t* s){
@@ -64,8 +68,8 @@ module TestP{
 
   event void Boot.booted(){
     call SerialControl.start();
-    printf("FLUSH\n");
-    printf("SETUP %d %d %x %x %x %d %d %s\n", 
+    printf("FLUSH\r\n");
+    printf("SETUP %d %d %x %x %x %d %d %s\r\n", 
       TEST_NUM, 
       TOS_NODE_ID, 
       IS_SENDER, 
@@ -75,7 +79,7 @@ module TestP{
       POWER_LEVELS[POWER_INDEX],
       TEST_DESC);
     #ifndef QUIET
-    printf("Radio Test app\n\r t: toggle RX/TX mode\n\r p: increment TX power\n\r h: toggle cc1190 HGM\n\r c: increment channel\n\r i: toggle IPI (cont. v. report-able)\n\r r: toggle serial reporting\n\r q: reset\n\r");
+    printf("Radio Test app\r\n t: toggle RX/TX mode\r\n p: increment TX power\r\n h: toggle cc1190 HGM\r\n c: increment channel\r\n i: toggle IPI (cont. v. report-able)\r\n r: toggle serial reporting\r\n q: reset\r\n");
     #endif
     settings.seqNum = 0;
     settings.isSender = IS_SENDER;
@@ -94,7 +98,6 @@ module TestP{
 
     //memset(prrBuf, 0, PRR_BUF_LEN);
 
-    //post printSettingsTask();
     call SplitControl.start();
     call WDTResetTimer.startPeriodic(500);
     //set WDT to reset at 1 second
@@ -120,7 +123,7 @@ module TestP{
     needsRestart = FALSE;
     radioBusy = FALSE;
     #ifndef QUIET
-    printf("Radio on\n\r");
+    printf("Radio on\r\n");
     #endif
     call AmpControl.start();
     call Rf1aPhysical.setChannel(settings.channel);
@@ -139,6 +142,7 @@ module TestP{
       call CC1190.RXMode(settings.hgm);
       call IndicatorTimer.startPeriodic(256);
     }
+    post printSettingsTask();
   }
 
   uint8_t indicatorSlot = 0;
@@ -221,18 +225,18 @@ module TestP{
           call AMSend.send(AM_BROADCAST_ADDR, msg,
             sizeof(test_settings_t));
         }else{
-          printf("TOO FAST-RESTART RADIO\n");
+          printf("TOO FAST-RESTART RADIO\r\n");
           call Timer.stop();
           post restartRadio();
         }
       }else{
         lastSN++;
-//        printf("lost %lu (%u?)\n\r", call Timer.getNow(), lastSN);
+//        printf("lost %lu (%u?)\r\n", call Timer.getNow(), lastSN);
 //        call Timer.startOneShot(lastIpi + IPI_DELAY);
 //  
         if (settings.report){
           #ifdef REPORT_LOST
-          printf("LOST\n\r");
+          printf("LOST\r\n");
           #endif
         }
         if (rxCounter > 0){
@@ -252,7 +256,7 @@ module TestP{
       #ifdef QUIET
       printf("%d ", TOS_NODE_ID);
       printMinimal(pkt);
-      printf("\n");
+      printf("\r\n");
       #else
       printSettings(pkt);
       #endif
@@ -297,7 +301,7 @@ module TestP{
 
     //TODO: periodic timer component seems to be messed up: in some
     //      cases it starts immediately and fires every few ms.
-    //printf("at %lu spa %lu %u\n\r", rxTime, lostAt, pkt->ipi);
+    //printf("at %lu spa %lu %u\r\n", rxTime, lostAt, pkt->ipi);
     call Timer.startPeriodicAt(lostAt, (pkt->ipi));
 
     call Rf1aPhysicalMetadata.store(&metadata);
@@ -311,7 +315,7 @@ module TestP{
       printf("%x ", HAS_FE);
       printf("%d ", call AMPacket.source(msg_));
       printMinimal(pkt);
-      printf(" %x\n", (call Rf1aPhysicalMetadata.crcPassed(&metadata))?1:0);
+      printf(" %x\r\n", (call Rf1aPhysicalMetadata.crcPassed(&metadata))?1:0);
       #else
       printf(" (rssi, %d)", call Rf1aPhysicalMetadata.rssi(&metadata));
       printf(" (lqi, %d)", call Rf1aPhysicalMetadata.lqi(&metadata));
@@ -373,7 +377,7 @@ module TestP{
         WDTCTL = 0;
         break;
       case '\r':
-        printf("\n\r");
+        printf("\r\n");
         break;
       default:
         printf("%c", byte);

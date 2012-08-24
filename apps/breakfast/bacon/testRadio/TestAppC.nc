@@ -31,6 +31,9 @@ configuration TestAppC{
   TestP.Rf1aIf -> Rf1aActiveMessageC;
   TestP.Rf1aPhysical -> Rf1aActiveMessageC;
 
+  components Rf1aDumpConfigC;
+  TestP.Rf1aDumpConfig -> Rf1aDumpConfigC;
+
   components CC1190C;
   TestP.AmpControl -> CC1190C;
   TestP.CC1190 -> CC1190C;
