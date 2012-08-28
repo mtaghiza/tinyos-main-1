@@ -1,16 +1,33 @@
-x <- read.csv('expansion/depth_v_time_35.csv')
+#x <- read.csv('expansion/depth_v_time_35.csv')
 
-plotFile=F
-for (e in commandArgs()){
-  if ( e == '--pdf' ){
-    plotFile=T
-    pdf('fig/depth_v_time_35.pdf', width=9, height=6, title="Depth v.  Time (single node)")
+fn <- ''
+plotFile <- F
+argc <- length(commandArgs())
+argStart <- 1 + which (commandArgs() == '--args')
+
+for (i in seq(argStart, argc-1)){
+  opt <- commandArgs()[i]
+  val <- commandArgs()[i+1]
+  if ( opt == '-f'){
+    fn <- val
   }
-  if ( e == '--png' ){
+  if ( opt == '--pdf' ){
     plotFile=T
-    png('fig/depth_v_time_35.png', width=9, height=6, units="in", res=200)
+    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+  }
+  if ( opt == '--png' ){
+    plotFile=T
+    png(val, width=9, height=6, units="in", res=200)
   }
 }
+
+selectQ <- "SELECT ts, depth FROM rx_all WHERE src=35 AND dest = 0 ORDER by ts;"
+library(RSQLite)
+con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+rs <- dbSendQuery(con, selectQ);
+
+x<- fetch(rs, n=-1)
+
 
 plot(x=x$ts-min(x$ts), y=x$depth, type='o', ylab='Depth',
   xlab='Time(s)')

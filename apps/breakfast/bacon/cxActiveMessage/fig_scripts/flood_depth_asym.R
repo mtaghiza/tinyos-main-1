@@ -1,18 +1,43 @@
-x<-read.csv('expansion/flood_depth_asym.csv')
-o <- order(x$depth_rl)
+selectQ <- "SELECT
+  rl.src as root,
+  rl.dest as leaf,
+  rl.avgDepth as depth_rl,
+  lr.avgDepth as depth_lr
+FROM agg_depth rl
+JOIN agg_depth lr 
+ON lr.src = rl.dest and lr.dest = rl.src
+WHERE rl.src = 0";
 
-plotFile=F
-for (e in commandArgs()){
-  if ( e == '--pdf' ){
-    plotFile=T
-    pdf('fig/flood_depth_asym.pdf', width=6, height=6, title="Average depth asymmetry")
+fn <- ''
+plotFile <- F
+argc <- length(commandArgs())
+argStart <- 1 + which (commandArgs() == '--args')
+
+for (i in seq(argStart, argc-1)){
+  opt <- commandArgs()[i]
+  val <- commandArgs()[i+1]
+  if ( opt == '-f'){
+    fn <- val
   }
-  if ( e == '--png' ){
+  if ( opt == '--pdf' ){
     plotFile=T
-    png('fig/flood_depth_asym.png', width=6, height=6, units="in", res=200)
+    pdf(val, width=9, height=9, title="Depth Asymmetry Boxplots")
+  }
+  if ( opt == '--png' ){
+    plotFile=T
+    png(val, width=9, height=9, units="in", res=200)
   }
 }
 
+library(RSQLite)
+con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+rs <- dbSendQuery(con, selectQ);
+
+x<- fetch(rs, n=-1)
+
+
+
+o <- order(x$depth_rl)
 xl <- c(1, 5)
 yl <- c(1, 5)
 farther_rl <- x[x$depth_rl > x$depth_lr, ]

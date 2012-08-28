@@ -1,18 +1,33 @@
-x <- read.csv('expansion/asym_boxplot.csv')
-yl <- c(1,9)
 
-plotFile=F
-for (e in commandArgs()){
-  if ( e == '--pdf' ){
-    plotFile=T
-    pdf('fig/asym_boxplot.pdf', width=9, height=6, title="Depth Asymmetry Boxplots")
+selectQ <- "SELECT * FROM depth_asymmetry"
+fn <- ''
+plotFile <- F
+argc <- length(commandArgs())
+argStart <- 1 + which (commandArgs() == '--args')
+
+for (i in seq(argStart, argc-1)){
+  opt <- commandArgs()[i]
+  val <- commandArgs()[i+1]
+  if ( opt == '-f'){
+    fn <- val
   }
-  if ( e == '--png' ){
+  if ( opt == '--pdf' ){
     plotFile=T
-    png('fig/asym_boxplot.png', width=9, height=6, units="in", res=200)
+    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+  }
+  if ( opt == '--png' ){
+    plotFile=T
+    png(val, width=9, height=6, units="in", res=200)
   }
 }
 
+library(RSQLite)
+con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+x <- dbGetQuery(con, selectQ);
+
+#x<- fetch(rs, n=-1)
+
+yl <- c(1,9)
 boxplot(depth~root*leaf, data=x[x$lr==0,], border='red', ylim=yl,
  ylab='Distance', xlab='', yaxt='n', pars=list(staplewex=1)
 # ,xaxt='n'

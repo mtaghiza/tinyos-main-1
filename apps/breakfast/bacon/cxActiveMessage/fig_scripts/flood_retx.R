@@ -1,18 +1,44 @@
-x<-read.csv('expansion/flood_retx.csv')
-yl <- c(0,1.0)
+library(RSQLite)
+selectQ <- "SELECT 
+  a.src,
+  a.dest,
+  ? as retx,
+  a.prr as prr_rl,
+  b.prr as prr_lr
+FROM prr_clean a
+JOIN prr_clean b
+  ON a.src=b.dest AND a.dest=b.src
+WHERE a.dest=0 AND a.pr=0 AND b.pr = 0"
 
-plotFile=F
-for (e in commandArgs()){
-  if ( e == '--pdf' ){
-    plotFile=T
-    pdf('fig/flood_retx.pdf', width=9, height=6, title="Flood W. ReTX")
+fn <- ''
+plotFile <- F
+argc <- length(commandArgs())
+argStart <- 1 + which (commandArgs() == '--args')
+x <- c()
+
+for (i in seq(argStart, argc-1)){
+  opt <- commandArgs()[i]
+  val <- commandArgs()[i+1]
+  if ( opt == '-f'){
+    fn <- val
+    retx <- as.integer(commandArgs()[i+2])
+    con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+    x <- rbind(x, dbGetQuery(con, selectQ, retx))
   }
-  if ( e == '--png' ){
+  if ( opt == '--pdf' ){
     plotFile=T
-    png('fig/flood_retx.png', width=9, height=6, units="in", res=200)
+    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+  }
+  if ( opt == '--png' ){
+    plotFile=T
+    png(val, width=9, height=6, units="in", res=200)
   }
 }
+
+
+
 #CDF plot
+yl <- c(0,1.0)
 xl <- c(0.8, 1.0)
 firstPlot <- T
 rCols <- rainbow(length(unique(x$retx)))

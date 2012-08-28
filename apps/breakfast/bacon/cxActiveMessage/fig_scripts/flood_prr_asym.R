@@ -1,18 +1,45 @@
-x<-read.csv('expansion/flood_prr_asym.csv')
-o <- order(x$prr_lr)
-n <- length(o)
+selectQ <- "SELECT 
+  a.src,
+  a.dest,
+  a.prr as prr_rl,
+  b.prr as prr_lr
+FROM prr_clean a
+JOIN prr_clean b
+  ON a.src=b.dest AND b.src=a.dest
+  AND a.tp=b.tp
+  AND a.np=b.np
+  AND a.pr=b.pr
+WHERE a.src=0"
 
-plotFile=F
-for (e in commandArgs()){
-  if ( e == '--pdf' ){
-    plotFile=T
-    pdf('fig/flood_prr_asym.pdf', width=9, height=6, title="Flood PRR Asymmetry")
+fn <- ''
+plotFile <- F
+argc <- length(commandArgs())
+argStart <- 1 + which (commandArgs() == '--args')
+
+for (i in seq(argStart, argc-1)){
+  opt <- commandArgs()[i]
+  val <- commandArgs()[i+1]
+  if ( opt == '-f'){
+    fn <- val
   }
-  if ( e == '--png' ){
+  if ( opt == '--pdf' ){
     plotFile=T
-    png('fig/flood_prr_asym.png', width=9, height=6, units="in", res=200)
+    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+  }
+  if ( opt == '--png' ){
+    plotFile=T
+    png(val, width=9, height=6, units="in", res=200)
   }
 }
+
+library(RSQLite)
+con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+rs <- dbSendQuery(con, selectQ);
+
+x<- fetch(rs, n=-1)
+
+o <- order(x$prr_lr)
+n <- length(o)
 
 #order+line by lr, points for rl
 yl<- c(0.4, 1.0)
