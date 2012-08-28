@@ -1,4 +1,4 @@
-x <- read.csv('data/depth_v_time_35.csv')
+x <- read.csv('expansion/depth_v_time_35.csv')
 
 plotFile=F
 for (e in commandArgs()){

@@ -56,6 +56,9 @@ module NullC @safe()
 implementation
 {
   event void Boot.booted() {
+    P2DIR |= BIT1;
+    P2SEL &= ~BIT1;
+    P2OUT &= ~BIT1;
     // Do nothing.
   }
 }

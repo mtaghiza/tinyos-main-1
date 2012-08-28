@@ -55,7 +55,7 @@
 
 configuration RadioCountToLedsAppC {}
 implementation {
-  components MainC, RadioCountToLedsC as App, LedsC;
+  components MainC, RadioCountToLedsC as App, LedsC, NoLedsC;
   components new AMSenderC(AM_RADIO_COUNT_MSG);// as AMSenderC;
   components new AMReceiverC(AM_RADIO_COUNT_MSG);
   components new TimerMilliC() as SendTimer;
@@ -82,7 +82,7 @@ implementation {
   App.Receive -> AMReceiverC;
   App.AMSend -> AMSenderC;
   App.AMControl -> ActiveMessageC;
-  App.Leds -> LedsC;
+  App.Leds -> NoLedsC;
   App.Packet -> AMSenderC;
   App.AMPacket -> AMSenderC;
   App.Random -> RandomC;

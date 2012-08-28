@@ -93,7 +93,7 @@ class TestbedMap(object):
         if not outFile:
             plt.show()
         else:
-            #TODO: file output
+            plt.savefig(outFile, format='png')
             pass
 
     def postDraw(self):
@@ -262,7 +262,11 @@ if __name__ == '__main__':
         src = int(sys.argv[2])
         fn = sys.argv[3]
         tbm = SinglePrr(src, fn)
-    tbm.draw(node_size=400)
+    outFile=None
+    for (o, v) in zip(sys.argv, sys.argv[1:]):
+        if o == '--outFile':
+            outFile = v
+    tbm.draw(node_size=400, outFile=outFile)
 
 # - common internal state: Graph, edges, labels, colors
 # - common behavior: construct, draw (to file or screen)

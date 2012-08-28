@@ -116,6 +116,8 @@ implementation {
       call CC1190.RXMode(TRUE);
     }
 
+    printf("P3DIR: %x P3SEL: %x P3OUT: %x\r\n", P3DIR, P3SEL, P3OUT);
+    printf("PJDIR: %x PJOUT: %x\r\n", PJDIR, PJOUT);
     call Rf1aPhysical.setChannel(TEST_CHANNEL);
     call HplMsp430Rf1aIf.writeSinglePATable(TEST_POWER);
     call Rf1aPhysical.readConfiguration(&config);
@@ -166,12 +168,12 @@ implementation {
     if (len != sizeof(radio_count_msg_t)) {return bufPtr;}
     else {
       radio_count_msg_t* rcm = (radio_count_msg_t*)payload;
-      printf("RX %u %u %lu %d %d \r\n", 
-        call AMPacket.source(bufPtr),
-        TOS_NODE_ID,
-        rcm->counter, 
-        call Rf1aPacket.rssi(bufPtr),
-        call Rf1aPacket.lqi(bufPtr));
+//      printf("RX %u %u %lu %d %d \r\n", 
+//        call AMPacket.source(bufPtr),
+//        TOS_NODE_ID,
+//        rcm->counter, 
+//        call Rf1aPacket.rssi(bufPtr),
+//        call Rf1aPacket.lqi(bufPtr));
       if (rcm->counter & 0x1) {
 	call Leds.led0On();
       }

@@ -1,4 +1,4 @@
-x<-read.csv('data/flood_depth_asym.csv')
+x<-read.csv('expansion/flood_depth_asym.csv')
 o <- order(x$depth_rl)
 
 plotFile=F

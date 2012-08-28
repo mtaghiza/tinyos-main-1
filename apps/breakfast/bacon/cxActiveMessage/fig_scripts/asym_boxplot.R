@@ -1,4 +1,4 @@
-x <- read.csv('data/asym_boxplot.csv')
+x <- read.csv('expansion/asym_boxplot.csv')
 yl <- c(1,9)
 
 plotFile=F
