@@ -5,9 +5,9 @@ import sqlite3
 import sys
 
 class TestbedMap(object):
-    def __init__(self, nsluFile='nslu_locations.txt', 
-            nodeFile='node_map.txt',
-            mapFile='floorplan.png'):
+    def __init__(self, nsluFile='config/nslu_locations.txt', 
+            nodeFile='config/node_map.txt',
+            mapFile='static/floorplan.png'):
         """Set up a floorplan map of testbed nodes"""
         #add background image
         im = plt.imread(mapFile)
