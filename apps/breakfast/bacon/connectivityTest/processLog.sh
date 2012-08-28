@@ -16,7 +16,8 @@ fi
 tfDir=tmp
 mkdir -p $tfDir
 txFile=$(tempfile -d $tfDir)
-rxFile=$(tempfile -d $tfDir)
+#rxFile=$(tempfile -d $tfDir)
+rxFile=tmp.rx
 
 if [ "$(file -b $logFile)" !=  "ASCII text" ]
 then
@@ -31,7 +32,7 @@ pv $logFile | awk --re-interval \
 
 #ts sr power length sender sn receiver rssi lqi crc
 pv $logFile | awk --re-interval \
-  '/^[0-9]*\.[0-9]* [0-9]* RX( [0-9]*){6} -[0-9]*( [0-9]*){2}[ ]*$/{print $1,$4,$5,$6,$7,$9,$2,$10,$11,$12}' \
+  '/^[0-9]*\.[0-9]* [0-9]* RX( [0-9]*){7} -[0-9]*( [0-9]*){2}[ ]*$/{print $1,$4,$5,$6,$7,$10,$9,$11,$12,$13}' \
   > $rxFile
 
 if [ $recreate -eq 1 ]

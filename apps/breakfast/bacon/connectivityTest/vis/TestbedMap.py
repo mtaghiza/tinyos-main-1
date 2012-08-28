@@ -93,6 +93,8 @@ class TestbedMap(object):
         if not outFile:
             plt.show()
         else:
+            F = plt.gcf()
+            F.set_size_inches([12, 12])
             plt.savefig(outFile, format='png')
             pass
 
@@ -129,7 +131,7 @@ class SingleTXDepth(TestbedMap):
         return p
 
 class CXDistance(TestbedMap):
-    def __init__(self, node, distanceFrom, dbFile, **kwargs):
+    def __init__(self, dbFile, node, distanceFrom, **kwargs):
         super(CXDistance, self).__init__(**kwargs)
         self.loadDistances(node, distanceFrom, dbFile)
         self.loadErrors(dbFile)
@@ -214,54 +216,87 @@ class CXPrr(TestbedMap):
         
 
 class SinglePrr(TestbedMap):
-    def __init__(self, src, dbFile, **kwargs):
+    def __init__(self, nodeId, prrFrom, dbFile, **kwargs):
         super(SinglePrr, self).__init__(**kwargs)
-        self.loadPrrs(src, dbFile)
-        self.prrs[src]=1.0
+        self.loadPrrs(nodeId, prrFrom, dbFile)
+        self.prrs[nodeId]=1.0
         self.setAttr('prr', self.prrs, 0.0)
         self.setColAttr('prr')
-        self.addOutlined(src, 10)
+        self.addOutlined(nodeId, 10)
         rounded = dict([ (k, "%.2f"%self.prrs[k]) 
           for k in self.prrs])
         self.setLabels(rounded)
 
-    def loadPrrs(self, src, dbFile):
+    def loadPrrs(self, nodeId, prrFrom, dbFile):
         c = sqlite3.connect(dbFile)
-        self.prrs = dict(c.execute('SELECT dest, prr from link where src=?', (src,)))
+        if prrFrom:
+            q = 'SELECT dest, prr from link where src=?'
+        else:
+            q = 'SELECT src, prr from link where dest=?'
+        self.prrs = dict(c.execute(q, (nodeId,)))
         c.close()
         
 if __name__ == '__main__':
-    t = sys.argv[1]
+    fn = sys.argv[1]
+    t = sys.argv[2]
     if t == '--simple':
-        fn = sys.argv[2]
         src = int(sys.argv[3])
         thresh = float(sys.argv[4])
         sr = 125
         #0xC3= +10
         txp = 0xC3
         packetLen = 35
+        distanceLabels = False
         if len(sys.argv) > 5:
-            sr = int(sys.argv[6])
-            txp = int(sys.argv[7])
-            packetLen = int(sys.argv[8])
-        tbm = SingleTXDepth(src, fn, sr, txp, packetLen, thresh)
+            for (o, v) in zip(sys.argv[5:], sys.argv[6:]):
+                if o == '--sr':
+                    sr = int(v)
+                if o == '--txp':
+                    txp = int(v)
+                if o == '--pl':
+                    pl = int(v)
+                if o == '--distanceLabels':
+                    distanceLabels = int(v)
+        tbm = SingleTXDepth(src, fn, sr, txp, packetLen, thresh,
+          distanceLabels)
     elif t == '--cxd':
-        distanceFrom = (sys.argv[2] == '--from')
-        tbm = CXDistance(int(sys.argv[3]), distanceFrom, sys.argv[4])
+        distanceFrom = True
+        nodeId = 0
+        for (o, v) in zip(sys.argv[2:], sys.argv[3:]):
+            if o == '--from':
+                distanceFrom = True
+                nodeId = int(v)
+            if o == '--to':
+                distanceFrom = False
+                nodeId = int(v)
+        tbm = CXDistance(fn, nodeId, distanceFrom)
     elif t == '--cxf':
-        src = int(sys.argv[2])
-        dest = int(sys.argv[3])
-        fn = sys.argv[4]
+        src = int(sys.argv[3])
+        dest = int(sys.argv[4])
         tbm = CXForwarders(src, dest, fn)
     elif t == '--cxp':
-        prrFrom = (sys.argv[2] == '--from')
-        node = int(sys.argv[3])
-        fn = sys.argv[4]
-        tbm = CXPrr(node, prrFrom, fn)
+        prrFrom = True
+        nodeId = 0
+        for (o, v) in zip(sys.argv[2:], sys.argv[3:]):
+            if o == '--from':
+                prrFrom = True
+                nodeId = int(v)
+            if o == '--to':
+                prrFrom = False
+                nodeId = int(v)
+        tbm = CXPrr(nodeId, prrFrom, fn)
     elif t == '--sp':
-        src = int(sys.argv[2])
-        fn = sys.argv[3]
-        tbm = SinglePrr(src, fn)
+        prrFrom = True
+        nodeId = 0
+        for (o, v) in zip(sys.argv[2:], sys.argv[3:]):
+            if o == '--from':
+                prrFrom = True
+                nodeId = int(v)
+            if o == '--to':
+                prrFrom = False
+                nodeId = int(v)
+        tbm = SinglePrr(nodeId, prrFrom, fn)
+
     outFile=None
     for (o, v) in zip(sys.argv, sys.argv[1:]):
         if o == '--outFile':
