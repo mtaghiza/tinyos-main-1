@@ -10,6 +10,11 @@ PAYLOAD_LEN=35
 MAP=map.all
 BURN_TIME=30
 
+if [ $# -gt 0 ]
+then
+  TEST_POWER=$1
+fi
+
 make bacon2 TEST_CHANNEL=$TEST_CHANNEL TEST_POWER=$TEST_POWER\
   PAYLOAD_LEN=$PAYLOAD_LEN TEST_SR=$TEST_SR
 #set up everybody

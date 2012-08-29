@@ -130,6 +130,27 @@ class SingleTXDepth(TestbedMap):
                 p[nodeId] = unreachableVal
         return p
 
+class Degree(TestbedMap):
+    def __init__(self, dbFile, sr, txp, packetLen, prr_threshold=0.0,
+            degreeLabels = False, **kwargs):
+        super(Degree, self).__init__(**kwargs)
+        self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold)
+        self.degrees = self.computeDegrees()
+        self.setAttr('degree', self.degrees)
+        self.setColAttr('degree')
+        if degreeLabels:
+            self.setLabels(self.degrees)
+
+    def loadPrrEdges(self, dbFile, sr, txp, packetLen, prr_threshold):
+        c = sqlite3.connect(dbFile)
+        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=? AND txPower=? AND len=? AND prr >=?', (sr, txp, packetLen, prr_threshold)).fetchall()
+        for (src, dest, prr) in links:
+            self.G.add_edge(src, dest, prr=prr)
+    
+    def computeDegrees(self):
+        return self.G.in_degree()
+
+
 class CXDistance(TestbedMap):
     def __init__(self, dbFile, node, distanceFrom, **kwargs):
         super(CXDistance, self).__init__(**kwargs)
@@ -235,6 +256,22 @@ class SinglePrr(TestbedMap):
             q = 'SELECT src, prr from link where dest=?'
         self.prrs = dict(c.execute(q, (nodeId,)))
         c.close()
+
+class DutyCycle(TestbedMap):
+    def __init__(self, dbFile, **kwargs):
+        super(DutyCycle, self).__init__(**kwargs)
+        self.loadDutyCycles(dbFile)
+        self.setAttr('dutyCycle', self.dutyCycles, 0.0)
+        self.setColAttr('dutyCycle')
+        rounded = dict([ (k, "%.2f"%self.dutyCycles[k]) 
+          for k in self.dutyCycles])
+        self.setLabels(rounded)
+
+    def loadDutyCycles(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        q = 'SELECT node, dc from duty_cycle'
+        self.dutyCycles = dict(c.execute(q))
+        c.close()
         
 if __name__ == '__main__':
     fn = sys.argv[1]
@@ -252,7 +289,7 @@ if __name__ == '__main__':
                 if o == '--sr':
                     sr = int(v)
                 if o == '--txp':
-                    txp = int(v)
+                    txp = int(v, 16)
                 if o == '--pl':
                     pl = int(v)
                 if o == '--distanceLabels':
@@ -296,6 +333,31 @@ if __name__ == '__main__':
                 prrFrom = False
                 nodeId = int(v)
         tbm = SinglePrr(nodeId, prrFrom, fn)
+    elif t == '--dc':
+        tbm = DutyCycle(fn)
+    elif t == '--degree':
+        thresh = 0.95
+        sr = 125
+        #0xC3= +10
+        txp = 0xC3
+        packetLen = 35
+        degreeLabels = False
+        if len(sys.argv) > 4:
+            for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--thresh':
+                    thresh = float(v)
+                if o == '--sr':
+                    sr = int(v)
+                if o == '--txp':
+                    txp = int(v, 16)
+                if o == '--pl':
+                    pl = int(v)
+                if o == '--degreeLabels':
+                    degreeLabels = int(v)
+        tbm = Degree(fn, sr, txp, packetLen, thresh,
+          degreeLabels)
+    else:
+        print >> sys.stderr, "Unrecognized type",t
 
     outFile=None
     for (o, v) in zip(sys.argv, sys.argv[1:]):
@@ -303,26 +365,6 @@ if __name__ == '__main__':
             outFile = v
     tbm.draw(node_size=400, outFile=outFile)
 
-# - common internal state: Graph, edges, labels, colors
-# - common behavior: construct, draw (to file or screen)
-# - subclasses define rules for what constitutes edge, label, color.
-# x single-tx connectivity subclass:
-#   - edges are PRR > threshold
-#   - label is depth
-#   - color is depth
-# x CX distance subclass
-#   - no edges
-#   - label is depth
-#   - color is depth
-# x CX forwarder rates
-#   - no edges
-#   - color for src, dest fixed
-#   - other nodes: fraction of bursts for which node is forwarder
-#   - label is node id?
-# 0 CX PRR
-#   - no edges
-#   - color is PRR (mark source)
-#   - label is node ID
 # 0 CX trace
 #   - no edges
 #   - burst setup info to gray out non-forwarders

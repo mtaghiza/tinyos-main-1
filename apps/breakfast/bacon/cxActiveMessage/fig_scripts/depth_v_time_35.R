@@ -13,7 +13,7 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+    pdf(val, width=9, height=6, title="Node 35 depth time series")
   }
   if ( opt == '--png' ){
     plotFile=T

@@ -21,7 +21,7 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=9, title="Depth Asymmetry Boxplots")
+    pdf(val, width=9, height=9, title="Depth Asymmetry Scatterplot")
   }
   if ( opt == '--png' ){
     plotFile=T

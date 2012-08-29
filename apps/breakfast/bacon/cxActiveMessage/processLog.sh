@@ -56,17 +56,13 @@ echo "extracting errors"
 pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
 
 echo "extracting radio stats"
-#1      2 3  4 5 6        7 ...
-#123.45 1 RS o 0 30820222 s 0 0 i 0 20882649 f 0 0 t 0 0 r 0 4433067
+#1      2 3  4 5 6 7
+#123.45 1 RS 1 o 0 30820181
 pv $logFile | awk '($3 == "RS"){ 
-  tot=0
-  for (k=4; k < NF; k+=3){
-    thisTot = $(k+1)*(2**32) + $(k+2)
-    print $1, $2, $k, thisTot
-    tot += thisTot
-  }
-  print $1, $2, "A", tot
+  print $1, $2, $4, $5, ($6)*(2**32) + $7
 }' > $rsTf
+
+#TODO: should dump test settings at mote startup and load these, too.
 
 sqlite3 $db << EOF
 .headers OFF
@@ -274,6 +270,7 @@ DROP TABLE IF EXISTS RADIO_STATS_RAW;
 CREATE TABLE RADIO_STATS_RAW (
   ts REAL,
   node INTEGER,
+  sn INTEGER,
   state TEXT,
   total INTEGER);
 
@@ -286,13 +283,19 @@ SELECT node,
   max(total) as total 
 FROM radio_stats_raw GROUP BY node, state;
 
-INSERT INTO radio_stats_totals (node, state, total) 
-SELECT ra.node, 'a', ra.total - ro.total 
-FROM radio_stats_totals as ra 
-JOIN radio_stats_totals as ro 
-  ON ra.node = ro.node 
-  AND ra.state='A' 
-  AND ro.state = 'o';
+INSERT INTO radio_stats_totals (node, state, total)
+  SELECT node, 'a', sum(total) 
+  FROM radio_stats_totals
+  WHERE state in ('f', 'i', 'r', 's', 't')
+  GROUP BY node;
+
+-- INSERT INTO radio_stats_totals (node, state, total) 
+-- SELECT ra.node, 'a', ra.total - ro.total 
+-- FROM radio_stats_totals as ra 
+-- JOIN radio_stats_totals as ro 
+--   ON ra.node = ro.node 
+--   AND ra.state='A' 
+--   AND ro.state = 'o';
 
 DROP TABLE IF EXISTS RADIO_STATS;
 CREATE TABLE RADIO_STATS as 
@@ -331,6 +334,7 @@ AS
 
 DELETE FROM BD_LINKS WHERE src <> 0;
 
+DROP TABLE IF EXISTS DEPTH_ASYMMETRY;
 CREATE TABLE DEPTH_ASYMMETRY as
 SELECT
   rx_all.src as root, 
@@ -365,6 +369,13 @@ WHERE rx_all.dest = 0
   AND tx_all.np = 1
   AND tx_all.pr = 0;
 
+--
+DROP TABLE IF EXISTS IPI;
+CREATE TABLE IPI AS 
+SELECT src as node,
+  (max(ts)-min(ts))/count(*) as ipi
+FROM TX_ALL
+GROUP BY src;
 EOF
 
 if [ "$keepTemp" != "-k" ]

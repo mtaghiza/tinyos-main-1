@@ -24,7 +24,7 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="Depth Asymmetry Boxplots")
+    pdf(val, width=9, height=6, title="Burst PRR v. ReTX CDF")
   }
   if ( opt == '--png' ){
     plotFile=T
