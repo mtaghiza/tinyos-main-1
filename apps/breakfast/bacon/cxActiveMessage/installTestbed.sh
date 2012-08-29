@@ -1,56 +1,24 @@
 #!/bin/bash
 autoRun=1
 programDelay=60
-if [ $# -eq 0 ]
-then 
-  echo "No test name provided." 1>&2
-  exit 1
-fi
-testDesc=\\\"$1\\\"
-shift 1
-
-rootMap=map.root
-receiverMap=map.nonroot.rx
-senderMap=map.nonroot.tx
-
-#radio physical params
-txp=0xC3
-tc=0
 
 debugScale=4UL
 
-#test setup
-requestAck=0
 rootSender=0
 rootDest=1
-senderDest=0
-
 fecEnabled=0
 fecHamming74=1
-
-targetIpi=1024UL
-queueThreshold=10
-
-#network params
-fps=40
-maxDepth=5
-numTransmits=1
-staticScheduler=1
-bufferWidth=0
 
 #radio logging
 rl=0
 rs=1
-
-#schedule config
-#init symbol rate
-sr=125
 
 #stack protection
 sp=1
 #pool size
 ps=3
 
+#debug settings
 debugLinkRXTX=1
 debugFCleartime=0
 debugSFCleartime=0
@@ -75,86 +43,72 @@ debugFSched=0
 debugRoutingTable=0
 debugUB=1
 
+#test defaults
+testId=$(date +%s)
+testLabel=''
+txp=0xC3
+sr=125
+channel=0
+requestAck=0
+senderDest=0
+senderMap=map.nonroot.tx
+receiverMap=map.nonroot.rx
+rootMap=map.root
+targetIpi=1024UL
+queueThreshold=10
+maxDepth=5
+numTransmits=1
+bufferWidth=0
+fps=40
+staticScheduler=1
+
+settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
+"senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
+"queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
+"staticScheduler" )
+
 while [ $# -gt 1 ]
 do
-  case $1 in
-   testId)
-     testId=$2
-     shift 2
-   ;;
-   testLabel)
-     testLabel=$2
-     shift 2
-   ;;
-   txp)
-     txp=$2
-     shift 2
-   ;;
-   sr)
-     sr=$2
-     shift 2
-   ;;
-   channel)
-     channel=$2
-     shift 2
-   ;;
-   requestAck)
-     requestAck=$2
-     shift 2
-   ;;
-   senderDest)
-     senderDest=$2
-     shift 2
-     ;;
-   senderMap)
-     senderMap=$2
-     shift 2
-     ;;
-   receiverMap)
-     receiverMap=$2
-     shift 2
-     ;;
-   rootMap)
-     rootMap=$2
-     shift 2
-     ;;
-   targetIpi)
-     targetIpi=$2
-     shift 2
-     ;;
-   queueThreshold)
-     queueThreshold=$2
-     shift 2
-     ;;
-   maxDepth)
-     maxDepth=$2
-     shift 2
-     ;;
-   numTransmits)
-     numTransmits=$2
-     shift 2
-     ;;
-   bufferWidth)
-     bufferWidth=$2
-     shift 2
-     ;;
-   fps)
-     fps=$2
-     shift 2
-     ;;
-   staticScheduler)
-     staticScheduler=$2
-     shift 2
-   ;;
-   *)
-     echo "unrecognized: $1"
-     shift 1
-   ;;
-  esac
+  varMatched=0
+  for v in ${settingVars[@]}
+  do
+    if [ "$v" == "$1" ]
+    then
+      varMatched=1
+      declare "$1"="$2"
+      shift 2
+      break 
+    fi
+  done
+  if [ $varMatched -eq 0 ]
+  then
+    echo "Unrecognized option $1. Options: ${settingVars[@]}" 1>&2
+    exit 1
+  fi
 done
 
+for v in ${settingVars[@]}
+do
+  echo "SETTING $v VALUE [${!v}]"
+done
 
-set -x 
+if [ "$testLabel" == "" ]
+then
+  echo "No test label provided." 1>&2
+  exit 1
+fi
+
+#concatenate the settings together
+testDesc=""
+for v in ${settingVars[@]}
+do
+  testDesc=${testDesc}_${v}_${!v}
+done
+#trim off the leading underscore
+testDesc=$(echo "$testDesc" | cut -c 1 --complement)
+#and slap it into something that make won't barf on
+testDesc=\\\"$testDesc\\\"
+
 if [ $staticScheduler -eq 1 ]
 then
   maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
@@ -168,7 +122,7 @@ fi
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1"
 set +x
-phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
+phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$channel"
 
 memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 

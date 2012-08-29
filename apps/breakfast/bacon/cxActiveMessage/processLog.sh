@@ -26,6 +26,7 @@ txTf=$tfb.tx
 rTf=$tfb.r
 rsTf=$tfb.rs
 errTf=$tfb.err
+settingsTf=$tfb.settings
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -62,7 +63,17 @@ pv $logFile | awk '($3 == "RS"){
   print $1, $2, $4, $5, ($6)*(2**32) + $7
 }' > $rsTf
 
-#TODO: should dump test settings at mote startup and load these, too.
+echo "extracting test settings"
+pv $logFile | grep ' 0 START ' | tr '_' ' ' | awk '{
+  for (i=4; i <= NF; i+=2){
+    print $1, $i, $(i+1)
+  }
+}' > $settingsTf
+
+if [ $(grep -c 'testLabel' < $settingsTf) -ne 1 ]
+then
+  echo "WARNING: expected 1 test label line found $(grep -c 'testLabel' < $settingsTf)" 1>&2
+fi
 
 sqlite3 $db << EOF
 .headers OFF
@@ -376,6 +387,14 @@ SELECT src as node,
   (max(ts)-min(ts))/count(*) as ipi
 FROM TX_ALL
 GROUP BY src;
+
+DROP TABLE IF EXISTS TEST_SETTINGS;
+CREATE TABLE TEST_SETTINGS (
+  ts REAL,
+  k  TEXT,
+  v  TEXT
+);
+.import $settingsTf TEST_SETTINGS
 EOF
 
 if [ "$keepTemp" != "-k" ]
@@ -384,8 +403,9 @@ then
   rm $txTf
   rm $tfb
   rm $rTf
-  rm $errTf
   rm $rsTf
+  rm $errTf
+  rm $settingsTf
 else
   echo "keeping temp files"
 fi
