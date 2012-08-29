@@ -9,9 +9,9 @@ fi
 testDesc=\\\"$1\\\"
 shift 1
 
-root=map.root
-nonrootRx=map.nonroot.rx
-nonrootTx=map.nonroot.tx
+rootMap=map.root
+receiverMap=map.nonroot.rx
+senderMap=map.nonroot.tx
 
 #radio physical params
 txp=0xC3
@@ -20,24 +20,23 @@ tc=0
 debugScale=4UL
 
 #test setup
-testRequestAck=0
+requestAck=0
 rootSender=0
 rootDest=1
-leafDest=0
+senderDest=0
 
 fecEnabled=0
 fecHamming74=1
 
-ipi=1024UL
+targetIpi=1024UL
 queueThreshold=10
 
 #network params
 fps=40
-md=5
-mr=1
+maxDepth=5
+numTransmits=1
 staticScheduler=1
-cxBufferWidth=0
-cxDutyCycleEnabled=1
+bufferWidth=0
 
 #radio logging
 rl=0
@@ -45,7 +44,7 @@ rs=1
 
 #schedule config
 #init symbol rate
-initSR=125
+sr=125
 
 #stack protection
 sp=1
@@ -79,42 +78,74 @@ debugUB=1
 while [ $# -gt 1 ]
 do
   case $1 in
-   staticScheduler)
-     staticScheduler=$2
+   testId)
+     testId=$2
      shift 2
    ;;
-   nonrootTx)
-     nonrootTx=$2
+   testLabel)
+     testLabel=$2
+     shift 2
+   ;;
+   txp)
+     txp=$2
+     shift 2
+   ;;
+   sr)
+     sr=$2
+     shift 2
+   ;;
+   channel)
+     channel=$2
+     shift 2
+   ;;
+   requestAck)
+     requestAck=$2
+     shift 2
+   ;;
+   senderDest)
+     senderDest=$2
      shift 2
      ;;
-   nonrootRx)
-     nonrootRx=$2
+   senderMap)
+     senderMap=$2
      shift 2
      ;;
-   testRequestAck)
-     testRequestAck=$2
+   receiverMap)
+     receiverMap=$2
      shift 2
      ;;
-   cxBufferWidth)
-     cxBufferWidth=$2
+   rootMap)
+     rootMap=$2
      shift 2
      ;;
-   mr)
-     mr=$2
+   targetIpi)
+     targetIpi=$2
      shift 2
      ;;
-   leafDest)
-     leafDest=$2
+   queueThreshold)
+     queueThreshold=$2
+     shift 2
+     ;;
+   maxDepth)
+     maxDepth=$2
+     shift 2
+     ;;
+   numTransmits)
+     numTransmits=$2
+     shift 2
+     ;;
+   bufferWidth)
+     bufferWidth=$2
      shift 2
      ;;
    fps)
      fps=$2
      shift 2
      ;;
-   cxDutyCycleEnabled)
-     cxDutyCycleEnabled=$2
+   staticScheduler)
+     staticScheduler=$2
      shift 2
-     ;;
+   ;;
    *)
      echo "unrecognized: $1"
      shift 1
@@ -126,16 +157,16 @@ done
 set -x 
 if [ $staticScheduler -eq 1 ]
 then
-  maxNodeId=$(cat $root $nonrootRx $nonrootTx | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
+  maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
   numSlots=$(($maxNodeId + 10))
   firstIdleSlot=$(($maxNodeId + 5))
 else
-  numNodes=$(cat $root $nonrootRx $nonrootTx | grep -c -v '#' )
+  numNodes=$(cat $rootMap $receiverMap $senderMap | grep -c -v '#' )
   numSlots=$(($numNodes + 5))
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth CX_DUTY_CYCLE_ENABLED=$cxDutyCycleEnabled"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1"
 set +x
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
 
@@ -146,7 +177,7 @@ loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable DEBUG_UB=$debugUB" 
 
 
-testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
+testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
 miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
@@ -166,27 +197,27 @@ else
   sleep $programDelay
 fi
 
-if [ "$nonrootRx" != "" ]
+if [ "$receiverMap" != "" ]
 then
-  ./burn $nonrootRx \
+  ./burn $receiverMap \
     TDMA_ROOT=0 IS_SENDER=0 \
     $commonOptions 
 fi
 
-if [ "$nonrootTx" != "" ]
+if [ "$senderMap" != "" ]
 then
-  ./burn $nonrootTx \
+  ./burn $senderMap \
     TDMA_ROOT=0 IS_SENDER=1 \
-    TEST_DEST_ADDR=$leafDest \
-    TEST_REQUEST_ACK=$testRequestAck\
+    TEST_DEST_ADDR=$senderDest \
+    TEST_REQUEST_ACK=$requestAck\
     $commonOptions
 fi
 
-if [ "$root" != "" ]
+if [ "$rootMap" != "" ]
 then
-  ./burn $root \
+  ./burn $rootMap \
     TDMA_ROOT=1 IS_SENDER=$rootSender \
     TEST_DEST_ADDR=$rootDest \
-    TEST_REQUEST_ACK=$testRequestAck\
+    TEST_REQUEST_ACK=$requestAck\
     $commonOptions
 fi

@@ -126,9 +126,20 @@ module SlaveSchedulerStaticP {
   }
 
   event void FrameStarted.frameStarted(uint16_t frameNum){
-    bool newSlot = (0 == (frameNum % call TDMARoutingSchedule.framesPerSlot()));
+    uint32_t framesThisSlot = (frameNum % call TDMARoutingSchedule.framesPerSlot());
+    bool newSlot = (0 == framesThisSlot);
     curFrame = frameNum;
     framesSinceSynch++;
+
+    //if we are more than maxDepth frames into the slot, and the last
+    //  synch occurred in a preceding slot, we can assume this slot is
+    //  idle and go inactive.
+    if (isSynched   
+        && ! newSlot 
+        && framesThisSlot > call TDMARoutingSchedule.maxDepth()
+        && framesSinceSynch > framesThisSlot){
+      call TDMARoutingSchedule.inactiveSlot();
+    }
     
     //increment the number of cycles since we last got a schedule
     //  announcement at the start of each cycle.
