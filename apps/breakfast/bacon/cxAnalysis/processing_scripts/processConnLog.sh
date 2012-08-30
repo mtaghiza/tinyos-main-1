@@ -2,22 +2,22 @@
 #set -x
 if [ $# -lt 1 ]
 then
-  echo "Usage: $0 <logFile> [-r]" 1>&2
-  echo " -r: drop/recreate tables" 1>&2
+  echo "Usage: $0 <logFile> [-k]" 1>&2
+  echo " -k: keep (don't drop/recreate) tables" 1>&2
   exit 1
 fi
 logFile=$1
 shift 1
-recreate=0
-if [ "$1" == "-r" ]
+recreate=1
+if [ "$1" == "-k" ]
 then 
-  recreate=1
+  recreate=0
 fi
 tfDir=tmp
 mkdir -p $tfDir
 txFile=$(tempfile -d $tfDir)
-#rxFile=$(tempfile -d $tfDir)
-rxFile=tmp.rx
+rxFile=$(tempfile -d $tfDir)
+#rxFile=tmp.rx
 
 if [ "$(file -b $logFile)" !=  "ASCII text" ]
 then
@@ -37,7 +37,7 @@ pv $logFile | awk --re-interval \
 
 if [ $recreate -eq 1 ]
 then
-  echo "Recreating"
+  echo "Creating tables"
   sqlite3 $logFile.db << EOF
     DROP TABLE IF EXISTS TX;
     CREATE TABLE TX (
@@ -81,6 +81,7 @@ select "Loading TX";
 select "Loading RX";
 .import $rxFile RX
 
+SELECT "Creating TX Summary table";
 DROP TABLE IF EXISTS TX_SUMMARY;
 CREATE TABLE TX_SUMMARY AS 
 SELECT sr, txPower, len, src, count(*) as sent,
@@ -88,6 +89,7 @@ SELECT sr, txPower, len, src, count(*) as sent,
 FROM TX
 GROUP BY sr, txPower, len, src;
 
+SELECT "Creating RX Summary table";
 DROP TABLE IF EXISTS RX_SUMMARY;
 CREATE TABLE RX_SUMMARY AS
 SELECT RX.sr as sr, 
@@ -108,6 +110,7 @@ JOIN TX_SUMMARY ON
 WHERE crc == 80
 GROUP BY RX.sr, RX.txPower, RX.len, RX.src, RX.dest;
 
+SELECT "Creating LINK table";
 DROP TABLE IF EXISTS LINK;
 CREATE TABLE LINK AS
 SELECT 
@@ -127,6 +130,7 @@ LEFT JOIN RX_SUMMARY ON
   TX_SUMMARY.len == RX_SUMMARY.len
 ;
 
+SELECT "Creating B_LINK table";
 DROP TABLE IF EXISTS B_LINK;
 CREATE TABLE B_LINK AS
 SELECT a.src n0,
@@ -138,5 +142,4 @@ JOIN LINK b
 ON a.src==b.dest AND b.src == a.dest 
 ;
 EOF
-echo "Run depths.py <db> <txpower> [prr threshold...] to extract depth information"
 #rm $txFile $rxFile

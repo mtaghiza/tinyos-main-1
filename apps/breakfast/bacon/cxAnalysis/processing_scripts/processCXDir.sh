@@ -5,9 +5,10 @@ then
 fi
 logDir=$1
 dbDir=$2
+sd=$(dirname $0)
 
 for f in $logDir/*
 do
   bn=$(basename $f | cut -d '.' -f 1,2)
-  ./processLog.sh $f $dbDir/$bn
+  $sd/processCXLog.sh $f $dbDir/$bn
 done
