@@ -41,14 +41,14 @@ class PrrClosureMap(TestbedMap):
             p_other_last = self.getP_d(src).get(d-1, 0)
             p_rx_this = self.G[src][dest]['prr']
             p.append( (p_other_last, p_rx_this))
-        print "n", n, "d", d, "p", p,
+#        print "n", n, "d", d, "p", p,
         p_d = self.getP_d(n)
-#        print "p_d start", p_d
+##        print "p_d start", p_d
 
         #prob that we got it on a previous round
         p_prev = sum([p_d[i] for i in p_d])
         p_prev_inv = 1 - p_prev
-        print "p_prev", p_prev,
+#        print "p_prev", p_prev,
 
         #prob for each link that got it previously to fail
         p_inv = [1-(last*rx) for (last, rx) in p]
@@ -57,15 +57,14 @@ class PrrClosureMap(TestbedMap):
         p_none = reduce(lambda l,r: l*r, p_inv, 1.0)
         #prob that at least one link succeeds
         p_none_inv = 1 - p_none
-        print "p_some", p_none_inv,
+#        print "p_some", p_none_inv,
 
         #prob that we did not get it on previous round AND we did
         # get it this round
         self.setP_d(n, d, p_prev_inv * p_none_inv)
-        print "->", p_d[d]
+#        print "->", p_d[d]
 
     def closureRound(self, d):
-        print "-------"
         for n in self.G.nodes():
             self.closureRoundNode(d, n)
 
@@ -143,13 +142,18 @@ class FloodSimMap(TestbedMap):
 
 if __name__ == '__main__':
     cn = sys.argv[1]
-    cxn = sys.argv[2]
-    pcm = PrrClosureMap(cn, cxn, scriptDir='fig_scripts')
-    pcm.computeClosure(0, 4)
-    print "=============== COMPUTED ==========="
-    pcm.expectedDepths()
-    print "=============== SIMULATED =========="
-    fsm = FloodSimMap(cn, cxn, scriptDir='fig_scripts')
-    for i in range(10000):
-        fsm.sim(0)
-    fsm.listResults()
+#    cxn = sys.argv[2]
+    txp=int(sys.argv[2], 16)
+    if sys.argv[3] == '-c':
+        pcm = PrrClosureMap(cn, 'xxx', scriptDir='fig_scripts',
+            txp=txp)
+        pcm.computeClosure(0, 4)
+        print "=============== COMPUTED ==========="
+        pcm.expectedDepths()
+    elif sys.argv[3] == '-s':
+        print "=============== SIMULATED =========="
+        fsm = FloodSimMap(cn, 'xxx', scriptDir='fig_scripts',
+            txp=txp)
+        for i in range(100):
+            fsm.sim(0)
+        fsm.listResults()
