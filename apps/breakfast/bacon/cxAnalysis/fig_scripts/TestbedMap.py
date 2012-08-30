@@ -9,12 +9,14 @@ class TestbedMap(object):
             nodeFile='config/node_map.txt',
             mapFile='static/floorplan.png'):
         """Set up a floorplan map of testbed nodes"""
+        scriptDir='/'.join(sys.argv[0].split('/')[:-1])+'/'
+
         #add background image
-        im = plt.imread(mapFile)
+        im = plt.imread(scriptDir+mapFile)
         implot = plt.imshow(im)
         
         #read NSLU locations
-        f = open(nsluFile)
+        f = open(scriptDir+nsluFile)
         nslus={}
         for l in f.readlines():
             if not l.startswith("#"):
@@ -25,7 +27,7 @@ class TestbedMap(object):
         
         #read node-nslu mapping and get node locations
         nodes = {}
-        f = open(nodeFile)
+        f = open(scriptDir+nodeFile)
         for l in f.readlines():
             if not l.startswith("#"):
                 [nslu, port, nodeId] = [int(v) for v in l.split()]
