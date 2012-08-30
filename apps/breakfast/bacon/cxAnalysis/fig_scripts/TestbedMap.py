@@ -7,9 +7,12 @@ import sys
 class TestbedMap(object):
     def __init__(self, nsluFile='config/nslu_locations.txt', 
             nodeFile='config/node_map.txt',
-            mapFile='static/floorplan.png'):
+            mapFile='static/floorplan.png',
+            scriptDir=None):
         """Set up a floorplan map of testbed nodes"""
-        scriptDir='/'.join(sys.argv[0].split('/')[:-1])+'/'
+        if not scriptDir:
+            scriptDir='/'.join(sys.argv[0].split('/')[:-1])
+        scriptDir = scriptDir+'/'
 
         #add background image
         im = plt.imread(scriptDir+mapFile)
