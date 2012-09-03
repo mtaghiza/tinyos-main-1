@@ -1,4 +1,5 @@
 #!/bin/bash
+killall picocom
 autoRun=1
 programDelay=60
 
@@ -153,7 +154,7 @@ if [ $autoRun == 0 ]
 then
   read -p "Hit enter when programming is done"
 else
-  sleep $programDelay
+  echo "moving right along"
 fi
 
 if [ "$receiverMap" != "" ]

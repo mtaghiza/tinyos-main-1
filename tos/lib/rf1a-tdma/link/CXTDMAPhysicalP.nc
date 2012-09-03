@@ -371,6 +371,7 @@ module CXTDMAPhysicalP {
   void stopAlarms(){
     call PrepareFrameStartAlarm.stop();
     call FrameStartAlarm.stop();
+    FWA_TIMING_CLEAR_PIN;
     call FrameWaitAlarm.stop();
   }
 
@@ -754,8 +755,10 @@ module CXTDMAPhysicalP {
           txCapture = FALSE;
           if (call FrameWaitAlarm.isRunning()){
             if (s_isSynched){
-              //extend the alarm if we got a capture.
-              call FrameWaitAlarm.startAt(lastRECapture, s_fwCheckLen);
+              //extend the alarm if we got a capture: extend to max
+              //packet length
+              call FrameWaitAlarm.startAt(lastRECapture,
+                s_frameLen/2);
             }else{
               //TODO: if non-synched, FWA is already pushed back close
               //to boundary. We should push back both FWA and PFSA in
@@ -883,6 +886,7 @@ module CXTDMAPhysicalP {
     //warnings
     atomic{
       rxd = call FrameStartAlarm.getNow();
+      FWA_TIMING_CLEAR_PIN;
       call FrameWaitAlarm.stop();
       if (asyncState == S_RX_RECEIVING 
           || asyncState == S_RX_RECEIVING_FINAL){
