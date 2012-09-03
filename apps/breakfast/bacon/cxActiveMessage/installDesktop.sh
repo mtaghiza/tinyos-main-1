@@ -1,60 +1,25 @@
 #!/bin/bash
-if [ $# -eq 0 ]
-then 
-  echo "No test name provided." 1>&2
-  exit 1
-fi
-testDesc=\\\"$1\\\"
-
-#radio physical params
-txp=0x25
-tc=0
-
+autoRun=1
+programDelay=60
 
 debugScale=4UL
 
-#test setup
-rootId="0"
-#rootId=""
 rootSender=0
 rootDest=1
-#nonrootRx="1"
-leafDest=0
-testRequestAck=0
-#allPlugged="0 1 2 3"
-allPlugged="0 1"
-#allPlugged="0"
-nonrootTx=""
-
 fecEnabled=0
 fecHamming74=1
-
-ipi=1024UL
-queueThreshold=1
-
-#network params
-numSlots=20
-fps=5
-md=1
-mr=1
-staticScheduler=1
-firstIdleSlot=$2
-cxBufferWidth=0
 
 #radio logging
 rl=0
 rs=1
-
-#schedule config
-#init symbol rate
-initSR=125
 
 #stack protection
 sp=1
 #pool size
 ps=3
 
-debugLinkRXTX=0
+#debug settings
+debugLinkRXTX=1
 debugFCleartime=0
 debugSFCleartime=0
 debugTestbed=1
@@ -75,64 +40,161 @@ debugTestbedResource=0
 rxr=0
 debugDup=0
 debugFSched=0
+debugRoutingTable=0
+debugUB=1
 
-killall picocom
+#test defaults
+testId=$(date +%s)
+testLabel=''
+txp=0xC3
+sr=125
+channel=0
+requestAck=0
+senderDest=65535UL
+senderMap=dmap.none
+receiverMap=dmap.1
+rootMap=dmap.0
+targetIpi=1024UL
+queueThreshold=10
+maxDepth=5
+numTransmits=1
+bufferWidth=0
+fps=40
+staticScheduler=1
 
-pushd .
-cd ~/tinyos-2.x/apps/Blink
-make bacon2
-for id in $allPlugged
+settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
+"senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
+"queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
+"staticScheduler" "autoRun")
+
+while [ $# -gt 1 ]
 do
-  make bacon2 reinstall bsl,ref,JH00030$id
+  varMatched=0
+  for v in ${settingVars[@]}
+  do
+    if [ "$v" == "$1" ]
+    then
+      varMatched=1
+      declare "$1"="$2"
+      shift 2
+      break 
+    fi
+  done
+  if [ $varMatched -eq 0 ]
+  then
+    echo "Unrecognized option $1. Options: ${settingVars[@]}" 1>&2
+    exit 1
+  fi
 done
-popd
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$initSR DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${md}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${mr}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$cxBufferWidth"
+for v in ${settingVars[@]}
+do
+  echo "SETTING $v VALUE [${!v}]"
+done
 
-phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$tc"
+if [ "$testLabel" == "" ]
+then
+  echo "No test label provided." 1>&2
+  exit 1
+fi
+
+#concatenate the settings together
+testDesc=""
+for v in ${settingVars[@]}
+do
+  testDesc=${testDesc}_${v}_${!v}
+done
+#trim off the leading underscore
+testDesc=$(echo "$testDesc" | cut -c 1 --complement)
+#and slap it into something that make won't barf on
+testDesc=\\\"$testDesc\\\"
+
+if [ $staticScheduler -eq 1 ]
+then
+  maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
+  numSlots=$(($maxNodeId + 10))
+  firstIdleSlot=$(($maxNodeId + 5))
+else
+  numNodes=$(cat $rootMap $receiverMap $senderMap | grep -c -v '#' )
+  numSlots=$(($numNodes + 5))
+  firstIdleSlot=0
+fi
+
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1"
+set +x
+phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$channel"
 
 memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
-debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched" 
+debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable DEBUG_UB=$debugUB" 
 
 
-testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$ipi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
+testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
 miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
+
 set -x 
-if [ "$nonrootRx" != "" ]
+
+pushd .
+testbedDir=$(pwd)
+cd ~/tinyos-2.x/apps/Blink
+
+make bacon2
+for dev in /dev/ttyUSB*
+do
+  make bacon2 reinstall bsl,$dev
+done
+popd
+
+if [ $autoRun == 0 ]
 then
-  for id in $nonrootRx
+  read -p "Hit enter when programming is done"
+else
+  sleep $programDelay
+fi
+
+if [ "$receiverMap" != "" ]
+then
+  make bacon2 \
+    TDMA_ROOT=0 IS_SENDER=0 \
+    $commonOptions 
+  grep -v '#' $receiverMap | while read line
   do
-    make bacon2 install,$id bsl,ref,JH00030$id \
-      TDMA_ROOT=0 IS_SENDER=0 \
-      DEBUG_AODV_STATE=$rxAodvState \
-      $commonOptions DEBUG_TESTBED=1
+    ref=$(echo $line | cut -d ' ' -f 1)
+    id=$(echo $line | cut -d ' ' -f 2)
+    make bacon2 reinstall,$id bsl,ref,$ref
   done
 fi
 
-if [ "$nonrootTx" != "" ]
+if [ "$senderMap" != "" ]
 then
-  for id in $nonrootTx
+  make bacon2 \
+    TDMA_ROOT=0 IS_SENDER=1 \
+    TEST_DEST_ADDR=$senderDest \
+    TEST_REQUEST_ACK=$requestAck\
+    $commonOptions
+  grep -v '#' $senderMap | while read line
   do
-    make bacon2 install,$id bsl,ref,JH00030$id \
-      TDMA_ROOT=0 IS_SENDER=1 \
-      TEST_DEST_ADDR=$leafDest \
-      TEST_REQUEST_ACK=$testRequestAck\
-      DEBUG_AODV_STATE=$txAodvState $commonOptions\
-      DEBUG_TMP=1 DEBUG_TESTBED=1
+    ref=$(echo $line | cut -d ' ' -f 1)
+    id=$(echo $line | cut -d ' ' -f 2)
+    make bacon2 reinstall,$id bsl,ref,$ref
   done
 fi
 
-if [ "$rootId" != "" ]
+if [ "$rootMap" != "" ]
 then
-  make bacon2 install,0 bsl,ref,JH00030$rootId \
+  make bacon2 \
     TDMA_ROOT=1 IS_SENDER=$rootSender \
-    TEST_DEST_ADDR=$rootDest\
-    TEST_REQUEST_ACK=$testRequestAck\
-    $commonOptions\
-    DEBUG_TMP=1 DEBUG_TESTBED=1 DEBUG_PFS_FREAKOUT=1
+    TEST_DEST_ADDR=$rootDest \
+    TEST_REQUEST_ACK=$requestAck\
+    $commonOptions
+  grep -v '#' $rootMap | while read line
+  do
+    ref=$(echo $line | cut -d ' ' -f 1)
+    id=$(echo $line | cut -d ' ' -f 2)
+    make bacon2 reinstall,$id bsl,ref,$ref
+  done
 fi

@@ -572,6 +572,7 @@ module CXTDMAPhysicalP {
   //FrameStartAlarm.fired event.
   void configureRadio();
   async event void PrepareFrameStartAlarm.fired(){
+    PFS_TIMING_SET_PIN;
     recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
@@ -606,6 +607,7 @@ module CXTDMAPhysicalP {
       pfsTaskPending = FALSE;
       reportAsyncError(S_ERROR_2);
     }
+    PFS_TIMING_CLEAR_PIN;
   }
   
   //actually set up the radio for the coming frame-start
@@ -709,6 +711,7 @@ module CXTDMAPhysicalP {
             call PrepareFrameStartAlarm.getAlarm());
         }
         if (asyncState == S_RX_READY){
+          FWA_TIMING_SET_PIN;
           call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
             s_fwCheckLen);
   //        if (! s_isSynched){
@@ -816,6 +819,7 @@ module CXTDMAPhysicalP {
   }
 
   async event void FrameWaitAlarm.fired(){
+    FWA_TIMING_CLEAR_PIN;
     recordEvent(7);
     fwHandled = call FrameWaitAlarm.getNow();
     if (asyncState == S_RX_WAIT){
@@ -841,6 +845,7 @@ module CXTDMAPhysicalP {
         setAsyncState(S_ERROR_f);
       }
     } else if (asyncState == S_RX_RECEIVING){
+      FWA_TIMING_SET_PIN;
       //TODO:extend the wait time for max-length packet. 
       //half-frame-length is probably too long?
       lastFw = call FrameWaitAlarm.getAlarm();
@@ -1164,6 +1169,8 @@ module CXTDMAPhysicalP {
 //          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
+    printf_TMP("Using PFS_SLACK: %lu s_fwCheckLen: %lu\r\n",
+      PFS_SLACK, s_fwCheckLen);
     return err;
   }
 
