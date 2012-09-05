@@ -53,6 +53,7 @@ requestAck=0
 senderDest=65535UL
 senderMap=map.none
 receiverMap=map.none
+snifferMap=map.none
 rootMap=map.0
 targetIpi=1024UL
 queueThreshold=10
@@ -61,11 +62,12 @@ numTransmits=1
 bufferWidth=0
 fps=40
 staticScheduler=1
+forceSlots=0
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
-"staticScheduler" )
+"staticScheduler" "snifferMap" "forceSlots")
 
 while [ $# -gt 1 ]
 do
@@ -111,9 +113,15 @@ testDesc=\\\"$testDesc\\\"
 
 if [ $staticScheduler -eq 1 ]
 then
-  maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
-  numSlots=$(($maxNodeId + 10))
-  firstIdleSlot=$(($maxNodeId + 5))
+  if [ "$forceSlots" !=  "0" ]
+  then
+    numSlots=$forceSlots
+    firstIdleSlot=$(($forceSlots - 1))
+  else
+    maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
+    numSlots=$(($maxNodeId + 10))
+    firstIdleSlot=$(($maxNodeId + 5))
+  fi
 else
   numNodes=$(cat $rootMap $receiverMap $senderMap | grep -c -v '#' )
   numSlots=$(($numNodes + 5))
@@ -165,6 +173,14 @@ then
     TEST_DEST_ADDR=$senderDest \
     TEST_REQUEST_ACK=$requestAck\
     $commonOptions
+fi
+
+if [ "$snifferMap" != "" ]
+then
+  pushd .
+  cd ../sniffer
+  ./burn $testbedDir/$snifferMap
+  popd
 fi
 
 if [ "$rootMap" != "" ]

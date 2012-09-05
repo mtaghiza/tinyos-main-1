@@ -7,8 +7,9 @@ logDir=$1
 dbDir=$2
 sd=$(dirname $0)
 
+set -x
 for f in $logDir/*
 do
-  bn=$(basename $f | cut -d '.' -f 1,2)
+  bn=$(basename $f | rev | cut -d '.' -f 1 --complement | rev)
   $sd/processCXLog.sh $f $dbDir/$bn
 done

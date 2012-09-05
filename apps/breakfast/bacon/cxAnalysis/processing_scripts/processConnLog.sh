@@ -133,13 +133,19 @@ LEFT JOIN RX_SUMMARY ON
 SELECT "Creating B_LINK table";
 DROP TABLE IF EXISTS B_LINK;
 CREATE TABLE B_LINK AS
-SELECT a.src n0,
+SELECT a.txPower as txPower,
+  a.sr as sr,
+  a.len as len,
+  a.src n0,
   b.src n1,
   b.prr p_01,
   a.prr p_10
 FROM LINK a 
 JOIN LINK b
 ON a.src==b.dest AND b.src == a.dest 
+AND a.txPower = b.txPower
+AND a.sr = b.sr
+AND a.len = b.len
 ;
 EOF
 #rm $txFile $rxFile

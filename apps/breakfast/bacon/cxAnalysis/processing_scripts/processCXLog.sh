@@ -287,36 +287,75 @@ CREATE TABLE RADIO_STATS_RAW (
 
 .import $rsTf RADIO_STATS_RAW
 
-DROP TABLE IF EXISTS RADIO_STATS_TOTALS;
-CREATE TABLE RADIO_STATS_TOTALS as
-SELECT node, 
-  state, 
-  max(total) as total 
-FROM radio_stats_raw GROUP BY node, state;
+DROP TABLE IF EXISTS radio_stats_start;
+CREATE TABLE radio_stats_start
+AS 
+  SELECT radio_stats_raw.node as node, 
+    min(sn) as sn
+  FROM radio_stats_raw 
+  JOIN prr_bounds
+  ON radio_stats_raw.node = prr_bounds.node
+  WHERE radio_stats_raw.ts > prr_bounds.startTs
+  GROUP BY radio_stats_raw.node;
 
-INSERT INTO radio_stats_totals (node, state, total)
-  SELECT node, 'a', sum(total) 
-  FROM radio_stats_totals
-  WHERE state in ('f', 'i', 'r', 's', 't')
-  GROUP BY node;
+DROP TABLE IF EXISTS radio_stats_end;
+CREATE TABLE radio_stats_end
+AS 
+  SELECT radio_stats_raw.node as node, 
+    max(sn) as sn
+  FROM radio_stats_raw 
+  JOIN prr_bounds
+  ON radio_stats_raw.node = prr_bounds.node
+  WHERE radio_stats_raw.ts < prr_bounds.endTs
+  GROUP BY radio_stats_raw.node;
 
--- INSERT INTO radio_stats_totals (node, state, total) 
--- SELECT ra.node, 'a', ra.total - ro.total 
--- FROM radio_stats_totals as ra 
--- JOIN radio_stats_totals as ro 
---   ON ra.node = ro.node 
---   AND ra.state='A' 
---   AND ro.state = 'o';
+--total time at each record
+DROP TABLE IF EXISTS radio_stats_totals;
+CREATE TABLE radio_stats_totals AS
+  SELECT ts, node, sn, sum(total) as total
+  FROM radio_stats_raw
+  GROUP BY ts, node, sn;
 
-DROP TABLE IF EXISTS RADIO_STATS;
-CREATE TABLE RADIO_STATS as 
-SELECT radio_stats_totals.node, 
-  radio_stats_totals.state, 
-  (1.0*radio_stats_totals.total/ra.total) as frac
-FROM radio_stats_totals 
-JOIN radio_stats_totals as ra 
-  ON ra.node = radio_stats_totals.node 
-WHERE ra.state='a';
+-- time spent in each state:
+--   (stateFinal-stateStart)/(totalFinal - totalStart)
+DROP TABLE IF EXISTS radio_stats;
+CREATE TABLE RADIO_STATS AS
+SELECT 
+  stateEnd.node as node,
+  stateEnd.state as state,
+  stateEnd.total as endVal, stateStart.total as startVal, allEnd.total
+  as endTot, allStart.total as startTot,
+  (1.0*stateEnd.total - stateStart.total) / (allEnd.total - allStart.total) as frac
+FROM radio_stats_start 
+  JOIN radio_stats_end 
+    ON radio_stats_start.node = radio_stats_end.node
+  JOIN radio_stats_raw stateEnd
+    ON stateEnd.node = radio_stats_end.node 
+    AND stateEnd.sn = radio_stats_end.sn
+  JOIN radio_stats_raw stateStart
+    ON stateStart.node = radio_stats_start.node
+    AND stateStart.sn = radio_stats_start.sn
+    AND stateStart.state = stateEnd.state
+  JOIN (
+    SELECT radio_stats_raw.node as node, sum(total) as total
+    FROM radio_stats_raw 
+      JOIN radio_stats_start
+      ON radio_stats_raw.node = radio_stats_start.node
+      AND radio_stats_raw.sn = radio_stats_start.sn
+    GROUP BY radio_stats_raw.node
+  ) allStart
+    ON allStart.node = radio_stats_start.node
+  JOIN (
+    SELECT radio_stats_raw.node as node, 
+      sum(total) as total
+    FROM radio_stats_raw 
+      JOIN radio_stats_end
+      ON radio_stats_raw.node = radio_stats_end.node
+      AND radio_stats_raw.sn = radio_stats_end.sn
+    GROUP BY radio_stats_raw.node
+  ) allEnd
+    ON allEnd.node = radio_stats_end.node; 
+
 
 DROP TABLE IF EXISTS ACTIVE_STATES;
 CREATE TABLE ACTIVE_STATES (
@@ -333,6 +372,8 @@ AS
   JOIN active_states 
   ON active_states.state = radio_stats.state 
   GROUP BY node;
+
+
 
 SELECT "Computing depth asymmetry";
 

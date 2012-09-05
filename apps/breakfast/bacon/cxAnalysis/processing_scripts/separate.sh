@@ -19,20 +19,27 @@ do
   # cut from start -> end of full log and put in tmp
   tail --lines=+$s $lf > $tf
   # read label from first line of tmp file
-  label=$(head -1 $tf | tr '_' ' '| cut -d ' ' -f 7)
-  of=$od/$label.log 
+  settingsLine=$(head -1 $tf)
+  label=$(echo "$settingsLine" | tr '/' '.'| tr '_' ' ' | cut -d ' ' -f 7 )
+  id=$(head -1 $tf | tr '_' ' '| cut -d ' ' -f 5)
+  of=$od/$label.$id.log 
   echo "Separating to $of"
   #is there another START in here?
   if [ $(grep -c ' 0 START' $tf) -gt 1 ]
   then 
     #find it
-    e=$(tail --lines=+2 $tf | grep -n ' 7 START' | head -1 | tr ':' ' ' | cut -d ' ' -f 1)
+    e=$(tail --lines=+2 $tf | grep -n ' 0 START' | head -1 | tr ':' ' ' | cut -d ' ' -f 1)
     #cut to it and put in final
     head --lines=$e $tf > $of
   else
     #save as output file
     mv $tf $of
   fi
+#  #cut end: if stuff happened after the root was reprogrammed, we
+#  # don't want to hear about it.
+#  lastRoot=$(awk '($2 == 0){print NR}' < $of | tail -1)
+#  head --lines=$lastRoot $of > $tf
+#  mv $tf $of
 done
 
 touch $tf 

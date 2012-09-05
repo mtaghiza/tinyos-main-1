@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import sqlite3
 import sys
+import random
 
 class TestbedMap(object):
     def __init__(self, nsluFile='config/nslu_locations.txt', 
@@ -106,6 +107,11 @@ class TestbedMap(object):
     def postDraw(self):
         pass
 
+    def textOutput(self):
+        print 'node,%s'%self.colAttr
+        for n in self.G.nodes():
+            print '%d,%f'%(n, self.G.node[n][self.colAttr])
+
 class SingleTXDepth(TestbedMap):
     def __init__(self, root, dbFile, sr, txp, packetLen, prr_threshold=0.0,
             distanceLabels = False, **kwargs):
@@ -161,7 +167,7 @@ class CXDistance(TestbedMap):
         super(CXDistance, self).__init__(**kwargs)
         self.loadDistances(node, distanceFrom, dbFile)
         self.loadErrors(dbFile)
-        self.setAttr('distance', self.distances, -1)
+        self.setAttr('distance', self.distances, 0)
         self.setColAttr('distance')
         self.addOutlined(node, 10)
 
@@ -232,7 +238,7 @@ class CXPrr(TestbedMap):
             q = 'SELECT dest, sum(cnt*prr)/sum(cnt) from prr_clean where src=? group by dest'
         else:
             q = 'SELECT src, sum(cnt*prr)/sum(cnt) from prr_clean where dest=? group by src'
-        print "Using query:",q, node
+#        print "Using query:",q, node
         self.prrs = dict(c.execute(q, (node,)))
         c.close()
 
@@ -262,15 +268,104 @@ class SinglePrr(TestbedMap):
         self.prrs = dict(c.execute(q, (nodeId,)))
         c.close()
 
+class FloodSimMap(TestbedMap):
+    def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
+          sr=125, txp=0x8D, packetLen=35, **kwargs):
+        super(FloodSimMap, self).__init__(**kwargs)
+        self.loadEdges(connDbFile, sr, txp, packetLen)
+        self.simMultiple(root, maxDepth, simRuns)
+
+    def loadEdges(self, dbFile, sr, txp, packetLen):
+        c = sqlite3.connect(dbFile)
+        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=? AND txPower=? AND len=?', (sr, txp, packetLen)).fetchall()
+        for (src, dest, prr) in links:
+            self.G.add_edge(src, dest, prr=prr)
+    
+    def simInit(self, root):
+        for n in self.G.nodes():
+            self.G.node[n]['receiveRound'] = sys.maxint
+            if 'simResults' not in self.G.node[n]:
+                self.G.node[n]['simResults'] = []
+        self.G.node[root]['receiveRound'] = 0
+
+    def simRound(self, d):
+        for n in self.G.nodes():
+            if self.G.node[n]['receiveRound'] == d-1:
+                for dest in self.G[n]:
+                    if self.G.node[dest]['receiveRound'] == sys.maxint: 
+                        if random.random() < self.G[n][dest]['prr']:
+                            self.G.node[dest]['receiveRound'] = d
+                        else:
+                            pass
+
+    def sim(self, root, maxDepth=10):
+        self.simInit(root)
+        for d in range(1, maxDepth+1):
+            self.simRound(d)
+        for n in self.G.nodes():
+            self.G.node[n]['simResults'].append(self.G.node[n]['receiveRound'])
+ 
+    def simMultiple(self, root, maxDepth=10, simRuns=100):
+        for i in range(simRuns):
+            self.sim(root, maxDepth)
+
+#     def listResults(self):
+#         for n in self.G.nodes():
+#             r_all = self.G.node[n]['simResults']
+#             r_rx  = [v for v in r_all if v != sys.maxint]
+#             prr = len(r_rx)/float(len(r_all))
+#             if prr > 0:
+#                 avgDepth = sum(r_rx)/float(len(r_rx))
+#                 print n, avgDepth, prr
+
+class FloodSimPrrMap(FloodSimMap):
+    def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
+        sr=125, txp=0x8D, packetLen=35, **kwargs):
+        super(FloodSimPrrMap, self).__init__(connDbFile, root,
+          maxDepth, simRuns, sr, txp, packetLen, **kwargs)
+        self.computePrr()
+        self.setColAttr('prr')
+        self.addOutlined(root, 10)
+        self.setLabels(nx.get_node_attributes(self.G, 'prr'))
+
+    def computePrr(self):
+        for n in self.G.nodes():
+            r_all = self.G.node[n]['simResults']
+            r_rx  = [v for v in r_all if v != sys.maxint]
+            prr = len(r_rx)/float(len(r_all))
+            self.G.node[n]['prr'] = prr
+        
+
+class FloodSimDepthMap(FloodSimMap):
+    def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
+        sr=125, txp=0x8D, packetLen=35, **kwargs):
+        super(FloodSimDepthMap, self).__init__(connDbFile, root,
+          maxDepth, simRuns, sr, txp, packetLen, **kwargs)
+        self.computeDepth()
+        self.setColAttr('distance')
+        self.addOutlined(root, 10)
+        self.setLabels(nx.get_node_attributes(self.G, 'distance'))
+
+    def computeDepth(self):
+        for n in self.G.nodes():
+            r_all = self.G.node[n]['simResults']
+            r_rx  = [v for v in r_all if v != sys.maxint]
+            prr = len(r_rx)/float(len(r_all))
+            if not r_rx:
+                self.G.node[n]['distance'] = 0
+            else:
+                self.G.node[n]['distance'] = sum(r_rx)/float(len(r_rx))
+
 class DutyCycle(TestbedMap):
-    def __init__(self, dbFile, **kwargs):
+    def __init__(self, dbFile, dcLabels, **kwargs):
         super(DutyCycle, self).__init__(**kwargs)
         self.loadDutyCycles(dbFile)
         self.setAttr('dutyCycle', self.dutyCycles, 0.0)
         self.setColAttr('dutyCycle')
-        rounded = dict([ (k, "%.2f"%self.dutyCycles[k]) 
-          for k in self.dutyCycles])
-        self.setLabels(rounded)
+        if dcLabels:
+          rounded = dict([ (k, "%.2f"%self.dutyCycles[k]) 
+            for k in self.dutyCycles])
+          self.setLabels(rounded)
 
     def loadDutyCycles(self, dbFile):
         c = sqlite3.connect(dbFile)
@@ -285,8 +380,8 @@ if __name__ == '__main__':
         src = int(sys.argv[3])
         thresh = float(sys.argv[4])
         sr = 125
-        #0xC3= +10
-        txp = 0xC3
+        #0x8D= 0
+        txp = 0x8D
         packetLen = 35
         distanceLabels = False
         if len(sys.argv) > 5:
@@ -339,12 +434,16 @@ if __name__ == '__main__':
                 nodeId = int(v)
         tbm = SinglePrr(nodeId, prrFrom, fn)
     elif t == '--dc':
-        tbm = DutyCycle(fn)
+        dcLabels = 1
+        if len(sys.argv) > 4:
+            for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--dcLabels':
+                    dcLabels = int(v)
+        tbm = DutyCycle(fn, dcLabels)
     elif t == '--degree':
         thresh = 0.95
         sr = 125
-        #0xC3= +10
-        txp = 0xC3
+        txp = 0x8D
         packetLen = 35
         degreeLabels = False
         if len(sys.argv) > 4:
@@ -361,6 +460,24 @@ if __name__ == '__main__':
                     degreeLabels = int(v)
         tbm = Degree(fn, sr, txp, packetLen, thresh,
           degreeLabels)
+    elif t == '--fsp':
+        root = 0
+        maxDepth = 10
+        simRuns = 100
+        sr = 125
+        txp = 0x8D
+        packetLen = 35
+        tbm = FloodSimPrrMap(fn, root, maxDepth, simRuns, sr, txp,
+            packetLen)
+    elif t == '--fsd':
+        root = 0
+        maxDepth = 10
+        simRuns = 100
+        sr = 125
+        txp = 0x8D
+        packetLen = 35
+        tbm = FloodSimDepthMap(fn, root, maxDepth, simRuns, sr, txp,
+            packetLen)
     else:
         print >> sys.stderr, "Unrecognized type",t
 
@@ -369,6 +486,7 @@ if __name__ == '__main__':
         if o == '--outFile':
             outFile = v
     tbm.draw(node_size=400, outFile=outFile)
+    tbm.textOutput()
 
 # 0 CX trace
 #   - no edges
