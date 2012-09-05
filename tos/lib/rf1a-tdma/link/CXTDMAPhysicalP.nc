@@ -394,6 +394,11 @@ module CXTDMAPhysicalP {
       //NB: Phy impl starts the radio in IDLE
       setState(S_IDLE);
       signal SplitControl.startDone(SUCCESS);
+      if (DEBUG_CONFIG){
+        rf1a_config_t config;
+        call Rf1aPhysical.readConfiguration(&config);
+        call Rf1aDumpConfig.display(&config);
+      }
     }else{
       setState(S_ERROR_0);
     }

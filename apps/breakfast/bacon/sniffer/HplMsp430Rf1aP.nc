@@ -67,7 +67,6 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Rf1aInterrupts[uint8_t client];
     interface Leds;
     interface Counter<TMicro,uint32_t>;
-    interface StdOut;
   }
 } implementation {
   int rssiConvert_dBm(uint8_t rssi_dec_);
@@ -370,6 +369,16 @@ generic module HplMsp430Rf1aP () @safe() {
       tx_pos = tx_end = 0;
       tx_remain = 0;
       rx_result = tx_result = SUCCESS;
+
+      //if we are not using one of the auto-cal settings, then
+      //  we need to do a manual calibration here.
+      if ( 0x00 == ((config->mcsm0 >> 4) & 0x03)){
+        uint8_t rc;
+        rc = call Rf1aIf.strobe(RF_SCAL);
+        while (RF1A_S_IDLE != (RF1A_S_MASK & rc)) {
+          rc = call Rf1aIf.strobe(RF_SNOP);
+        }
+      }
     }
   }
 
@@ -1256,17 +1265,14 @@ generic module HplMsp430Rf1aP () @safe() {
 
 
 /* sniffer begin *************************************************************/
-//      call StdOut.print("\n\r");
-      call StdOut.printBase10uint32(rxTime);
-      call StdOut.print(" ");
-      call StdOut.dumpHex(start,received," ");
-      call StdOut.print(" ");
-      call StdOut.printHex(rx_lqi_raw &  0x80);
-      call StdOut.print(" ");
-      call StdOut.printHex(rx_lqi_raw &  0x7f);
-      call StdOut.print(" ");
-      call StdOut.printBase10int16(rssiConvert_dBm(rx_rssi_raw));
-      call StdOut.print("\r\n");
+    uint8_t k;
+    for(k = 0; k < received; k++){
+      printf("%02X", start[k]);
+    }
+    printf(" %d %u %x\r\n", 
+      rssiConvert_dBm(rx_rssi_raw),
+      rx_lqi_raw & 0x7f, 
+      (rx_lqi_raw & 0x80));
 /* sniffer end ***************************************************************/
     
       signal Rf1aPhysical.receiveDone[client](start, received, result);
@@ -1642,7 +1648,6 @@ generic module HplMsp430Rf1aP () @safe() {
     return metadatap->lqi & 0x80;
   }
 
-  async event void StdOut.get(uint8_t data) { }
 
 }
 

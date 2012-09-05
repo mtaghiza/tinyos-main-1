@@ -89,9 +89,6 @@ generic configuration HplMsp430Rf1aC (
   components CounterMicro32C;
   HplRf1aP.Counter -> CounterMicro32C;
   
-  components StdOutC;
-  HplRf1aP.StdOut -> StdOutC;
-  
   components LedsC;
   HplRf1aP.Leds -> LedsC;
   HplMsp430Rf1aInterruptP.Leds -> LedsC;

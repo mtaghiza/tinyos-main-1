@@ -73,6 +73,7 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Leds;
   }
 } implementation {
+  int rssiConvert_dBm(uint8_t rssi_dec_);
 
   /* See configure_ for details. on how these signals are used. */
   enum {
@@ -1397,6 +1398,16 @@ generic module HplMsp430Rf1aP () @safe() {
       signal Rf1aPhysical.receiveStarted[client](expected);
     }
     if (signal_complete) {
+///* sniffer begin *************************************************************/
+//    uint8_t k;
+//    for(k = 0; k < received; k++){
+//      printf("%02X", start[k]);
+//    }
+//    printf(" %d %u %x\r\n", 
+//      rssiConvert_dBm(rx_rssi_raw),
+//      rx_lqi_raw & 0x7f, 
+//      (rx_lqi_raw & 0x80));
+///* sniffer end ***************************************************************/
       signal Rf1aPhysical.receiveDone[client](start, received, result);
     }
     if (signal_filled) {

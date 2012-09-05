@@ -4,15 +4,15 @@ implementation {
   components new TimerMilliC();
   components ActiveMessageC;
   components Rf1aActiveMessageC;
+  components PlatformSerialC;
   
 
-//  components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
   #if SYMBOLRATE == 50
   components Rf1aConfig50KC as Rf1aSettings;
   #elif SYMBOLRATE == 100
   components Rf1aConfig100KC as Rf1aSettings;
   #elif SYMBOLRATE == 125
-  components Rf1aConfig125KC as Rf1aSettings;
+  components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
   #elif SYMBOLRATE == 250
   components Rf1aConfig250KC as Rf1aSettings;
   #else
@@ -31,9 +31,8 @@ implementation {
   App.MilliTimer -> TimerMilliC;
 
 
-  components StdOutC;
-  App.SerialControl -> StdOutC;
-  App.StdOut -> StdOutC;
+  App.SerialControl -> PlatformSerialC;
+  components SerialPrintfC;
 
   components Rf1aDumpConfigC;
 //  App.Rf1aConfigure -> Rf1aSettings;
