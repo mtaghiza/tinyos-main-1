@@ -31,9 +31,9 @@ for (i in seq(argStart, argc-1)){
 
 library(RSQLite)
 con <- dbConnect(dbDriver("SQLite"), dbname=fn)
-rs <- dbSendQuery(con, selectQ);
 
-x<- fetch(rs, n=-1)
+
+x<- dbGetQuery(con, selectQ)
 
 
 
@@ -57,11 +57,11 @@ lines(c(-10,10), y=c(-10,10) - margin, col='gray')
 counts <- c( dim(farther_rl)[1], dim(farther_lr)[1], dim(equal_lr)[1])
 means <- round(c(mean(farther_rl$depth_rl - farther_rl$depth_lr),
   mean(farther_lr$depth_lr - farther_lr$depth_rl),
-  0), digits=2)
+  mean(equal_lr$depth_lr - equal_lr$depth_rl)), digits=2)
 legend('topleft', 
   paste(c('R->L Longer:', 'L->R Longer:', paste('Within', margin, ':')), counts,
-  c('Avg diff:'), means),
-  text.col=c('red', 'blue', 'black'))
+  c('Avg diff:'), means, c('', '', '(- indicates rl > lr)')),
+  text.col=c('blue', 'red', 'black'))
 title("Average Depth Asymmetries: Flood, no retx")
 
 if ( plotFile){

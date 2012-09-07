@@ -48,4 +48,7 @@ legend('topleft', c(paste(x$lbl.y[1], 'Farther:', dim(fartherY)[1]),
     paste('Within', margin,':', dim(equalY)[1])),
     text.col=c('red', 'blue', 'black'))
 title('Simulated (serial) flood depth and actual CX flood depth')
-    
+
+if (plotFile){
+  g<-dev.off()
+}

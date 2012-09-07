@@ -1,20 +1,27 @@
 #!/bin/bash
 if [ $# -lt 2 ]
 then
-  echo "Usage: $0 <logfile> <outputDir>" 2>&1
+  echo "Usage: $0 <logfile> <outputDir> [root=0]" 2>&1
   exit 1
 fi
 
 lf=$1
 od=$2
+rootId=0
 tf=tmp.log
 if [ $(file $lf | grep -c 'CRLF') -eq 1 ] 
 then 
   dos2unix $lf
 fi
+
 set -x 
+if [ $# -gt 2 ]
+then
+  rootId=$3
+fi
+
 # for each start message for root
-grep -n ' 0 START' $lf | tr ':_' ' ' | cut -d ' ' -f 1 | while read s
+grep -n " $rootId START" $lf | tr ':_' ' ' | cut -d ' ' -f 1 | while read s
 do
   # cut from start -> end of full log and put in tmp
   tail --lines=+$s $lf > $tf
@@ -25,10 +32,10 @@ do
   of=$od/$label.$id.log 
   echo "Separating to $of"
   #is there another START in here?
-  if [ $(grep -c ' 0 START' $tf) -gt 1 ]
+  if [ $(grep -c " $rootId START" $tf) -gt 1 ]
   then 
     #find it
-    e=$(tail --lines=+2 $tf | grep -n ' 0 START' | head -1 | tr ':' ' ' | cut -d ' ' -f 1)
+    e=$(tail --lines=+2 $tf | grep -n " $rootId START" | head -1 | tr ':' ' ' | cut -d ' ' -f 1)
     #cut to it and put in final
     head --lines=$e $tf > $of
   else

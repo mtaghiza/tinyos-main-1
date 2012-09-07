@@ -2,6 +2,7 @@
 if [ $# -lt 2 ]
 then
   echo "Usage: $0 <logDir> <dbDir>"
+  exit 1
 fi
 logDir=$1
 dbDir=$2

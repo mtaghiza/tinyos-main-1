@@ -56,6 +56,8 @@ for (index in 1:length(labelVals)){
     
   medians <- c(medians, median(vals$dc))
 }
+lines(c(0.0043, 0.0043), c(0,1), lty=3)
+lines(c(0.1, 0.1), c(0,1), lty=2)
 legend('bottomright', legend=paste('Label:', labelVals, 'Med DC:',
   round(medians, 4)), 
   text.col=rCols)
