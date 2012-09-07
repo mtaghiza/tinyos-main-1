@@ -233,6 +233,10 @@ module UnreliableBurstSchedulerP{
         sd,
         bw,
         isBetween);
+      if (call TDMARoutingSchedule.isSynched() 
+          && (sm == 0xff || sd == 0xff || md == 0xff)){
+        call CXRoutingTable.dumpTable();
+      }
       //shut 'er down
       if (! isBetween){
         call TDMARoutingSchedule.inactiveSlot();

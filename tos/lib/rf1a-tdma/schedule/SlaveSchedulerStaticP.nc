@@ -109,7 +109,7 @@ module SlaveSchedulerStaticP {
     schedule_msg = msg;
     //make sure that root -> self distance retained.
     call CXRoutingTable.setPinned(call AMPacket.source(msg),
-      TOS_NODE_ID, TRUE);
+      TOS_NODE_ID, TRUE, TRUE);
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
     cyclesSinceSchedule = 0;

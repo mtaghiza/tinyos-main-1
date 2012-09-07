@@ -8,6 +8,20 @@ generic module CXRoutingTableP(uint8_t numEntries){
   cx_route_entry_t rt[numEntries];
   uint8_t lastEvicted = numEntries-1;
 
+  command void CXRoutingTable.dumpTable(){
+    uint8_t k;
+    for (k=0; k< numEntries; k++){
+      cx_route_entry_t* re;
+      printf_TMP("# RT[%d] %d->%d = %d (%d %d) ", 
+        k, rt[k].n0, rt[k].n1, 
+        rt[k].distance, rt[k].used, rt[k].pinned);
+      printf_TMP(" lu: %d", 
+        call CXRoutingTable.distance(rt[k].n0, rt[k].n1, FALSE));
+      printf_TMP(" rev: %d \r\n", 
+        call CXRoutingTable.distance(rt[k].n1, rt[k].n0, TRUE));
+    }
+  }
+
   command error_t Init.init(){
     uint8_t i;
     for(i = 0; i < numEntries; i++){
@@ -71,19 +85,22 @@ generic module CXRoutingTableP(uint8_t numEntries){
     }
     //start at lastEvicted+1
     i = (lastEvicted + 1)%numEntries;
-
     //look for one that hasn't been used recently, clearing LRU flag
     //as you go. Eventually we'll either find an unused slot or we'll
     //wrap around.
-    while (rt[i].used && checked < CX_ROUTING_TABLE_ENTRIES + 1){
+
+    while (rt[i].used && checked < CX_ROUTING_TABLE_ENTRIES ){
       if (!rt[i].pinned){
         rt[i].used = FALSE;
+      }else{
+        checked++;
       }
-      checked++;
       i = (i+1)%numEntries;
     }
-    //Fail if there are no un-pinned entries.
-    if (checked == CX_ROUTING_TABLE_ENTRIES + 1){
+    //Fail if there are no un-pinned entries
+    if (rt[i].pinned){
+      printf("~No unpinned RT entries!\r\n");
+      call CXRoutingTable.dumpTable();
       return FAIL;
     }
     //save it
@@ -97,13 +114,26 @@ generic module CXRoutingTableP(uint8_t numEntries){
     return SUCCESS;
   }
 
-  command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1, bool pinned){
+  command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1,
+      bool pinned, bool bdOK){
     cx_route_entry_t* re;
+    error_t err = FAIL;
+    //make sure that we pin both directions...
+//    printf_TMP("Pin %d -> %d: %d %d e=", n0, n1, pinned, bdOK);
     if (getEntry(&re, n0, n1, FALSE)){
+      err = SUCCESS;
       re->pinned = pinned;
-      return SUCCESS;
+    }    
+    if (bdOK){
+      if (getEntry(&re, n1, n0, FALSE)){
+        err = SUCCESS;
+        re->pinned = pinned;
+      }
     }
-    return FAIL;
+//    printf_TMP("%x\r\n", err);
+//    call CXRoutingTable.dumpTable();
+
+    return err;
   }
 
   command uint8_t CXRoutingTable.getBufferWidth(){
@@ -120,7 +150,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
     }
     if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
       uint8_t sm = re->distance;
-      if (getEntry(&re, n1, TOS_NODE_ID, bdOK)){
+      if (getEntry(&re, TOS_NODE_ID, n1, bdOK)){
         uint8_t md = re->distance;
         if (getEntry(&re, n0, n1, bdOK)){
           *result = sm + md <= (re->distance 

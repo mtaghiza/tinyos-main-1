@@ -1331,7 +1331,7 @@ generic module HplMsp430Rf1aP () @safe() {
     uint8_t lqi){
       uint8_t k;
         printf("S ");
-        for(k = 0; k < SNIFFER_PKT_LEN; k++){
+        for(k = 0; k < SNIFFER_PKT_LEN ; k++){
           printf("%02X", pkt[k]);
         }
         printf(" %d %u %x\r\n", 
