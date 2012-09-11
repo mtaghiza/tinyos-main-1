@@ -86,6 +86,8 @@ module TestP {
       P2OUT |=BIT1;
     }
     call UartControl.start();
+    //in case we were mid-printf when we got programmed last
+    printf_APP("\r\n\r\n");
     printf_APP("START %s\r\n", TEST_DESC);
     call StartupTimer.startOneShot((call Random.rand32())%5120);
   }
