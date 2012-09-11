@@ -663,6 +663,16 @@ generic module HplMsp430Rf1aP () @safe() {
       call Rf1aFifo.writeTXFIFO(&len8, sizeof(len8), TRUE);
     }
     TXCP_CLEAR_PIN;
+    //TODO: signal up to PartialSend.getWriteLength(): default wiring
+    //      should indicate entire packet. If we are non-origin,
+    //      indicate entire packet.
+    //TODO: fill in buffer with PartialSend.getWriteLength() bytes.
+    //TODO: if data remains, save state and yield by signalling
+    //      PartialSend.writePaused()
+    //TODO: upper layer will get TX capture, fill in timestamp, and
+    //      then call PartialSend.completeWrite(), continues with the
+    //      rest of the packet.
+
     //FEC: encode this data on the way in.
     call Rf1aFifo.writeTXFIFO (data, count, FALSE);
     tx_state = TX_S_loaded;

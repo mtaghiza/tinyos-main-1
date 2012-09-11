@@ -181,6 +181,16 @@ module Rf1aCXPacketP{
   command uint32_t CXPacketMetadata.getPhyTimestamp(message_t* amsg){
     return getMetadata(amsg)->phyTimestamp;
   }
+  
+  command void CXPacketMetadata.setOriginalFrameStartEstimate(
+      message_t* amsg, uint32_t ts){
+    getMetadata(amsg)->originalFrameStartEstimate = ts;
+  }
+
+  command uint32_t CXPacketMetadata.getOriginalFrameStartEstimate(message_t* amsg){
+    return getMetadata(amsg)->originalFrameStartEstimate;
+  }
+
   command void CXPacketMetadata.setFrameNum(message_t* amsg, uint16_t frameNum){
     getMetadata(amsg)->frameNum = frameNum;
   }

@@ -37,6 +37,7 @@ typedef struct cx_metadata_t{
   uint8_t receivedCount;
   uint32_t phyTimestamp;
   uint32_t alarmTimestamp;
+  uint32_t originalFrameStartEstimate;
   uint16_t frameNum;
   uint8_t symbolRate;
   bool requiresClear;

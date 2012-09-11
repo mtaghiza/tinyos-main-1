@@ -11,5 +11,7 @@ interface CXPacketMetadata{
   command uint8_t getSymbolRate(message_t* amsg);
   command void setRequiresClear(message_t* amsg, bool rc);
   command bool getRequiresClear(message_t* amsg);
-
+  command void setOriginalFrameStartEstimate(message_t* amsg, 
+    uint32_t ts);
+  command uint32_t getOriginalFrameStartEstimate(message_t* amsg);
 }

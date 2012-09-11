@@ -79,17 +79,54 @@ module SlaveSchedulerStaticP {
       );
   }
 
+  #define SKEW_HISTORY 2
+  uint32_t delta_root [SKEW_HISTORY];
+  uint32_t delta_leaf [SKEW_HISTORY];
+  uint32_t last_root;
+  uint32_t last_leaf;
+  uint8_t skew_index = 0;
+  int32_t lag_per_cycle;
+  int32_t lag_per_slot;
+
   task void updateSchedule(){
+    uint32_t cur_root;
+    uint32_t cur_leaf;
     uint8_t sri = srIndex(schedule->symbolRate);
     isSynched = TRUE;
     scheduleNum = schedule->scheduleNum;
-    //TODO: clock skew correction
+    //clock skew correction:
+    // - we have originalFrameStartEstimate (local) and packet timestamp, 
+    //   so use these as reference points
+    // - just get the average delta per slot (in ticks) and adjust by this at each
+    //   slot start: do this by issuing a setSchedule that uses
+    //     (originalFrameStartEstimate + (slotNum*delta_per_slot),
+    //      originalFrameNum + (slotNum* framesPerSlot))
     //OFN 0 and receivedCount 1: should be received at
     //frame 0, not frame 1. 
+
+    //lag_per_cycle: (ts_1 - ts_0) - (ofse_1 - ofse_0) 
+    //lag_per_slot: lag_per_cycle/numSlots
+    cur_root = call CXPacket.getTimestamp(schedule_msg);
+    cur_leaf = call CXPacketMetadata.getOriginalFrameStartEstimate(schedule_msg);
+    //TODO: handle wrap (maybe? should be cool.)
+    if (last_root != 0){
+      int32_t lagTot = 0;
+      uint8_t i;
+      delta_root[skew_index] = cur_root - last_root;
+      delta_leaf[skew_index] = cur_leaf - last_leaf;
+      for(i = 0; i< SKEW_HISTORY && delta_root[i] != 0 ; i++){
+        lagTot += delta_root[i] - delta_leaf[i];
+      }
+      lag_per_cycle = lagTot/(i-1);
+      lag_per_slot = lag_per_cycle / schedule->slots;
+      skew_index = (skew_index+1)%SKEW_HISTORY;
+    }
+    last_root = cur_root;
+    last_leaf = cur_leaf;
+
     call TDMAPhySchedule.setSchedule(
-      call CXPacketMetadata.getPhyTimestamp(schedule_msg) -
-      sfdDelays[sri] - fsDelays[sri],
-      call CXPacket.getOriginalFrameNum(schedule_msg) + call CXPacketMetadata.getReceivedCount(schedule_msg) -1,
+      cur_leaf,
+      call CXPacket.getOriginalFrameNum(schedule_msg),
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
@@ -113,10 +150,14 @@ module SlaveSchedulerStaticP {
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
     cyclesSinceSchedule = 0;
+    if (! isSynched){
+      printf_SCHED_RXTX("SCHED_SYNCH\r\n");
+    }
     return ret;
   }
 
   event void SubSplitControl.startDone(error_t error){ 
+    printf_SCHED_RXTX("SCHED_SEARCH\r\n");
     post startListen();
   }
 
@@ -146,6 +187,7 @@ module SlaveSchedulerStaticP {
     if (frameNum == 0){
       cyclesSinceSchedule ++;
       if (cyclesSinceSchedule > CX_RESYNCH_CYCLES && state != S_LISTEN){
+        printf_SCHED_RXTX("SYNCH_LOSS\r\n");
         post startListen();
       }
     }
@@ -163,6 +205,22 @@ module SlaveSchedulerStaticP {
       isSynched = FALSE;
     }
     if (newSlot){
+//      //TODO: re-synch to estimated root schedule 
+//      //issue a setSchedule that uses
+//      //  (originalFrameStartEstimate - (slotNum*lag_per_slot),
+//      //   originalFrameNum + (slotNum* framesPerSlot))
+//      //e.g. if we typically lag, then we need to bump up our start
+//      //     time
+
+      call TDMAPhySchedule.setSchedule(
+        last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot),
+        frameNum, 
+        schedule->framesPerSlot*schedule->slots,
+        schedule->symbolRate,
+        schedule->channel,
+        isSynched
+      );
+
       signal SlotStarted.slotStarted(curSlot);
     }
   }
@@ -219,6 +277,7 @@ module SlaveSchedulerStaticP {
   
   event void TDMAPhySchedule.resynched(uint16_t resynchFrame){
     if ( !isSynched){
+      printf_SCHED_RXTX("FAST_RESYNCH\r\n");
       printf_TMP("#Fast resynch@ %u\r\n", resynchFrame);
       isSynched = TRUE;
     }

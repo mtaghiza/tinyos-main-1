@@ -562,6 +562,15 @@ module CXTDMAPhysicalP {
           signal TDMAPhySchedule.getScheduleNum());
         call CXPacket.setOriginalFrameNum(tx_msgLocal,
           fn);
+
+        //TODO: precision timestamping: set flag to indicate that
+        //   when synch capture occurs, we should be filling in
+        //   timestamp and completing the transmission.
+
+        //ghetto timestamping: set timestamp to next FSA: receivers
+        //  will have to adjust for retransmission delays.
+        call CXPacket.setTimestamp(tx_msgLocal,
+          call FrameStartAlarm.getAlarm());
       }
       atomic{
         tx_msg = tx_msgLocal;
@@ -644,7 +653,8 @@ module CXTDMAPhysicalP {
           //get the callback.
           setAsyncState(S_TX_READY);
           sdFrameNum = asyncFrameNum;
-          //get ready to capture your own SFD for re-synch.
+          //get ready to capture your own SFD for re-synch and packet
+          //time-stamping.
           call SynchCapture.captureRisingEdge();
           captureRising = TRUE;
         }else{
@@ -776,6 +786,9 @@ module CXTDMAPhysicalP {
         case S_TX_TRANSMITTING:
           txCapture = TRUE;
           //no state change
+          //TODO: if we are origin-sending, then we need to set the
+          //timestamp field of the CX header and indicate that it's OK
+          //to finish sending the packet.
           break;
         default:
           setAsyncState(S_ERROR_4);
@@ -795,7 +808,9 @@ module CXTDMAPhysicalP {
     atomic{
       uint32_t captureFrameStart;
       call PrepareFrameStartAlarm.stop();
+      //compensate for offset between FSA and transmitter SFD
       captureFrameStart = lastRECapture - fsDelays[s_sri];
+      //compensate for lag between transmitter SFD and receiver SFD
       if (!txCapture){
         captureFrameStart -= sfdDelays[s_sri];
       }
@@ -970,6 +985,21 @@ module CXTDMAPhysicalP {
               captureFrameNum = call CXPacket.getOriginalFrameNum(msg)
                 + call CXPacket.count(msg) - 1;
               resynch();
+
+              //We correct for SFD delays in resynch, assume that we
+              //  see little skew/error over the course of the
+              //  retransmissions that led to this reception and fill
+              //  in our best estimate of when the packet's origin
+              //  frame started in our time scale.
+              //We get this by adding PFS_SLACK to PFSA (giving us
+              //  next FSA), then subtracting off one frame len for
+              //  each hop it's traveled (e.g. subtract 1: this gives us
+              //  start of the frame in which we received it).
+              call CXPacketMetadata.setOriginalFrameStartEstimate(msg,
+                call PrepareFrameStartAlarm.getAlarm()+PFS_SLACK -
+                s_frameLen*(call CXPacketMetadata.getReceivedCount(msg)));
+            }else{
+              call CXPacketMetadata.setOriginalFrameStartEstimate(msg, 0);
             }
     //        printf_TMP("#RX %u @ %u\r\n", 
     //          call CXPacket.sn(msg),
@@ -1068,6 +1098,19 @@ module CXTDMAPhysicalP {
         return ERETRY;
     }
   }
+  
+//  command error_t TDMAPhySchedule.nudgeSchedule(int32_t nudge){
+//    if (call FrameStartAlarm.isRunning()){
+//      uint32_t curAlarm = call FrameStartAlarm.getAlarm();
+//      call FrameStartAlarm.startAt(curAlarm - s_frameLen, 
+//        s_frameLen + nudge);
+//    }
+//    if (call PrepareFrameStartAlarm.isRunning()){
+//      uint32_t curAlarm = call PrepareFrameStartAlarm.getAlarm();
+//      call PrepareFrameStartAlarm.startAt(curAlarm - s_frameLen,
+//        s_frameLen + nudge);
+//    }
+//  }
 
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
@@ -1181,6 +1224,10 @@ module CXTDMAPhysicalP {
     printf_TMP("Using PFS_SLACK: %lu s_fwCheckLen: %lu\r\n",
       PFS_SLACK, s_fwCheckLen);
     return err;
+  }
+
+  command uint32_t TDMAPhySchedule.getFrameLen(){
+    return s_frameLen;
   }
 
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
