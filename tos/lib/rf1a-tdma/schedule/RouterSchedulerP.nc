@@ -65,14 +65,19 @@ module RouterSchedulerP {
     return FAIL;
   }
 
+  command uint32_t TDMAPhySchedule.getFrameLen[uint8_t clientId](){
+    return call SubTDMAPhySchedule.getFrameLen();
+  }
+
   command error_t TDMAPhySchedule.setSchedule[uint8_t clientId](uint32_t startAt,
       uint16_t atFrameNum, 
       uint16_t totalFrames, 
       uint8_t symbolRate,
       uint8_t channel, 
-      bool isSynched){
+      bool isSynched,
+      bool skewCorrected){
     return call SubTDMAPhySchedule.setSchedule(startAt, atFrameNum,
-      totalFrames, symbolRate, channel, isSynched);
+      totalFrames, symbolRate, channel, isSynched, skewCorrected);
   } 
   async command uint32_t TDMAPhySchedule.getNow[uint8_t clientId](){
     return call SubTDMAPhySchedule.getNow();

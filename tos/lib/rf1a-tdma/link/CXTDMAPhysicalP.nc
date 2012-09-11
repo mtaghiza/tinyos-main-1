@@ -137,6 +137,7 @@ module CXTDMAPhysicalP {
   uint8_t s_sri = 0xff;
   uint32_t s_frameLen;
   uint32_t s_fwCheckLen;
+  uint32_t s_pfs_slack;
   bool s_isSynched = FALSE;
 
 
@@ -608,7 +609,7 @@ module CXTDMAPhysicalP {
       //first, set up for FSA (this frame)
       call FrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
-        PFS_SLACK);
+        s_pfs_slack);
       //now, set up for next PFSA (next frame)
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
@@ -827,7 +828,7 @@ module CXTDMAPhysicalP {
         frameNum = captureFrameNum;
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
-        s_frameLen- PFS_SLACK);
+        s_frameLen- s_pfs_slack);
       ////TODO: remove debug
       atomic pt = 2;
 //      post printTimers();
@@ -991,12 +992,12 @@ module CXTDMAPhysicalP {
               //  retransmissions that led to this reception and fill
               //  in our best estimate of when the packet's origin
               //  frame started in our time scale.
-              //We get this by adding PFS_SLACK to PFSA (giving us
+              //We get this by adding s_pfs_slack to PFSA (giving us
               //  next FSA), then subtracting off one frame len for
               //  each hop it's traveled (e.g. subtract 1: this gives us
               //  start of the frame in which we received it).
               call CXPacketMetadata.setOriginalFrameStartEstimate(msg,
-                call PrepareFrameStartAlarm.getAlarm()+PFS_SLACK -
+                call PrepareFrameStartAlarm.getAlarm()+s_pfs_slack -
                 s_frameLen*(call CXPacketMetadata.getReceivedCount(msg)));
             }else{
               call CXPacketMetadata.setOriginalFrameStartEstimate(msg, 0);
@@ -1114,7 +1115,7 @@ module CXTDMAPhysicalP {
 
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
-      uint8_t channel, bool isSynched){
+      uint8_t channel, bool isSynched, bool skewCorrected){
     error_t err;
     atomic{
       err = checkSetSchedule();
@@ -1133,7 +1134,15 @@ module CXTDMAPhysicalP {
         s_sr = symbolRate;
         s_sri = srIndex(s_sr);
         s_frameLen = frameLens[s_sri];
-        s_fwCheckLen = fwCheckLens[s_sri];
+
+        //double guard times if no skew correction available
+        if ( skewCorrected){
+          s_pfs_slack = PFS_SLACK;
+          s_fwCheckLen = fwCheckLens[s_sri];
+        }else{
+          s_pfs_slack = 2*PFS_SLACK;
+          s_fwCheckLen = 2*fwCheckLens[s_sri];
+        }
   
         stopAlarms();
         setState(S_IDLE);
@@ -1156,15 +1165,15 @@ module CXTDMAPhysicalP {
           //not synched: set the frame wait timeout to almost-frame len
           if (!isSynched){
             s_frameLen *= 20;
-            s_fwCheckLen = s_frameLen-2*PFS_SLACK;
+            s_fwCheckLen = s_frameLen-2*s_pfs_slack;
 //            printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
 //              frameLens[s_sri], s_frameLen, s_fwCheckLen);
           }
     
           //while target frameStart is in the past
           // - add 1 to target frameNum, add framelen to target frameStart
-          //TODO: fix issue with PFS_SLACK causing numbers to wrap
-          pfsStartAt = startAt - PFS_SLACK ;
+          //TODO: fix issue with s_pfs_slack causing numbers to wrap
+          pfsStartAt = startAt - s_pfs_slack ;
           while (pfsStartAt < call PrepareFrameStartAlarm.getNow()){
             pfsStartAt += s_frameLen;
             atFrameNum = (atFrameNum + 1)%(s_totalFrames);
@@ -1221,8 +1230,8 @@ module CXTDMAPhysicalP {
 //          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
-    printf_TMP("Using PFS_SLACK: %lu s_fwCheckLen: %lu\r\n",
-      PFS_SLACK, s_fwCheckLen);
+    printf_TMP("Using s_pfs_slack: %lu s_fwCheckLen: %lu\r\n",
+      s_pfs_slack, s_fwCheckLen);
     return err;
   }
 

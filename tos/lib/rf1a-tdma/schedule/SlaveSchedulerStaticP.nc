@@ -75,18 +75,21 @@ module SlaveSchedulerStaticP {
       1, 
       SCHED_INIT_SYMBOLRATE,
       TEST_CHANNEL,
-      isSynched
+      isSynched, 
+      FALSE
       );
   }
 
+  #if CX_ENABLE_SKEW_CORRECTION
   #define SKEW_HISTORY 2
   uint32_t delta_root [SKEW_HISTORY];
   uint32_t delta_leaf [SKEW_HISTORY];
-  uint32_t last_root;
-  uint32_t last_leaf;
   uint8_t skew_index = 0;
   int32_t lag_per_cycle;
-  int32_t lag_per_slot;
+  #endif
+  uint32_t last_root;
+  uint32_t last_leaf;
+  int32_t lag_per_slot = 0;
 
   task void updateSchedule(){
     uint32_t cur_root;
@@ -108,6 +111,7 @@ module SlaveSchedulerStaticP {
     //lag_per_slot: lag_per_cycle/numSlots
     cur_root = call CXPacket.getTimestamp(schedule_msg);
     cur_leaf = call CXPacketMetadata.getOriginalFrameStartEstimate(schedule_msg);
+    #if CX_ENABLE_SKEW_CORRECTION
     //TODO: handle wrap (maybe? should be cool.)
     if (last_root != 0){
       int32_t lagTot = 0;
@@ -121,6 +125,7 @@ module SlaveSchedulerStaticP {
       lag_per_slot = lag_per_cycle / schedule->slots;
       skew_index = (skew_index+1)%SKEW_HISTORY;
     }
+    #endif
     last_root = cur_root;
     last_leaf = cur_leaf;
 
@@ -130,7 +135,8 @@ module SlaveSchedulerStaticP {
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
-      isSynched
+      isSynched,
+      (lag_per_slot != 0)
     );
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
@@ -205,20 +211,20 @@ module SlaveSchedulerStaticP {
       isSynched = FALSE;
     }
     if (newSlot){
-//      //TODO: re-synch to estimated root schedule 
-//      //issue a setSchedule that uses
-//      //  (originalFrameStartEstimate - (slotNum*lag_per_slot),
-//      //   originalFrameNum + (slotNum* framesPerSlot))
-//      //e.g. if we typically lag, then we need to bump up our start
-//      //     time
-
+      // re-synch to estimated root schedule 
+      //issue a setSchedule that uses
+      //  (originalFrameStartEstimate - (slotNum*lag_per_slot),
+      //   originalFrameNum + (slotNum* framesPerSlot))
+      //e.g. if we typically lag, then we need to bump up our start
+      //     time
       call TDMAPhySchedule.setSchedule(
         last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot),
         frameNum, 
         schedule->framesPerSlot*schedule->slots,
         schedule->symbolRate,
         schedule->channel,
-        isSynched
+        isSynched,
+        (lag_per_slot != 0)
       );
 
       signal SlotStarted.slotStarted(curSlot);

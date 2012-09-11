@@ -106,7 +106,8 @@ module MasterSchedulerStaticP {
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel, 
-      TRUE);
+      TRUE,
+      CX_ENABLE_SKEW_CORRECTION);
 ////removed: this will get setup next go-around
 //    if (SUCCESS == err){
 //      post recomputeSchedule();
@@ -206,8 +207,21 @@ module MasterSchedulerStaticP {
     curFrame = frameNum;
     if (curSlot == INVALID_SLOT || 
         0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot())) ){
+      uint32_t last_announce = call CXPacket.getTimestamp(schedule_msg);
       curSlot = getSlot(frameNum); 
       inactiveSlot = FALSE;
+      //self-adjust schedule in case we got bumped during last slot
+      
+      call TDMAPhySchedule.setSchedule( 
+        last_announce + (frameNum*(call TDMAPhySchedule.getFrameLen())),
+        frameNum,
+        schedule->framesPerSlot*schedule->slots,
+        schedule->symbolRate,
+        schedule->channel, 
+        TRUE,
+        CX_ENABLE_SKEW_CORRECTION);
+
+
       signal SlotStarted.slotStarted(curSlot);
     }
     if (cycleStart){
