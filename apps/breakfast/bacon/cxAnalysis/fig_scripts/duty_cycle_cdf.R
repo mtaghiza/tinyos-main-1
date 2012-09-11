@@ -3,7 +3,8 @@ selectQ <- "SELECT
   ? as label,
   node,
   dc
-FROM duty_cycle"
+FROM duty_cycle
+WHERE dc is not NULL"
 
 fn <- ''
 plotFile <- F
@@ -32,7 +33,7 @@ for (i in seq(argStart, argc-1)){
 
 #CDF plot
 yl <- c(0,1.0)
-xl <- c(0, 1.0)
+xl <- c(0, max(x$dc))
 firstPlot <- T
 rCols <- rainbow(length(unique(x$label)))
 labelVals <- sort(unique(x$label))

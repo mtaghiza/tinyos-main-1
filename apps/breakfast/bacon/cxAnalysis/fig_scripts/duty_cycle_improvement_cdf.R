@@ -3,7 +3,8 @@ selectQ <- "SELECT
   ? as label,
   node,
   dc
-FROM duty_cycle"
+FROM duty_cycle
+WHERE dc is not NULL"
 
 fn <- ''
 plotFile <- F

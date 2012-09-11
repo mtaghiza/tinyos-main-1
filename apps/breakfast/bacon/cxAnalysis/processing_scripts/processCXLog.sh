@@ -27,6 +27,8 @@ rTf=$tfb.r
 rsTf=$tfb.rs
 errTf=$tfb.err
 settingsTf=$tfb.settings
+synchLossTf=$tfb.synchLoss
+synchRecoverTf=$tfb.synchRecover
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -69,6 +71,26 @@ pv $logFile | grep ' 0 START ' | tr '_' ' ' | awk '{
     print $1, $i, $(i+1)
   }
 }' > $settingsTf
+
+echo "extracting synch-losses"
+
+pv $logFile | awk '/Started./{
+  firstStart[$2] = $1
+}
+/start listen/{ 
+  if (firstStart[$2] > 0 && nextStart[$2] == 0){
+    print $2, $1
+  }
+}
+/START/{
+  if (firstStart[$2] > 0){
+    nextStart[$2] = $1
+  }
+}' > $synchLossTf
+
+pv $logFile | awk '/Fast resynch/{
+  print $2, $1
+}' > $synchRecoverTf
 
 if [ $(grep -c 'testLabel' < $settingsTf) -ne 1 ]
 then
@@ -354,7 +376,15 @@ FROM radio_stats_start
       AND radio_stats_raw.sn = radio_stats_end.sn
     GROUP BY radio_stats_raw.node
   ) allEnd
-    ON allEnd.node = radio_stats_end.node; 
+    ON allEnd.node = radio_stats_end.node
+  JOIN (
+    SELECT node, count(*) AS recordCount
+    FROM radio_stats_totals
+    GROUP BY node
+  ) radio_stats_count ON
+    radio_stats_count.node = stateEnd.node
+    AND radio_stats_count.recordCount > 1
+  ; 
 
 
 DROP TABLE IF EXISTS ACTIVE_STATES;
@@ -436,6 +466,20 @@ CREATE TABLE TEST_SETTINGS (
   v  TEXT
 );
 .import $settingsTf TEST_SETTINGS
+
+DROP TABLE IF EXISTS SYNCH_LOSS;
+CREATE TABLE SYNCH_LOSS (
+  node INTEGER,
+  ts REAL);
+
+.import $synchLossTf SYNCH_LOSS
+
+DROP TABLE IF EXISTS SYNCH_RECOVER;
+CREATE TABLE SYNCH_RECOVER (
+  node INTEGER,
+  ts REAL);
+
+.import $synchRecoverTf SYNCH_RECOVER
 EOF
 
 if [ "$keepTemp" != "-k" ]
@@ -447,6 +491,8 @@ then
   rm $rsTf
   rm $errTf
   rm $settingsTf
+  rm $synchLossTf
+  rm $synchRecoverTf
 else
   echo "keeping temp files"
 fi

@@ -5,22 +5,44 @@ outDir=rough_draft
 connDb=data/conn/db/all.log.db
 
 cxDir=data/cx/lowpower_macro/db
-floodDb=$cxDir/lpf.0x8D.1.0.db
-floodLowDb=data/cx/idle_lowpower/db/f.low.0x8D.1.0.1.1346368295.db
-burstHigh0Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.0.high.1346965999.db
-burstHigh1Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.1.high.1346969682.db
-burstHigh3Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.3.high.1346973363.db
-burstHigh5Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.5.high.1346977046.db
+
+floodDb=data/cx/0907/db/lpf.0x8D.1.high.1347073707.db
+floodLowDb=data/cx/0907/db/lpf.0x8D.1.low.1347253698.db
+
+burstHigh0Db=data/cx/0907/db/lpb.0x8D.1.0.high.1347055298.db
+burstHigh1Db=data/cx/0907/db/lpb.0x8D.1.1.high.1347058980.db
+burstHigh3Db=data/cx/0907/db/lpb.0x8D.1.3.high.1347062662.db
+burstHigh5Db=data/cx/0907/db/lpb.0x8D.1.5.high.1347066343.db
+burstHigh7Db=data/cx/0907/db/lpb.0x8D.1.7.high.1347070025.db
+#burstHigh0Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.0.high.1346965999.db
+#burstHigh1Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.1.high.1346969682.db
+#burstHigh3Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.3.high.1346973363.db
+#burstHigh5Db=data/cx/lowpower_macro_0906/db/lpb.0x8D.1.5.high.1346977046.db
 idleDb=data/cx/dc/db/idle.0x8D.1.1346773943.db
 idleNoFailDb=data/cx/dc/db/idle_nofail.db
+
+R --no-save --slave  --args \
+  -f $floodDb flood_21 \
+  -f $burstHigh0Db burst_0_10 \
+  -f $burstHigh1Db burst_1_12 \
+  -f $burstHigh3Db burst_3_18 \
+  -f $burstHigh5Db burst_5_20 \
+  -f $burstHigh7Db burst_7_21 \
+  -f $floodLowDb flood_105 \
+  --png $outDir/duty_cycle_all.png \
+  < $sd/duty_cycle_cdf.R
+
+python $sd/TestbedMap.py $burstHigh0Db \
+  --dc \
+  --outFile $outDir/burst_dc_0.png
 
 python $sd/TestbedMap.py $burstHigh1Db \
   --dc \
   --outFile $outDir/burst_dc_1.png
 
-python $sd/TestbedMap.py $burstHigh5Db \
+python $sd/TestbedMap.py $burstHigh3Db \
   --dc \
-  --outFile $outDir/burst_dc_5.png
+  --outFile $outDir/burst_dc_3.png
 
 
 python $sd/TestbedMap.py $floodDb --cxp --from 0 --outFile $outDir/flood_prr_rl.png
@@ -38,27 +60,20 @@ R --no-save --slave  --args \
   -f $burstHigh1Db burst_1_12 \
   -f $burstHigh3Db burst_3_18 \
   -f $burstHigh5Db burst_5_20 \
-  -f $floodLowDb flood_122 \
+  -f $burstHigh7Db burst_7_21 \
+  -f $floodLowDb flood_105 \
   --png $outDir/prr_all.png \
   < $sd/prr_cdf.R
 
-R --no-save --slave  --args \
-  -f $floodDb flood_21 \
-  -f $burstHigh0Db burst_0_10 \
-  -f $burstHigh1Db burst_1_12 \
-  -f $burstHigh3Db burst_3_18 \
-  -f $burstHigh5Db burst_5_20 \
-  -f $floodLowDb flood_122 \
-  --png $outDir/duty_cycle_all.png \
-  < $sd/duty_cycle_cdf.R
-
+#  -f $burstHigh1Db burst_1_12 \
 R --no-save --slave  --args \
   -nf $floodDb flood_21 \
   -f $burstHigh0Db burst_0_10 \
   -f $burstHigh1Db burst_1_12 \
   -f $burstHigh3Db burst_3_18 \
   -f $burstHigh5Db burst_5_20 \
-  -f $floodLowDb flood_122 \
+  -f $burstHigh7Db burst_7_21 \
+  -f $floodLowDb flood_105 \
   --png $outDir/duty_cycle_improvement_cdf.png \
   < $sd/duty_cycle_improvement_cdf.R
 
@@ -66,14 +81,14 @@ R --no-save --slave  --args \
 
 R --no-save --slave  --args \
   -f $floodDb flood_21 \
-  -f $floodLowDb flood_122 \
+  -f $floodLowDb flood_105 \
   --png $outDir/prr_flood.png \
   < $sd/prr_cdf.R
 
 
 R --no-save --slave  --args \
   -f $floodDb flood_21 \
-  -f $floodLowDb flood_122 \
+  -f $floodLowDb flood_105 \
   --png $outDir/duty_cycle_flood.png \
   < $sd/duty_cycle_cdf.R
 
