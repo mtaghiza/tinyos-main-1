@@ -477,6 +477,7 @@ module CXTDMAPhysicalP {
       post logDutyCycle();
     }
     signal FrameStarted.frameStarted(frameNum);
+    printf_TMP("F %u\r\n", frameNum);
 //    printf_TMP("F %u s %x ia %u\r\n", 
 //      frameNum, 
 //      state, 
@@ -676,7 +677,11 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
   async event void FrameStartAlarm.fired(){
-    FS_CYCLE_TOGGLE_PIN;
+    if (frameNum & 0x01){
+      FS_CYCLE_SET_PIN;
+    }else{
+      FS_CYCLE_CLEAR_PIN;
+    }
 //    if (fsHandled < 
 //        call FrameStartAlarm.getAlarm()){
 //      printf("!FS early: %lu < %lu\r\n", 
@@ -1230,8 +1235,8 @@ module CXTDMAPhysicalP {
 //          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
-    printf_TMP("Using s_pfs_slack: %lu s_fwCheckLen: %lu\r\n",
-      s_pfs_slack, s_fwCheckLen);
+//    printf_TMP("Using s_pfs_slack: %lu s_fwCheckLen: %lu\r\n",
+//      s_pfs_slack, s_fwCheckLen);
     return err;
   }
 

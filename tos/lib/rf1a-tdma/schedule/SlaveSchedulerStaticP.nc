@@ -35,7 +35,8 @@ module SlaveSchedulerStaticP {
   uint16_t firstIdleFrame = 0;
   uint16_t lastIdleFrame = 0;
   uint16_t mySlot = INVALID_SLOT;
-  bool isSynched = FALSE;
+  bool hasSchedule = FALSE;
+  bool softSynch = FALSE;
   bool claimedLast = FALSE;
   bool hasStarted = FALSE;
   bool inactiveSlot = FALSE;
@@ -68,14 +69,15 @@ module SlaveSchedulerStaticP {
   task void startListen(){
     printf_SCHED_RXTX("start listen\r\n");
     state = S_LISTEN;
-    isSynched = FALSE;
+    softSynch = FALSE;
+    hasSchedule = FALSE;
     mySlot = INVALID_SLOT;
     call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNow(),
       0, 
       1, 
       SCHED_INIT_SYMBOLRATE,
       TEST_CHANNEL,
-      isSynched, 
+      hasSchedule, 
       FALSE
       );
   }
@@ -94,8 +96,11 @@ module SlaveSchedulerStaticP {
   task void updateSchedule(){
     uint32_t cur_root;
     uint32_t cur_leaf;
+    uint32_t startTS;
+    uint16_t startFN;
     uint8_t sri = srIndex(schedule->symbolRate);
-    isSynched = TRUE;
+    softSynch = TRUE;
+    hasSchedule = TRUE;
     scheduleNum = schedule->scheduleNum;
     //clock skew correction:
     // - we have originalFrameStartEstimate (local) and packet timestamp, 
@@ -128,16 +133,35 @@ module SlaveSchedulerStaticP {
     #endif
     last_root = cur_root;
     last_leaf = cur_leaf;
+    //We don't have this yet if we haven't done a synch.
+    if (! cur_leaf){
+      startTS = call CXPacketMetadata.getPhyTimestamp(schedule_msg) -
+        sfdDelays[sri] - fsDelays[sri];
+      startFN = call CXPacket.getOriginalFrameNum(schedule_msg) + call CXPacketMetadata.getReceivedCount(schedule_msg) -1;
+    }else{
+      startTS = cur_leaf;
+      startFN = call CXPacket.getOriginalFrameNum(schedule_msg);
+    }
 
-    call TDMAPhySchedule.setSchedule(
-      cur_leaf,
-      call CXPacket.getOriginalFrameNum(schedule_msg),
+    printf_TMP("SS: %lu %u %u %u %u %x %x\r\n",
+      startTS,
+      startFN,
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
-      isSynched,
+      hasSchedule,
+      (lag_per_slot != 0));
+    //TODO: on first reception, cur_leaf will be 0.
+    call TDMAPhySchedule.setSchedule(
+      startTS,
+      startFN,
+      schedule->framesPerSlot*schedule->slots,
+      schedule->symbolRate,
+      schedule->channel,
+      hasSchedule,
       (lag_per_slot != 0)
     );
+    framesSinceSynch = 0;
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
     if (state == S_LISTEN){
@@ -156,7 +180,7 @@ module SlaveSchedulerStaticP {
     schedule = (cx_schedule_t*)pl;
     post updateSchedule();
     cyclesSinceSchedule = 0;
-    if (! isSynched){
+    if (! hasSchedule){
       printf_SCHED_RXTX("SCHED_SYNCH\r\n");
     }
     return ret;
@@ -181,7 +205,7 @@ module SlaveSchedulerStaticP {
     //if we are more than maxDepth frames into the slot, and the last
     //  synch occurred in a preceding slot, we can assume this slot is
     //  idle and go inactive.
-    if (isSynched   
+    if (hasSchedule
         && ! newSlot 
         && framesThisSlot > call TDMARoutingSchedule.maxDepth()
         && framesSinceSynch > framesThisSlot){
@@ -194,6 +218,7 @@ module SlaveSchedulerStaticP {
       cyclesSinceSchedule ++;
       if (cyclesSinceSchedule > CX_RESYNCH_CYCLES && state != S_LISTEN){
         printf_SCHED_RXTX("SYNCH_LOSS\r\n");
+        hasSchedule = FALSE;
         post startListen();
       }
     }
@@ -207,8 +232,9 @@ module SlaveSchedulerStaticP {
     //TODO: this assumes that the schedule is always in slot 0
     //If we haven't gotten schedule yet this cycle, stay unsynched.
     if ((curSlot > 0) 
-        && (isSynched && (framesSinceSynch > frameNum))){
-      isSynched = FALSE;
+        && (softSynch && (framesSinceSynch > frameNum))){
+      softSynch = FALSE;
+      printf_SCHED_RXTX("SOFT_SYNCH_LOSS\r\n");
     }
     if (newSlot){
       // re-synch to estimated root schedule 
@@ -217,15 +243,26 @@ module SlaveSchedulerStaticP {
       //   originalFrameNum + (slotNum* framesPerSlot))
       //e.g. if we typically lag, then we need to bump up our start
       //     time
-      call TDMAPhySchedule.setSchedule(
-        last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot),
-        frameNum, 
-        schedule->framesPerSlot*schedule->slots,
-        schedule->symbolRate,
-        schedule->channel,
-        isSynched,
-        (lag_per_slot != 0)
-      );
+      if (schedule != NULL && last_leaf !=0){
+        uint32_t startTS = last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
+        printf_TMP("SS: %lu %u %u %u %u %x %x\r\n",
+          startTS,
+          frameNum + 1,
+          schedule->framesPerSlot*schedule->slots,
+          schedule->symbolRate,
+          schedule->channel,
+          hasSchedule,
+          (lag_per_slot != 0));
+        call TDMAPhySchedule.setSchedule(
+          startTS,
+          frameNum + 1, 
+          schedule->framesPerSlot*schedule->slots,
+          schedule->symbolRate,
+          schedule->channel,
+          hasSchedule,
+          (lag_per_slot != 0)
+        );
+      }
 
       signal SlotStarted.slotStarted(curSlot);
     }
@@ -282,16 +319,16 @@ module SlaveSchedulerStaticP {
   }
   
   event void TDMAPhySchedule.resynched(uint16_t resynchFrame){
-    if ( !isSynched){
+    if ( !softSynch){
       printf_SCHED_RXTX("FAST_RESYNCH\r\n");
       printf_TMP("#Fast resynch@ %u\r\n", resynchFrame);
-      isSynched = TRUE;
+      softSynch = TRUE;
     }
     framesSinceSynch = 0;
   }
 
   command bool TDMARoutingSchedule.isSynched(){
-    return isSynched;
+    return softSynch && hasSchedule;
   }
   
   command uint16_t TDMARoutingSchedule.framesPerSlot(){
@@ -341,7 +378,7 @@ module SlaveSchedulerStaticP {
   }
 
   command bool DefaultScheduledSend.sendReady(){
-    return (state == S_READY) && isSynched;
+    return (state == S_READY) && hasSchedule && softSynch;
   }
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){

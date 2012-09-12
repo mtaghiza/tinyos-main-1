@@ -1,7 +1,6 @@
 #!/bin/bash
-killall picocom
 autoRun=1
-programDelay=60
+programDelay=30
 
 debugScale=4UL
 
@@ -55,6 +54,7 @@ senderDest=65535UL
 senderMap=dmap.none
 receiverMap=dmap.1
 rootMap=dmap.0
+snifferMap=dmap.none
 targetIpi=1024UL
 queueThreshold=10
 maxDepth=5
@@ -62,11 +62,13 @@ numTransmits=1
 bufferWidth=0
 fps=40
 staticScheduler=1
+forceSlots=0
+cxEnableSkewCorrection=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
-"staticScheduler" "autoRun")
+"staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection")
 
 while [ $# -gt 1 ]
 do
@@ -112,16 +114,22 @@ testDesc=\\\"$testDesc\\\"
 
 if [ $staticScheduler -eq 1 ]
 then
-  maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
-  numSlots=$(($maxNodeId + 10))
-  firstIdleSlot=$(($maxNodeId + 5))
+  if [ "$forceSlots" !=  "0" ]
+  then
+    numSlots=$forceSlots
+    firstIdleSlot=$(($forceSlots - 1))
+  else
+    maxNodeId=$(cat $rootMap $receiverMap $senderMap | grep -v '#' | sort -n -k 2 | tail -1 | cut -d ' ' -f 2)
+    numSlots=$(($maxNodeId + 10))
+    firstIdleSlot=$(($maxNodeId + 5))
+  fi
 else
   numNodes=$(cat $rootMap $receiverMap $senderMap | grep -c -v '#' )
   numSlots=$(($numNodes + 5))
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection"
 set +x
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$channel"
 
@@ -137,7 +145,6 @@ miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
 commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
 
-set -x 
 
 pushd .
 testbedDir=$(pwd)
@@ -157,7 +164,7 @@ else
   echo "moving right along"
 fi
 
-if [ "$receiverMap" != "" ]
+if [ "$receiverMap" != ""  -a $(grep -c -v '#' $receiverMap) -gt 0 ]
 then
   make bacon2 \
     TDMA_ROOT=0 IS_SENDER=0 \
@@ -170,7 +177,7 @@ then
   done
 fi
 
-if [ "$senderMap" != "" ]
+if [ "$senderMap" != "" -a $(grep -c -v '#' $senderMap) -gt 0 ]
 then
   make bacon2 \
     TDMA_ROOT=0 IS_SENDER=1 \
@@ -185,7 +192,21 @@ then
   done
 fi
 
-if [ "$rootMap" != "" ]
+if [ "$snifferMap" != "" -a $(grep -c -v '#' $snifferMap) -gt 0 ]
+then
+  pushd .
+  cd ../sniffer
+  make bacon2
+  grep -v '#' $snifferMap | while read line
+  do
+    ref=$(echo $line | cut -d ' ' -f 1)
+    id=$(echo $line | cut -d ' ' -f 2)
+    make bacon2 reinstall,$id bsl,ref,$ref
+  done
+  popd
+fi
+
+if [ "$rootMap" != "" -a $(grep -c -v '#' $rootMap) -gt 0 ]
 then
   make bacon2 \
     TDMA_ROOT=1 IS_SENDER=$rootSender \

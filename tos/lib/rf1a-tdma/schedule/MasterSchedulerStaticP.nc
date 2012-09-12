@@ -211,15 +211,16 @@ module MasterSchedulerStaticP {
       curSlot = getSlot(frameNum); 
       inactiveSlot = FALSE;
       //self-adjust schedule in case we got bumped during last slot
-      
-      call TDMAPhySchedule.setSchedule( 
-        last_announce + (frameNum*(call TDMAPhySchedule.getFrameLen())),
-        frameNum,
-        schedule->framesPerSlot*schedule->slots,
-        schedule->symbolRate,
-        schedule->channel, 
-        TRUE,
-        CX_ENABLE_SKEW_CORRECTION);
+//      if (last_announce !=0){
+//        call TDMAPhySchedule.setSchedule( 
+//          last_announce + (frameNum*(call TDMAPhySchedule.getFrameLen())),
+//          frameNum,
+//          schedule->framesPerSlot*schedule->slots,
+//          schedule->symbolRate,
+//          schedule->channel, 
+//          TRUE,
+//          CX_ENABLE_SKEW_CORRECTION);
+//      }
 
 
       signal SlotStarted.slotStarted(curSlot);

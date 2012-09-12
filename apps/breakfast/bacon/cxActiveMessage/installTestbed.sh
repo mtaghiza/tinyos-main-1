@@ -1,6 +1,6 @@
 #!/bin/bash
 autoRun=1
-programDelay=60
+programDelay=30
 
 debugScale=4UL
 
@@ -63,11 +63,12 @@ bufferWidth=0
 fps=40
 staticScheduler=1
 forceSlots=0
+cxEnableSkewCorrection=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
-"staticScheduler" "snifferMap" "forceSlots")
+"staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection")
 
 while [ $# -gt 1 ]
 do
@@ -128,7 +129,7 @@ else
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection"
 set +x
 phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$channel"
 
