@@ -1,4 +1,5 @@
 #!/bin/bash
+killall picocom
 autoRun=1
 programDelay=30
 

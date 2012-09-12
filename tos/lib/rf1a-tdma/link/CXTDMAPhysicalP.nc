@@ -592,6 +592,10 @@ module CXTDMAPhysicalP {
   void configureRadio();
   async event void PrepareFrameStartAlarm.fired(){
     PFS_TIMING_SET_PIN;
+    //we see this at reset...ugh
+    if (asyncState == S_OFF){
+      return;
+    }
     recordEvent(2);
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
@@ -851,6 +855,10 @@ module CXTDMAPhysicalP {
 
   async event void FrameWaitAlarm.fired(){
     FWA_TIMING_CLEAR_PIN;
+    //see this at reset sometimes
+    if (asyncState == S_OFF){
+      return;
+    }
     recordEvent(7);
     fwHandled = call FrameWaitAlarm.getNow();
     if (asyncState == S_RX_WAIT){

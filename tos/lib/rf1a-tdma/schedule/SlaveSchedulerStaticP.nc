@@ -47,6 +47,19 @@ module SlaveSchedulerStaticP {
   uint8_t cyclesSinceSchedule = 0;
   uint16_t framesSinceSynch = 0;
 
+  #if CX_ENABLE_SKEW_CORRECTION == 1
+  #define SKEW_HISTORY_LOG_2 2
+  #define SKEW_HISTORY 4
+  uint32_t delta_root [SKEW_HISTORY];
+  uint32_t delta_leaf [SKEW_HISTORY];
+  uint8_t skew_index = 0;
+  int32_t lag_per_cycle;
+  #endif
+  uint32_t last_root;
+  uint32_t last_leaf;
+  int32_t lag_per_slot = 0;
+
+
   enum {
     S_OFF = 0x00,
     S_LISTEN = 0x01,
@@ -67,11 +80,23 @@ module SlaveSchedulerStaticP {
   }
 
   task void startListen(){
+    uint8_t i;
     printf_SCHED_RXTX("start listen\r\n");
     state = S_LISTEN;
     softSynch = FALSE;
     hasSchedule = FALSE;
     mySlot = INVALID_SLOT;
+    #if CX_ENABLE_SKEW_CORRECTION == 1
+    last_leaf = 0;
+    last_root = 0;
+    for(i = 0; i < SKEW_HISTORY; i++){
+      delta_root[i] = 0;
+      delta_leaf[i] = 0;
+      lag_per_slot = 0;
+    }
+    //maybe?
+    schedule = NULL;
+    #endif
     call TDMAPhySchedule.setSchedule(call TDMAPhySchedule.getNow(),
       0, 
       1, 
@@ -81,18 +106,6 @@ module SlaveSchedulerStaticP {
       FALSE
       );
   }
-
-  #if CX_ENABLE_SKEW_CORRECTION
-  #define SKEW_HISTORY_LOG_2 2
-  #define SKEW_HISTORY 4
-  uint32_t delta_root [SKEW_HISTORY];
-  uint32_t delta_leaf [SKEW_HISTORY];
-  uint8_t skew_index = 0;
-  int32_t lag_per_cycle;
-  #endif
-  uint32_t last_root;
-  uint32_t last_leaf;
-  int32_t lag_per_slot = 0;
 
   task void updateSchedule(){
     uint32_t cur_root;
@@ -117,8 +130,7 @@ module SlaveSchedulerStaticP {
     //lag_per_slot: lag_per_cycle/numSlots
     cur_root = call CXPacket.getTimestamp(schedule_msg);
     cur_leaf = call CXPacketMetadata.getOriginalFrameStartEstimate(schedule_msg);
-    #if CX_ENABLE_SKEW_CORRECTION
-    //TODO: handle wrap (maybe? should be cool.)
+    #if CX_ENABLE_SKEW_CORRECTION == 1
     if (last_root != 0 && last_leaf != 0){
       int32_t lagTot = 0;
       uint8_t i;
@@ -138,6 +150,8 @@ module SlaveSchedulerStaticP {
       lag_per_slot = lag_per_cycle / schedule->slots;
       skew_index = (skew_index+1)%SKEW_HISTORY;
     }
+    #else
+    lag_per_slot = 0;
     #endif
     last_root = cur_root;
     last_leaf = cur_leaf;
@@ -159,7 +173,6 @@ module SlaveSchedulerStaticP {
 //      schedule->channel,
 //      hasSchedule,
 //      (lag_per_slot != 0));
-    //TODO: on first reception, cur_leaf will be 0.
     call TDMAPhySchedule.setSchedule(
       startTS,
       startFN,
@@ -255,21 +268,25 @@ module SlaveSchedulerStaticP {
       //e.g. if we typically lag, then we need to bump up our start
       //     time
       if (schedule != NULL && last_leaf != 0){
-        uint32_t startTS = last_leaf 
-          + ((frameNum -1)*(call TDMAPhySchedule.getFrameLen())) 
-          - ((curSlot+1)*lag_per_slot);
-//        printf_TMP("LL %lu fl %lu fn %u s %u lps %ld\r\n", 
-//          last_leaf,
-//          call TDMAPhySchedule.getFrameLen(),
-//          frameNum,
-//          curSlot+1,
-//          lag_per_slot);
-//
-//        printf_TMP("AFS: %lu %u\r\n",
-//          startTS,
-//          frameNum);
+//        uint32_t noMissTS = last_leaf 
+//          + ((frameNum -1)*(call TDMAPhySchedule.getFrameLen())) 
+//          - ((curSlot+1)*lag_per_slot);
+        uint32_t wrapTS;
+        uint16_t elapsedFrames = frameNum;
+        elapsedFrames += cyclesSinceSchedule*(
+          schedule->framesPerSlot*schedule->slots);
+        //target frame start is last reception...
+        wrapTS = last_leaf;
+        //...plus the duration of elapsed frames
+        //TODO: resolve mystery off-by-one
+        wrapTS += ((elapsedFrames -1)*(call TDMAPhySchedule.getFrameLen()));
+        //...minus the lag introduced for each elapsed slot
+        wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*schedule->slots))*lag_per_slot);
+//        printf_TMP("NMT %lu css %u WT %lu\r\n", 
+//          noMissTS,
+//          cyclesSinceSchedule, wrapTS);
         call TDMAPhySchedule.adjustFrameStart(
-          startTS,
+          wrapTS,
           frameNum);
       }
     }

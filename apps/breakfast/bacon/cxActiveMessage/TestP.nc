@@ -204,17 +204,12 @@ module TestP {
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
-    #if DESKTOP_TEST == 1
     switch(byte){
       case 'q':
         WDTCTL=0;
         break;
-      case 's':
-        post startTask();
-        break;
       default:
     }
-    #endif
   }
   //unused events
   async event void UartStream.receiveDone( uint8_t* buf_, uint16_t len,
