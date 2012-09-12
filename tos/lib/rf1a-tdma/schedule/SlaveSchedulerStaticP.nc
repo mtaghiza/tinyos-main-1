@@ -134,6 +134,7 @@ module SlaveSchedulerStaticP {
     if (last_root != 0 && last_leaf != 0){
       int32_t lagTot = 0;
       uint8_t i;
+      uint8_t num_measurements = 0;
       delta_root[skew_index] = cur_root - last_root;
       delta_leaf[skew_index] = cur_leaf - last_leaf;
 //      printf_TMP("dr %lu - %lu = %lu\r\n", cur_root, last_root,
@@ -141,13 +142,20 @@ module SlaveSchedulerStaticP {
 //      printf_TMP("dl %lu - %lu = %lu\r\n", cur_leaf, last_leaf,
 //        delta_leaf[skew_index]);
       for(i = 0; i< SKEW_HISTORY && delta_root[i] != 0 ; i++){
-//        printf_TMP("LT %u %ld + (%lu - %lu) = ", i, lagTot, delta_root[i],
-//          delta_leaf[i]);
+        printf_TMP("LAG %u %ld\r\n", i, delta_root[i] -  delta_leaf[i]);
         lagTot += delta_root[i] - delta_leaf[i];
-//        printf_TMP("%ld\r\n", lagTot);
+        num_measurements ++;
       }
-      lag_per_cycle = lagTot/(i-1);
-      lag_per_slot = lag_per_cycle / schedule->slots;
+      if (num_measurements > 0){
+        lag_per_cycle = lagTot/(num_measurements);
+        lag_per_slot = lag_per_cycle / schedule->slots;
+        printf_TMP("LPC %ld\r\n", lag_per_cycle);
+        printf_TMP("LPS %ld\r\n", lag_per_slot);
+        //why is this computation incorrect? must be an overflow.
+        printf_TMP("PPM %ld\r\n",
+        (lag_per_cycle)/((schedule->slots*schedule->framesPerSlot*(call
+        TDMAPhySchedule.getFrameLen()))/1000000 ));
+      } 
       skew_index = (skew_index+1)%SKEW_HISTORY;
     }
     #else
