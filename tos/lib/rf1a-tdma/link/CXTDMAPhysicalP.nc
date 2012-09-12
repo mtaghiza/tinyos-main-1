@@ -468,6 +468,7 @@ module CXTDMAPhysicalP {
       }
     }
     recordEvent(1);
+//    printf_TMP("p %u -> %u m %lu: ", frameNum, frameNum+1, s_totalFrames);
     //increment frame number
     atomic{
       frameNum = (frameNum+1)%(s_totalFrames);
@@ -476,8 +477,9 @@ module CXTDMAPhysicalP {
     if (s_isSynched && (frameNum == s_totalFrames-1)){
       post logDutyCycle();
     }
+//    printf_TMP("%u \r\n", frameNum);
     signal FrameStarted.frameStarted(frameNum);
-    printf_TMP("F %u\r\n", frameNum);
+//    printf_TMP("F %u\r\n", frameNum);
 //    printf_TMP("F %u s %x ia %u\r\n", 
 //      frameNum, 
 //      state, 
@@ -1117,6 +1119,35 @@ module CXTDMAPhysicalP {
 //        s_frameLen + nudge);
 //    }
 //  }
+  command error_t TDMAPhySchedule.adjustFrameStart(uint32_t startAt,
+      uint16_t atFrameNum){
+    uint16_t nextFrame = (frameNum+1)%s_totalFrames;
+//    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
+//      atFrameNum);
+    //we assume that atFrameNum is in the past.
+    while (atFrameNum != nextFrame){
+      startAt += s_frameLen;
+      atFrameNum = (atFrameNum+1)%s_totalFrames;
+    }
+//    while (atFrameNum > nextFrame){
+//      startAt -= s_frameLen;
+//      atFrameNum = (atFrameNum == 0)? s_totalFrames-1 : atFrameNum - 1;
+//    }
+    if (call FrameStartAlarm.isRunning()){
+      call FrameStartAlarm.startAt(startAt - s_frameLen,
+        s_frameLen);
+    }
+    if (call PrepareFrameStartAlarm.isRunning()){
+//      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
+      call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
+        s_frameLen);
+//      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+    }
+    //TODO: I would like to make sure that we're not setting up a case
+    //  where it will fire immediately, but I'm not sure how at the
+    //  moment: this gets messy when the timer wraps around.
+    return SUCCESS;
+  }
 
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
       uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
@@ -1174,7 +1205,9 @@ module CXTDMAPhysicalP {
 //            printf_TMP("Original FL %lu Using FL %lu FW %lu\r\n",
 //              frameLens[s_sri], s_frameLen, s_fwCheckLen);
           }
-    
+          
+
+          printf_TMP("at %u r %u ->", frameNum, atFrameNum);
           //while target frameStart is in the past
           // - add 1 to target frameNum, add framelen to target frameStart
           //TODO: fix issue with s_pfs_slack causing numbers to wrap
@@ -1183,12 +1216,13 @@ module CXTDMAPhysicalP {
             pfsStartAt += s_frameLen;
             atFrameNum = (atFrameNum + 1)%(s_totalFrames);
           }
+          printf_TMP("%u\r\n", atFrameNum);
     
           //now that target is in the future: 
           //  - set frameNum to target framenum - 1 (so that pfs counts to
           //    correct frame num when it fires).
           if (atFrameNum == 0){
-            frameNum = s_totalFrames;
+            frameNum = s_totalFrames-1;
           }else{
             frameNum = atFrameNum - 1;
           }

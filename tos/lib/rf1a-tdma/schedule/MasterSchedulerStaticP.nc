@@ -124,7 +124,7 @@ module MasterSchedulerStaticP {
     return curTime + 65000UL;
   }
   default command uint16_t ExternalScheduler.getStartFrame(){
-    return 0;
+    return totalFrames-1;
   }
 
   void printSchedule(){
@@ -200,29 +200,47 @@ module MasterSchedulerStaticP {
       uint8_t len){
     return msg;
   }
+
+  uint32_t last_announce;
+  uint16_t targetFrame;
+  void doAdjustSlotStart(){
+    if (last_announce != 0 ){
+      call TDMAPhySchedule.adjustFrameStart(
+        last_announce + (targetFrame*(call TDMAPhySchedule.getFrameLen())),
+        targetFrame
+      );
+//      call TDMAPhySchedule.setSchedule( 
+//        last_announce + (targetFrame*(call TDMAPhySchedule.getFrameLen())),
+//        targetFrame,
+//        schedule->framesPerSlot*schedule->slots,
+//        schedule->symbolRate,
+//        schedule->channel, 
+//        TRUE,
+//        CX_ENABLE_SKEW_CORRECTION);
+    }
+  }
+  task void adjustSlotStart(){
+    doAdjustSlotStart();
+  }
   
   event void FrameStarted.frameStarted(uint16_t frameNum){
     bool cycleStart = (frameNum == totalFrames - 1);
     bool cycleEnd = (frameNum == totalFrames - 2);
+    uint16_t frameOfSlot = frameNum % (call TDMARoutingSchedule.framesPerSlot());
     curFrame = frameNum;
-    if (curSlot == INVALID_SLOT || 
-        0 == (frameNum % (call TDMARoutingSchedule.framesPerSlot())) ){
-      uint32_t last_announce = call CXPacket.getTimestamp(schedule_msg);
-      curSlot = getSlot(frameNum); 
-      inactiveSlot = FALSE;
+
+    curSlot = getSlot(frameNum); 
+    if (frameOfSlot == (call TDMARoutingSchedule.framesPerSlot() - 1)){
+      last_announce = call CXPacket.getTimestamp(schedule_msg);
+      targetFrame = frameNum;
       //self-adjust schedule in case we got bumped during last slot
-//      if (last_announce !=0){
-//        call TDMAPhySchedule.setSchedule( 
-//          last_announce + (frameNum*(call TDMAPhySchedule.getFrameLen())),
-//          frameNum,
-//          schedule->framesPerSlot*schedule->slots,
-//          schedule->symbolRate,
-//          schedule->channel, 
-//          TRUE,
-//          CX_ENABLE_SKEW_CORRECTION);
-//      }
+      //post adjustSlotStart();
+      doAdjustSlotStart();
+    }
 
-
+    if (curSlot == INVALID_SLOT || 
+        frameOfSlot == 0 ){
+      inactiveSlot = FALSE;
       signal SlotStarted.slotStarted(curSlot);
     }
     if (cycleStart){
