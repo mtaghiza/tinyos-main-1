@@ -1122,8 +1122,8 @@ module CXTDMAPhysicalP {
   command error_t TDMAPhySchedule.adjustFrameStart(uint32_t startAt,
       uint16_t atFrameNum){
     uint16_t nextFrame = (frameNum+1)%s_totalFrames;
-//    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
-//      atFrameNum);
+    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
+      atFrameNum);
     //we assume that atFrameNum is in the past.
     while (atFrameNum != nextFrame){
       startAt += s_frameLen;
@@ -1138,10 +1138,10 @@ module CXTDMAPhysicalP {
         s_frameLen);
     }
     if (call PrepareFrameStartAlarm.isRunning()){
-//      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
+      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
-//      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
     }
     //TODO: I would like to make sure that we're not setting up a case
     //  where it will fire immediately, but I'm not sure how at the

@@ -178,6 +178,7 @@ module SlaveSchedulerStaticP {
     call CXRoutingTable.setPinned(call AMPacket.source(msg),
       TOS_NODE_ID, TRUE, TRUE);
     schedule = (cx_schedule_t*)pl;
+    printf_TMP("ar.r\r\n");
     post updateSchedule();
     cyclesSinceSchedule = 0;
     if (! hasSchedule){
@@ -236,34 +237,28 @@ module SlaveSchedulerStaticP {
       softSynch = FALSE;
       printf_SCHED_RXTX("SOFT_SYNCH_LOSS\r\n");
     }
-    if (newSlot){
+
+    if (framesThisSlot == (call TDMARoutingSchedule.framesPerSlot() -1)){
+      //FIXME TODO DEBUG REMOVE ME
+      lag_per_slot = 0;
       // re-synch to estimated root schedule 
       //issue a setSchedule that uses
       //  (originalFrameStartEstimate - (slotNum*lag_per_slot),
       //   originalFrameNum + (slotNum* framesPerSlot))
       //e.g. if we typically lag, then we need to bump up our start
       //     time
-      if (schedule != NULL && last_leaf !=0){
-        uint32_t startTS = last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
-        printf_TMP("SS: %lu %u %u %u %u %x %x\r\n",
-          startTS,
-          frameNum + 1,
-          schedule->framesPerSlot*schedule->slots,
-          schedule->symbolRate,
-          schedule->channel,
-          hasSchedule,
-          (lag_per_slot != 0));
-        call TDMAPhySchedule.setSchedule(
-          startTS,
-          frameNum + 1, 
-          schedule->framesPerSlot*schedule->slots,
-          schedule->symbolRate,
-          schedule->channel,
-          hasSchedule,
-          (lag_per_slot != 0)
-        );
-      }
+//      if (schedule != NULL && last_leaf !=0){
+//        uint32_t startTS = last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
+//        printf_TMP("AFS: %lu %u \r\n",
+//          startTS,
+//          frameNum);
+//        call TDMAPhySchedule.adjustFrameStart(
+//          startTS,
+//          frameNum);
+//      }
+    }
 
+    if (newSlot){
       signal SlotStarted.slotStarted(curSlot);
     }
   }
