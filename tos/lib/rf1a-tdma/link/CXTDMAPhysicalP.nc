@@ -1122,8 +1122,8 @@ module CXTDMAPhysicalP {
   command error_t TDMAPhySchedule.adjustFrameStart(uint32_t startAt,
       uint16_t atFrameNum){
     uint16_t nextFrame = (frameNum+1)%s_totalFrames;
-    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
-      atFrameNum);
+//    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
+//      atFrameNum);
     //we assume that atFrameNum is in the past.
     while (atFrameNum != nextFrame){
       startAt += s_frameLen;
@@ -1138,10 +1138,10 @@ module CXTDMAPhysicalP {
         s_frameLen);
     }
     if (call PrepareFrameStartAlarm.isRunning()){
-      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
+//      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
-      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
+//      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
     }
     //TODO: I would like to make sure that we're not setting up a case
     //  where it will fire immediately, but I'm not sure how at the
@@ -1207,7 +1207,6 @@ module CXTDMAPhysicalP {
           }
           
 
-          printf_TMP("at %u r %u ->", frameNum, atFrameNum);
           //while target frameStart is in the past
           // - add 1 to target frameNum, add framelen to target frameStart
           //TODO: fix issue with s_pfs_slack causing numbers to wrap
@@ -1216,7 +1215,6 @@ module CXTDMAPhysicalP {
             pfsStartAt += s_frameLen;
             atFrameNum = (atFrameNum + 1)%(s_totalFrames);
           }
-          printf_TMP("%u\r\n", atFrameNum);
     
           //now that target is in the future: 
           //  - set frameNum to target framenum - 1 (so that pfs counts to
@@ -1226,13 +1224,16 @@ module CXTDMAPhysicalP {
           }else{
             frameNum = atFrameNum - 1;
           }
-    
+   
           //  - set t0 and dt to arbitrary values s.t t0 + dt =
           //    target frame start AND t0 is in the past
           t0 = call PrepareFrameStartAlarm.getNow();
           dt = pfsStartAt - t0;
           call PrepareFrameStartAlarm.startAt(t0,
             dt);
+//          printf_TMP("t0 %lu dt %lu a %lu\r\n", 
+//            t0, dt, 
+//            call PrepareFrameStartAlarm.getAlarm());
 
           ////TODO: remove debug
           atomic pt = 4;

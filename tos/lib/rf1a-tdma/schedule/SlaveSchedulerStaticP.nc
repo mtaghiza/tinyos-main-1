@@ -83,7 +83,8 @@ module SlaveSchedulerStaticP {
   }
 
   #if CX_ENABLE_SKEW_CORRECTION
-  #define SKEW_HISTORY 2
+  #define SKEW_HISTORY_LOG_2 2
+  #define SKEW_HISTORY 4
   uint32_t delta_root [SKEW_HISTORY];
   uint32_t delta_leaf [SKEW_HISTORY];
   uint8_t skew_index = 0;
@@ -118,13 +119,20 @@ module SlaveSchedulerStaticP {
     cur_leaf = call CXPacketMetadata.getOriginalFrameStartEstimate(schedule_msg);
     #if CX_ENABLE_SKEW_CORRECTION
     //TODO: handle wrap (maybe? should be cool.)
-    if (last_root != 0){
+    if (last_root != 0 && last_leaf != 0){
       int32_t lagTot = 0;
       uint8_t i;
       delta_root[skew_index] = cur_root - last_root;
       delta_leaf[skew_index] = cur_leaf - last_leaf;
+//      printf_TMP("dr %lu - %lu = %lu\r\n", cur_root, last_root,
+//        delta_root[skew_index]);
+//      printf_TMP("dl %lu - %lu = %lu\r\n", cur_leaf, last_leaf,
+//        delta_leaf[skew_index]);
       for(i = 0; i< SKEW_HISTORY && delta_root[i] != 0 ; i++){
+//        printf_TMP("LT %u %ld + (%lu - %lu) = ", i, lagTot, delta_root[i],
+//          delta_leaf[i]);
         lagTot += delta_root[i] - delta_leaf[i];
+//        printf_TMP("%ld\r\n", lagTot);
       }
       lag_per_cycle = lagTot/(i-1);
       lag_per_slot = lag_per_cycle / schedule->slots;
@@ -143,14 +151,14 @@ module SlaveSchedulerStaticP {
       startFN = call CXPacket.getOriginalFrameNum(schedule_msg);
     }
 
-    printf_TMP("SS: %lu %u %u %u %u %x %x\r\n",
-      startTS,
-      startFN,
-      schedule->framesPerSlot*schedule->slots,
-      schedule->symbolRate,
-      schedule->channel,
-      hasSchedule,
-      (lag_per_slot != 0));
+//    printf_TMP("SS: %lu %u %u %u %u %x %x\r\n",
+//      startTS,
+//      startFN,
+//      schedule->framesPerSlot*schedule->slots,
+//      schedule->symbolRate,
+//      schedule->channel,
+//      hasSchedule,
+//      (lag_per_slot != 0));
     //TODO: on first reception, cur_leaf will be 0.
     call TDMAPhySchedule.setSchedule(
       startTS,
@@ -161,6 +169,7 @@ module SlaveSchedulerStaticP {
       hasSchedule,
       (lag_per_slot != 0)
     );
+//    printf_TMP("updated\r\n");
     framesSinceSynch = 0;
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
@@ -178,7 +187,7 @@ module SlaveSchedulerStaticP {
     call CXRoutingTable.setPinned(call AMPacket.source(msg),
       TOS_NODE_ID, TRUE, TRUE);
     schedule = (cx_schedule_t*)pl;
-    printf_TMP("ar.r\r\n");
+//    printf_TMP("ar.r\r\n");
     post updateSchedule();
     cyclesSinceSchedule = 0;
     if (! hasSchedule){
@@ -239,8 +248,6 @@ module SlaveSchedulerStaticP {
     }
 
     if (framesThisSlot == (call TDMARoutingSchedule.framesPerSlot() -1)){
-      //FIXME TODO DEBUG REMOVE ME
-      lag_per_slot = 0;
       // re-synch to estimated root schedule 
       //issue a setSchedule that uses
       //  (originalFrameStartEstimate - (slotNum*lag_per_slot),
@@ -248,10 +255,19 @@ module SlaveSchedulerStaticP {
       //e.g. if we typically lag, then we need to bump up our start
       //     time
       if (schedule != NULL && last_leaf != 0){
-        uint32_t startTS = last_leaf + ((frameNum -1)*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
-        printf_TMP("AFS: %lu %u \r\n",
-          startTS,
-          frameNum);
+        uint32_t startTS = last_leaf 
+          + ((frameNum -1)*(call TDMAPhySchedule.getFrameLen())) 
+          - ((curSlot+1)*lag_per_slot);
+//        printf_TMP("LL %lu fl %lu fn %u s %u lps %ld\r\n", 
+//          last_leaf,
+//          call TDMAPhySchedule.getFrameLen(),
+//          frameNum,
+//          curSlot+1,
+//          lag_per_slot);
+//
+//        printf_TMP("AFS: %lu %u\r\n",
+//          startTS,
+//          frameNum);
         call TDMAPhySchedule.adjustFrameStart(
           startTS,
           frameNum);
