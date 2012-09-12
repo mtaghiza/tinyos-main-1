@@ -247,15 +247,15 @@ module SlaveSchedulerStaticP {
       //   originalFrameNum + (slotNum* framesPerSlot))
       //e.g. if we typically lag, then we need to bump up our start
       //     time
-//      if (schedule != NULL && last_leaf !=0){
-//        uint32_t startTS = last_leaf + (frameNum*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
-//        printf_TMP("AFS: %lu %u \r\n",
-//          startTS,
-//          frameNum);
-//        call TDMAPhySchedule.adjustFrameStart(
-//          startTS,
-//          frameNum);
-//      }
+      if (schedule != NULL && last_leaf != 0){
+        uint32_t startTS = last_leaf + ((frameNum -1)*(call TDMAPhySchedule.getFrameLen())) - (curSlot*lag_per_slot);
+        printf_TMP("AFS: %lu %u \r\n",
+          startTS,
+          frameNum);
+        call TDMAPhySchedule.adjustFrameStart(
+          startTS,
+          frameNum);
+      }
     }
 
     if (newSlot){
