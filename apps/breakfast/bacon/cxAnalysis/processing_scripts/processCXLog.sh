@@ -309,34 +309,67 @@ CREATE TABLE RADIO_STATS_RAW (
 
 .import $rsTf RADIO_STATS_RAW
 
+--OK, apparently the overflow detection is messed up (an extra
+--  rollover is added). Detect the case where a counter incremented by
+--  more time than has elapsed according to testbed and register an
+--  adjustment of -0x100000000 ticks to all succeeding measurements on
+--  that counter
+DROP TABLE IF EXISTS radio_stats_adjustment;
+CREATE TABLE radio_stats_adjustment
+AS
+  SELECT 
+    l.node, 
+    r.sn, 
+    l.state, 
+    -4294967296 as adjustment
+  FROM radio_stats_raw l 
+  JOIN radio_stats_raw r 
+    ON l.node=r.node 
+    AND l.state=r.state 
+    AND l.sn +1 = r.sn
+  WHERE (r.total - l.total)/(6.5e6) > (r.ts - l.ts);
+
+--Now accumulate the adjustments on the raw table.
+DROP TABLE IF EXISTS radio_stats_adjusted;
+
+CREATE TABLE radio_stats_adjusted AS
+SELECT r.ts as ts, r.node as node, r.sn as sn, r.state as state, 
+  r.total + coalesce(sum(adjustment),0) as total
+FROM radio_stats_raw r
+LEFT JOIN radio_stats_adjustment a
+ON a.node=r.node and a.state = r.state 
+AND a.sn <= r.sn
+GROUP BY r.ts, r.node, r.sn, r.state;
+
+
 DROP TABLE IF EXISTS radio_stats_start;
 CREATE TABLE radio_stats_start
 AS 
-  SELECT radio_stats_raw.node as node, 
+  SELECT radio_stats_adjusted.node as node, 
     min(sn) as sn
-  FROM radio_stats_raw 
+  FROM radio_stats_adjusted 
   JOIN prr_bounds
-  ON radio_stats_raw.node = prr_bounds.node
-  WHERE radio_stats_raw.ts > prr_bounds.startTs
-  GROUP BY radio_stats_raw.node;
+  ON radio_stats_adjusted.node = prr_bounds.node
+  WHERE radio_stats_adjusted.ts > prr_bounds.startTs
+  GROUP BY radio_stats_adjusted.node;
 
 DROP TABLE IF EXISTS radio_stats_end;
 CREATE TABLE radio_stats_end
 AS 
-  SELECT radio_stats_raw.node as node, 
+  SELECT radio_stats_adjusted.node as node, 
     max(sn) as sn
-  FROM radio_stats_raw 
+  FROM radio_stats_adjusted 
   JOIN prr_bounds
-  ON radio_stats_raw.node = prr_bounds.node
-  WHERE radio_stats_raw.ts < prr_bounds.endTs
-  GROUP BY radio_stats_raw.node;
+  ON radio_stats_adjusted.node = prr_bounds.node
+  WHERE radio_stats_adjusted.ts < prr_bounds.endTs
+  GROUP BY radio_stats_adjusted.node;
 
 --total time at each record
 DROP TABLE IF EXISTS radio_stats_totals;
 CREATE TABLE radio_stats_totals AS
-  SELECT ts, node, sn, sum(total) as total
-  FROM radio_stats_raw
-  GROUP BY ts, node, sn;
+  SELECT min(ts) as ts, node, sn, sum(total) as total
+  FROM radio_stats_adjusted
+  GROUP BY node, sn;
 
 -- time spent in each state:
 --   (stateFinal-stateStart)/(totalFinal - totalStart)
@@ -351,30 +384,30 @@ SELECT
 FROM radio_stats_start 
   JOIN radio_stats_end 
     ON radio_stats_start.node = radio_stats_end.node
-  JOIN radio_stats_raw stateEnd
+  JOIN radio_stats_adjusted stateEnd
     ON stateEnd.node = radio_stats_end.node 
     AND stateEnd.sn = radio_stats_end.sn
-  JOIN radio_stats_raw stateStart
+  JOIN radio_stats_adjusted stateStart
     ON stateStart.node = radio_stats_start.node
     AND stateStart.sn = radio_stats_start.sn
     AND stateStart.state = stateEnd.state
   JOIN (
-    SELECT radio_stats_raw.node as node, sum(total) as total
-    FROM radio_stats_raw 
+    SELECT radio_stats_adjusted.node as node, sum(total) as total
+    FROM radio_stats_adjusted 
       JOIN radio_stats_start
-      ON radio_stats_raw.node = radio_stats_start.node
-      AND radio_stats_raw.sn = radio_stats_start.sn
-    GROUP BY radio_stats_raw.node
+      ON radio_stats_adjusted.node = radio_stats_start.node
+      AND radio_stats_adjusted.sn = radio_stats_start.sn
+    GROUP BY radio_stats_adjusted.node
   ) allStart
     ON allStart.node = radio_stats_start.node
   JOIN (
-    SELECT radio_stats_raw.node as node, 
+    SELECT radio_stats_adjusted.node as node, 
       sum(total) as total
-    FROM radio_stats_raw 
+    FROM radio_stats_adjusted 
       JOIN radio_stats_end
-      ON radio_stats_raw.node = radio_stats_end.node
-      AND radio_stats_raw.sn = radio_stats_end.sn
-    GROUP BY radio_stats_raw.node
+      ON radio_stats_adjusted.node = radio_stats_end.node
+      AND radio_stats_adjusted.sn = radio_stats_end.sn
+    GROUP BY radio_stats_adjusted.node
   ) allEnd
     ON allEnd.node = radio_stats_end.node
   JOIN (

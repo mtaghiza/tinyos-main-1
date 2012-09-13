@@ -197,16 +197,18 @@ module CXTDMAPhysicalP {
   
   //update running total of time spent in each radio state.
   void radioStateChange(uint8_t newState, uint32_t changeTime){
-    if (newState != curRadioState){
-      uint32_t lastTotal = radioStateTimes[curRadioState];
-      radioStateTimes[curRadioState] +=
-        (changeTime-lastRadioStateChange);
-      if (lastTotal > radioStateTimes[curRadioState]){
-        rollOvers[curRadioState]++;
+    atomic{
+      if (newState != curRadioState){
+        uint32_t elapsed = changeTime-lastRadioStateChange;
+        uint32_t lastTotal = radioStateTimes[curRadioState];
+        radioStateTimes[curRadioState] += elapsed;
+        if (lastTotal > radioStateTimes[curRadioState]){
+          rollOvers[curRadioState]++;
+        }
+  
+        curRadioState = newState;
+        lastRadioStateChange = changeTime;
       }
-
-      curRadioState = newState;
-      lastRadioStateChange = changeTime;
     }
   }
 
