@@ -33,6 +33,20 @@
 
 #include "Rf1aPacket.h"
 
+typedef nx_struct cx_header_t {
+  nx_am_addr_t destination;
+  //would like to reuse the dsn in the 15.4 header, but it's not exposed in a clean way
+  nx_uint16_t sn;
+  nx_uint8_t count;
+  nx_uint8_t scheduleNum;
+  nx_uint16_t originalFrameNum;
+  nx_uint32_t timestamp;
+  nx_uint8_t nProto;
+  nx_uint8_t tProto;
+  nx_uint8_t type;
+} cx_header_t;
+
+
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -1330,14 +1344,33 @@ generic module HplMsp430Rf1aP () @safe() {
   void doSniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
     uint8_t lqi){
       uint8_t k;
-        printf("S ");
-        for(k = 0; k < SNIFFER_PKT_LEN ; k++){
-          printf("%02X", pkt[k]);
-        }
-        printf(" %d %u %x\r\n", 
-          rssiConvert_dBm(rssi),
-          lqi & 0x7f, 
-          (lqi & 0x80));
+      message_t* msg = (message_t*)pkt;
+      uint8_t crcPassed = (lqi & 0x80);
+      uint8_t lqiVal = (lqi&0x7f);
+      int8_t rssiConv = rssiConvert_dBm(rssi); 
+
+      cx_header_t* cxHdr = (cx_header_t*)(&msg->data[-1]);
+      message_header_t* msgHdr = (message_header_t*)(msg->header);
+      rf1a_ieee154_t* ieee154Hdr = (rf1a_ieee154_t*)msgHdr;
+      printf("S ");
+      for(k = 0; k < SNIFFER_PKT_LEN ; k++){
+        printf("%02X", pkt[k]);
+      }
+      printf(" %d %u %x\r\n", 
+        rssiConv,
+        lqiVal,
+        crcPassed);
+      //To match with SD:
+      //np source sn count frameNum
+      printf("CXS %u %u %u %u %u %d %u %x\r\n",
+        cxHdr -> nProto,
+        ieee154Hdr -> src,
+        cxHdr -> sn,
+        cxHdr -> count,
+        cxHdr -> count + cxHdr -> originalFrameNum - 1,
+        rssiConv,
+        lqiVal,
+        crcPassed);
   }
   
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
