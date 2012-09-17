@@ -124,7 +124,6 @@ implementation {
         }
         if (closestSend == 0 && validSender){
 //          printf_TMP("send now\r\n");
-          printf_TMP("npt.ds\r\n");
           doSend();
         }
       }
@@ -279,13 +278,11 @@ implementation {
         post nextPacketTask();
       }else if (nextSlot == curSlot && ! isSending){
 //        printf_TMP("a%u\r\n", slotNum);
-        printf_TMP("ss.ds\r\n");
         doSend();
       }
     }
 
     task void doSendTask(){
-      printf_TMP("dst.ds\r\n");
       doSend();
     }
 
@@ -301,11 +298,11 @@ implementation {
 //        printf_TMP("send for tp %x client %u @ %u\r\n", 
 //          call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
         nextErr = call SubSend.send[call CXPacket.getTransportProtocol(nextMsg)](nextMsg, len);
-//        if (nextErr != SUCCESS && nextErr != ERETRY){
+        if (nextErr != SUCCESS && nextErr != ERETRY){
           printf_TMP("tp %x client %u slot %u pkt %p\r\n",
             call CXPacket.getTransportProtocol(nextMsg), nextClient,
               curSlot, nextMsg);
-//        }
+        }
       }
 
       if (nextErr == ERETRY){
