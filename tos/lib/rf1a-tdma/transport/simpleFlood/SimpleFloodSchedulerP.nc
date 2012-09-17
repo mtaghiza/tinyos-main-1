@@ -32,6 +32,8 @@ module SimpleFloodSchedulerP{
       error = call FloodSend.send(msg, len);
       if (error == SUCCESS){
         state = S_PENDING;
+      }else{
+        printf_TMP("%s: %s\r\n", __FUNCTION__, decodeError(error));
       }
       return error;
     }else{

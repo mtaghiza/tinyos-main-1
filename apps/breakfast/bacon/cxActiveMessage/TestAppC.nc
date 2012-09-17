@@ -13,6 +13,7 @@ configuration TestAppC{
   components LedsC;
   components new TimerMilliC() as StartupTimer;
   components new TimerMilliC() as SendTimer;
+  components new TimerMilliC() as SendTimeout;
   components RandomC;
 
   #if STACK_PROTECTION == 1
@@ -28,6 +29,7 @@ configuration TestAppC{
 
   TestP.StartupTimer -> StartupTimer;
   TestP.SendTimer -> SendTimer;
+  TestP.SendTimeout -> SendTimeout;
   TestP.Random -> RandomC;
   
 

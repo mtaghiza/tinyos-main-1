@@ -11,6 +11,7 @@
 #include "SchedulerDebug.h"
 #include "test.h"
 
+
 module TestP {
   uses interface Boot;
   uses interface StdControl as UartControl;
@@ -29,6 +30,7 @@ module TestP {
   uses interface Leds;
   uses interface Timer<TMilli> as StartupTimer;
   uses interface Timer<TMilli> as SendTimer;
+  uses interface Timer<TMilli> as SendTimeout;
 
   uses interface Random;
   uses interface PacketAcknowledgements;
@@ -94,16 +96,20 @@ module TestP {
   
   event void SendTimer.fired(){
     packetQueue++;
-//    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
+    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
     if (packetQueue >= QUEUE_THRESHOLD){
-//      printf_TEST_QUEUE("send\r\n");
+      printf_TEST_QUEUE("send\r\n");
       post sendTask();
     }else{
-//      printf_TEST_QUEUE("wait\r\n");
+      printf_TEST_QUEUE("wait\r\n");
     }
-
-    call SendTimer.startOneShot((TEST_IPI/2) + 
-      (call Random.rand32())%TEST_IPI );
+    
+    #if RANDOMIZE_IPI == 1
+      call SendTimer.startOneShot((TEST_IPI/2) + 
+        (call Random.rand32())%TEST_IPI );
+    #else
+      call SendTimer.startOneShot(TEST_IPI);
+    #endif
   }
 
   event void StartupTimer.fired(){
@@ -153,16 +159,31 @@ module TestP {
     }
   }
 
+  event void SendTimeout.fired(){
+    if (sending){
+      error_t err = call AMSend.cancel(tx_msg);
+      printf_TMP("TO CANCEL: %s\r\n", decodeError(err));
+//      call SendTimer.stop();
+    }
+  }
+
   event void AMSend.sendDone(message_t* msg, error_t error){
     call Leds.led1Toggle();
     sending = FALSE;
-    if (packetQueue){
-      packetQueue--;
+    if (call SendTimeout.isRunning()){
+      call SendTimeout.stop();
     }
     if (error == ENOACK || error == SUCCESS){
       if (packetQueue){
+        packetQueue--;
+      }
+      //try to drain it until we hit a delay
+      if (packetQueue){
+        call SendTimeout.startOneShot(APP_SEND_TIMEOUT);
         post sendTask();
       }
+    } else if (error == ECANCEL){
+      printf_TMP("SD: cancel\r\n");
     } else {
       printf("!sd %s\r\n", decodeError(error));
     }

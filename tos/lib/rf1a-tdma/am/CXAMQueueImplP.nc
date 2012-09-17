@@ -80,6 +80,7 @@ implementation {
     void doSend();
   
     task void nextPacketTask() {
+      bool validSender = FALSE;
       if (curSlot == INVALID_SLOT){
         curSlot = call SlotStarted.currentSlot();
       }
@@ -96,6 +97,7 @@ implementation {
           uint8_t k = (nextClient+i)%numClients;
           if (!queue[k].deferred && queue[k].msg != NULL && !(cancelMask[k/8] & (1 << k%8))){
             uint16_t slotsRemaining;
+            validSender = TRUE;
 //            printf_TMP("check c %u s %u: ", k,
 //              queue[k].sendSlot);
             if (curSlot <= queue[k].sendSlot){
@@ -120,10 +122,14 @@ implementation {
 //            printf_TMP("client %u not pending\r\n", k);
           }
         }
-        if (closestSend == 0){
+        if (closestSend == 0 && validSender){
 //          printf_TMP("send now\r\n");
+          printf_TMP("npt.ds\r\n");
           doSend();
         }
+      }
+      if (! validSender){
+        nextSlot = INVALID_SLOT;
       }
     }
 
@@ -166,6 +172,11 @@ implementation {
                         last = i*8 + j;
                         msg = queue[last].msg;
                         queue[last].msg = NULL;
+                        if (queue[last].sendSlot == nextSlot){
+                          post nextPacketTask();
+                        }
+                        queue[last].sendSlot = INVALID_SLOT;
+                        queue[last].deferred = FALSE;
                         cancelMask[i] &= ~mask;
                         signal Send.sendDone[last](msg, ECANCEL);
                     }
@@ -268,11 +279,13 @@ implementation {
         post nextPacketTask();
       }else if (nextSlot == curSlot && ! isSending){
 //        printf_TMP("a%u\r\n", slotNum);
+        printf_TMP("ss.ds\r\n");
         doSend();
       }
     }
 
     task void doSendTask(){
+      printf_TMP("dst.ds\r\n");
       doSend();
     }
 
@@ -288,6 +301,11 @@ implementation {
 //        printf_TMP("send for tp %x client %u @ %u\r\n", 
 //          call CXPacket.getTransportProtocol(nextMsg), nextClient, curSlot);
         nextErr = call SubSend.send[call CXPacket.getTransportProtocol(nextMsg)](nextMsg, len);
+//        if (nextErr != SUCCESS && nextErr != ERETRY){
+          printf_TMP("tp %x client %u slot %u pkt %p\r\n",
+            call CXPacket.getTransportProtocol(nextMsg), nextClient,
+              curSlot, nextMsg);
+//        }
       }
 
       if (nextErr == ERETRY){
@@ -300,8 +318,9 @@ implementation {
           post nextPacketTask();
       } else if(nextErr != SUCCESS) {
         printf("%s: %s\r\n", __FUNCTION__, decodeError(nextErr));
+
         post errorTask();
-      }else{
+      } else {
 //        printf_TMP("sending.\r\n");
         isSending = TRUE;
       }
@@ -325,6 +344,9 @@ implementation {
     }
 
     default command error_t SubSend.send[uint8_t tProto](message_t* msg, uint8_t len) {
+        return FAIL;
+    }
+    default command error_t SubSend.cancel[uint8_t tProto](message_t* msg) {
         return FAIL;
     }
 
