@@ -494,7 +494,7 @@ module CXTDMAPhysicalP {
           radioStateChange(R_SLEEP, call TDMAPhySchedule.getNow());
           setAsyncState(S_INACTIVE);
         }
-        printf_TMP("I@%u\r\n", frameNum);
+//        printf_TMP("I@%u\r\n", frameNum);
       }else{
         setState(S_ERROR_0);
       }
@@ -509,7 +509,7 @@ module CXTDMAPhysicalP {
           radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
           setState(S_IDLE);
         }
-        printf_TMP("A@%u\r\n", frameNum);
+//        printf_TMP("A@%u\r\n", frameNum);
       }else{
         setState(S_ERROR_0);
       }

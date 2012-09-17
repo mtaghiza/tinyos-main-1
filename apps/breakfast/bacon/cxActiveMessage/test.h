@@ -29,12 +29,8 @@
 #define TEST_IPI (60UL * 1024UL)
 #endif
 
-#ifndef QUEUE_THRESHOLD
-#define QUEUE_THRESHOLD ((SCHED_FRAMES_PER_SLOT - 1)/ SCHED_MAX_DEPTH)
-#endif
-
-#if QUEUE_THRESHOLD == 0
-#define QUEUE_THRESHOLD 1
+#ifndef RANDOMIZE_IPI
+#define RANDOMIZE_IPI 1
 #endif
 
 #ifndef APP_SEND_TIMEOUT

@@ -96,12 +96,12 @@ module TestP {
   
   event void SendTimer.fired(){
     packetQueue++;
-    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
+//    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
     if (packetQueue >= QUEUE_THRESHOLD){
-      printf_TEST_QUEUE("send\r\n");
+//      printf_TEST_QUEUE("send\r\n");
       post sendTask();
     }else{
-      printf_TEST_QUEUE("wait\r\n");
+//      printf_TEST_QUEUE("wait\r\n");
     }
     
     #if RANDOMIZE_IPI == 1
@@ -124,6 +124,7 @@ module TestP {
     call Leds.led0On();
     #if IS_SENDER == 1
       printf_APP("Start sending.\r\n");
+      packetQueue = QUEUE_THRESHOLD - 1;
       call SendTimer.startOneShot((TEST_IPI/2) + 
         (call Random.rand32())%TEST_IPI );
     #endif
@@ -162,8 +163,9 @@ module TestP {
   event void SendTimeout.fired(){
     if (sending){
       error_t err = call AMSend.cancel(tx_msg);
-      printf_TMP("TO CANCEL: %s\r\n", decodeError(err));
-//      call SendTimer.stop();
+      if (err != SUCCESS){
+        printf_TMP("TO CANCEL: %s\r\n", decodeError(err));
+      }
     }
   }
 
@@ -183,7 +185,7 @@ module TestP {
         post sendTask();
       }
     } else if (error == ECANCEL){
-      printf_TMP("SD: cancel\r\n");
+      //OK: we should see this when we cancel to keep IPI steady
     } else {
       printf("!sd %s\r\n", decodeError(error));
     }
