@@ -96,12 +96,12 @@ module TestP {
   
   event void SendTimer.fired(){
     packetQueue++;
-//    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
+    printf_TEST_QUEUE("Queue Length: %u ", packetQueue);
     if (packetQueue >= QUEUE_THRESHOLD){
-//      printf_TEST_QUEUE("send\r\n");
+      printf_TEST_QUEUE("send\r\n");
       post sendTask();
     }else{
-//      printf_TEST_QUEUE("wait\r\n");
+      printf_TEST_QUEUE("wait\r\n");
     }
     
     #if RANDOMIZE_IPI == 1
@@ -125,8 +125,12 @@ module TestP {
     #if IS_SENDER == 1
       printf_APP("Start sending.\r\n");
       packetQueue = QUEUE_THRESHOLD - 1;
-      call SendTimer.startOneShot((TEST_IPI/2) + 
-        (call Random.rand32())%TEST_IPI );
+      #if RANDOMIZE_IPI == 1
+        call SendTimer.startOneShot((TEST_IPI/2) + 
+          (call Random.rand32())%TEST_IPI );
+      #else
+        call SendTimer.startOneShot(TEST_IPI);
+      #endif
     #endif
   }
 

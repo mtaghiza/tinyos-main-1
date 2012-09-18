@@ -85,4 +85,7 @@
 #define DEFAULT_TDMA_FW_CHECK_LEN 6500UL
 #define PFS_SLACK 2600UL
 
+#ifndef FWD_DROP_RATE
+#define FWD_DROP_RATE 0
+#endif
 #endif

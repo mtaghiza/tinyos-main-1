@@ -36,7 +36,6 @@ module UnreliableBurstSchedulerP{
     S_ERROR_7 = 0x17,
 
     S_IDLE = 0x00,
-    S_SETUP = 0x01,
     S_SETUP_SENDING = 0x01,
     S_READY = 0x02,
     S_SENDING = 0x03
@@ -276,8 +275,8 @@ module UnreliableBurstSchedulerP{
       if (state == S_READY){
         state = S_IDLE;
       }else if (state != S_IDLE){
-        if (state != S_ERROR_3){
-          printf("!SS.SS in %x\r\n", state);
+        if (state != S_ERROR_7){
+          printf("!NSF.UB.SS.SS in %x\r\n", state);
         }
         state = S_ERROR_7;
       }

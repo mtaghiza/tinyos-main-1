@@ -48,6 +48,8 @@ debugUB=1
 testId=$(date +%s)
 testLabel=''
 txp=0xC3
+rootTxp=x
+leafTxp=x
 sr=125
 channel=64
 requestAck=0
@@ -65,11 +67,13 @@ fps=40
 staticScheduler=1
 forceSlots=0
 cxEnableSkewCorrection=1
+fwdDropRate=0
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
-"staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection")
+"staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
+"rootTxp" "leafTxp" "fwdDropRate")
 
 while [ $# -gt 1 ]
 do
@@ -102,6 +106,16 @@ then
   exit 1
 fi
 
+if [ "$leafTxp" == "x" ]
+then
+  leafTxp=$txp
+fi
+
+if [ "$rootTxp" == "x" ]
+then
+  rootTxp=$txp
+fi
+
 #concatenate the settings together
 testDesc=""
 for v in ${settingVars[@]}
@@ -132,7 +146,9 @@ fi
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection"
 set +x
-phyOptions="PATABLE0_SETTING=$txp TEST_CHANNEL=$channel"
+phyOptionsCommon="TEST_CHANNEL=$channel"
+phyOptionsLeaf="PATABLE0_SETTING=$leafTxp"
+phyOptionsRoot="PATABLE0_SETTING=$rootTxp"
 
 memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
 
@@ -141,10 +157,10 @@ loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable DEBUG_UB=$debugUB" 
 
 
-testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74"
+testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74 FWD_DROP_RATE=$fwdDropRate"
 miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
-commonOptions="$scheduleOptions $phyOptions $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
+commonOptions="$scheduleOptions $phyOptionsCommon $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
 
 
 pushd .
@@ -169,7 +185,8 @@ if [ "$receiverMap" != ""  -a $(grep -c -v '#' $receiverMap) -gt 0 ]
 then
   make bacon2 \
     TDMA_ROOT=0 IS_SENDER=0 \
-    $commonOptions 
+    $commonOptions \
+    $phyOptionsLeaf 
   grep -v '#' $receiverMap | while read line
   do
     ref=$(echo $line | cut -d ' ' -f 1)
@@ -184,7 +201,9 @@ then
     TDMA_ROOT=0 IS_SENDER=1 \
     TEST_DEST_ADDR=$senderDest \
     TEST_REQUEST_ACK=$requestAck\
-    $commonOptions
+    $commonOptions \
+    $phyOptionsLeaf
+
   grep -v '#' $senderMap | while read line
   do
     ref=$(echo $line | cut -d ' ' -f 1)
@@ -213,7 +232,9 @@ then
     TDMA_ROOT=1 IS_SENDER=$rootSender \
     TEST_DEST_ADDR=$rootDest \
     TEST_REQUEST_ACK=$requestAck\
-    $commonOptions
+    $commonOptions\
+    $phyOptionsRoot
+
   grep -v '#' $rootMap | while read line
   do
     ref=$(echo $line | cut -d ' ' -f 1)

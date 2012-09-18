@@ -281,6 +281,10 @@ module MasterSchedulerStaticP {
     return SUCCESS;
   }
 
+  command bool TDMARoutingSchedule.isInactiveSlot(){
+    return inactiveSlot;
+  }
+
   event uint8_t TDMAPhySchedule.getScheduleNum(){
     return schedule->scheduleNum;
   }

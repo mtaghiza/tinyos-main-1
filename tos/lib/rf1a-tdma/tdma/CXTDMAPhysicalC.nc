@@ -23,6 +23,8 @@ configuration CXTDMAPhysicalC {
   //This could be 32khz, not so important
   components new AlarmMicro32C() as FrameWaitAlarm;
 
+  components RandomC;
+
   components GDO1CaptureC;
 
   components Rf1aDumpConfigC;
@@ -66,6 +68,8 @@ configuration CXTDMAPhysicalC {
   CXTDMAPhysicalP.Packet -> CXPacketStackC.Ieee154PacketBody;
   CXTDMAPhysicalP.CXPacket -> CXPacketStackC.CXPacket;
   CXTDMAPhysicalP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+
+  CXTDMAPhysicalP.Random -> RandomC;
 
   Rf1aPhysicalMetadata = Rf1aPhysicalC;
 }

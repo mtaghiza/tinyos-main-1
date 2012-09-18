@@ -146,7 +146,7 @@ module UnreliableBurstSchedulerP{
         state = S_IDLE;
       }else if (state != S_IDLE){
         if (state != S_ERROR_3){
-          printf("!SS.SS in %x\r\n", state);
+          printf("!UB.SS.SS in %x\r\n", state);
         }
         state = S_ERROR_3;
       }

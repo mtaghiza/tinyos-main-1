@@ -39,6 +39,8 @@ module CXTDMAPhysicalP {
 
   uses interface Rf1aDumpConfig;
   uses interface StateTiming;
+
+  uses interface Random;
 } implementation {
   enum{
     M_TYPE = 0xf0,
@@ -959,6 +961,14 @@ module CXTDMAPhysicalP {
     }
   }
 
+  bool shouldDrop(){
+    #if FWD_DROP_RATE == 0
+    return FALSE;
+    #else
+    return ((call Random.rand32() & 0xff) < FWD_DROP_RATE);
+    #endif
+  }
+
   task void completeReceiveDone(){
     message_t* msg;
     uint8_t rdResultLocal;
@@ -1028,9 +1038,18 @@ module CXTDMAPhysicalP {
               call CXPacket.sn(msg),
               call CXPacket.count(msg),
               frameNum);
-            rx_msg = signal CXTDMA.receive(msg,
-              rdCountLocal - sizeof(rf1a_ieee154_t),
-              frameNum, rdLastRECaptureLocal);
+            if (shouldDrop()){
+              printf_LINK_RXTX("DROP %u %u %u %u %u\r\n",
+                call CXPacket.getNetworkProtocol(msg),
+                call CXPacket.source(msg),
+                call CXPacket.sn(msg),
+                call CXPacket.count(msg),
+                frameNum);
+            } else {
+              rx_msg = signal CXTDMA.receive(msg,
+                rdCountLocal - sizeof(rf1a_ieee154_t),
+                frameNum, rdLastRECaptureLocal);
+            }
           }
         }else{
           printf_LINK_RXTX("Bad CRC %u\r\n", frameNum);
