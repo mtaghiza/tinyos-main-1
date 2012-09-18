@@ -92,34 +92,34 @@ left join sniffs s
   and s.hopCount = n.hopCount
   and s.crcPassed = 1;
 
-select "grouping receptions by sender";
-DROP TABLE IF EXISTS single_results;
-CREATE TABLE single_results as
-SELECT t.*, g.dest, g.sendCount, g.rxOK
-FROM transmits t
-JOIN group_results g
-  ON t.cycle=g.cycle
-  AND t.sn = g.sn
-  AND t.hopCount = g.hopCount;
-
-
-select "computing prr w. / wo. node";
-DROP TABLE if exists prr_v_node;
-CREATE TABLE prr_v_node as 
-SELECT src, hopCount, sendCount, involved, avg(rxOK) as prr, 
-  count(*) as cnt
-FROM (
-SELECT nodes.src, g.sendCount, g.hopCount, coalesce(involved, 0) as involved,
-  g.rxOK as rxOK
-FROM group_results g
-JOIN (select distinct src from single_results) nodes
-LEFT JOIN (
-  SELECT *, 1 as involved
-  FROM single_results
-  ) s
-ON g.cycle = s.cycle AND g.sn = s.sn AND g.hopCount = s.hopCount and
-nodes.src = s.src
-) x
-GROUP BY src, hopCount, sendCount, involved;
+-- select "grouping receptions by sender";
+-- DROP TABLE IF EXISTS single_results;
+-- CREATE TABLE single_results as
+-- SELECT t.*, g.dest, g.sendCount, g.rxOK
+-- FROM transmits t
+-- JOIN group_results g
+--   ON t.cycle=g.cycle
+--   AND t.sn = g.sn
+--   AND t.hopCount = g.hopCount;
+-- 
+-- 
+-- select "computing prr w. / wo. node";
+-- DROP TABLE if exists prr_v_node;
+-- CREATE TABLE prr_v_node as 
+-- SELECT src, hopCount, sendCount, involved, avg(rxOK) as prr, 
+--   count(*) as cnt
+-- FROM (
+-- SELECT nodes.src, g.sendCount, g.hopCount, coalesce(involved, 0) as involved,
+--   g.rxOK as rxOK
+-- FROM group_results g
+-- JOIN (select distinct src from single_results) nodes
+-- LEFT JOIN (
+--   SELECT *, 1 as involved
+--   FROM single_results
+--   ) s
+-- ON g.cycle = s.cycle AND g.sn = s.sn AND g.hopCount = s.hopCount and
+-- nodes.src = s.src
+-- ) x
+-- GROUP BY src, hopCount, sendCount, involved;
 
 EOF
