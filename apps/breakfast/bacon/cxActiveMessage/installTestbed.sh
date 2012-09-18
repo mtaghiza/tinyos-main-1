@@ -68,12 +68,13 @@ forceSlots=0
 cxEnableSkewCorrection=1
 fwdDropRate=0
 cxForwarderSelection=0
+installBlink=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
-"rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection")
+"rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink")
 
 while [ $# -gt 1 ]
 do
@@ -163,18 +164,22 @@ miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 commonOptions="$scheduleOptions $phyOptionsCommon $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
 
 set -x 
-
-pushd .
-testbedDir=$(pwd)
-cd ~/tinyos-2.x/apps/Blink
-./burn $testbedDir/map.bacon2 2>&1 | grep -i -e err -e sensorbed
-popd
-
-if [ $autoRun == 0 ]
+if [ "$installBlink" == "1" ]
 then
-  read -p "Hit enter when programming is done"
+  pushd .
+  testbedDir=$(pwd)
+  cd ~/tinyos-2.x/apps/Blink
+  ./burn $testbedDir/map.bacon2 2>&1 | grep -i -e err -e sensorbed
+  popd
+  
+  if [ $autoRun == 0 ]
+  then
+    read -p "Hit enter when programming is done"
+  else
+    sleep $programDelay
+  fi
 else
-  sleep $programDelay
+  echo "Skipping blink installation"
 fi
 
 if [ "$receiverMap" != "" ]

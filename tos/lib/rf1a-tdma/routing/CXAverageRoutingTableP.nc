@@ -1,0 +1,201 @@
+ #include "CXRouting.h"
+ #include "CXAverageRouting.h"
+ #include "CXRoutingDebug.h"
+
+generic module CXAverageRoutingTableP(uint8_t numEntries){
+  provides interface CXRoutingTable;
+  provides interface Init;
+} implementation {
+  cx_avg_route_entry_t rt[numEntries];
+  uint8_t lastEvicted = numEntries-1;
+
+  uint8_t curDump;
+  bool dumping = FALSE;
+
+  uint8_t dist(uint32_t distanceTotal, uint32_t measureCount){
+    //round to nearest integer distance: shift total left so it is in
+    //fixed-point fraction form with a single-bit fractional part
+    //(1/(2**1))
+    uint32_t fpAvg = (distanceTotal << 1) / measureCount;
+    return (fpAvg >> 1) + (0x01 & fpAvg);
+  }
+
+  task void nextDumpTask(){
+    cx_avg_route_entry_t* re;
+    printf("# RT[%d] %d->%d = %d (%ld/%ld)(%d %d) ", 
+      curDump, rt[curDump].n0, rt[curDump].n1, 
+      dist(rt[curDump].distanceTotal, rt[curDump].measureCount), 
+      rt[curDump].distanceTotal,
+      rt[curDump].measureCount,
+      rt[curDump].used, 
+      rt[curDump].pinned);
+    printf(" lu: %d", 
+      call CXRoutingTable.distance(rt[curDump].n0, rt[curDump].n1, FALSE));
+    printf(" rev: %d \r\n", 
+      call CXRoutingTable.distance(rt[curDump].n1, rt[curDump].n0, TRUE));
+    curDump ++;
+    if (curDump < numEntries){
+      post nextDumpTask();
+    }else{
+      dumping = FALSE;
+    }
+  }
+
+  command void CXRoutingTable.dumpTable(){
+    if (! dumping){
+      curDump = 0;
+      dumping = TRUE;
+      post nextDumpTask();
+    }
+  }
+
+  command error_t Init.init(){
+    uint8_t i;
+    for(i = 0; i < numEntries; i++){
+      rt[i].used = FALSE;
+      rt[i].pinned = FALSE;
+    }
+    return SUCCESS;
+  }
+
+  bool getEntry(cx_avg_route_entry_t** re, am_addr_t n0, am_addr_t n1,
+      bool bdOK){
+    uint8_t i = 0;
+    for (i = 0; i < numEntries; i++){
+      if ((rt[i].n0 == n0) && (rt[i].n1 == n1)){
+        *re = &rt[i];
+        return TRUE;
+      }
+    }
+    if (bdOK){
+      for (i = 0; i < numEntries; i++){
+        if ((rt[i].n0 == n1) && (rt[i].n1 == n0)){
+          *re = &rt[i];
+          return TRUE;
+        }
+      }
+    }
+    return FALSE;
+  }
+
+  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
+      bool bdOK){
+    cx_avg_route_entry_t* re;
+    if (from == TOS_NODE_ID && to == TOS_NODE_ID){
+      return 0;
+    }
+    if (getEntry(&re, from, to, bdOK)){
+      return dist(re->distanceTotal, re->measureCount);
+    }else{
+      return 0xff;
+    }
+  }
+
+  command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
+      uint8_t distance){
+    uint8_t i;
+    uint8_t checked = 0;
+    cx_avg_route_entry_t* re;
+    //update and mark used-recently if it's already in the table.
+    if (getEntry(&re, n0, n1, FALSE)){
+      re->distanceTotal += distance;
+      re->measureCount ++;
+      re->used = TRUE;
+      return SUCCESS;
+    }
+    //start at lastEvicted+1
+    i = (lastEvicted + 1)%numEntries;
+    //look for one that hasn't been used recently, clearing LRU flag
+    //as you go. Eventually we'll either find an unused slot or we'll
+    //wrap around.
+
+    while (rt[i].used && checked < CX_ROUTING_TABLE_ENTRIES ){
+      if (!rt[i].pinned){
+        rt[i].used = FALSE;
+      }else{
+        checked++;
+      }
+      i = (i+1)%numEntries;
+    }
+    //Fail if there are no un-pinned entries
+    if (rt[i].pinned){
+      printf("~No unpinned RT entries!\r\n");
+      call CXRoutingTable.dumpTable();
+      return FAIL;
+    }
+    //save it
+    printf_ROUTING_TABLE("NR %u->%u %u\r\n", n0, n1, distance);
+    rt[i].n0 = n0;
+    rt[i].n1 = n1;
+    //New record: so, overwrite distance and measureCount
+    rt[i].distanceTotal = distance;
+    rt[i].measureCount = 1;
+    rt[i].used = TRUE;
+    //update for next time.
+    lastEvicted = i;
+    return SUCCESS;
+  }
+
+  command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1,
+      bool pinned, bool bdOK){
+    cx_avg_route_entry_t* re;
+    error_t err = FAIL;
+    //make sure that we pin both directions...
+//    printf_TMP("Pin %d -> %d: %d %d e=", n0, n1, pinned, bdOK);
+    if (getEntry(&re, n0, n1, FALSE)){
+      err = SUCCESS;
+      re->pinned = pinned;
+    }    
+    if (bdOK){
+      if (getEntry(&re, n1, n0, FALSE)){
+        err = SUCCESS;
+        re->pinned = pinned;
+      }
+    }
+//    printf_TMP("%x\r\n", err);
+//    call CXRoutingTable.dumpTable();
+
+    return err;
+  }
+
+  command uint8_t CXRoutingTable.getBufferWidth(){
+    return CX_BUFFER_WIDTH;
+  }
+
+  command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
+      bool bdOK, bool* result){
+    cx_avg_route_entry_t* re; 
+    if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR 
+        || n0 == TOS_NODE_ID || n1== TOS_NODE_ID){
+      *result = TRUE;
+      return SUCCESS;
+    }
+    if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
+      uint8_t sm = dist(re->distanceTotal , re->measureCount);
+      if (getEntry(&re, TOS_NODE_ID, n1, bdOK)){
+        uint8_t md = dist(re->distanceTotal , re->measureCount);
+        if (getEntry(&re, n0, n1, bdOK)){
+          *result = sm + md <= (dist(re->distanceTotal, re->measureCount) 
+            + call CXRoutingTable.getBufferWidth());
+          if (! *result){
+            printf_ROUTING_TABLE("~");
+          }
+          printf_ROUTING_TABLE("IB %u->%u %u %u %u\r\n", 
+            n0,
+            n1,
+            sm,
+            md,
+            dist(re->distanceTotal,re->measureCount));
+          return SUCCESS;
+        }else{
+          printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
+        }
+      }else{
+        printf_ROUTING_TABLE("~IB %u -> %u dm UNK\r\n", n0, n1);
+      }
+    }else{
+      printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
+    }
+    return FAIL;
+  }
+}
