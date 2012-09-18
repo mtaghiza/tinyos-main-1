@@ -5,7 +5,7 @@
 generic module CXMaxRoutingTableP(uint8_t numEntries){
   provides interface CXRoutingTable;
   provides interface Init;
-  uses interface Timer<TMilli>;
+  uses interface LocalTime<TMilli>;
 } implementation {
   cx_max_route_entry_t rt[numEntries];
   uint8_t lastEvicted = numEntries-1;
@@ -14,10 +14,8 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
   bool dumping = FALSE;
   
   uint32_t now(){
-    return call Timer.getNow();
+    return call LocalTime.get();
   }
-  //just using the timer for getNow
-  event void Timer.fired(){}
 
   task void nextDumpTask(){
     cx_max_route_entry_t* re;
@@ -139,7 +137,7 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     rt[i].n0 = n0;
     rt[i].n1 = n1;
     rt[i].distance = distance;
-    rt[i].lastSeen = now;
+    rt[i].lastSeen = ts;
     rt[i].used = TRUE;
     printf_ROUTING_TABLE("MAX NR %u->%u (%u, %lu)\r\n", 
       n0, n1,
