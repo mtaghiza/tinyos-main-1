@@ -372,6 +372,31 @@ class DutyCycle(TestbedMap):
         q = 'SELECT node, dc from duty_cycle'
         self.dutyCycles = dict(c.execute(q))
         c.close()
+
+class ConditionalPrr(TestbedMap):
+    def __init__(self, dbFile, refNode, prrLabels, **kwargs):
+        super(ConditionalPrr, self).__init__(**kwargs)
+        self.loadPrrs(dbFile, refNode)
+        self.loadTransmitters(dbFile)
+        self.addOutlined(refNode, 10)
+        self.setAttr('prr', self.prrs, 0.0)
+        self.setColAttr('prr')
+        if prrLabels:
+            rounded = dict([ (k, "%.2f"%self.prrs[k]) 
+              for k in self.prrs])
+            self.setLabels(rounded)
+        for (t,) in self.transmitters:
+            self.addOutlined(t, 5)
+
+    def loadPrrs(self, dbFile, refNode):
+        c = sqlite3.connect(dbFile)
+        q = 'SELECT cd, condPrr from conditional_prr WHERE rd=?'
+        self.prrs = dict(c.execute(q,(refNode,)))
+
+    def loadTransmitters(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        q = 'SELECT distinct(src) from transmits'
+        self.transmitters = c.execute(q)
         
 if __name__ == '__main__':
     fn = sys.argv[1]
@@ -478,6 +503,16 @@ if __name__ == '__main__':
         packetLen = 35
         tbm = FloodSimDepthMap(fn, root, maxDepth, simRuns, sr, txp,
             packetLen)
+    elif t == '--cond':
+        refNode = 2
+        prrLabels = 1
+        if (len(sys.argv)>4):
+            for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--ref':
+                    refNode = int(v)
+                if o == '--prrLabels':
+                    prrLabels = int(v)
+        tbm = ConditionalPrr(fn, refNode, prrLabels)
     else:
         print >> sys.stderr, "Unrecognized type",t
 
