@@ -151,7 +151,10 @@ module SlaveSchedulerStaticP {
       if (num_measurements > 0){
         lag_per_cycle = lagTot/(num_measurements);
         lag_per_slot = lag_per_cycle / schedule->slots;
-//        printf_TMP("LPC %ld\r\n", lag_per_cycle);
+        printf_TMP("LPC %ld\r\n", lag_per_cycle);
+        printf_TMP("CL %ld\r\n", 
+          (schedule->slots*schedule->framesPerSlot)
+          *(call TDMAPhySchedule.getFrameLen()));
 //        printf_TMP("LPS %ld\r\n", lag_per_slot);
         //why is this computation incorrect? must be an overflow.
 //        printf_TMP("PPM %ld\r\n",

@@ -7,8 +7,13 @@ configuration CXRoutingTableC{
   #elif CX_FORWARDER_SELECTION == 1
   components new CXAverageRoutingTableP(CX_ROUTING_TABLE_ENTRIES) 
     as CXRoutingTableP;
+  #elif CX_FORWARDER_SELECTION == 2
+  components new CXMaxRoutingTableP(CX_ROUTING_TABLE_ENTRIES) 
+    as CXRoutingTableP;
+  components new TimerMilliC();
+  CXRoutingTableP.Timer -> TimerMilliC;
   #else
-  #error Unrecognized CX_FORWARDER_SELECTION option: 0=instant, 1=avg
+  #error Unrecognized CX_FORWARDER_SELECTION option: 0=instant, 1=avg, 2=max
   #endif
 //  components new SafeCXRoutingTableP(CX_ROUTING_TABLE_ENTRIES) as CXRoutingTableP;
   components MainC;

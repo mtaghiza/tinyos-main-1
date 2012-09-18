@@ -41,7 +41,7 @@ debugTestbedResource=0
 rxr=0
 debugDup=0
 debugFSched=0
-debugRoutingTable=0
+debugRoutingTable=1
 debugUB=1
 
 #test defaults

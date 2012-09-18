@@ -8,17 +8,25 @@ generic module CXRoutingTableP(uint8_t numEntries){
   cx_route_entry_t rt[numEntries];
   uint8_t lastEvicted = numEntries-1;
 
+  uint8_t curDump;
+  bool dumping = FALSE;
+
+  task void nextDumpTask(){
+    cx_route_entry_t* re;
+    printf_TMP("# INS RT[%d] %d->%d = %d (%d %d) ", 
+      curDump, rt[curDump].n0, rt[curDump].n1, 
+      rt[curDump].distance, rt[curDump].used, rt[curDump].pinned);
+    printf_TMP(" lu: %d", 
+      call CXRoutingTable.distance(rt[curDump].n0, rt[curDump].n1, FALSE));
+    printf_TMP(" rev: %d \r\n", 
+      call CXRoutingTable.distance(rt[curDump].n1, rt[curDump].n0, TRUE));
+  }
+
   command void CXRoutingTable.dumpTable(){
-    uint8_t k;
-    for (k=0; k< numEntries; k++){
-      cx_route_entry_t* re;
-      printf_TMP("# RT[%d] %d->%d = %d (%d %d) ", 
-        k, rt[k].n0, rt[k].n1, 
-        rt[k].distance, rt[k].used, rt[k].pinned);
-      printf_TMP(" lu: %d", 
-        call CXRoutingTable.distance(rt[k].n0, rt[k].n1, FALSE));
-      printf_TMP(" rev: %d \r\n", 
-        call CXRoutingTable.distance(rt[k].n1, rt[k].n0, TRUE));
+    if (! dumping){
+      curDump = 0;
+      dumping = TRUE;
+      post nextDumpTask();
     }
   }
 

@@ -1,32 +1,33 @@
  #include "CXRouting.h"
- #include "CXAverageRouting.h"
+ #include "CXMaxRouting.h"
  #include "CXRoutingDebug.h"
 
-generic module CXAverageRoutingTableP(uint8_t numEntries){
+generic module CXMaxRoutingTableP(uint8_t numEntries){
   provides interface CXRoutingTable;
   provides interface Init;
+  uses interface Timer<TMilli>;
 } implementation {
-  cx_avg_route_entry_t rt[numEntries];
+  cx_max_route_entry_t rt[numEntries];
   uint8_t lastEvicted = numEntries-1;
 
   uint8_t curDump;
   bool dumping = FALSE;
-
-  uint8_t dist(uint32_t distanceTotal, uint32_t measureCount){
-    //round to nearest integer distance: shift total left so it is in
-    //fixed-point fraction form with a single-bit fractional part
-    //(1/(2**1))
-    uint32_t fpAvg = (distanceTotal << 1) / measureCount;
-    return (fpAvg >> 1) + (0x01 & fpAvg);
+  
+  uint32_t now(){
+    return call Timer.getNow();
   }
+  //just using the timer for getNow
+  event void Timer.fired(){}
 
   task void nextDumpTask(){
-    cx_avg_route_entry_t* re;
-    printf("# AVG RT[%d] %d->%d = %d (%ld/%ld)(%d %d) ", 
+    cx_max_route_entry_t* re;
+    if (curDump == 0){
+      printf("# RT Now: %lu\r\n", now());
+    }
+    printf("# MAX RT[%d] %d->%d = %d %lu (%d %d) ", 
       curDump, rt[curDump].n0, rt[curDump].n1, 
-      dist(rt[curDump].distanceTotal, rt[curDump].measureCount), 
-      rt[curDump].distanceTotal,
-      rt[curDump].measureCount,
+      rt[curDump].distance,
+      rt[curDump].lastSeen,
       rt[curDump].used, 
       rt[curDump].pinned);
     printf(" lu: %d", 
@@ -58,7 +59,7 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
     return SUCCESS;
   }
 
-  bool getEntry(cx_avg_route_entry_t** re, am_addr_t n0, am_addr_t n1,
+  bool getEntry(cx_max_route_entry_t** re, am_addr_t n0, am_addr_t n1,
       bool bdOK){
     uint8_t i = 0;
     for (i = 0; i < numEntries; i++){
@@ -80,12 +81,12 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
       bool bdOK){
-    cx_avg_route_entry_t* re;
+    cx_max_route_entry_t* re;
     if (from == TOS_NODE_ID && to == TOS_NODE_ID){
       return 0;
     }
     if (getEntry(&re, from, to, bdOK)){
-      return dist(re->distanceTotal, re->measureCount);
+      return re->distance;
     }else{
       return 0xff;
     }
@@ -95,11 +96,22 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
       uint8_t distance){
     uint8_t i;
     uint8_t checked = 0;
-    cx_avg_route_entry_t* re;
-    //update and mark used-recently if it's already in the table.
+    cx_max_route_entry_t* re;
+    uint32_t ts = now();
     if (getEntry(&re, n0, n1, FALSE)){
-      re->distanceTotal += distance;
-      re->measureCount ++;
+      //record this if it meets/exceeds current max distance. Replace
+      //current max distance if it's expired.
+      printf_TMP("MAX UR %u -> %u (%u, %lu) => (%u, %lu) =>",
+        n0, n1, 
+        re->distance, re->lastSeen,
+        distance, ts);
+      if ( distance >= re->distance || 
+        (ts - re->lastSeen > CX_ROUTING_TABLE_TIMEOUT) ){
+        re->distance = distance;
+        re->lastSeen = ts;
+      } 
+      printf_TMP("(%u, %lu)\r\n", re->distance, re->lastSeen);
+      //mark used-recently if it's already in the table.
       re->used = TRUE;
       return SUCCESS;
     }
@@ -124,13 +136,14 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
       return FAIL;
     }
     //save it
-    printf_ROUTING_TABLE("NR %u->%u %u\r\n", n0, n1, distance);
     rt[i].n0 = n0;
     rt[i].n1 = n1;
-    //New record: so, overwrite distance and measureCount
-    rt[i].distanceTotal = distance;
-    rt[i].measureCount = 1;
+    rt[i].distance = distance;
+    rt[i].lastSeen = now;
     rt[i].used = TRUE;
+    printf_ROUTING_TABLE("MAX NR %u->%u (%u, %lu)\r\n", 
+      n0, n1,
+      rt[i].distance, rt[i].lastSeen);
     //update for next time.
     lastEvicted = i;
     return SUCCESS;
@@ -138,7 +151,7 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.setPinned(am_addr_t n0, am_addr_t n1,
       bool pinned, bool bdOK){
-    cx_avg_route_entry_t* re;
+    cx_max_route_entry_t* re;
     error_t err = FAIL;
     //make sure that we pin both directions...
 //    printf_TMP("Pin %d -> %d: %d %d e=", n0, n1, pinned, bdOK);
@@ -164,19 +177,18 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool bdOK, bool* result){
-    cx_avg_route_entry_t* re; 
+    cx_max_route_entry_t* re; 
     if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR 
         || n0 == TOS_NODE_ID || n1== TOS_NODE_ID){
       *result = TRUE;
       return SUCCESS;
     }
     if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
-      uint8_t sm = dist(re->distanceTotal , re->measureCount);
+      uint8_t sm = re->distance;
       if (getEntry(&re, TOS_NODE_ID, n1, bdOK)){
-        uint8_t md = dist(re->distanceTotal , re->measureCount);
+        uint8_t md = re->distance;
         if (getEntry(&re, n0, n1, bdOK)){
-          *result = sm + md <= (dist(re->distanceTotal, re->measureCount) 
-            + call CXRoutingTable.getBufferWidth());
+          *result = sm + md <= (re->distance + call CXRoutingTable.getBufferWidth());
           if (! *result){
             printf_ROUTING_TABLE("~");
           }
@@ -185,7 +197,7 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
             n1,
             sm,
             md,
-            dist(re->distanceTotal,re->measureCount));
+            re->distance);
           return SUCCESS;
         }else{
           printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
@@ -199,3 +211,4 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
     return FAIL;
   }
 }
+
