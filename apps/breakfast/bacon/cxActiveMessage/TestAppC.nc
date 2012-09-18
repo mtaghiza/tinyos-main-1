@@ -46,4 +46,7 @@ configuration TestAppC{
   TestP.CXPacketMetadata -> ActiveMessageC.CXPacketMetadata;
   TestP.Packet -> ActiveMessageC.Packet;
   TestP.SplitControl -> ActiveMessageC.SplitControl;
+  
+  components CXRoutingTableC;
+  TestP.CXRoutingTable -> CXRoutingTableC;
 }

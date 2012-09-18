@@ -155,7 +155,12 @@ module CXFloodP{
    */
   event rf1a_offmode_t CXTDMA.frameType(uint16_t frameNum){ 
     printf_F_SCHED("f.ft %u", frameNum);
-
+//    if (txPending){
+//      printf_TMP("p ");
+//    } else{
+//      printf_TMP("np ");
+//    }
+//    printf_TMP("%u\r\n", frameNum);
     if (!txSent && txPending && (call CXTransportSchedule.isOrigin[call CXPacket.getTransportProtocol(tx_msg)](frameNum))){
       error_t error = call TaskResource.immediateRequest(); 
       printf_F_SCHED("o");

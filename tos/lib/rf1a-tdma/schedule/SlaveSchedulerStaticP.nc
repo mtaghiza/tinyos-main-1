@@ -241,7 +241,8 @@ module SlaveSchedulerStaticP {
     if (hasSchedule
         && ! newSlot 
         && framesThisSlot > call TDMARoutingSchedule.maxDepth()
-        && framesSinceSynch > framesThisSlot){
+        && framesSinceSynch > framesThisSlot 
+        && ! (call TDMARoutingSchedule.ownsFrame(curFrame))){
       call TDMARoutingSchedule.inactiveSlot();
     }
     
@@ -350,9 +351,6 @@ module SlaveSchedulerStaticP {
   command error_t TDMARoutingSchedule.inactiveSlot(){
     inactiveSlot = TRUE;
     return SUCCESS;
-  }
-  command bool TDMARoutingSchedule.isInactiveSlot(){
-    return inactiveSlot;
   }
 
   event uint8_t TDMAPhySchedule.getScheduleNum(){

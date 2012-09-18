@@ -122,9 +122,7 @@ implementation {
 //            printf_TMP("client %u not pending\r\n", k);
           }
         }
-        if (closestSend == 0 
-            && validSender 
-            && !  (call TDMARoutingSchedule.isInactiveSlot())){
+        if (closestSend == 0 && validSender){
 //          printf_TMP("send now\r\n");
           doSend();
         }

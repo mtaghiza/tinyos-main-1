@@ -35,6 +35,8 @@ module TestP {
   uses interface Random;
   uses interface PacketAcknowledgements;
 
+  uses interface CXRoutingTable;
+
 } implementation {
   
   message_t tx_msg_internal;
@@ -230,10 +232,16 @@ module TestP {
     return msg;
   }
 
+  task void dumpTableTask(){
+    call CXRoutingTable.dumpTable();
+  }
   async event void UartStream.receivedByte(uint8_t byte){ 
     switch(byte){
       case 'q':
         WDTCTL=0;
+        break;
+      case 'd':
+        post dumpTableTask();
         break;
       default:
     }
