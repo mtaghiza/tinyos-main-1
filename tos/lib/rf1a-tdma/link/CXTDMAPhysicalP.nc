@@ -763,7 +763,11 @@ module CXTDMAPhysicalP {
       }
     }
   }
-  
+
+  task void reportLateCapture(){
+    printf_TMP("~LATE\r\n");
+  }
+
   async event void SynchCapture.captured(uint16_t time){
     uint32_t fst = call FrameStartAlarm.getNow();
     uint32_t lastCapture;
@@ -775,6 +779,11 @@ module CXTDMAPhysicalP {
       fst  -= 0x00010000;
     }
     lastCapture = (fst & 0xffff0000) | time;
+    if (asyncState == S_IDLE){ 
+      //can sometimes get this if FWA expires just before capture
+      //detected
+      post reportLateCapture();
+    }
     if (captureRising){
       lastRECapture = lastCapture;
       captureRising = FALSE;
@@ -865,7 +874,11 @@ module CXTDMAPhysicalP {
     }
     recordEvent(7);
     fwHandled = call FrameWaitAlarm.getNow();
-    if (asyncState == S_RX_WAIT){
+
+    //NB Ideally we'd check to see if there is a pending
+    //not-yet-handled synch capture interrupt (and treat this the same
+    //  as S_RX_RECEIVING)
+    if (asyncState == S_RX_WAIT ){
       error_t error = call Rf1aPhysical.resumeIdleMode();
       if (error == SUCCESS){
         radioStateChange(R_IDLE, call FrameWaitAlarm.getAlarm());
@@ -1052,7 +1065,7 @@ module CXTDMAPhysicalP {
             }
           }
         }else{
-          printf_LINK_RXTX("Bad CRC %u\r\n", frameNum);
+//          printf_LINK_RXTX("Bad CRC %u\r\n", frameNum);
         }
         setAsyncState(S_IDLE);
         postPfs();
