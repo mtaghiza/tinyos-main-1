@@ -40,7 +40,7 @@ debugTestbedResource=0
 rxr=0
 debugDup=0
 debugFSched=0
-debugRoutingTable=1
+debugRoutingTable=0
 debugUB=1
 
 #test defaults
@@ -69,12 +69,14 @@ cxEnableSkewCorrection=1
 fwdDropRate=0
 cxForwarderSelection=0
 installBlink=1
+cxRoutingTableEntries=16
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
-"rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink")
+"rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink"
+"cxRoutingTableEntries")
 
 while [ $# -gt 1 ]
 do
@@ -151,7 +153,9 @@ phyOptionsCommon="TEST_CHANNEL=$channel"
 phyOptionsLeaf="PATABLE0_SETTING=$leafTxp"
 phyOptionsRoot="PATABLE0_SETTING=$rootTxp"
 
-memoryOptions="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps"
+memoryOptionsCommon="STACK_PROTECTION=$sp CX_MESSAGE_POOL_SIZE=$ps "
+memoryOptionsLeaf="CX_ROUTING_TABLE_ENTRIES=$cxRoutingTableEntries"
+memoryOptionsRoot="CX_ROUTING_TABLE_ENTRIES=70"
 
 loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 
@@ -161,13 +165,13 @@ debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$s
 testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74 FWD_DROP_RATE=$fwdDropRate"
 miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
-commonOptions="$scheduleOptions $phyOptionsCommon $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"
+commonOptions="$scheduleOptions $phyOptionsCommon $memoryOptionsCommon $loggingOptions $debugOptions $testSettings $miscSettings"
 
+testbedDir=$(pwd)
 set -x 
 if [ "$installBlink" == "1" ]
 then
   pushd .
-  testbedDir=$(pwd)
   cd ~/tinyos-2.x/apps/Blink
   ./burn $testbedDir/map.bacon2 2>&1 | grep -i -e err -e sensorbed
   popd
@@ -187,6 +191,7 @@ then
   ./burn $receiverMap \
     TDMA_ROOT=0 IS_SENDER=0 \
     $commonOptions \
+    $memoryOptionsLeaf \
     $phyOptionsLeaf
 fi
 
@@ -197,6 +202,7 @@ then
     TEST_DEST_ADDR=$senderDest \
     TEST_REQUEST_ACK=$requestAck\
     $commonOptions \
+    $memoryOptionsLeaf \
     $phyOptionsLeaf
 fi
 
@@ -215,5 +221,6 @@ then
     TEST_DEST_ADDR=$rootDest \
     TEST_REQUEST_ACK=$requestAck\
     $commonOptions\
+    $memoryOptionsRoot \
     $phyOptionsRoot
 fi
