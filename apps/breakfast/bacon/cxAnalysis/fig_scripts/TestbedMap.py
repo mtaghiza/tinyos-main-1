@@ -521,7 +521,8 @@ if __name__ == '__main__':
         if o == '--outFile':
             outFile = v
     tbm.draw(node_size=400, outFile=outFile)
-    tbm.textOutput()
+    if '--text' in sys.argv:
+        tbm.textOutput()
 
 # 0 CX trace
 #   - no edges
