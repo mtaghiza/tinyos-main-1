@@ -30,6 +30,7 @@ settingsTf=$tfb.settings
 synchLossTf=$tfb.synchLoss
 synchRecoverTf=$tfb.synchRecover
 lagTf=$tfb.lag
+lpcTf=$tfb.lpc
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -90,6 +91,8 @@ pv $logFile | awk '/Started./{
 }' > $synchLossTf
 
 pv $logFile | awk '/LPC/{print $1, $2, $4}' \
+  > $lpcTf
+pv $logFile | awk '/LAG/{print $1, $2, $4}' \
   > $lagTf
 
 pv $logFile | awk '/Fast resynch/{
@@ -519,6 +522,14 @@ CREATE TABLE SYNCH_RECOVER (
 
 .import $synchRecoverTf SYNCH_RECOVER
 
+DROP TABLE IF EXISTS LPC;
+CREATE TABLE LPC (
+  ts REAL,
+  node INTEGER,
+  lpc INTEGER);
+
+.import $lpcTf LPC
+
 DROP TABLE IF EXISTS LAG;
 CREATE TABLE LAG (
   ts REAL,
@@ -540,6 +551,7 @@ then
   rm $synchLossTf
   rm $synchRecoverTf
   rm $lagTf
+  rm $lpcTf
 else
   echo "keeping temp files"
 fi
