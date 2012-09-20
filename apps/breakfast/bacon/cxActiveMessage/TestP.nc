@@ -126,7 +126,7 @@ module TestP {
     call Leds.led0On();
     #if IS_SENDER == 1
       printf_APP("Start sending.\r\n");
-      packetQueue = QUEUE_THRESHOLD - 1;
+      packetQueue = 0;
       #if RANDOMIZE_IPI == 1
         call SendTimer.startOneShot((TEST_IPI/2) + 
           (call Random.rand32())%TEST_IPI );
