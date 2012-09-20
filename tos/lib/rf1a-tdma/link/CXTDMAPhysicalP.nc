@@ -142,6 +142,11 @@ module CXTDMAPhysicalP {
   uint32_t s_pfs_slack;
   bool s_isSynched = FALSE;
 
+  uint16_t lastPfsStartFrame;
+  uint16_t lastPfsFinishedFrame;
+  uint16_t lastFwaStartFrame;
+  uint16_t lastFwaFiredFrame;
+
 
   //Split control vars
   bool stopPending = FALSE;
@@ -299,19 +304,28 @@ module CXTDMAPhysicalP {
 
   task void printTimers(){
     atomic{
+      bool pfsaRunning = (call PrepareFrameStartAlarm.isRunning())?1:0;
+      bool fsaRunning = (call FrameStartAlarm.isRunning())?1:0; 
+      bool fwaRunning = (call FrameWaitAlarm.isRunning())?1:0; 
       printf("# @ %u %lu\r\n", pt, call PrepareFrameStartAlarm.getNow());
+      printf("# last pfs start: %u finished: %u\r\n",
+        lastPfsStartFrame, 
+        lastPfsFinishedFrame);
+      printf("# last fwa start: %u fired: %u\r\n",
+        lastFwaStartFrame, 
+        lastFwaFiredFrame);
       printf("# last RE capture: %lu last FE capture: %lu last rxd: %lu\r\n", 
         lastRECapture, lastFECapture, rxd);
       printf("# P %x %lu last %lu\r\n", 
-        (call PrepareFrameStartAlarm.isRunning())?1:0, 
+        pfsaRunning, 
         call PrepareFrameStartAlarm.getAlarm(),
         pfsHandled);
       printf("# F %x %lu last %lu\r\n", 
-        (call FrameStartAlarm.isRunning())?1:0, 
+        fsaRunning,
         call FrameStartAlarm.getAlarm(),
         fsHandled);
       printf("# W %x %lu last %lu\r\n", 
-        (call FrameWaitAlarm.isRunning())?1:0, 
+        fwaRunning,
         call FrameWaitAlarm.getAlarm(),
         fwHandled);
       printf("#fl: %lu fw: %lu\r\n", s_frameLen, s_fwCheckLen);
@@ -601,6 +615,7 @@ module CXTDMAPhysicalP {
       return;
     }
     recordEvent(2);
+    lastPfsStartFrame = asyncFrameNum;
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
 //    if (call PrepareFrameStartAlarm.getNow() < 
@@ -634,6 +649,7 @@ module CXTDMAPhysicalP {
       pfsTaskPending = FALSE;
       reportAsyncError(S_ERROR_2);
     }
+    lastPfsFinishedFrame = asyncFrameNum;
     PFS_TIMING_CLEAR_PIN;
   }
   
@@ -744,6 +760,7 @@ module CXTDMAPhysicalP {
         }
         if (asyncState == S_RX_READY){
           FWA_TIMING_SET_PIN;
+          lastFwaStartFrame = asyncFrameNum;
           call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
             s_fwCheckLen);
   //        if (! s_isSynched){
@@ -754,9 +771,7 @@ module CXTDMAPhysicalP {
         ////TODO: remove debug
           atomic pt = 1;
   //        post printTimers();
-          if (asyncState == S_RX_READY){
-            setAsyncState(S_RX_WAIT);
-          }
+          setAsyncState(S_RX_WAIT);
         }else if (asyncState == S_INACTIVE){
           postPfs();
         }
@@ -869,11 +884,12 @@ module CXTDMAPhysicalP {
   async event void FrameWaitAlarm.fired(){
     FWA_TIMING_CLEAR_PIN;
     //see this at reset sometimes
+    recordEvent(7);
+    fwHandled = call FrameWaitAlarm.getNow();
+    lastFwaFiredFrame = asyncFrameNum;
     if (asyncState == S_OFF){
       return;
     }
-    recordEvent(7);
-    fwHandled = call FrameWaitAlarm.getNow();
 
     //NB Ideally we'd check to see if there is a pending
     //not-yet-handled synch capture interrupt (and treat this the same
