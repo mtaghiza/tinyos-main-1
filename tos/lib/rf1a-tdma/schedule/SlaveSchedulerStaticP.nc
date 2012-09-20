@@ -135,10 +135,26 @@ module SlaveSchedulerStaticP {
       int32_t lagTot = 0;
       uint8_t i;
       uint8_t num_measurements = 0;
-      delta_root[skew_index] = cur_root - last_root;
-      delta_leaf[skew_index] = cur_leaf - last_leaf;
-      printf_TMP("LAG %ld\r\n", 
-        delta_root[skew_index] - delta_leaf[skew_index]);
+
+      // Very conservative bound: should be between 0 and 2*avg
+      // and we should accept it if it's the first lag measurement.
+      {
+        bool firstLag = delta_root[0] == 0;
+        int32_t dr = cur_root - last_root;
+        int32_t dl = cur_leaf - last_leaf;
+        int32_t lag = dr - dl;
+        bool saneLag = (lag > 0 ) ? (lag < (2*lag_per_cycle)): (lag > 2*lag_per_cycle);
+        if (firstLag || saneLag){
+          delta_root[skew_index] = dr;
+          delta_leaf[skew_index] = dl ;
+          printf_TMP("LAG %ld\r\n", 
+            lag);
+        }else{
+          printf_TMP("BAD_LAG %ld\r\n", 
+            lag);
+        }
+      }
+
 //      printf_TMP("dr %lu - %lu = %lu\r\n", cur_root, last_root,
 //        delta_root[skew_index]);
 //      printf_TMP("dl %lu - %lu = %lu\r\n", cur_leaf, last_leaf,
