@@ -244,7 +244,7 @@ LEFT JOIN error_events
 ON error_events.node = first_rx.dest;
 
 --deal with root node
-INSERT INTO PRR_BOUNDS (node, startTS, endTS) VALUES (0, 0, (select max(ts) from TX_ALL));
+INSERT INTO PRR_BOUNDS (node, startTS, endTS) VALUES (0, 0, (select max(ts) from TX_ALL where src=0));
 
 select "computing cleaned prr";
 DROP TABLE IF EXISTS PRR_CLEAN;
@@ -494,6 +494,7 @@ CREATE TABLE IPI AS
 SELECT src as node,
   (max(ts)-min(ts))/count(*) as ipi
 FROM TX_ALL
+WHERE am != 0
 GROUP BY src;
 
 DROP TABLE IF EXISTS TEST_SETTINGS;
