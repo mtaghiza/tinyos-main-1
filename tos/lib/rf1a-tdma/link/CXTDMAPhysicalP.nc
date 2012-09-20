@@ -128,6 +128,7 @@ module CXTDMAPhysicalP {
   //externally-facing state vars
   uint16_t frameNum;
   uint16_t asyncFrameNum;
+  uint32_t totalFrames;
 
   //Current radio settings
   uint8_t s_sr = SCHED_INIT_SYMBOLRATE;
@@ -491,6 +492,7 @@ module CXTDMAPhysicalP {
     atomic{
       frameNum = (frameNum+1)%(s_totalFrames);
       asyncFrameNum = frameNum;
+      totalFrames++;
     }
     if (s_isSynched && (frameNum == s_totalFrames-1)){
       post logDutyCycle();
@@ -615,7 +617,7 @@ module CXTDMAPhysicalP {
       return;
     }
     recordEvent(2);
-    lastPfsStartFrame = asyncFrameNum;
+    lastPfsStartFrame = totalFrames;
     pfsHandled = call PrepareFrameStartAlarm.getNow();
     PFS_CYCLE_TOGGLE_PIN;
 //    if (call PrepareFrameStartAlarm.getNow() < 
@@ -649,7 +651,7 @@ module CXTDMAPhysicalP {
       pfsTaskPending = FALSE;
       reportAsyncError(S_ERROR_2);
     }
-    lastPfsFinishedFrame = asyncFrameNum;
+    lastPfsFinishedFrame = totalFrames;
     PFS_TIMING_CLEAR_PIN;
   }
   
@@ -680,7 +682,7 @@ module CXTDMAPhysicalP {
           //NB: if this becomes split-phase, we'll set the state when we
           //get the callback.
           setAsyncState(S_TX_READY);
-          sdFrameNum = asyncFrameNum;
+          sdFrameNum = totalFrames;
           //get ready to capture your own SFD for re-synch and packet
           //time-stamping.
           call SynchCapture.captureRisingEdge();
@@ -760,7 +762,7 @@ module CXTDMAPhysicalP {
         }
         if (asyncState == S_RX_READY){
           FWA_TIMING_SET_PIN;
-          lastFwaStartFrame = asyncFrameNum;
+          lastFwaStartFrame = totalFrames;
           call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
             s_fwCheckLen);
   //        if (! s_isSynched){
@@ -886,7 +888,7 @@ module CXTDMAPhysicalP {
     //see this at reset sometimes
     recordEvent(7);
     fwHandled = call FrameWaitAlarm.getNow();
-    lastFwaFiredFrame = asyncFrameNum;
+    lastFwaFiredFrame = totalFrames;
     if (asyncState == S_OFF){
       return;
     }
