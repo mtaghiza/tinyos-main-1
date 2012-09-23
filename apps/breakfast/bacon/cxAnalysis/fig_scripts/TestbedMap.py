@@ -408,14 +408,16 @@ class Trace(TestbedMap):
         key[71] = {'pos': (0, 200)}
         key[72] = {'pos': (0, 300)}
         key[73] = {'pos': (0, 400)}
+        key[74] = {'pos': (0, 500)}
         self.states[70] = 0
         self.states[71] = 1
         self.states[72] = 2
         self.states[73] = 3
+        self.states[74] = 4
         
         labels = {}
         for n in self.states:
-            labels[n] = [".", "T", "R", "P"][self.states[n]]
+            labels[n] = [".", "T", "R", "P", "!"][self.states[n]]
         self.setLabels(labels)
         self.G.add_nodes_from([(k, key[k]) for k in key])
         self.setAttr('state', self.states, 0)
@@ -428,8 +430,16 @@ class Trace(TestbedMap):
         r = c.execute(q, (src, sn)).fetchone()
         (cn, firstFN) = r
 
-        q = '''SELECT sender, 1 as label FROM link_tx WHERE cn=? and fn=?'''
-        self.sending = dict(c.execute(q,(cn, firstFN+count)))
+        q = '''SELECT sender, 1 as label FROM link_tx WHERE cn=? and fn=? and sn=?'''
+        self.sending = dict(c.execute(q,(cn, firstFN+count, sn)))
+        
+        #end of this transmission
+        if not self.sending:
+            q = '''SELECT node FROM fwd where cn=? and src=? and f=1'''
+            for (node,) in c.execute(q,(cn,src)):
+                self.addOutlined(node, 5)
+            self.states = {}
+            return
 
         q = '''SELECT receiver, 2 as label FROM link_rx WHERE cn=? and fn=?'''
         self.receiving = dict(c.execute(q,(cn, firstFN+count)))
@@ -439,9 +449,16 @@ class Trace(TestbedMap):
           WHERE cn=? and src=? and sn=? 
             and fn < ?'''
         self.sent = dict(c.execute(q, (cn, src, sn, firstFN+count)))
+
+        q = '''SELECT distinct sender, 4 as label
+          FROM link_tx
+          WHERE cn=? and src=? and sn!=? and fn=?'''
+        self.conflict = dict(c.execute(q, (cn, src, sn,
+          firstFN+count)))
         self.states = dict(self.sending.items() 
           + self.receiving.items() 
-          + self.sent.items())
+          + self.sent.items()
+          + self.conflict.items())
         q = '''SELECT node FROM fwd where cn=? and src=? and f=1'''
         for (node,) in c.execute(q,(cn,src)):
             self.addOutlined(node, 5)
