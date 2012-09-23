@@ -14,7 +14,7 @@ typedef struct cx_max_route_entry_t{
 
 
 #ifndef CX_ROUTING_TABLE_TIMEOUT
-#define CX_ROUTING_TABLE_TIMEOUT (10UL * 60UL * 1024UL)
+#define CX_ROUTING_TABLE_TIMEOUT (120UL * 60UL * 1024UL)
 #endif
 
 #ifndef CX_ROUTING_TABLE_ENTRIES

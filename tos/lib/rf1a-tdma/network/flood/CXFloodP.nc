@@ -113,7 +113,11 @@ module CXFloodP{
         call TDMARoutingSchedule.currentFrame(),
         call TDMARoutingSchedule.framesLeftInSlot(
           call TDMARoutingSchedule.currentFrame()));
-
+      
+      //OK, it looks like there are a decent number of cases in
+      //practice where it's beneficial to have one more shot at
+      //delivering the packet.
+      clearTime += 1;
       // have to add 1 here: if we're in the last frame now and the
       // clear time is 1, then we don't have time to send it.
       if (call TDMARoutingSchedule.framesLeftInSlot(call TDMARoutingSchedule.currentFrame()) < clearTime+1){
