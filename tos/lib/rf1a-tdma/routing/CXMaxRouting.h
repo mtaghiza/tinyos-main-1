@@ -4,8 +4,10 @@
 typedef struct cx_max_route_entry_t{
   am_addr_t n0;
   am_addr_t n1;
-  uint8_t distance;
-  uint32_t lastSeen;
+  uint8_t maxDistance;
+  uint32_t lastMax;
+  uint8_t minDistance;
+  uint32_t lastMin;
   bool used;
   bool pinned;
 } cx_max_route_entry_t;

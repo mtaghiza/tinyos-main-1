@@ -1210,7 +1210,7 @@ module CXTDMAPhysicalP {
   }
 
   command error_t TDMAPhySchedule.setSchedule(uint32_t startAt,
-      uint16_t atFrameNum, uint16_t totalFrames, uint8_t symbolRate, 
+      uint16_t atFrameNum, uint16_t totalFramesSched, uint8_t symbolRate, 
       uint8_t channel, bool isSynched, bool skewCorrected){
     error_t err;
     atomic{
@@ -1221,7 +1221,7 @@ module CXTDMAPhysicalP {
         uint8_t last_channel = s_channel;
         uint32_t t0;
         uint32_t dt;
-        s_totalFrames = totalFrames;
+        s_totalFrames = totalFramesSched;
         //need to hang onto this for the case where we can do a fast
         //resynch.
         if (isSynched){

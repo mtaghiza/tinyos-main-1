@@ -94,7 +94,7 @@ module CXFloodP{
       uint16_t clearTime = 0xff;
       if ((call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED)){
         //distance + width of buffer region
-        clearTime = call CXRoutingTable.distance(TOS_NODE_ID, 
+        clearTime = call CXRoutingTable.advertiseDistance(TOS_NODE_ID, 
           call CXPacket.destination(msg), TRUE);
 
         printf_F_CLEARTIME("#CT: %u ->", clearTime);
@@ -176,7 +176,7 @@ module CXFloodP{
           //known. otherwise, max-depth + 1 (since some nodes at
           //maxDepth will rebroadcast)
           if (call CXPacket.getNetworkProtocol(tx_msg) & CX_NP_PREROUTED){
-            clearLeft = call CXRoutingTable.distance(TOS_NODE_ID, 
+            clearLeft = call CXRoutingTable.advertiseDistance(TOS_NODE_ID, 
               call CXPacket.destination(tx_msg), TRUE) 
               + call CXRoutingTable.getBufferWidth();
           }

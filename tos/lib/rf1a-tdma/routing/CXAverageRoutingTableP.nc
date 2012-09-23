@@ -30,9 +30,9 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
       rt[curDump].used, 
       rt[curDump].pinned);
     printf(" lu: %d", 
-      call CXRoutingTable.distance(rt[curDump].n0, rt[curDump].n1, FALSE));
+      call CXRoutingTable.selectionDistance(rt[curDump].n0, rt[curDump].n1, FALSE));
     printf(" rev: %d \r\n", 
-      call CXRoutingTable.distance(rt[curDump].n1, rt[curDump].n0, TRUE));
+      call CXRoutingTable.selectionDistance(rt[curDump].n1, rt[curDump].n0, TRUE));
     curDump ++;
     if (curDump < numEntries){
       post nextDumpTask();
@@ -78,7 +78,7 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
     return FALSE;
   }
 
-  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
+  command uint8_t CXRoutingTable.selectionDistance(am_addr_t from, am_addr_t to, 
       bool bdOK){
     cx_avg_route_entry_t* re;
     if (from == TOS_NODE_ID && to == TOS_NODE_ID){
@@ -89,6 +89,11 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
     }else{
       return 0xff;
     }
+  }
+
+  command uint8_t CXRoutingTable.advertiseDistance(am_addr_t from, am_addr_t to, 
+      bool bdOK){
+    return call CXRoutingTable.selectionDistance(from, to, bdOK);
   }
 
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
@@ -164,38 +169,43 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool bdOK, bool* result){
-    cx_avg_route_entry_t* re; 
     if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR 
         || n0 == TOS_NODE_ID || n1== TOS_NODE_ID){
       *result = TRUE;
       return SUCCESS;
     }
-    if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
-      uint8_t sm = dist(re->distanceTotal , re->measureCount);
-      if (getEntry(&re, TOS_NODE_ID, n1, bdOK)){
-        uint8_t md = dist(re->distanceTotal , re->measureCount);
-        if (getEntry(&re, n0, n1, bdOK)){
-          *result = sm + md <= (dist(re->distanceTotal, re->measureCount) 
-            + call CXRoutingTable.getBufferWidth());
-          if (! *result){
-            printf_ROUTING_TABLE("~");
+    {
+      uint8_t sm = call CXRoutingTable.selectionDistance(n0, 
+        TOS_NODE_ID, bdOK);
+      if (sm < 0xff){
+        uint8_t md = call CXRoutingTable.selectionDistance(TOS_NODE_ID,
+          n1, bdOK);
+        if (md < 0xff){
+          uint8_t sd = call CXRoutingTable.advertiseDistance(n0, n1,
+            bdOK);
+          if (sd < 0xff){
+            *result = sm + md <= sd + call CXRoutingTable.getBufferWidth();
+            if (! *result){
+              printf_ROUTING_TABLE("~");
+            }
+            printf_ROUTING_TABLE("IB %u->%u %u %u %u\r\n", 
+              n0,
+              n1,
+              sm,
+              md,
+              sd);
+            return SUCCESS;
+          }else{
+            printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
           }
-          printf_ROUTING_TABLE("IB %u->%u %u %u %u\r\n", 
-            n0,
-            n1,
-            sm,
-            md,
-            dist(re->distanceTotal,re->measureCount));
-          return SUCCESS;
         }else{
-          printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
+          printf_ROUTING_TABLE("~IB %u -> %u md UNK\r\n", n0, n1);
         }
       }else{
-        printf_ROUTING_TABLE("~IB %u -> %u dm UNK\r\n", n0, n1);
+        printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
       }
-    }else{
-      printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
+      return FAIL;
     }
-    return FAIL;
   }
 }
+

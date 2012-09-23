@@ -22,16 +22,20 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     if (curDump == 0){
       printf("# RT Now: %lu\r\n", now());
     }
-    printf("# MAX RT[%d] %d->%d = %d %lu (%d %d) ", 
+    printf("# MAX RT[%d] %d->%d = M (%d, %lu) m (%d, %lu) (%d %d) ", 
       curDump, rt[curDump].n0, rt[curDump].n1, 
-      rt[curDump].distance,
-      rt[curDump].lastSeen,
+      rt[curDump].maxDistance,
+      rt[curDump].lastMax,
+      rt[curDump].minDistance,
+      rt[curDump].lastMin,
       rt[curDump].used, 
       rt[curDump].pinned);
-    printf(" lu: %d", 
-      call CXRoutingTable.distance(rt[curDump].n0, rt[curDump].n1, FALSE));
-    printf(" rev: %d \r\n", 
-      call CXRoutingTable.distance(rt[curDump].n1, rt[curDump].n0, TRUE));
+    printf(" lu: a %d s %d", 
+      call CXRoutingTable.advertiseDistance(rt[curDump].n0, rt[curDump].n1, FALSE),
+      call CXRoutingTable.selectionDistance(rt[curDump].n0, rt[curDump].n1, FALSE));
+    printf(" rev: a %d s %d\r\n", 
+      call CXRoutingTable.advertiseDistance(rt[curDump].n1, rt[curDump].n0, TRUE),
+      call CXRoutingTable.selectionDistance(rt[curDump].n1, rt[curDump].n0, TRUE));
     curDump ++;
     if (curDump < numEntries){
       post nextDumpTask();
@@ -77,18 +81,32 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     return FALSE;
   }
 
-  command uint8_t CXRoutingTable.distance(am_addr_t from, am_addr_t to, 
-      bool bdOK){
+  command uint8_t CXRoutingTable.advertiseDistance(am_addr_t from, 
+      am_addr_t to, bool bdOK){
     cx_max_route_entry_t* re;
     if (from == TOS_NODE_ID && to == TOS_NODE_ID){
       return 0;
     }
     if (getEntry(&re, from, to, bdOK)){
-      return re->distance;
+      return re->maxDistance;
     }else{
       return 0xff;
     }
   }
+
+  command uint8_t CXRoutingTable.selectionDistance(am_addr_t from,
+    am_addr_t to, bool bdOK){
+    cx_max_route_entry_t* re;
+    if (from == TOS_NODE_ID && to == TOS_NODE_ID){
+      return 0;
+    }
+    if (getEntry(&re, from, to, bdOK)){
+      return re->minDistance;
+    }else{
+      return 0xff;
+    }
+  }
+
 
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
       uint8_t distance){
@@ -99,16 +117,25 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     if (getEntry(&re, n0, n1, FALSE)){
       //record this if it meets/exceeds current max distance. Replace
       //current max distance if it's expired.
-      printf_TMP("MAX UR %u -> %u (%u, %lu) => (%u, %lu) =>",
+      printf_TMP("MAX UR %u -> %u M(%u, %lu) m(%u, %lu) => (%u, %lu) =>",
         n0, n1, 
-        re->distance, re->lastSeen,
+        re->maxDistance, re->lastMax,
+        re->minDistance, re->lastMin,
         distance, ts);
-      if ( distance >= re->distance || 
-        (ts - re->lastSeen > CX_ROUTING_TABLE_TIMEOUT) ){
-        re->distance = distance;
-        re->lastSeen = ts;
+      if ( distance >= re->maxDistance || 
+        (ts - re->lastMax > CX_ROUTING_TABLE_TIMEOUT) ){
+        re->maxDistance = distance;
+        re->lastMax = ts;
       } 
-      printf_TMP("(%u, %lu)\r\n", re->distance, re->lastSeen);
+      if (distance <= re->minDistance || 
+        (ts - re->lastMin > CX_ROUTING_TABLE_TIMEOUT) ){
+        re->minDistance = distance;
+        re->lastMin = ts;
+      } 
+
+      printf_TMP("M(%u, %lu) m(%u, %lu)\r\n", 
+        re->maxDistance, re->lastMax,
+        re->minDistance, re->lastMin);
       //mark used-recently if it's already in the table.
       re->used = TRUE;
       return SUCCESS;
@@ -136,12 +163,15 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     //save it
     rt[i].n0 = n0;
     rt[i].n1 = n1;
-    rt[i].distance = distance;
-    rt[i].lastSeen = ts;
+    rt[i].minDistance = distance;
+    rt[i].lastMin = ts;
+    rt[i].maxDistance = distance;
+    rt[i].lastMax = ts;
     rt[i].used = TRUE;
-    printf_ROUTING_TABLE("MAX NR %u->%u (%u, %lu)\r\n", 
+    printf_ROUTING_TABLE("MAX NR %u->%u M(%u, %lu) m(%u, %lu)\r\n", 
       n0, n1,
-      rt[i].distance, rt[i].lastSeen);
+      rt[i].maxDistance, rt[i].lastMax,
+      rt[i].minDistance, rt[i].lastMin);
     //update for next time.
     lastEvicted = i;
     return SUCCESS;
@@ -175,38 +205,43 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
 
   command error_t CXRoutingTable.isBetween(am_addr_t n0, am_addr_t n1,
       bool bdOK, bool* result){
-    cx_max_route_entry_t* re; 
     if (n0 == AM_BROADCAST_ADDR || n1 == AM_BROADCAST_ADDR 
         || n0 == TOS_NODE_ID || n1== TOS_NODE_ID){
       *result = TRUE;
       return SUCCESS;
     }
-    if (getEntry(&re, n0, TOS_NODE_ID, bdOK)){
-      uint8_t sm = re->distance;
-      if (getEntry(&re, TOS_NODE_ID, n1, bdOK)){
-        uint8_t md = re->distance;
-        if (getEntry(&re, n0, n1, bdOK)){
-          *result = sm + md <= (re->distance + call CXRoutingTable.getBufferWidth());
-          if (! *result){
-            printf_ROUTING_TABLE("~");
+    {
+      uint8_t sm = call CXRoutingTable.selectionDistance(n0, 
+        TOS_NODE_ID, bdOK);
+      if (sm < 0xff){
+        uint8_t md = call CXRoutingTable.selectionDistance(TOS_NODE_ID,
+          n1, bdOK);
+        if (md < 0xff){
+          uint8_t sd = call CXRoutingTable.advertiseDistance(n0, n1,
+            bdOK);
+          if (sd < 0xff){
+            *result = sm + md <= sd + call CXRoutingTable.getBufferWidth();
+            if (! *result){
+              printf_ROUTING_TABLE("~");
+            }
+            printf_ROUTING_TABLE("IB %u->%u %u %u %u\r\n", 
+              n0,
+              n1,
+              sm,
+              md,
+              sd);
+            return SUCCESS;
+          }else{
+            printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
           }
-          printf_ROUTING_TABLE("IB %u->%u %u %u %u\r\n", 
-            n0,
-            n1,
-            sm,
-            md,
-            re->distance);
-          return SUCCESS;
         }else{
-          printf_ROUTING_TABLE("~IB %u -> %u sd UNK\r\n", n0, n1);
+          printf_ROUTING_TABLE("~IB %u -> %u md UNK\r\n", n0, n1);
         }
       }else{
-        printf_ROUTING_TABLE("~IB %u -> %u dm UNK\r\n", n0, n1);
+        printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
       }
-    }else{
-      printf_ROUTING_TABLE("~IB %u -> %u sm UNK\r\n", n0, n1);
+      return FAIL;
     }
-    return FAIL;
   }
 }
 

@@ -76,7 +76,7 @@ module UnreliableBurstSchedulerP{
         nsf_setup_t* pl = (nsf_setup_t*) (call CXPacketBody.getPayload(setup_msg, sizeof(nsf_setup_t)));
         pl -> src = call CXPacket.destination(msg);
         pl -> dest = TOS_NODE_ID;
-        pl -> distance = call CXRoutingTable.distance(pl->src,
+        pl -> distance = call CXRoutingTable.advertiseDistance(pl->src,
           pl->dest, FALSE);
         call CXPacket.setNetworkProtocol(setup_msg, CX_NP_NONE);
         call CXPacket.setTransportType(setup_msg, CX_TYPE_SETUP);
@@ -213,9 +213,9 @@ module UnreliableBurstSchedulerP{
 //        msg, pl, 
 //        pl->src, pl->dest, pl->distance);
       call CXRoutingTable.update(pl->src, pl->dest, pl->distance);
-      sm = call CXRoutingTable.distance(src, TOS_NODE_ID, TRUE);
-      md = call CXRoutingTable.distance(TOS_NODE_ID, dest, TRUE);
-      sd = call CXRoutingTable.distance(src, dest, TRUE);
+      sm = call CXRoutingTable.selectionDistance(src, TOS_NODE_ID, TRUE);
+      md = call CXRoutingTable.selectionDistance(TOS_NODE_ID, dest, TRUE);
+      sd = call CXRoutingTable.advertiseDistance(src, dest, TRUE);
       if ( SUCCESS != 
           call CXRoutingTable.isBetween(src, dest, TRUE, &isBetween)){
         isBetween = FALSE;

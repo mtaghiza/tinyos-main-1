@@ -245,7 +245,7 @@ module CXScopedFloodP{
     if (!originDataPending){
       //compute clear time and compare to frames left in slot
       //if there's not enough time, return ERETRY
-     uint8_t distance = call CXRoutingTable.distance(TOS_NODE_ID,
+     uint8_t distance = call CXRoutingTable.advertiseDistance(TOS_NODE_ID,
         call CXPacket.destination(msg), TRUE);
       uint8_t ct;
       if (distance > call TDMARoutingSchedule.maxDepth()){
@@ -538,7 +538,7 @@ module CXScopedFloodP{
       //  the air is clear. So, we should signal completion after the
       //  transmission in frame ct+origin - 1
       clearFrame = clearTime(
-        call CXRoutingTable.distance(TOS_NODE_ID, 
+        call CXRoutingTable.advertiseDistance(TOS_NODE_ID, 
           call CXPacket.destination(origin_data_msg), TRUE), 
         call CXPacket.getNetworkProtocol(origin_data_msg)&CX_NP_PREROUTED) 
         + originFrame - 1;
