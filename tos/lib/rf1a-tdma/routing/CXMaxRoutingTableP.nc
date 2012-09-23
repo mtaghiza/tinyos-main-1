@@ -168,7 +168,7 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     rt[i].maxDistance = distance;
     rt[i].lastMax = ts;
     rt[i].used = TRUE;
-    printf_ROUTING_TABLE("MAX NR %u->%u M(%u, %lu) m(%u, %lu)\r\n", 
+    printf_TMP("MAX NR %u->%u M(%u, %lu) m(%u, %lu)\r\n", 
       n0, n1,
       rt[i].maxDistance, rt[i].lastMax,
       rt[i].minDistance, rt[i].lastMin);
