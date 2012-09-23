@@ -30,14 +30,12 @@ x <- dbGetQuery(con, "SELECT cd, rd, condPrr from conditional_prr where cd in (s
 
 
 library(lattice)
-#TODO: replace with node IDs
 #Build the horizontal and vertical axis information
 hor <- refNodes$rd
 ver <- refNodes$rd
 
 #Build the fake correlation matrix
 nrowcol <- length(ver)
-#TODO: fill in with values
 cor <- matrix(0, nrow=nrowcol,
 ncol=nrowcol, dimnames = list(hor, ver))
 for (i in seq(dim(x)[1])){
