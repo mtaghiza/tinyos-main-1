@@ -113,10 +113,12 @@ class TestbedMap(object):
             print '%d,%f'%(n, self.G.node[n][self.colAttr])
 
 class SingleTXDepth(TestbedMap):
-    def __init__(self, root, dbFile, sr, txp, packetLen, prr_threshold=0.0,
-            distanceLabels = False, **kwargs):
+    def __init__(self, root, dbFile, sr, txp, packetLen,
+          prr_threshold=0.0, rssi_threshold=-100, 
+          distanceLabels = False, **kwargs):
         super(SingleTXDepth, self).__init__(**kwargs)
-        self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold)
+        self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold,
+          rssi_threshold)
         self.distances = self.computeSPs(root)
         self.setAttr('distance', self.distances)
         self.setColAttr('distance')
@@ -124,9 +126,11 @@ class SingleTXDepth(TestbedMap):
         if distanceLabels:
             self.setLabels(self.distances)
 
-    def loadPrrEdges(self, dbFile, sr, txp, packetLen, prr_threshold):
+    def loadPrrEdges(self, dbFile, sr, txp, packetLen, prr_threshold,
+          rssi_threshold):
         c = sqlite3.connect(dbFile)
-        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=? AND txPower=? AND len=? AND prr >=?', (sr, txp, packetLen, prr_threshold)).fetchall()
+        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=?  AND txPower=? AND len=? AND prr >=? and avgRssi >=?', (sr,
+          txp, packetLen, prr_threshold, rssi_threshold)).fetchall()
         for (src, dest, prr) in links:
             self.G.add_edge(src, dest, prr=prr)
     
@@ -468,8 +472,9 @@ if __name__ == '__main__':
     fn = sys.argv[1]
     t = sys.argv[2]
     if t == '--simple':
-        src = int(sys.argv[3])
-        thresh = float(sys.argv[4])
+        src = 0
+        prrThresh = 0.95
+        rssiThresh = -100
         sr = 125
         #0x8D= 0
         txp = 0x8D
@@ -477,6 +482,12 @@ if __name__ == '__main__':
         distanceLabels = False
         if len(sys.argv) > 5:
             for (o, v) in zip(sys.argv[5:], sys.argv[6:]):
+                if o == '--src':
+                    src = int(v)
+                if o == '--prrThresh':
+                    prrThresh = float(v)
+                if o == '--rssiThresh':
+                    rssiThresh = float(v)
                 if o == '--sr':
                     sr = int(v)
                 if o == '--txp':
@@ -485,8 +496,8 @@ if __name__ == '__main__':
                     pl = int(v)
                 if o == '--distanceLabels':
                     distanceLabels = int(v)
-        tbm = SingleTXDepth(src, fn, sr, txp, packetLen, thresh,
-          distanceLabels)
+        tbm = SingleTXDepth(src, fn, sr, txp, packetLen, prrThresh,
+          rssiThresh, distanceLabels)
     elif t == '--cxd':
         distanceFrom = True
         nodeId = 0
