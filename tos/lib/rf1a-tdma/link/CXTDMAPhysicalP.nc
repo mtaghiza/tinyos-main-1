@@ -580,6 +580,7 @@ module CXTDMAPhysicalP {
     if (gpResultLocal && tx_msgLocal != NULL){
       tx_lenLocal = (call Rf1aPacket.metadata(tx_msgLocal))->payload_length;
       call CXPacket.incCount(tx_msgLocal);
+      call CXPacket.decTTL(tx_msgLocal);
       if (call CXPacket.source(tx_msgLocal) == TOS_NODE_ID 
           && call CXPacket.count(tx_msgLocal) == 1){
         call CXPacket.setScheduleNum(tx_msgLocal, 

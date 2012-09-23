@@ -16,6 +16,7 @@ typedef nx_struct cx_header_t {
   nx_uint8_t nProto;
   nx_uint8_t tProto;
   nx_uint8_t type;
+  nx_uint8_t ttl;
 } cx_header_t;
 
 enum{

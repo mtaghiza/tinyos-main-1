@@ -237,5 +237,17 @@ module Rf1aCXPacketP{
     return getMetadata(amsg)->requiresClear;
   }
 
+  command uint8_t CXPacket.getTTL(message_t* amsg){
+    return getHeader(amsg)->ttl;
+  }
+  command void CXPacket.setTTL(message_t* amsg,
+      uint8_t ttl){
+    getHeader(amsg)->ttl = ttl;
+  }
+  command void CXPacket.decTTL(message_t* amsg){
+    getHeader(amsg)->ttl--;
+  }
+
+
   async event void ActiveMessageAddress.changed(){ }
 }

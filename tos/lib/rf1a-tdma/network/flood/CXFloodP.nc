@@ -126,6 +126,7 @@ module CXFloodP{
         call CXPacket.init(msg);
         call CXPacket.setTransportProtocol(msg, t);
         call CXPacket.setNetworkType(msg, CX_TYPE_DATA);
+        call CXPacket.setTTL(msg, clearTime);
 //        call AMPacket.setDestination(msg, AM_BROADCAST_ADDR);
         //preserve pre-routed flag
         call CXPacket.setNetworkProtocol(msg, 
@@ -332,6 +333,13 @@ module CXFloodP{
           printf_SF_TESTBED_PR("PRK %u %lu\r\n", thisSrc, thisSn);
           printf_F_RX("b");
         }
+      }
+      //check TTL. If it's 0, just signal reception up.
+      if (call CXPacket.getTTL(msg) == 0){
+        uint8_t pll = call LayerPacket.payloadLength(msg);
+        void* pl = call LayerPacket.getPayload(msg, pll);
+        uint8_t tProto = call CXPacket.getTransportProtocol(msg);
+        return signal Receive.receive[tProto](msg, pl, pll);
       }
       if (!rxOutstanding){
         if (SUCCESS == call TaskResource.immediateRequest()){

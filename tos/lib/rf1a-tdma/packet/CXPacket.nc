@@ -30,4 +30,7 @@ interface CXPacket{
   command void setOriginalFrameNum(message_t* amsg, uint16_t frameNum);
   command uint16_t getOriginalFrameNum(message_t* amsg);
   command bool ackRequested(message_t* msg);
+  command uint8_t getTTL(message_t* amsg);
+  command void setTTL(message_t* amsg, uint8_t ttl);
+  command void decTTL(message_t* amsg);
 }
