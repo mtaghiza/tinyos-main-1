@@ -397,6 +397,55 @@ class ConditionalPrr(TestbedMap):
         c = sqlite3.connect(dbFile)
         q = 'SELECT distinct(src) from transmits'
         self.transmitters = c.execute(q)
+
+class Trace(TestbedMap):
+    def __init__(self, dbFile, src, sn, count, **kwargs):
+        super(Trace, self).__init__(**kwargs)
+        self.loadStates(dbFile, src, sn, count)
+        
+        key = {}
+        key[70] = {'pos': (0, 100)}
+        key[71] = {'pos': (0, 200)}
+        key[72] = {'pos': (0, 300)}
+        key[73] = {'pos': (0, 400)}
+        self.states[70] = 0
+        self.states[71] = 1
+        self.states[72] = 2
+        self.states[73] = 3
+        
+        labels = {}
+        for n in self.states:
+            labels[n] = [".", "T", "R", "P"][self.states[n]]
+        self.setLabels(labels)
+        self.G.add_nodes_from([(k, key[k]) for k in key])
+        self.setAttr('state', self.states, 0)
+        self.setColAttr('state')
+        
+
+    def loadStates(self, dbFile, src, sn, count):
+        c = sqlite3.connect(dbFile)
+        q = '''SELECT cn, fn FROM link_tx where src=? and sn=? and hc=1'''
+        r = c.execute(q, (src, sn)).fetchone()
+        (cn, firstFN) = r
+
+        q = '''SELECT sender, 1 as label FROM link_tx WHERE cn=? and fn=?'''
+        self.sending = dict(c.execute(q,(cn, firstFN+count)))
+
+        q = '''SELECT receiver, 2 as label FROM link_rx WHERE cn=? and fn=?'''
+        self.receiving = dict(c.execute(q,(cn, firstFN+count)))
+        
+        q = '''SELECT distinct sender, 3 as label
+          FROM link_tx 
+          WHERE cn=? and src=? and sn=? 
+            and fn < ?'''
+        self.sent = dict(c.execute(q, (cn, src, sn, firstFN+count)))
+        self.states = dict(self.sending.items() 
+          + self.receiving.items() 
+          + self.sent.items())
+        q = '''SELECT node FROM fwd where cn=? and src=? and f=1'''
+        for (node,) in c.execute(q,(cn,src)):
+            self.addOutlined(node, 5)
+
         
 if __name__ == '__main__':
     fn = sys.argv[1]
@@ -513,6 +562,19 @@ if __name__ == '__main__':
                 if o == '--prrLabels':
                     prrLabels = int(v)
         tbm = ConditionalPrr(fn, refNode, prrLabels)
+    elif t == '--trace':
+        src = 0
+        sn = 1
+        count = 0
+        if (len(sys.argv) > 4):
+            for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--src':
+                    src = int(v)
+                if o == '--sn':
+                    sn = int(v)
+                if o == '--count':
+                    count = int(v)
+        tbm = Trace(fn, src, sn, count)
     else:
         print >> sys.stderr, "Unrecognized type",t
 

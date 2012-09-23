@@ -56,7 +56,6 @@ for (index in 1:length(labelVals)){
       xlab='Number of senders',
       xlim=xl, ylim=yl, type='l', col=rCol)
   }else{
-    par(new=T)
     lines(x=vals$sendCount, y=vals$prr, col=rCol)
   }
 } 
