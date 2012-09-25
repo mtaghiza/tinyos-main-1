@@ -48,6 +48,7 @@ firstPlot <- T
 rCols <- rainbow(length(unique(x$label.var)))
 labelVals <- sort(unique(x$label.var))
 medians<-c()
+means<-c()
 for (index in 1:length(labelVals)){
   label <- labelVals[index]
   rCol <- rCols[index]
@@ -66,9 +67,10 @@ for (index in 1:length(labelVals)){
   }
     
   medians <- c(medians, median(vals$normalized))
+  means <- c(means, mean(vals$normalized))
 }
 legend('bottomright', legend=paste('Label:', labelVals, 'Med Improvement:',
-  round(medians, 4)), 
+  round(medians, 2), 'Mean:', round(means, 2)), 
   text.col=rCols)
 title("Duty Cycle Improvement: < 1.0 is good, > 1.0 is bad.")
 lines(c(1.0, 1.0), c(-1, 2), lty=2)

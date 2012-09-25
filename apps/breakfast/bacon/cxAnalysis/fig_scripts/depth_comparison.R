@@ -42,7 +42,8 @@ points(closerY$distance.x, closerY$distance.y, col='blue')
 points(equalY$distance.x, equalY$distance.y, col='black')
 lines(c(-10, 10), c(-10,10) - margin, col='gray')
 lines(c(-10, 10), c(-10,10) + margin, col='gray')
-
+depth1Both <- dim(x[x$distance.x==1 & x$distance.y==1,])[1]
+text(1,1, paste(depth1Both," at depth=1"), adj=c(-0.1, 1.1))
 legend('topleft', c(paste(x$lbl.y[1], 'Farther:', dim(fartherY)[1]), 
     paste(x$lbl.x[1], 'Farther:', dim(closerY)[1]),
     paste('Within', margin,':', dim(equalY)[1])),

@@ -46,6 +46,7 @@ firstPlot <- T
 lblCols <- rainbow(length(unique(x$lbl)))
 lblVals <- sort(unique(x$lbl))
 medians<- c()
+means<- c()
 for (index in 1:length(lblVals)){
   lbl <- lblVals[index]
   lblCol <- lblCols[index]
@@ -62,8 +63,10 @@ for (index in 1:length(lblVals)){
       xlim=xl, ylim=yl, type='l', col=lblCol)
   }
   medians <- c(medians, median(vals$prr_lr))
+  means <- c(means, mean(vals$prr_lr))
 }
-legend('topleft', legend=paste('lbl:', lblVals, 'Med:', round(medians, 4)), 
+legend('topleft', legend=paste('lbl:', lblVals, 'Med:', round(medians,
+4), 'Mean:', round(means, 4)), 
   text.col=lblCols)
 title("CDF of PRR")
 

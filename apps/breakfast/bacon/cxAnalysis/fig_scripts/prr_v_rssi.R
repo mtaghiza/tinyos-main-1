@@ -6,11 +6,19 @@ argc <- length(commandArgs())
 argStart <- 1 + which (commandArgs() == '--args')
 x <- c()
 
+xmin <- -100
+xmax <- -20
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
   if ( opt == '-f'){
     fn <- val
+  }
+  if ( opt == '--xmin'){
+    xmin <- as.numeric(val)
+  }
+  if ( opt == '--xmax'){
+    xmax <- as.numeric(val)
   }
   if ( opt == '--pdf' ){
     plotFile=T
@@ -32,8 +40,12 @@ x <- dbGetQuery(con, selectQ)
 
 maxSent <- max(x$srcCount)
 y <- x[x$srcCount > maxSent-200 & x$destCount > maxSent-200,]
-plot(y$avgRssi, y$prr)
-
+plot(y$avgRssi, y$prr, 
+  xlim=c(xmin, xmax), ylim=c(0, 1.0),
+  xlab="RSSI (dBm)",
+  ylab="PRR (0,1.0)"
+  )
+title("Single-transmitter Packet Reception Ratio vs. RSSI")
 if(plotFile){
   g <- dev.off()
 }
