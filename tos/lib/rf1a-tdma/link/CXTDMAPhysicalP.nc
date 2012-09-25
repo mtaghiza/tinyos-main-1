@@ -993,7 +993,10 @@ module CXTDMAPhysicalP {
     }
   }
 
-  bool shouldDrop(){
+  bool shouldDrop(message_t* msg){
+    if (call Rf1aPacket.rssi(msg) < RSSI_THRESHOLD){
+      return TRUE;
+    }
     #if FWD_DROP_RATE == 0
     return FALSE;
     #else
@@ -1070,13 +1073,15 @@ module CXTDMAPhysicalP {
               call CXPacket.sn(msg),
               call CXPacket.count(msg),
               frameNum);
-            if (shouldDrop()){
-              printf_LINK_RXTX("DROP %u %u %u %u %u\r\n",
+            if (shouldDrop(msg)){
+              printf_LINK_RXTX("DROP %u %u %u %u %u %d %d\r\n",
                 call CXPacket.getNetworkProtocol(msg),
                 call CXPacket.source(msg),
                 call CXPacket.sn(msg),
                 call CXPacket.count(msg),
-                frameNum);
+                frameNum,
+                call Rf1aPacket.rssi(msg),
+                RSSI_THRESHOLD);
             } else {
               rx_msg = signal CXTDMA.receive(msg,
                 rdCountLocal - sizeof(rf1a_ieee154_t),

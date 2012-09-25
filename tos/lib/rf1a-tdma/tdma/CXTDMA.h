@@ -88,4 +88,9 @@
 #ifndef FWD_DROP_RATE
 #define FWD_DROP_RATE 0
 #endif
+
+#ifndef RSSI_THRESHOLD
+#define RSSI_THRESHOLD -100
+#endif
+
 #endif

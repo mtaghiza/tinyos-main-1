@@ -70,13 +70,14 @@ fwdDropRate=0
 cxForwarderSelection=0
 installBlink=1
 cxRoutingTableEntries=16
+rssiThreshold=-100
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink"
-"cxRoutingTableEntries")
+"cxRoutingTableEntries" "rssiThreshold")
 
 while [ $# -gt 1 ]
 do
@@ -149,7 +150,7 @@ fi
 
 scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection CX_FORWARDER_SELECTION=$cxForwarderSelection"
 set +x
-phyOptionsCommon="TEST_CHANNEL=$channel"
+phyOptionsCommon="TEST_CHANNEL=$channel RSSI_THRESHOLD=$rssiThreshold"
 phyOptionsLeaf="PATABLE0_SETTING=$leafTxp"
 phyOptionsRoot="PATABLE0_SETTING=$rootTxp"
 
