@@ -85,7 +85,8 @@ FROM transmits group by hopCount, cycle, sn;
 select "grouping receptions by num senders";
 DROP TABLE IF EXISTS group_results;
 CREATE TABLE group_results as 
-select sniffers.dest, n.cycle, n.sn, n.hopCount, n.sendCount, coalesce(crcPassed, 0) as rxOK 
+select sniffers.dest, n.cycle, n.sn, n.hopCount, n.sendCount,
+  coalesce(crcPassed, 0) as rxOK, s.rssi as rssi
 FROM numSenders n
 JOIN (select distinct dest from sniffs) sniffers
 left join sniffs s 

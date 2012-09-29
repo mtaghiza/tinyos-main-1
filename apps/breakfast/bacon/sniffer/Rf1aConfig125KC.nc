@@ -14,7 +14,7 @@ module Rf1aConfig125KC{
     pktctrl1:0x4,
     pktctrl0:0x5,
     addr:    0x0,
-    channr:  0x0,
+    channr:  TEST_CHANNEL,
     fsctrl1: 0xc,
     fsctrl0: 0x0,
     freq2:   0x23,

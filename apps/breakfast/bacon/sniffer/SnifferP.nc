@@ -34,6 +34,7 @@ implementation {
   event void AMControl.startDone(error_t error){
     rf1a_config_t config;
     printf("Started\r\n");
+    call Rf1aPhysical.setChannel(TEST_CHANNEL);
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
   }

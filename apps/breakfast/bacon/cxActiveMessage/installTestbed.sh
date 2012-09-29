@@ -79,6 +79,8 @@ settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink"
 "cxRoutingTableEntries" "rssiThreshold")
 
+echo "Provided args: $@"
+
 while [ $# -gt 1 ]
 do
   varMatched=0

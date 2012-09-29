@@ -9,6 +9,7 @@ dbDir=$2
 sd=$(dirname $0)
 
 set -x
+mkdir -p $dbDir
 for f in $logDir/*
 do
   bn=$(basename $f | rev | cut -d '.' -f 1 --complement | rev)

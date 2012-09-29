@@ -8,6 +8,7 @@ logDir=$1
 dbDir=$2
 sd=$(dirname $0)
 
+mkdir -p $dbDir
 set -x
 for f in $logDir/*
 do

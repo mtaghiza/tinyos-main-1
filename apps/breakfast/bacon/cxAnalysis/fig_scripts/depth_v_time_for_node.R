@@ -3,6 +3,8 @@ plotFile <- F
 argc <- length(commandArgs())
 argStart <- 1 + which (commandArgs() == '--args')
 nodeId <- -1
+ymin <- -1
+ymax <- -1
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -20,6 +22,12 @@ for (i in seq(argStart, argc-1)){
     plotFile=T
     png(val, width=9, height=6, units="in", res=200)
   }
+  if (opt == '--ymin'){
+    ymin <- as.numeric(val)
+  }
+  if (opt == '--ymax'){
+    ymax <- as.numeric(val)
+  }
 }
 
 rlQ <- "SELECT ts, depth FROM rx_all WHERE src=0 AND dest = ? ORDER by ts;"
@@ -32,10 +40,15 @@ rl <- dbGetQuery(con, rlQ, nodeId)
 
 lr <- dbGetQuery(con, lrQ, nodeId)
 
-
+if (ymin == -1){
+  ymin <- 1
+}
+if (ymax == -1){
+  ymax <-max(c(rl$depth, lr$depth)) 
+}
 plot(x=rl$ts-min(rl$ts), y=rl$depth, type='o', ylab='Depth',
   xlab='Time(s)',
-  ylim=c(1, max(c(rl$depth, lr$depth))), 
+  ylim=c(ymin,ymax), 
   col='red')
 
 points(x=lr$ts-min(rl$ts), y=lr$depth, col='blue', type='o', pch=16, lty=2)

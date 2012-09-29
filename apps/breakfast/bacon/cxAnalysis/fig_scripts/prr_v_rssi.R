@@ -40,6 +40,7 @@ x <- dbGetQuery(con, selectQ)
 
 maxSent <- max(x$srcCount)
 y <- x[x$srcCount > maxSent-200 & x$destCount > maxSent-200,]
+#plot(y$avgLqi, y$avgRssi)
 plot(y$avgRssi, y$prr, 
   xlim=c(xmin, xmax), ylim=c(0, 1.0),
   xlab="RSSI (dBm)",

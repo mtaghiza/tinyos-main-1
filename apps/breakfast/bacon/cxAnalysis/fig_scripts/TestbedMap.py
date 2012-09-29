@@ -4,6 +4,8 @@ import networkx as nx
 import sqlite3
 import sys
 import random
+from math import log
+import pdb
 
 class TestbedMap(object):
     def __init__(self, nsluFile='config/nslu_locations.txt', 
@@ -274,16 +276,37 @@ class SinglePrr(TestbedMap):
 
 class FloodSimMap(TestbedMap):
     def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
-          sr=125, txp=0x8D, packetLen=35, **kwargs):
+          sr=125, txp=0x8D, packetLen=35, captureThresh=6,
+          noCaptureLoss=0.3, independent=0, colorMode=None, **kwargs):
         super(FloodSimMap, self).__init__(**kwargs)
+        self.root=root
         self.loadEdges(connDbFile, sr, txp, packetLen)
-        self.simMultiple(root, maxDepth, simRuns)
+        self.captureThresh = captureThresh
+        self.noCaptureLoss = noCaptureLoss
+        self.simMultiple(root, independent, maxDepth, simRuns)
+        if colorMode == 'distance':
+            self.computeDepth()
+            self.setColAttr('distance')
+            self.addOutlined(root, 10)
+            self.setLabels(nx.get_node_attributes(self.G, 'distance'))
+        if colorMode == 'prr':
+            self.computePrr()
+            self.setColAttr('prr')
+            self.addOutlined(root, 10)
+            self.setLabels(nx.get_node_attributes(self.G, 'prr'))
+
+    def textOutput(self):
+        print "src,dest,sn,depth"
+        for n in self.G.nodes():
+            for (i, d) in enumerate(self.G.node[n]['simResults']):
+                if (d != sys.maxint):
+                    print '%d,%d,%d,%d'%(self.root, n, i, d)
 
     def loadEdges(self, dbFile, sr, txp, packetLen):
         c = sqlite3.connect(dbFile)
-        links = c.execute('SELECT src, dest, prr FROM link WHERE sr=? AND txPower=? AND len=?', (sr, txp, packetLen)).fetchall()
-        for (src, dest, prr) in links:
-            self.G.add_edge(src, dest, prr=prr)
+        links = c.execute('SELECT src, dest, prr, avgRssi FROM link WHERE sr=? AND txPower=? AND len=?', (sr, txp, packetLen)).fetchall()
+        for (src, dest, prr, rssi) in links:
+            self.G.add_edge(src, dest, prr=prr, rssi=rssi)
     
     def simInit(self, root):
         for n in self.G.nodes():
@@ -291,6 +314,73 @@ class FloodSimMap(TestbedMap):
             if 'simResults' not in self.G.node[n]:
                 self.G.node[n]['simResults'] = []
         self.G.node[root]['receiveRound'] = 0
+
+    def computePrr(self):
+        for n in self.G.nodes():
+            r_all = self.G.node[n]['simResults']
+            r_rx  = [v for v in r_all if v != sys.maxint]
+            prr = len(r_rx)/float(len(r_all))
+            self.G.node[n]['prr'] = prr
+
+    #TODO: how is this always giving me integer depths?
+    def computeDepth(self):
+        for n in self.G.nodes():
+            r_all = self.G.node[n]['simResults']
+            r_rx  = [v for v in r_all if v != sys.maxint]
+            prr = len(r_rx)/float(len(r_all))
+            if not r_rx:
+                self.G.node[n]['distance'] = 0
+            else:
+                self.G.node[n]['distance'] = sum(r_rx)/float(len(r_rx))
+
+    def dbmToWatts(self, x):
+        #print "d to w", x
+        return 10**((x-30.0)/10)
+
+    def wattsToDbm(self, p):
+        #print "w to d",p
+        return 10*log(p, 10) + 30
+
+    def addRSSIs(self, rssiVals):
+        #print "add", rssiVals
+        #TODO: phase interference?
+        return self.wattsToDbm(sum([self.dbmToWatts(v) for v in rssiVals]))
+
+    def subtractRSSI(self, minuend, subtrahend):
+        #TODO: phase interference?
+        return self.wattsToDbm(self.dbmToWatts(minuend) - self.dbmToWatts(subtrahend))
+
+    def simRoundReverse(self, d):
+        receivers = {}
+        for n in self.G.nodes():
+            #accumulate receptions at each node with incoming packets
+            if self.G.node[n]['receiveRound'] == d-1:
+                for dest in self.G[n]:
+                    if self.G.node[dest]['receiveRound'] == sys.maxint:
+                        prr = self.G[n][dest]['prr']
+                        rssi = self.G[n][dest]['rssi']
+                        receivers[dest] = receivers.get(dest, []) + [(prr, rssi)]
+        #print receivers
+        #pdb.set_trace()
+        for n in receivers:
+            incoming = receivers[n]
+            capturePresent = False
+            maxPrr = max(prr for (prr, rssi) in incoming)
+            if len(incoming) > 1:
+                combinedRSSI = self.addRSSIs([rssi for (prr, rssi) in incoming])
+                for (prr, rssi) in incoming:
+                    if rssi > self.subtractRSSI(combinedRSSI, rssi) + self.captureThresh:
+                        capturePresent = True
+                        maxPrr = prr
+                shouldReceive = (random.random() < maxPrr)
+            else:
+                capturePresent = True
+                shouldReceive = (random.random() < maxPrr)
+
+            if not capturePresent and shouldReceive:
+                shouldReceive = (random.random() > self.noCaptureLoss)
+            if shouldReceive:
+                self.G.node[n]['receiveRound'] = d
 
     def simRound(self, d):
         for n in self.G.nodes():
@@ -302,16 +392,21 @@ class FloodSimMap(TestbedMap):
                         else:
                             pass
 
-    def sim(self, root, maxDepth=10):
+    def sim(self, root, independent, maxDepth=10):
         self.simInit(root)
         for d in range(1, maxDepth+1):
-            self.simRound(d)
+            if independent:
+                self.simRound(d)
+            else:
+                self.simRoundReverse(d)
         for n in self.G.nodes():
             self.G.node[n]['simResults'].append(self.G.node[n]['receiveRound'])
  
-    def simMultiple(self, root, maxDepth=10, simRuns=100):
+    def simMultiple(self, root, independent, maxDepth=10, simRuns=100):
         for i in range(simRuns):
-            self.sim(root, maxDepth)
+            if i % 10 == 0:
+                print >>sys.stderr, "%d of %d completed"%(i, simRuns)
+            self.sim(root, independent, maxDepth)
 
 #     def listResults(self):
 #         for n in self.G.nodes():
@@ -322,43 +417,6 @@ class FloodSimMap(TestbedMap):
 #                 avgDepth = sum(r_rx)/float(len(r_rx))
 #                 print n, avgDepth, prr
 
-class FloodSimPrrMap(FloodSimMap):
-    def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
-        sr=125, txp=0x8D, packetLen=35, **kwargs):
-        super(FloodSimPrrMap, self).__init__(connDbFile, root,
-          maxDepth, simRuns, sr, txp, packetLen, **kwargs)
-        self.computePrr()
-        self.setColAttr('prr')
-        self.addOutlined(root, 10)
-        self.setLabels(nx.get_node_attributes(self.G, 'prr'))
-
-    def computePrr(self):
-        for n in self.G.nodes():
-            r_all = self.G.node[n]['simResults']
-            r_rx  = [v for v in r_all if v != sys.maxint]
-            prr = len(r_rx)/float(len(r_all))
-            self.G.node[n]['prr'] = prr
-        
-
-class FloodSimDepthMap(FloodSimMap):
-    def __init__(self, connDbFile, root=0, maxDepth=10, simRuns=100,
-        sr=125, txp=0x8D, packetLen=35, **kwargs):
-        super(FloodSimDepthMap, self).__init__(connDbFile, root,
-          maxDepth, simRuns, sr, txp, packetLen, **kwargs)
-        self.computeDepth()
-        self.setColAttr('distance')
-        self.addOutlined(root, 10)
-        self.setLabels(nx.get_node_attributes(self.G, 'distance'))
-
-    def computeDepth(self):
-        for n in self.G.nodes():
-            r_all = self.G.node[n]['simResults']
-            r_rx  = [v for v in r_all if v != sys.maxint]
-            prr = len(r_rx)/float(len(r_all))
-            if not r_rx:
-                self.G.node[n]['distance'] = 0
-            else:
-                self.G.node[n]['distance'] = sum(r_rx)/float(len(r_rx))
 
 class DutyCycle(TestbedMap):
     def __init__(self, dbFile, dcLabels, **kwargs):
@@ -569,8 +627,8 @@ if __name__ == '__main__':
         sr = 125
         txp = 0x8D
         packetLen = 35
-        tbm = FloodSimPrrMap(fn, root, maxDepth, simRuns, sr, txp,
-            packetLen)
+        tbm = FloodSimMap(fn, root, maxDepth, simRuns, sr, txp,
+            packetLen, colorMode='prr')
     elif t == '--fsd':
         root = 0
         maxDepth = 10
@@ -578,8 +636,36 @@ if __name__ == '__main__':
         sr = 125
         txp = 0x8D
         packetLen = 35
-        tbm = FloodSimDepthMap(fn, root, maxDepth, simRuns, sr, txp,
-            packetLen)
+        tbm = FloodSimMap(fn, root, maxDepth, simRuns, sr, txp,
+            packetLen, colorMode='distance')
+    elif t == '--sim':
+        root = 0
+        maxDepth = 10
+        simRuns = 1
+        sr = 125
+        txp = 0x8D
+        packetLen = 35
+        captureThresh = 0.0
+        noCaptureLoss = 0.0
+        colorMode = 'distance'
+        independent = 1
+        if (len(sys.argv) > 4):
+            for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--root':
+                    root = int(v)
+                if o == '--simRuns':
+                    simRuns = int(v)
+                if o == '--captureThresh':
+                    captureThresh = float(v)
+                if o == '--noCaptureLoss':
+                    noCaptureLoss = float(v)
+                if o == '--colorMode':
+                    colorMode = v
+                if o == '--independent':
+                    independent = int(v)
+        tbm = FloodSimMap(fn, root, maxDepth, simRuns, sr, txp,
+          packetLen, captureThresh, noCaptureLoss, independent, 
+          colorMode)
     elif t == '--cond':
         refNode = 2
         prrLabels = 1
@@ -614,7 +700,7 @@ if __name__ == '__main__':
     if '--text' in sys.argv:
         tbm.textOutput()
 
-# 0 CX trace
+# x CX trace
 #   - no edges
 #   - burst setup info to gray out non-forwarders
 #   - for each frame in transmission, color as:

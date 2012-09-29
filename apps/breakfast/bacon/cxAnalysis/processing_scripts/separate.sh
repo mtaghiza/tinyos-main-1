@@ -20,6 +20,7 @@ then
   rootId=$3
 fi
 
+mkdir -p $od
 # for each start message for root
 grep -n " $rootId START" $lf | tr ':_' ' ' | cut -d ' ' -f 1 | while read s
 do
