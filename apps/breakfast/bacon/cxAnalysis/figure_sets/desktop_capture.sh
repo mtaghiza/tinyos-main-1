@@ -157,8 +157,14 @@ set -x
 
 R --no-save --slave --args \
   $berOptions \
-  --plotType prr \
-  --png $outDir/prr_v_senders.png\
+  --plotType prrAny \
+  --png $outDir/prr_any_v_senders.png\
+  < $sd/ber_v_senders.R
+
+R --no-save --slave --args \
+  $berOptions \
+  --plotType prrPass \
+  --png $outDir/prr_pass_v_senders.png\
   < $sd/ber_v_senders.R
 
 R --no-save --slave --args \

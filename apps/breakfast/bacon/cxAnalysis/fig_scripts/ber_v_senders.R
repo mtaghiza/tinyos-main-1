@@ -56,7 +56,21 @@ x$label <- factor(x$label, levels=sort(unique(as.numeric(x$label))))
 pd <- position_dodge(0.1)
 
 
-if (plotType == 'prr'){
+if (plotType == 'prrAny'){
+  print(
+    ggplot(agg, aes(x=sc, y=prrAnyM, colour=label))
+    + geom_line(position=pd)
+    + scale_colour_hue(name="Capture Margin (dBm) ")
+    + geom_point(data=x, aes(x=sc, y=prrAny), position=pd)
+    + ggtitle("Packet Reception Ratio (incl. CRC failures) v. Senders")
+    + xlab("Number of senders")
+    + ylab("PRR (0,1.0)")
+    + scale_y_continuous(limits=c(0.0,1))
+    + theme_bw()
+    + theme(legend.justification=c(0,0), legend.position=c(0,0))
+  )
+}
+if (plotType == 'prrPass'){
   print(
     ggplot(agg, aes(x=sc, y=prrPassM, colour=label))
     + geom_line(position=pd)
