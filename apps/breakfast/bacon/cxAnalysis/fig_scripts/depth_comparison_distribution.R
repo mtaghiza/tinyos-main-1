@@ -4,15 +4,20 @@ argStart <- 1 + which (commandArgs() == '--args')
 x <- c()
 library(plyr)
 library(ggplot2)
+library(RSQLite)
 
 plotTitle <- 'Distance Comparison'
 legendSettings <- 'sim'
+
+selectQ <- "SELECT dest, depth
+FROM rx_all 
+WHERE src=0
+AND ts > (SELECT max(startTS) from prr_bounds)"
 
 
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
-  print(paste(opt, ':', val))
   if ( opt == '--csv'){
     fn <- val
     label <- commandArgs()[i+2]
@@ -37,7 +42,6 @@ for (i in seq(argStart, argc-1)){
     png(val, width=12, height=6, units="in", res=200)
   }
   if (opt == '--labels'){
-    print("labels opt")
     legendSettings <- val
   }
 }
@@ -49,7 +53,7 @@ agg <- ddply(x, .(label, dest), summarise,
   uq=quantile(depth, 0.75))
 
 pd <- position_dodge(0.5)
-agg <- agg[agg$depth > 1,]
+agg <- agg[agg$depth > 1.1,]
 
 
 if ( legendSettings == 'sim'){
@@ -71,10 +75,13 @@ if ( legendSettings == 'sim'){
 
 if (legendSettings == 'thresh'){
   plotTitle <- "Distance v. RSSI Threshold"
+  meanSDs <- aggregate(sd~label, data=agg, FUN=mean)
+
+  agg$label <- factor(agg$label, levels=sort(unique(as.numeric(agg$label))))
   print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
     + geom_point(position=pd)
     + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
-  #  + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
+#    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
     + xlab("Node ID")
     + ylab("Distance")
     + ggtitle(plotTitle) 
@@ -82,8 +89,8 @@ if (legendSettings == 'thresh'){
     + theme_bw()
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
   )
-
 }
+
 if (plotFile){
   g <- dev.off()
 }
