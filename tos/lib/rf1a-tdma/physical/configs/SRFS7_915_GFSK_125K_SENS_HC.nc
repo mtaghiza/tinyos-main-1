@@ -18,7 +18,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     //TODO: this does get set in sw, right?
     pktlen:  0x3D,    // PKTLEN    Packet length.
     pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
-    pktctrl0:0x05,   // PKTCTRL0  Packet automation control.
+    pktctrl0:0x04,   // PKTCTRL0  Packet automation control.
     //TODO: this does get set in sw, right?
     addr:    0x00,   // ADDR      Device address.
     //TODO: this does get set in sw, right?
@@ -30,8 +30,8 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     freq0:   0x3B,   // FREQ0     Frequency control word, low byte.
     mdmcfg4: 0x2C,   // MDMCFG4   Modem configuration.
     mdmcfg3: 0x3B,   // MDMCFG3   Modem configuration.
-    mdmcfg2: 0x03,   // MDMCFG2   Modem configuration.
-    mdmcfg1: 0x22,   // MDMCFG1   Modem configuration.
+    mdmcfg2: 0x01,   // MDMCFG2   Modem configuration.
+    mdmcfg1: 0x02,   // MDMCFG1   Modem configuration.
     mdmcfg0: 0xF8,   // MDMCFG0   Modem configuration.
     deviatn: 0x62,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
     //mcsm2 default from Rf1aConfigure.h
