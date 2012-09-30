@@ -1195,11 +1195,11 @@ generic module HplMsp430Rf1aP () @safe() {
 
         /* OK, there's data; do we know how much to read? */
         if (RX_S_active > rx_state) {
+          uint8_t len8;
           bool variable_packet_length_mode = (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
 
+          /* @TODO@ set rx_expected when not using variable packet length mode */
           if (variable_packet_length_mode) {
-            uint8_t len8;
-            uint16_t availTimeout = 0x2ff;
             //FEC length: not encoded. reflects the number of bytes
             //  actually sent, not the encoded payload length
             call Rf1aFifo.readRXFIFO(&len8, sizeof(len8), TRUE);
@@ -1219,6 +1219,12 @@ generic module HplMsp430Rf1aP () @safe() {
             //  we receive is not going to overflow anything. If we
             //  get a len of 255, we are never going to read all of
             //  it.
+          }else{
+            len8 = call Rf1aIf.readRegister(PKTLEN);
+          }
+
+          {
+            uint16_t availTimeout = 0x2ff;
             avail -= 1;
             //rx_expected: in data bytes
             rx_expected = call Rf1aFifo.getDecodedLen(len8 - call Rf1aFifo.getCrcLen()) ;
@@ -1239,7 +1245,6 @@ generic module HplMsp430Rf1aP () @safe() {
               avail = receiveCountAvailable_();
             #endif
           }
-          /* @TODO@ set rx_expected when not using variable packet length mode */
 
           /* Update the state */
           rx_state = RX_S_active;
