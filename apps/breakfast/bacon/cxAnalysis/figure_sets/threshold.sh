@@ -32,7 +32,7 @@ R --no-save --slave --args \
 
 R --no-save --slave --args\
   $options \
-  --png $outDir/prr_v_thresh_avg.png \
+  --png $outDir/prr_v_thresh.png \
   < $sd/prr_cdf_ggplot.R
 
 R --no-save --slave --args\

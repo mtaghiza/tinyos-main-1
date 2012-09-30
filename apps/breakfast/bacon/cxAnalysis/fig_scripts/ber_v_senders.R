@@ -8,9 +8,17 @@ library(RSQLite)
 
 plotType <- 'prr'
 selectQ <- 'SELECT * from ber_summary'
+pw <- 8
+ph <- 4
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
+  if (opt == '--aspect'){
+    if (val == 'square'){
+      pw <- 4
+      ph <- 4
+    }
+  }
   if ( opt == '-f'){
     fn <- val
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
@@ -24,11 +32,11 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=12, height=6, title=paste(plotType, "v. Senders"))
+    pdf(val, width=pw, height=ph, title=paste(plotType, "v. Senders"))
   }
   if ( opt == '--png' ){
     plotFile=T
-    png(val, width=12, height=6, units="in", res=200)
+    png(val, width=pw, height=ph, units="in", res=200)
   }
   if ( opt == '--plotType'){
     plotType <- val
@@ -94,7 +102,7 @@ if (plotType == 'ber'){
     + xlab("Number of senders")
     + ylab("Bit error rate (0,1.0)")
     + theme_bw()
-    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(legend.justification=c(1,1), legend.position=c(1,1))
   )
 }
 if (plotType == 'sc'){

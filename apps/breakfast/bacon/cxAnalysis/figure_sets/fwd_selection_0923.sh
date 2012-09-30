@@ -66,6 +66,29 @@ goodCap7=data/cx/0925/conditionalPRR_db/map.200cap.7.1348599436.db
 # max1large=data/cx/fwd_selection_0923/db/lpb.0x8D.1.1.mid.2.70.1348471884.db
 
 
+  #duty cycle improvement
+  R --no-save --slave  --args \
+    -nf $floodDb flood \
+    -f $max0Large max_0_l \
+    -f $max1Large max_1_l \
+    -f $max2Large max_2_l \
+    -f $max3Large max_3_l \
+    --png $outDir/improvement_v_bw.png \
+    < $sd/duty_cycle_improvement_cdf.R
+
+  #prr
+  R --no-save --slave  --args \
+    -f $floodDb flood \
+    -f $max0Large max_0_l \
+    -f $max1Large max_1_l \
+    -f $max2Large max_2_l \
+    -f $max3Large max_3_l \
+    --png $outDir/prr_v_bw.png \
+    < $sd/prr_cdf.R
+
+
+exit 0
+
 set -x
 
   #prr
@@ -91,7 +114,6 @@ set -x
     --png $outDir/improvement_v_retx_bw_0.png \
     < $sd/duty_cycle_improvement_cdf.R
 
-exit 0
   #prr
   R --no-save --slave  --args \
     -f $floodDb flood \

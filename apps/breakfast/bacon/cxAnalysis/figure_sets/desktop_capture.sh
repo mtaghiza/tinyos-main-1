@@ -157,21 +157,30 @@ set -x
 
 R --no-save --slave --args \
   $berOptions \
+  --plotType ber \
+  --legendX 1 \
+  --legendY 1 \
+  --aspect square \
+  --png $outDir/ber_v_senders.png\
+  < $sd/ber_v_senders.R
+
+exit 0
+R --args \
+  $berOptions \
   --plotType prrAny \
+  --aspect square \
   --png $outDir/prr_any_v_senders.png\
   < $sd/ber_v_senders.R
 
 R --no-save --slave --args \
   $berOptions \
   --plotType prrPass \
+  --legendX 0 \
+  --legendY 0 \
+  --aspect square\
   --png $outDir/prr_pass_v_senders.png\
   < $sd/ber_v_senders.R
 
-R --no-save --slave --args \
-  $berOptions \
-  --plotType ber \
-  --png $outDir/ber_v_senders.png\
-  < $sd/ber_v_senders.R
 
 R --no-save --slave --args \
   $rssi10Options \
