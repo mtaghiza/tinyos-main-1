@@ -30,6 +30,7 @@ agg <- ddply(x, .(label, dest), summarise,
   sd=sd(depth),
   lq=quantile(depth, 0.25),
   uq=quantile(depth, 0.75))
+
 pd <- position_dodge(0.5)
 agg <- agg[agg$depth > 1,]
 print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
