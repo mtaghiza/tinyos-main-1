@@ -29,7 +29,7 @@ do
       echo "unknown rate $rate"
       exit 1
     fi
-  
+    thresh=-90 
     for txp in 0x8D 
     do
       #3 x 6  = 18
@@ -54,7 +54,8 @@ do
                 $burstOptions\
                 $rateOptions \
                 cxForwarderSelection $cxForwarderSelection \
-                cxRoutingTableEntries $cxRoutingTableEntries
+                cxRoutingTableEntries $cxRoutingTableEntries\
+                rssiThreshold $thresh
               sleep $testDuration
             done
           done
@@ -76,7 +77,9 @@ do
                 $burstOptions\
                 $rateOptions \
                 cxForwarderSelection $cxForwarderSelection \
-                cxRoutingTableEntries $cxRoutingTableEntries
+                cxRoutingTableEntries $cxRoutingTableEntries\
+                rssiThreshold $thresh
+
               sleep $testDuration
             done
           done
@@ -89,7 +92,9 @@ do
           numTransmits $numTransmits\
           bufferWidth $bufferWidth\
           $floodOptions\
-          $rateOptions
+          $rateOptions\
+          rssiThreshold $thresh
+
         sleep $testDuration
       done
     done
