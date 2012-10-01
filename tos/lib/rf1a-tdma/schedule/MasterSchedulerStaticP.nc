@@ -79,16 +79,46 @@ module MasterSchedulerStaticP {
   // ResponseSend.sendDone + more pending / call ResponseSend.send
   // -> S_RESPONSES_PENDING
 
+  void setSymbolRate(cx_schedule_t* sched, uint8_t symbolRate){ }
+  void setChannel(cx_schedule_t* sched, uint8_t channel){}
+  void setSlots(cx_schedule_t* sched, uint16_t slots){ }
+  void setFramesPerSlot(cx_schedule_t* sched, uint16_t framesPerSlot){ }
+  void setMaxRetransmit(cx_schedule_t* sched, uint8_t maxRetransmit){ }
+  void setFirstIdleSlot(cx_schedule_t* sched, uint16_t firstIdleSlot){ }
+  void setLastIdleSlot(cx_schedule_t* sched, uint16_t lastIdleSlot){ }
+
+  uint8_t getSymbolRate(cx_schedule_t* sched){
+    return SCHED_INIT_SYMBOLRATE;
+  }
+  uint8_t getChannel(cx_schedule_t* sched){
+    return TEST_CHANNEL;
+  }
+  uint16_t getSlots(cx_schedule_t* sched){
+    return SCHED_NUM_SLOTS;
+  }
+  uint16_t getFramesPerSlot(cx_schedule_t* sched){
+    return SCHED_FRAMES_PER_SLOT;
+  }
+  uint8_t getMaxRetransmit(cx_schedule_t* sched){
+    return SCHED_MAX_RETRANSMIT;
+  }
+  uint16_t getFirstIdleSlot(cx_schedule_t* sched){
+    return STATIC_FIRST_IDLE_SLOT;
+  }
+  uint16_t getLastIdleSlot(cx_schedule_t* sched){
+    return (SCHED_NUM_SLOTS - 1);
+  }
+  
   command error_t SplitControl.start(){
     schedule = call AnnounceSend.getPayload(schedule_msg,
       sizeof(cx_schedule_t));
     schedule->scheduleNum++;
-    schedule->symbolRate = SCHED_INIT_SYMBOLRATE;
-    schedule->channel = TEST_CHANNEL;
-    schedule->slots = SCHED_NUM_SLOTS;
-    schedule->framesPerSlot = SCHED_FRAMES_PER_SLOT;
-    schedule->maxRetransmit = SCHED_MAX_RETRANSMIT;
-    totalFrames = schedule->framesPerSlot * schedule->slots;
+    setSymbolRate(schedule, SCHED_INIT_SYMBOLRATE);
+    setChannel(schedule, TEST_CHANNEL);
+    setSlots(schedule, SCHED_NUM_SLOTS);
+    setFramesPerSlot(schedule, SCHED_FRAMES_PER_SLOT);
+    setMaxRetransmit(schedule, SCHED_MAX_RETRANSMIT);
+    totalFrames = getFramesPerSlot(schedule) * getSlots(schedule);
 
     return call SubSplitControl.start();
   }
@@ -103,9 +133,9 @@ module MasterSchedulerStaticP {
     error_t err = call TDMAPhySchedule.setSchedule( 
       call ExternalScheduler.getStartTime(call TDMAPhySchedule.getNow()),
       call ExternalScheduler.getStartFrame(),
-      schedule->framesPerSlot*schedule->slots,
-      schedule->symbolRate,
-      schedule->channel, 
+      getFramesPerSlot(schedule)*getSlots(schedule),
+      getSymbolRate(schedule),
+      getChannel(schedule), 
       TRUE,
       CX_ENABLE_SKEW_CORRECTION);
 ////removed: this will get setup next go-around
@@ -131,17 +161,17 @@ module MasterSchedulerStaticP {
     uint8_t i;
     printf_TMP("SCHED: sn %u sr %u chan %u slots %u fps %u mr %u fis %u lis %u [",
       schedule->scheduleNum,
-      schedule->symbolRate,
-      schedule->channel,
-      schedule->slots,
-      schedule->framesPerSlot,
-      schedule->maxRetransmit,
-      schedule->firstIdleSlot,
-      schedule->lastIdleSlot
+      getSymbolRate(schedule),
+      getChannel(schedule),
+      getSlots(schedule),
+      getFramesPerSlot(schedule),
+      getMaxRetransmit(schedule),
+      getFirstIdleSlot(schedule),
+      getLastIdleSlot(schedule)
     );
-    for (i = 0; i < MAX_ANNOUNCED_SLOTS; i++){
-      printf_TMP(" %u, ", schedule->availableSlots[i]);
-    }
+//    for (i = 0; i < MAX_ANNOUNCED_SLOTS; i++){
+//      printf_TMP(" %u, ", schedule->availableSlots[i]);
+//    }
     printf_TMP("]\r\n");
    }
 
@@ -152,13 +182,13 @@ module MasterSchedulerStaticP {
   task void recomputeSchedule(){
     uint16_t i;
     error_t error;
-    for (i = 0; i< MAX_ANNOUNCED_SLOTS; i++){
-      schedule->availableSlots[i] = INVALID_SLOT;
-    }
-    schedule->firstIdleSlot = STATIC_FIRST_IDLE_SLOT;
-    schedule->lastIdleSlot = SCHED_NUM_SLOTS - 1;
-    firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
-    lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
+//    for (i = 0; i< MAX_ANNOUNCED_SLOTS; i++){
+//      schedule->availableSlots[i] = INVALID_SLOT;
+//    }
+    setFirstIdleSlot(schedule, STATIC_FIRST_IDLE_SLOT);
+    setLastIdleSlot(schedule, SCHED_NUM_SLOTS - 1);
+    firstIdleFrame = (getFirstIdleSlot(schedule) * getFramesPerSlot(schedule));
+    lastIdleFrame = (getLastIdleSlot(schedule) * getFramesPerSlot(schedule));
 //    printSchedule();
 //    post printScheduleTask();
     error = call AnnounceSend.send(AM_BROADCAST_ADDR, schedule_msg, sizeof(cx_schedule_t));
@@ -168,7 +198,7 @@ module MasterSchedulerStaticP {
   }
   
   uint16_t getSlot(uint16_t frameNum){
-    return frameNum / schedule->framesPerSlot;
+    return frameNum / getFramesPerSlot(schedule);
   }
 
   //owns announce, data, and response frames
@@ -288,16 +318,16 @@ module MasterSchedulerStaticP {
   event void TDMAPhySchedule.resynched(uint16_t frameNum){ }
   
   command uint16_t TDMARoutingSchedule.framesPerSlot(){
-    return schedule->framesPerSlot;
+    return getFramesPerSlot(schedule);
   }
   command bool TDMARoutingSchedule.isSynched(){
     return TRUE;
   }
   command uint8_t TDMARoutingSchedule.maxRetransmit(){
-    return schedule->maxRetransmit;
+    return getMaxRetransmit(schedule);
   }
   command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
-    return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
+    return getFramesPerSlot(schedule) - (frameNum % getFramesPerSlot(schedule));
   }
   
   command uint16_t DefaultScheduledSend.getSlot(){
@@ -309,7 +339,7 @@ module MasterSchedulerStaticP {
   }
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){
-    return schedule->slots;
+    return getSlots(schedule);
   }
 
   command uint16_t TDMARoutingSchedule.currentFrame(){

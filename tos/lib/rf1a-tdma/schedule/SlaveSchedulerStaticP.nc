@@ -107,12 +107,34 @@ module SlaveSchedulerStaticP {
       );
   }
 
+  uint8_t getSymbolRate(cx_schedule_t* sched){
+    return SCHED_INIT_SYMBOLRATE;
+  }
+  uint8_t getChannel(cx_schedule_t* sched){
+    return TEST_CHANNEL;
+  }
+  uint16_t getSlots(cx_schedule_t* sched){
+    return SCHED_NUM_SLOTS;
+  }
+  uint16_t getFramesPerSlot(cx_schedule_t* sched){
+    return SCHED_FRAMES_PER_SLOT;
+  }
+  uint8_t getMaxRetransmit(cx_schedule_t* sched){
+    return SCHED_MAX_RETRANSMIT;
+  }
+  uint16_t getFirstIdleSlot(cx_schedule_t* sched){
+    return STATIC_FIRST_IDLE_SLOT;
+  }
+  uint16_t getLastIdleSlot(cx_schedule_t* sched){
+    return (SCHED_NUM_SLOTS - 1);
+  }
+
   task void updateSchedule(){
     uint32_t cur_root;
     uint32_t cur_leaf;
     uint32_t startTS;
     uint16_t startFN;
-    uint8_t sri = srIndex(schedule->symbolRate);
+    uint8_t sri = srIndex(getSymbolRate(schedule));
     softSynch = TRUE;
     hasSchedule = TRUE;
     scheduleNum = schedule->scheduleNum;
@@ -166,10 +188,10 @@ module SlaveSchedulerStaticP {
       }
       if (num_measurements > 0){
         lag_per_cycle = lagTot/(num_measurements);
-        lag_per_slot = lag_per_cycle / schedule->slots;
+        lag_per_slot = lag_per_cycle / getSlots(schedule);
         printf_TMP("LPC %ld\r\n", lag_per_cycle);
         printf_TMP("CL %ld\r\n", 
-          (schedule->slots*schedule->framesPerSlot)
+          (getSlots(schedule)*getFramesPerSlot(schedule))
           *(call TDMAPhySchedule.getFrameLen()));
 //        printf_TMP("LPS %ld\r\n", lag_per_slot);
         //why is this computation incorrect? must be an overflow.
@@ -205,16 +227,17 @@ module SlaveSchedulerStaticP {
     call TDMAPhySchedule.setSchedule(
       startTS,
       startFN,
-      schedule->framesPerSlot*schedule->slots,
-      schedule->symbolRate,
-      schedule->channel,
+      getFramesPerSlot(schedule)* getSlots(schedule),
+      getSymbolRate(schedule),
+      getChannel(schedule),
       hasSchedule,
       (lag_per_slot != 0)
     );
 //    printf_TMP("updated\r\n");
     framesSinceSynch = 0;
-    firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
-    lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
+    firstIdleFrame = (getFirstIdleSlot(schedule)  * 
+      getFramesPerSlot(schedule));
+    lastIdleFrame = (getLastIdleSlot(schedule) * getFramesPerSlot(schedule));
     if (state == S_LISTEN){
       state = S_READY;
       post startDoneTask();
@@ -304,14 +327,14 @@ module SlaveSchedulerStaticP {
         uint32_t wrapTS;
         uint16_t elapsedFrames = frameNum;
         elapsedFrames += cyclesSinceSchedule*(
-          schedule->framesPerSlot*schedule->slots);
+          getFramesPerSlot(schedule)*getSlots(schedule));
         //target frame start is last reception...
         wrapTS = last_leaf;
         //...plus the duration of elapsed frames
         //TODO: resolve mystery off-by-one
         wrapTS += ((elapsedFrames -1)*(call TDMAPhySchedule.getFrameLen()));
         //...minus the lag introduced for each elapsed slot
-        wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*schedule->slots))*lag_per_slot);
+        wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*getSlots(schedule)))*lag_per_slot);
 //        printf_TMP("NMT %lu css %u WT %lu\r\n", 
 //          noMissTS,
 //          cyclesSinceSchedule, wrapTS);
@@ -390,13 +413,13 @@ module SlaveSchedulerStaticP {
   }
   
   command uint16_t TDMARoutingSchedule.framesPerSlot(){
-    return schedule->framesPerSlot;
+    return getFramesPerSlot(schedule);
   }
 
   //No retransmissions allowed if we're not in synch.
   command uint8_t TDMARoutingSchedule.maxRetransmit(){
     if (call TDMARoutingSchedule.isSynched()){
-      return schedule->maxRetransmit;
+      return getMaxRetransmit(schedule);
     } else {
       return 0;
     }
@@ -414,7 +437,7 @@ module SlaveSchedulerStaticP {
   }
 
   command uint16_t TDMARoutingSchedule.framesLeftInSlot(uint16_t frameNum){
-    return schedule->framesPerSlot - (frameNum % schedule->framesPerSlot);
+    return getFramesPerSlot(schedule) - (frameNum % getFramesPerSlot(schedule));
   }
 
   command uint16_t TDMARoutingSchedule.currentFrame(){
@@ -440,7 +463,7 @@ module SlaveSchedulerStaticP {
   }
 
   command uint16_t TDMARoutingSchedule.getNumSlots(){
-    return schedule->slots;
+    return getSlots(schedule);
   }
 
   command uint16_t SlotStarted.currentSlot(){ 

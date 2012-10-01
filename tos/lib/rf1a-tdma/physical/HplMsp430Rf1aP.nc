@@ -1230,7 +1230,6 @@ generic module HplMsp430Rf1aP () @safe() {
             avail -= 1;
             //rx_expected: in data bytes
             rx_expected = call Rf1aFifo.getDecodedLen(len8 - call Rf1aFifo.getCrcLen()) ;
-
             //spin until the entire packet is available: if len8 +2 >
             //64, we're not going to wait for it all to show up.
             #if WAIT_FOR_PACKET == 1

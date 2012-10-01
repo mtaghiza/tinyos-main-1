@@ -44,6 +44,7 @@ typedef struct assignment_t {
   bool notified;
 } assignment_t;
 
+#if STATIC_SCHEDULER == 0
 typedef nx_struct cx_schedule_t {
   nx_uint8_t scheduleNum;  //incremented if any parameters change
                            // which would result in a synch loss were
@@ -57,6 +58,13 @@ typedef nx_struct cx_schedule_t {
   nx_uint16_t lastIdleSlot;
   nx_uint16_t availableSlots[MAX_ANNOUNCED_SLOTS]; //the free slots
 } cx_schedule_t;
+#else
+typedef nx_struct cx_schedule_t {
+  nx_uint8_t scheduleNum;  //incremented if any parameters change
+                           // which would result in a synch loss were
+                           // they not received
+} cx_schedule_t;
+#endif
 
 typedef nx_struct cx_request_t {
   nx_uint16_t slotNumber;
