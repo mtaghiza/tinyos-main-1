@@ -658,9 +658,9 @@ generic module HplMsp430Rf1aP () @safe() {
     if (need_to_write_length) {
       uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain) 
         + call Rf1aFifo.getCrcLen();
-      printf_FEC("Len %u + %u\r\n", 
-        call Rf1aFifo.getEncodedLen(tx_remain),
-        call Rf1aFifo.getCrcLen());
+//      printf_FEC("Len %u + %u\r\n", 
+//        call Rf1aFifo.getEncodedLen(tx_remain),
+//        call Rf1aFifo.getCrcLen());
       //FEC not encoded: should reflect encoded length
       call Rf1aFifo.writeTXFIFO(&len8, sizeof(len8), TRUE);
     }
@@ -1463,7 +1463,7 @@ generic module HplMsp430Rf1aP () @safe() {
         printf("SNIFFER OVERFLOW\r\n");
       } else{
         cur = &sniffQueue[endSniffed];
-        printf("W %p\r\n", cur);
+//        printf("W %p\r\n", cur);
         for (i=0; i< SNIFFER_PKT_LEN; i++){
           cur->pkt[i] = pkt[i];
         }
