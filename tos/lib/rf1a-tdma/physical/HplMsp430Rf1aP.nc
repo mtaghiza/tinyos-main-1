@@ -74,6 +74,8 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 } implementation {
   int rssiConvert_dBm(uint8_t rssi_dec_);
+  void sniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
+      uint8_t lqi);
 
   /* See configure_ for details. on how these signals are used. */
   enum {
@@ -1423,6 +1425,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      rx_lqi_raw & 0x7f, 
 //      (rx_lqi_raw & 0x80));
 ///* sniffer end ***************************************************************/
+      sniffPacket(start, received, rx_rssi_raw, rx_lqi_raw);
       signal Rf1aPhysical.receiveDone[client](start, received, result);
     }
     if (signal_filled) {
@@ -1430,6 +1433,97 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     //~7 uS from start of signal checks
   }
+
+  #if CX_SNIFF_ENABLED == 1
+    #warning "CX Sniff enabled"
+
+    #define SNIFFER_PKT_LEN 64
+    #define SNIFFER_QUEUE_LEN 16
+    typedef struct sniffed_packet_t {
+      uint8_t pkt[SNIFFER_PKT_LEN];
+      uint8_t received;
+      uint8_t rssi;
+      uint8_t lqi;
+    } sniffed_packet_t;
+  
+    sniffed_packet_t sniffQueue[SNIFFER_QUEUE_LEN];
+    uint8_t startSniffed = 0;
+    uint8_t endSniffed = 0;
+
+    void doSniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
+      uint8_t lqi);
+    task void sniffNext();
+  
+    void sniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
+        uint8_t lqi){
+      uint8_t i;
+      sniffed_packet_t* cur;
+  //    printf("%02X -> %d\r\n", pkt[2], endSniffed);
+  //    return;
+      if (((endSniffed+1)%SNIFFER_QUEUE_LEN) == startSniffed){
+        printf("SNIFFER OVERFLOW\r\n");
+      } else{
+        cur = &sniffQueue[endSniffed];
+        printf("W %p\r\n", cur);
+        for (i=0; i< SNIFFER_PKT_LEN; i++){
+          cur->pkt[i] = pkt[i];
+        }
+        cur -> received = received;
+        cur -> rssi = rssi;
+        cur -> lqi = lqi;
+        post sniffNext();
+        endSniffed = (endSniffed + 1)%SNIFFER_QUEUE_LEN;
+      }
+    }
+
+    task void sniffNext(){
+      if (startSniffed != endSniffed){
+        sniffed_packet_t* cur;
+        atomic{
+          cur = &sniffQueue[startSniffed];
+          startSniffed = (startSniffed+1)%SNIFFER_QUEUE_LEN;
+        }
+        printf("R %p %u\r\n", cur, cur->received);
+        doSniffPacket(cur->pkt, cur->received, cur->rssi, cur->lqi);
+        post sniffNext();
+      }
+    }
+  
+    void doSniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
+      uint8_t lqi){
+        uint8_t k;
+        message_t* msg = (message_t*)pkt;
+        uint8_t crcPassed = (lqi & 0x80);
+        uint8_t lqiVal = (lqi&0x7f);
+        int8_t rssiConv = rssiConvert_dBm(rssi); 
+  
+        cx_header_t* cxHdr = (cx_header_t*)(&msg->data[-1]);
+        message_header_t* msgHdr = (message_header_t*)(msg->header);
+        rf1a_ieee154_t* ieee154Hdr = (rf1a_ieee154_t*)msgHdr;
+        printf("S ");
+        for(k = 0; k < SNIFFER_PKT_LEN ; k++){
+          printf("%02X", pkt[k]);
+        }
+        printf(" %d %u %x\r\n", 
+          rssiConv,
+          lqiVal,
+          crcPassed);
+        //To match with SD:
+        //np source sn count frameNum
+        printf("CXS %u %u %u %u %u %d %u %x\r\n",
+          cxHdr -> nProto,
+          ieee154Hdr -> src,
+          cxHdr -> sn,
+          cxHdr -> count,
+          cxHdr -> count + cxHdr -> originalFrameNum - 1,
+          rssiConv,
+          lqiVal,
+          crcPassed);
+    }
+  #else
+  void sniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
+      uint8_t lqi){}
+  #endif
    
   #define STEPSIZE 1
   #define NUMSTEPS 16 
@@ -1622,6 +1716,7 @@ generic module HplMsp430Rf1aP () @safe() {
         }
 
         tx_state = TX_S_inactive;
+        sniffPacket(tx_buffer, tx_length, 0xFF, 0xFF);
         signal Rf1aPhysical.sendDone[tx_client](tx_buffer, tx_length, SUCCESS);
       }      
     }
