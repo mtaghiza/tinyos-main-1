@@ -28,32 +28,28 @@ module Hamming74Rf1aFifoP{
 
   async command error_t Rf1aFifo.readRXFIFO(uint8_t* buf, uint8_t dataBytes, 
       bool isControl){
-    printf_FEC("R %u %x ", dataBytes, isControl);
     if (isControl){
       call Rf1aIf.readBurstRegister(RF_RXFIFORD, buf, dataBytes);
-      printf_FEC("(%x)\r\n", *buf);
+//      printf_FEC("R %u %x\r\n", dataBytes, *buf);
       return SUCCESS;
     } else {
-      if ((call Rf1aFifo.getEncodedLen(dataBytes) + 4) > FEC_BUF_LEN){
+      if (call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen() > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
         uint8_t d;
         error_t ret = SUCCESS;
-
-//        printf_FEC("[ ");
+        printf_FEC("[ ");
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, encodedBuf,
-          dataBytes*2 + 4);
-        //TODO: should check for invalid encodings here? or just plan
-        //on putting in a checksum
-        for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + 4; i++){
+          call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
+        for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen(); i++){
           d = decoding[encodedBuf[i]];
-//          printf_FEC("%02X", encodedBuf[i]);
+          printf_FEC("%02X", encodedBuf[i]);
           if (i&0x01){
             buf[i>>1] |= d;
-//            printf_FEC(" %02X\r\n", buf[i>>1]);
+            printf_FEC(" %02X\r\n", buf[i>>1]);
           }else{
-            buf[i>>1] = d << 4;
+            buf[i>>1] = 0xf0&(d << 4);
           }
           //0xff indicates error in decoding table
           if (d == 0xff){
@@ -64,12 +60,12 @@ module Hamming74Rf1aFifoP{
           //god byte alignment is the worst
           uint16_t receivedCrc = buf[dataBytes]| buf[dataBytes+1]<<8;
           uint16_t cc = call Crc.crc16(buf, dataBytes);
-          printf_TESTBED_CRC("RC %x CC %x\r\n", receivedCrc, cc);
+//          printf_FEC("RC %x CC %x\r\n", receivedCrc, cc);
           if( receivedCrc != cc){
             ret = FAIL;
           }
         }
-//        printf_FEC("]\r\n");
+        printf_FEC("]\r\n");
         return ret;
       }
     }
@@ -82,36 +78,39 @@ module Hamming74Rf1aFifoP{
     if (isControl){
       call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, buf,
         dataBytes);
-//      printf_FEC("W %u\r\n", *buf);
+      if (dataBytes == 1){
+//        printf_FEC("Wc %x\r\n", *buf);
+      }
       return SUCCESS;
     } else {
-      if ((call Rf1aFifo.getEncodedLen(dataBytes) + 4) > FEC_BUF_LEN){
+      if (call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen() > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
-        uint8_t k;
         uint16_t crc;
-        uint8_t* crcb = (uint8_t*)&crc;
+        uint8_t* crcb=(uint8_t*)&crc;
         for (i=0; i < dataBytes; i++){
           //would like this to be more flexible so we can change the
           //encoding.
           encodedBuf[2*i] = encoding[buf[i] >> 4];
           encodedBuf[(2*i)+1] = encoding[(buf[i] & 0x0f)];
-          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*i], 2);
+//          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*i], 2);
         }
         crc = call Crc.crc16((uint8_t*)buf, dataBytes);
-        printf_TESTBED_CRC("WC %x\r\n", crc);
-        for (k=0; k < sizeof(uint16_t); k++){
-          encodedBuf[(2*(i+k))] = encoding[crcb[k]>>4];
-          encodedBuf[(2*(i+k))+1] = encoding[crcb[k] & 0x0f];
-          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*(i+k)], 2);
+//        printf_FEC("WC %x\r\n", crc);
+        for (i=0; i < sizeof(uint16_t); i++){
+          //would like this to be more flexible so we can change the
+          //encoding.
+          encodedBuf[call Rf1aFifo.getEncodedLen(dataBytes)+(2*i)] = encoding[crcb[i]>>4];
+          encodedBuf[call Rf1aFifo.getEncodedLen(dataBytes)+(2*i)+1] = encoding[crcb[i] & 0x0f];
+//          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &encodedBuf[2*(i+k)], 2);
         }
-
-//        call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, encodedBuf, 
-//          call Rf1aFifo.getEncodedLen(dataBytes));
+        call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, encodedBuf, 
+          call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
+        
         return SUCCESS;
       }
     }
   }
-  
+ 
 }

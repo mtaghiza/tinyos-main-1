@@ -38,8 +38,6 @@ module DoubleRf1aFifoP{
 //        printf_FEC("[ ");
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, encodedBuf,
           call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
-        //TODO: should check for invalid encodings here? or just plan
-        //on putting in a checksum
         for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen(); i++){
 //          printf_FEC("%02X ", encodedBuf[i]);
           if (i&0x01){
