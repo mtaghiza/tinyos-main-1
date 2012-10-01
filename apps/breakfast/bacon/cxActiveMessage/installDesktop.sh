@@ -7,8 +7,6 @@ debugScale=4UL
 
 rootSender=0
 rootDest=1
-fecEnabled=0
-fecHamming74=1
 
 #radio logging
 rl=0
@@ -72,13 +70,15 @@ cxForwarderSelection=0
 cxSniffEnabled=0
 cxFixedLen=0
 maxAnnouncedSlots=0
+fecEnabled=0
+fecHamming74=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection"
-"cxSniffEnabled" "cxFixedLen" "maxAnnouncedSlots")
+"cxSniffEnabled" "cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74")
 
 while [ $# -gt 1 ]
 do
