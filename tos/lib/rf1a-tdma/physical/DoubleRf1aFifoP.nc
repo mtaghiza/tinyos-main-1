@@ -30,14 +30,14 @@ module DoubleRf1aFifoP{
 //      printf_FEC("R %u %x\r\n", dataBytes, *buf);
       return SUCCESS;
     } else {
-      if (call Rf1aFifo.getEncodedLen(dataBytes) > FEC_BUF_LEN){
+      if (call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen() > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
         error_t ret = SUCCESS;
 //        printf_FEC("[ ");
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, encodedBuf,
-          dataBytes*2 + call Rf1aFifo.getCrcLen());
+          call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
         //TODO: should check for invalid encodings here? or just plan
         //on putting in a checksum
         for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen(); i++){
@@ -80,7 +80,7 @@ module DoubleRf1aFifoP{
       }
       return SUCCESS;
     } else {
-      if (call Rf1aFifo.getEncodedLen(dataBytes) > FEC_BUF_LEN){
+      if (call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen() > FEC_BUF_LEN){
         return ESIZE;
       }else{
         uint8_t i;
@@ -97,8 +97,8 @@ module DoubleRf1aFifoP{
         for (i=0; i < sizeof(uint16_t); i++){
           //would like this to be more flexible so we can change the
           //encoding.
-          encodedBuf[(2*dataBytes)+2*i] = (dummyLookup[0]>>4) + crcb[i];
-          encodedBuf[(2*dataBytes)+(2*i)+1] = (dummyLookup[0]&0x0f) + crcb[i];
+          encodedBuf[call Rf1aFifo.getEncodedLen(dataBytes)+2*i] = (dummyLookup[0]>>4) + crcb[i];
+          encodedBuf[call Rf1aFifo.getEncodedLen(dataBytes)+(2*i)+1] = (dummyLookup[0]&0x0f) + crcb[i];
         }
         call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, encodedBuf, 
           call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
