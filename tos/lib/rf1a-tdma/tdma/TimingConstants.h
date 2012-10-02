@@ -24,7 +24,7 @@
     (DEFAULT_TDMA_FRAME_LEN*125UL)/100UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/125UL,
     (DEFAULT_TDMA_FRAME_LEN*125UL)/175UL,
-    (DEFAULT_TDMA_FRAME_LEN*125UL)/250UL, 
+    (DEFAULT_TDMA_FRAME_LEN*125UL)/125UL, 
   };
 
   const uint32_t fwCheckLens[NUM_SRS] = {
@@ -34,7 +34,7 @@
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/100UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/125UL,
     (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/175UL,
-    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/250UL, 
+    (DEFAULT_TDMA_FW_CHECK_LEN*125UL)/125UL, 
   };
   
   //These are the delays (in 6.5 MHz ticks) between the SFD
@@ -54,7 +54,7 @@
     //175 1.62371794875365e-05 105.541666669  odd
     0,
     //250 1.36229016783686e-05 88.5488609094
-    0,
+    89,
   };
   
   //  the interrupt handling time appears to be very
@@ -83,7 +83,7 @@
     //175 2482    0.000381797237110289
     0,
     //250 1781    0.000274057315233786
-    0,
+    1723,
   };
 
   const int32_t originDelays[NUM_SRS] = {

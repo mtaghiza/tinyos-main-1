@@ -6,72 +6,69 @@ module SRFS7_915_GFSK_125K_SENS_HC{
 } implementation{
   enum{ SR_COUNT = unique(SR_COUNT_KEY)};
   const rf1a_config_t cfg = {
-    iocfg2:  0x29,   // IOCFG2    GDO2 output pin configuration.
-    //iocfg1 default from Rf1aConfigure.h 
-    iocfg1:  0x06,   // GDO1: synch rx/tx
-    iocfg0:  0x06,   // IOCFG0D   GDO0 output pin configuration. Refer to SmartRF® Studio User Manual for detailed pseudo register explanation.
-    fifothr: 0x07,   // FIFOTHR   RXFIFO and TXFIFO thresholds.
-    //sync1 default from Rf1aConfigure.h 
+    iocfg2:  0x29,   
+    
+    iocfg1:  0x06,   
+    iocfg0:  0x06,   
+    fifothr: 0x07,   
+    
     sync1:   0xd3,
-    //sync0 default from Rf1aConfigure.h 
+    
     sync0:   0x91,
-    //TODO: this does get set in sw, right?
-    pktlen:  0x3D,    // PKTLEN    Packet length.
-    pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
-    pktctrl0:0x05,   // PKTCTRL0  Packet automation control.
-    //TODO: this does get set in sw, right?
-    addr:    0x00,   // ADDR      Device address.
-    //TODO: this does get set in sw, right?
-    0x00,   // CHANNR    Channel number.
-    fsctrl1: 0x0C,   // FSCTRL1   Frequency synthesizer control.
-    fsctrl0: 0x00,   // FSCTRL0   Frequency synthesizer control.
-    freq2:   0x23,   // FREQ2     Frequency control word, high byte.
-    freq1:   0x31,   // FREQ1     Frequency control word, middle byte.
-    freq0:   0x3B,   // FREQ0     Frequency control word, low byte.
-    mdmcfg4: 0x2C,   // MDMCFG4   Modem configuration.
-    mdmcfg3: 0x3B,   // MDMCFG3   Modem configuration.
-    mdmcfg2: 0x03,   // MDMCFG2   Modem configuration.
-    mdmcfg1: 0x22,   // MDMCFG1   Modem configuration.
-    mdmcfg0: 0xF8,   // MDMCFG0   Modem configuration.
-    deviatn: 0x62,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
-    //mcsm2 default from Rf1aConfigure.h
+    pktlen:  0x3D,    
+    pktctrl1:0x04,   
+    pktctrl0:0x05,   
+    addr:    0x00,   
+    channr:   0x00,   
+    fsctrl1: 0x0C,   
+    fsctrl0: 0x00,   
+    freq2:   0x23,   
+    freq1:   0x31,   
+    freq0:   0x3B,   
+    mdmcfg4: 0x2C,   
+    mdmcfg3: 0x3B,   
+    mdmcfg2: 0x03,   
+    mdmcfg1: 0x22,   
+    mdmcfg0: 0xF8,   
+    deviatn: 0x62,   
+    
     mcsm2:   0x07,
-    //mcsm1 default from Rf1aConfigure.h
+    
     mcsm1:   0x00,
     #ifndef RF1A_AUTOCAL
     #define RF1A_AUTOCAL 0
     #endif
     #if RF1A_AUTOCAL == 1
-    mcsm0:   0x10,   // MCSM0     Main Radio Control State Machine configuration.
+    mcsm0:   0x10,   
     #else
-    mcsm0:   0x00,   // MCSM0     Main Radio Control State Machine configuration.
+    mcsm0:   0x00,   
     #endif
-    foccfg:  0x1D,   // FOCCFG    Frequency Offset Compensation Configuration.
-    bscfg:   0x1C,   // BSCFG     Bit synchronization Configuration.
-    agcctrl2:0xC7,   // AGCCTRL2  AGC control.
-    agcctrl1:0x00,   // AGCCTRL1  AGC control.
-    agcctrl0:0xB0,   // AGCCTRL0  AGC control.
-    //worevt1 default from Rf1aConfigure.h
+    foccfg:  0x1D,   
+    bscfg:   0x1C,   
+    agcctrl2:0xC7,   
+    agcctrl1:0x00,   
+    agcctrl0:0xB0,   
+    
     worevt1: 0x80,
-    //worevt0 default from Rf1aConfigure.h
+    
     worevt0: 0x00,
-    //worctrl default from Rf1aConfigure.h
+    
     worctrl: 0xf0,
-    frend1:  0xB6,   // FREND1    Front end RX configuration.
-    frend0:  0x10,   // FREND0    Front end TX configuration.
-    fscal3:  0xEA,   // FSCAL3    Frequency synthesizer calibration.
-    fscal2:  0x2A,   // FSCAL2    Frequency synthesizer calibration.
-    fscal1:  0x00,   // FSCAL1    Frequency synthesizer calibration.
-    fscal0:  0x1F,   // FSCAL0    Frequency synthesizer calibration.
-    //_rcctrl1: reserved, skipped in Rf1aConfigure.h
-    //_rcctrl0: reserved, skipped in Rf1aConfigure.h
-    fstest:  0x59,   // FSTEST    Frequency synthesizer calibration.
-    //ptest: reserved, skipped in Rf1aConfigure.h
-    //agctest: reserved, skipped in Rf1aConfigure.h
-    test2:   0x88,   // TEST2     Various test settings.
-    test1:   0x31,   // TEST1     Various test settings.
-    test0:   0x09,   // TEST0     Various test settings.
-    //patable (just patable0 is used), default from Rf1aConfigure.h
+    frend1:  0xB6,   
+    frend0:  0x10,   
+    fscal3:  0xEA,   
+    fscal2:  0x2A,   
+    fscal1:  0x00,   
+    fscal0:  0x1F,   
+    
+    
+    fstest:  0x59,   
+    
+    
+    test2:   0x88,   
+    test1:   0x31,   
+    test0:   0x09,   
+    
     #ifndef PATABLE0_SETTING
     patable: {0xc6},
     #else
