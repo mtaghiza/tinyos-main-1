@@ -6,8 +6,6 @@ debugScale=4UL
 
 rootSender=0
 rootDest=1
-fecEnabled=0
-fecHamming74=1
 
 #radio logging
 rl=0
@@ -71,13 +69,19 @@ cxForwarderSelection=0
 installBlink=1
 cxRoutingTableEntries=16
 rssiThreshold=-100
+cxSniffEnabled=0
+cxFixedLen=0
+maxAnnouncedSlots=0
+fecEnabled=0
+fecHamming74=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink"
-"cxRoutingTableEntries" "rssiThreshold")
+"cxRoutingTableEntries" "rssiThreshold" "cxSniffEnabled" 
+"cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74")
 
 echo "Provided args: $@"
 
@@ -150,9 +154,8 @@ else
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection CX_FORWARDER_SELECTION=$cxForwarderSelection"
-set +x
-phyOptionsCommon="TEST_CHANNEL=$channel RSSI_THRESHOLD=$rssiThreshold"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection CX_FORWARDER_SELECTION=$cxForwarderSelection MAX_ANNOUNCED_SLOTS=$maxAnnouncedSlots"
+phyOptionsCommon="TEST_CHANNEL=$channel RSSI_THRESHOLD=$rssiThreshold CX_SNIFF_ENABLED=$cxSniffEnabled CX_FIXED_LEN=$cxFixedLen"
 phyOptionsLeaf="PATABLE0_SETTING=$leafTxp"
 phyOptionsRoot="PATABLE0_SETTING=$rootTxp"
 
