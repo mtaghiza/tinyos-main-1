@@ -1316,18 +1316,29 @@ generic module HplMsp430Rf1aP () @safe() {
               avail = receiveCountAvailable_(); //0x7f & call Rf1aIf.readRegister(RXBYTES);
               readTimeout --;
 //              printf("A' %u %u\r\n", avail, readTimeout);
-            }while (2 != avail && readTimeout); 
+            }while (2 > avail && readTimeout); 
 //            printf_FEC("A. %u\r\n", avail);
             if (! readTimeout){
               printf("!COULD NOT READ RX METADATA: %u avail\r\n", avail);
               rx_rssi_raw = 0x00;
               rx_lqi_raw = 0x00;
             }else{
+              //TODO: if we see weird RSSI/LQI figures, then this
+              //could indicate that we are in the case where extra
+              //data is left in the buffer, and we read out something
+              //other than the last two bytes (a.k.a. the status
+              //bytes)
               //FEC: not encoded
               call Rf1aFifo.readRXFIFO(&rx_rssi_raw,
                 sizeof(rx_rssi_raw), TRUE);
               call Rf1aFifo.readRXFIFO(&rx_lqi_raw, sizeof(rx_lqi_raw),
                 TRUE);
+            }
+            //flush out the rest of the RXFIFO if there's anything
+            //left.
+            while (receiveCountAvailable_()){
+              uint8_t garbage;
+              call Rf1aFifo.readRXFIFO(&garbage, sizeof(garbage), TRUE);
             }
             //crcError is FAIL if some codewords had detectable but
             //uncorrected bit errors. 
