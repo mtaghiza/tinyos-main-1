@@ -68,6 +68,7 @@ cxSniffEnabled=0
 cxFixedLen=0
 maxAnnouncedSlots=0
 fecEnabled=0
+minimalPacket=1
 fecHamming74=1
 debugConfig=0
 
@@ -77,7 +78,7 @@ settingVars=( "testId" "testLabel" "sr" "channel" "requestAck"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "fwdDropRate" "cxForwarderSelection" "receiverMap2" "cxSniffEnabled" 
 "cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74"
-"debugConfig")
+"debugConfig" "minimalPacket")
 
 while [ $# -gt 1 ]
 do
@@ -148,7 +149,7 @@ loggingOptions="CX_RADIO_LOGGING=$rl DEBUG_RADIO_STATS=$rs"
 debugOptions="DEBUG_F_STATE=0 DEBUG_SF_STATE=0  DEBUG_F_TESTBED=0 DEBUG_SF_SV=$sv DEBUG_F_SV=$sv DEBUG_SF_TESTBED_PR=$pr DEBUG_SF_ROUTE=$sfr DEBUG_TESTBED_CRC=$crc DEBUG_AODV_CLEAR=$aodvClear DEBUG_TEST_QUEUE=1 DEBUG_RXREADY_ERROR=$rxr DEBUG_PACKET=$debugPacket DEBUG_CONFIG=$debugConfig DEBUG_TDMA_SS=$debugSS DEBUG_FEC=$debugFEC DEBUG_SF_RX=$debugSFRX DEBUG_TESTBED_RESOURCE=$debugTestbedResource DEBUG_TESTBED=$debugTestbed DEBUG_LINK_RXTX=$debugLinkRXTX DEBUG_F_CLEARTIME=$debugFCleartime DEBUG_SF_CLEARTIME=$debugSFCleartime DEBUG_DUP=$debugDup DEBUG_F_SCHED=$debugFSched DEBUG_ROUTING_TABLE=$debugRoutingTable DEBUG_UB=$debugUB" 
 
 #remove extraneous header fields if FEC is enabled
-testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74 FWD_DROP_RATE=$fwdDropRate MINIMAL_PACKET=$fecEnabled"
+testSettings="QUEUE_THRESHOLD=$queueThreshold TEST_IPI=$targetIpi CX_ADAPTIVE_SR=0 RF1A_FEC_ENABLED=$fecEnabled FEC_HAMMING74=$fecHamming74 FWD_DROP_RATE=$fwdDropRate MINIMAL_PACKET=$minimalPacket"
 miscSettings="ENABLE_SKEW_CORRECTION=0 TEST_DESC=$testDesc"
 
 commonOptions="$scheduleOptions $phyOptionsCommon $memoryOptions $loggingOptions $debugOptions $testSettings $miscSettings"

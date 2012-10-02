@@ -48,21 +48,19 @@ module TestP {
   uint8_t rx_len;
   bool sending;
 
-  #if MINIMAL_PACKET == 1
-  typedef nx_struct test_packet_t{
-    nx_uint32_t sn;
-  } test_packet_t;
+  #if RF1A_FEC_ENABLED == 1
+  #define PADDING_LEN 0
   #else
-  typedef nx_struct test_packet_t{
-    nx_uint8_t a;
-    nx_uint8_t b;
-    nx_uint8_t c;
-    nx_uint8_t d;
-    nx_uint8_t e;
-    nx_uint8_t f;
-    nx_uint32_t sn;
-  } test_packet_t;
+  //padding length: equal to the length of the FEC-protected portion
+  //of the packet (headers, 4-byte sn, encoded(2-byte CRC))
+  #define PADDING_LEN (sizeof(ieee154_header_t) + sizeof(cx_header_t) + sizeof(rf1a_nalp_am_t)  + sizeof(nx_uint32_t) + 2*sizeof(uint16_t))
   #endif
+
+  typedef nx_struct test_packet_t{
+    nx_uint32_t sn;
+    nx_uint8_t padding[PADDING_LEN];
+  } test_packet_t;
+
   uint16_t packetQueue = 0;
   
   task void sendTask();
@@ -147,19 +145,15 @@ module TestP {
 
   task void sendTask(){
     if (!sending){
+      uint8_t i;
       error_t error;
       test_packet_t* pl = call Packet.getPayload(tx_msg,
         sizeof(test_packet_t));
-      #if MINIMAL_PACKET == 1
-      #else
-      pl -> a = 0xaa;
-      pl -> b = 0xbb;
-      pl -> c = 0xcc;
-      pl -> d = 0xdd;
-      pl -> e = 0xee;
-      pl -> f = 0xff;
-      #endif
       pl -> sn ++;//= (1+TOS_NODE_ID);
+      for (i =0 ; i < PADDING_LEN; i++){
+        pl->padding[i] = 0xDC;
+      }
+
       #if TEST_REQUEST_ACK == 1
       call PacketAcknowledgements.requestAck(tx_msg);
       #endif
