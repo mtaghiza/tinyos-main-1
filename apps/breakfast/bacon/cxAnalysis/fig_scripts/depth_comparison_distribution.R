@@ -90,6 +90,24 @@ if (legendSettings == 'thresh'){
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
   )
 }
+if (legendSettings == 'fec'){
+  plotTitle <- "Distance v. FEC"
+  meanSDs <- aggregate(sd~label, data=agg, FUN=mean)
+
+  agg$label <- factor(agg$label, levels=sort(unique(as.numeric(agg$label))))
+  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
+    + geom_point(position=pd)
+    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
+#    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
+    + xlab("Node ID")
+    + ylab("Distance")
+    + ggtitle(plotTitle) 
+    + scale_colour_hue(name="FEC in use")
+    + theme_bw()
+    + theme(legend.justification=c(1,0), legend.position=c(1,0))
+  )
+}
+
 
 if (plotFile){
   g <- dev.off()

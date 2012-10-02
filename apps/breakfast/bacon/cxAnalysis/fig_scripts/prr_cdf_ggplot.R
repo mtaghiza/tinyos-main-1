@@ -61,6 +61,11 @@ aggByNode <- ddply(x, .(label, node), summarise,
   prrSD=sd(prr)
 )
 
+aggByLabel <- ddply(aggByNode, .(label), summarize,
+  medOfMed=median(prr),
+  meanOfMed=mean(prr)
+)
+print(aggByLabel)
 #What this next thing means:
 #  group by label
 #  prr = list of unique PRRs for group
