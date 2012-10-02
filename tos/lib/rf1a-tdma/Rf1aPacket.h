@@ -51,7 +51,12 @@
 #define _Rf1aPacket_H_
 
 #include "Ieee154.h"
+
+#if MINIMAL_PACKET == 1
+#include "MinimalIeee154PacketLayer.h"
+#else
 #include "Ieee154PacketLayer.h"
+#endif
 
 enum {
   /** NALP code for ActiveMessage type field */
@@ -61,11 +66,17 @@ enum {
 /** Base header is the stock IEEE 802.15.4 MAC header (MHR) */
 typedef ieee154_header_t rf1a_ieee154_t;
 
+#if MINIMAL_PACKET == 1
+typedef nx_struct rf1a_nalp_am_t {
+  nxle_uint8_t am_type;
+} rf1a_nalp_am_t;
+#else
 /** ActiveMessage packets add a NALP header */
 typedef nx_struct rf1a_nalp_am_t {
   nxle_uint8_t nalp_tinyos;
   nxle_uint8_t am_type;
 } rf1a_nalp_am_t;
+#endif
 
 /** Metadata common to all packet types */
 typedef nx_struct rf1a_metadata_t {
@@ -85,9 +96,13 @@ typedef nx_struct rf1a_metadata_t {
  * to 255 bytes, to reduce overhead we default to a physical frame
  * limit of 127 bytes, less the size of the fixed header.  Beware that
  * rf1a_nalp_am_t headers cut into this payload space. */
-//DC: reduced this to 63-header: this ensures that we can fit the
-//entire packet in the radio's FIFOs.
-#define TOSH_DATA_LENGTH (63 - sizeof(rf1a_ieee154_t))
+#if RF1A_FEC_ENABLED == 1
+  #define TOSH_DATA_LENGTH (31 - 2*sizeof(rf1a_ieee154_t))
+#else
+  //DC: reduced this to 63-header: this ensures that we can fit the
+  //entire packet in the radio's FIFOs.
+  #define TOSH_DATA_LENGTH (63 - sizeof(rf1a_ieee154_t))
+#endif
 #endif // TOSH_DATA_LENGTH
 
 #endif _Rf1aPacket_H_

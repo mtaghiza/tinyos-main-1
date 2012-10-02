@@ -140,12 +140,20 @@ module CXScopedFloodP{
       printf("%2X ", dispMsg->header[i]); 
     }
     printf("\r\n");
+    #if MINIMAL_PACKET == 1
+    printf(" 15.4 fcf: %x dsn: %x d: %x s: %x\r\n",
+      header154->fcf,
+      header154->dsn,
+      header154->dest,
+      header154->src);
+    #else
     printf(" 15.4 fcf: %x dsn: %x dp: %x d: %x s: %x\r\n",
       header154->fcf,
       header154->dsn,
       header154->destpan,
       header154->dest,
       header154->src);
+    #endif
 
     printf(" Raw CX   ");
     for (i=0; i< sizeof(cx_header_t); i++){

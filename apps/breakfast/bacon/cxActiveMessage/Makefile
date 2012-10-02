@@ -75,6 +75,9 @@ CFLAGS+=-DCX_FORWARDER_SELECTION=$(CX_FORWARDER_SELECTION)
 RSSI_THRESHOLD?=-100
 CFLAGS+=-DRSSI_THRESHOLD=$(RSSI_THRESHOLD)
 
+MINIMAL_PACKET?=0
+CFLAGS+=-DMINIMAL_PACKET=$(MINIMAL_PACKET)
+
 #dbm patable0
 # -30 0x03
 # -12 0x25
@@ -99,6 +102,7 @@ CFLAGS += -I../../util
 CFLAGS += -I../../util/stackGuard
 CFLAGS += -I../../util/crc
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/ieee154
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/schedule
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/link

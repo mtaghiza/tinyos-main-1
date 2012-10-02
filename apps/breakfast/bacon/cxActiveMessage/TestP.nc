@@ -48,6 +48,11 @@ module TestP {
   uint8_t rx_len;
   bool sending;
 
+  #if MINIMAL_PACKET == 1
+  typedef nx_struct test_packet_t{
+    nx_uint32_t sn;
+  } test_packet_t;
+  #else
   typedef nx_struct test_packet_t{
     nx_uint8_t a;
     nx_uint8_t b;
@@ -57,7 +62,7 @@ module TestP {
     nx_uint8_t f;
     nx_uint32_t sn;
   } test_packet_t;
-
+  #endif
   uint16_t packetQueue = 0;
   
   task void sendTask();
@@ -145,12 +150,15 @@ module TestP {
       error_t error;
       test_packet_t* pl = call Packet.getPayload(tx_msg,
         sizeof(test_packet_t));
+      #if MINIMAL_PACKET == 1
+      #else
       pl -> a = 0xaa;
       pl -> b = 0xbb;
       pl -> c = 0xcc;
       pl -> d = 0xdd;
       pl -> e = 0xee;
       pl -> f = 0xff;
+      #endif
       pl -> sn ++;//= (1+TOS_NODE_ID);
       #if TEST_REQUEST_ACK == 1
       call PacketAcknowledgements.requestAck(tx_msg);
