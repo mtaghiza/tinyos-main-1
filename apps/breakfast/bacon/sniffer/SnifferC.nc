@@ -14,7 +14,8 @@ implementation {
   #elif SYMBOLRATE == 125
   components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
   #elif SYMBOLRATE == 250
-  components Rf1aConfig250KC as Rf1aSettings;
+  components SRFS7_915_GFSK_250K_SENS_HC as Rf1aSettings;
+  //components Rf1aConfig250KC as Rf1aSettings;
   #else
   #error Unrecognized symbol rate
   #endif

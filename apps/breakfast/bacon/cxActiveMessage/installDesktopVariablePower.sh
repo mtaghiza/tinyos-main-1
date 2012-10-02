@@ -27,7 +27,6 @@ sv=0
 pr=0
 sfr=0
 crc=0
-debugConfig=0
 txAodvState=0
 rxAodvState=0
 aodvClear=0
@@ -49,11 +48,11 @@ sr=125
 channel=0
 requestAck=0
 senderDest=65535UL
-senderMap=dmap.none
-receiverMap=dmap.1
-receiverMap2=dmap.none
-rootMap=dmap.0
-snifferMap=dmap.none
+senderMap=dmap/dmap.none
+receiverMap=dmap/dmap.1
+receiverMap2=dmap/dmap.none
+rootMap=dmap/dmap.0
+snifferMap=dmap/dmap.none
 targetIpi=1024UL
 queueThreshold=10
 maxDepth=5
@@ -70,13 +69,15 @@ cxFixedLen=0
 maxAnnouncedSlots=0
 fecEnabled=0
 fecHamming74=1
+debugConfig=0
 
 settingVars=( "testId" "testLabel" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "fwdDropRate" "cxForwarderSelection" "receiverMap2" "cxSniffEnabled" 
-"cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74")
+"cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74"
+"debugConfig")
 
 while [ $# -gt 1 ]
 do
@@ -221,7 +222,7 @@ then
     ref=$(echo $line | cut -d ' ' -f 1)
     id=$(echo $line | cut -d ' ' -f 2)
     set -x
-    make bacon2 TEST_CHANNEL=$channel install,$id bsl,ref,$ref
+    make bacon2 TEST_CHANNEL=$channel SYMBOLRATE=$sr install,$id bsl,ref,$ref
     set +x
   done
   popd

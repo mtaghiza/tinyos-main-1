@@ -39,7 +39,14 @@ const rf1a_config_t this_config = {
   deviatn: 0x62,
   mcsm2: 0x07,
   mcsm1: 0x00,
+  #ifndef RF1A_AUTOCAL
+  #define RF1A_AUTOCAL 0
+  #endif
+  #if RF1A_AUTOCAL == 1
+  mcsm0: 0x10,
+  #else
   mcsm0: 0x00,
+  #endif
   foccfg: 0x1D,
   bscfg: 0x1C,
   agcctrl2: 0xC7,
