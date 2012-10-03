@@ -110,6 +110,7 @@ module MasterSchedulerStaticP {
   }
   
   command error_t SplitControl.start(){
+    uint8_t i;
     schedule = call AnnounceSend.getPayload(schedule_msg,
       sizeof(cx_schedule_t));
     schedule->scheduleNum++;
@@ -119,6 +120,9 @@ module MasterSchedulerStaticP {
     setFramesPerSlot(schedule, SCHED_FRAMES_PER_SLOT);
     setMaxRetransmit(schedule, SCHED_MAX_RETRANSMIT);
     totalFrames = getFramesPerSlot(schedule) * getSlots(schedule);
+    for (i=0; i< SCHED_PADDING_LEN; i++){
+      schedule->padding[i] = 0xDC;
+    }
 
     return call SubSplitControl.start();
   }

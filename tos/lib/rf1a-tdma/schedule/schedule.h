@@ -1,6 +1,9 @@
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
+#include "Rf1aPacket.h"
+#include "CX.h"
+
 #define AM_ID_LEAF_SCHEDULE 0xE0
 #define AM_ID_LEAF_REQUEST 0xE1
 #define AM_ID_LEAF_RESPONSE 0xE2
@@ -59,10 +62,16 @@ typedef nx_struct cx_schedule_t {
   nx_uint16_t availableSlots[MAX_ANNOUNCED_SLOTS]; //the free slots
 } cx_schedule_t;
 #else
+#if RF1A_FEC_ENABLED == 1
+#define SCHED_PADDING_LEN 0
+#else
+#define SCHED_PADDING_LEN (sizeof(ieee154_header_t) + sizeof(cx_header_t) + sizeof(rf1a_nalp_am_t) + sizeof(nx_uint8_t) + 2*sizeof(uint16_t))
+#endif
 typedef nx_struct cx_schedule_t {
   nx_uint8_t scheduleNum;  //incremented if any parameters change
                            // which would result in a synch loss were
                            // they not received
+  nx_uint8_t padding[SCHED_PADDING_LEN];
 } cx_schedule_t;
 #endif
 
