@@ -1,6 +1,8 @@
 #include "Rf1aConfigure.h"
 #include "CXConfig.h"
-
+#ifndef TEST_CHANNEL
+#define TEST_CHANNEL 0x00
+#endif
 module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
 } implementation{
@@ -19,7 +21,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     pktctrl1:0x04,   
     pktctrl0:0x05,   
     addr:    0x00,   
-    channr:   0x00,   
+    channr:  TEST_CHANNEL,   
     fsctrl1: 0x0C,   
     fsctrl0: 0x00,   
     freq2:   0x23,   

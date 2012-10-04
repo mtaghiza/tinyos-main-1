@@ -67,6 +67,9 @@ implementation {
   #elif TEST_SR == 125
   //components Rf1aConfig125KC as Rf1aSettings;
   components SRFS7_915_GFSK_125K_SENS_HC as Rf1aSettings;
+  #elif TEST_SR == 250
+  //components Rf1aConfig125KC as Rf1aSettings;
+  components SRFS7_915_GFSK_250K_SENS_HC as Rf1aSettings;
   #else
   //TODO: other symbol rates
   #error Unknown symbol rate
