@@ -2,16 +2,17 @@
 sd=fig_scripts
 outDir=output/desktop_capture_1
 dataDir=data/cx/desktop_capture_1/conditionalPrr_db
-berDataDir=data/cx/desktop_capture_1/ber_db
+berDataDir=data/cx/desktop_capture_1/db
+fecBerDataDir=data/cx/fec/db
 
 berOptions=""
-for fn in $berDataDir/*
+for fn in $berDataDir/* $fecBerDataDir/*fec1*
 do
 
   #dmap.high.0.dmap.low.1.1.ts.db
 
   bn=$(basename $fn)
-  
+  fec=$(echo "$bn" | grep -c 'fec1')
   #should be "high" or "none"
   varSender=$(echo $bn | cut -d '.' -f 2)
   if [ "$varSender" == "high" ]
@@ -39,7 +40,7 @@ do
     fi
   fi
   
-  berOptions="$berOptions -f $fn $(($numVarSenders + $numOtherSenders)) $separation"
+  berOptions="$berOptions -f $fn $(($numVarSenders + $numOtherSenders)) $separation $fec"
 
 done
 
@@ -151,7 +152,6 @@ do
   rssi10Options="$rssi10Options -f $fn $(($numVarSenders + $numOtherSenders)) $separation"
 
 done
- 
  
 set -x
 

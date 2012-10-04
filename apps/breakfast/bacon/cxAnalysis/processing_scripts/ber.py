@@ -43,9 +43,14 @@ fixed_2 = [0xff, 0xff]
 #         end of packet, dummy)
 
 #802.15.4 header -> end of availableSlots(skipping count field)
-ref_indices = range(57)
-dec_indices = [24]
-inc_indices = [13]
+#TODO: this should be 54, but since we don't have a good method for
+# identifying bit errors in the internal CRC field (when FEC is in
+# place), we should omit it here to keep things fair.
+ref_indices = range(50)
+dec_indices = [25 - 3]
+inc_indices = [14 - 3]
+snIndex = 12 - 3
+countIndex = 14 - 3
 
 def toBytes(s):
     return [int(l+r, 16) for (l,r) in zip(s[::2], s[1::2])]
@@ -78,6 +83,7 @@ if __name__ == '__main__':
     lastB = []
     refBytes = []
     refSN = -1
+#    pdb.set_trace()
     for line in f:
         l = line.strip()
         s = l.split()[3]
@@ -86,8 +92,9 @@ if __name__ == '__main__':
         b = toBytes(s)
         if len(b) < 14:
             continue
-        sn = (b[11] << 8) + b[12]
-        count = b[13]
+        sn = (b[snIndex] << 8) + b[snIndex+1]
+        count = b[countIndex]
+#        pdb.set_trace()
         crcPassed = 1 if int(l.split()[-1]) != 0 else 0
         if crcPassed and count==1:
             for i in dec_indices:
@@ -95,6 +102,7 @@ if __name__ == '__main__':
             for i in inc_indices:
                 b[i] += (countOfInterest -1)
             refBytes = [b[i] for i in ref_indices]
+#            pdb.set_trace()
             refSN = sn
             errorTotal = 0
             print "ORIG",ts, sn
@@ -106,15 +114,18 @@ if __name__ == '__main__':
                 continue
             if sn == refSN and refBytes:
               tb = [b[i] for i in ref_indices]
+              byteErrors = [ v != refV for (v, refV) in zip(tb, rb)]
+              byteErrorCount = sum(byteErrors)
               errors = [ (v ^ refV) for (v, refV) in zip(tb, rb)]
               errorLocs = [findErrors(v) for v in errors]
               errorLocs = [ [i*8+v for v in l] for (i, l) in enumerate(errorLocs)]
+#              pdb.set_trace()
               errorLocs = reduce(lambda x,y: x+y, errorLocs, [])
               errorTotal = len(errorLocs)
               if count == countOfInterest:
                   if printLocations: 
                       for l in errorLocs:
                           print "LOC",ts,l
-                  print "BER", ts, sn, crcPassed, count, errorTotal, len(refBytes)*8
+                  print "BER", ts, sn, crcPassed, count, errorTotal, len(refBytes)*8, byteErrorCount
                   if printRaw:
                       print "RAW", ts, sn, count, ''.join('%02X'%v for v in b)
