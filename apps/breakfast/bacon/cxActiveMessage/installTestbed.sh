@@ -72,7 +72,7 @@ rssiThreshold=-100
 cxSniffEnabled=0
 cxFixedLen=0
 maxAnnouncedSlots=0
-fecEnabled=0
+fecEnabled=1
 fecHamming74=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
