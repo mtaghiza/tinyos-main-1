@@ -1296,6 +1296,10 @@ generic module HplMsp430Rf1aP () @safe() {
         //~33uS to read data
 //        printf_BF("rx %p %u\r\n", rx_pos, consume);
         //FEC: this should decode the data as we pull it out
+
+        //TODO: this will probably be an issue if the buffer is not
+        //filled when we start this process. Could spin until avail ==
+        //need
         crcError = call Rf1aFifo.readRXFIFO(rx_pos, consume, FALSE);
         rx_pos += consume;
         rx_received += consume;
@@ -1368,13 +1372,14 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Have we used up the receive buffer? */
         if (rx_pos_end == rx_pos) {
           signal_filled = TRUE;
-          received = rx_pos - rx_start;
-          rx_pos = 0;
           /* In one-shot mode, if we didn't get the whole message,
            * mark it failed. */
           if (rx_single_use && (! signal_complete)) {
+            printf("!expected %u received %u", rx_expected, rx_received);
             rx_result = ENOMEM;
           }
+          received = rx_pos - rx_start;
+          rx_pos = 0;
         }
 
       //11 uS from readBurstRegister above to end of loop
@@ -1415,6 +1420,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
     /* Repost the receive task if there's more work to be done. */
     if (need_post) {
+//      printf("REPOST\r\n");
       post receiveData_task();
     }
     //~3 uS from need_post assignment above
