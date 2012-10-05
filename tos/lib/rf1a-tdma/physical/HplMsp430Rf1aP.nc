@@ -1375,7 +1375,7 @@ generic module HplMsp430Rf1aP () @safe() {
           /* In one-shot mode, if we didn't get the whole message,
            * mark it failed. */
           if (rx_single_use && (! signal_complete)) {
-            printf("!expected %u received %u", rx_expected, rx_received);
+//            printf("!expected %u received %u", rx_expected, rx_received);
             rx_result = ENOMEM;
           }
           received = rx_pos - rx_start;
