@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "FECDebug.h"
+//#include "FECDebug.h"
 
 module DoubleRf1aFifoP{
   provides interface Rf1aFifo;

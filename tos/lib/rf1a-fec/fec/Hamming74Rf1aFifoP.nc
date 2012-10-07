@@ -1,6 +1,6 @@
 #include "hamming74.h"
 #include <stdio.h>
-#include "FECDebug.h"
+//#include "FECDebug.h"
 
 module Hamming74Rf1aFifoP{
   provides interface Rf1aFifo;
@@ -39,15 +39,15 @@ module Hamming74Rf1aFifoP{
         uint8_t i;
         uint8_t d;
         error_t ret = SUCCESS;
-        printf_FEC("[ ");
+//        printf_FEC("[ ");
         call Rf1aIf.readBurstRegister(RF_RXFIFORD, encodedBuf,
           call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen());
         for (i = 0; i < call Rf1aFifo.getEncodedLen(dataBytes) + call Rf1aFifo.getCrcLen(); i++){
           d = decoding[encodedBuf[i]];
-          printf_FEC("%02X", encodedBuf[i]);
+//          printf_FEC("%02X", encodedBuf[i]);
           if (i&0x01){
             buf[i>>1] |= d;
-            printf_FEC(" %02X\r\n", buf[i>>1]);
+//            printf_FEC(" %02X\r\n", buf[i>>1]);
           }else{
             buf[i>>1] = 0xf0&(d << 4);
           }
@@ -65,7 +65,7 @@ module Hamming74Rf1aFifoP{
             ret = FAIL;
           }
         }
-        printf_FEC("]\r\n");
+//        printf_FEC("]\r\n");
         return ret;
       }
     }
