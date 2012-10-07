@@ -24,6 +24,16 @@ generic module Rf1aFECP () {
 
   command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
       unsigned int length){
+
+//    {
+//      uint8_t i;
+//      printf("TX d %p %u [", buffer, length);
+//      for (i = 0 ; i < length; i++){
+//        printf(" %02X", buffer[i]);
+//      }
+//      printf(" ]\r\n");
+//    }
+
     if (! sendOutstanding){
       error_t err;
       uint8_t encodedLen;
@@ -33,6 +43,15 @@ generic module Rf1aFECP () {
       *((uint16_t*)(&buffer[length])) = crc;
       //encode to new buffer and get encoded length
       encodedLen = call FEC.encode(buffer, txEncoded, length + sizeof(crc));
+//      {
+//        uint8_t i;
+//        printf("TX e %p %u [", txEncoded, encodedLen);
+//        for (i = 0 ; i < encodedLen; i++){
+//          printf(" %02X", txEncoded[i]);
+//        }
+//        printf(" ]\r\n");
+//        printf("CRC c: %x\r\n", crc);
+//      }
       //pass it down
       err  = call SubRf1aPhysical.send[client](txEncoded, encodedLen);
       if (err == SUCCESS){
@@ -46,6 +65,7 @@ generic module Rf1aFECP () {
 
   async event void SubRf1aPhysical.sendDone[uint8_t client] (int result){
     sendOutstanding = FALSE;
+//    printf("TXD %x\r\n", result);
     signal Rf1aPhysical.sendDone[client](result);
   }
 
@@ -67,16 +87,33 @@ generic module Rf1aFECP () {
         decodedPayloadLen);
       uint16_t decodedCrc = *((uint16_t*)(&rxBuf[decodedPayloadLen]));
       uint8_t* rxBufTmp = rxBuf;
-
+//      {
+//        uint8_t i;
+//        printf("RX e %p %u [", buffer, count);
+//        for (i=0; i < count; i++){
+//          printf(" %02X", buffer[i]);
+//        }
+//        printf(" ]\r\n");
+//      }
+//      {
+//        uint8_t i;
+//        printf("RX d %p %u [", rxBufTmp, decodedLen);
+//        for (i=0; i < decodedLen; i++){
+//          printf(" %02X", rxBufTmp[i]);
+//        }
+//        printf(" ]\r\n");
+//      }
       //override crcPassed metadata- store result in this
       //component and intercept storeMetadata call 
       if (decodedCrc != computedCrc){
+//        printf("crcD %x != %x \r\n", decodedCrc, computedCrc);
         lastCrcPassed = FALSE;
       }else{
+//        printf("crcD %x == %x \r\n", decodedCrc, computedCrc);
         lastCrcPassed = TRUE;
       }
       rxBuf = NULL;
-      signal Rf1aPhysical.receiveDone[client](rxBufTmp, count, result);
+      signal Rf1aPhysical.receiveDone[client](rxBufTmp, decodedLen, result);
     }else{
       //TODO: what the hell happened?
     }

@@ -9,7 +9,11 @@ generic configuration Rf1aFECC () {
   components CC430CRCC;
 
   //TODO: switch between encodings
+  #if RF1A_FEC_ENABLED == 1
+  components Hamming74FECC as FEC;
+  #else
   components DummyFECC as FEC;
+  #endif
 
   Rf1aFECP.FEC -> FEC;
 
