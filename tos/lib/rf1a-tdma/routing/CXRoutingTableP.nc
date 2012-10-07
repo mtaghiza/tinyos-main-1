@@ -13,12 +13,12 @@ generic module CXRoutingTableP(uint8_t numEntries){
 
   task void nextDumpTask(){
     cx_route_entry_t* re;
-    printf_TMP("# INS RT[%d] %d->%d = %d (%d %d) ", 
+    printf("# INS RT[%d] %d->%d = %d (%d %d) ", 
       curDump, rt[curDump].n0, rt[curDump].n1, 
       rt[curDump].distance, rt[curDump].used, rt[curDump].pinned);
-    printf_TMP(" lu: %d", 
+    printf(" lu: %d", 
       call CXRoutingTable.selectionDistance(rt[curDump].n0, rt[curDump].n1, FALSE));
-    printf_TMP(" rev: %d \r\n", 
+    printf(" rev: %d \r\n", 
       call CXRoutingTable.selectionDistance(rt[curDump].n1, rt[curDump].n0, TRUE));
   }
 

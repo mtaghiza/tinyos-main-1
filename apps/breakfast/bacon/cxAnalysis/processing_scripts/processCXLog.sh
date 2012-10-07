@@ -321,20 +321,29 @@ CREATE TABLE RADIO_STATS_RAW (
 --  more time than has elapsed according to testbed and register an
 --  adjustment of -0x100000000 ticks to all succeeding measurements on
 --  that counter
+--  
+-- So we find cases where the ticks recorded reflect that more time
+-- has elapsed than timestamps indicate, compute how many rollovers
+-- appear to have occurred (cast/+1 is because of a lack of ceil..),
+-- and then use the rollover time in ticks to compensate.
 DROP TABLE IF EXISTS radio_stats_adjustment;
 CREATE TABLE radio_stats_adjustment
 AS
-  SELECT 
-    l.node, 
-    r.sn, 
-    l.state, 
-    -4294967296 as adjustment
-  FROM radio_stats_raw l 
-  JOIN radio_stats_raw r 
-    ON l.node=r.node 
-    AND l.state=r.state 
-    AND l.sn +1 = r.sn
-  WHERE (r.total - l.total)/(6.5e6) > (r.ts - l.ts);
+  SELECT *, -4294967296 * (1 + cast ( (elapsedTicks-elapsedUnix)*(6.5e6)/4294967296 as
+  integer)) as adjustment FROM (
+    SELECT 
+      l.node, 
+      r.sn, 
+      l.state, 
+      (r.total-l.total)/(6.5e6) as elapsedTicks,
+      r.ts-l.ts as elapsedUnix
+    FROM radio_stats_raw l 
+    JOIN radio_stats_raw r 
+      ON l.node=r.node 
+      AND l.state=r.state 
+      AND l.sn +1 = r.sn
+    WHERE (r.total - l.total)/(6.5e6) > (r.ts - l.ts + 30)
+  ) x;
 
 --Now accumulate the adjustments on the raw table.
 DROP TABLE IF EXISTS radio_stats_adjusted;

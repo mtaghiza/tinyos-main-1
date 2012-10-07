@@ -86,7 +86,9 @@ CREATE TABLE RAW (
   ts REAL,
   sn INTEGER,
   cnt INTEGER,
-  contents TEXT);
+  contents TEXT,
+  rssi INTEGER,
+  lqi INTEGER);
 .import $raw RAW
 
 --remove first and last minute of data (inconsistent logging/startup)

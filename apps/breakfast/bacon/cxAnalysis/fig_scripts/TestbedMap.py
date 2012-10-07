@@ -118,6 +118,7 @@ class SingleTXDepth(TestbedMap):
     def __init__(self, root, dbFile, sr, txp, packetLen,
           prr_threshold=0.0, rssi_threshold=-100, 
           distanceLabels = False, **kwargs):
+        print root, dbFile, sr, txp, packetLen, prr_threshold, rssi_threshold, distanceLabels
         super(SingleTXDepth, self).__init__(**kwargs)
         self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold,
           rssi_threshold)
@@ -538,22 +539,22 @@ if __name__ == '__main__':
         txp = 0x8D
         packetLen = 35
         distanceLabels = False
-        if len(sys.argv) > 5:
-            for (o, v) in zip(sys.argv[5:], sys.argv[6:]):
-                if o == '--src':
-                    src = int(v)
-                if o == '--prrThresh':
-                    prrThresh = float(v)
-                if o == '--rssiThresh':
-                    rssiThresh = float(v)
-                if o == '--sr':
-                    sr = int(v)
-                if o == '--txp':
-                    txp = int(v, 16)
-                if o == '--pl':
-                    pl = int(v)
-                if o == '--distanceLabels':
-                    distanceLabels = int(v)
+        for (o, v) in zip(sys.argv[2:], sys.argv[3:]):
+            if o == '--src':
+                src = int(v)
+            if o == '--prrThresh':
+                prrThresh = float(v)
+            if o == '--rssiThresh':
+                rssiThresh = float(v)
+            if o == '--sr':
+                sr = int(v)
+            if o == '--txp':
+                txp = int(v, 16)
+            if o == '--pl':
+                pl = int(v)
+            if o == '--distanceLabels':
+                distanceLabels = int(v)
+        print distanceLabels
         tbm = SingleTXDepth(src, fn, sr, txp, packetLen, prrThresh,
           rssiThresh, distanceLabels)
     elif t == '--cxd':

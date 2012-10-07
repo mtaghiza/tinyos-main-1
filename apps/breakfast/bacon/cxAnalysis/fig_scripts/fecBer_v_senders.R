@@ -6,7 +6,7 @@ library(plyr)
 library(ggplot2)
 library(RSQLite)
 
-plotType <- 'prrPass'
+plotType <- 'ber'
 sr <- 125
 selectQ <- 'SELECT * from ber_summary'
 checkQ <- 'SELECT count(*) from ber'
@@ -123,6 +123,7 @@ if (plotType == 'prrPass'){
     + scale_shape(solid=FALSE)
     + scale_y_continuous(limits=c(0.0, 1))
   )
+  print(agg[agg$sc == 5,])
 }
 if (plotType == 'ber'){
   print(
@@ -134,9 +135,10 @@ if (plotType == 'ber'){
     + ylab("BER")
     + ggtitle(paste("BER v. Senders: SR=", sr, "K", sep=""))
     + theme_bw()
-    + theme(legend.justification=c(0,0), legend.position=c(0,0))
+    + theme(legend.justification=c(1,1), legend.position=c(1,1))
     + scale_shape(solid=FALSE)
   )
+  print(agg[agg$sc == 5,])
 }
 
 if (plotFile){

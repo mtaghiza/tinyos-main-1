@@ -1,4 +1,26 @@
 #!/bin/bash
+retries=10
+retryTimeout=30
+locked=0
+for i in $(seq $retries)
+do
+  if [ -f install_lock ]
+  then
+    echo "install_lock present, retry in $retryTimeout s"
+    sleep $retryTimeout
+  else
+    echo "locking installation directory"
+    locked=1
+    touch install_lock
+    break
+  fi
+done
+if [ $locked -eq 0 ]
+then
+  echo "COULD NOT OBTAIN LOCK ON INSTALLATION DIRECTORY!" 1>&2
+  exit 1
+fi
+
 autoRun=1
 programDelay=30
 
@@ -101,6 +123,7 @@ do
   if [ $varMatched -eq 0 ]
   then
     echo "Unrecognized option $1. Options: ${settingVars[@]}" 1>&2
+    rm install_lock
     exit 1
   fi
 done
@@ -113,6 +136,7 @@ done
 if [ "$testLabel" == "" ]
 then
   echo "No test label provided." 1>&2
+  rm install_lock
   exit 1
 fi
 
@@ -230,3 +254,4 @@ then
     $memoryOptionsRoot \
     $phyOptionsRoot
 fi
+rm install_lock

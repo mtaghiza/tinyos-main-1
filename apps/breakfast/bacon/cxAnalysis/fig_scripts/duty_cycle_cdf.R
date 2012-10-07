@@ -38,6 +38,7 @@ firstPlot <- T
 rCols <- rainbow(length(unique(x$label)))
 labelVals <- sort(unique(x$label))
 medians<-c()
+means <- c()
 for (index in 1:length(labelVals)){
   label <- labelVals[index]
   rCol <- rCols[index]
@@ -56,11 +57,12 @@ for (index in 1:length(labelVals)){
   }
     
   medians <- c(medians, median(vals$dc))
+  means <- c(means, mean(vals$dc))
 }
 lines(c(0.0043, 0.0043), c(0,1), lty=3)
 lines(c(0.1, 0.1), c(0,1), lty=2)
-legend('bottomright', legend=paste('Label:', labelVals, 'Med DC:',
-  round(medians, 4)), 
+legend('bottomright', legend=paste('Label:', labelVals, 'Med:',
+  round(medians, 4), 'Mean:', round(means, 4)), 
   text.col=rCols)
 title("Duty Cycle")
 

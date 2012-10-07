@@ -5,47 +5,40 @@ library(plyr)
 library(ggplot2)
 library(RSQLite)
 
-selectQRL <- "SELECT 
-dest as node, prr
-FROM prr_clean a
-WHERE dest not in (select node from error_events)
-and src=0 and pr="
-
-selectQLR <- "SELECT 
-src as node, pr, prr
-FROM prr_clean
-WHERE src not in (select node from error_events)
-and dest=0
-and pr="
+selectQ <- "SELECT 
+node, dc FROM duty_cycle
+WHERE node !=0
+AND dc is not null
+and node not in (select node from error_events)"
 
 x <- c()
-direction <- 'rl'
-selectQ <- selectQRL
+nx <- c()
 
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
-  if (opt == '--dir'){
-    direction <- val
-    if (direction == 'lr'){
-      selectQ <- selectQLR
-      print(paste("Using", selectQ))
-    }
-    if (direction == 'rl'){
-      selectQ <- selectQRL
-    }
-  }
-  
-  if ( opt == '--db'){
+ 
+  if ( opt == '--ndb'){
     fn <- val
     lbl <- commandArgs()[i+2]
-    pr <- as.numeric(commandArgs()[i+3])
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
-    tmp <- dbGetQuery(con, paste(selectQ, pr))
+    tmp <- dbGetQuery(con, selectQ)
     print(paste("Loaded", length(tmp$node), "from", fn))
     if (length(tmp$node) > 0 ){
       tmp$label <- lbl
-      tmp$pr <- pr
+      tmp$fn <- fn
+      nx <- rbind(nx, tmp)
+    }
+  }
+  if ( opt == '--db'){
+    fn <- val
+    lbl <- commandArgs()[i+2]
+    con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+    tmp <- dbGetQuery(con, selectQ)
+    print(paste("Loaded", length(tmp$node), "from", fn))
+    if (length(tmp$node) > 0 ){
+      tmp$label <- lbl
+      tmp$fn <- fn
       x <- rbind(x, tmp)
     }
   }
@@ -66,14 +59,33 @@ for (i in seq(argStart, argc-1)){
   }
 }
 print("raw loaded")
+
+
+# #TODO: what the hell: a few nodes have high duty cycle in several
+# # tests, and it's really throwing off the figures
+# # 3, 15, 19, 21, 58
+# x <- x[x$node !=3,]
+# x <- x[x$node !=15,]
+# x <- x[x$node !=19,]
+# x <- x[x$node !=21,]
+# x <- x[x$node !=58,]
+
 aggByNode <- ddply(x, .(label, node), summarise,
-  prr=mean(prr),
-  prrSD=sd(prr)
+  dc=mean(dc),
+  dc=sd(dc)
 )
+nAggByNode <- ddply(nx, .(label, node), summarise,
+  dc=mean(dc),
+  dc=sd(dc)
+)
+aggByNode <- merge(nAggByNode, aggByNode, by='node', suffixes=c('.ref', '.var'))
+
+aggByNode$label <- aggByNode$label.var
+aggByNode$dc <- aggByNode$dc.var/aggByNode$dc.ref
 
 aggByLabel <- ddply(aggByNode, .(label), summarize,
-  medOfMed=median(prr),
-  meanOfMed=mean(prr)
+  medOfMed=median(dc),
+  meanOfMed=mean(dc)
 )
 
 #aggByNode <- aggByNode[aggByNode$label=="3",]
@@ -86,21 +98,24 @@ print(aggByLabel)
 #  (ecdf returns a function, applying it to a PRR gives you its
 #    cumulative density)
 aggCDF <- ddply(aggByNode, .(label), summarize, 
-  prr=unique(prr),
-  ecdf=ecdf(prr)(unique(prr)))
+  dc=unique(dc),
+  ecdf=ecdf(dc)(unique(dc)))
 
 # #TODO add end points at (0,0): this makes the plot barf (I think
 # # that it wants observations for each group to be contiguous?
 # for (lbl in unique(aggCDF$label)){
 #   aggCDF <- rbind(aggCDF, c(lbl, 0, 0))
 # }
+
 print(
-  ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+  ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
   + geom_line()
   + scale_y_continuous(limits=c(0,1.0))
-  + scale_x_continuous(limits=c(0,1.0))
+  + scale_x_continuous(limits=c(0,2.0))
   + theme_bw()
 )
 if ( plotFile){
   g<-dev.off()
 }
+
+

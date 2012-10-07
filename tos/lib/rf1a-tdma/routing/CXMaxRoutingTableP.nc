@@ -117,7 +117,7 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     if (getEntry(&re, n0, n1, FALSE)){
       //record this if it meets/exceeds current max distance. Replace
       //current max distance if it's expired.
-      printf_TMP("MAX UR %u -> %u M(%u, %lu) m(%u, %lu) => (%u, %lu) =>",
+      printf_ROUTING_TABLE("MAX UR %u -> %u M(%u, %lu) m(%u, %lu) => (%u, %lu) =>",
         n0, n1, 
         re->maxDistance, re->lastMax,
         re->minDistance, re->lastMin,
@@ -133,7 +133,7 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
         re->lastMin = ts;
       } 
 
-      printf_TMP("M(%u, %lu) m(%u, %lu)\r\n", 
+      printf_ROUTING_TABLE("M(%u, %lu) m(%u, %lu)\r\n", 
         re->maxDistance, re->lastMax,
         re->minDistance, re->lastMin);
       //mark used-recently if it's already in the table.
@@ -168,7 +168,7 @@ generic module CXMaxRoutingTableP(uint8_t numEntries){
     rt[i].maxDistance = distance;
     rt[i].lastMax = ts;
     rt[i].used = TRUE;
-    printf_TMP("MAX NR %u->%u M(%u, %lu) m(%u, %lu)\r\n", 
+    printf_ROUTING_TABLE("MAX NR %u->%u M(%u, %lu) m(%u, %lu)\r\n", 
       n0, n1,
       rt[i].maxDistance, rt[i].lastMax,
       rt[i].minDistance, rt[i].lastMin);

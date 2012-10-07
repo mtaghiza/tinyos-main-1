@@ -10,7 +10,7 @@ sd=$(dirname $0)
 
 mkdir -p $dbDir
 set -x
-for f in $logDir/*
+for f in $logDir/*.log
 do
   bn=$(basename $f | rev | cut -d '.' -f 1 --complement | rev)
   $sd/processCXLog.sh $f $dbDir/$bn
