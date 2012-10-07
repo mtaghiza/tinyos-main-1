@@ -85,7 +85,8 @@ generic module HplMsp430Rf1aP () @safe() {
     IFG_clearChannel = (1 << 12),
     // IFG13 positive to detect signal presence
     IFG_carrierSense = (1 << 13),
-    IFG_INTERRUPT = IFG_rxFifoAboveThreshold | IFG_txFifoAboveThreshold
+    IFG_INTERRUPT = IFG_rxFifoAboveThreshold 
+      | IFG_txFifoAboveThreshold
       | IFG_rxOverflow | IFG_txUnderflow
       | IFG_syncWordEvent
       | IFG_clearChannel | IFG_carrierSense,
@@ -621,6 +622,8 @@ generic module HplMsp430Rf1aP () @safe() {
 
         /* We're committed to the write: tell the radio how long the
          * packet is, if we haven't already. */
+//        call Rf1aIf.setIe( 
+//          call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
         if (need_to_write_length) {
           uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain) 
             + call Rf1aFifo.getCrcLen();
@@ -628,7 +631,8 @@ generic module HplMsp430Rf1aP () @safe() {
 //          uint8_t len8 = tx_remain;
 //          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
         }
-        call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
+        call Rf1aFifo.writeTXFIFO (data, count, FALSE);
+//        call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
         tx_state = TX_S_active;
         wrote_data = TRUE;
         
