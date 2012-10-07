@@ -478,7 +478,9 @@ generic module HplMsp430Rf1aP () @safe() {
   void receiveData_ ();
   
   /** Task used to do the work of transmitting a fragment of a message. */
-  task void sendFragment_task () { sendFragment_(); }
+  task void sendFragment_task () { 
+    sendFragment_(); 
+  }
 
   /** Task used to do the work of consuming a fragment of a message. */
   task void receiveData_task () { receiveData_(); }
@@ -552,6 +554,12 @@ generic module HplMsp430Rf1aP () @safe() {
     call Rf1aIf.writeRegister(MCSM1, mcsm1);
     return rc;
   }
+  
+  uint16_t sendCount;
+//  uint8_t lastC;
+  task void reportSF(){
+    printf("sf %u\r\n", sendCount);
+  }
 
   /** Activity invoked to request data from the client and stuff it
    * into the transmission fifo. */
@@ -564,7 +572,7 @@ generic module HplMsp430Rf1aP () @safe() {
     bool send_done = FALSE;
     bool need_repost = FALSE;
     uint8_t rc;
-
+    printf("sf");
     atomic {
       do {
         const uint8_t* data;
@@ -574,11 +582,13 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Did somebody cancel the transmit? */
         if (SUCCESS != tx_result) {
           cancelTransmit_();
+          printf("X\r\n");
           break;
         }
       
         /* If nothing left to do, exit */
         if (0 >= tx_remain) {
+          printf("d\r\n");
           break;
         }
 
@@ -586,6 +596,7 @@ generic module HplMsp430Rf1aP () @safe() {
          * now. */
         inuse = 0x7f & call Rf1aIf.readRegister(TXBYTES);
         if (inuse >= FIFO_FILL_LIMIT) {
+          printf(">\r\n");
           break;
         }
           
@@ -608,6 +619,7 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Is there any data ready?  If not, try again later. */
         count = call Rf1aTransmitFragment.transmitReadyCount[client](count);
         if (0 == count) {
+          printf("nr\r\n");
           break;
         }
 
@@ -617,6 +629,7 @@ generic module HplMsp430Rf1aP () @safe() {
         data = call Rf1aTransmitFragment.transmitData[client](count);
         if (0 == data) {
           cancelTransmit_();
+          printf("x\r\n");
           break;
         }
 
@@ -628,9 +641,12 @@ generic module HplMsp430Rf1aP () @safe() {
           uint8_t len8 = call Rf1aFifo.getEncodedLen(tx_remain) 
             + call Rf1aFifo.getCrcLen();
           call Rf1aFifo.writeTXFIFO(&len8, sizeof(len8), TRUE);
+          printf("l");
 //          uint8_t len8 = tx_remain;
 //          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
         }
+        printf("w");
+//        printf("sf %u\r\n", count);
         call Rf1aFifo.writeTXFIFO (data, count, FALSE);
 //        call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
         tx_state = TX_S_active;
@@ -638,12 +654,14 @@ generic module HplMsp430Rf1aP () @safe() {
         
         /* Account for what we just queued. */
         tx_remain -= count;
+        if (tx_remain != 0){
+          printf("Trouble: %d bytes remain\r\n", tx_remain);
+        }
       } while (0);
 
       /* Request task repost if we have more data and the fifo is not
        * already above the threshold at which we'll be re-posted. */
       need_repost = (0 < tx_remain) && ! (IFG_txFifoAboveThreshold & call Rf1aIf.getIn());
-
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
       if (wrote_data && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
@@ -670,16 +688,22 @@ generic module HplMsp430Rf1aP () @safe() {
 
       /* If we've started transmitting, see if we're done yet. */
       if (TX_S_active <= tx_state) {
+        printf("a");
+        //TODO: maybe we should just spin here until it finishes
+
         /* If there's no more data to be transmitted, the task is
          * done.  However, there's an end-game: we don't really want
          * to signal sendDone until it's actually in the air.  */
         if (0 == tx_remain) {
+          printf("f");
           if (TX_S_active == tx_state) {
+            printf("F");
             tx_state = TX_S_flushing;
             tx_cached_fifothr = call Rf1aIf.readRegister(FIFOTHR);
             call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
           }
           if (0 == call Rf1aIf.readRegister(TXBYTES)) {
+            printf("E");
             result = tx_result;
             call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
 
@@ -727,11 +751,14 @@ generic module HplMsp430Rf1aP () @safe() {
     } // atomic
 
     if (need_repost) {
+      printf("rp\r\n");
       post sendFragment_task();
     }
     if (send_done) {
+      printf("SD\r\n");
       signal Rf1aPhysical.sendDone[client](result);
     }
+    printf("?\r\n");
   }
 
   /** Place the radio into FSTXON or TX, with or without a
@@ -851,6 +878,7 @@ generic module HplMsp430Rf1aP () @safe() {
     if (0 == length) {
       return EINVAL;
     }
+    sendCount++;
     atomic {
       bool variable_packet_length_mode;
 
@@ -944,6 +972,7 @@ generic module HplMsp430Rf1aP () @safe() {
         tx_pos = tx_end = 0;
       }
     }
+    printf("sp\r\n");
     post sendFragment_task();
     return SUCCESS;
   }
@@ -976,6 +1005,7 @@ generic module HplMsp430Rf1aP () @safe() {
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
         tx_result = ECANCEL;
+        printf("xp\r\n");
         post sendFragment_task();
       } else if (RX_S_listening < rx_state) {
         rx_result = ECANCEL;
@@ -1439,6 +1469,7 @@ generic module HplMsp430Rf1aP () @safe() {
       if (0x3F <= (0x7F & txbytes)) {
         tx_result = ECANCEL;
       }
+      printf("ip\r\n");
       post sendFragment_task();
     }
   }
@@ -1453,6 +1484,7 @@ generic module HplMsp430Rf1aP () @safe() {
   {
     atomic {
       tx_result = FAIL;
+      printf("up\r\n");
       post sendFragment_task();
     }
   }
