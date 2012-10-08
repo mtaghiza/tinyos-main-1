@@ -65,6 +65,10 @@ module RouterSchedulerP {
     return FAIL;
   }
 
+  command error_t TDMAPhySchedule.logDutyCycle[uint8_t clientId](uint16_t slotNum){
+    return call SubTDMAPhySchedule.logDutyCycle(slotNum);
+  }
+
   command error_t TDMAPhySchedule.adjustFrameStart[uint8_t clientId](uint32_t startAt, uint16_t atFrameNum){
     return call SubTDMAPhySchedule.adjustFrameStart(startAt,
       atFrameNum);

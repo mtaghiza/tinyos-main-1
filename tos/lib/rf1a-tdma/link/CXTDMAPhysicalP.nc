@@ -225,8 +225,12 @@ module CXTDMAPhysicalP {
   uint8_t dc_i;
   uint16_t logBatch = 0;
   bool logging = FALSE;
+  uint16_t logSlot;
   
   task void logNextStat(){
+    if (dc_i == 0){
+      printf_RADIO_STATS("LB %u %u\r\n", logBatch, logSlot);
+    }
     if (dc_i < R_NUMSTATES){
       printf_RADIO_STATS("RS %u %c %u %lu\r\n", 
         logBatch, labels[dc_i], ro[dc_i], rst[dc_i]);
@@ -237,9 +241,16 @@ module CXTDMAPhysicalP {
     }
   }
 
-  task void logDutyCycle(){
+
+  #else
+  void radioStateChange(uint8_t newState, uint32_t changeTime){ }
+  task void logDutyCycle(){ }
+  #endif
+
+  command error_t TDMAPhySchedule.logDutyCycle(uint16_t slotNum){
     if (!logging){
       logging = TRUE;
+      logSlot = slotNum;
       logBatch ++;
       dc_i = 0;
       atomic{
@@ -250,14 +261,12 @@ module CXTDMAPhysicalP {
         }
       }
       post logNextStat();
+      return SUCCESS;
+    }else{
+      return EBUSY;
     }
+    
   }
-
-  #else
-  void radioStateChange(uint8_t newState, uint32_t changeTime){ }
-  task void logDutyCycle(){ }
-  #endif
-
   
   //This should be removed when debugging is done!
   void recordEventX(uint8_t eventId){}
@@ -475,7 +484,7 @@ module CXTDMAPhysicalP {
   }
 
   bool getPacket(uint16_t fn);
-
+  
   task void pfsTask(){
     //TODO: handle splitControl.stop: if stopPending, then we need to
     //quit duty cycling, release resource, etc.
@@ -494,9 +503,10 @@ module CXTDMAPhysicalP {
       asyncFrameNum = frameNum;
       totalFrames++;
     }
-    if (s_isSynched && (frameNum == s_totalFrames-1)){
-      post logDutyCycle();
-    }
+//    if (s_isSynched && (frameNum == s_totalFrames-1)){
+//      post logDutyCycle();
+//    }
+    
 //    printf_TMP("%u \r\n", frameNum);
     signal FrameStarted.frameStarted(frameNum);
 //    printf_TMP("F %u\r\n", frameNum);
@@ -754,13 +764,13 @@ module CXTDMAPhysicalP {
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         recordEvent(4);
         fsHandled = call FrameStartAlarm.getNow();
-        if ((call FrameStartAlarm.getAlarm() + s_fwCheckLen) > call PrepareFrameStartAlarm.getAlarm()){
-          printf_TMP("FWA: %lu + %lu (%lu) > PFSA: %lu\r\n", 
-            call FrameStartAlarm.getAlarm(), 
-            s_fwCheckLen,
-            call FrameStartAlarm.getAlarm() + s_fwCheckLen,
-            call PrepareFrameStartAlarm.getAlarm());
-        }
+//        if ((call FrameStartAlarm.getAlarm() + s_fwCheckLen) > call PrepareFrameStartAlarm.getAlarm()){
+//          printf_TMP("FWA: %lu + %lu (%lu) > PFSA: %lu\r\n", 
+//            call FrameStartAlarm.getAlarm(), 
+//            s_fwCheckLen,
+//            call FrameStartAlarm.getAlarm() + s_fwCheckLen,
+//            call PrepareFrameStartAlarm.getAlarm());
+//        }
         if (asyncState == S_RX_READY){
           FWA_TIMING_SET_PIN;
           lastFwaStartFrame = totalFrames;

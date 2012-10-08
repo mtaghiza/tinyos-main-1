@@ -301,6 +301,11 @@ module SlaveSchedulerStaticP {
 
 
     if (newSlot){
+      if (hasSchedule){
+        if (curSlot == 0 || VERBOSE_DUTY_CYCLE == 1){
+          call TDMAPhySchedule.logDutyCycle(curSlot);
+        }
+      }
       curSlot = getSlot(frameNum);
       inactiveSlot = FALSE;
     }

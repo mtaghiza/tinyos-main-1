@@ -11,4 +11,5 @@ interface TDMAPhySchedule{
   //TODO: should come from transport layer AND main schedule
   event bool isInactive(uint16_t frameNum);
   command error_t adjustFrameStart(uint32_t startAt, uint16_t atFrameNum);
+  command error_t logDutyCycle(uint16_t slotNum);
 }

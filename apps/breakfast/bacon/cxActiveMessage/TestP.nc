@@ -131,10 +131,10 @@ module TestP {
       printf_APP("Start sending.\r\n");
       packetQueue = 0;
       #if RANDOMIZE_IPI == 1
-        call SendTimer.startOneShot((TEST_IPI/2) + 
-          (call Random.rand32())%TEST_IPI );
+        call SendTimer.startOneShot(TX_START_DELAY + ((TEST_IPI/2) + 
+          (call Random.rand32())%TEST_IPI) );
       #else
-        call SendTimer.startOneShot(TEST_IPI);
+        call SendTimer.startOneShot(TX_START_DELAY + TEST_IPI);
       #endif
     #endif
   }

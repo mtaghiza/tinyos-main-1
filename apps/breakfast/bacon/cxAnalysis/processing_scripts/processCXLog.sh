@@ -31,6 +31,7 @@ synchLossTf=$tfb.synchLoss
 synchRecoverTf=$tfb.synchRecover
 lagTf=$tfb.lag
 lpcTf=$tfb.lpc
+rslbTf=$tfb.rslb
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -63,8 +64,13 @@ pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3,
 echo "extracting radio stats"
 #1      2 3  4 5 6 7
 #123.45 1 RS 1 o 0 30820181
-pv $logFile | awk '($3 == "RS"){ 
-  print $1, $2, $4, $5, ($6)*(2**32) + $7
+pv $logFile | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
+  if ($2 in curSlot){
+    cs=curSlot[$2]
+  }else{
+    cs=0
+  }
+  print $1, $2, $4, $5, ($6)*(2**32) + $7, cs
 }' > $rsTf
 
 echo "extracting test settings"
@@ -98,6 +104,9 @@ pv $logFile | awk '/LAG/{print $1, $2, $4}' \
 pv $logFile | awk '/Fast resynch/{
   print $2, $1
 }' > $synchRecoverTf
+
+touch $rslbTf
+pv $logFile | awk '($3 == "LB"){print $1, $2, $4, $5}' > $rslbTf
 
 if [ $(grep -c 'testLabel' < $settingsTf) -ne 1 ]
 then
@@ -306,16 +315,27 @@ ORDER BY prr;
 
 SELECT "Computing duty cycles";
 
+SELECT "importing radio stat logs";
 DROP TABLE IF EXISTS RADIO_STATS_RAW;
 CREATE TABLE RADIO_STATS_RAW (
   ts REAL,
   node INTEGER,
   sn INTEGER,
   state TEXT,
-  total INTEGER);
+  total INTEGER,
+  slot INTEGER);
 
 .import $rsTf RADIO_STATS_RAW
 
+DROP TABLE IF EXISTS ACTIVE_STATES;
+CREATE TABLE ACTIVE_STATES (
+  state TEXT);
+INSERT INTO ACTIVE_STATES (state) values ('f');
+INSERT INTO ACTIVE_STATES (state) values ('r');
+INSERT INTO ACTIVE_STATES (state) values ('t');
+
+
+select "fixing counter overflows";
 --OK, apparently the overflow detection is messed up (an extra
 --  rollover is added). Detect the case where a counter incremented by
 --  more time than has elapsed according to testbed and register an
@@ -350,109 +370,78 @@ DROP TABLE IF EXISTS radio_stats_adjusted;
 
 CREATE TABLE radio_stats_adjusted AS
 SELECT r.ts as ts, r.node as node, r.sn as sn, r.state as state, 
-  r.total + coalesce(sum(adjustment),0) as total
+  r.slot as slot, r.total + coalesce(sum(adjustment),0) as total
 FROM radio_stats_raw r
 LEFT JOIN radio_stats_adjustment a
 ON a.node=r.node and a.state = r.state 
 AND a.sn <= r.sn
-GROUP BY r.ts, r.node, r.sn, r.state;
+GROUP BY r.ts, r.node, r.sn, r.state, r.slot;
 
+select "Computing slot radio deltas";
+DROP TABLE IF EXISTS SLOT_STATE_DELTAS;
+CREATE TABLE SLOT_STATE_DELTAS AS
+SELECT l.ts, l.node, l.sn, r.slot, l.state, r.total - l.total as dt
+FROM radio_stats_adjusted l
+JOIN radio_stats_adjusted r on l.node=r.node and l.state = r.state and
+l.sn+1 = r.sn
+JOIN prr_bounds on l.node=prr_bounds.node
+WHERE l.ts > prr_bounds.startTS  and r.ts <= prr_bounds.endTs
+--WHERE l.node = 63
+--limit 5;
+;
 
-DROP TABLE IF EXISTS radio_stats_start;
-CREATE TABLE radio_stats_start
-AS 
-  SELECT radio_stats_adjusted.node as node, 
-    min(sn) as sn
-  FROM radio_stats_adjusted 
-  JOIN prr_bounds
-  ON radio_stats_adjusted.node = prr_bounds.node
-  WHERE radio_stats_adjusted.ts > prr_bounds.startTs
-  GROUP BY radio_stats_adjusted.node;
+select "Computing slot radio totals";
+DROP TABLE IF EXISTS SLOT_STATE_TOTALS;
+CREATE TABLE SLOT_STATE_TOTALS AS
+SELECT node, slot, state, sum(dt) as total
+FROM SLOT_STATE_DELTAS
+GROUP BY node, slot, state;
 
-DROP TABLE IF EXISTS radio_stats_end;
-CREATE TABLE radio_stats_end
-AS 
-  SELECT radio_stats_adjusted.node as node, 
-    max(sn) as sn
-  FROM radio_stats_adjusted 
-  JOIN prr_bounds
-  ON radio_stats_adjusted.node = prr_bounds.node
-  WHERE radio_stats_adjusted.ts < prr_bounds.endTs
-  GROUP BY radio_stats_adjusted.node;
+-- SELECT "Computing slot totals";
+-- DROP TABLE IF EXISTS SLOT_TOTALS;
+-- CREATE TABLE SLOT_TOTALS AS
+-- SELECT node, slot, sum(total)  as total
+-- FROM SLOT_STATE_TOTALS
+-- GROUP BY node, slot;
 
---total time at each record
-DROP TABLE IF EXISTS radio_stats_totals;
-CREATE TABLE radio_stats_totals AS
-  SELECT min(ts) as ts, node, sn, sum(total) as total
-  FROM radio_stats_adjusted
-  GROUP BY node, sn;
+SELECT "Computing node totals";
+DROP TABLE IF EXISTS NODE_TOTALS;
+CREATE TABLE NODE_TOTALS AS
+SELECT node, state, sum(total) as total
+FROM SLOT_STATE_TOTALS
+GROUP BY node, state;
 
--- time spent in each state:
---   (stateFinal-stateStart)/(totalFinal - totalStart)
-DROP TABLE IF EXISTS radio_stats;
-CREATE TABLE RADIO_STATS AS
-SELECT 
-  stateEnd.node as node,
-  stateEnd.state as state,
-  stateEnd.total as endVal, stateStart.total as startVal, allEnd.total
-  as endTot, allStart.total as startTot,
-  (1.0*stateEnd.total - stateStart.total) / (allEnd.total - allStart.total) as frac
-FROM radio_stats_start 
-  JOIN radio_stats_end 
-    ON radio_stats_start.node = radio_stats_end.node
-  JOIN radio_stats_adjusted stateEnd
-    ON stateEnd.node = radio_stats_end.node 
-    AND stateEnd.sn = radio_stats_end.sn
-  JOIN radio_stats_adjusted stateStart
-    ON stateStart.node = radio_stats_start.node
-    AND stateStart.sn = radio_stats_start.sn
-    AND stateStart.state = stateEnd.state
-  JOIN (
-    SELECT radio_stats_adjusted.node as node, sum(total) as total
-    FROM radio_stats_adjusted 
-      JOIN radio_stats_start
-      ON radio_stats_adjusted.node = radio_stats_start.node
-      AND radio_stats_adjusted.sn = radio_stats_start.sn
-    GROUP BY radio_stats_adjusted.node
-  ) allStart
-    ON allStart.node = radio_stats_start.node
-  JOIN (
-    SELECT radio_stats_adjusted.node as node, 
-      sum(total) as total
-    FROM radio_stats_adjusted 
-      JOIN radio_stats_end
-      ON radio_stats_adjusted.node = radio_stats_end.node
-      AND radio_stats_adjusted.sn = radio_stats_end.sn
-    GROUP BY radio_stats_adjusted.node
-  ) allEnd
-    ON allEnd.node = radio_stats_end.node
-  JOIN (
-    SELECT node, count(*) AS recordCount
-    FROM radio_stats_totals
-    GROUP BY node
-  ) radio_stats_count ON
-    radio_stats_count.node = stateEnd.node
-    AND radio_stats_count.recordCount > 1
-  ; 
-
-
-DROP TABLE IF EXISTS ACTIVE_STATES;
-CREATE TABLE ACTIVE_STATES (
-  state TEXT);
-INSERT INTO ACTIVE_STATES (state) values ('f');
-INSERT INTO ACTIVE_STATES (state) values ('r');
-INSERT INTO ACTIVE_STATES (state) values ('t');
-
+SELECT "Computing overall duty cycle";
 DROP TABLE IF EXISTS DUTY_CYCLE;
-CREATE TABLE DUTY_CYCLE
-AS 
-  SELECT node, sum(frac) as dc
-  FROM radio_stats 
-  JOIN active_states 
-  ON active_states.state = radio_stats.state 
-  GROUP BY node;
+CREATE TABLE DUTY_CYCLE AS 
+SELECT active.node, (1.0*active.total)/allStates.total as dc
+FROM (
+  SELECT node, sum(total) as total FROM node_totals where state in
+  (select state from active_states) group by node) active
+JOIN (
+  SELECT node, sum(total) as total FROM node_totals group by node)
+  allStates on active.node=allStates.node;
 
+SELECT "Computing dc contribution per slot";
+DROP TABLE IF EXISTS SLOT_CONTRIBUTIONS;
 
+CREATE TABLE SLOT_CONTRIBUTIONS AS 
+SELECT activeSlot.node, activeSlot.slot,
+  (1.0*activeSlot.total)/activeNode.total as fractionActive
+FROM 
+(
+  SELECT node, slot, sum(total) as total
+  FROM SLOT_STATE_TOTALS
+  WHERE state in (select state from active_states)
+  GROUP BY node, slot 
+) as activeSlot
+JOIN (
+  SELECT node, sum(total) as total
+  FROM node_totals
+  WHERE state in (select state from active_states)
+  GROUP BY node
+) as activeNode 
+on activeSlot.node=activeNode.node;
 
 SELECT "Computing depth asymmetry";
 
@@ -561,6 +550,7 @@ then
   rm $synchRecoverTf
   rm $lagTf
   rm $lpcTf
+  rm $rslbTf
 else
   echo "keeping temp files"
 fi
