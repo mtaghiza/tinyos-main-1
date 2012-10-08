@@ -38,6 +38,18 @@ done
 set -x
 
 R --no-save --slave --args \
+  --dir lr \
+  $floodOptions \
+  --png $outDir/prr_flood.png \
+  < $sd/prr_cdf_ggplot.R
+
+R --no-save --slave --args \
+  $floodOptions \
+  --png $outDir/dc_flood.png \
+  < $sd/duty_cycle_cdf_ggplot.R
+
+exit 0
+R --no-save --slave --args \
   $bwOptions \
   $floodOptions \
   --png $outDir/dci_v_bw.png \

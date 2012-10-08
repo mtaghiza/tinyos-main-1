@@ -19,7 +19,7 @@ and dest=0
 and pr="
 
 x <- c()
-direction <- 'rl'
+direction <- 'lr'
 selectQ <- selectQRL
 
 for (i in seq(argStart, argc-1)){
@@ -36,7 +36,7 @@ for (i in seq(argStart, argc-1)){
     }
   }
   
-  if ( opt == '--db'){
+  if ( opt == '--db' || opt == '--ndb'){
     fn <- val
     lbl <- commandArgs()[i+2]
     pr <- as.numeric(commandArgs()[i+3])
