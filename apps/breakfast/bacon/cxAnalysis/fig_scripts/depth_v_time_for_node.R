@@ -46,18 +46,18 @@ if (ymin == -1){
 if (ymax == -1){
   ymax <-max(c(rl$depth, lr$depth)) 
 }
-plot(x=rl$ts-min(rl$ts), y=rl$depth, type='o', ylab='Depth',
+plot(x=rl$ts-min(rl$ts), y=rl$depth, type='l', ylab='Depth',
   xlab='Time(s)',
   ylim=c(ymin,ymax), 
-  col='red')
+  col='black')
 
-points(x=lr$ts-min(rl$ts), y=lr$depth, col='blue', type='o', pch=16, lty=2)
+#points(x=lr$ts-min(rl$ts), y=lr$depth, col='blue', type='o', pch=16, lty=2)
 title(paste('Node', nodeId,'Distance v. Time'))
-legend('topleft', c('Root->Leaf', 'Leaf->Root'),
-  text.col=c('red','blue'),
-  col=c('red', 'blue'),
-  lty=c(1,2),
-  pch=c(1, 16))
+# legend('topleft', c('Root->Leaf', 'Leaf->Root'),
+#   text.col=c('red','blue'),
+#   col=c('red', 'blue'),
+#   lty=c(1,2),
+#   pch=c(1, 16))
 if ( plotFile){
   g<-dev.off()
 }

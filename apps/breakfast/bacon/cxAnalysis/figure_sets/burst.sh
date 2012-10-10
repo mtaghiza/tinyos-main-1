@@ -40,50 +40,49 @@ set -x
 R --no-save --slave --args \
   --dir lr \
   $floodOptions \
-  --png $outDir/prr_flood.png \
+  --pdf $outDir/prr_flood.pdf \
   < $sd/prr_cdf_ggplot.R
 
 R --no-save --slave --args \
   $floodOptions \
-  --png $outDir/dc_flood.png \
-  < $sd/duty_cycle_cdf_ggplot.R
-
-exit 0
-R --no-save --slave --args \
-  $bwOptions \
-  $floodOptions \
-  --png $outDir/dci_v_bw.png \
-  < $sd/duty_cycle_improvement_cdf_ggplot.R
-
-R --no-save --slave --args \
-  $selOptions \
-  $floodOptions \
-  --png $outDir/dci_v_sel.png \
-  < $sd/duty_cycle_improvement_cdf_ggplot.R
-
-R --no-save --slave --args \
-  $selOptions \
-  $floodOptions \
-  --png $outDir/dc_v_sel.png \
+  --pdf $outDir/dc_flood.pdf \
   < $sd/duty_cycle_cdf_ggplot.R
 
 R --no-save --slave --args \
   $bwOptions \
   $floodOptions \
-  --png $outDir/dc_v_bw.png \
+  --pdf $outDir/dci_v_bw.pdf \
+  < $sd/duty_cycle_improvement_cdf_ggplot.R
+
+R --no-save --slave --args \
+  $selOptions \
+  $floodOptions \
+  --pdf $outDir/dci_v_sel.pdf \
+  < $sd/duty_cycle_improvement_cdf_ggplot.R
+
+R --no-save --slave --args \
+  $selOptions \
+  $floodOptions \
+  --pdf $outDir/dc_v_sel.pdf \
+  < $sd/duty_cycle_cdf_ggplot.R
+
+R --no-save --slave --args \
+  $bwOptions \
+  $floodOptions \
+  --pdf $outDir/dc_v_bw.pdf \
   < $sd/duty_cycle_cdf_ggplot.R
 
 R --no-save --slave --args \
   --dir lr \
   $selOptions \
   $floodOptions \
-  --png $outDir/prr_v_sel.png \
+  --pdf $outDir/prr_v_sel.pdf \
   < $sd/prr_cdf_ggplot.R
 
 R --no-save --slave --args \
   --dir lr \
   $bwOptions \
   $floodOptions \
-  --png $outDir/prr_v_bw.png \
+  --pdf $outDir/prr_v_bw.pdf \
   < $sd/prr_cdf_ggplot.R
 

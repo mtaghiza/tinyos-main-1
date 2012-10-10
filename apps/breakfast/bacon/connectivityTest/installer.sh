@@ -8,7 +8,7 @@ TEST_SR=125
 PAYLOAD_LEN=14
 #MAP=map.bacon2
 MAP=map.all
-BURN_TIME=30
+BURN_TIME=60
 
 if [ $# -gt 0 ]
 then

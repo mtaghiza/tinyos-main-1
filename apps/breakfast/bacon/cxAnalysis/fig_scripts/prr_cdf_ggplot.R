@@ -19,6 +19,7 @@ and dest=0
 and pr="
 
 x <- c()
+pr <- 0
 direction <- 'lr'
 selectQ <- selectQRL
 

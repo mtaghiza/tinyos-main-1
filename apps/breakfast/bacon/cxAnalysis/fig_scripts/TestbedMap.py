@@ -281,10 +281,14 @@ class FloodSimMap(TestbedMap):
           noCaptureLoss=0.3, independent=0, colorMode=None, **kwargs):
         super(FloodSimMap, self).__init__(**kwargs)
         self.root=root
-        self.loadEdges(connDbFile, sr, txp, packetLen)
+        self.dbFile = connDbFile
+        self.sr=sr
+        self.txp=txp
+        self.packetLen=packetLen
         self.captureThresh = captureThresh
         self.noCaptureLoss = noCaptureLoss
-        self.simMultiple(root, independent, maxDepth, simRuns)
+        self.simMultiple(root, independent, maxDepth, simRuns,
+          testSetups, dbFile)
         if colorMode == 'distance':
             self.computeDepth()
             self.setColAttr('distance')
@@ -323,7 +327,6 @@ class FloodSimMap(TestbedMap):
             prr = len(r_rx)/float(len(r_all))
             self.G.node[n]['prr'] = prr
 
-    #TODO: how is this always giving me integer depths?
     def computeDepth(self):
         for n in self.G.nodes():
             r_all = self.G.node[n]['simResults']
@@ -403,11 +406,59 @@ class FloodSimMap(TestbedMap):
         for n in self.G.nodes():
             self.G.node[n]['simResults'].append(self.G.node[n]['receiveRound'])
  
-    def simMultiple(self, root, independent, maxDepth=10, simRuns=100):
-        for i in range(simRuns):
-            if i % 10 == 0:
-                print >>sys.stderr, "%d of %d completed"%(i, simRuns)
-            self.sim(root, independent, maxDepth)
+    def simMultiple(self, root, independent, maxDepth=10, simRuns=100,
+            testSetups=10):
+        for k in range(testSetups):
+            (start, end) = randomTimeSlice(600)
+            self.loadEdgesTimeSlice(start, end)
+            for i in range(simRuns/testSetups):
+                self.sim(root, independent, maxDepth)
+    
+    def randomTimeSlice(self):
+        c = sqlite3.connect(self.dbFile)
+        [(start, end)] = c.execute('''SELECT min(ts), max(ts) 
+            from tx 
+            where src = 2 and txpower = ? and sr=? and len=? 
+            group by src, txpower, sr, len''', 
+          (self.txp, self.sr, self.packetLen)).fetchall()
+        end -= sliceLen
+        startSlice = start + (random.random() * (end - start))
+        return (startSlice, startSlice + sliceLen)
+
+    def loadEdgesTimeSlice(self, startTime, endTime):
+        self.G.remove_edges_from(self.G.edges())
+        c = sqlite3.connect(self.dbFile)
+        c.execute('''DROP TABLE IF EXISTS TXO_TMP''')
+        c.execute('''CREATE TEMPORARY TABLE TXO_TMP
+                     AS 
+                     SELECT * from TXO 
+                     WHERE sr=? and txpower=? and len=?
+                     WHERE ts between ? and ?''', 
+                     (self.sr, self.txpower, 
+                       self.packetLen, startTime, endTime))
+        links = c.execute('''SELECT txAgg.src, txAgg.dest, 
+                      numReceived/numSent as prr,
+                      rssi as rssi,
+                      lqi as lqi
+                      FROM (
+                        SELECT src, dest, 
+                          1.0*count(*) as numSent
+                        FROM TXO_TMP
+                        GROUP BY src, dest
+                      ) as txAgg
+                      JOIN (
+                        SELECT src, dest,
+                          avg(rssi) as rssi,
+                          avg(lqi) as lqi,
+                          count(*) as numReceived
+                        FROM TXO_TMP
+                        WHERE received
+                        GROUP BY src, dest
+                      ) as rxAgg
+                      ON rxAgg.src = txAgg.src 
+                        AND rxAgg.dest = txAgg.dest''').fetchall()
+        for (src, dest, prr, rssi, lqi) in links:
+            self.G.add_edge(src, dest, prr=prr, rssi=rssi)
 
 #     def listResults(self):
 #         for n in self.G.nodes():

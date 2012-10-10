@@ -21,6 +21,7 @@ tickLen="4/26e6"
 #depthTf=$(tempfile -d $tfDir)
 tfb=$(tempfile -d $tfDir)
 #tfb=tmp/tmp
+logTf=$tfb.log
 rxTf=$tfb.rx
 txTf=$tfb.tx
 rTf=$tfb.r
@@ -33,12 +34,17 @@ lagTf=$tfb.lag
 lpcTf=$tfb.lpc
 rslbTf=$tfb.rslb
 
+#TODO: would be smart to put this in ramdisk
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
+  echo "strip non-ascii characters"
+  pv $logFile | tr -cd '\11\12\15\40-\176' > $logTf
+
   echo "convert line endings"
-  dos2unix $logFile
+  dos2unix $logTf
 else 
   echo "skip convert line endings"
+  cp $logFile $logTf
 fi
 
 #set -x 
@@ -46,25 +52,25 @@ echo "extracting RX"
 #1             2  3  4  5 6  7     8   9 10 11 12 13 14 15  16 17
 #1343662476.53 21 RX s: 0 d: 65535 sn: 0 o: 0  c: 1  r: -55 l: 0
 #pv $logFile | awk '($3 == "RX"){print $1,$5,$2,$7,$9,$11,$13,$15,$17,1}' > $rxTf
-pv $logFile | awk '($3 == "RX" && NF == 17){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
+pv $logTf | awk '($3 == "RX" && NF == 17){print $1, $5, $2, $7, $9,$11,$13,$15,$17,1}' > $rxTf
 
 echo "extracting TX"
 #1      2 3  4  5 6  7     8   9 10  11 12 13 14 15 16 17 18 19   20 21
 #1...71 0 TX s: 0 d: 65535 sn: 0 ofn: 0 np: 1 pr: 0 tp: 1 am: 224 e: 0
-pv $logFile | awk '($3 == "TX" && NF == 21){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
+pv $logTf | awk '($3 == "TX" && NF == 21){print $1,$5,$7,$9, $11, $13, $15, $17, $19, $21}' > $txTf
 
 echo "extracting routing decisions"
 #1             2 3   4  5  6  7 8   9 10 11 12 13 14 15 16 17 18 19
 #1344892228.29 3 UBF s: 31 d: 0 sn: 0 sm: 4 md: 4 sd: 3 bw: 0 f: 0
-pv $logFile | awk '($3 == "UBF" && NF == 19){print $1, $2, $5, $7, $9, $11, $13, $15, $17, $19}' > $rTf
+pv $logTf | awk '($3 == "UBF" && NF == 19){print $1, $2, $5, $7, $9, $11, $13, $15, $17, $19}' > $rTf
 
 echo "extracting errors"
-pv $logFile | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
+pv $logTf | grep '!\[' | tr '[\->]!' ' ' | tr -s ' ' | awk '{print $1, $2, $3, $4}' > $errTf
 
 echo "extracting radio stats"
 #1      2 3  4 5 6 7
 #123.45 1 RS 1 o 0 30820181
-pv $logFile | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
+pv $logTf | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
   if ($2 in curSlot){
     cs=curSlot[$2]
   }else{
@@ -74,7 +80,7 @@ pv $logFile | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){
 }' > $rsTf
 
 echo "extracting test settings"
-pv $logFile | grep ' 0 START ' | tr '_' ' ' | awk '{
+pv $logTf | grep ' 0 START ' | tr '_' ' ' | awk '{
   for (i=4; i <= NF; i+=2){
     print $1, $i, $(i+1)
   }
@@ -82,7 +88,7 @@ pv $logFile | grep ' 0 START ' | tr '_' ' ' | awk '{
 
 echo "extracting synch-losses"
 
-pv $logFile | awk '/Started./{
+pv $logTf | awk '/Started./{
   firstStart[$2] = $1
 }
 /start listen/{ 
@@ -96,17 +102,17 @@ pv $logFile | awk '/Started./{
   }
 }' > $synchLossTf
 
-pv $logFile | awk '/LPC/{print $1, $2, $4}' \
+pv $logTf | awk '/LPC/{print $1, $2, $4}' \
   > $lpcTf
-pv $logFile | awk '/LAG/{print $1, $2, $4}' \
+pv $logTf | awk '/LAG/{print $1, $2, $4}' \
   > $lagTf
 
-pv $logFile | awk '/Fast resynch/{
+pv $logTf | awk '/Fast resynch/{
   print $2, $1
 }' > $synchRecoverTf
 
 touch $rslbTf
-pv $logFile | awk '($3 == "LB"){print $1, $2, $4, $5}' > $rslbTf
+pv $logTf | awk '($3 == "LB"){print $1, $2, $4, $5}' > $rslbTf
 
 if [ $(grep -c 'testLabel' < $settingsTf) -ne 1 ]
 then
@@ -535,6 +541,38 @@ CREATE TABLE LAG (
   lag INTEGER);
 
 .import $lagTf LAG
+
+SELECT "organizing transmissions by burst";
+-- organize transmissions by burst: number bursts by schedule sn
+DROP TABLE IF EXISTS BURST_TX_ALL;
+CREATE TABLE BURST_TX_ALL AS 
+select tx_all.*, c.sn as burstNum
+  from tx_all 
+  join (
+    select l.sn, l.ts as startTS, r.ts as endTS 
+    from tx_all l 
+    join tx_all r on l.src=0 and r.src=0 and r.sn=l.sn+1
+  ) as c on ts between startTS and endTS 
+;
+
+SELECT "Computing interpacket spacing";
+-- compute the spacing (in frames) between transmissions.
+--  actualIPD is the actual measured value, ipd limits this to the
+--  diameter of the network (e.g. for the case where we set the max
+--  depth too conservatively)
+DROP TABLE IF EXISTS BURST_SPACING;
+CREATE TABLE BURST_SPACING AS 
+SELECT l.*, 
+  r.ofn-l.ofn as actualIPD, min(r.ofn-l.ofn, max_network_depth.d) as ipd,
+  max_network_depth.d as floodIPD
+
+FROM BURST_TX_ALL l
+JOIN BURST_TX_ALL r
+ON l.sn + 1 = r.sn AND l.src = r.src AND l.burstNum = r.burstNum
+JOIN 
+(select max(depth) as d from rx_all) as max_network_depth
+;
+
 EOF
 
 if [ "$keepTemp" != "-k" ]
@@ -551,6 +589,7 @@ then
   rm $lagTf
   rm $lpcTf
   rm $rslbTf
+  rm $logTf
 else
   echo "keeping temp files"
 fi

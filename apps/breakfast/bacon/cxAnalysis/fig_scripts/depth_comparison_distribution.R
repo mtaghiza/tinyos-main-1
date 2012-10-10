@@ -14,7 +14,7 @@ FROM rx_all
 WHERE src=0
 AND ts > (SELECT max(startTS) from prr_bounds)"
 
-
+removeOneHop <- 1
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -44,6 +44,9 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--labels'){
     legendSettings <- val
   }
+  if (opt == '--removeOneHop'){
+    removeOneHop <- as.numeric(val)
+  }
 }
 
 agg <- ddply(x, .(label, dest), summarise,
@@ -53,7 +56,10 @@ agg <- ddply(x, .(label, dest), summarise,
   uq=quantile(depth, 0.75))
 
 pd <- position_dodge(0.5)
-agg <- agg[agg$depth > 1.1,]
+
+if (removeOneHop){
+  agg <- agg[agg$depth > 1.1,]
+}
 
 
 if ( legendSettings == 'sim'){
@@ -106,6 +112,25 @@ if (legendSettings == 'fec'){
     + theme_bw()
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
   )
+}
+
+if (legendSettings == 'txp'){
+  plotTitle <- "Distance v. TXP"
+  meanSDs <- aggregate(sd~label, data=agg, FUN=mean)
+
+#  agg$label <- factor(as.numeric(agg$label), levels=sort(unique(as.numeric(agg$label))))
+  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
+    + geom_point(position=pd)
+    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
+#    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
+    + xlab("Node ID")
+    + ylab("Distance")
+    + ggtitle(plotTitle) 
+    + scale_colour_hue(name="PATABLE setting")
+    + theme_bw()
+    + theme(legend.justification=c(1,0), legend.position=c(1,0))
+  )
+  
 }
 
 
