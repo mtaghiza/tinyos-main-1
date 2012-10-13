@@ -322,7 +322,9 @@ class Simulation(object):
             self.frameNum = (self.framesPerSlot * self.slotNum) + self.frameOfSlot
             self.simTime += self.frameLen
             simFrame()
+        #reset owner to idle
         self.owner['routingState'] = 'idle'
+        #TODO: log duty cycle output
 
     def simFrame(self):
         self.updateQueues()
@@ -424,7 +426,17 @@ class Simulation(object):
         else:
             #ok, this is an idle frame so we're cool
             pass
-        #TODO: update node duty cycle totals
+        for node in self.G:
+            n = self.G.node[node]
+            rs = n['radioState']
+            if rs == 'rx':
+                n['rxCount'] += 1
+            if rs == 'tx':
+                n['txCount'] += 1
+            if rs == 'idle':
+                n['idleCount'] += 1
+            if rs == 'off':
+                n['offCount'] += 1
 
     def updateQueues(self):
         #update queue len for any node with nextPacket in the past
