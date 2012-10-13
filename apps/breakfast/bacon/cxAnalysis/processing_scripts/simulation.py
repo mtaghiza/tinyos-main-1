@@ -284,6 +284,7 @@ if __name__ == '__main__':
     captureThresh = 10
     noCaptureLoss = 0.05
     depthOutFile = None
+    textOutFile = None
     noCapMethod = 'min'
     synchLoss = 0
     naive = 0
@@ -319,6 +320,8 @@ if __name__ == '__main__':
             naive = int(val)
         if opt == '--numSetups':
             numSetups = int(val)
+        if opt == '--textOutFile':
+            textOutFile = open(val, 'w')
 
     if not dbFile:
         usage()
@@ -333,7 +336,8 @@ if __name__ == '__main__':
           noCapMethod, synchLoss)
     for i in range(numSetups):
         print "Test setup %d of %d"%(i+1, numSetups)
-        sim.simFloodBatch([0], 30)
+        sim.simFloodBatch([n for n in sim.G.nodes()], 30)
     if depthOutFile:
         sim.depthOutput(depthOutFile)
-    
+    if textOutFile:
+        sim.textOutput(textOutFile)
