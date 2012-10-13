@@ -13,7 +13,7 @@ class Topology(object):
         #return edges in [(src,dest, {prr:x, rssi:y})...] form
         pass
 
-class FileTopology(Topology):
+class StaticFileTopology(Topology):
     def __init__(self, topoFile):
         super(Topology, self).__init__()
         self.topoFile = topoFile
@@ -40,8 +40,8 @@ class FileTopology(Topology):
                 [prr, rssi] = [float(v) for v in r[-2:]]
                 edges.append( (s, d, {'prr':prr, 'rssi':rssi}))
         return edges
-
         
+
 
 class TestbedTopology(Topology):
     def __init__(self, dbFile, 
@@ -131,6 +131,90 @@ class TestbedTopology(Topology):
         end -= self.sliceLen
         startSlice = start + (random.random() * (end - start))
         return (startSlice, startSlice + self.sliceLen)
+
+class SyntheticTopology(TestbedTopology):
+    def __init__(self, 
+            dbFile, 
+            bucketSize,
+            density, 
+            numNodes,
+            aspectRatio,
+            cornerRoot,
+            nsluFile, nodeFile, 
+            sr, txp, packetLen, 
+            sliceLen):
+        super(SyntheticTopology, self).__init__(dbFile, 
+            nsluFile, nodeFile, 
+            sr, txp, packetLen, 
+            sliceLen)
+        self.bucketSize = bucketSize
+        self.numNodes = numNodes
+        self.density = density
+        self.aspectRatio = aspectRatio
+        self.cornerRoot = cornerRoot
+        self.nodes = []
+
+    def getEdges(self):
+        #get the positions of each node from testbed map
+        nodes = super(SyntheticTopology, self).getNodes()
+        #sample testbed for edges
+        edges = super(SyntheticTopology, self).getEdges()
+        edgeBuckets = {}
+        edgeMap = {}
+        #store all the edges which we have data for
+        for (s, d, em) in edges:
+            edgeMap[(s,d)] = (em['prr'], em['rssi'])
+        #put edge data into buckets by inter-node distance, fill in 
+        # 0 PRR for pairs of nodes with no link.
+        for (s,sm) in nodes:
+            for (d, dm) in nodes:
+                if d != s:
+                    (sx, sy) = sm['pos']
+                    (dx, dy) = sm['pos']
+                    dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
+                    distBucket = floor(dist/self.bucketSize) * self.bucketSize
+                    (prr, rssi) = edgeMap.get( (s, d), (0,-100))
+                    if distBucket not in edgeBuckets:
+                        edgeBuckets[distBucket] = []
+                    edgeBuckets[distBucket].append( (prr,rssi))
+        #OK, so now we've got our testbed data in buckets. Now we have
+        # to iterate over the pairs of nodes in the synthetic topology and
+        # create the corresponding edges
+        nodes = self.getNodes()
+        edges = []
+        for (s, sm) in nodes:
+            for (d, dm) in nodes:
+                if d!=s:
+                    (sx, sy) = sm['pos']
+                    (dx, dy) = sm['pos']
+                    dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
+                    distBucket = floor(dist/self.bucketSize) * self.bucketSize
+                    [(prr, rssi)] = random.sample(edgeBuckets[distBucket], 1)
+                    if prr != 0:
+                        edges.append( (s, d, {'prr':prr, 'rssi':rssi}))
+        return edges
+
+    def getNodes(self):
+        if not self.nodes:
+            self.area = self.numNodes / float(self.density)
+            # x*y = A
+            # x = ky
+            # A = ky**2
+            # y = (A/k)**0.5
+            # x = A/y
+            height = (self.area/self.aspectRatio)**0.5
+            width = self.area/height
+
+            if self.cornerRoot:
+                self.nodes = [ (0, {'pos':(0, 0)})]
+            else:
+                self.nodes = [ (0, {'pos':(width/2, height/2)})]
+            for n in range(1, self.numNodes):
+                x = (random.random()*width) - (width/2)
+                y = (random.random()*height) - (height/2)
+                self.nodes.append( (n, {'pos':(x, y)}))
+        return self.nodes
+
 
 
 class Simulation(object):
@@ -359,6 +443,8 @@ if __name__ == '__main__':
     packetLen = 16
     sliceLen = 10*60
     dbFile = None
+    topoFile = None
+    dbSyntheticFile = None
     captureThresh = 5
     noCaptureLoss = 0.05
     depthOutFile = None
@@ -373,8 +459,22 @@ if __name__ == '__main__':
     bw = 0
     dm = LastDistance()
     slotLen = 40
-    topoFile = None
     diameter = None
+
+    aspectRatio = 1
+    #Units are testbed map pixels (lol)
+    # 20 px = 50 in
+    #       = 127 cm
+    # 16 px ~= 1 meter
+    bucketSize = 32
+    #our testbed spans ~50 x 50 m, and has 66 nodes in it
+    # 2500 m2 = 66 nodes
+    # 0.0264 nodes / m2
+    # a.k.a 38 m2/node
+    #densityInv = 38
+    densityM2 = 0.0264
+    numNodes = 66
+    cornerRoot = 1
 
     fwdRawFile = open('/dev/null', 'w')
     fwdAggFile = open('/dev/null', 'w')
@@ -383,30 +483,26 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         usage()
         sys.exit(1)
-    (opt,val) = (sys.argv[1], sys.argv[2])
-    if opt == '--dbTopo':
-        dbFile = val
-    elif opt == '--fileTopo':
-        topoFile = val
-    else:
-        usage()
-
-    if dbFile:
-        for (opt, val) in zip(sys.argv, sys.argv[1:]):
-            if opt == '--nodeFile':
-                nodeFile = val
-            if opt == '--nsluFile':
-                nsluFile = val
-            if opt == '--sr':
-                sr = int(val)
-            if opt == '--txp':
-                txp = int(val, 16)
-            if opt == '--packetLen':
-                packetLen = int(val)
-            if opt == '--sliceLen':
-                sliceLen = int(val)
     
     for (opt, val) in zip(sys.argv, sys.argv[1:]):
+        if opt == '--dbSynthetic':
+            dbSyntheticFile = val        
+        if opt == '--fileTopo':
+            topoFile = val        
+        if opt == '--dbTopo':
+            dbFile = val
+        if opt == '--nodeFile':
+            nodeFile = val
+        if opt == '--nsluFile':
+            nsluFile = val
+        if opt == '--sr':
+            sr = int(val)
+        if opt == '--txp':
+            txp = int(val, 16)
+        if opt == '--packetLen':
+            packetLen = int(val)
+        if opt == '--sliceLen':
+            sliceLen = int(val)
         if opt == '--captureThresh':
             captureThresh = float(val)
         if opt == '--noCaptureLoss':
@@ -448,19 +544,46 @@ if __name__ == '__main__':
             fwdAggFile = open(val, 'w')
         if opt == '--ipiFile':
             ipiFile = open(val, 'w')
+        if opt == '--bucketSize':
+            bucketSize = float(val)
+        if opt == '--densityM2':
+            densityM2 = float(val)
+        if opt == '--numNodes':
+            numNodes = int(val)
+        if opt == '--aspectRatio':
+            aspectRatio = float(val)
+        if opt == '--cornerRoot':
+            cornerRoot = int(val)
 
 
-    if dbFile:
+    if dbSyntheticFile:
+        #roughly 16px to the meter
+        density = densityM2 / (16 *16)
+        topo = SyntheticTopology(dbSyntheticFile, 
+          bucketSize, density, numNodes, aspectRatio, 
+          cornerRoot,
+          nsluFile, nodeFile, sr, txp,
+          packetLen, sliceLen)
+        nodes = topo.getNodes()
+        for (n, nm) in nodes:
+            print n, nm['pos'][0], nm['pos'][1]
+        sys.exit(0)
+    elif dbFile:
         topo = TestbedTopology(dbFile, nsluFile, nodeFile, sr, txp,
           packetLen, sliceLen)
+    elif staticTopoFile:
+        topo = StaticFileTopology(staticTopoFile)
     else:
-        topo = FileTopology(topoFile)
+        usage()
+        sys.exit(1)
+        
 
     if naive:
         sim = NaiveSimulation(topo)
     else:
         sim = PhySimulation(topo, captureThresh, noCaptureLoss,
           noCapMethod, synchLoss)
+
     for i in range(numSetups):
         print "Test setup %d of %d"%(i+1, numSetups) 
         sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup) 
@@ -469,9 +592,6 @@ if __name__ == '__main__':
 
     #TODO: this should be a method of simulation class
 
-    #TODO this is going to way underestimate diameter if it uses all
-    # edges
-    #diameter = nx.diameter(sim.G) 
     ipi = {}
     for n in sim.G.nodes():
         sim.G.node[n]['forwards'] = []
@@ -533,3 +653,32 @@ if __name__ == '__main__':
         sim.depthOutput(depthOutFile)
     if textOutFile:
         sim.textOutput(textOutFile)
+
+
+
+
+#     #for generating topologies
+#     nodes = topo.getNodes()
+#     posMap = {}
+#     for (n, nm) in nodes:
+#         posMap[n] = nm['pos']
+# #        print 'p', n, posMap[n][0], posMap[n][1]
+# 
+#     for i in range(1):
+#         edges = topo.getEdges()
+#         edgeMap = {}
+#         for (s, d, em) in edges:
+#             edgeMap[(s,d)] = (em['prr'], em['rssi'])
+# #             (sx, sy) = posMap[s]
+# #             (dx, dy) = posMap[d]
+# #             dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
+# #             print s, d, dist, em['prr'], em['rssi']
+#         for (s,sm) in nodes:
+#             for (d, dm) in nodes:
+#                 (sx, sy) = posMap[s]
+#                 (dx, dy) = posMap[d]
+#                 dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
+#                 (prr, rssi) = edgeMap.get( (s,d), (0,-100))
+#                 print s, d, dist, prr, rssi
+# 
+#     sys.exit(0)
