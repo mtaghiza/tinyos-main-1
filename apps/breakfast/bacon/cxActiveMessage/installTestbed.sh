@@ -97,6 +97,7 @@ maxAnnouncedSlots=0
 fecEnabled=1
 fecHamming74=1
 txStartDelay=0UL
+roundThresh=1
 
 settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "senderDest" "senderMap" "receiverMap" "rootMap" "targetIpi"
@@ -105,7 +106,7 @@ settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection" "installBlink"
 "cxRoutingTableEntries" "rssiThreshold" "cxSniffEnabled" 
 "cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74"
-"txStartDelay")
+"txStartDelay", "roundThresh")
 
 echo "Provided args: $@"
 
@@ -180,7 +181,7 @@ else
   firstIdleSlot=0
 fi
 
-scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection CX_FORWARDER_SELECTION=$cxForwarderSelection MAX_ANNOUNCED_SLOTS=$maxAnnouncedSlots"
+scheduleOptions="DEBUG_SCALE=$debugScale TA_DIV=1UL SCHED_INIT_SYMBOLRATE=$sr DISCONNECTED_SR=500 SCHED_MAX_DEPTH=${maxDepth}UL SCHED_FRAMES_PER_SLOT=$fps SCHED_NUM_SLOTS=$numSlots SCHED_MAX_RETRANSMIT=${numTransmits}UL STATIC_SCHEDULER=$staticScheduler STATIC_FIRST_IDLE_SLOT=$firstIdleSlot CX_BUFFER_WIDTH=$bufferWidth CX_DUTY_CYCLE_ENABLED=1 CX_ENABLE_SKEW_CORRECTION=$cxEnableSkewCorrection CX_FORWARDER_SELECTION=$cxForwarderSelection ROUND_THRESH_LOG2=$roundThresh MAX_ANNOUNCED_SLOTS=$maxAnnouncedSlots"
 phyOptionsCommon="TEST_CHANNEL=$channel RSSI_THRESHOLD=$rssiThreshold CX_SNIFF_ENABLED=$cxSniffEnabled CX_FIXED_LEN=$cxFixedLen"
 phyOptionsLeaf="PATABLE0_SETTING=$leafTxp"
 phyOptionsRoot="PATABLE0_SETTING=$rootTxp"

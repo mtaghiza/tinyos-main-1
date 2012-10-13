@@ -305,7 +305,7 @@ module CXFloodP{
     if (state == S_IDLE){
 //        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
       call CXRoutingTable.update(thisSrc, TOS_NODE_ID, 
-        call CXPacket.count(msg));
+        call CXPacket.count(msg), TRUE);
       printf_F_RX("n");
 
       //check for routed flag: ignore it if the routed flag is

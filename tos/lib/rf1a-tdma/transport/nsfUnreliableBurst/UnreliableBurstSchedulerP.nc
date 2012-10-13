@@ -212,7 +212,7 @@ module UnreliableBurstSchedulerP{
 //      printf_TMP("SU msg: %p PL: %p src: %d dest: %d dist: %d\r\n",
 //        msg, pl, 
 //        pl->src, pl->dest, pl->distance);
-      call CXRoutingTable.update(pl->src, pl->dest, pl->distance);
+      call CXRoutingTable.update(pl->src, pl->dest, pl->distance, FALSE);
       sm = call CXRoutingTable.selectionDistance(src, TOS_NODE_ID, TRUE);
       md = call CXRoutingTable.selectionDistance(TOS_NODE_ID, dest, TRUE);
       sd = call CXRoutingTable.advertiseDistance(src, dest, TRUE);

@@ -523,11 +523,11 @@ module CXScopedFloodP{
       // between the two: 
       //  src->me + me->dest  <= src->dest
       call CXRoutingTable.update(ruSrc, ruDest,
-        ruDistance);
+        ruDistance, TRUE);
       call CXRoutingTable.update(ruSrc, TOS_NODE_ID, 
-        ruSrcDepth);
+        ruSrcDepth, TRUE);
       call CXRoutingTable.update(ruDest, TOS_NODE_ID,
-        ruAckDepth);
+        ruAckDepth, TRUE);
       routeUpdatePending = FALSE;
     }
     if (clearTimePending){

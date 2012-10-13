@@ -248,6 +248,7 @@ module CXTDMAPhysicalP {
   #endif
 
   command error_t TDMAPhySchedule.logDutyCycle(uint16_t slotNum){
+    #if DEBUG_RADIO_STATS == 1
     if (!logging){
       logging = TRUE;
       logSlot = slotNum;
@@ -265,6 +266,9 @@ module CXTDMAPhysicalP {
     }else{
       return EBUSY;
     }
+    #else
+    return SUCCESS;
+    #endif
     
   }
   

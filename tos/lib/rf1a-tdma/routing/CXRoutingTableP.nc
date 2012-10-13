@@ -77,7 +77,7 @@ generic module CXRoutingTableP(uint8_t numEntries){
   }
 
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
-      uint8_t distance){
+      uint8_t distance, bool incremental){
     uint8_t i;
     uint8_t checked = 0;
     cx_route_entry_t* re;

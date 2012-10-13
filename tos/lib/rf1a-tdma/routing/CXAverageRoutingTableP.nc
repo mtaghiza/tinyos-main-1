@@ -11,20 +11,53 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   uint8_t curDump;
   bool dumping = FALSE;
+  
 
-  uint8_t dist(uint32_t distanceTotal, uint32_t measureCount){
-    //round to nearest integer distance: shift total left so it is in
-    //fixed-point fraction form with a single-bit fractional part
-    //(1/(2**1))
-    uint32_t fpAvg = (distanceTotal << 1) / measureCount;
-    return (fpAvg >> 1) + (0x01 & fpAvg);
+  #ifndef ROUND_THRESH_LOG2
+  #define ROUND_THRESH_LOG2 1
+  #endif
+
+  //rounding threshold is 2**(-1*(ROUND_THRESH_LOG2))
+  //
+  //e.g. ROUND_THRESH_LOG2 = 1
+  //    
+  // we make 1 remainder bit, divide, and round up if there is a
+  // remainder (0.5 or higher)
+  //e.g. ROUND_THRESH_LOG2 = 2
+  // make 2 remainder bits (0.5, 0.25), divide, and if there is a
+  // remainder then it has to be greater than or equal to 0.25.
+  uint8_t dist(uint32_t distanceTotal, uint32_t measureCount, 
+      bool roundUp){
+    //shift total left so it is in
+    //fixed-point fraction form with a FRAC_LEN bit fractional part,
+    //then divide it
+    uint32_t fpAvg = (distanceTotal << ROUND_THRESH_LOG2) / measureCount;
+    //mask off the fractional part
+    uint32_t fracMask = ~((~0) << ROUND_THRESH_LOG2);
+    //quotient
+    uint32_t q = fpAvg >> ROUND_THRESH_LOG2;
+    //remainder
+    uint32_t r = fpAvg & fracMask;
+
+    if (roundUp){
+      if (r){
+        return q + 1;
+      }else{
+        return q;
+      }
+    } else{
+      //round down: ignore remainder
+      return q;
+    }
   }
+
 
   task void nextDumpTask(){
     cx_avg_route_entry_t* re;
-    printf("# AVG RT[%d] %d->%d = %d (%ld/%ld)(%d %d) ", 
+    printf("# AVG RT[%d] %d->%d = u %d d %d (%ld/%ld)(%d %d) ", 
       curDump, rt[curDump].n0, rt[curDump].n1, 
-      dist(rt[curDump].distanceTotal, rt[curDump].measureCount), 
+      dist(rt[curDump].distanceTotal, rt[curDump].measureCount, TRUE), 
+      dist(rt[curDump].distanceTotal, rt[curDump].measureCount, FALSE), 
       rt[curDump].distanceTotal,
       rt[curDump].measureCount,
       rt[curDump].used, 
@@ -85,7 +118,8 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
       return 0;
     }
     if (getEntry(&re, from, to, bdOK)){
-      return dist(re->distanceTotal, re->measureCount);
+      //Round down when we are selecting
+      return dist(re->distanceTotal, re->measureCount, FALSE);
     }else{
       return 0xff;
     }
@@ -93,19 +127,34 @@ generic module CXAverageRoutingTableP(uint8_t numEntries){
 
   command uint8_t CXRoutingTable.advertiseDistance(am_addr_t from, am_addr_t to, 
       bool bdOK){
-    return call CXRoutingTable.selectionDistance(from, to, bdOK);
+    cx_avg_route_entry_t* re;
+    if (from == TOS_NODE_ID && to == TOS_NODE_ID){
+      return 0;
+    }
+    if (getEntry(&re, from, to, bdOK)){
+      //Round up when we are advertising
+      return dist(re->distanceTotal, re->measureCount, TRUE);
+    }else{
+      return 0xff;
+    }
   }
 
   command error_t CXRoutingTable.update(am_addr_t n0, am_addr_t n1,
-      uint8_t distance){
+      uint8_t distance, bool incremental){
     uint8_t i;
     uint8_t checked = 0;
     cx_avg_route_entry_t* re;
     //update and mark used-recently if it's already in the table.
     if (getEntry(&re, n0, n1, FALSE)){
-      re->distanceTotal += distance;
-      re->measureCount ++;
+      if (incremental){
+        re->distanceTotal += distance;
+        re->measureCount ++;
+      }else{
+        re->distanceTotal = distance;
+        re->measureCount = 1;
+      }
       re->used = TRUE;
+
       return SUCCESS;
     }
     //start at lastEvicted+1
