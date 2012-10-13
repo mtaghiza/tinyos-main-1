@@ -3,7 +3,7 @@ import sys
 import networkx as nx
 import sqlite3
 import random
-from math import log, round, ceil
+from math import log, ceil, floor
 
 class Topology(object):
     def __init__(self):
@@ -12,6 +12,36 @@ class Topology(object):
     def getEdges(self):
         #return edges in [(src,dest, {prr:x, rssi:y})...] form
         pass
+
+class FileTopology(Topology):
+    def __init__(self, topoFile):
+        super(Topology, self).__init__()
+        self.topoFile = topoFile
+
+
+    def getNodes(self):
+        f = open(self.topoFile, 'r')
+        nodes = []
+        for l in f.readlines():
+            if l.startswith('n'):
+                r = l.strip().split()[1:4]
+                (node, x, y) = (int(r[0]), float(r[1]), float(r[2]))
+                nodes.append((node, {'pos':(x,y)}))
+        return nodes
+
+
+    def getEdges(self):
+        f = open(self.topoFile, 'r')
+        edges = []
+        for l in f.readlines():
+            if l.startswith('e'):
+                r = l.strip().split()[1:5]
+                [s, d] = [int(v) for v in r[:2]]
+                [prr, rssi] = [float(v) for v in r[-2:]]
+                edges.append( (s, d, {'prr':prr, 'rssi':rssi}))
+        return edges
+
+        
 
 class TestbedTopology(Topology):
     def __init__(self, dbFile, 
@@ -108,7 +138,6 @@ class Simulation(object):
         '''Create basic data structures and load nodes from topo. '''
         self.G = nx.DiGraph()
         self.topo = topo
-        self.maxDepth = 10
         self.G.add_nodes_from(self.topo.getNodes())
     
     def simFloodBatch(self, senders, simRuns):
@@ -133,8 +162,9 @@ class Simulation(object):
     def simFlood(self, root, sn):
         '''Simulate the effect of one flood'''
         self.simInit(root)
-        for d in range(1, self.maxDepth+1):
-            self.simRound(d)
+        d = 1
+        while self.simRound(d):
+            d += 1
         for n in self.G.nodes():
             rr = self.G.node[n]['receiveRound']
             if rr != sys.maxint:
@@ -172,14 +202,17 @@ class NaiveSimulation(Simulation):
         super(NaiveSimulation, self).__init__(topo)
 
     def simRound(self, d):
+        someReceived = False
         for n in self.G.nodes():
             if self.G.node[n]['receiveRound'] == d-1:
                 for dest in self.G[n]:
                     if self.G.node[dest]['receiveRound'] == sys.maxint: 
                         if random.random() < self.G[n][dest]['prr']:
                             self.G.node[dest]['receiveRound'] = d
+                            someReceived = True
                         else:
                             pass
+        return someReceived
 
 
 class PhySimulation(Simulation):
@@ -191,8 +224,10 @@ class PhySimulation(Simulation):
         self.noCapMethod = noCapMethod
         self.synchLoss = synchLoss
 
+
     def simRound(self, d):
         receivers = {}
+        someReceived = False
         for n in self.G.nodes():
             #accumulate receptions at each node with incoming packets
             if self.G.node[n]['receiveRound'] == d-1:
@@ -235,7 +270,9 @@ class PhySimulation(Simulation):
                 if shouldReceive:
                     shouldReceive = random.random() < (1-self.synchLoss)**(d-1)
             if shouldReceive:
+                someReceived = True
                 self.G.node[n]['receiveRound'] = d
+        return someReceived
 
 
     def dbmToWatts(self, x):
@@ -259,35 +296,39 @@ class DistanceMetric(object):
     def __init__(self):
         pass
 
-    def advertiseDistance(self, distances):
-        return random.sample(distances, 1)
+    def advertiseDistance(self, results):
+        return random.sample(results, 1)[0][1]
 
-    def selectDistance(self, distances):
-        return random.sample(distances, 1)
+    def selectDistance(self, results):
+        return random.sample(results, 1)[0][1]
 
 class LastDistance(DistanceMetric):
     pass
 
 class AverageDistance(DistanceMetric):
-    def selectDistance(self, distances):
-        return round(return sum(distances)/float(len(distances)))
+    def selectDistance(self, results):
+        distances = [d for (sn, d) in results]
+        return round(sum(distances)/float(len(distances)))
 
-    def advertiseDistance(self, distances):
+    def advertiseDistance(self, results):
+        distances = [d for (sn, d) in results]
         return round(sum(distances)/float(len(distances)))
 
 class RoundedAverageDistance(DistanceMetric):
-    def selectDistance(self, distances):
-        return floor(return sum(distances)/float(len(distances)))
+    def selectDistance(self, results):
+        distances = [d for (sn, d) in results]
+        return floor(sum(distances)/float(len(distances)))
 
-    def advertiseDistance(self, distances):
+    def advertiseDistance(self, results):
+        distances = [d for (sn, d) in results]
         return ceil(sum(distances)/float(len(distances)))
 
 
 class MaxDistance(DistanceMetric):
-    def selectDistance(self, distances):
+    def selectDistance(self, results):
         return min(distances)
 
-    def advertiseDistance(self, distances):
+    def advertiseDistance(self, results):
         return max(distances)
 
 def usage():
@@ -325,23 +366,45 @@ if __name__ == '__main__':
     naive = 0
     numSetups = 5
     testsPerSetup = 30
+    dest = 0
+    selectionTrials = 1
+    bw = 0
+    dm = LastDistance()
+    slotLen = 40
+    topoFile = None
+    diameter = None
 
+    fwdRawFile = sys.stdout
+    fwdAggFile = sys.stdout
+    ipiFile = sys.stdout
 
+    if len(sys.argv) < 3:
+        usage()
+        sys.exit(1)
+    (opt,val) = (sys.argv[1], sys.argv[2])
+    if opt == '--dbTopo':
+        dbFile = val
+    elif opt == '--topoFile':
+        topoFile = val
+    else:
+        usage()
+
+    if dbFile:
+        for (opt, val) in zip(sys.argv, sys.argv[1:]):
+            if opt == '--nodeFile':
+                nodeFile = val
+            if opt == '--nsluFile':
+                nsluFile = val
+            if opt == '--sr':
+                sr = int(val)
+            if opt == '--txp':
+                txp = int(val, 16)
+            if opt == '--packetLen':
+                packetLen = int(val)
+            if opt == '--sliceLen':
+                sliceLen = int(val)
+    
     for (opt, val) in zip(sys.argv, sys.argv[1:]):
-        if opt == '--nodeFile':
-            nodeFile = val
-        if opt == '--nsluFile':
-            nsluFile = val
-        if opt == '--sr':
-            sr = int(val)
-        if opt == '--txp':
-            txp = int(val, 16)
-        if opt == '--packetLen':
-            packetLen = int(val)
-        if opt == '--sliceLen':
-            sliceLen = int(val)
-        if opt == '--dbFile':
-            dbFile = val
         if opt == '--captureThresh':
             captureThresh = float(val)
         if opt == '--noCaptureLoss':
@@ -360,12 +423,36 @@ if __name__ == '__main__':
             testsPerSetup = int(val)
         if opt == '--textOutFile':
             textOutFile = open(val, 'w')
+        if opt == '--dest':
+            dest = int(val)
+        if opt == '--selectionTrials':
+            selectionTrials = int(val)
+        if opt == '--bw':
+            bw = int(val)
+        if opt == '--distanceMetric':
+            if val == 'last':
+                dm = LastDistance()
+            if val == 'max':
+                dm = MaxDistance()
+            if val == 'avg':
+                dm = AverageDistance()
+            if val == 'ravg':
+                dm = RoundedAverageDistance()
+        if opt == '--slotLen':
+            slotLen = int(val)
+        if opt == '--fwdRawFile':
+            fwdRawFile = open(val, 'w')
+        if opt == '--fwdAggFile':
+            fwdAggFile = open(val, 'w')
+        if opt == '--ipiFile':
+            ipiFile = open(val, 'w')
 
-    if not dbFile:
-        usage()
-        sys.exit(1)
-    topo = TestbedTopology(dbFile, nsluFile, nodeFile, sr, txp,
-      packetLen, sliceLen)
+
+    if dbFile:
+        topo = TestbedTopology(dbFile, nsluFile, nodeFile, sr, txp,
+          packetLen, sliceLen)
+    else:
+        topo = FileTopology(topoFile)
 
     if naive:
         sim = NaiveSimulation(topo)
@@ -378,48 +465,57 @@ if __name__ == '__main__':
     #OK, so now we've got an  n x n x tps matrix of distance
     #  measurements
 
-    #TODO: these should be params
-    dest = 0
-    selectionTrials = 5
-    bw = 0
-    ipi = {}
-    dm = LastDistance()
-    slotLen = 40
-    #TODO: this should come from topo
-    diameter = 8
+    #TODO: this should be a method of simulation class
 
+    #TODO this is going to way underestimate diameter if it uses all
+    # edges
+    #diameter = nx.diameter(sim.G) 
+    ipi = {}
     for n in sim.G.nodes():
-        sim.G.nodes[n]['forwards'] = []
+        sim.G.node[n]['forwards'] = []
+        ipi[n]=[]
+
     for n in range(selectionTrials):
         for s in sim.G.nodes():
+            if s == dest:
+                continue
             #pick d_sd from source measurements
             d_sd = dm.advertiseDistance(sim.G.node[s]['distances'][dest])
-            ipi.get(s, []).append(d_sd)
+            ipi[s].append(d_sd)
             for f in sim.G.nodes():
-                d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
-                d_fd = dm.selectDistance(sim.G.node[f]['distances'][dest])
-                isForwarder = (d_sf + d_fd) <= d_sd + bw
-                sim.G.nodes[f]['forwards'].append((s,  isForwarder))
+                if f == dest or f == s:
+                    isForwarder = True
+                else:
+                    d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
+                    d_fd = dm.selectDistance(sim.G.node[f]['distances'][dest])
+                    isForwarder = (d_sf + d_fd) <= d_sd + bw
+                sim.G.node[f]['forwards'].append((s,  isForwarder))
+
+    diameter = 0
+    for n in ipi:
+        diameter = max( ipi[n] + [diameter])
 
     for f in sim.G.nodes():
-        forwards = sim.G.nodes[f]['forwards']
+        if f == dest:
+            continue
+        forwards = sim.G.node[f]['forwards']
         for (src, isForwarder) in forwards:
             #output: src, forwarder, isForwarder
-            fwdRawFile.write('%d %d %d'%(src, f, isForwarder))
+            fwdRawFile.write('%d %d %d\n'%(src, f, isForwarder))
         totalTrials = len(forwards)
-        activeTrials = len( s for (s, isForwarder) in forwards if isForwarder)
+        activeTrials = len([ s for (s, isForwarder) in forwards if isForwarder ] )
         #output: src, active, total, fractionActive
-        fwdAggFile.write('%d %d %d %0.4f'%(f, activeTrials, totalTrials,
-          float(activeTrials)/totalTrials)
+        fwdAggFile.write('%d %d %d %0.4f\n'%(f, activeTrials, totalTrials,
+          float(activeTrials)/totalTrials))
         ipis = ipi[f]
-        dp = [ (slotLen - diameter)/ d_sd for d_sd in ipis]
-        effectiveIpi = [(diameter + d_sd*p)/p for p in dp]
+        dp = [ floor((slotLen - diameter)/ d_sd) for d_sd in ipis]
+        effectiveIpi = [float((diameter + d_sd*p))/p for p in dp]
         #format: src, distance, effective IPI, flood IPI
-        ipiFile.write('%d %0.4f %0.4f %d', 
+        ipiFile.write('%d %0.4f %0.4f %d\n'%( 
           f, 
           sum(ipis)/float(len(ipis)),
           sum(effectiveIpi)/float(len(effectiveIpi)),
-          diameter)
+          diameter))
 
     if depthOutFile:
         sim.depthOutput(depthOutFile)
