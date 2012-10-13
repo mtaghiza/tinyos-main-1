@@ -115,10 +115,13 @@ class Simulation(object):
         '''Run multiple simulation instances with same set of edges'''
         print "loading edges"
         self.loadEdges()
+        #reset distance measurements for this batch
+        for n in self.G.nodes():
+            self.G.node[n]['distances']={}
         print "edges loaded"
         for i in range(simRuns):
             for root in senders:
-                self.simFlood(root)
+                self.simFlood(root, i)
             if ((i+1) % 10) == 0:
                 print "%d of %d done"%(i+1, simRuns)
 
@@ -127,13 +130,17 @@ class Simulation(object):
         self.G.remove_edges_from(self.G.edges())
         self.G.add_edges_from(self.topo.getEdges())
 
-    def simFlood(self, root = 0):
+    def simFlood(self, root, sn):
         '''Simulate the effect of one flood'''
         self.simInit(root)
         for d in range(1, self.maxDepth+1):
             self.simRound(d)
         for n in self.G.nodes():
-            self.G.node[n]['simResults'].append(self.G.node[n]['receiveRound'])
+            rr = self.G.node[n]['receiveRound']
+            if rr != sys.maxint:
+                if root not in self.G.node[n]['distances']:
+                    self.G.node[n]['distances'][root] = []
+                self.G.node[n]['distances'][root].append((sn, rr))
 
 #    def simRound(self):
 #        '''Simulate one round of communication events'''
@@ -142,9 +149,23 @@ class Simulation(object):
         '''Initialize node state for a single data transmission'''
         for n in self.G.nodes():
             self.G.node[n]['receiveRound'] = sys.maxint
-            if 'simResults' not in self.G.node[n]:
-                self.G.node[n]['simResults'] = []
         self.G.node[root]['receiveRound'] = 0
+
+    def depthOutput(self, outFile, root=0):
+        outFile.write("dest,depth\n")
+        for n in self.G.nodes():
+            for (sn, rr) in self.G.node[n]['distances'].get(root, []):
+                outFile.write('%d,%d\n'%(n, rr))
+        outFile.close()
+
+    def textOutput(self, outFile):
+        outFile.write("src dest sn depth\n")
+        for n in self.G.nodes():
+            for src in self.G.node[n]['distances']:
+                for (sn, rr) in self.G.node[n]['distances'][src]:
+                    outFile.write('%d %d %d %d\n'%(src, n, sn, rr))
+        outFile.close()
+
 
 class NaiveSimulation(Simulation):
     def __init__(self, topo):
