@@ -326,9 +326,11 @@ class RoundedAverageDistance(DistanceMetric):
 
 class MaxDistance(DistanceMetric):
     def selectDistance(self, results):
+        distances = [d for (sn, d) in results]
         return min(distances)
 
     def advertiseDistance(self, results):
+        distances = [d for (sn, d) in results]
         return max(distances)
 
 def usage():
