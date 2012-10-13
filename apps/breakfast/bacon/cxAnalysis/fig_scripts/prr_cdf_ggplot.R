@@ -117,8 +117,8 @@ if (labels == 'sel'){
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(0,1.0))
     + scale_colour_hue(name="Selection Method",
-      breaks=c(0, 1, 2, 'flood'),
-      labels=c('Last', 'Avg', 'Max', 'Flood'))
+      breaks=c(0, 1, 3, 2, 'flood'),
+      labels=c('Last', 'Avg', 'Avg-R', 'Max', 'Flood'))
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
   )

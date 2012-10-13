@@ -142,8 +142,8 @@ if (labels == 'sel'){
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(xmin,xmax))
     + scale_colour_hue(name="Selection Method",
-      breaks=c(0, 1, 2),
-      labels=c('Last', 'Avg', 'Max'))
+      breaks=c(0, 1, 3, 2),
+      labels=c('Last', 'Avg', 'Avg-R', 'Max'))
     + geom_vline(xintercept=c(1.0), linetype='dotted')
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
