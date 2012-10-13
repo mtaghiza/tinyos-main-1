@@ -3,7 +3,7 @@ import sys
 import networkx as nx
 import sqlite3
 import random
-from math import log
+from math import log, round, ceil
 
 class Topology(object):
     def __init__(self):
@@ -255,6 +255,41 @@ class PhySimulation(Simulation):
         #TODO: phase interference?
         return self.wattsToDbm(self.dbmToWatts(minuend) - self.dbmToWatts(subtrahend))
 
+class DistanceMetric(object):
+    def __init__(self):
+        pass
+
+    def advertiseDistance(self, distances):
+        return random.sample(distances, 1)
+
+    def selectDistance(self, distances):
+        return random.sample(distances, 1)
+
+class LastDistance(DistanceMetric):
+    pass
+
+class AverageDistance(DistanceMetric):
+    def selectDistance(self, distances):
+        return round(return sum(distances)/float(len(distances)))
+
+    def advertiseDistance(self, distances):
+        return round(sum(distances)/float(len(distances)))
+
+class RoundedAverageDistance(DistanceMetric):
+    def selectDistance(self, distances):
+        return floor(return sum(distances)/float(len(distances)))
+
+    def advertiseDistance(self, distances):
+        return ceil(sum(distances)/float(len(distances)))
+
+
+class MaxDistance(DistanceMetric):
+    def selectDistance(self, distances):
+        return min(distances)
+
+    def advertiseDistance(self, distances):
+        return max(distances)
+
 def usage():
     print >>sys.stderr, "Usage: python %s [options]"%sys.argv[0]
     print >>sys.stderr, """
@@ -289,6 +324,7 @@ if __name__ == '__main__':
     synchLoss = 0
     naive = 0
     numSetups = 5
+    testsPerSetup = 30
 
 
     for (opt, val) in zip(sys.argv, sys.argv[1:]):
@@ -320,6 +356,8 @@ if __name__ == '__main__':
             naive = int(val)
         if opt == '--numSetups':
             numSetups = int(val)
+        if opt == '--testsPerSetup':
+            testsPerSetup = int(val)
         if opt == '--textOutFile':
             textOutFile = open(val, 'w')
 
@@ -336,7 +374,53 @@ if __name__ == '__main__':
           noCapMethod, synchLoss)
     for i in range(numSetups):
         print "Test setup %d of %d"%(i+1, numSetups)
-        sim.simFloodBatch([n for n in sim.G.nodes()], 30)
+        sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup)
+    #OK, so now we've got an  n x n x tps matrix of distance
+    #  measurements
+
+    #TODO: these should be params
+    dest = 0
+    selectionTrials = 5
+    bw = 0
+    ipi = {}
+    dm = LastDistance()
+    slotLen = 40
+    #TODO: this should come from topo
+    diameter = 8
+
+    for n in sim.G.nodes():
+        sim.G.nodes[n]['forwards'] = []
+    for n in range(selectionTrials):
+        for s in sim.G.nodes():
+            #pick d_sd from source measurements
+            d_sd = dm.advertiseDistance(sim.G.node[s]['distances'][dest])
+            ipi.get(s, []).append(d_sd)
+            for f in sim.G.nodes():
+                d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
+                d_fd = dm.selectDistance(sim.G.node[f]['distances'][dest])
+                isForwarder = (d_sf + d_fd) <= d_sd + bw
+                sim.G.nodes[f]['forwards'].append((s,  isForwarder))
+
+    for f in sim.G.nodes():
+        forwards = sim.G.nodes[f]['forwards']
+        for (src, isForwarder) in forwards:
+            #output: src, forwarder, isForwarder
+            fwdRawFile.write('%d %d %d'%(src, f, isForwarder))
+        totalTrials = len(forwards)
+        activeTrials = len( s for (s, isForwarder) in forwards if isForwarder)
+        #output: src, active, total, fractionActive
+        fwdAggFile.write('%d %d %d %0.4f'%(f, activeTrials, totalTrials,
+          float(activeTrials)/totalTrials)
+        ipis = ipi[f]
+        dp = [ (slotLen - diameter)/ d_sd for d_sd in ipis]
+        effectiveIpi = [(diameter + d_sd*p)/p for p in dp]
+        #format: src, distance, effective IPI, flood IPI
+        ipiFile.write('%d %0.4f %0.4f %d', 
+          f, 
+          sum(ipis)/float(len(ipis)),
+          sum(effectiveIpi)/float(len(effectiveIpi)),
+          diameter)
+
     if depthOutFile:
         sim.depthOutput(depthOutFile)
     if textOutFile:
