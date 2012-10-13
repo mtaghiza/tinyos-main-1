@@ -353,11 +353,11 @@ if __name__ == '__main__':
     nodeFile = 'fig_scripts/config/node_map.txt'
     nsluFile = 'fig_scripts/config/nslu_locations.txt'
     sr = 125
-    txp = 0x8D
+    txp = 0x2D
     packetLen = 16
     sliceLen = 10*60
     dbFile = None
-    captureThresh = 10
+    captureThresh = 5
     noCaptureLoss = 0.05
     depthOutFile = None
     textOutFile = None
@@ -367,16 +367,16 @@ if __name__ == '__main__':
     numSetups = 5
     testsPerSetup = 30
     dest = 0
-    selectionTrials = 1
+    selectionTrials = 20
     bw = 0
     dm = LastDistance()
     slotLen = 40
     topoFile = None
     diameter = None
 
-    fwdRawFile = sys.stdout
-    fwdAggFile = sys.stdout
-    ipiFile = sys.stdout
+    fwdRawFile = open('/dev/null', 'w')
+    fwdAggFile = open('/dev/null', 'w')
+    ipiFile = open('/dev/null', 'w')
 
     if len(sys.argv) < 3:
         usage()
@@ -384,7 +384,7 @@ if __name__ == '__main__':
     (opt,val) = (sys.argv[1], sys.argv[2])
     if opt == '--dbTopo':
         dbFile = val
-    elif opt == '--topoFile':
+    elif opt == '--fileTopo':
         topoFile = val
     else:
         usage()
@@ -460,8 +460,8 @@ if __name__ == '__main__':
         sim = PhySimulation(topo, captureThresh, noCaptureLoss,
           noCapMethod, synchLoss)
     for i in range(numSetups):
-        print "Test setup %d of %d"%(i+1, numSetups)
-        sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup)
+        print "Test setup %d of %d"%(i+1, numSetups) 
+        sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup) 
     #OK, so now we've got an  n x n x tps matrix of distance
     #  measurements
 
@@ -474,16 +474,20 @@ if __name__ == '__main__':
     for n in sim.G.nodes():
         sim.G.node[n]['forwards'] = []
         ipi[n]=[]
-
+    
+    #ignore nodes with no edges, if they appear
     for n in range(selectionTrials):
         for s in sim.G.nodes():
-            if s == dest:
+            if s == dest or len(sim.G[s]) == 0:
                 continue
             #pick d_sd from source measurements
             d_sd = dm.advertiseDistance(sim.G.node[s]['distances'][dest])
-            ipi[s].append(d_sd)
+            ipi[s].append(d_sd )
             for f in sim.G.nodes():
-                if f == dest or f == s:
+                #no edges for this node in connectivity graph, ignore it
+                if len(sim.G[f]) == 0:
+                    continue
+                if f == dest or f == s :
                     isForwarder = True
                 else:
                     d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
@@ -494,9 +498,10 @@ if __name__ == '__main__':
     diameter = 0
     for n in ipi:
         diameter = max( ipi[n] + [diameter])
+    floodDuration = diameter + 1
 
     for f in sim.G.nodes():
-        if f == dest:
+        if f == dest or len(sim.G[f]) == 0:
             continue
         forwards = sim.G.node[f]['forwards']
         for (src, isForwarder) in forwards:
@@ -508,14 +513,19 @@ if __name__ == '__main__':
         fwdAggFile.write('%d %d %d %0.4f\n'%(f, activeTrials, totalTrials,
           float(activeTrials)/totalTrials))
         ipis = ipi[f]
-        dp = [ floor((slotLen - diameter)/ d_sd) for d_sd in ipis]
-        effectiveIpi = [float((diameter + d_sd*p))/p for p in dp]
+        #number of data packets:
+        #  subtract flood duration from slotLen
+        dp = [ floor((slotLen - floodDuration)/ d_sd) for d_sd in ipis]
+        #burst duration: given by advertised distance + boundary width
+        bd = [ d_sd + bw for d_sd in ipis]
+        #effective IPI: (setup+ tx)/numData
+        eipi = [ (floodDuration + bv*p)/p for (bv,p) in zip(bd, dp)]
         #format: src, distance, effective IPI, flood IPI
         ipiFile.write('%d %0.4f %0.4f %d\n'%( 
           f, 
           sum(ipis)/float(len(ipis)),
-          sum(effectiveIpi)/float(len(effectiveIpi)),
-          diameter))
+          sum(eipi)/float(len(eipi)),
+          floodDuration))
 
     if depthOutFile:
         sim.depthOutput(depthOutFile)
