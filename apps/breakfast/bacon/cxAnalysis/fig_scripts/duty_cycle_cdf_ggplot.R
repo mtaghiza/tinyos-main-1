@@ -12,7 +12,8 @@ AND dc is not null
 and node not in (select node from error_events)"
 
 x <- c()
-
+xmin <- -1
+xmax <- -1
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -55,7 +56,6 @@ print("raw loaded")
 # x <- x[x$node !=19,]
 # x <- x[x$node !=21,]
 # x <- x[x$node !=58,]
-
 aggByNode <- ddply(x, .(label, node), summarise,
   dc=mean(dc),
   dc=sd(dc)
@@ -85,11 +85,16 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 #   aggCDF <- rbind(aggCDF, c(lbl, 0, 0))
 # }
 
+if (xmin == -1 ){
+  xmin <- 0
+  xmax <- max(aggCDF$dc)
+}
+
 print(
   ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
   + geom_line()
   + scale_y_continuous(limits=c(0,1.0))
-#  + scale_x_continuous(limits=c(0.0075,0.0225))
+  + scale_x_continuous(limits=c(xmin, xmax))
   + theme_bw()
 )
 if ( plotFile){

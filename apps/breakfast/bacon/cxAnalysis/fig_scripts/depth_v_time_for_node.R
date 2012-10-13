@@ -1,3 +1,5 @@
+library(RSQLite)
+library(ggplot2)
 fn <- ''
 plotFile <- F
 argc <- length(commandArgs())
@@ -5,11 +7,32 @@ argStart <- 1 + which (commandArgs() == '--args')
 nodeId <- -1
 ymin <- -1
 ymax <- -1
+rlQ <- "SELECT ts, depth FROM rx_all WHERE src=0 AND dest = ? ORDER by ts;"
+lrQ <- "SELECT ts, depth FROM rx_all WHERE dest=0 AND src = ? ORDER by ts;"
+
+testBreaks <- c()
+lr <- c()
+rl <- c()
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
-  if ( opt == '-f'){
+  if ( opt == '--db'){
     fn <- val
+    con <- dbConnect(dbDriver("SQLite"), dbname=fn)
+    
+    label <- commandArgs()[i+2]
+    rlTmp <- dbGetQuery(con, rlQ, nodeId)
+    rlTmp$label <- label
+    lrTmp <- dbGetQuery(con, lrQ, nodeId)
+    if (length(lrTmp$ts) > 0){
+      lrTmp$label <- label
+    }
+    if (length(rl) > 0){
+      rlTmp$ts <- rlTmp$ts - min(rlTmp$ts) + max(rl$ts)
+    }
+    testBreaks <- rbind(testBreaks, min(rlTmp$ts))
+    lr <- rbind(lr, lrTmp)
+    rl <- rbind(rl, rlTmp)
   }
   if ( opt == '-n'){
     nodeId <- as.integer(val)
@@ -29,16 +52,7 @@ for (i in seq(argStart, argc-1)){
     ymax <- as.numeric(val)
   }
 }
-
-rlQ <- "SELECT ts, depth FROM rx_all WHERE src=0 AND dest = ? ORDER by ts;"
-lrQ <- "SELECT ts, depth FROM rx_all WHERE dest=0 AND src = ? ORDER by ts;"
-library(RSQLite)
-con <- dbConnect(dbDriver("SQLite"), dbname=fn)
-
-
-rl <- dbGetQuery(con, rlQ, nodeId)
-
-lr <- dbGetQuery(con, lrQ, nodeId)
+testBreaks <- testBreaks-min(rl$ts)
 
 if (ymin == -1){
   ymin <- 1
@@ -46,18 +60,16 @@ if (ymin == -1){
 if (ymax == -1){
   ymax <-max(c(rl$depth, lr$depth)) 
 }
-plot(x=rl$ts-min(rl$ts), y=rl$depth, type='l', ylab='Depth',
-  xlab='Time(s)',
-  ylim=c(ymin,ymax), 
-  col='black')
-
-#points(x=lr$ts-min(rl$ts), y=lr$depth, col='blue', type='o', pch=16, lty=2)
-title(paste('Node', nodeId,'Distance v. Time'))
-# legend('topleft', c('Root->Leaf', 'Leaf->Root'),
-#   text.col=c('red','blue'),
-#   col=c('red', 'blue'),
-#   lty=c(1,2),
-#   pch=c(1, 16))
+print(
+  ggplot(rl, aes(x=ts-min(ts), y=depth)) 
+  + geom_point(size=0.5)
+  + geom_vline(xintercept=testBreaks, color='gray')
+  + theme_bw()
+  + xlab("Time (s)")
+  + ylab("Distance from Root")
+  + scale_y_continuous(limits=c(ymin, ymax))
+  + ggtitle(paste("Node", nodeId, " Distance v. Time"))
+)
 if ( plotFile){
   g<-dev.off()
 }

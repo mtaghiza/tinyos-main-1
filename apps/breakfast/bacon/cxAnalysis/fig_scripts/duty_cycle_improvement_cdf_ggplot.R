@@ -13,7 +13,8 @@ and node not in (select node from error_events)"
 
 x <- c()
 nx <- c()
-
+xmin <- 0
+xmax <- 2
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -56,6 +57,9 @@ for (i in seq(argStart, argc-1)){
   }
   if (opt == '--xmax'){
     xmax <- as.numeric(val)
+  }
+  if (opt == '--labels'){
+    labels <- val
   }
 }
 print("raw loaded")
@@ -107,13 +111,45 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 #   aggCDF <- rbind(aggCDF, c(lbl, 0, 0))
 # }
 
-print(
-  ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
-  + geom_line()
-  + scale_y_continuous(limits=c(0,1.0))
-  + scale_x_continuous(limits=c(0,2.0))
-  + theme_bw()
-)
+if (labels == 'none'){
+  print(
+    ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
+    + geom_line()
+    + geom_vline(xintercept=c(1.0), linetype='dotted')
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(xmin,xmax))
+    + theme_bw()
+  )
+}
+
+if (labels == 'bw'){
+  print(
+    ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(xmin,xmax))
+    + scale_colour_hue(name="Boundary Width")
+    + geom_vline(xintercept=c(1.0), linetype='dotted')
+    + theme_bw()
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+  )
+}
+
+if (labels == 'sel'){
+  print(
+    ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(xmin,xmax))
+    + scale_colour_hue(name="Selection Method",
+      breaks=c(0, 1, 2),
+      labels=c('Last', 'Avg', 'Max'))
+    + geom_vline(xintercept=c(1.0), linetype='dotted')
+    + theme_bw()
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+  )
+}
+
 if ( plotFile){
   g<-dev.off()
 }

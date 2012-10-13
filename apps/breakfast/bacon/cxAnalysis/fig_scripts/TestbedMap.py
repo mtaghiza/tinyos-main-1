@@ -602,7 +602,7 @@ if __name__ == '__main__':
             if o == '--txp':
                 txp = int(v, 16)
             if o == '--pl':
-                pl = int(v)
+                packetLen = int(v)
             if o == '--distanceLabels':
                 distanceLabels = int(v)
         print distanceLabels

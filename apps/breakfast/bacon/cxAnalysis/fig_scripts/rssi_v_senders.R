@@ -1,4 +1,5 @@
 library(RSQLite)
+
 selectQ <- "SELECT rssi, sendCount, crcPassed 
 FROM sniffs 
 JOIN numSenders ON 

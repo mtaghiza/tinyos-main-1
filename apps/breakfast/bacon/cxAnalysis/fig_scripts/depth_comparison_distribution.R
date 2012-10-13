@@ -66,14 +66,14 @@ if ( legendSettings == 'sim'){
   plotTitle <- "Simulation v. Actual Distance"
   print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
     + geom_point(position=pd)
-    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
+#    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
   #  + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
     + xlab("Node ID")
     + ylab("Distance")
     + ggtitle(plotTitle) 
-    + scale_colour_hue(name="Dataset", 
-        breaks=c("testbed", "sim_0.4_10_ind_0", "sim_0.4_10_ind_1"),
-        labels=c("Testbed", "Simulation ( + interference)", "Simulation (no interference)")) 
+#     + scale_colour_hue(name="Dataset", 
+#         breaks=c("testbed", "sim_0.4_10_ind_0", "sim_0.4_10_ind_1"),
+#         labels=c("Testbed", "Simulation ( + interference)", "Simulation (no interference)")) 
     + theme_bw()
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
   )

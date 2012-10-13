@@ -75,6 +75,7 @@ print(
 #   ylab="PRR (0,1.0)"
 #   )
 # title("Single-transmitter Packet Reception Ratio vs. RSSI")
-# if(plotFile){
-#   g <- dev.off()
-# }
+
+if(plotFile){
+  g <- dev.off()
+}

@@ -22,7 +22,7 @@ x <- c()
 pr <- 0
 direction <- 'lr'
 selectQ <- selectQRL
-
+labels <- 'none'
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -65,6 +65,9 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--xmax'){
     xmax <- as.numeric(val)
   }
+  if (opt == '--labels'){
+    labels <- val
+  }
 }
 print("raw loaded")
 aggByNode <- ddply(x, .(label, node), summarise,
@@ -95,13 +98,42 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 # for (lbl in unique(aggCDF$label)){
 #   aggCDF <- rbind(aggCDF, c(lbl, 0, 0))
 # }
-print(
-  ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
-  + geom_line()
-  + scale_y_continuous(limits=c(0,1.0))
-  + scale_x_continuous(limits=c(0,1.0))
-  + theme_bw()
-)
+
+if (labels == 'bw'){
+  print(
+    ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(0,1.0))
+    + scale_colour_hue(name="Boundary Width")
+    + theme_bw()
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+  )
+}
+if (labels == 'sel'){
+  print(
+    ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(0,1.0))
+    + scale_colour_hue(name="Selection Method",
+      breaks=c(0, 1, 2, 'flood'),
+      labels=c('Last', 'Avg', 'Max', 'Flood'))
+    + theme_bw()
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+  )
+}
+if (labels == 'none'){
+  print(
+    ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(0,1.0))
+    + theme_bw()
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+  )
+}
+
 if ( plotFile){
   g<-dev.off()
 }
