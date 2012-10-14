@@ -53,11 +53,11 @@ class TestbedMap(object):
         nx.draw_networkx_nodes(self.G, 
           pos=nx.get_node_attributes(self.G, 'pos'),
           node_size=node_size,
-          nodelist = self.G.nodes()
-          , node_color=[self.G.node[n][self.colAttr] for n in self.G.nodes()]
+          nodelist = [n for n in reversed(self.G.nodes())]
+          , node_color=[self.G.node[n][self.colAttr] for n in reversed(self.G.nodes())]
           , cmap = palette
           , linewidths = [self.G.node[n].get('linewidth', 1.0) 
-              for n in self.G.nodes()]
+              for n in reversed(self.G.nodes())]
         )
 
     def drawEdges(self, alpha=0.2):
@@ -93,16 +93,20 @@ class TestbedMap(object):
     def addOutlined(self, nodeId, width):
         self.G.node[nodeId]['linewidth'] = width
 
-    def draw(self, outFile=None, node_size=200, palette=plt.cm.jet):
+    def draw(self, outFile=None, node_size=200, palette=plt.cm.jet,
+          drawLabels= True):
         self.drawCMapNodes(node_size, palette)
         self.drawEdges()
-        self.drawLabels()
+        if drawLabels:
+            self.drawLabels()
         self.postDraw()
         if not outFile:
             plt.show()
         else:
             F = plt.gcf()
-            F.set_size_inches([12, 12])
+            plt.ylim(0, 1000)
+            plt.xlim(0, 1000)
+            F.set_size_inches([8, 8])
             plt.savefig(outFile, format='png')
             pass
 
@@ -145,7 +149,7 @@ class SingleTXDepth(TestbedMap):
         maxDepth= max([v for v in p.values()])
         for nodeId in self.G.nodes():
             if nodeId not in p:
-                p[nodeId] = unreachableVal
+                p[nodeId] = maxDepth
         return p
 
 class Degree(TestbedMap):
@@ -748,7 +752,8 @@ if __name__ == '__main__':
     for (o, v) in zip(sys.argv, sys.argv[1:]):
         if o == '--outFile':
             outFile = v
-    tbm.draw(node_size=400, outFile=outFile)
+    tbm.draw(node_size=200, outFile=outFile, palette=plt.cm.gist_yarg,
+      drawLabels=True)
     if '--text' in sys.argv:
         tbm.textOutput()
 
