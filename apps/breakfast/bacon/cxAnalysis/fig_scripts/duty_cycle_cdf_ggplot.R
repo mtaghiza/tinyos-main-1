@@ -14,6 +14,7 @@ and node not in (select node from error_events)"
 x <- c()
 xmin <- -1
 xmax <- -1
+plotType <- 'cdf'
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -33,7 +34,7 @@ for (i in seq(argStart, argc-1)){
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="PRR Comparison CDF")
+    pdf(val, width=4, height=3, title="Duty Cycle Distribution")
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -44,6 +45,9 @@ for (i in seq(argStart, argc-1)){
   }
   if (opt == '--xmax'){
     xmax <- as.numeric(val)
+  }
+  if (opt == '--plotType'){
+    plotType <- val
   }
 }
 print("raw loaded")
@@ -84,19 +88,33 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 # for (lbl in unique(aggCDF$label)){
 #   aggCDF <- rbind(aggCDF, c(lbl, 0, 0))
 # }
-
-if (xmin == -1 ){
-  xmin <- 0
-  xmax <- max(aggCDF$dc)
+if (plotType == 'cdf'){
+  if (xmin == -1 ){
+    xmin <- 0
+  }
+  if (xmax == -1){
+    xmax <- max(aggCDF$dc)
+  }
+  print(
+    ggplot(aggCDF, aes(x=dc, y=ecdf, linetype=label))
+    + geom_line()
+    + scale_y_continuous(limits=c(0,1.0))
+    + scale_x_continuous(limits=c(xmin, xmax))
+    + theme_bw()
+    + xlab("Duty Cycle")
+    + ylab("CDF")
+    + theme(legend.position="none")
+  )
 }
-
-print(
-  ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
-  + geom_line()
-  + scale_y_continuous(limits=c(0,1.0))
-  + scale_x_continuous(limits=c(xmin, xmax))
-  + theme_bw()
-)
+if (plotType == 'hist'){
+  print(
+    ggplot(aggByNode, aes(x=dc))
+    + geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.001, color='black', fill='gray')
+    + xlab("Duty Cycle")
+    + ylab("Fraction")
+    + theme_bw()
+  )
+}
 if ( plotFile){
   g<-dev.off()
 }

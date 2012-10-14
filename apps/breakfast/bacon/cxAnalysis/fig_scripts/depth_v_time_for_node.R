@@ -10,6 +10,7 @@ ymax <- -1
 rlQ <- "SELECT ts, depth FROM rx_all WHERE src=0 AND dest = ? ORDER by ts;"
 lrQ <- "SELECT ts, depth FROM rx_all WHERE dest=0 AND src = ? ORDER by ts;"
 
+plotType <- 'time'
 testBreaks <- c()
 lr <- c()
 rl <- c()
@@ -39,7 +40,7 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title=paste("Node",nodeId, "depth time series"))
+    pdf(val, width=4, height=3, title=paste("Node",nodeId, "depth time series"))
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -51,6 +52,9 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--ymax'){
     ymax <- as.numeric(val)
   }
+  if (opt == '--plotType'){
+    plotType <- val
+  }
 }
 testBreaks <- testBreaks-min(rl$ts)
 
@@ -60,16 +64,30 @@ if (ymin == -1){
 if (ymax == -1){
   ymax <-max(c(rl$depth, lr$depth)) 
 }
-print(
-  ggplot(rl, aes(x=ts-min(ts), y=depth)) 
-  + geom_point(size=0.5)
-  + geom_vline(xintercept=testBreaks, color='gray')
-  + theme_bw()
-  + xlab("Time (s)")
-  + ylab("Distance from Root")
-  + scale_y_continuous(limits=c(ymin, ymax))
-  + ggtitle(paste("Node", nodeId, " Distance v. Time"))
-)
+if (plotType == 'time'){
+  print(
+    ggplot(rl, aes(x=ts-min(ts), y=depth)) 
+    + geom_point(size=0.5)
+    + geom_vline(xintercept=testBreaks, color='gray')
+    + theme_bw() 
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+    + xlab("Time (s)")
+    + ylab("Distance from Root")
+    + scale_y_continuous(limits=c(ymin, ymax))
+    + ggtitle(paste("Node ", nodeId, " Distance v. Time"))
+  )
+}
+if (plotType == 'hist'){
+  print(
+    ggplot(rl, aes(x=depth))
+    + geom_histogram(aes(y=..count../sum(..count..)),
+      binwidth=1.0, color='black', fill='gray')
+    + xlab("Distance From root")
+    + ylab("Fraction")
+    + theme_bw()
+    + ggtitle(paste("Node ", nodeId, " Distance Distribution"))
+  )
+}
 if ( plotFile){
   g<-dev.off()
 }

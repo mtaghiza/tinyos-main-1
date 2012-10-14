@@ -6,9 +6,9 @@ library(plyr)
 library(ggplot2)
 library(RSQLite)
 
-plotType <- 'prrPass'
+plotType <- 'RSSI'
 sr <- 125
-selectQ <- 'SELECT rssi,lqi from raw where cnt=2'
+selectQ <- 'SELECT rssi,lqi from raw where cnt=2 and lqi<=50'
 checkQ <- 'SELECT count(*) from ber'
 pw <- 8
 ph <- 4
@@ -17,8 +17,8 @@ for (i in seq(argStart, argc-1)){
   val <- commandArgs()[i+1]
   if (opt == '--aspect'){
     if (val == 'square'){
-      pw <- 4
-      ph <- 4
+      pw <- 8
+      ph <- 8
     }
   }
   if ( opt == '--db'){
@@ -60,4 +60,12 @@ for (i in seq(argStart, argc-1)){
 x$fecOn <- factor(x$fecOn)
 x$captureMargin <- factor(x$captureMargin)
 
+boxplot(rssi~sc,
+  data=x,
+  xlab="Number of Senders",
+  ylab="RSSI")
+title("RSSI v. Number of Senders")
 
+if (plotFile){
+  g <- dev.off()
+}

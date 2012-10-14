@@ -46,7 +46,7 @@ for (i in seq(argStart, argc-1)){
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="PRR Comparison CDF")
+    pdf(val, width=4, height=4, title="DCI Comparison CDF")
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -124,29 +124,38 @@ if (labels == 'none'){
 
 if (labels == 'bw'){
   print(
-    ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
+    ggplot(aggCDF, aes(x=dc, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(xmin,xmax))
-    + scale_colour_hue(name="Boundary Width")
-    + geom_vline(xintercept=c(1.0), linetype='dotted')
+    + scale_linetype_manual(name="BW",
+      breaks=c(0, 1, 2, 3, 5),
+      labels=c(0, 1, 2, 3, 5),
+      values=c(3, 4, 2, 5, 1))
+    + ylab("CDF")
+    + xlab("Fraction of Flood Duty Cycle")
+    + geom_vline(xintercept=c(1.0), col='gray')
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
   )
 }
 
 if (labels == 'sel'){
+  
   print(
-    ggplot(aggCDF, aes(x=dc, y=ecdf, color=label))
+    ggplot(aggCDF, aes(x=dc, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(xmin,xmax))
-    + scale_colour_hue(name="Selection Method",
-      breaks=c(0, 1, 3, 2),
-      labels=c('Last', 'Avg', 'Avg-R', 'Max'))
-    + geom_vline(xintercept=c(1.0), linetype='dotted')
+    + scale_linetype_manual(name="Selection Method",
+      breaks=c(0, 1, 3, 2, 'flood'),
+      labels=c('Last', 'Avg', 'Avg', 'Max', 'Flood'),
+      values=c(3, 1, 2, 4, 5))
+    + ylab("CDF")
+    + xlab("Fraction of Flood Duty Cycle")
+    + geom_vline(xintercept=c(1.0), col='gray')
     + theme_bw()
-    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(legend.justification=c(1,0), legend.position=c(1,0))
   )
 }
 

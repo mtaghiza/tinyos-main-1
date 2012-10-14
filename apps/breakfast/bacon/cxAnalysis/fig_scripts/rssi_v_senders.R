@@ -24,11 +24,11 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="RSSI v. Num Senders")
+    pdf(val, width=9, height=9, title="RSSI v. Num Senders")
   }
   if ( opt == '--png' ){
     plotFile=T
-    png(val, width=9, height=6, units="in", res=200)
+    png(val, width=9, height=9, units="in", res=200)
   }
 }
 

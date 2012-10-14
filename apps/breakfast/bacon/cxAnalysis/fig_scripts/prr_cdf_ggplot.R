@@ -23,6 +23,8 @@ pr <- 0
 direction <- 'lr'
 selectQ <- selectQRL
 labels <- 'none'
+xmin <- 0
+xmax <- 1
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -53,7 +55,7 @@ for (i in seq(argStart, argc-1)){
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=9, height=6, title="PRR Comparison CDF")
+    pdf(val, width=4, height=4, title="PRR Comparison CDF")
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -101,11 +103,16 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 
 if (labels == 'bw'){
   print(
-    ggplot(aggCDF, aes(x=prr, y=ecdf, linetype=label))
+    ggplot(aggCDF[aggCDF$label!=5,], aes(x=prr, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
-    + scale_x_continuous(limits=c(0,1.0))
-    + scale_linetype(name="Boundary Width")
+    + scale_x_continuous(limits=c(xmin,xmax))
+    + scale_linetype_manual(name="Boundary Width",
+      breaks=c(0, 1, 2, 3, 5),
+      labels=c(0, 1, 2, 3, 5),
+      values=c(3, 4, 2, 5, 1))
+    + ylab("CDF")
+    + xlab("Packet Reception Ratio")
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
   )
