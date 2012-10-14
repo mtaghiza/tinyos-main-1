@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import pdb
+import matplotlib.pyplot as plt
 import sys
 import networkx as nx
 import sqlite3
@@ -170,13 +172,14 @@ class SyntheticTopology(TestbedTopology):
             for (d, dm) in nodes:
                 if d != s:
                     (sx, sy) = sm['pos']
-                    (dx, dy) = sm['pos']
+                    (dx, dy) = dm['pos']
                     dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
                     distBucket = floor(dist/self.bucketSize) * self.bucketSize
                     (prr, rssi) = edgeMap.get( (s, d), (0,-100))
                     if distBucket not in edgeBuckets:
                         edgeBuckets[distBucket] = []
                     edgeBuckets[distBucket].append( (prr,rssi))
+#         pdb.set_trace()
         #OK, so now we've got our testbed data in buckets. Now we have
         # to iterate over the pairs of nodes in the synthetic topology and
         # create the corresponding edges
@@ -186,12 +189,15 @@ class SyntheticTopology(TestbedTopology):
             for (d, dm) in nodes:
                 if d!=s:
                     (sx, sy) = sm['pos']
-                    (dx, dy) = sm['pos']
+                    (dx, dy) = dm['pos']
                     dist = ((dx-sx)**2 + (dy-sy)**2)**0.5
                     distBucket = floor(dist/self.bucketSize) * self.bucketSize
+                    if distBucket not in edgeBuckets:
+                        edgeBuckets[distBucket] = [(0, -100)]
                     [(prr, rssi)] = random.sample(edgeBuckets[distBucket], 1)
                     if prr != 0:
                         edges.append( (s, d, {'prr':prr, 'rssi':rssi}))
+#         pdb.set_trace()
         return edges
 
     def getNodes(self):
@@ -206,9 +212,10 @@ class SyntheticTopology(TestbedTopology):
             width = self.area/height
 
             if self.cornerRoot:
-                self.nodes = [ (0, {'pos':(0, 0)})]
+                self.nodes = [ (0, {'pos':(-1*width/2, -1*height/2)})]
             else:
-                self.nodes = [ (0, {'pos':(width/2, height/2)})]
+                self.nodes = [ (0, {'pos':(0, 0)})]
+
             for n in range(1, self.numNodes):
                 x = (random.random()*width) - (width/2)
                 y = (random.random()*height) - (height/2)
@@ -508,6 +515,7 @@ if __name__ == '__main__':
         if opt == '--noCaptureLoss':
             noCaptureLoss = float(val)
         if opt == '--depthOutFile':
+            print "depth output to", val
             depthOutFile = open(val, 'w')
         if opt == '--noCapMethod':
             noCapMethod = val
@@ -520,6 +528,7 @@ if __name__ == '__main__':
         if opt == '--testsPerSetup':
             testsPerSetup = int(val)
         if opt == '--textOutFile':
+            print "text output to", val
             textOutFile = open(val, 'w')
         if opt == '--dest':
             dest = int(val)
@@ -554,6 +563,8 @@ if __name__ == '__main__':
             aspectRatio = float(val)
         if opt == '--cornerRoot':
             cornerRoot = int(val)
+        if opt == '--positionOutFile':
+            positionOutFile = open(val, 'w')
 
 
     if dbSyntheticFile:
@@ -564,10 +575,6 @@ if __name__ == '__main__':
           cornerRoot,
           nsluFile, nodeFile, sr, txp,
           packetLen, sliceLen)
-        nodes = topo.getNodes()
-        for (n, nm) in nodes:
-            print n, nm['pos'][0], nm['pos'][1]
-        sys.exit(0)
     elif dbFile:
         topo = TestbedTopology(dbFile, nsluFile, nodeFile, sr, txp,
           packetLen, sliceLen)
@@ -584,11 +591,34 @@ if __name__ == '__main__':
         sim = PhySimulation(topo, captureThresh, noCaptureLoss,
           noCapMethod, synchLoss)
 
+    print 'root position:', sim.G.node[0]['pos']
+    if positionOutFile:
+        nodes = topo.getNodes()
+        for (n, nm) in nodes:
+            positionOutFile.write('%d %0.2f %0.2f\n'%(n, nm['pos'][0], nm['pos'][1]))
+
+    #all right, what the fuck. let's show the graph 
     for i in range(numSetups):
         print "Test setup %d of %d"%(i+1, numSetups) 
+#         sim.simFloodBatch([0], testsPerSetup) 
+#         nx.draw_networkx_nodes(sim.G,
+#           pos=nx.get_node_attributes(sim.G, 'pos'))
+#         allEdges = sim.G.edges(data=True)
+#         goodEdges = [ e for e in allEdges if e[-1]['prr'] > 0.9]
+#         nx.draw_networkx_edges(sim.G,
+#           pos=nx.get_node_attributes(sim.G, 'pos'),
+#           edgelist=goodEdges, 
+#           alpha=0.2, arrows=False)
+#         plt.show()    
         sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup) 
     #OK, so now we've got an  n x n x tps matrix of distance
     #  measurements
+
+    if depthOutFile:
+        sim.depthOutput(depthOutFile)
+    if textOutFile:
+        sim.textOutput(textOutFile)
+
 
     #TODO: this should be a method of simulation class
 
@@ -648,12 +678,6 @@ if __name__ == '__main__':
           sum(ipis)/float(len(ipis)),
           sum(eipi)/float(len(eipi)),
           floodDuration))
-
-    if depthOutFile:
-        sim.depthOutput(depthOutFile)
-    if textOutFile:
-        sim.textOutput(textOutFile)
-
 
 
 
