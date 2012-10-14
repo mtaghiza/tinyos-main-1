@@ -101,24 +101,27 @@ aggCDF <- ddply(aggByNode, .(label), summarize,
 
 if (labels == 'bw'){
   print(
-    ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+    ggplot(aggCDF, aes(x=prr, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(0,1.0))
-    + scale_colour_hue(name="Boundary Width")
+    + scale_linetype(name="Boundary Width")
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
   )
 }
 if (labels == 'sel'){
   print(
-    ggplot(aggCDF, aes(x=prr, y=ecdf, color=label))
+    ggplot(aggCDF, aes(x=prr, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(0,1.0))
-    + scale_colour_hue(name="Selection Method",
+    + scale_linetype_manual(name="Selection Method",
       breaks=c(0, 1, 3, 2, 'flood'),
-      labels=c('Last', 'Avg', 'Avg-R', 'Max', 'Flood'))
+      labels=c('Last', 'Avg', 'Avg', 'Max', 'Flood'),
+      values=c(3, 1, 2, 4, 5))
+    + ylab("CDF")
+    + xlab("Packet Reception Ratio")
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
   )
