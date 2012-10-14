@@ -18,7 +18,7 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--aspect'){
     if (val == 'square'){
       pw <- 4
-      ph <- 4
+      ph <- 3
     }
   }
   if ( opt == '--db'){
@@ -111,17 +111,25 @@ if (plotType == 'prrAny'){
 }
 if (plotType == 'prrPass'){
   print(
-    ggplot(agg[agg$symbolRate == sr,], aes(x=sc, y=prrFecM,
-      color=captureMargin, linetype=fecOn))
+    ggplot(agg[agg$symbolRate == sr & agg$fecOn==1,], aes(x=sc, y=prrFecM,
+      linetype=captureMargin))
     + geom_line(position=pd)
-    + geom_point(position=pd, data=x[x$symbolRate==sr,], aes(x=sc, y=prrFec, shape=fecOn) )
+    + geom_point(position=pd, 
+      data=x[x$symbolRate==sr & x$captureMargin==0,], 
+      aes(x=sc, y=prrFec),
+      size=1.0)
     + xlab("Number of senders")
     + ylab("PRR")
     + ggtitle(paste("PRR v. Senders: SR=", sr, "K", sep=""))
     + theme_bw()
-    + theme(legend.justification=c(0,0), legend.position=c(0,0))
+    + theme(legend.justification=c(1,0), legend.position=c(1,0))
     + scale_shape(solid=FALSE)
-    + scale_y_continuous(limits=c(0.0, 1))
+    + scale_y_continuous(limits=c(0.75, 1))
+    + scale_linetype_manual(name="Capture Margin", 
+      breaks=c(0,6,10,20),
+      labels=c(0,6,10,20),
+      values=c(1,2,3,4)
+      )
   )
   print(agg[agg$sc == 5,])
 }

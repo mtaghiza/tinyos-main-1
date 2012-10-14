@@ -34,7 +34,8 @@ for (i in seq(argStart, argc-1)){
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=4, height=3, title="Duty Cycle Distribution")
+    #for whatever rason, latex barfs if this is 4x3
+    pdf(val, width=4, height=3.5, title="Duty Cycle Distribution")
   }
   if ( opt == '--png' ){
     plotFile=T

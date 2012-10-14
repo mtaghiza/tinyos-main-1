@@ -55,7 +55,7 @@ for (i in seq(argStart, argc-1)){
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=4, height=4, title="PRR Comparison CDF")
+    pdf(val, width=4, height=3, title="PRR Comparison CDF")
   }
   if ( opt == '--png' ){
     plotFile=T

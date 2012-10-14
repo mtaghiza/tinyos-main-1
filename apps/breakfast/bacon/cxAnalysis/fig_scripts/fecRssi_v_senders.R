@@ -17,8 +17,8 @@ for (i in seq(argStart, argc-1)){
   val <- commandArgs()[i+1]
   if (opt == '--aspect'){
     if (val == 'square'){
-      pw <- 8
-      ph <- 8
+      pw <- 4
+      ph <- 4
     }
   }
   if ( opt == '--db'){
@@ -63,7 +63,9 @@ x$captureMargin <- factor(x$captureMargin)
 boxplot(rssi~sc,
   data=x,
   xlab="Number of Senders",
-  ylab="RSSI")
+  ylab="RSSI",
+  outpch='.',
+  whisklty=1)
 title("RSSI v. Number of Senders")
 
 if (plotFile){
