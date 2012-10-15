@@ -18,8 +18,7 @@ class TestbedMap(object):
         scriptDir = scriptDir+'/'
 
         #add background image
-        im = plt.imread(scriptDir+mapFile)
-        implot = plt.imshow(im)
+        self.im = plt.imread(scriptDir+mapFile)
         
         #read NSLU locations
         f = open(scriptDir+nsluFile)
@@ -50,16 +49,43 @@ class TestbedMap(object):
 
     def drawCMapNodes(self, node_size, palette):
         """ Draw nodes, color according to palette/colorMap"""
-        nx.draw_networkx_nodes(self.G, 
-          pos=nx.get_node_attributes(self.G, 'pos'),
-          node_size=node_size,
-          nodelist = [n for n in reversed(self.G.nodes())]
-          , node_color=[self.G.node[n][self.colAttr] for n in reversed(self.G.nodes())]
-          , cmap = palette
-          , linewidths = [self.G.node[n].get('linewidth', 1.0) 
-              for n in reversed(self.G.nodes())]
-        )
-
+        #pdb.set_trace()
+        circleNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'circle']
+        boxNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'box']
+        starNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'star']
+        if circleNodes:
+            nx.draw_networkx_nodes(self.G, 
+              pos=nx.get_node_attributes(self.G, 'pos'),
+              node_size=node_size,
+              nodelist = [n for n in reversed(circleNodes)]
+              , node_color=[self.G.node[n][self.colAttr] for n in reversed(circleNodes)]
+              , cmap = palette
+              , linewidths = [self.G.node[n].get('linewidth', 1.0) 
+                  for n in reversed(circleNodes)]
+            )
+        if boxNodes:
+            nx.draw_networkx_nodes(self.G, 
+              pos=nx.get_node_attributes(self.G, 'pos'),
+              node_size=2*node_size,
+              nodelist = [n for n in reversed(boxNodes)]
+              , node_color=[self.G.node[n][self.colAttr] for n in reversed(boxNodes)]
+              , cmap = palette
+              , linewidths = [self.G.node[n].get('linewidth', 1.0) 
+                  for n in reversed(boxNodes)]
+              , node_shape='s'
+            ) 
+        if starNodes:
+            nx.draw_networkx_nodes(self.G, 
+              pos=nx.get_node_attributes(self.G, 'pos'),
+              node_size=2*node_size,
+              nodelist = [n for n in reversed(starNodes)]
+              , node_color=[self.G.node[n][self.colAttr] for n in reversed(starNodes)]
+              , cmap = palette
+              , linewidths = [self.G.node[n].get('linewidth', 1.0) 
+                  for n in reversed(starNodes)]
+              , node_shape=(5,1)
+            ) 
+     
     def drawEdges(self, alpha=0.2):
         """Draw a set of edges on the graph."""
         nx.draw_networkx_edges(self.G,
@@ -68,12 +94,25 @@ class TestbedMap(object):
           arrows=False,
           alpha=0.2)
     
-    def drawLabels(self):
+    def drawLabels(self, labelAll=True):
         """Draw labels on nodes in graph (nodeId by default)"""
-        nx.draw_networkx_labels(self.G, 
-          pos=nx.get_node_attributes(self.G, 'pos'),
-          font_size=10,
-          labels=self.labelMap)
+#        circleNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'circle']
+#        pdb.set_trace()
+        if labelAll:
+            nx.draw_networkx_labels(self.G, 
+              pos=nx.get_node_attributes(self.G, 'pos'),
+              font_size=10,
+              labels=self.labelMap)
+        else:
+            boxNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'box']
+            lm = {} 
+            for n in boxNodes:
+                lm[n]=self.labelMap[n]
+            nx.draw_networkx_labels(self.G, 
+              pos=nx.get_node_attributes(self.G, 'pos'),
+              font_size=10,
+              labels=lm)
+
 
     def setAttr(self, attr, attrMap, defaultVal=None):
         #ugly: we want to have a way to enforce that every node has a
@@ -94,11 +133,12 @@ class TestbedMap(object):
         self.G.node[nodeId]['linewidth'] = width
 
     def draw(self, outFile=None, node_size=200, palette=plt.cm.jet,
-          drawLabels= True):
+          labelAll= True, bgImage=True):
+        if bgImage:
+            implot = plt.imshow(self.im)
         self.drawCMapNodes(node_size, palette)
         self.drawEdges()
-        if drawLabels:
-            self.drawLabels()
+        self.drawLabels(labelAll)
         self.postDraw()
         if not outFile:
             plt.show()
@@ -121,15 +161,33 @@ class TestbedMap(object):
 class SingleTXDepth(TestbedMap):
     def __init__(self, root, dbFile, sr, txp, packetLen,
           prr_threshold=0.0, rssi_threshold=-100, 
-          distanceLabels = False, **kwargs):
+          distanceLabels = False, addKey=True, 
+          **kwargs):
         print root, dbFile, sr, txp, packetLen, prr_threshold, rssi_threshold, distanceLabels
         super(SingleTXDepth, self).__init__(**kwargs)
         self.loadPrrEdges(dbFile, sr, txp, packetLen, prr_threshold,
           rssi_threshold)
         self.distances = self.computeSPs(root)
+        self.distances[root]=1
+        self.G.node[root]['shape']='star'
+        if addKey:
+            key = {}
+            key[70] = {'pos': (25, 30), 'shape':'box'}
+            key[71] = {'pos': (25, 80), 'shape':'box'}
+            key[72] = {'pos': (25, 130), 'shape':'box'}
+            key[73] = {'pos': (25, 180), 'shape':'box'}
+            key[74] = {'pos': (25, 230), 'shape':'box'}
+            self.distances[70] = 1
+            self.distances[71] = 2
+            self.distances[72] = 3
+            self.distances[73] = 4
+            self.distances[74] = 5
+            self.G.add_nodes_from([(k, key[k]) for k in key])
+
         self.setAttr('distance', self.distances)
         self.setColAttr('distance')
-        self.addOutlined(root, 10)
+        self.addOutlined(root, 2)
+
         if distanceLabels:
             self.setLabels(self.distances)
 
@@ -202,18 +260,41 @@ class CXDistance(TestbedMap):
         self.errors = [ nodeId for (nodeId,) in c.execute('SELECT node from error_events')]
 
 class CXForwarders(TestbedMap):
-    def __init__(self, src, dest, dbFile, **kwargs):
+    def __init__(self, src, dest, dbFile, outlineErrors=False,
+          addKey=True, **kwargs):
         super(CXForwarders, self).__init__(**kwargs)
         self.loadForwarders(src, dest, dbFile)
         self.loadErrors(dbFile)
         self.fwdRatio[src]=1.0
         self.fwdRatio[dest]=1.0
+        self.G.node[src]['shape']='star'
+        self.G.node[dest]['shape']='star'
+        self.addOutlined(src, 2)
+        self.addOutlined(dest, 2)
+        for n in self.errors:
+            self.G.node[n]['shape'] = 'none'
+        
+        if addKey:
+            key = {}
+            key[70] = {'pos': (25, 30), 'shape':'box'}
+            key[71] = {'pos': (25, 80), 'shape':'box'}
+            key[72] = {'pos': (25, 130), 'shape':'box'}
+            key[73] = {'pos': (25, 180), 'shape':'box'}
+            key[74] = {'pos': (25, 230), 'shape':'box'}
+            self.fwdRatio[70] = 0
+            self.fwdRatio[71] = 0.25
+            self.fwdRatio[72] = 0.50
+            self.fwdRatio[73] = 0.75
+            self.fwdRatio[74] = 1.0
+            self.G.add_nodes_from([(k, key[k]) for k in key])
+
         self.setAttr('fwdRatio', self.fwdRatio, 0)
         self.setColAttr('fwdRatio')
-        self.addOutlined(src, 10)
-        self.addOutlined(dest, 10)
-        for nodeId in self.errors:
-            self.addOutlined(nodeId, 3)
+
+
+        if outlineErrors:
+            for nodeId in self.errors:
+                self.addOutlined(nodeId, 3)
         rounded = dict([ (k, "%.2f"%self.fwdRatio[k]) 
           for k in self.fwdRatio])
         self.setLabels(rounded)
@@ -585,6 +666,8 @@ class Trace(TestbedMap):
 if __name__ == '__main__':
     fn = sys.argv[1]
     t = sys.argv[2]
+    labelAll = 1
+    bgImage = 1
     if t == '--simple':
         src = 0
         prrThresh = 0.95
@@ -609,6 +692,10 @@ if __name__ == '__main__':
                 packetLen = int(v)
             if o == '--distanceLabels':
                 distanceLabels = int(v)
+            if o == '--labelAll':
+                labelAll = int(v)
+            if o == '--bgImage':
+                bgImage = int(v)
         print distanceLabels
         tbm = SingleTXDepth(src, fn, sr, txp, packetLen, prrThresh,
           rssiThresh, distanceLabels)
@@ -627,6 +714,11 @@ if __name__ == '__main__':
         src = int(sys.argv[3])
         dest = int(sys.argv[4])
         tbm = CXForwarders(src, dest, fn)
+        for (o, v) in zip(sys.argv, sys.argv[1:]):
+            if o == '--labelAll':
+                labelAll = int(v)
+            if o == '--bgImage':
+                bgImage = int(v)
     elif t == '--cxp':
         prrFrom = True
         nodeId = 0
@@ -744,6 +836,7 @@ if __name__ == '__main__':
                     sn = int(v)
                 if o == '--count':
                     count = int(v)
+
         tbm = Trace(fn, src, sn, count)
     else:
         print >> sys.stderr, "Unrecognized type",t
@@ -752,8 +845,9 @@ if __name__ == '__main__':
     for (o, v) in zip(sys.argv, sys.argv[1:]):
         if o == '--outFile':
             outFile = v
+    
     tbm.draw(node_size=200, outFile=outFile, palette=plt.cm.gist_yarg,
-      drawLabels=True)
+      labelAll=labelAll, bgImage=bgImage)
     if '--text' in sys.argv:
         tbm.textOutput()
 

@@ -74,7 +74,6 @@ if (plotType == 'time'){
     + xlab("Time (s)")
     + ylab("Distance from Root")
     + scale_y_continuous(limits=c(ymin, ymax))
-    + ggtitle(paste("Node ", nodeId, " Distance v. Time"))
   )
 }
 if (plotType == 'hist'){
@@ -85,7 +84,7 @@ if (plotType == 'hist'){
     + xlab("Distance From root")
     + ylab("Fraction")
     + theme_bw()
-    + ggtitle(paste("Node ", nodeId, " Distance Distribution"))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if ( plotFile){

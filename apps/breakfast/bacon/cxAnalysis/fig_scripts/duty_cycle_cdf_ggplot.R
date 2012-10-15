@@ -105,6 +105,7 @@ if (plotType == 'cdf'){
     + xlab("Duty Cycle")
     + ylab("CDF")
     + theme(legend.position="none")
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if (plotType == 'hist'){
@@ -114,6 +115,7 @@ if (plotType == 'hist'){
     + xlab("Duty Cycle")
     + ylab("Fraction")
     + theme_bw()
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if ( plotFile){

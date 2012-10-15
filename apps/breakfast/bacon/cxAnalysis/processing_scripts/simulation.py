@@ -357,7 +357,10 @@ class PhySimulation(Simulation):
                 shouldReceive = (random.random() < maxPrr)
 
             if not capturePresent and shouldReceive:
-                shouldReceive = (random.random() > self.noCaptureLoss)
+                if len(incoming) == 2:
+                    shouldReceive = (random.random() > 2*self.noCaptureLoss)
+                else:
+                    shouldReceive = (random.random() > self.noCaptureLoss)
                 if shouldReceive:
                     shouldReceive = random.random() < (1-self.synchLoss)**(d-1)
             if shouldReceive:
@@ -441,6 +444,20 @@ def usage():
     --sliceLen    : time slice length for segmenting connectivity data
 """
 
+def dn(sim):
+    nx.draw_networkx_nodes(sim.G,
+      pos=nx.get_node_attributes(sim.G, 'pos'))
+    allEdges = sim.G.edges(data=True)
+    goodEdges = [ e for e in allEdges if e[-1]['prr'] > 0.9]
+    nx.draw_networkx_edges(sim.G,
+      pos=nx.get_node_attributes(sim.G, 'pos'),
+      edgelist=goodEdges, 
+      alpha=0.2, arrows=False)
+    nx.draw_networkx_labels(sim.G,
+      pos=nx.get_node_attributes(sim.G, 'pos'),
+      labels=dict((n,n) for n in sim.G.nodes()))
+    plt.show()    
+
 if __name__ == '__main__':
     #default settings
     nodeFile = 'fig_scripts/config/node_map.txt'
@@ -482,10 +499,13 @@ if __name__ == '__main__':
     densityM2 = 0.0264
     numNodes = 66
     cornerRoot = 1
-
+    randomSeed = None
     fwdRawFile = open('/dev/null', 'w')
     fwdAggFile = open('/dev/null', 'w')
     ipiFile = open('/dev/null', 'w')
+    positionOutFile = open('/dev/null', 'w')
+
+    diameterOnly = False
 
     if len(sys.argv) < 3:
         usage()
@@ -565,6 +585,17 @@ if __name__ == '__main__':
             cornerRoot = int(val)
         if opt == '--positionOutFile':
             positionOutFile = open(val, 'w')
+        if opt == '--seed':
+            randomSeed = int(val)
+        if opt == '--diameterOnly':
+            diameterOnly = int(val)
+
+    if randomSeed:
+        random.seed(randomSeed)
+        print "Using random seed", randomSeed
+    else:
+        print >> sys.stderr, "Random seed must be provided"
+        sys.exit(1)
 
 
     if dbSyntheticFile:
@@ -597,19 +628,9 @@ if __name__ == '__main__':
         for (n, nm) in nodes:
             positionOutFile.write('%d %0.2f %0.2f\n'%(n, nm['pos'][0], nm['pos'][1]))
 
-    #all right, what the fuck. let's show the graph 
     for i in range(numSetups):
         print "Test setup %d of %d"%(i+1, numSetups) 
 #         sim.simFloodBatch([0], testsPerSetup) 
-#         nx.draw_networkx_nodes(sim.G,
-#           pos=nx.get_node_attributes(sim.G, 'pos'))
-#         allEdges = sim.G.edges(data=True)
-#         goodEdges = [ e for e in allEdges if e[-1]['prr'] > 0.9]
-#         nx.draw_networkx_edges(sim.G,
-#           pos=nx.get_node_attributes(sim.G, 'pos'),
-#           edgelist=goodEdges, 
-#           alpha=0.2, arrows=False)
-#         plt.show()    
         sim.simFloodBatch([n for n in sim.G.nodes()], testsPerSetup) 
     #OK, so now we've got an  n x n x tps matrix of distance
     #  measurements
@@ -618,7 +639,6 @@ if __name__ == '__main__':
         sim.depthOutput(depthOutFile)
     if textOutFile:
         sim.textOutput(textOutFile)
-
 
     #TODO: this should be a method of simulation class
 
@@ -630,10 +650,13 @@ if __name__ == '__main__':
     #ignore nodes with no edges, if they appear
     for n in range(selectionTrials):
         for s in sim.G.nodes():
-            if s == dest or len(sim.G[s]) == 0:
+            if s == dest or (dest not in sim.G.node[s]['distances']):
                 continue
             #pick d_sd from source measurements
             d_sd = dm.advertiseDistance(sim.G.node[s]['distances'][dest])
+            #this indicates the node was unreachable
+            if d_sd == sys.maxint:
+                continue
             ipi[s].append(d_sd )
             for f in sim.G.nodes():
                 #no edges for this node in connectivity graph, ignore it
@@ -642,29 +665,30 @@ if __name__ == '__main__':
                 if f == dest or f == s :
                     isForwarder = True
                 else:
-                    d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
-                    d_fd = dm.selectDistance(sim.G.node[f]['distances'][dest])
-                    isForwarder = (d_sf + d_fd) <= d_sd + bw
+                    if (s not in sim.G.node[f]['distances'] 
+                      or dest not in sim.G.node[f]['distances'] ):
+                        isForwarder=False
+                    else:
+                        d_sf = dm.selectDistance(sim.G.node[f]['distances'][s])
+                        d_fd = dm.selectDistance(sim.G.node[f]['distances'][dest])
+                        isForwarder = (d_sf + d_fd) <= d_sd + bw
                 sim.G.node[f]['forwards'].append((s,  isForwarder))
 
     diameter = 0
     for n in ipi:
         diameter = max( ipi[n] + [diameter])
     floodDuration = diameter + 1
+    
+    if diameterOnly:
+        print "DIAMETER_INFO", aspectRatio, numNodes, densityM2, cornerRoot, randomSeed, diameter
+        sys.exit(0)
 
     for f in sim.G.nodes():
+#        pdb.set_trace()
         if f == dest or len(sim.G[f]) == 0:
             continue
-        forwards = sim.G.node[f]['forwards']
-        for (src, isForwarder) in forwards:
-            #output: src, forwarder, isForwarder
-            fwdRawFile.write('%d %d %d\n'%(src, f, isForwarder))
-        totalTrials = len(forwards)
-        activeTrials = len([ s for (s, isForwarder) in forwards if isForwarder ] )
-        #output: src, active, total, fractionActive
-        fwdAggFile.write('%d %d %d %0.4f\n'%(f, activeTrials, totalTrials,
-          float(activeTrials)/totalTrials))
         ipis = ipi[f]
+        avgDepth = sum(ipis)/float(len(ipis))
         #number of data packets:
         #  subtract flood duration from slotLen
         dp = [ floor((slotLen - floodDuration)/ d_sd) for d_sd in ipis]
@@ -675,11 +699,20 @@ if __name__ == '__main__':
         #format: src, distance, effective IPI, flood IPI
         ipiFile.write('%d %0.4f %0.4f %d\n'%( 
           f, 
-          sum(ipis)/float(len(ipis)),
+          avgDepth,
           sum(eipi)/float(len(eipi)),
           floodDuration))
 
-
+        forwards = sim.G.node[f]['forwards']
+        for (src, isForwarder) in forwards:
+            #output: src, forwarder, isForwarder
+            fwdRawFile.write('%d %d %d\n'%(src, f, isForwarder))
+        totalTrials = len(forwards)
+        activeTrials = len([ s for (s, isForwarder) in forwards if isForwarder ] )
+        #output: src, avgDepth, active, total, fractionActive
+        fwdAggFile.write('%d %0.4f %d %d %0.4f\n'%(f, avgDepth, activeTrials, totalTrials,
+          float(activeTrials)/totalTrials))
+#    pdb.set_trace()
 
 #     #for generating topologies
 #     nodes = topo.getNodes()

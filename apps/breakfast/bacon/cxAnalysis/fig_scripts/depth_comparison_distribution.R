@@ -35,7 +35,7 @@ for (i in seq(argStart, argc-1)){
   }
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=12, height=6, title=plotTitle)
+    pdf(val, width=4, height=3, title=plotTitle)
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -64,18 +64,20 @@ if (removeOneHop){
 
 if ( legendSettings == 'sim'){
   plotTitle <- "Simulation v. Actual Distance"
-  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
+  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, shape=label)) 
     + geom_point(position=pd)
 #    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
-  #  + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
-    + xlab("Node ID")
+#    + geom_errorbar(aes(ymin=depth, ymax=uq), width=.1, position=pd, col='gray') 
+    + xlab("")
     + ylab("Distance")
-    + ggtitle(plotTitle) 
-#     + scale_colour_hue(name="Dataset", 
-#         breaks=c("testbed", "sim_0.4_10_ind_0", "sim_0.4_10_ind_1"),
-#         labels=c("Testbed", "Simulation ( + interference)", "Simulation (no interference)")) 
+    + scale_shape_manual(name="Setting", 
+        breaks=c("0x2D", "sim_0x2D_naive", "sim_0x2D_phy"),
+        labels=c("Testbed", "Naive", "Phy"),
+        values=c(3,2,1)) 
     + theme_bw()
-    + theme(legend.justification=c(1,0), legend.position=c(1,0))
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 
@@ -88,12 +90,12 @@ if (legendSettings == 'thresh'){
     + geom_point(position=pd)
     + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
 #    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
-    + xlab("Node ID")
+    + xlab("")
     + ylab("Distance")
-    + ggtitle(plotTitle) 
     + scale_colour_hue(name="Threshold (dBm)")
     + theme_bw()
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if (legendSettings == 'fec'){
@@ -105,30 +107,38 @@ if (legendSettings == 'fec'){
     + geom_point(position=pd)
     + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
 #    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
-    + xlab("Node ID")
+    + xlab("")
     + ylab("Distance")
-    + ggtitle(plotTitle) 
     + scale_colour_hue(name="FEC in use")
     + theme_bw()
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 
 if (legendSettings == 'txp'){
-  plotTitle <- "Distance v. TXP"
+  plotTitle <- "Distance v. TX Power"
   meanSDs <- aggregate(sd~label, data=agg, FUN=mean)
 
 #  agg$label <- factor(as.numeric(agg$label), levels=sort(unique(as.numeric(agg$label))))
-  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, colour=label)) 
-    + geom_point(position=pd)
-    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
-#    + geom_errorbar(aes(ymin=lq, ymax=uq), width=.1, position=pd) 
-    + xlab("Node ID")
+  print(ggplot(agg, aes(x=reorder(dest, depth), y=depth, shape=label)) 
+    + geom_point(position=pd,)
+#    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
+#    + geom_errorbar(aes(ymin=depth, ymax=uq), width=.1, position=pd, color='gray') 
+    + xlab("")
     + ylab("Distance")
-    + ggtitle(plotTitle) 
-    + scale_colour_hue(name="PATABLE setting")
+    + scale_shape_manual(name="TX Power (dBm)",
+      breaks=c('0x8D', '0x2D', '0x25'),
+      labels=c(0, -6, -12),
+      values=c(3, 2, 0))
+#     + scale_size_manual(name="TX Power (dBm)",
+#       breaks=c('0x8D', '0x2D', '0x25'),
+#       labels=c(0, -6, -12),
+#       values=c(0.5, 1, 1.5))
     + theme_bw()
-    + theme(legend.justification=c(1,0), legend.position=c(1,0))
+    + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
   
 }

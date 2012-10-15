@@ -107,7 +107,7 @@ if (labels == 'bw'){
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(xmin,xmax))
-    + scale_linetype_manual(name="Boundary Width",
+    + scale_linetype_manual(name="BW",
       breaks=c(0, 1, 2, 3, 5),
       labels=c(0, 1, 2, 3, 5),
       values=c(3, 4, 2, 5, 1))
@@ -115,6 +115,7 @@ if (labels == 'bw'){
     + xlab("Packet Reception Ratio")
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if (labels == 'sel'){
@@ -123,7 +124,7 @@ if (labels == 'sel'){
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
     + scale_x_continuous(limits=c(0,1.0))
-    + scale_linetype_manual(name="Selection Method",
+    + scale_linetype_manual(name="Metric",
       breaks=c(0, 1, 3, 2, 'flood'),
       labels=c('Last', 'Avg', 'Avg', 'Max', 'Flood'),
       values=c(3, 1, 2, 4, 5))
@@ -131,6 +132,7 @@ if (labels == 'sel'){
     + xlab("Packet Reception Ratio")
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 if (labels == 'none'){
@@ -141,6 +143,7 @@ if (labels == 'none'){
     + scale_x_continuous(limits=c(0,1.0))
     + theme_bw()
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }
 
