@@ -10,7 +10,7 @@ import pdb
 class TestbedMap(object):
     def __init__(self, nsluFile='config/nslu_locations.txt', 
             nodeFile='config/node_map.txt',
-            mapFile='static/floorplan.png',
+            mapFile='static/floorplan.50.png',
             scriptDir=None):
         """Set up a floorplan map of testbed nodes"""
         if not scriptDir:
@@ -104,14 +104,24 @@ class TestbedMap(object):
               font_size=10,
               labels=self.labelMap)
         else:
-            boxNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'box']
-            lm = {} 
-            for n in boxNodes:
-                lm[n]=self.labelMap[n]
-            nx.draw_networkx_labels(self.G, 
-              pos=nx.get_node_attributes(self.G, 'pos'),
-              font_size=10,
-              labels=lm)
+#             boxNodes = [ n for (n, m) in self.G.nodes(data=True) if m.get('shape','circle') == 'box']
+#             lm = {} 
+#             for n in boxNodes:
+#                 lm[n]=self.labelMap[n]
+#             nx.draw_networkx_labels(self.G, 
+#               pos=nx.get_node_attributes(self.G, 'pos'),
+#               font_size=10,
+#               labels=lm)
+            emptyNodes = [ n for (n,m) in self.G.nodes(data=True) if m.get('shape','circle') == 'empty']
+            if emptyNodes:
+                lm = {} 
+                for n in emptyNodes:
+                    lm[n]=self.labelMap[n]
+                nx.draw_networkx_labels(self.G,
+                  pos=nx.get_node_attributes(self.G, 'pos'),
+                  font_size=10,
+                  labels=lm)
+
 
 
     def setAttr(self, attr, attrMap, defaultVal=None):
@@ -182,6 +192,18 @@ class SingleTXDepth(TestbedMap):
             self.distances[72] = 3
             self.distances[73] = 4
             self.distances[74] = 5
+
+            key[80] = {'pos': (65, 30), 'shape':'empty'}
+            key[81] = {'pos': (65, 80), 'shape':'empty'}
+            key[82] = {'pos': (65, 130), 'shape':'empty'}
+            key[83] = {'pos': (65, 180), 'shape':'empty'}
+            key[84] = {'pos': (65, 230), 'shape':'empty'}
+            self.distances[80] = 1
+            self.distances[81] = 2
+            self.distances[82] = 3
+            self.distances[83] = 4
+            self.distances[84] = 5
+
             self.G.add_nodes_from([(k, key[k]) for k in key])
 
         self.setAttr('distance', self.distances)
@@ -286,6 +308,17 @@ class CXForwarders(TestbedMap):
             self.fwdRatio[72] = 0.50
             self.fwdRatio[73] = 0.75
             self.fwdRatio[74] = 1.0
+
+            key[80] = {'pos': (75, 30), 'shape':'empty'}
+            key[81] = {'pos': (75, 80), 'shape':'empty'}
+            key[82] = {'pos': (75, 130), 'shape':'empty'}
+            key[83] = {'pos': (75, 180), 'shape':'empty'}
+            key[84] = {'pos': (75, 230), 'shape':'empty'}
+            self.fwdRatio[80] = 0
+            self.fwdRatio[81] = 0.25
+            self.fwdRatio[82] = 0.50
+            self.fwdRatio[83] = 0.75
+            self.fwdRatio[84] = 1.0
             self.G.add_nodes_from([(k, key[k]) for k in key])
 
         self.setAttr('fwdRatio', self.fwdRatio, 0)

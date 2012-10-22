@@ -22,24 +22,36 @@ for (i in seq(argStart, argc-1)){
   if ( opt == '--ndb'){
     fn <- val
     lbl <- commandArgs()[i+2]
+    bn <- strsplit(fn, '\\.')[[1]]
+    bn <- bn[length(bn)-1]
+    if (bn %in% nx$bn){
+      print(paste("Duplicate", fn))
+      next
+    }
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
     tmp <- dbGetQuery(con, selectQ)
-    print(paste("Loaded", length(tmp$node), "from", fn))
+#    print(paste("Loaded", length(tmp$node), "from", fn))
     if (length(tmp$node) > 0 ){
       tmp$label <- lbl
-      tmp$fn <- fn
+      tmp$bn <- bn
       nx <- rbind(nx, tmp)
     }
   }
   if ( opt == '--db'){
     fn <- val
+    bn <- strsplit(fn, '\\.')[[1]]
+    bn <- bn[length(bn)-1]
+    if (bn %in% x$bn){
+      print(paste("Duplicate", fn))
+      next
+    }
     lbl <- commandArgs()[i+2]
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
     tmp <- dbGetQuery(con, selectQ)
-    print(paste("Loaded", length(tmp$node), "from", fn))
+#    print(paste("Loaded", length(tmp$node), "from", fn))
     if (length(tmp$node) > 0 ){
       tmp$label <- lbl
-      tmp$fn <- fn
+      tmp$bn <- bn
       x <- rbind(x, tmp)
     }
   }
@@ -62,7 +74,7 @@ for (i in seq(argStart, argc-1)){
     labels <- val
   }
 }
-print("raw loaded")
+#print("raw loaded")
 
 
 # #TODO: what the hell: a few nodes have high duty cycle in several

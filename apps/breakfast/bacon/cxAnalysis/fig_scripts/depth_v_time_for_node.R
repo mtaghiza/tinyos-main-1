@@ -12,6 +12,7 @@ lrQ <- "SELECT ts, depth FROM rx_all WHERE dest=0 AND src = ? ORDER by ts;"
 
 plotType <- 'time'
 testBreaks <- c()
+breakLen <- 600
 lr <- c()
 rl <- c()
 for (i in seq(argStart, argc-1)){
@@ -19,17 +20,24 @@ for (i in seq(argStart, argc-1)){
   val <- commandArgs()[i+1]
   if ( opt == '--db'){
     fn <- val
+    bn <- strsplit(fn, '\\.')[[1]]
+    bn <- bn[length(bn)-1]
+    if (bn %in% rl$bn){
+      print(paste("Duplicate", fn))
+      next
+    }
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
     
     label <- commandArgs()[i+2]
     rlTmp <- dbGetQuery(con, rlQ, nodeId)
     rlTmp$label <- label
+    rlTmp$bn <- bn
     lrTmp <- dbGetQuery(con, lrQ, nodeId)
     if (length(lrTmp$ts) > 0){
       lrTmp$label <- label
     }
     if (length(rl) > 0){
-      rlTmp$ts <- rlTmp$ts - min(rlTmp$ts) + max(rl$ts)
+      rlTmp$ts <- rlTmp$ts - min(rlTmp$ts) + max(rl$ts) + breakLen
     }
     testBreaks <- rbind(testBreaks, min(rlTmp$ts))
     lr <- rbind(lr, lrTmp)
@@ -57,6 +65,7 @@ for (i in seq(argStart, argc-1)){
   }
 }
 testBreaks <- testBreaks-min(rl$ts)
+rl$sn = 1:length(rl$ts)
 
 if (ymin == -1){
   ymin <- 1
@@ -65,10 +74,11 @@ if (ymax == -1){
   ymax <-max(c(rl$depth, lr$depth)) 
 }
 if (plotType == 'time'){
+  ds <- 2
   print(
-    ggplot(rl, aes(x=ts-min(ts), y=depth)) 
+    ggplot(rl[rl$sn %% ds == 0,], aes(x=ts-min(ts), y=depth)) 
     + geom_point(size=0.5)
-    + geom_vline(xintercept=testBreaks, color='gray')
+#    + geom_vline(xintercept=testBreaks, color='gray')
     + theme_bw() 
     + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
     + xlab("Time (s)")

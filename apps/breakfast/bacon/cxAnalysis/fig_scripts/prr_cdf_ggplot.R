@@ -41,14 +41,21 @@ for (i in seq(argStart, argc-1)){
   
   if ( opt == '--db' || opt == '--ndb'){
     fn <- val
+    bn <- strsplit(fn, '\\.')[[1]]
+    bn <- bn[length(bn)-1]
+    if (bn %in% x$bn){
+    #  print(paste("Duplicate", fn))
+      next
+    }    
     lbl <- commandArgs()[i+2]
     pr <- as.numeric(commandArgs()[i+3])
     con <- dbConnect(dbDriver("SQLite"), dbname=fn)
     tmp <- dbGetQuery(con, paste(selectQ, pr))
-    print(paste("Loaded", length(tmp$node), "from", fn))
+    #print(paste("Loaded", length(tmp$node), "from", fn))
     if (length(tmp$node) > 0 ){
       tmp$label <- lbl
       tmp$pr <- pr
+      tmp$bn <- bn
       x <- rbind(x, tmp)
     }
   }
