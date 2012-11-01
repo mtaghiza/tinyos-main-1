@@ -33,7 +33,6 @@
 
 #ifndef _H_hardware_h
 #define _H_hardware_h
-#warning "Using bacon hardware.h"
 #include "msp430hardware.h"
 
 // enum so components can override power saving,

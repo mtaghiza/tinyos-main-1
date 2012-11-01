@@ -2,7 +2,6 @@
 module MetadataP{
   uses interface Boot;
   uses interface Timer<TMilli>;
-  uses interface AMSend as TestSend;
   uses interface Packet;
   uses interface SplitControl as SerialSplitControl;
 } implementation {
@@ -11,28 +10,15 @@ module MetadataP{
 
   event void Boot.booted(){
     printf("Booted.\n");
+    printfflush();
     call SerialSplitControl.start();
   }
 
-  event void SerialSplitControl.startDone(error_t error){
-    call Timer.startPeriodic(1024);
-  }
+  event void SerialSplitControl.startDone(error_t error){ }
 
   event void SerialSplitControl.stopDone(error_t error){}
 
-  task void testSend();
-  event void Timer.fired(){
-    printf("Fired.\n");
-    printfflush();
-    post testSend();
-  }
 
-  task void testSend(){
-    test_msg_t* pl = (test_msg_t*) (call Packet.getPayload(msg,
-      sizeof(test_msg_t)));
-    pl -> counter ++;
-    call TestSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_msg_t));
-  }
+  event void Timer.fired(){ }
 
-  event void TestSend.sendDone(message_t* msg_, error_t error){ }
 }

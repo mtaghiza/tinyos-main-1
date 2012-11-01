@@ -1,14 +1,24 @@
 COMPONENT=MetadataAppC
-BUILD_EXTRA_DEPS = TestMsg.py PrintfMsg.py
+MIGDIR = mig
+
+##couldn't entice Make to run this command...
+#grep 'msg{' ctrl_messages.h | awk '{print $3}' | tr -d '{' | sed -re 's,(_|^)([a-z]),\u\2,g' -e 's,^,$(MIGDIR)/,g' -e 's,$,.py,g'
+
+MIGCLASSES= $(MIGDIR)/ReadIvCmdMsg.py $(MIGDIR)/ReadIvResponseMsg.py $(MIGDIR)/ReadMfrIdCmdMsg.py $(MIGDIR)/ReadMfrIdResponseMsg.py $(MIGDIR)/ReadBaconBarcodeIdCmdMsg.py $(MIGDIR)/ReadBaconBarcodeIdResponseMsg.py $(MIGDIR)/WriteBaconBarcodeIdCmdMsg.py $(MIGDIR)/WriteBaconBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastBarcodeIdCmdMsg.py $(MIGDIR)/ReadToastBarcodeIdResponseMsg.py $(MIGDIR)/WriteToastBarcodeIdCmdMsg.py $(MIGDIR)/WriteToastBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastAssignmentsCmdMsg.py $(MIGDIR)/ReadToastAssignmentsResponseMsg.py $(MIGDIR)/WriteToastAssignmentsCmdMsg.py $(MIGDIR)/WriteToastAssignmentsResponseMsg.py $(MIGDIR)/ReadBaconTlvCmdMsg.py $(MIGDIR)/ReadBaconTlvResponseMsg.py $(MIGDIR)/ReadToastTlvCmdMsg.py $(MIGDIR)/ReadToastTlvResponseMsg.py $(MIGDIR)/WriteBaconTlvCmdMsg.py $(MIGDIR)/WriteBaconTlvResponseMsg.py $(MIGDIR)/WriteToastTlvCmdMsg.py $(MIGDIR)/WriteToastTlvResponseMsg.py $(MIGDIR)/DeleteBaconTlvEntryCmdMsg.py $(MIGDIR)/DeleteBaconTlvEntryResponseMsg.py $(MIGDIR)/DeleteToastTlvEntryCmdMsg.py $(MIGDIR)/DeleteToastTlvEntryResponseMsg.py $(MIGDIR)/AddBaconTlvEntryCmdMsg.py $(MIGDIR)/AddBaconTlvEntryResponseMsg.py $(MIGDIR)/AddToastTlvEntryCmdMsg.py $(MIGDIR)/AddToastTlvEntryResponseMsg.py 
+
+BUILD_EXTRA_DEPS = mig/PrintfMsg.py $(MIGCLASSES)
 
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 
-TestMsg.py: ctrl_messages.h
-	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=TestMsg ctrl_messages.h test_msg -o $@
+$(MIGDIR):
+	mkdir $(MIGDIR)
 
-PrintfMsg.py: $(TOSDIR)/lib/printf/printf.h
+$(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
+
+$(MIGDIR)/%.py: $(MIGDIR) ctrl_messages.h
+	./genMig.sh $(PLATFORM) ctrl_messages.h $@ $(CFLAGS) 
 
 include $(MAKERULES)

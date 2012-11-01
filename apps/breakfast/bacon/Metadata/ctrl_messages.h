@@ -62,7 +62,7 @@ typedef nx_struct write_toast_barcode_id_response_msg{
 } write_toast_barcode_id_response_msg_t;
 
 //--- Analog sensor transactions
-typedef nx_struct sensor_assignment_t{
+typedef nx_struct sensor_assignment{
   nx_uint8_t sensorType;
   nx_uint16_t sensorId;
 } sensor_assignment_t;
@@ -72,7 +72,7 @@ typedef nx_struct read_toast_assignments_cmd_msg{
 }read_toast_assignments_cmd_msg_t;
 
 typedef nx_struct read_toast_assignments_response_msg{
-  error_t error;
+  nx_uint8_t error;
   sensor_assignment_t assignments[8];
 }read_toast_assignments_response_t;
 
@@ -81,7 +81,7 @@ typedef nx_struct write_toast_assignments_cmd_msg{
 }write_toast_assignments_cmd_msg_t;
 
 typedef nx_struct write_toast_assignments_response_msg{
-  error_t error;
+  nx_uint8_t error;
 } write_toast_assignments_response_t;
 
 //---Utilities
