@@ -6,19 +6,24 @@ MIGDIR = mig
 
 MIGCLASSES= $(MIGDIR)/ReadIvCmdMsg.py $(MIGDIR)/ReadIvResponseMsg.py $(MIGDIR)/ReadMfrIdCmdMsg.py $(MIGDIR)/ReadMfrIdResponseMsg.py $(MIGDIR)/ReadBaconBarcodeIdCmdMsg.py $(MIGDIR)/ReadBaconBarcodeIdResponseMsg.py $(MIGDIR)/WriteBaconBarcodeIdCmdMsg.py $(MIGDIR)/WriteBaconBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastBarcodeIdCmdMsg.py $(MIGDIR)/ReadToastBarcodeIdResponseMsg.py $(MIGDIR)/WriteToastBarcodeIdCmdMsg.py $(MIGDIR)/WriteToastBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastAssignmentsCmdMsg.py $(MIGDIR)/ReadToastAssignmentsResponseMsg.py $(MIGDIR)/WriteToastAssignmentsCmdMsg.py $(MIGDIR)/WriteToastAssignmentsResponseMsg.py $(MIGDIR)/ReadBaconTlvCmdMsg.py $(MIGDIR)/ReadBaconTlvResponseMsg.py $(MIGDIR)/ReadToastTlvCmdMsg.py $(MIGDIR)/ReadToastTlvResponseMsg.py $(MIGDIR)/WriteBaconTlvCmdMsg.py $(MIGDIR)/WriteBaconTlvResponseMsg.py $(MIGDIR)/WriteToastTlvCmdMsg.py $(MIGDIR)/WriteToastTlvResponseMsg.py $(MIGDIR)/DeleteBaconTlvEntryCmdMsg.py $(MIGDIR)/DeleteBaconTlvEntryResponseMsg.py $(MIGDIR)/DeleteToastTlvEntryCmdMsg.py $(MIGDIR)/DeleteToastTlvEntryResponseMsg.py $(MIGDIR)/AddBaconTlvEntryCmdMsg.py $(MIGDIR)/AddBaconTlvEntryResponseMsg.py $(MIGDIR)/AddToastTlvEntryCmdMsg.py $(MIGDIR)/AddToastTlvEntryResponseMsg.py 
 
-BUILD_EXTRA_DEPS = mig/PrintfMsg.py $(MIGCLASSES)
+MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
 
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 
-$(MIGDIR):
-	mkdir $(MIGDIR)
+CLEAN_EXTRA = $(MIGCLASSES)
+
+$(MIGDIR): 
+	mkdir -p $(MIGDIR)
 
 $(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
 
 $(MIGDIR)/%.py: $(MIGDIR) ctrl_messages.h
 	./genMig.sh $(PLATFORM) ctrl_messages.h $@ $(CFLAGS) 
+
+migClasses: $(MIGCLASSES)
+
 
 include $(MAKERULES)

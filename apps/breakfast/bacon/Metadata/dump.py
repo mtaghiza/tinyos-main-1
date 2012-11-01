@@ -7,9 +7,7 @@ from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 #import tos
-import TestMsg 
-import PrintfMsg
-from PrintfStr import printfStr
+from mig import PrintfMsg
 
 class PrintfLogger:
     def __init__(self):
@@ -17,29 +15,10 @@ class PrintfLogger:
         pass
     
     def receive(self, src, msg):
-        print printfStr(msg),
-        #TODO: would be nice to combine messages as needed and only
-        #      write when we end in a newline
-#        self.buf += printfStr(msg)
-#         if '\n' in self.buf:
-#             if self.buf.endswith('\n'):
-#                 for s in self.buf.split('\n'):
-#                     print s
-#                 self.buf = ''
-#             else:
-#                 for s in self.buf.split('\n')[:-1]:
-#                     print s
-#                 self.buf = self.buf.split('\n')[:-1]
-                
-
-
-class TestMsgLogger:
-    def __init__(self):
-        pass
-
-    def receive(self, src, msg):
-        pass
-#        print "TM",msg
+        mb = msg.get_buffer()
+        if 0 in mb:
+            mb = mb[:mb.index(0)]
+        sys.stdout.write(''.join(chr(v) for v in mb))
 
 
 class Dispatcher:
@@ -47,7 +26,6 @@ class Dispatcher:
         self.mif = MoteIF.MoteIF()
         self.tos_source = self.mif.addSource(motestring)
         self.mif.addListener(PrintfLogger(), PrintfMsg.PrintfMsg)
-        self.mif.addListener(TestMsgLogger(), TestMsg.TestMsg)
 
     def stop(self):
         self.mif.finishAll()

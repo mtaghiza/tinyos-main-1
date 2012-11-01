@@ -10,6 +10,7 @@ typedef nx_struct read_iv_cmd_msg{
 } read_iv_cmd_msg_t;
 
 typedef nx_struct read_iv_response_msg{
+  nx_uint8_t error;
   nx_uint16_t iv[16];
 } read_iv_response_msg_t;
 
@@ -19,6 +20,7 @@ typedef nx_struct read_mfr_id_cmd_msg{
 } read_mfr_id_cmd_msg_t;
 
 typedef nx_struct read_mfr_id_response_msg{
+  nx_uint8_t error;
   nx_uint8_t mfrId[8];
 } read_mfr_id_response_msg_t;
 
@@ -74,7 +76,7 @@ typedef nx_struct read_toast_assignments_cmd_msg{
 typedef nx_struct read_toast_assignments_response_msg{
   nx_uint8_t error;
   sensor_assignment_t assignments[8];
-}read_toast_assignments_response_t;
+}read_toast_assignments_response_msg_t;
 
 typedef nx_struct write_toast_assignments_cmd_msg{
   sensor_assignment_t assignments[8];
@@ -82,7 +84,7 @@ typedef nx_struct write_toast_assignments_cmd_msg{
 
 typedef nx_struct write_toast_assignments_response_msg{
   nx_uint8_t error;
-} write_toast_assignments_response_t;
+} write_toast_assignments_response_msg_t;
 
 //---Utilities
 typedef nx_struct scan_bus_cmd_msg {
