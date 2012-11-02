@@ -87,36 +87,36 @@ typedef nx_struct write_toast_assignments_response_msg{
 } write_toast_assignments_response_msg_t;
 
 //---Utilities
-typedef nx_struct scan_bus_cmd_msg {
+typedef nx_struct scan_bus_cmd_msg{
   nx_uint8_t dummy[0];
 } scan_bus_cmd_msg_t;
 
-typedef nx_struct scan_bus_response_msg {
+typedef nx_struct scan_bus_response_msg{
   nx_uint8_t error;
   nx_uint8_t numFound;
 } scan_bus_response_msg_t;
 
-typedef nx_struct ping_cmd_msg {
+typedef nx_struct ping_cmd_msg{
   nx_uint8_t dummy[0];
 } ping_cmd_msg_t;
 
-typedef nx_struct ping_response_msg {
+typedef nx_struct ping_response_msg{
   nx_uint8_t error;
 } ping_response_msg_t;
 
-typedef nx_struct reset_bacon_cmd_msg {
+typedef nx_struct reset_bacon_cmd_msg{
   nx_uint8_t dummy[0];
 } reset_bacon_cmd_msg_t;
 
-typedef nx_struct reset_bacon_response_msg {
+typedef nx_struct reset_bacon_response_msg{
   nx_uint8_t error;
 } reset_bacon_response_msg_t;
 
-typedef nx_struct reset_bus_cmd_msg {
+typedef nx_struct reset_bus_cmd_msg{
   nx_uint8_t dummy[0];
 } reset_bus_cmd_msg_t;
 
-typedef nx_struct reset_bus_response_msg {
+typedef nx_struct reset_bus_response_msg{
   nx_uint8_t error;
 } reset_bus_response_msg_t;
 

@@ -18,6 +18,14 @@ ReadToastAssignmentsCmdMsg
 ReadToastAssignmentsResponseMsg
 WriteToastAssignmentsCmdMsg
 WriteToastAssignmentsResponseMsg
+ScanBusCmdMsg
+ScanBusResponseMsg
+PingCmdMsg
+PingResponseMsg
+ResetBaconCmdMsg
+ResetBaconResponseMsg
+ResetBusCmdMsg
+ResetBusResponseMsg
 ReadBaconTlvCmdMsg
 ReadBaconTlvResponseMsg
 ReadToastTlvCmdMsg
@@ -34,4 +42,4 @@ AddBaconTlvEntryCmdMsg
 AddBaconTlvEntryResponseMsg
 AddToastTlvEntryCmdMsg
 AddToastTlvEntryResponseMsg'''
-__all__= allS.split()
+__all__= ['PrintfMsg'] + allS.split()

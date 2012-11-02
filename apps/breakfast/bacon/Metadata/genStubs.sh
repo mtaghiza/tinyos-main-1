@@ -18,8 +18,8 @@ cat <<EOF
   event message_t* ${ca}CmdReceive.receive(message_t* msg_, 
       void* payload,
       uint8_t len){
-    printf("RX: ${ca}");
     if (${cmdMsg} != NULL){
+      printf("RX: ${ca}");
       printf(" BUSY!\n");
       printfflush();
       return msg_;
@@ -28,11 +28,10 @@ cat <<EOF
         message_t* ret = call Pool.get();
         ${responseMsg} = call Pool.get();
         ${cmdMsg} = msg_;
-        printf(" OK\n");
-        printfflush();
         post respond${ca}();
         return ret;
       }else{
+        printf("RX: ${ca}");
         printf(" Pool Empty!\n");
         printfflush();
         return msg_;
@@ -52,6 +51,8 @@ cat <<EOF
       error_t error){
     call Pool.put(${responseMsg});
     call Pool.put(${cmdMsg});
+    ${cmdMsg} = NULL;
+    ${responseMsg} = NULL;
     printf("Response sent\n");
     printfflush();
   }
