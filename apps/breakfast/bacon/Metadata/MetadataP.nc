@@ -1,11 +1,20 @@
 
  #include "printf.h"
+ #include "GlobalID.h"
+ #include "decodeError.h"
+
+#define RESET_TIMEOUT 1024
+
 module MetadataP{
   uses interface Boot;
   uses interface Timer<TMilli>;
   uses interface Packet;
   uses interface SplitControl as SerialSplitControl;
   uses interface Pool<message_t>;
+
+  uses interface I2CDiscoverer;
+  uses interface SplitControl as BusControl;
+  uses interface Timer<TMilli> as ResetTimer;
   
 //Begin Auto-generated used interfaces (see genUsedInterfaces.sh)
 //Receive
@@ -53,6 +62,15 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 //End Auto-generated used interfaces
   
 } implementation {
+  enum {
+    S_BOOTING ,
+    S_READY,
+    S_RESETTING_BUS
+  };
+
+  uint8_t state = S_BOOTING;
+  uint8_t slaveCount;
+  error_t scanBus_err;
 
   event void Boot.booted(){
     printf("Booted.\n");
@@ -61,8 +79,52 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
   
   task void respondResetBacon();
+  task void respondResetBus();
+
   event void SerialSplitControl.startDone(error_t error){ 
-    post respondResetBacon();
+    call BusControl.start();
+  }
+
+  event void BusControl.startDone(error_t error){
+    if (state == S_BOOTING){
+      state = S_READY;
+      post respondResetBacon();
+    } else if (state == S_RESETTING_BUS){
+      state = S_READY;
+      post respondResetBus();
+    }else{
+      printf("State=%x?\n", state);
+    }
+  }
+
+  event uint16_t I2CDiscoverer.getLocalAddr(){
+    return TOS_NODE_ID & 0x7F;
+  }
+
+  event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
+    uint8_t i;
+    slaveCount++;
+    printf("Assigned %x to ", discovery->val.localAddr);
+    for ( i = 0 ; i < GLOBAL_ID_LEN; i++){
+      printf("%x ", discovery->val.globalAddr[i]);
+    }
+    printf("\n");
+    printfflush();
+    return discovery;
+  }
+
+  task void respondScanBus();
+  event void I2CDiscoverer.discoveryDone(error_t error){
+    scanBus_err = error;
+    post respondScanBus();
+  }
+
+  event void BusControl.stopDone(error_t error){
+    call ResetTimer.startOneShot(RESET_TIMEOUT);
+  }
+
+  event void ResetTimer.fired(){
+    call BusControl.start();
   }
 
 
@@ -446,99 +508,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     printfflush();
   }
 
-
-  message_t* ScanBus_cmd_msg = NULL;
-  message_t* ScanBus_response_msg = NULL;
-  task void respondScanBus();
-
-  event message_t* ScanBusCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (ScanBus_cmd_msg != NULL){
-      printf("RX: ScanBus");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ScanBus_response_msg = call Pool.get();
-        ScanBus_cmd_msg = msg_;
-        post respondScanBus();
-        return ret;
-      }else{
-        printf("RX: ScanBus");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondScanBus(){
-    scan_bus_cmd_msg_t* commandPl = (scan_bus_cmd_msg_t*)(call Packet.getPayload(ScanBus_cmd_msg, sizeof(scan_bus_cmd_msg_t)));
-    scan_bus_response_msg_t* responsePl = (scan_bus_response_msg_t*)(call Packet.getPayload(ScanBus_response_msg, sizeof(scan_bus_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ScanBusResponseSend.send(0, ScanBus_response_msg, sizeof(scan_bus_response_msg_t));
-  }
-
-  event void ScanBusResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(ScanBus_response_msg);
-    call Pool.put(ScanBus_cmd_msg);
-    ScanBus_cmd_msg = NULL;
-    ScanBus_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
-
-
-  message_t* ResetBus_cmd_msg = NULL;
-  message_t* ResetBus_response_msg = NULL;
-  task void respondResetBus();
-
-  event message_t* ResetBusCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (ResetBus_cmd_msg != NULL){
-      printf("RX: ResetBus");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ResetBus_response_msg = call Pool.get();
-        ResetBus_cmd_msg = msg_;
-        post respondResetBus();
-        return ret;
-      }else{
-        printf("RX: ResetBus");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondResetBus(){
-    reset_bus_cmd_msg_t* commandPl = (reset_bus_cmd_msg_t*)(call Packet.getPayload(ResetBus_cmd_msg, sizeof(reset_bus_cmd_msg_t)));
-    reset_bus_response_msg_t* responsePl = (reset_bus_response_msg_t*)(call Packet.getPayload(ResetBus_response_msg, sizeof(reset_bus_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ResetBusResponseSend.send(0, ResetBus_response_msg, sizeof(reset_bus_response_msg_t));
-  }
-
-  event void ResetBusResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(ResetBus_response_msg);
-    call Pool.put(ResetBus_cmd_msg);
-    ResetBus_cmd_msg = NULL;
-    ResetBus_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
 
 
   message_t* ReadBaconTlv_cmd_msg = NULL;
@@ -982,7 +951,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondPing(){
-    ping_cmd_msg_t* commandPl = (ping_cmd_msg_t*)(call Packet.getPayload(Ping_cmd_msg, sizeof(ping_cmd_msg_t)));
     ping_response_msg_t* responsePl = (ping_response_msg_t*)(call Packet.getPayload(Ping_response_msg, sizeof(ping_response_msg_t)));
     responsePl->error = SUCCESS;
     call PingResponseSend.send(0, Ping_response_msg, sizeof(ping_response_msg_t));
@@ -995,6 +963,111 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     Ping_cmd_msg = NULL;
     Ping_response_msg = NULL;
   }
+
+  //Scan bus
+  message_t* ScanBus_cmd_msg = NULL;
+  message_t* ScanBus_response_msg = NULL;
+  task void respondScanBus();
+  task void startDiscovery();
+
+  event message_t* ScanBusCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ScanBus_cmd_msg != NULL){
+      printf("RX: ScanBus");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ScanBus_response_msg = call Pool.get();
+        ScanBus_cmd_msg = msg_;
+        post startDiscovery();
+        return ret;
+      }else{
+        printf("RX: ScanBus");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void startDiscovery(){
+    slaveCount = 0;
+    call I2CDiscoverer.startDiscovery(TRUE, 0x40);
+  }
+
+
+  task void respondScanBus(){
+    scan_bus_cmd_msg_t* commandPl = (scan_bus_cmd_msg_t*)(call Packet.getPayload(ScanBus_cmd_msg, sizeof(scan_bus_cmd_msg_t)));
+    scan_bus_response_msg_t* responsePl = (scan_bus_response_msg_t*)(call Packet.getPayload(ScanBus_response_msg, sizeof(scan_bus_response_msg_t)));
+    responsePl->error = scanBus_err;
+    responsePl->numFound = slaveCount;
+    call ScanBusResponseSend.send(0, ScanBus_response_msg, sizeof(scan_bus_response_msg_t));
+  }
+
+  event void ScanBusResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ScanBus_response_msg);
+    call Pool.put(ScanBus_cmd_msg);
+    ScanBus_cmd_msg = NULL;
+    ScanBus_response_msg = NULL;
+    printf("Response sent\n");
+    printfflush();
+  }
+
+
+  message_t* ResetBus_cmd_msg = NULL;
+  message_t* ResetBus_response_msg = NULL;
+
+  task void stopBus(){
+    error_t error = call BusControl.stop();
+    if (SUCCESS == error){
+      state = S_RESETTING_BUS;
+    }
+  }
+
+  event message_t* ResetBusCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ResetBus_cmd_msg != NULL){
+      printf("RX: ResetBus");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ResetBus_response_msg = call Pool.get();
+        ResetBus_cmd_msg = msg_;
+        post stopBus();
+        return ret;
+      }else{
+        printf("RX: ResetBus");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondResetBus(){
+    reset_bus_cmd_msg_t* commandPl = (reset_bus_cmd_msg_t*)(call Packet.getPayload(ResetBus_cmd_msg, sizeof(reset_bus_cmd_msg_t)));
+    reset_bus_response_msg_t* responsePl = (reset_bus_response_msg_t*)(call Packet.getPayload(ResetBus_response_msg, sizeof(reset_bus_response_msg_t)));
+    responsePl->error = SUCCESS;
+    call ResetBusResponseSend.send(0, ResetBus_response_msg, sizeof(reset_bus_response_msg_t));
+  }
+
+  event void ResetBusResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ResetBus_response_msg);
+    call Pool.put(ResetBus_cmd_msg);
+    ResetBus_cmd_msg = NULL;
+    ResetBus_response_msg = NULL;
+  }
+
 
 //End completed implementations
 

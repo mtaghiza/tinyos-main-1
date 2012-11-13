@@ -16,6 +16,8 @@ configuration TestAppC{
   TestP.SubUartStream -> PlatformSerialC;
 
   TestP.I2CDiscoverer -> I2CDiscovererC;
+  components new BusPowerClientC();
+  TestP.BusControl -> BusPowerClientC; 
 
   enum {
     ADC_TEST_ID = unique(UQ_TEST_CLIENT),

@@ -1,4 +1,4 @@
-#include "BusPower.h"
+ #include "BusPower.h"
 module BusPowerC{ 
   //wired by clients
   provides interface SplitControl[uint8_t id];
@@ -63,6 +63,7 @@ module BusPowerC{
     for (k = 0; k < uniqueCount(UQ_BUS_POWER_CLIENT); k++){
       if (clientFlags[k] == FLAG_PENDING_STOP){
         clientFlags[k] = FLAG_STOPPED;
+        signal SplitControl.stopDone[k](SUCCESS);
       }
     }
   }

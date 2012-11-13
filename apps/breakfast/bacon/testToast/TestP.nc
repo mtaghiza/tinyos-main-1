@@ -14,6 +14,8 @@ module TestP{
   uses interface Get<const char*> as GetDesc[uint8_t testClient];
   provides interface UartStream[uint8_t testClient];
 
+  uses interface SplitControl as BusControl;
+
 } implementation {
   norace test_state_t state;
   norace uint8_t currentTest;
@@ -24,7 +26,14 @@ module TestP{
 
   event void Boot.booted(){
     call StdControl.start();
+    call BusControl.start();
     printf("Test Toast apps\n\r '~' to switch apps. Current app: %s\n\r", call GetDesc.get[currentTest]());
+  }
+
+  event void BusControl.startDone(error_t error){
+  }
+
+  event void BusControl.stopDone(error_t error){
   }
 
   task void startDiscovery(){

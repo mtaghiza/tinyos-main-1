@@ -19,6 +19,14 @@ configuration MetadataAppC{
   components new PoolC(message_t, 16);
   MetadataP.Pool -> PoolC;
 
+  components new I2CDiscovererC();
+  MetadataP.I2CDiscoverer -> I2CDiscovererC;
+
+  components new BusPowerClientC();
+  MetadataP.BusControl -> BusPowerClientC;
+  components new TimerMilliC() as ResetTimer;
+  MetadataP.ResetTimer -> ResetTimer;
+
 //Begin Auto-generated external wiring (see genExternalWiring.sh)
 //Receive
 components new SerialAMReceiverC(AM_READ_IV_CMD_MSG) as ReadIvCmdReceive;
