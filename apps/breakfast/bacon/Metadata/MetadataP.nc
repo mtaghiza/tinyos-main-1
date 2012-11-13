@@ -1,4 +1,5 @@
-#include "printf.h"
+
+ #include "printf.h"
 module MetadataP{
   uses interface Boot;
   uses interface Timer<TMilli>;
@@ -58,9 +59,12 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     printfflush();
     call SerialSplitControl.start();
   }
-
+  
+  task void respondResetBacon();
   event void SerialSplitControl.startDone(error_t error){ 
+    post respondResetBacon();
   }
+
 
   event void SerialSplitControl.stopDone(error_t error){}
 
@@ -490,100 +494,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
 
-  message_t* Ping_cmd_msg = NULL;
-  message_t* Ping_response_msg = NULL;
-  task void respondPing();
-
-  event message_t* PingCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (Ping_cmd_msg != NULL){
-      printf("RX: Ping");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        Ping_response_msg = call Pool.get();
-        Ping_cmd_msg = msg_;
-        post respondPing();
-        return ret;
-      }else{
-        printf("RX: Ping");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondPing(){
-    ping_cmd_msg_t* commandPl = (ping_cmd_msg_t*)(call Packet.getPayload(Ping_cmd_msg, sizeof(ping_cmd_msg_t)));
-    ping_response_msg_t* responsePl = (ping_response_msg_t*)(call Packet.getPayload(Ping_response_msg, sizeof(ping_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call PingResponseSend.send(0, Ping_response_msg, sizeof(ping_response_msg_t));
-  }
-
-  event void PingResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(Ping_response_msg);
-    call Pool.put(Ping_cmd_msg);
-    Ping_cmd_msg = NULL;
-    Ping_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
-
-
-  message_t* ResetBacon_cmd_msg = NULL;
-  message_t* ResetBacon_response_msg = NULL;
-  task void respondResetBacon();
-
-  event message_t* ResetBaconCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (ResetBacon_cmd_msg != NULL){
-      printf("RX: ResetBacon");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ResetBacon_response_msg = call Pool.get();
-        ResetBacon_cmd_msg = msg_;
-        post respondResetBacon();
-        return ret;
-      }else{
-        printf("RX: ResetBacon");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondResetBacon(){
-    reset_bacon_cmd_msg_t* commandPl = (reset_bacon_cmd_msg_t*)(call Packet.getPayload(ResetBacon_cmd_msg, sizeof(reset_bacon_cmd_msg_t)));
-    reset_bacon_response_msg_t* responsePl = (reset_bacon_response_msg_t*)(call Packet.getPayload(ResetBacon_response_msg, sizeof(reset_bacon_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ResetBaconResponseSend.send(0, ResetBacon_response_msg, sizeof(reset_bacon_response_msg_t));
-  }
-
-  event void ResetBaconResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(ResetBacon_response_msg);
-    call Pool.put(ResetBacon_cmd_msg);
-    ResetBacon_cmd_msg = NULL;
-    ResetBacon_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
-
-
   message_t* ResetBus_cmd_msg = NULL;
   message_t* ResetBus_response_msg = NULL;
   task void respondResetBus();
@@ -1008,5 +918,84 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 
 
 //End auto-generated message stubs
+
+//Begin completed implementations
+  //Reset Bacon
+  message_t* ResetBacon_response_msg = NULL;
+  
+  task void resetBacon(){
+    WDTCTL = 0;
+  }
+
+  event message_t* ResetBaconCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    post resetBacon();
+    return msg_;
+  }
+
+  task void respondResetBacon(){
+    if (call Pool.size()){
+      ResetBacon_response_msg = call Pool.get(); 
+      {
+        reset_bacon_response_msg_t* responsePl = (reset_bacon_response_msg_t*)(call Packet.getPayload(ResetBacon_response_msg, sizeof(reset_bacon_response_msg_t)));
+        responsePl->error = SUCCESS;
+        call ResetBaconResponseSend.send(0, ResetBacon_response_msg,
+          sizeof(reset_bacon_response_msg_t));
+      }
+    }
+  }
+
+  event void ResetBaconResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ResetBacon_response_msg);
+    ResetBacon_response_msg = NULL;
+  }
+  
+  //Ping
+  message_t* Ping_cmd_msg = NULL;
+  message_t* Ping_response_msg = NULL;
+  task void respondPing();
+
+  event message_t* PingCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (Ping_cmd_msg != NULL){
+      printf("RX: Ping");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        Ping_response_msg = call Pool.get();
+        Ping_cmd_msg = msg_;
+        post respondPing();
+        return ret;
+      }else{
+        printf("RX: Ping");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondPing(){
+    ping_cmd_msg_t* commandPl = (ping_cmd_msg_t*)(call Packet.getPayload(Ping_cmd_msg, sizeof(ping_cmd_msg_t)));
+    ping_response_msg_t* responsePl = (ping_response_msg_t*)(call Packet.getPayload(Ping_response_msg, sizeof(ping_response_msg_t)));
+    responsePl->error = SUCCESS;
+    call PingResponseSend.send(0, Ping_response_msg, sizeof(ping_response_msg_t));
+  }
+
+  event void PingResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(Ping_response_msg);
+    call Pool.put(Ping_cmd_msg);
+    Ping_cmd_msg = NULL;
+    Ping_response_msg = NULL;
+  }
+
+//End completed implementations
 
 }

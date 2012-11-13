@@ -11,6 +11,8 @@ CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 
+CFLAGS += -Ihandlers
+
 CLEAN_EXTRA = $(MIGCLASSES)
 
 $(MIGDIR): 
