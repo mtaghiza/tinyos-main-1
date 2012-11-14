@@ -24,8 +24,8 @@ PingCmdMsg
 PingResponseMsg
 ResetBaconCmdMsg
 ResetBaconResponseMsg
-ResetBusCmdMsg
-ResetBusResponseMsg
+SetBusPowerCmdMsg
+SetBusPowerResponseMsg
 ReadBaconTlvCmdMsg
 ReadBaconTlvResponseMsg
 ReadToastTlvCmdMsg

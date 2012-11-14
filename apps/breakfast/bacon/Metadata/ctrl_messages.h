@@ -112,13 +112,13 @@ typedef nx_struct reset_bacon_response_msg{
   nx_uint8_t error;
 } reset_bacon_response_msg_t;
 
-typedef nx_struct reset_bus_cmd_msg{
-  nx_uint8_t dummy[0];
-} reset_bus_cmd_msg_t;
+typedef nx_struct set_bus_power_cmd_msg{
+  nx_uint8_t powerOn;
+} set_bus_power_cmd_msg_t;
 
-typedef nx_struct reset_bus_response_msg{
+typedef nx_struct set_bus_power_response_msg{
   nx_uint8_t error;
-} reset_bus_response_msg_t;
+} set_bus_power_response_msg_t;
 
 //--- Generic low-level commands
 //Read/write entire TLV storage space: mote will handle checksum.
@@ -218,8 +218,8 @@ enum{
   AM_PING_RESPONSE_MSG = 0x93,
   AM_RESET_BACON_CMD_MSG = 0x94,
   AM_RESET_BACON_RESPONSE_MSG = 0x95,
-  AM_RESET_BUS_CMD_MSG = 0x96,
-  AM_RESET_BUS_RESPONSE_MSG = 0x97,
+  AM_SET_BUS_POWER_CMD_MSG = 0x96,
+  AM_SET_BUS_POWER_RESPONSE_MSG = 0x97,
   AM_READ_BACON_TLV_CMD_MSG = 0x98,
   AM_READ_BACON_TLV_RESPONSE_MSG = 0x99,
   AM_READ_TOAST_TLV_CMD_MSG = 0x9A,

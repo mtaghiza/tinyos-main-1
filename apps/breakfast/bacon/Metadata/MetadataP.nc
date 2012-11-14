@@ -2,8 +2,8 @@
  #include "printf.h"
  #include "GlobalID.h"
  #include "decodeError.h"
-
-#define RESET_TIMEOUT 1024
+ #include "I2CCom.h"
+ #include "I2CTLVStorage.h"
 
 module MetadataP{
   uses interface Boot;
@@ -13,8 +13,9 @@ module MetadataP{
   uses interface Pool<message_t>;
 
   uses interface I2CDiscoverer;
+  uses interface I2CTLVStorageMaster;
   uses interface SplitControl as BusControl;
-  uses interface Timer<TMilli> as ResetTimer;
+  uses interface Leds;
   
 //Begin Auto-generated used interfaces (see genUsedInterfaces.sh)
 //Receive
@@ -29,7 +30,7 @@ uses interface Receive as WriteToastAssignmentsCmdReceive;
 uses interface Receive as ScanBusCmdReceive;
 uses interface Receive as PingCmdReceive;
 uses interface Receive as ResetBaconCmdReceive;
-uses interface Receive as ResetBusCmdReceive;
+uses interface Receive as SetBusPowerCmdReceive;
 uses interface Receive as ReadBaconTlvCmdReceive;
 uses interface Receive as ReadToastTlvCmdReceive;
 uses interface Receive as WriteBaconTlvCmdReceive;
@@ -50,7 +51,7 @@ uses interface AMSend as WriteToastAssignmentsResponseSend;
 uses interface AMSend as ScanBusResponseSend;
 uses interface AMSend as PingResponseSend;
 uses interface AMSend as ResetBaconResponseSend;
-uses interface AMSend as ResetBusResponseSend;
+uses interface AMSend as SetBusPowerResponseSend;
 uses interface AMSend as ReadBaconTlvResponseSend;
 uses interface AMSend as ReadToastTlvResponseSend;
 uses interface AMSend as WriteBaconTlvResponseSend;
@@ -64,37 +65,40 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 } implementation {
   enum {
     S_BOOTING ,
-    S_READY,
-    S_RESETTING_BUS
+    S_READY
   };
 
   uint8_t state = S_BOOTING;
   uint8_t slaveCount;
+  uint8_t lastSlave;
   error_t scanBus_err;
+  error_t setBusPower_error;
+  i2c_message_t i2c_msg_internal;
+  i2c_message_t* i2c_msg = &i2c_msg_internal;
 
   event void Boot.booted(){
+    call Leds.led0On();
     printf("Booted.\n");
     printfflush();
     call SerialSplitControl.start();
   }
   
   task void respondResetBacon();
-  task void respondResetBus();
+  task void respondSetBusPower();
 
   event void SerialSplitControl.startDone(error_t error){ 
-    call BusControl.start();
+    state = S_READY;
+    post respondResetBacon();
   }
 
   event void BusControl.startDone(error_t error){
-    if (state == S_BOOTING){
-      state = S_READY;
-      post respondResetBacon();
-    } else if (state == S_RESETTING_BUS){
-      state = S_READY;
-      post respondResetBus();
-    }else{
-      printf("State=%x?\n", state);
-    }
+    setBusPower_error = error;
+    post respondSetBusPower();
+  }
+
+  event void BusControl.stopDone(error_t error){
+    setBusPower_error = error;
+    post respondSetBusPower();
   }
 
   event uint16_t I2CDiscoverer.getLocalAddr(){
@@ -108,6 +112,11 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     for ( i = 0 ; i < GLOBAL_ID_LEN; i++){
       printf("%x ", discovery->val.globalAddr[i]);
     }
+    if (slaveCount == 1){
+      lastSlave = discovery->val.localAddr;
+    }else{
+      lastSlave = 0;
+    }
     printf("\n");
     printfflush();
     return discovery;
@@ -119,13 +128,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     post respondScanBus();
   }
 
-  event void BusControl.stopDone(error_t error){
-    call ResetTimer.startOneShot(RESET_TIMEOUT);
-  }
-
-  event void ResetTimer.fired(){
-    call BusControl.start();
-  }
 
 
   event void SerialSplitControl.stopDone(error_t error){}
@@ -133,99 +135,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   event void Timer.fired(){ }
 
 //Begin Auto-generated message stubs (see genStubs.sh)
-  message_t* ReadIv_cmd_msg = NULL;
-  message_t* ReadIv_response_msg = NULL;
-  task void respondReadIv();
-
-  event message_t* ReadIvCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (ReadIv_cmd_msg != NULL){
-      printf("RX: ReadIv");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ReadIv_response_msg = call Pool.get();
-        ReadIv_cmd_msg = msg_;
-        post respondReadIv();
-        return ret;
-      }else{
-        printf("RX: ReadIv");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondReadIv(){
-    read_iv_cmd_msg_t* commandPl = (read_iv_cmd_msg_t*)(call Packet.getPayload(ReadIv_cmd_msg, sizeof(read_iv_cmd_msg_t)));
-    read_iv_response_msg_t* responsePl = (read_iv_response_msg_t*)(call Packet.getPayload(ReadIv_response_msg, sizeof(read_iv_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ReadIvResponseSend.send(0, ReadIv_response_msg, sizeof(read_iv_response_msg_t));
-  }
-
-  event void ReadIvResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(ReadIv_response_msg);
-    call Pool.put(ReadIv_cmd_msg);
-    ReadIv_cmd_msg = NULL;
-    ReadIv_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
-
-
-  message_t* ReadMfrId_cmd_msg = NULL;
-  message_t* ReadMfrId_response_msg = NULL;
-  task void respondReadMfrId();
-
-  event message_t* ReadMfrIdCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (ReadMfrId_cmd_msg != NULL){
-      printf("RX: ReadMfrId");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ReadMfrId_response_msg = call Pool.get();
-        ReadMfrId_cmd_msg = msg_;
-        post respondReadMfrId();
-        return ret;
-      }else{
-        printf("RX: ReadMfrId");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondReadMfrId(){
-    read_mfr_id_cmd_msg_t* commandPl = (read_mfr_id_cmd_msg_t*)(call Packet.getPayload(ReadMfrId_cmd_msg, sizeof(read_mfr_id_cmd_msg_t)));
-    read_mfr_id_response_msg_t* responsePl = (read_mfr_id_response_msg_t*)(call Packet.getPayload(ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ReadMfrIdResponseSend.send(0, ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t));
-  }
-
-  event void ReadMfrIdResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(ReadMfrId_response_msg);
-    call Pool.put(ReadMfrId_cmd_msg);
-    ReadMfrId_cmd_msg = NULL;
-    ReadMfrId_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
-  }
-
 
   message_t* ReadBaconBarcodeId_cmd_msg = NULL;
   message_t* ReadBaconBarcodeId_response_msg = NULL;
@@ -559,7 +468,36 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 
   message_t* ReadToastTlv_cmd_msg = NULL;
   message_t* ReadToastTlv_response_msg = NULL;
+  error_t readToastTLVError = FAIL;
+
   task void respondReadToastTlv();
+  task void reportReadToastTLVError();
+
+  task void loadToastTLVStorage(){
+    readToastTLVError = call I2CTLVStorageMaster.loadTLVStorage(lastSlave,
+      i2c_msg);
+    if (readToastTLVError  != SUCCESS){
+      post reportReadToastTLVError();
+    }
+  }
+
+  event void I2CTLVStorageMaster.loaded(error_t error, i2c_message_t* msg_){
+    readToastTLVError = error;
+    if (error != SUCCESS){
+      post reportReadToastTLVError();
+    } else{
+      post respondReadToastTlv();
+    }
+  }
+
+  event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){
+  }
+
+  task void reportReadToastTLVError(){
+    read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t)));
+    responsePl->error = readToastTLVError;
+    call ReadToastTlvResponseSend.send(0, ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t));
+  }
 
   event message_t* ReadToastTlvCmdReceive.receive(message_t* msg_, 
       void* payload,
@@ -571,11 +509,16 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
       return msg_;
     }else{
       if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        ReadToastTlv_response_msg = call Pool.get();
-        ReadToastTlv_cmd_msg = msg_;
-        post respondReadToastTlv();
-        return ret;
+        if (lastSlave ==0){
+          readToastTLVError = EOFF;
+          post reportReadToastTLVError();
+        } else{
+          message_t* ret = call Pool.get();
+          ReadToastTlv_response_msg = call Pool.get();
+          ReadToastTlv_cmd_msg = msg_;
+          post loadToastTLVStorage();
+          return ret;
+        }
       }else{
         printf("RX: ReadToastTlv");
         printf(" Pool Empty!\n");
@@ -919,6 +862,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
       error_t error){
     call Pool.put(ResetBacon_response_msg);
     ResetBacon_response_msg = NULL;
+    call Leds.led0Off();
   }
   
   //Ping
@@ -1019,33 +963,44 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
 
-  message_t* ResetBus_cmd_msg = NULL;
-  message_t* ResetBus_response_msg = NULL;
+  message_t* SetBusPower_cmd_msg = NULL;
+  message_t* SetBusPower_response_msg = NULL;
 
-  task void stopBus(){
-    error_t error = call BusControl.stop();
-    if (SUCCESS == error){
-      state = S_RESETTING_BUS;
+  task void reportBusPowerError(){
+    set_bus_power_response_msg_t* responsePl = (set_bus_power_response_msg_t*)(call Packet.getPayload(SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t)));
+    responsePl->error = setBusPower_error;
+    call SetBusPowerResponseSend.send(0, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
+  }
+
+  task void setPowerTask(){
+    set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
+    if (commandPl->powerOn){
+      setBusPower_error = call BusControl.start();
+    } else {
+      setBusPower_error = call BusControl.stop();
+    }
+    if (setBusPower_error != SUCCESS){
+      post reportBusPowerError();
     }
   }
 
-  event message_t* ResetBusCmdReceive.receive(message_t* msg_, 
+  event message_t* SetBusPowerCmdReceive.receive(message_t* msg_, 
       void* payload,
       uint8_t len){
-    if (ResetBus_cmd_msg != NULL){
-      printf("RX: ResetBus");
+    if (SetBusPower_cmd_msg != NULL){
+      printf("RX: SetBusPower");
       printf(" BUSY!\n");
       printfflush();
       return msg_;
     }else{
       if ((call Pool.size()) >= 2){
         message_t* ret = call Pool.get();
-        ResetBus_response_msg = call Pool.get();
-        ResetBus_cmd_msg = msg_;
-        post stopBus();
+        SetBusPower_response_msg = call Pool.get();
+        SetBusPower_cmd_msg = msg_;
+        post setPowerTask();
         return ret;
       }else{
-        printf("RX: ResetBus");
+        printf("RX: SetBusPower");
         printf(" Pool Empty!\n");
         printfflush();
         return msg_;
@@ -1053,19 +1008,110 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     }
   }
 
-  task void respondResetBus(){
-    reset_bus_cmd_msg_t* commandPl = (reset_bus_cmd_msg_t*)(call Packet.getPayload(ResetBus_cmd_msg, sizeof(reset_bus_cmd_msg_t)));
-    reset_bus_response_msg_t* responsePl = (reset_bus_response_msg_t*)(call Packet.getPayload(ResetBus_response_msg, sizeof(reset_bus_response_msg_t)));
+  task void respondSetBusPower(){
+    set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
+    set_bus_power_response_msg_t* responsePl = (set_bus_power_response_msg_t*)(call Packet.getPayload(SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t)));
     responsePl->error = SUCCESS;
-    call ResetBusResponseSend.send(0, ResetBus_response_msg, sizeof(reset_bus_response_msg_t));
+    call SetBusPowerResponseSend.send(0, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
   }
 
-  event void ResetBusResponseSend.sendDone(message_t* msg, 
+  event void SetBusPowerResponseSend.sendDone(message_t* msg, 
       error_t error){
-    call Pool.put(ResetBus_response_msg);
-    call Pool.put(ResetBus_cmd_msg);
-    ResetBus_cmd_msg = NULL;
-    ResetBus_response_msg = NULL;
+    call Pool.put(SetBusPower_response_msg);
+    call Pool.put(SetBusPower_cmd_msg);
+    SetBusPower_cmd_msg = NULL;
+    SetBusPower_response_msg = NULL;
+  }
+  
+  //Read bacon IV
+  message_t* ReadIv_cmd_msg = NULL;
+  message_t* ReadIv_response_msg = NULL;
+  task void respondReadIv();
+
+  event message_t* ReadIvCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ReadIv_cmd_msg != NULL){
+      printf("RX: ReadIv");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ReadIv_response_msg = call Pool.get();
+        ReadIv_cmd_msg = msg_;
+        post respondReadIv();
+        return ret;
+      }else{
+        printf("RX: ReadIv");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondReadIv(){
+    read_iv_cmd_msg_t* commandPl = (read_iv_cmd_msg_t*)(call Packet.getPayload(ReadIv_cmd_msg, sizeof(read_iv_cmd_msg_t)));
+    read_iv_response_msg_t* responsePl = (read_iv_response_msg_t*)(call Packet.getPayload(ReadIv_response_msg, sizeof(read_iv_response_msg_t)));
+    memcpy(&(responsePl->iv), (void*)0xFFE0, 32);
+    responsePl->error = SUCCESS;
+    call ReadIvResponseSend.send(0, ReadIv_response_msg, sizeof(read_iv_response_msg_t));
+  }
+
+  event void ReadIvResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ReadIv_response_msg);
+    call Pool.put(ReadIv_cmd_msg);
+    ReadIv_cmd_msg = NULL;
+    ReadIv_response_msg = NULL;
+  }
+
+
+  //Read bacon Manufacture info
+  message_t* ReadMfrId_cmd_msg = NULL;
+  message_t* ReadMfrId_response_msg = NULL;
+  task void respondReadMfrId();
+
+  event message_t* ReadMfrIdCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ReadMfrId_cmd_msg != NULL){
+      printf("RX: ReadMfrId");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ReadMfrId_response_msg = call Pool.get();
+        ReadMfrId_cmd_msg = msg_;
+        post respondReadMfrId();
+        return ret;
+      }else{
+        printf("RX: ReadMfrId");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondReadMfrId(){
+    read_mfr_id_cmd_msg_t* commandPl = (read_mfr_id_cmd_msg_t*)(call Packet.getPayload(ReadMfrId_cmd_msg, sizeof(read_mfr_id_cmd_msg_t)));
+    read_mfr_id_response_msg_t* responsePl = (read_mfr_id_response_msg_t*)(call Packet.getPayload(ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t)));
+    memcpy(&(responsePl->mfrId), (void*)0x1A0A, 8);
+    responsePl->error = SUCCESS;
+    call ReadMfrIdResponseSend.send(0, ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t));
+  }
+
+  event void ReadMfrIdResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ReadMfrId_response_msg);
+    call Pool.put(ReadMfrId_cmd_msg);
+    ReadMfrId_cmd_msg = NULL;
+    ReadMfrId_response_msg = NULL;
   }
 
 

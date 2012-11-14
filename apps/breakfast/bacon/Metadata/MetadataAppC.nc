@@ -24,8 +24,13 @@ configuration MetadataAppC{
 
   components new BusPowerClientC();
   MetadataP.BusControl -> BusPowerClientC;
-  components new TimerMilliC() as ResetTimer;
-  MetadataP.ResetTimer -> ResetTimer;
+
+  components LedsC;
+  MetadataP.Leds -> LedsC;
+
+  components I2CTLVStorageMasterC;
+  MetadataP.I2CTLVStorageMaster -> I2CTLVStorageMasterC;
+//  MetadataP.TLVUtils -> I2CTLVStorageMasterC;
 
 //Begin Auto-generated external wiring (see genExternalWiring.sh)
 //Receive
@@ -51,8 +56,8 @@ components new SerialAMReceiverC(AM_PING_CMD_MSG) as PingCmdReceive;
 MetadataP.PingCmdReceive -> PingCmdReceive;
 components new SerialAMReceiverC(AM_RESET_BACON_CMD_MSG) as ResetBaconCmdReceive;
 MetadataP.ResetBaconCmdReceive -> ResetBaconCmdReceive;
-components new SerialAMReceiverC(AM_RESET_BUS_CMD_MSG) as ResetBusCmdReceive;
-MetadataP.ResetBusCmdReceive -> ResetBusCmdReceive;
+components new SerialAMReceiverC(AM_SET_BUS_POWER_CMD_MSG) as SetBusPowerCmdReceive;
+MetadataP.SetBusPowerCmdReceive -> SetBusPowerCmdReceive;
 components new SerialAMReceiverC(AM_READ_BACON_TLV_CMD_MSG) as ReadBaconTlvCmdReceive;
 MetadataP.ReadBaconTlvCmdReceive -> ReadBaconTlvCmdReceive;
 components new SerialAMReceiverC(AM_READ_TOAST_TLV_CMD_MSG) as ReadToastTlvCmdReceive;
@@ -92,8 +97,8 @@ components new SerialAMSenderC(AM_PING_RESPONSE_MSG) as PingResponseSend;
 MetadataP.PingResponseSend -> PingResponseSend;
 components new SerialAMSenderC(AM_RESET_BACON_RESPONSE_MSG) as ResetBaconResponseSend;
 MetadataP.ResetBaconResponseSend -> ResetBaconResponseSend;
-components new SerialAMSenderC(AM_RESET_BUS_RESPONSE_MSG) as ResetBusResponseSend;
-MetadataP.ResetBusResponseSend -> ResetBusResponseSend;
+components new SerialAMSenderC(AM_SET_BUS_POWER_RESPONSE_MSG) as SetBusPowerResponseSend;
+MetadataP.SetBusPowerResponseSend -> SetBusPowerResponseSend;
 components new SerialAMSenderC(AM_READ_BACON_TLV_RESPONSE_MSG) as ReadBaconTlvResponseSend;
 MetadataP.ReadBaconTlvResponseSend -> ReadBaconTlvResponseSend;
 components new SerialAMSenderC(AM_READ_TOAST_TLV_RESPONSE_MSG) as ReadToastTlvResponseSend;
