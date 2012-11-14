@@ -59,7 +59,8 @@ implementation {
       //P2.0: VBAT sense (input? out to gnd?)
       //P2.2: light sense (input? out to gnd?)
       //P2.5: thermistor sense (input? out to gnd?)
-      //P2.6/2.7: I2C (out to VCC)
+      //P2.6/2.7: I2C (should be out to GND, but currently seeing
+      //  serial port reset when we do this.)
       P2DIR = 0xDA;
       P2OUT = 0xC0;
 #endif 

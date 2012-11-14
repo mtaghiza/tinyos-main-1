@@ -89,9 +89,12 @@ if __name__ == '__main__':
                 #ugh, these should be exposed with __set__, __get__ so
                 # that it looks like dictionary access
                 for setter in [s for s in dir(m) if s.startswith('set_')]:
-                    v = eval(raw_input('%s:'%setter),
-                      {"__builtins__":None}, {})
-                    print v
+                    if setter == 'set_dummy':
+                        v = []
+                    else:
+                        v = eval(raw_input('%s:'%setter),
+                          {"__builtins__":None}, {})
+                        print v
                     getattr(m, setter)(v)
                 d.send(m)
                 last = m
