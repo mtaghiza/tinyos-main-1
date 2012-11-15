@@ -210,7 +210,8 @@ typedef nx_struct read_bacon_tlv_entry_response_msg{
 typedef nx_struct read_toast_tlv_entry_cmd_msg{
   nx_uint8_t tag;
 } read_toast_tlv_entry_cmd_msg_t;
-
+//these would ideally use the tlv_entry_t type, but that's not an nx
+//type
 typedef nx_struct read_toast_tlv_entry_response_msg{
   nx_uint8_t error;
   nx_uint8_t tag;

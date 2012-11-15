@@ -11,6 +11,7 @@ configuration ToastTLVC{
 
   components I2CTLVStorageMasterC;
   ToastTLVP.I2CTLVStorageMaster -> I2CTLVStorageMasterC;
+  ToastTLVP.TLVUtils -> I2CTLVStorageMasterC;
 
 //  components new SerialAMReceiverC(AM_READ_TOAST_BARCODE_ID_CMD_MSG) as ReadToastBarcodeIdCmdReceive;
 //  ToastTLVP.ReadToastBarcodeIdCmdReceive -> ReadToastBarcodeIdCmdReceive;

@@ -6,6 +6,7 @@ module ToastTLVP{
   uses interface Pool<message_t>;
   uses interface Get<uint8_t> as LastSlave;
   uses interface I2CTLVStorageMaster;
+  uses interface TLVUtils;
 
 //  uses interface Receive as ReadToastBarcodeIdCmdReceive;
 //  uses interface Receive as WriteToastBarcodeIdCmdReceive;
@@ -316,7 +317,7 @@ module ToastTLVP{
           message_t* ret = call Pool.get();
           responseMsg = call Pool.get();
           cmdMsg = msg_;
-          post respondReadToastTlvEntry();
+          post loadToastTLVStorage();
           return ret;
         }
       }else{
@@ -331,8 +332,18 @@ module ToastTLVP{
   task void respondReadToastTlvEntry(){
     read_toast_tlv_entry_cmd_msg_t* commandPl = (read_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(read_toast_tlv_entry_cmd_msg_t)));
     read_toast_tlv_entry_response_msg_t* responsePl = (read_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_toast_tlv_entry_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
+    tlv_entry_t* entry;
+    uint8_t initOffset = 0;
+    uint8_t offset = call TLVUtils.findEntry(commandPl->tag, 
+      initOffset, &entry, tlvs);
+//    printf("FE %x %u %p %p: %u\n", commandPl->tag, initOffset, &entry,
+//      tlvs, offset);
+    memcpy((void*)(&responsePl->tag), (void*)entry, entry->len+2);
+    if (0 == offset){
+      responsePl->error = EINVAL;
+    } else{
+      responsePl->error = SUCCESS;
+    }
     call ReadToastTlvEntryResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
   }
 
