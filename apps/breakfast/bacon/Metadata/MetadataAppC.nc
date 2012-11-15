@@ -3,6 +3,9 @@ configuration MetadataAppC{
 } implementation {
   components MainC;
   components MetadataP;
+  components UtilitiesC;
+  components BusC;
+
   components new TimerMilliC();
 
   components PrintfC;
@@ -11,7 +14,6 @@ configuration MetadataAppC{
   components SerialActiveMessageC;
 
   MetadataP.Boot -> MainC;
-  MetadataP.BusPowerDelayTimer -> TimerMilliC;
 
   MetadataP.Packet -> SerialActiveMessageC;
   MetadataP.SerialSplitControl -> SerialActiveMessageC;
@@ -19,14 +21,11 @@ configuration MetadataAppC{
   components new PoolC(message_t, 16);
   MetadataP.Pool -> PoolC;
   UtilitiesC.Pool -> PoolC;
+  BusC.Pool -> PoolC;
 
-  components new I2CDiscovererC();
-  MetadataP.I2CDiscoverer -> I2CDiscovererC;
+  MetadataP.LastSlave -> BusC.Get;
 
-  components new BusPowerClientC();
-  MetadataP.BusControl -> BusPowerClientC;
 
-  components UtilitiesC;
 
   components LedsC;
   MetadataP.Leds -> LedsC;
@@ -53,12 +52,8 @@ components new SerialAMReceiverC(AM_READ_TOAST_ASSIGNMENTS_CMD_MSG) as ReadToast
 MetadataP.ReadToastAssignmentsCmdReceive -> ReadToastAssignmentsCmdReceive;
 components new SerialAMReceiverC(AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG) as WriteToastAssignmentsCmdReceive;
 MetadataP.WriteToastAssignmentsCmdReceive -> WriteToastAssignmentsCmdReceive;
-components new SerialAMReceiverC(AM_SCAN_BUS_CMD_MSG) as ScanBusCmdReceive;
-MetadataP.ScanBusCmdReceive -> ScanBusCmdReceive;
 components new SerialAMReceiverC(AM_RESET_BACON_CMD_MSG) as ResetBaconCmdReceive;
 MetadataP.ResetBaconCmdReceive -> ResetBaconCmdReceive;
-components new SerialAMReceiverC(AM_SET_BUS_POWER_CMD_MSG) as SetBusPowerCmdReceive;
-MetadataP.SetBusPowerCmdReceive -> SetBusPowerCmdReceive;
 components new SerialAMReceiverC(AM_READ_BACON_TLV_CMD_MSG) as ReadBaconTlvCmdReceive;
 MetadataP.ReadBaconTlvCmdReceive -> ReadBaconTlvCmdReceive;
 components new SerialAMReceiverC(AM_READ_TOAST_TLV_CMD_MSG) as ReadToastTlvCmdReceive;
@@ -92,12 +87,8 @@ components new SerialAMSenderC(AM_READ_TOAST_ASSIGNMENTS_RESPONSE_MSG) as ReadTo
 MetadataP.ReadToastAssignmentsResponseSend -> ReadToastAssignmentsResponseSend;
 components new SerialAMSenderC(AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG) as WriteToastAssignmentsResponseSend;
 MetadataP.WriteToastAssignmentsResponseSend -> WriteToastAssignmentsResponseSend;
-components new SerialAMSenderC(AM_SCAN_BUS_RESPONSE_MSG) as ScanBusResponseSend;
-MetadataP.ScanBusResponseSend -> ScanBusResponseSend;
 components new SerialAMSenderC(AM_RESET_BACON_RESPONSE_MSG) as ResetBaconResponseSend;
 MetadataP.ResetBaconResponseSend -> ResetBaconResponseSend;
-components new SerialAMSenderC(AM_SET_BUS_POWER_RESPONSE_MSG) as SetBusPowerResponseSend;
-MetadataP.SetBusPowerResponseSend -> SetBusPowerResponseSend;
 components new SerialAMSenderC(AM_READ_BACON_TLV_RESPONSE_MSG) as ReadBaconTlvResponseSend;
 MetadataP.ReadBaconTlvResponseSend -> ReadBaconTlvResponseSend;
 components new SerialAMSenderC(AM_READ_TOAST_TLV_RESPONSE_MSG) as ReadToastTlvResponseSend;
