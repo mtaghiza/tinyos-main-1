@@ -989,6 +989,8 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
       call BusPowerDelayTimer.startOneShot(5); 
     } else {
       P2OUT &= ~(0xC0);
+      P1DIR |= BIT0;
+      P1OUT &= ~BIT0;
       setBusPower_error = call BusControl.stop();
       if (setBusPower_error != SUCCESS){
         post reportBusPowerError();
