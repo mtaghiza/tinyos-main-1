@@ -194,6 +194,30 @@ typedef nx_struct add_toast_tlv_entry_response_msg{
   nx_uint8_t error;
 } add_toast_tlv_entry_response_msg_t;
 
+//Read a single TLV Entry
+
+typedef nx_struct read_bacon_tlv_entry_cmd_msg{
+  nx_uint8_t tag;
+} read_bacon_tlv_entry_cmd_msg_t;
+
+typedef nx_struct read_bacon_tlv_entry_response_msg{
+  nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint8_t len;
+  nx_uint8_t data[64];
+} read_bacon_tlv_entry_response_msg_t;
+
+typedef nx_struct read_toast_tlv_entry_cmd_msg{
+  nx_uint8_t tag;
+} read_toast_tlv_entry_cmd_msg_t;
+
+typedef nx_struct read_toast_tlv_entry_response_msg{
+  nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint8_t len;
+  nx_uint8_t data[64];
+} read_toast_tlv_entry_response_msg_t;
+
 
 enum{
   AM_READ_IV_CMD_MSG = 0x80,
@@ -236,6 +260,10 @@ enum{
   AM_ADD_BACON_TLV_ENTRY_RESPONSE_MSG = 0xA5,
   AM_ADD_TOAST_TLV_ENTRY_CMD_MSG = 0xA6,
   AM_ADD_TOAST_TLV_ENTRY_RESPONSE_MSG = 0xA7,
+  AM_READ_TOAST_TLV_ENTRY_CMD_MSG = 0xA8,
+  AM_READ_TOAST_TLV_ENTRY_RESPONSE_MSG = 0xA9,
+  AM_READ_BACON_TLV_ENTRY_CMD_MSG = 0xAA,
+  AM_READ_BACON_TLV_ENTRY_RESPONSE_MSG = 0xAB,
 };
 
 #endif

@@ -7,6 +7,7 @@ configuration ToastTLVC{
   components SerialActiveMessageC;
   ToastTLVP.Pool = Pool;
   ToastTLVP.Packet -> SerialActiveMessageC;
+  ToastTLVP.AMPacket -> SerialActiveMessageC;
 
   components I2CTLVStorageMasterC;
   ToastTLVP.I2CTLVStorageMaster -> I2CTLVStorageMasterC;
@@ -43,4 +44,8 @@ configuration ToastTLVC{
   ToastTLVP.DeleteToastTlvEntryResponseSend -> DeleteToastTlvEntryResponseSend;
   components new SerialAMSenderC(AM_ADD_TOAST_TLV_ENTRY_RESPONSE_MSG) as AddToastTlvEntryResponseSend;
   ToastTLVP.AddToastTlvEntryResponseSend -> AddToastTlvEntryResponseSend;
+  components new SerialAMReceiverC(AM_READ_TOAST_TLV_ENTRY_CMD_MSG) as ReadToastTlvEntryCmdReceive;
+  ToastTLVP.ReadToastTlvEntryCmdReceive -> ReadToastTlvEntryCmdReceive;
+  components new SerialAMSenderC(AM_READ_TOAST_TLV_ENTRY_RESPONSE_MSG) as ReadToastTlvEntryResponseSend;
+  ToastTLVP.ReadToastTlvEntryResponseSend -> ReadToastTlvEntryResponseSend;
 }

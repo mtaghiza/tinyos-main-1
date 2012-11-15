@@ -2,6 +2,7 @@
  #include "I2CTLVStorage.h"
 module ToastTLVP{
   uses interface Packet;
+  uses interface AMPacket;
   uses interface Pool<message_t>;
   uses interface Get<uint8_t> as LastSlave;
   uses interface I2CTLVStorageMaster;
@@ -14,6 +15,7 @@ module ToastTLVP{
   uses interface Receive as WriteToastTlvCmdReceive;
   uses interface Receive as DeleteToastTlvEntryCmdReceive;
   uses interface Receive as AddToastTlvEntryCmdReceive;
+  uses interface Receive as ReadToastTlvEntryCmdReceive;
   uses interface AMSend as ReadToastBarcodeIdResponseSend;
   uses interface AMSend as WriteToastBarcodeIdResponseSend;
   uses interface AMSend as ReadToastAssignmentsResponseSend;
@@ -22,9 +24,21 @@ module ToastTLVP{
   uses interface AMSend as WriteToastTlvResponseSend;
   uses interface AMSend as DeleteToastTlvEntryResponseSend;
   uses interface AMSend as AddToastTlvEntryResponseSend;
+  uses interface AMSend as ReadToastTlvEntryResponseSend;
+
 } implementation {
+  message_t* responseMsg = NULL;
+  message_t* cmdMsg = NULL;
+
+  error_t loadTLVError;
+
   i2c_message_t i2c_msg_internal;
   i2c_message_t* i2c_msg = &i2c_msg_internal;
+
+  void* tlvs;
+  am_id_t currentCommandType;
+
+  task void handleLoaded();
 
   message_t* ReadToastBarcodeId_cmd_msg = NULL;
   message_t* ReadToastBarcodeId_response_msg = NULL;
@@ -218,39 +232,62 @@ module ToastTLVP{
   error_t readToastTLVError = FAIL;
 
   task void respondReadToastTlv();
-  task void reportReadToastTLVError();
 
   task void loadToastTLVStorage(){
-    readToastTLVError = call I2CTLVStorageMaster.loadTLVStorage((call
-    LastSlave.get()),
+    loadTLVError = call I2CTLVStorageMaster.loadTLVStorage((call LastSlave.get()),
       i2c_msg);
-    if (readToastTLVError  != SUCCESS){
-      post reportReadToastTLVError();
+
+    if (loadTLVError  != SUCCESS){
+      post handleLoaded();
     }
   }
 
   event void I2CTLVStorageMaster.loaded(error_t error, i2c_message_t* msg_){
-    readToastTLVError = error;
-    if (error != SUCCESS){
-      post reportReadToastTLVError();
-    } else{
-      post respondReadToastTlv();
+    tlvs = call I2CTLVStorageMaster.getPayload(msg_);
+    loadTLVError = error;
+    post handleLoaded();
+  }
+
+  task void handleLoaded(){
+    if (loadTLVError == SUCCESS){
+      switch (currentCommandType){
+        case AM_READ_TOAST_TLV_CMD_MSG:
+          post respondReadToastTlv();
+          break;
+        case AM_READ_TOAST_TLV_ENTRY_CMD_MSG:
+          break;
+        default:
+          printf("Unknown command %x\n", currentCommandType);
+      }
+    } else {
+      read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_toast_tlv_response_msg_t)));
+      responsePl->error = loadTLVError;
+      switch (currentCommandType){
+        case AM_READ_TOAST_TLV_CMD_MSG:
+          call ReadToastTlvResponseSend.send(0, responseMsg, 
+            sizeof(read_toast_tlv_response_msg_t));
+          break;
+        case AM_READ_TOAST_TLV_ENTRY_CMD_MSG:
+          call ReadToastTlvEntryResponseSend.send(0, responseMsg, 
+            sizeof(read_toast_tlv_entry_response_msg_t));
+          break;
+        default:
+          printf("Unrecognized current command: %x\n",
+            currentCommandType);
+          break;
+      }
+      currentCommandType = 0;
     }
   }
 
   event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){
   }
 
-  task void reportReadToastTLVError(){
-    read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t)));
-    responsePl->error = readToastTLVError;
-    call ReadToastTlvResponseSend.send(0, ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t));
-  }
-
   event message_t* ReadToastTlvCmdReceive.receive(message_t* msg_, 
       void* payload,
       uint8_t len){
-    if (ReadToastTlv_cmd_msg != NULL){
+    currentCommandType = call AMPacket.type(msg_);
+    if (cmdMsg != NULL){
       printf("RX: ReadToastTlv");
       printf(" BUSY!\n");
       printfflush();
@@ -258,13 +295,13 @@ module ToastTLVP{
     }else{
       if ((call Pool.size()) >= 2){
         if ((call LastSlave.get())==0){
-          readToastTLVError = EOFF;
-          post reportReadToastTLVError();
+          loadTLVError = EOFF;
+          post handleLoaded();
           return msg_;
         } else{
           message_t* ret = call Pool.get();
-          ReadToastTlv_response_msg = call Pool.get();
-          ReadToastTlv_cmd_msg = msg_;
+          responseMsg = call Pool.get();
+          cmdMsg = msg_;
           post loadToastTLVStorage();
           return ret;
         }
@@ -278,11 +315,12 @@ module ToastTLVP{
   }
 
   task void respondReadToastTlv(){
+    error_t err;
 //    read_toast_tlv_cmd_msg_t* commandPl = (read_toast_tlv_cmd_msg_t*)(call Packet.getPayload(ReadToastTlv_cmd_msg, sizeof(read_toast_tlv_cmd_msg_t)));
-    read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call ReadToastTlvResponseSend.send(0, ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t));
+    read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_toast_tlv_response_msg_t)));
+    memcpy(&(responsePl->tlvs), tlvs, 64);
+    responsePl->error = SUCCESS;
+    err =call ReadToastTlvResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_response_msg_t));
   }
 
   event void ReadToastTlvResponseSend.sendDone(message_t* msg, 
@@ -291,8 +329,6 @@ module ToastTLVP{
     call Pool.put(ReadToastTlv_cmd_msg);
     ReadToastTlv_cmd_msg = NULL;
     ReadToastTlv_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
   }
 
 
@@ -435,6 +471,50 @@ module ToastTLVP{
     printfflush();
   }
 
+  message_t* ReadToastTlvEntry_cmd_msg = NULL;
+  message_t* ReadToastTlvEntry_response_msg = NULL;
+  task void respondReadToastTlvEntry();
 
+  event message_t* ReadToastTlvEntryCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ReadToastTlvEntry_cmd_msg != NULL){
+      printf("RX: ReadToastTlvEntry");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ReadToastTlvEntry_response_msg = call Pool.get();
+        ReadToastTlvEntry_cmd_msg = msg_;
+        post respondReadToastTlvEntry();
+        return ret;
+      }else{
+        printf("RX: ReadToastTlvEntry");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondReadToastTlvEntry(){
+    read_toast_tlv_entry_cmd_msg_t* commandPl = (read_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(ReadToastTlvEntry_cmd_msg, sizeof(read_toast_tlv_entry_cmd_msg_t)));
+    read_toast_tlv_entry_response_msg_t* responsePl = (read_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(ReadToastTlvEntry_response_msg, sizeof(read_toast_tlv_entry_response_msg_t)));
+    //TODO: other processing logic
+    responsePl->error = FAIL;
+    call ReadToastTlvEntryResponseSend.send(0, ReadToastTlvEntry_response_msg, sizeof(read_toast_tlv_entry_response_msg_t));
+  }
+
+  event void ReadToastTlvEntryResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ReadToastTlvEntry_response_msg);
+    call Pool.put(ReadToastTlvEntry_cmd_msg);
+    ReadToastTlvEntry_cmd_msg = NULL;
+    ReadToastTlvEntry_response_msg = NULL;
+    printf("Response sent\n");
+    printfflush();
+  }
   
 }

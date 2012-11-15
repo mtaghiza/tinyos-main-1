@@ -41,5 +41,11 @@ DeleteToastTlvEntryResponseMsg
 AddBaconTlvEntryCmdMsg
 AddBaconTlvEntryResponseMsg
 AddToastTlvEntryCmdMsg
-AddToastTlvEntryResponseMsg'''
+AddToastTlvEntryResponseMsg
+ReadBaconTlvEntryCmdMsg
+ReadBaconTlvEntryResponseMsg
+ReadToastTlvEntryCmdMsg
+ReadToastTlvEntryResponseMsg
+'''
+
 __all__= ['PrintfMsg'] + allS.split()
