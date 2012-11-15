@@ -1,3 +1,4 @@
+ #include "GlobalID.h"
 module BusP{
   uses interface SplitControl as BusControl;
   uses interface I2CDiscoverer;
