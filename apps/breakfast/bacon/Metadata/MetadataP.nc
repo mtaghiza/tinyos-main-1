@@ -7,7 +7,7 @@
 
 module MetadataP{
   uses interface Boot;
-  uses interface Timer<TMilli>;
+  uses interface Timer<TMilli> as BusPowerDelayTimer;
   uses interface Packet;
   uses interface SplitControl as SerialSplitControl;
   uses interface Pool<message_t>;
@@ -132,7 +132,13 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 
   event void SerialSplitControl.stopDone(error_t error){}
 
-  event void Timer.fired(){ }
+  task void reportBusPowerError();
+  event void BusPowerDelayTimer.fired(){ 
+    setBusPower_error = call BusControl.start();
+    if (setBusPower_error != SUCCESS){
+      post reportBusPowerError();
+    }
+  }
 
 //Begin Auto-generated message stubs (see genStubs.sh)
 
@@ -975,12 +981,18 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   task void setPowerTask(){
     set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
     if (commandPl->powerOn){
-      setBusPower_error = call BusControl.start();
+      //Make P1.0 high-impedance
+      P1DIR &= ~BIT0;
+      //Use P2.6 and P2.7 to charge up the bus through pull-ups
+      P2OUT |= (0xC0);
+      //Wait some time until the charging is done
+      call BusPowerDelayTimer.startOneShot(5); 
     } else {
+      P2OUT &= ~(0xC0);
       setBusPower_error = call BusControl.stop();
-    }
-    if (setBusPower_error != SUCCESS){
-      post reportBusPowerError();
+      if (setBusPower_error != SUCCESS){
+        post reportBusPowerError();
+      }
     }
   }
 

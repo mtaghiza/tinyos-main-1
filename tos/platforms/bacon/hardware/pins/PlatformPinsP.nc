@@ -35,6 +35,7 @@
 /**
  * @author David Moss
  * @author Peter A. Bigot <pab@peoplepowerco.com>
+ * @author Doug Carlson <carlson@cs.jhu.edu> 
  */
 
 module PlatformPinsP {
@@ -63,7 +64,7 @@ implementation {
       //  serial port reset when we do this at the point where we
       //  either do a bus or bacon reset.)
       P2DIR = 0xDA;
-      P2OUT = 0xC0;
+      P2OUT = 0x00;
 #endif 
     
 #if defined(__msp430_have_port3) || defined(__MSP430_HAS_PORT3__) || defined(__MSP430_HAS_PORT3_R__)

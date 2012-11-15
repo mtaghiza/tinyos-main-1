@@ -11,7 +11,7 @@ configuration MetadataAppC{
   components SerialActiveMessageC;
 
   MetadataP.Boot -> MainC;
-  MetadataP.Timer -> TimerMilliC;
+  MetadataP.BusPowerDelayTimer -> TimerMilliC;
 
   MetadataP.Packet -> SerialActiveMessageC;
   MetadataP.SerialSplitControl -> SerialActiveMessageC;
