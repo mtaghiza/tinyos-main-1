@@ -28,7 +28,6 @@ uses interface Receive as WriteToastBarcodeIdCmdReceive;
 uses interface Receive as ReadToastAssignmentsCmdReceive;
 uses interface Receive as WriteToastAssignmentsCmdReceive;
 uses interface Receive as ScanBusCmdReceive;
-uses interface Receive as PingCmdReceive;
 uses interface Receive as ResetBaconCmdReceive;
 uses interface Receive as SetBusPowerCmdReceive;
 uses interface Receive as ReadBaconTlvCmdReceive;
@@ -49,7 +48,6 @@ uses interface AMSend as WriteToastBarcodeIdResponseSend;
 uses interface AMSend as ReadToastAssignmentsResponseSend;
 uses interface AMSend as WriteToastAssignmentsResponseSend;
 uses interface AMSend as ScanBusResponseSend;
-uses interface AMSend as PingResponseSend;
 uses interface AMSend as ResetBaconResponseSend;
 uses interface AMSend as SetBusPowerResponseSend;
 uses interface AMSend as ReadBaconTlvResponseSend;
@@ -166,7 +164,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadBaconBarcodeId(){
-    read_bacon_barcode_id_cmd_msg_t* commandPl = (read_bacon_barcode_id_cmd_msg_t*)(call Packet.getPayload(ReadBaconBarcodeId_cmd_msg, sizeof(read_bacon_barcode_id_cmd_msg_t)));
+//    read_bacon_barcode_id_cmd_msg_t* commandPl = (read_bacon_barcode_id_cmd_msg_t*)(call Packet.getPayload(ReadBaconBarcodeId_cmd_msg, sizeof(read_bacon_barcode_id_cmd_msg_t)));
     read_bacon_barcode_id_response_msg_t* responsePl = (read_bacon_barcode_id_response_msg_t*)(call Packet.getPayload(ReadBaconBarcodeId_response_msg, sizeof(read_bacon_barcode_id_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -213,7 +211,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondWriteBaconBarcodeId(){
-    write_bacon_barcode_id_cmd_msg_t* commandPl = (write_bacon_barcode_id_cmd_msg_t*)(call Packet.getPayload(WriteBaconBarcodeId_cmd_msg, sizeof(write_bacon_barcode_id_cmd_msg_t)));
+//    write_bacon_barcode_id_cmd_msg_t* commandPl = (write_bacon_barcode_id_cmd_msg_t*)(call Packet.getPayload(WriteBaconBarcodeId_cmd_msg, sizeof(write_bacon_barcode_id_cmd_msg_t)));
     write_bacon_barcode_id_response_msg_t* responsePl = (write_bacon_barcode_id_response_msg_t*)(call Packet.getPayload(WriteBaconBarcodeId_response_msg, sizeof(write_bacon_barcode_id_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -260,7 +258,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadToastBarcodeId(){
-    read_toast_barcode_id_cmd_msg_t* commandPl = (read_toast_barcode_id_cmd_msg_t*)(call Packet.getPayload(ReadToastBarcodeId_cmd_msg, sizeof(read_toast_barcode_id_cmd_msg_t)));
+//    read_toast_barcode_id_cmd_msg_t* commandPl = (read_toast_barcode_id_cmd_msg_t*)(call Packet.getPayload(ReadToastBarcodeId_cmd_msg, sizeof(read_toast_barcode_id_cmd_msg_t)));
     read_toast_barcode_id_response_msg_t* responsePl = (read_toast_barcode_id_response_msg_t*)(call Packet.getPayload(ReadToastBarcodeId_response_msg, sizeof(read_toast_barcode_id_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -307,7 +305,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondWriteToastBarcodeId(){
-    write_toast_barcode_id_cmd_msg_t* commandPl = (write_toast_barcode_id_cmd_msg_t*)(call Packet.getPayload(WriteToastBarcodeId_cmd_msg, sizeof(write_toast_barcode_id_cmd_msg_t)));
+//    write_toast_barcode_id_cmd_msg_t* commandPl = (write_toast_barcode_id_cmd_msg_t*)(call Packet.getPayload(WriteToastBarcodeId_cmd_msg, sizeof(write_toast_barcode_id_cmd_msg_t)));
     write_toast_barcode_id_response_msg_t* responsePl = (write_toast_barcode_id_response_msg_t*)(call Packet.getPayload(WriteToastBarcodeId_response_msg, sizeof(write_toast_barcode_id_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -354,7 +352,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadToastAssignments(){
-    read_toast_assignments_cmd_msg_t* commandPl = (read_toast_assignments_cmd_msg_t*)(call Packet.getPayload(ReadToastAssignments_cmd_msg, sizeof(read_toast_assignments_cmd_msg_t)));
+//    read_toast_assignments_cmd_msg_t* commandPl = (read_toast_assignments_cmd_msg_t*)(call Packet.getPayload(ReadToastAssignments_cmd_msg, sizeof(read_toast_assignments_cmd_msg_t)));
     read_toast_assignments_response_msg_t* responsePl = (read_toast_assignments_response_msg_t*)(call Packet.getPayload(ReadToastAssignments_response_msg, sizeof(read_toast_assignments_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -401,7 +399,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondWriteToastAssignments(){
-    write_toast_assignments_cmd_msg_t* commandPl = (write_toast_assignments_cmd_msg_t*)(call Packet.getPayload(WriteToastAssignments_cmd_msg, sizeof(write_toast_assignments_cmd_msg_t)));
+//    write_toast_assignments_cmd_msg_t* commandPl = (write_toast_assignments_cmd_msg_t*)(call Packet.getPayload(WriteToastAssignments_cmd_msg, sizeof(write_toast_assignments_cmd_msg_t)));
     write_toast_assignments_response_msg_t* responsePl = (write_toast_assignments_response_msg_t*)(call Packet.getPayload(WriteToastAssignments_response_msg, sizeof(write_toast_assignments_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -449,7 +447,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadBaconTlv(){
-    read_bacon_tlv_cmd_msg_t* commandPl = (read_bacon_tlv_cmd_msg_t*)(call Packet.getPayload(ReadBaconTlv_cmd_msg, sizeof(read_bacon_tlv_cmd_msg_t)));
+//    read_bacon_tlv_cmd_msg_t* commandPl = (read_bacon_tlv_cmd_msg_t*)(call Packet.getPayload(ReadBaconTlv_cmd_msg, sizeof(read_bacon_tlv_cmd_msg_t)));
     read_bacon_tlv_response_msg_t* responsePl = (read_bacon_tlv_response_msg_t*)(call Packet.getPayload(ReadBaconTlv_response_msg, sizeof(read_bacon_tlv_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -513,6 +511,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
         if (lastSlave ==0){
           readToastTLVError = EOFF;
           post reportReadToastTLVError();
+          return msg_;
         } else{
           message_t* ret = call Pool.get();
           ReadToastTlv_response_msg = call Pool.get();
@@ -530,7 +529,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadToastTlv(){
-    read_toast_tlv_cmd_msg_t* commandPl = (read_toast_tlv_cmd_msg_t*)(call Packet.getPayload(ReadToastTlv_cmd_msg, sizeof(read_toast_tlv_cmd_msg_t)));
+//    read_toast_tlv_cmd_msg_t* commandPl = (read_toast_tlv_cmd_msg_t*)(call Packet.getPayload(ReadToastTlv_cmd_msg, sizeof(read_toast_tlv_cmd_msg_t)));
     read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(ReadToastTlv_response_msg, sizeof(read_toast_tlv_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -577,7 +576,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondWriteBaconTlv(){
-    write_bacon_tlv_cmd_msg_t* commandPl = (write_bacon_tlv_cmd_msg_t*)(call Packet.getPayload(WriteBaconTlv_cmd_msg, sizeof(write_bacon_tlv_cmd_msg_t)));
+//    write_bacon_tlv_cmd_msg_t* commandPl = (write_bacon_tlv_cmd_msg_t*)(call Packet.getPayload(WriteBaconTlv_cmd_msg, sizeof(write_bacon_tlv_cmd_msg_t)));
     write_bacon_tlv_response_msg_t* responsePl = (write_bacon_tlv_response_msg_t*)(call Packet.getPayload(WriteBaconTlv_response_msg, sizeof(write_bacon_tlv_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -624,7 +623,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondWriteToastTlv(){
-    write_toast_tlv_cmd_msg_t* commandPl = (write_toast_tlv_cmd_msg_t*)(call Packet.getPayload(WriteToastTlv_cmd_msg, sizeof(write_toast_tlv_cmd_msg_t)));
+//    write_toast_tlv_cmd_msg_t* commandPl = (write_toast_tlv_cmd_msg_t*)(call Packet.getPayload(WriteToastTlv_cmd_msg, sizeof(write_toast_tlv_cmd_msg_t)));
     write_toast_tlv_response_msg_t* responsePl = (write_toast_tlv_response_msg_t*)(call Packet.getPayload(WriteToastTlv_response_msg, sizeof(write_toast_tlv_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -671,7 +670,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondDeleteBaconTlvEntry(){
-    delete_bacon_tlv_entry_cmd_msg_t* commandPl = (delete_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(DeleteBaconTlvEntry_cmd_msg, sizeof(delete_bacon_tlv_entry_cmd_msg_t)));
+//    delete_bacon_tlv_entry_cmd_msg_t* commandPl = (delete_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(DeleteBaconTlvEntry_cmd_msg, sizeof(delete_bacon_tlv_entry_cmd_msg_t)));
     delete_bacon_tlv_entry_response_msg_t* responsePl = (delete_bacon_tlv_entry_response_msg_t*)(call Packet.getPayload(DeleteBaconTlvEntry_response_msg, sizeof(delete_bacon_tlv_entry_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -718,7 +717,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondDeleteToastTlvEntry(){
-    delete_toast_tlv_entry_cmd_msg_t* commandPl = (delete_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(DeleteToastTlvEntry_cmd_msg, sizeof(delete_toast_tlv_entry_cmd_msg_t)));
+//    delete_toast_tlv_entry_cmd_msg_t* commandPl = (delete_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(DeleteToastTlvEntry_cmd_msg, sizeof(delete_toast_tlv_entry_cmd_msg_t)));
     delete_toast_tlv_entry_response_msg_t* responsePl = (delete_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(DeleteToastTlvEntry_response_msg, sizeof(delete_toast_tlv_entry_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -765,7 +764,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondAddBaconTlvEntry(){
-    add_bacon_tlv_entry_cmd_msg_t* commandPl = (add_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(AddBaconTlvEntry_cmd_msg, sizeof(add_bacon_tlv_entry_cmd_msg_t)));
+//    add_bacon_tlv_entry_cmd_msg_t* commandPl = (add_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(AddBaconTlvEntry_cmd_msg, sizeof(add_bacon_tlv_entry_cmd_msg_t)));
     add_bacon_tlv_entry_response_msg_t* responsePl = (add_bacon_tlv_entry_response_msg_t*)(call Packet.getPayload(AddBaconTlvEntry_response_msg, sizeof(add_bacon_tlv_entry_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -812,7 +811,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondAddToastTlvEntry(){
-    add_toast_tlv_entry_cmd_msg_t* commandPl = (add_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(AddToastTlvEntry_cmd_msg, sizeof(add_toast_tlv_entry_cmd_msg_t)));
+//    add_toast_tlv_entry_cmd_msg_t* commandPl = (add_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(AddToastTlvEntry_cmd_msg, sizeof(add_toast_tlv_entry_cmd_msg_t)));
     add_toast_tlv_entry_response_msg_t* responsePl = (add_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(AddToastTlvEntry_response_msg, sizeof(add_toast_tlv_entry_response_msg_t)));
     //TODO: other processing logic
     responsePl->error = FAIL;
@@ -866,49 +865,6 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
     call Leds.led0Off();
   }
   
-  //Ping
-  message_t* Ping_cmd_msg = NULL;
-  message_t* Ping_response_msg = NULL;
-  task void respondPing();
-
-  event message_t* PingCmdReceive.receive(message_t* msg_, 
-      void* payload,
-      uint8_t len){
-    if (Ping_cmd_msg != NULL){
-      printf("RX: Ping");
-      printf(" BUSY!\n");
-      printfflush();
-      return msg_;
-    }else{
-      if ((call Pool.size()) >= 2){
-        message_t* ret = call Pool.get();
-        Ping_response_msg = call Pool.get();
-        Ping_cmd_msg = msg_;
-        post respondPing();
-        return ret;
-      }else{
-        printf("RX: Ping");
-        printf(" Pool Empty!\n");
-        printfflush();
-        return msg_;
-      }
-    }
-  }
-
-  task void respondPing(){
-    ping_response_msg_t* responsePl = (ping_response_msg_t*)(call Packet.getPayload(Ping_response_msg, sizeof(ping_response_msg_t)));
-    responsePl->error = SUCCESS;
-    call PingResponseSend.send(0, Ping_response_msg, sizeof(ping_response_msg_t));
-  }
-
-  event void PingResponseSend.sendDone(message_t* msg, 
-      error_t error){
-    call Pool.put(Ping_response_msg);
-    call Pool.put(Ping_cmd_msg);
-    Ping_cmd_msg = NULL;
-    Ping_response_msg = NULL;
-  }
-
   //Scan bus
   message_t* ScanBus_cmd_msg = NULL;
   message_t* ScanBus_response_msg = NULL;
@@ -946,7 +902,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
 
 
   task void respondScanBus(){
-    scan_bus_cmd_msg_t* commandPl = (scan_bus_cmd_msg_t*)(call Packet.getPayload(ScanBus_cmd_msg, sizeof(scan_bus_cmd_msg_t)));
+//    scan_bus_cmd_msg_t* commandPl = (scan_bus_cmd_msg_t*)(call Packet.getPayload(ScanBus_cmd_msg, sizeof(scan_bus_cmd_msg_t)));
     scan_bus_response_msg_t* responsePl = (scan_bus_response_msg_t*)(call Packet.getPayload(ScanBus_response_msg, sizeof(scan_bus_response_msg_t)));
     responsePl->error = scanBus_err;
     responsePl->numFound = slaveCount;
@@ -1010,7 +966,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondSetBusPower(){
-    set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
+//    set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
     set_bus_power_response_msg_t* responsePl = (set_bus_power_response_msg_t*)(call Packet.getPayload(SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t)));
     responsePl->error = SUCCESS;
     call SetBusPowerResponseSend.send(0, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
@@ -1054,7 +1010,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadIv(){
-    read_iv_cmd_msg_t* commandPl = (read_iv_cmd_msg_t*)(call Packet.getPayload(ReadIv_cmd_msg, sizeof(read_iv_cmd_msg_t)));
+//    read_iv_cmd_msg_t* commandPl = (read_iv_cmd_msg_t*)(call Packet.getPayload(ReadIv_cmd_msg, sizeof(read_iv_cmd_msg_t)));
     read_iv_response_msg_t* responsePl = (read_iv_response_msg_t*)(call Packet.getPayload(ReadIv_response_msg, sizeof(read_iv_response_msg_t)));
     memcpy(&(responsePl->iv), (void*)0xFFE0, 32);
     responsePl->error = SUCCESS;
@@ -1100,7 +1056,7 @@ uses interface AMSend as AddToastTlvEntryResponseSend;
   }
 
   task void respondReadMfrId(){
-    read_mfr_id_cmd_msg_t* commandPl = (read_mfr_id_cmd_msg_t*)(call Packet.getPayload(ReadMfrId_cmd_msg, sizeof(read_mfr_id_cmd_msg_t)));
+//    read_mfr_id_cmd_msg_t* commandPl = (read_mfr_id_cmd_msg_t*)(call Packet.getPayload(ReadMfrId_cmd_msg, sizeof(read_mfr_id_cmd_msg_t)));
     read_mfr_id_response_msg_t* responsePl = (read_mfr_id_response_msg_t*)(call Packet.getPayload(ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t)));
     memcpy(&(responsePl->mfrId), (void*)0x1A0A, 8);
     responsePl->error = SUCCESS;

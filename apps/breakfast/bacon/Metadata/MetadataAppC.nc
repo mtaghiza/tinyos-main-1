@@ -18,12 +18,15 @@ configuration MetadataAppC{
 
   components new PoolC(message_t, 16);
   MetadataP.Pool -> PoolC;
+  UtilitiesC.Pool -> PoolC;
 
   components new I2CDiscovererC();
   MetadataP.I2CDiscoverer -> I2CDiscovererC;
 
   components new BusPowerClientC();
   MetadataP.BusControl -> BusPowerClientC;
+
+  components UtilitiesC;
 
   components LedsC;
   MetadataP.Leds -> LedsC;
@@ -52,8 +55,6 @@ components new SerialAMReceiverC(AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG) as WriteToa
 MetadataP.WriteToastAssignmentsCmdReceive -> WriteToastAssignmentsCmdReceive;
 components new SerialAMReceiverC(AM_SCAN_BUS_CMD_MSG) as ScanBusCmdReceive;
 MetadataP.ScanBusCmdReceive -> ScanBusCmdReceive;
-components new SerialAMReceiverC(AM_PING_CMD_MSG) as PingCmdReceive;
-MetadataP.PingCmdReceive -> PingCmdReceive;
 components new SerialAMReceiverC(AM_RESET_BACON_CMD_MSG) as ResetBaconCmdReceive;
 MetadataP.ResetBaconCmdReceive -> ResetBaconCmdReceive;
 components new SerialAMReceiverC(AM_SET_BUS_POWER_CMD_MSG) as SetBusPowerCmdReceive;
@@ -93,8 +94,6 @@ components new SerialAMSenderC(AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG) as Write
 MetadataP.WriteToastAssignmentsResponseSend -> WriteToastAssignmentsResponseSend;
 components new SerialAMSenderC(AM_SCAN_BUS_RESPONSE_MSG) as ScanBusResponseSend;
 MetadataP.ScanBusResponseSend -> ScanBusResponseSend;
-components new SerialAMSenderC(AM_PING_RESPONSE_MSG) as PingResponseSend;
-MetadataP.PingResponseSend -> PingResponseSend;
 components new SerialAMSenderC(AM_RESET_BACON_RESPONSE_MSG) as ResetBaconResponseSend;
 MetadataP.ResetBaconResponseSend -> ResetBaconResponseSend;
 components new SerialAMSenderC(AM_SET_BUS_POWER_RESPONSE_MSG) as SetBusPowerResponseSend;
