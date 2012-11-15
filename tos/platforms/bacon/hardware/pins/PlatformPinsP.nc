@@ -50,8 +50,8 @@ implementation {
     atomic {
     
 #if defined(__msp430_have_port1) || defined(__MSP430_HAS_PORT1__) || defined(__MSP430_HAS_PORT1_R__)
-      P1DIR = 0xFF;
       //p1.0 is NO terminal of VCC1WB SPDT switch
+      P1DIR = 0xFE;
       //p1.7 is flash nCS, set high
       P1OUT = 0x80;            
 #endif 
