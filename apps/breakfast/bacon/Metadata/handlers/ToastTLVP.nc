@@ -110,6 +110,9 @@ module ToastTLVP{
       case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
         call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
         break;
+      case AM_WRITE_TOAST_TLV_CMD_MSG:
+        call WriteToastTlvResponseSend.send(0, responseMsg, sizeof(write_toast_tlv_response_msg_t));
+        break;
       default:
         printf("Unrecognized command: %x\n", currentCommandType);
     }
@@ -199,10 +202,23 @@ module ToastTLVP{
 
   task void respondWriteToastTlv(){
     write_toast_tlv_cmd_msg_t* commandPl = (write_toast_tlv_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(write_toast_tlv_cmd_msg_t)));
-    write_toast_tlv_response_msg_t* responsePl = (write_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_toast_tlv_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call WriteToastTlvResponseSend.send(0, responseMsg, sizeof(write_toast_tlv_response_msg_t));
+    error_t error = SUCCESS;
+    tlv_entry_t* e;
+    tlvs = call I2CTLVStorageMaster.getPayload(i2c_msg);
+    memcpy(tlvs, commandPl->tlvs, 64);
+    //verify that there is a TAG_VERSION in here somewhere: otherwise,
+    //toast will reject it.
+    if (0 == call TLVUtils.findEntry(TAG_VERSION, 0, &e, tlvs)){
+      error = EINVAL;
+    }else{
+      error = call I2CTLVStorageMaster.persistTLVStorage(call LastSlave.get(),
+        i2c_msg);
+    }
+    if (error != SUCCESS){
+      write_toast_tlv_response_msg_t* responsePl = (write_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_toast_tlv_response_msg_t)));
+      responsePl->error = error;
+      call WriteToastTlvResponseSend.send(0, responseMsg, sizeof(write_toast_tlv_response_msg_t));
+    }
   }
 
   event void WriteToastTlvResponseSend.sendDone(message_t* msg, 
