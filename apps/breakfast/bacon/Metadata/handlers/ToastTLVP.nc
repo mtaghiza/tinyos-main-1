@@ -43,6 +43,7 @@ module ToastTLVP{
   task void respondReadToastTlv();
   task void respondReadToastTlvEntry();
   task void respondAddToastTlvEntry();
+  task void respondDeleteToastTlvEntry();
 
   task void loadToastTLVStorage(){
     loadTLVError = call I2CTLVStorageMaster.loadTLVStorage((call LastSlave.get()),
@@ -70,6 +71,9 @@ module ToastTLVP{
           break;
         case AM_ADD_TOAST_TLV_ENTRY_CMD_MSG:
           post respondAddToastTlvEntry();
+          break;
+        case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
+          post respondDeleteToastTlvEntry();
           break;
         default:
           printf("Unknown command %x\n", currentCommandType);
@@ -103,8 +107,11 @@ module ToastTLVP{
       case AM_ADD_TOAST_TLV_ENTRY_CMD_MSG:
         call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
         break;
+      case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
+        call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
+        break;
       default:
-        printf("Unrecognized command: %x\n");
+        printf("Unrecognized command: %x\n", currentCommandType);
     }
   }
 
@@ -207,7 +214,6 @@ module ToastTLVP{
     printf("Response sent\n");
     printfflush();
   }
-  task void respondDeleteToastTlvEntry();
 
   event message_t* DeleteToastTlvEntryCmdReceive.receive(message_t* msg_, 
       void* payload,
@@ -228,7 +234,7 @@ module ToastTLVP{
           message_t* ret = call Pool.get();
           responseMsg = call Pool.get();
           cmdMsg = msg_;
-          post respondDeleteToastTlvEntry();
+          post loadToastTLVStorage();
           return ret;
         }
       }else{
@@ -242,10 +248,25 @@ module ToastTLVP{
 
   task void respondDeleteToastTlvEntry(){
     delete_toast_tlv_entry_cmd_msg_t* commandPl = (delete_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(delete_toast_tlv_entry_cmd_msg_t)));
-    delete_toast_tlv_entry_response_msg_t* responsePl = (delete_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t)));
-    //TODO: other processing logic
-    responsePl->error = FAIL;
-    call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
+    tlv_entry_t* e;
+    uint8_t offset = call TLVUtils.findEntry(commandPl->tag, 0, &e,
+      tlvs);
+    error_t error = SUCCESS;
+    if (offset == 0){
+      error = EINVAL;
+    }else{
+      error = call TLVUtils.deleteEntry(offset, tlvs);
+      if (error == SUCCESS){
+        error = call I2CTLVStorageMaster.persistTLVStorage(
+          call LastSlave.get(), i2c_msg);
+      }
+    }
+
+    if (error != SUCCESS){
+      delete_toast_tlv_entry_response_msg_t* responsePl = (delete_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t)));
+      responsePl->error = EINVAL;
+      call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
+    }
   }
 
   event void DeleteToastTlvEntryResponseSend.sendDone(message_t* msg, 
