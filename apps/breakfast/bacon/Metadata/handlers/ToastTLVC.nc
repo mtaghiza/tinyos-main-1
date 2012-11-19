@@ -19,8 +19,8 @@ configuration ToastTLVC{
   ToastTLVP.WriteToastBarcodeIdCmdReceive -> WriteToastBarcodeIdCmdReceive;
 //  components new SerialAMReceiverC(AM_READ_TOAST_ASSIGNMENTS_CMD_MSG) as ReadToastAssignmentsCmdReceive;
 //  ToastTLVP.ReadToastAssignmentsCmdReceive -> ReadToastAssignmentsCmdReceive;
-//  components new SerialAMReceiverC(AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG) as WriteToastAssignmentsCmdReceive;
-//  ToastTLVP.WriteToastAssignmentsCmdReceive -> WriteToastAssignmentsCmdReceive;
+  components new SerialAMReceiverC(AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG) as WriteToastAssignmentsCmdReceive;
+  ToastTLVP.WriteToastAssignmentsCmdReceive -> WriteToastAssignmentsCmdReceive;
   components new SerialAMReceiverC(AM_READ_TOAST_TLV_CMD_MSG) as ReadToastTlvCmdReceive;
   ToastTLVP.ReadToastTlvCmdReceive -> ReadToastTlvCmdReceive;
   components new SerialAMReceiverC(AM_WRITE_TOAST_TLV_CMD_MSG) as WriteToastTlvCmdReceive;
@@ -35,8 +35,8 @@ configuration ToastTLVC{
   ToastTLVP.WriteToastBarcodeIdResponseSend -> WriteToastBarcodeIdResponseSend;
 //  components new SerialAMSenderC(AM_READ_TOAST_ASSIGNMENTS_RESPONSE_MSG) as ReadToastAssignmentsResponseSend;
 //  ToastTLVP.ReadToastAssignmentsResponseSend -> ReadToastAssignmentsResponseSend;
-//  components new SerialAMSenderC(AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG) as WriteToastAssignmentsResponseSend;
-//  ToastTLVP.WriteToastAssignmentsResponseSend -> WriteToastAssignmentsResponseSend;
+  components new SerialAMSenderC(AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG) as WriteToastAssignmentsResponseSend;
+  ToastTLVP.WriteToastAssignmentsResponseSend -> WriteToastAssignmentsResponseSend;
   components new SerialAMSenderC(AM_READ_TOAST_TLV_RESPONSE_MSG) as ReadToastTlvResponseSend;
   ToastTLVP.ReadToastTlvResponseSend -> ReadToastTlvResponseSend;
   components new SerialAMSenderC(AM_WRITE_TOAST_TLV_RESPONSE_MSG) as WriteToastTlvResponseSend;

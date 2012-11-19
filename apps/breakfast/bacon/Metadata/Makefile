@@ -12,6 +12,7 @@ CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 CFLAGS += -Ihandlers
+CFLAGS += -I.
 CFLAGS +=-DTOSH_DATA_LENGTH=128
 
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util

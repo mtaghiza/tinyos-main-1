@@ -1,5 +1,6 @@
  #include "I2CCom.h"
  #include "I2CTLVStorage.h"
+ #include "metadata.h"
 module ToastTLVP{
   uses interface Packet;
   uses interface AMPacket;
@@ -11,7 +12,7 @@ module ToastTLVP{
   uses interface Receive as ReadToastBarcodeIdCmdReceive;
   uses interface Receive as WriteToastBarcodeIdCmdReceive;
 //  uses interface Receive as ReadToastAssignmentsCmdReceive;
-//  uses interface Receive as WriteToastAssignmentsCmdReceive;
+  uses interface Receive as WriteToastAssignmentsCmdReceive;
   uses interface Receive as ReadToastTlvCmdReceive;
   uses interface Receive as WriteToastTlvCmdReceive;
   uses interface Receive as DeleteToastTlvEntryCmdReceive;
@@ -20,7 +21,7 @@ module ToastTLVP{
   uses interface AMSend as ReadToastBarcodeIdResponseSend;
   uses interface AMSend as WriteToastBarcodeIdResponseSend;
 //  uses interface AMSend as ReadToastAssignmentsResponseSend;
-//  uses interface AMSend as WriteToastAssignmentsResponseSend;
+  uses interface AMSend as WriteToastAssignmentsResponseSend;
   uses interface AMSend as ReadToastTlvResponseSend;
   uses interface AMSend as WriteToastTlvResponseSend;
   uses interface AMSend as DeleteToastTlvEntryResponseSend;
@@ -46,6 +47,7 @@ module ToastTLVP{
   task void respondDeleteToastTlvEntry();
   task void respondWriteToastBarcodeId();
   task void respondReadToastBarcodeId();
+  task void respondWriteToastAssignments();
 
   task void loadToastTLVStorage(){
     loadTLVError = call I2CTLVStorageMaster.loadTLVStorage((call LastSlave.get()),
@@ -63,6 +65,8 @@ module ToastTLVP{
   }
 
   task void handleLoaded(){
+    printf("hl: %x\n", currentCommandType);
+    printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
         case AM_READ_TOAST_TLV_CMD_MSG:
@@ -82,6 +86,9 @@ module ToastTLVP{
           break;
         case AM_READ_TOAST_BARCODE_ID_CMD_MSG:
           post respondReadToastBarcodeId();
+          break;
+        case AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG:
+          post respondWriteToastAssignments();
           break;
         default:
           printf("Unknown command %x\n", currentCommandType);
@@ -123,6 +130,10 @@ module ToastTLVP{
         break;
       case AM_WRITE_TOAST_BARCODE_ID_CMD_MSG:
         call WriteToastBarcodeIdResponseSend.send(0, responseMsg, sizeof(write_toast_barcode_id_response_msg_t));
+        break;
+      case AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG:
+        call WriteToastAssignmentsResponseSend.send(0, responseMsg,
+          sizeof(write_toast_assignments_response_msg_t));
         break;
       default:
         printf("Unrecognized command: %x\n", currentCommandType);
@@ -342,12 +353,12 @@ module ToastTLVP{
   task void respondAddToastTlvEntry(){
     add_toast_tlv_entry_cmd_msg_t* commandPl = (add_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(add_toast_tlv_entry_cmd_msg_t)));
     error_t err = SUCCESS;
-    tlv_entry_t e;
+    tlv_entry_t* e;
     uint8_t offset;
-    e.tag = commandPl -> tag;
-    e.len = commandPl -> len;
-    memcpy((void*)(&e.data), (void*)(commandPl->data), e.len);
-    offset = call TLVUtils.addEntry(e.tag, e.len, &e, tlvs, 0);
+//    e.tag = commandPl -> tag;
+//    e.len = commandPl -> len;
+    offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len, e, tlvs, 0);
+    memcpy((void*)(&e->data), (void*)(commandPl->data), e->len);
     if (offset == 0){
       err = ESIZE;
     }else{
@@ -465,19 +476,18 @@ module ToastTLVP{
 
   task void respondWriteToastBarcodeId(){
     write_toast_barcode_id_cmd_msg_t* commandPl = (write_toast_barcode_id_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(write_toast_barcode_id_cmd_msg_t)));
-    tlv_entry_t* ePtr;
-    tlv_entry_t e;
+    tlv_entry_t* e;
     error_t error;
-    uint8_t offset = call TLVUtils.findEntry(TAG_GLOBAL_ID, 0, &ePtr, tlvs);
+    uint8_t offset = call TLVUtils.findEntry(TAG_GLOBAL_ID, 0, &e, tlvs);
     //global ID present? update its data.
     if (offset != 0){
-      memcpy(&(ePtr->data), &(commandPl->barcodeId), TOAST_BARCODE_LEN);
+      memcpy(&(e->data), &(commandPl->barcodeId), TOAST_BARCODE_LEN);
     }else{
       //absent? create a new one.
-      e.tag = TAG_GLOBAL_ID;
-      e.len = TOAST_BARCODE_LEN;
-      memcpy((&e.data), commandPl->barcodeId, TOAST_BARCODE_LEN);
-      offset = call TLVUtils.addEntry(e.tag, e.len, &e, tlvs, 0);
+      offset = call TLVUtils.addEntry(TAG_GLOBAL_ID, TOAST_BARCODE_LEN, 
+        NULL, tlvs, 0);
+      call TLVUtils.findEntry(TAG_GLOBAL_ID, offset, &e, tlvs);
+      memcpy((&e->data), commandPl->barcodeId, TOAST_BARCODE_LEN);
       if (offset == 0){
         error = ESIZE;
       }else{
@@ -546,6 +556,87 @@ module ToastTLVP{
   }
 
   event void ReadToastBarcodeIdResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(responseMsg);
+    call Pool.put(cmdMsg);
+    cmdMsg = NULL;
+    responseMsg = NULL;
+    printf("Response sent\n");
+    printfflush();
+  }
+
+  event message_t* WriteToastAssignmentsCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    printf("RX WTA\n");
+    printfflush();
+    currentCommandType = call AMPacket.type(msg_);
+    if (cmdMsg != NULL){
+      printf("RX: WriteToastAssignments");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        if (call LastSlave.get() == 0){
+          loadTLVError = EOFF;
+          post handleLoaded();
+          return msg_;
+        }else{
+          message_t* ret = call Pool.get();
+          responseMsg = call Pool.get();
+          cmdMsg = msg_;
+          post loadToastTLVStorage();
+          return ret;
+        }
+      }else{
+        printf("RX: WriteToastAssignments");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondWriteToastAssignments(){
+    write_toast_assignments_cmd_msg_t* commandPl = (write_toast_assignments_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(write_toast_assignments_cmd_msg_t)));
+    tlv_entry_t* e;
+    error_t error;
+    uint8_t offset; 
+    printf("respondWriteToastAssignments");
+    printf("find: %x %u %p %p\n", TAG_TOAST_ASSIGNMENTS, 0, &e, tlvs);
+    offset = call TLVUtils.findEntry(TAG_TOAST_ASSIGNMENTS, 0, &e, tlvs);
+    printf("offset: %u\n", offset);
+    //assignments present? update its data.
+    if (offset != 0){
+      printf("updating at: %u (%p)\n", offset, e);
+      printfflush();
+      memcpy(&(e->data), &(commandPl->assignments),
+        8*sizeof(sensor_assignment_t));
+    }else{
+      //absent? create a new one.
+      offset = call TLVUtils.addEntry(TAG_TOAST_ASSIGNMENTS,
+        8*sizeof(sensor_assignment_t), e, tlvs, 0);
+      memcpy((&e->data), &(commandPl->assignments),
+        8*sizeof(sensor_assignment_t));
+      printf("Added at %u\n", offset);
+      printfflush();
+      if (offset == 0){
+        error = ESIZE;
+      }else{
+        error = call I2CTLVStorageMaster.persistTLVStorage(call LastSlave.get(), i2c_msg);
+      }
+    }
+    if (error != SUCCESS){
+      write_toast_assignments_response_msg_t* responsePl = (write_toast_assignments_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_toast_assignments_response_msg_t)));
+      responsePl->error = error;
+      call WriteToastAssignmentsResponseSend.send(0, 
+        responseMsg,
+        sizeof(write_toast_assignments_response_msg_t));
+    }
+  }
+
+  event void WriteToastAssignmentsResponseSend.sendDone(message_t* msg, 
       error_t error){
     call Pool.put(responseMsg);
     call Pool.put(cmdMsg);
