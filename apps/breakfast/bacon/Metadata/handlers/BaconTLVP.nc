@@ -71,6 +71,8 @@ module BaconTLVP{
   }
 
   task void handleLoaded(){
+    printf("Loaded bacon TLV: %x\n", loadTLVError);
+    printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
@@ -94,6 +96,8 @@ module BaconTLVP{
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
+          printf("Respond: hl +fail + cct\n");
+          printfflush();
           call ReadBaconTlvResponseSend.send(0, responseMsg, 
             sizeof(read_bacon_tlv_response_msg_t));
           break;
@@ -177,6 +181,8 @@ module BaconTLVP{
     read_bacon_tlv_response_msg_t* responsePl = (read_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_bacon_tlv_response_msg_t)));
     memcpy(&(responsePl->tlvs), tlvs, BACON_TLV_LEN);
     responsePl->error = SUCCESS;
+    printf("Respond: respondTask\n");
+    printfflush();
     err = call ReadBaconTlvResponseSend.send(0, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
   }
 
