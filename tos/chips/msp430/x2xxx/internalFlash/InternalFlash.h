@@ -1,6 +1,7 @@
 #ifndef INTERNAL_FLASH_H
 #define INTERNAL_FLASH_H
 
+//Values taken from msp430f235 datasheet, Table 12
 #define IFLASH_A_START (void*)0x10c0
 #define IFLASH_A_END   (void*)0x10ff
 #define IFLASH_B_START (void*)0x1080

@@ -23,6 +23,9 @@ CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cPersistentStorage
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cTLVStorage
 #CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cSynch
 #CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
+
+CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
+CFLAGS+=-I$(TOSDIR)/chips/msp430/msp430xv2/internalFlash
 CFLAGS+=-I$(TOSDIR)/chips/msp430/x2xxx/internalFlash
 
 #CLEAN_EXTRA = $(MIGCLASSES)
