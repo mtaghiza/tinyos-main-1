@@ -36,6 +36,8 @@ typedef nx_struct read_bacon_barcode_id_response_msg{
 
 //Write bacon barcode ID
 typedef nx_struct write_bacon_barcode_id_cmd_msg{
+  nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint8_t barcodeId[BACON_BARCODE_LEN];
 } write_bacon_barcode_id_cmd_msg_t;
 
