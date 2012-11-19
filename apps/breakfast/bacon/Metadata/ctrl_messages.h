@@ -56,6 +56,26 @@ typedef nx_struct read_toast_barcode_id_response_msg{
   nx_uint8_t barcodeId[TOAST_BARCODE_LEN];
 } read_toast_barcode_id_response_msg_t;
 
+typedef nx_struct write_bacon_version_cmd_msg{
+  nx_uint8_t tag;
+  nx_uint8_t len;
+  nx_uint16_t version;
+}write_bacon_version_cmd_msg_t;
+
+typedef nx_struct write_bacon_version_response_msg{
+  nx_uint8_t error;
+} write_bacon_version_response_msg_t;
+
+typedef nx_struct read_bacon_version_cmd_msg{
+  nx_uint8_t dummy[0];
+} read_bacon_version_cmd_msg_t;
+
+typedef nx_struct read_bacon_version_response_msg{
+  nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint16_t version;
+} read_bacon_version_response_msg_t;
+
 //Write toast barcode ID
 typedef nx_struct write_toast_barcode_id_cmd_msg{
   nx_uint8_t tag;
@@ -254,10 +274,22 @@ enum{
   AM_READ_IV_RESPONSE_MSG = 0x81,
   AM_READ_MFR_ID_CMD_MSG = 0x82,
   AM_READ_MFR_ID_RESPONSE_MSG = 0x83,
-  AM_READ_BACON_BARCODE_ID_CMD_MSG = 0x84,
+  //
+  //Bacon Commands
+  //
+  //generic read TLV
+  AM_READ_BACON_BARCODE_ID_CMD_MSG = 0xAA,
   AM_READ_BACON_BARCODE_ID_RESPONSE_MSG = 0x85,
-  AM_WRITE_BACON_BARCODE_ID_CMD_MSG = 0x86,
+  //generic add TLV
+  AM_WRITE_BACON_BARCODE_ID_CMD_MSG = 0xA4,
   AM_WRITE_BACON_BARCODE_ID_RESPONSE_MSG = 0x87,
+  //uses generic add TLV
+  AM_WRITE_BACON_VERSION_CMD_MSG = 0xA4,
+  AM_WRITE_BACON_VERSION_RESPONSE_MSG = 0xAE,
+  //uses generic read tlv
+  AM_READ_BACON_VERSION_CMD_MSG = 0xAA,
+  AM_READ_BACON_VERSION_RESPONSE_MSG = 0xAF,
+
   //
   //TOAST COMMANDS
   //
@@ -279,6 +311,7 @@ enum{
   //uses generic read tlv
   AM_READ_TOAST_VERSION_CMD_MSG = 0xA6,
   AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
+
   //
   //Utilities
   //

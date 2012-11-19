@@ -6,6 +6,7 @@ configuration MetadataAppC{
   components UtilitiesC;
   components BusC;
   components ToastTLVC;
+  components BaconTLVC;
 
   components new TimerMilliC();
 
@@ -24,6 +25,7 @@ configuration MetadataAppC{
   UtilitiesC.Pool -> PoolC;
   BusC.Pool -> PoolC;
   ToastTLVC.Pool -> PoolC;
+  BaconTLVC.Pool -> PoolC;
 
   ToastTLVC.LastSlave -> BusC.Get;
 
