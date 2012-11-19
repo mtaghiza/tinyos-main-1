@@ -51,11 +51,15 @@ typedef nx_struct read_toast_barcode_id_cmd_msg{
 
 typedef nx_struct read_toast_barcode_id_response_msg{
   nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint8_t barcodeId[TOAST_BARCODE_LEN];
 } read_toast_barcode_id_response_msg_t;
 
 //Write toast barcode ID
 typedef nx_struct write_toast_barcode_id_cmd_msg{
+  nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint8_t barcodeId[TOAST_BARCODE_LEN];
 } write_toast_barcode_id_cmd_msg_t;
 
@@ -70,21 +74,46 @@ typedef nx_struct sensor_assignment{
 } sensor_assignment_t;
 
 typedef nx_struct read_toast_assignments_cmd_msg{
+  nx_uint8_t tag;
   nx_uint8_t dummy[0];
 }read_toast_assignments_cmd_msg_t;
 
 typedef nx_struct read_toast_assignments_response_msg{
   nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint8_t len;
   sensor_assignment_t assignments[8];
 }read_toast_assignments_response_msg_t;
 
 typedef nx_struct write_toast_assignments_cmd_msg{
+  nx_uint8_t tag;
+  nx_uint8_t len;
   sensor_assignment_t assignments[8];
 }write_toast_assignments_cmd_msg_t;
 
 typedef nx_struct write_toast_assignments_response_msg{
   nx_uint8_t error;
 } write_toast_assignments_response_msg_t;
+
+typedef nx_struct write_toast_version_cmd_msg{
+  nx_uint8_t tag;
+  nx_uint8_t len;
+  nx_uint16_t version;
+}write_toast_version_cmd_msg_t;
+
+typedef nx_struct write_toast_version_response_msg{
+  nx_uint8_t error;
+} write_toast_version_response_msg_t;
+
+typedef nx_struct read_toast_version_cmd_msg{
+  nx_uint8_t dummy[0];
+} read_toast_version_cmd_msg_t;
+
+typedef nx_struct read_toast_version_response_msg{
+  nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint16_t version;
+} read_toast_version_response_msg_t;
 
 //---Utilities
 typedef nx_struct scan_bus_cmd_msg{
@@ -229,14 +258,30 @@ enum{
   AM_READ_BACON_BARCODE_ID_RESPONSE_MSG = 0x85,
   AM_WRITE_BACON_BARCODE_ID_CMD_MSG = 0x86,
   AM_WRITE_BACON_BARCODE_ID_RESPONSE_MSG = 0x87,
-  AM_READ_TOAST_BARCODE_ID_CMD_MSG = 0x88,
+  //
+  //TOAST COMMANDS
+  //
+  //uses generic read tlv
+  AM_READ_TOAST_BARCODE_ID_CMD_MSG = 0xA8,
   AM_READ_TOAST_BARCODE_ID_RESPONSE_MSG = 0x89,
-  AM_WRITE_TOAST_BARCODE_ID_CMD_MSG = 0x8A,
+  //uses generic add TLV
+  AM_WRITE_TOAST_BARCODE_ID_CMD_MSG = 0xA6,
   AM_WRITE_TOAST_BARCODE_ID_RESPONSE_MSG = 0x8B,
-  AM_READ_TOAST_ASSIGNMENTS_CMD_MSG = 0x8C,
+  //uses generic read tlv
+  AM_READ_TOAST_ASSIGNMENTS_CMD_MSG = 0xA8,
   AM_READ_TOAST_ASSIGNMENTS_RESPONSE_MSG = 0x8D,
-  AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG = 0x8E,
+  //uses generic add TLV
+  AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG = 0xA6,
   AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG = 0x8F,
+  //uses generic add TLV
+  AM_WRITE_TOAST_VERSION_CMD_MSG = 0xA6,
+  AM_WRITE_TOAST_VERSION_RESPONSE_MSG = 0xAC,
+  //uses generic read tlv
+  AM_READ_TOAST_VERSION_CMD_MSG = 0xA6,
+  AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
+  //
+  //Utilities
+  //
   AM_SCAN_BUS_CMD_MSG = 0x90,
   AM_SCAN_BUS_RESPONSE_MSG = 0x91,
   AM_PING_CMD_MSG = 0x92,
@@ -245,6 +290,9 @@ enum{
   AM_RESET_BACON_RESPONSE_MSG = 0x95,
   AM_SET_BUS_POWER_CMD_MSG = 0x96,
   AM_SET_BUS_POWER_RESPONSE_MSG = 0x97,
+  //
+  //Generics
+  //
   AM_READ_BACON_TLV_CMD_MSG = 0x98,
   AM_READ_BACON_TLV_RESPONSE_MSG = 0x99,
   AM_READ_TOAST_TLV_CMD_MSG = 0x9A,

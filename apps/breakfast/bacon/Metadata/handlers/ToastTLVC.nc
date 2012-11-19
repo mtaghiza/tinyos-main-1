@@ -13,7 +13,6 @@ configuration ToastTLVC{
   ToastTLVP.I2CTLVStorageMaster -> I2CTLVStorageMasterC;
   ToastTLVP.TLVUtils -> I2CTLVStorageMasterC;
 
-
   components new SerialAMReceiverC(AM_READ_TOAST_TLV_CMD_MSG) 
     as ReadToastTlvCmdReceive;
   ToastTLVP.ReadToastTlvCmdReceive -> ReadToastTlvCmdReceive;
@@ -53,4 +52,29 @@ configuration ToastTLVC{
   components new SerialAMSenderC(AM_READ_TOAST_TLV_ENTRY_RESPONSE_MSG) 
     as ReadToastTlvEntryResponseSend;
   ToastTLVP.ReadToastTlvEntryResponseSend -> ReadToastTlvEntryResponseSend;
+
+  components new SerialAMSenderC(AM_WRITE_TOAST_VERSION_RESPONSE_MSG) 
+    as WriteToastVersionResponseSend;
+  ToastTLVP.WriteToastVersionResponseSend -> WriteToastVersionResponseSend;
+
+  components new SerialAMSenderC(AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG) 
+    as WriteToastAssignmentsResponseSend;
+  ToastTLVP.WriteToastAssignmentsResponseSend -> WriteToastAssignmentsResponseSend;
+
+  components new SerialAMSenderC(AM_WRITE_TOAST_BARCODE_ID_RESPONSE_MSG) 
+    as WriteToastBarcodeIdResponseSend;
+  ToastTLVP.WriteToastBarcodeIdResponseSend -> WriteToastBarcodeIdResponseSend;
+
+  components new SerialAMSenderC(AM_READ_TOAST_BARCODE_ID_RESPONSE_MSG) 
+    as ReadToastBarcodeIdResponseSend;
+  ToastTLVP.ReadToastBarcodeIdResponseSend -> ReadToastBarcodeIdResponseSend;
+
+  components new SerialAMSenderC(AM_READ_TOAST_VERSION_RESPONSE_MSG) 
+    as ReadToastVersionResponseSend;
+  ToastTLVP.ReadToastVersionResponseSend -> ReadToastVersionResponseSend;
+
+  components new SerialAMSenderC(AM_READ_TOAST_ASSIGNMENTS_RESPONSE_MSG) 
+    as ReadToastAssignmentsResponseSend;
+  ToastTLVP.ReadToastAssignmentsResponseSend -> ReadToastAssignmentsResponseSend;
+
 }

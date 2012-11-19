@@ -21,6 +21,14 @@ module ToastTLVP{
   uses interface AMSend as AddToastTlvEntryResponseSend;
   uses interface AMSend as ReadToastTlvEntryResponseSend;
 
+  uses interface AMSend as WriteToastVersionResponseSend;
+  uses interface AMSend as WriteToastAssignmentsResponseSend;
+  uses interface AMSend as WriteToastBarcodeIdResponseSend;
+
+  uses interface AMSend as ReadToastVersionResponseSend;
+  uses interface AMSend as ReadToastAssignmentsResponseSend;
+  uses interface AMSend as ReadToastBarcodeIdResponseSend;
+
 } implementation {
   message_t* responseMsg = NULL;
   message_t* cmdMsg = NULL;
@@ -116,12 +124,25 @@ module ToastTLVP{
   }
 
   event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){
+    add_toast_tlv_entry_cmd_msg_t* commandPl = (add_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(add_toast_tlv_entry_cmd_msg_t)));
     add_toast_tlv_entry_response_msg_t* responsePl = (add_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(add_toast_tlv_entry_response_msg_t)));
     responsePl->error = error;
-
     switch(currentCommandType){
       case AM_ADD_TOAST_TLV_ENTRY_CMD_MSG:
-        call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+        switch(commandPl->tag){
+          case TAG_VERSION:
+            call WriteToastVersionResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            break;
+          case TAG_TOAST_ASSIGNMENTS:
+            call WriteToastAssignmentsResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            break;
+          case TAG_GLOBAL_ID:
+            call WriteToastBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            break;
+          default:
+            call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            break;
+        }
         break;
       case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
         call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
@@ -318,7 +339,20 @@ module ToastTLVP{
     if (err != SUCCESS){
       add_toast_tlv_entry_response_msg_t* responsePl = (add_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(add_toast_tlv_entry_response_msg_t)));
       responsePl->error = ESIZE;
-      call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+      switch(commandPl->tag){
+        case TAG_VERSION:
+          call WriteToastVersionResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          break;
+        case TAG_TOAST_ASSIGNMENTS:
+          call WriteToastAssignmentsResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          break;
+        case TAG_GLOBAL_ID:
+          call WriteToastBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          break;
+        default:
+          call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          break;
+      }
     }
   }
 
@@ -346,10 +380,51 @@ module ToastTLVP{
       memcpy((void*)(&responsePl->tag), (void*)entry, entry->len+2);
       responsePl->error = SUCCESS;
     }
-    call ReadToastTlvEntryResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
+    switch(commandPl->tag){
+      case TAG_VERSION:
+        call ReadToastVersionResponseSend.send(0, responseMsg, 
+          sizeof(read_toast_version_response_msg_t));
+      case TAG_GLOBAL_ID:
+        call ReadToastBarcodeIdResponseSend.send(0, responseMsg, 
+          sizeof(read_toast_barcode_id_response_msg_t));
+        break;
+      case TAG_TOAST_ASSIGNMENTS:
+        call ReadToastAssignmentsResponseSend.send(0, responseMsg,
+          sizeof(read_toast_assignments_response_msg_t));
+        break;
+      default:
+        call ReadToastTlvEntryResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
+        break;
+    }
   }
 
   event void ReadToastTlvEntryResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+
+  event void ReadToastAssignmentsResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+  event void ReadToastVersionResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+  event void ReadToastBarcodeIdResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+
+  event void WriteToastBarcodeIdResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+  event void WriteToastVersionResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    cleanup();
+  }
+  event void WriteToastAssignmentsResponseSend.sendDone(message_t* msg, 
       error_t error){
     cleanup();
   }
