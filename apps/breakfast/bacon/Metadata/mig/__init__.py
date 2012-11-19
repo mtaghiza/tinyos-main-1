@@ -52,6 +52,10 @@ ReadToastVersionCmdMsg
 ReadToastVersionResponseMsg
 WriteToastVersionCmdMsg
 WriteToastVersionResponseMsg
+ReadBaconVersionCmdMsg
+ReadBaconVersionResponseMsg
+WriteBaconVersionCmdMsg
+WriteBaconVersionResponseMsg
 '''
 
 __all__= ['PrintfMsg'] + allS.split()
