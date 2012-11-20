@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 9
+DEFAULT_MESSAGE_SIZE = 11
 
 # The Active Message type associated with this message.
 AM_TYPE = 133
 
 class ReadBaconBarcodeIdResponseMsg(tinyos.message.Message.Message):
-    # Create a new ReadBaconBarcodeIdResponseMsg of size 9.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=9):
+    # Create a new ReadBaconBarcodeIdResponseMsg of size 11.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=11):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -32,6 +32,14 @@ class ReadBaconBarcodeIdResponseMsg(tinyos.message.Message.Message):
         s = "Message <ReadBaconBarcodeIdResponseMsg> \n"
         try:
             s += "  [error=0x%x]\n" % (self.get_error())
+        except:
+            pass
+        try:
+            s += "  [tag=0x%x]\n" % (self.get_tag())
+        except:
+            pass
+        try:
+            s += "  [len=0x%x]\n" % (self.get_len())
         except:
             pass
         try:
@@ -101,9 +109,119 @@ class ReadBaconBarcodeIdResponseMsg(tinyos.message.Message.Message):
         return 8
     
     #
+    # Accessor methods for field: tag
+    #   Field type: short
+    #   Offset (bits): 8
+    #   Size (bits): 8
+    #
+
+    #
+    # Return whether the field 'tag' is signed (False).
+    #
+    def isSigned_tag(self):
+        return False
+    
+    #
+    # Return whether the field 'tag' is an array (False).
+    #
+    def isArray_tag(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'tag'
+    #
+    def offset_tag(self):
+        return (8 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'tag'
+    #
+    def offsetBits_tag(self):
+        return 8
+    
+    #
+    # Return the value (as a short) of the field 'tag'
+    #
+    def get_tag(self):
+        return self.getUIntElement(self.offsetBits_tag(), 8, 1)
+    
+    #
+    # Set the value of the field 'tag'
+    #
+    def set_tag(self, value):
+        self.setUIntElement(self.offsetBits_tag(), 8, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'tag'
+    #
+    def size_tag(self):
+        return (8 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'tag'
+    #
+    def sizeBits_tag(self):
+        return 8
+    
+    #
+    # Accessor methods for field: len
+    #   Field type: short
+    #   Offset (bits): 16
+    #   Size (bits): 8
+    #
+
+    #
+    # Return whether the field 'len' is signed (False).
+    #
+    def isSigned_len(self):
+        return False
+    
+    #
+    # Return whether the field 'len' is an array (False).
+    #
+    def isArray_len(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'len'
+    #
+    def offset_len(self):
+        return (16 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'len'
+    #
+    def offsetBits_len(self):
+        return 16
+    
+    #
+    # Return the value (as a short) of the field 'len'
+    #
+    def get_len(self):
+        return self.getUIntElement(self.offsetBits_len(), 8, 1)
+    
+    #
+    # Set the value of the field 'len'
+    #
+    def set_len(self, value):
+        self.setUIntElement(self.offsetBits_len(), 8, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'len'
+    #
+    def size_len(self):
+        return (8 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'len'
+    #
+    def sizeBits_len(self):
+        return 8
+    
+    #
     # Accessor methods for field: barcodeId
     #   Field type: short[]
-    #   Offset (bits): 8
+    #   Offset (bits): 24
     #   Size of each element (bits): 8
     #
 
@@ -123,7 +241,7 @@ class ReadBaconBarcodeIdResponseMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'barcodeId'
     #
     def offset_barcodeId(self, index1):
-        offset = 8
+        offset = 24
         if index1 < 0 or index1 >= 8:
             raise IndexError
         offset += 0 + index1 * 8
@@ -133,7 +251,7 @@ class ReadBaconBarcodeIdResponseMsg(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'barcodeId'
     #
     def offsetBits_barcodeId(self, index1):
-        offset = 8
+        offset = 24
         if index1 < 0 or index1 >= 8:
             raise IndexError
         offset += 0 + index1 * 8

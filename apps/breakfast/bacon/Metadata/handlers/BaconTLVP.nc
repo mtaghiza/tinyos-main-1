@@ -71,9 +71,9 @@ module BaconTLVP{
   }
 
   task void handleLoaded(){
-    printf("Loaded bacon TLV e %x c %x\n", loadTLVError,
-      currentCommandType);
-    printfflush();
+//    printf("Loaded bacon TLV e %x c %x\n", loadTLVError,
+//      currentCommandType);
+//    printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
@@ -86,8 +86,6 @@ module BaconTLVP{
           post respondAddBaconTlvEntry();
           break;
         case AM_READ_BACON_TLV_ENTRY_CMD_MSG:
-          printf("loaded: read generic\n");
-          printfflush();
           post respondReadBaconTlvEntry();
           break;
         default:
@@ -305,13 +303,11 @@ module BaconTLVP{
     error_t err = SUCCESS;
     //add tag and initialize from commandPl
     uint8_t offset;
-    printf("AddEntry %x %u %p %p %u\n", commandPl->tag, commandPl->len,
-      (tlv_entry_t*)commandPl, tlvs, 0);
-    printfflush();
+//    printf("AddEntry %x %u %p %p %u\n", commandPl->tag, commandPl->len,
+//      (tlv_entry_t*)commandPl, tlvs, 0);
+//    printfflush();
     offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
       (tlv_entry_t*)commandPl, tlvs, 0);
-    printf("Offset: %u\n", offset);
-    printfflush();
     if (offset == 0){
       err = ESIZE;
     } else {

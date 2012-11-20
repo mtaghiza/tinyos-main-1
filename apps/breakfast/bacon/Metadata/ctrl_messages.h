@@ -31,6 +31,8 @@ typedef nx_struct read_bacon_barcode_id_cmd_msg{
 
 typedef nx_struct read_bacon_barcode_id_response_msg{
   nx_uint8_t error;
+  nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint8_t barcodeId[BACON_BARCODE_LEN];
 } read_bacon_barcode_id_response_msg_t;
 
@@ -313,7 +315,7 @@ enum{
   AM_WRITE_TOAST_VERSION_CMD_MSG = 0xA6,
   AM_WRITE_TOAST_VERSION_RESPONSE_MSG = 0xAC,
   //uses generic read tlv
-  AM_READ_TOAST_VERSION_CMD_MSG = 0xA6,
+  AM_READ_TOAST_VERSION_CMD_MSG = 0xA8,
   AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
 
   //

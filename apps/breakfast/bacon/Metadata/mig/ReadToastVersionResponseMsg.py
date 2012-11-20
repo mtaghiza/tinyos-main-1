@@ -250,13 +250,13 @@ class ReadToastVersionResponseMsg(tinyos.message.Message.Message):
     # Return the value (as a int) of the field 'version'
     #
     def get_version(self):
-        return self.getUIntElement(self.offsetBits_version(), 16, 1)
+        return self.getUIntElement(self.offsetBits_version(), 16, 0)
     
     #
     # Set the value of the field 'version'
     #
     def set_version(self, value):
-        self.setUIntElement(self.offsetBits_version(), 16, value, 1)
+        self.setUIntElement(self.offsetBits_version(), 16, value, 0)
     
     #
     # Return the size, in bytes, of the field 'version'

@@ -10,7 +10,7 @@ import tinyos.message.Message
 DEFAULT_MESSAGE_SIZE = 1
 
 # The Active Message type associated with this message.
-AM_TYPE = 166
+AM_TYPE = 168
 
 class ReadToastVersionCmdMsg(tinyos.message.Message.Message):
     # Create a new ReadToastVersionCmdMsg of size 1.
