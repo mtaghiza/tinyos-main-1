@@ -232,7 +232,7 @@ typedef nx_struct delete_toast_tlv_entry_response_msg{
 typedef nx_struct add_bacon_tlv_entry_cmd_msg{
   nx_uint8_t tag;
   nx_uint8_t len;
-  nx_uint8_t data[64];
+  nx_uint8_t data[128];
 } add_bacon_tlv_entry_cmd_msg_t;
 
 typedef nx_struct add_bacon_tlv_entry_response_msg{

@@ -28,7 +28,6 @@ module BaconTLVP{
   message_t* cmdMsg = NULL;
   am_id_t currentCommandType; 
 
-  //TODO: param
   #define BACON_TLV_LEN 128
   uint8_t tlvs_buf[BACON_TLV_LEN];
   void* tlvs = tlvs_buf;
