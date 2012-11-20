@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 64
+DEFAULT_MESSAGE_SIZE = 128
 
 # The Active Message type associated with this message.
 AM_TYPE = 156
 
 class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
-    # Create a new WriteBaconTlvCmdMsg of size 64.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=64):
+    # Create a new WriteBaconTlvCmdMsg of size 128.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=128):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -32,7 +32,7 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
         s = "Message <WriteBaconTlvCmdMsg> \n"
         try:
             s += "  [tlvs=";
-            for i in range(0, 64):
+            for i in range(0, 128):
                 s += "0x%x " % (self.getElement_tlvs(i) & 0xff)
             s += "]\n";
         except:
@@ -65,7 +65,7 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
     #
     def offset_tlvs(self, index1):
         offset = 0
-        if index1 < 0 or index1 >= 64:
+        if index1 < 0 or index1 >= 128:
             raise IndexError
         offset += 0 + index1 * 8
         return (offset / 8)
@@ -75,7 +75,7 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
     #
     def offsetBits_tlvs(self, index1):
         offset = 0
-        if index1 < 0 or index1 >= 64:
+        if index1 < 0 or index1 >= 128:
             raise IndexError
         offset += 0 + index1 * 8
         return offset
@@ -84,7 +84,7 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
     # Return the entire array 'tlvs' as a short[]
     #
     def get_tlvs(self):
-        tmp = [None]*64
+        tmp = [None]*128
         for index0 in range (0, self.numElements_tlvs(0)):
                 tmp[index0] = self.getElement_tlvs(index0)
         return tmp
@@ -112,13 +112,13 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
     # Return the total size, in bytes, of the array 'tlvs'
     #
     def totalSize_tlvs(self):
-        return (512 / 8)
+        return (1024 / 8)
     
     #
     # Return the total size, in bits, of the array 'tlvs'
     #
     def totalSizeBits_tlvs(self):
-        return 512
+        return 1024
     
     #
     # Return the size, in bytes, of each element of the array 'tlvs'
@@ -142,14 +142,14 @@ class WriteBaconTlvCmdMsg(tinyos.message.Message.Message):
     # Return the number of elements in the array 'tlvs'
     #
     def numElements_tlvs():
-        return 64
+        return 128
     
     #
     # Return the number of elements in the array 'tlvs'
     # for the given dimension.
     #
     def numElements_tlvs(self, dimension):
-        array_dims = [ 64,  ]
+        array_dims = [ 128,  ]
         if dimension < 0 or dimension >= 1:
             raise IndexException
         if array_dims[dimension] == 0:

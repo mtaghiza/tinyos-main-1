@@ -4,6 +4,10 @@
 #include "I2CCom.h"
 #include "TLVStorage.h"
 
+#ifndef SLAVE_TLV_LEN
+#define SLAVE_TLV_LEN 64
+#endif
+
 #define I2C_COM_CLIENT_ID_TLV_STORAGE 0x03
 
 #define TLV_STORAGE_WRITE_CMD 0xa0
@@ -14,10 +18,10 @@
 //  checksumming to work correctly.
 typedef nx_struct{
   nx_uint16_t cmd;
-  nx_uint16_t data[TLV_LEN / sizeof(nx_uint16_t)];
+  nx_uint16_t data[SLAVE_TLV_LEN / sizeof(nx_uint16_t)];
 } i2c_tlv_storage_t;
 
-#if I2C_MESSAGE_LEN < TLV_LEN + 2
+#if I2C_MESSAGE_LEN < SLAVE_TLV_LEN + 2
 #error "I2C_MESSAGE_LEN too small to support i2c TLV storage."
 #endif
 

@@ -1,11 +1,12 @@
 #include "TLVStorage.h"
+#include "InternalFlash.h"
 
 configuration TLVStorageC{
   provides interface TLVStorage;
   provides interface TLVUtils;
 } implementation {
   components TLVStorageP;
-  components TLVUtilsC;
+  components new TLVUtilsC(IFLASH_SEGMENT_SIZE);
 
   TLVStorageP.TLVUtils -> TLVUtilsC;
 

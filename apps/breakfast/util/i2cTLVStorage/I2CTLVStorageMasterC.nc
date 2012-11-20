@@ -6,7 +6,7 @@ configuration I2CTLVStorageMasterC{
   provides interface TLVUtils;
 } implementation {
   components I2CTLVStorageMasterP;
-  components TLVUtilsC;
+  components new TLVUtilsC(SLAVE_TLV_LEN);
   
   components new I2CComMasterC(I2C_COM_CLIENT_ID_TLV_STORAGE);
 

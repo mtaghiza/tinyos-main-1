@@ -20,9 +20,9 @@
 
 #define TLV_CHECKSUM_LENGTH 2
 
-#ifndef TLV_LEN
-#define TLV_LEN 64
-#endif
+//#ifndef TLV_LEN
+//#define TLV_LEN 64
+//#endif
 
 typedef struct {
   uint8_t tag;

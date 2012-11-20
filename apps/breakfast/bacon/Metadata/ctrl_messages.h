@@ -183,7 +183,7 @@ typedef nx_struct read_bacon_tlv_cmd_msg{
 
 typedef nx_struct read_bacon_tlv_response_msg{
   nx_uint8_t error;
-  nx_uint8_t tlvs[64];
+  nx_uint8_t tlvs[128];
 } read_bacon_tlv_response_msg_t;
 
 typedef nx_struct read_toast_tlv_cmd_msg{
@@ -196,7 +196,7 @@ typedef nx_struct read_toast_tlv_response_msg{
 } read_toast_tlv_response_msg_t;
 
 typedef nx_struct write_bacon_tlv_cmd_msg{
-  nx_uint8_t tlvs[64];
+  nx_uint8_t tlvs[128];
 } write_bacon_tlv_cmd_msg_t;
 
 typedef nx_struct write_bacon_tlv_response_msg{

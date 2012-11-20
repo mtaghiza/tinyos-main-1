@@ -11,7 +11,7 @@
 #define IFLASH_D_START (void*)0x1800
 #define IFLASH_D_END   (void*)0x187f
 
-#define IFLASH_SEGMENT_SIZE   64
+#define IFLASH_SEGMENT_SIZE   128
 
 #endif
 

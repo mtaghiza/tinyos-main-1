@@ -1,6 +1,6 @@
 #include "TLVStorage.h"
 
-module TLVUtilsC{
+generic module TLVUtilsC(uint8_t TLV_LEN){
   provides interface TLVUtils;
 } implementation{
   
