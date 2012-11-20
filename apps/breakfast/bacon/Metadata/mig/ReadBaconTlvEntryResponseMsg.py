@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 67
+DEFAULT_MESSAGE_SIZE = 131
 
 # The Active Message type associated with this message.
 AM_TYPE = 171
 
 class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
-    # Create a new ReadBaconTlvEntryResponseMsg of size 67.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=67):
+    # Create a new ReadBaconTlvEntryResponseMsg of size 131.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=131):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -44,7 +44,7 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [data=";
-            for i in range(0, 64):
+            for i in range(0, 128):
                 s += "0x%x " % (self.getElement_data(i) & 0xff)
             s += "]\n";
         except:
@@ -242,7 +242,7 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
     #
     def offset_data(self, index1):
         offset = 24
-        if index1 < 0 or index1 >= 64:
+        if index1 < 0 or index1 >= 128:
             raise IndexError
         offset += 0 + index1 * 8
         return (offset / 8)
@@ -252,7 +252,7 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
     #
     def offsetBits_data(self, index1):
         offset = 24
-        if index1 < 0 or index1 >= 64:
+        if index1 < 0 or index1 >= 128:
             raise IndexError
         offset += 0 + index1 * 8
         return offset
@@ -261,7 +261,7 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
     # Return the entire array 'data' as a short[]
     #
     def get_data(self):
-        tmp = [None]*64
+        tmp = [None]*128
         for index0 in range (0, self.numElements_data(0)):
                 tmp[index0] = self.getElement_data(index0)
         return tmp
@@ -289,13 +289,13 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
     # Return the total size, in bytes, of the array 'data'
     #
     def totalSize_data(self):
-        return (512 / 8)
+        return (1024 / 8)
     
     #
     # Return the total size, in bits, of the array 'data'
     #
     def totalSizeBits_data(self):
-        return 512
+        return 1024
     
     #
     # Return the size, in bytes, of each element of the array 'data'
@@ -319,14 +319,14 @@ class ReadBaconTlvEntryResponseMsg(tinyos.message.Message.Message):
     # Return the number of elements in the array 'data'
     #
     def numElements_data():
-        return 64
+        return 128
     
     #
     # Return the number of elements in the array 'data'
     # for the given dimension.
     #
     def numElements_data(self, dimension):
-        array_dims = [ 64,  ]
+        array_dims = [ 128,  ]
         if dimension < 0 or dimension >= 1:
             raise IndexException
         if array_dims[dimension] == 0:
