@@ -172,7 +172,13 @@ module ToastTLVP{
           return msg_;
         }else{
           message_t* ret = call Pool.get();
+          void* pl;
           responseMsg = call Pool.get();
+          call Packet.clear(responseMsg);
+          pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+          if (pl != NULL){
+            memset(pl, 0, TOSH_DATA_LENGTH);
+          }
           cmdMsg = msg_;
           post loadToastTLVStorage();
           return ret;
@@ -217,7 +223,13 @@ module ToastTLVP{
           return msg_;
         }else{
           message_t* ret = call Pool.get();
+          void* pl;
           responseMsg = call Pool.get();
+          call Packet.clear(responseMsg);
+          pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+          if (pl != NULL){
+            memset(pl, 0, TOSH_DATA_LENGTH);
+          }
           cmdMsg = msg_;
           post respondWriteToastTlv();
           return ret;
@@ -271,7 +283,13 @@ module ToastTLVP{
           return msg_;
         }else{
           message_t* ret = call Pool.get();
+          void* pl;
           responseMsg = call Pool.get();
+          call Packet.clear(responseMsg);
+          pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+          if (pl != NULL){
+            memset(pl, 0, TOSH_DATA_LENGTH);
+          }
           cmdMsg = msg_;
           post loadToastTLVStorage();
           return ret;

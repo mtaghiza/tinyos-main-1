@@ -162,7 +162,13 @@ module BaconTLVP{
     }else{
       if ((call Pool.size()) >= 2){
         message_t* ret = call Pool.get();
+        void* pl;
         responseMsg = call Pool.get();
+        call Packet.clear(responseMsg);
+        pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+        if (pl != NULL){
+          memset(pl, 0, TOSH_DATA_LENGTH);
+        }
         cmdMsg = msg_;
         post loadTLVStorage();
         return ret;
@@ -201,7 +207,13 @@ module BaconTLVP{
     }else{
       if ((call Pool.size()) >= 2){
         message_t* ret = call Pool.get();
+        void* pl;
         responseMsg = call Pool.get();
+        call Packet.clear(responseMsg);
+        pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+        if (pl != NULL){
+          memset(pl, 0, TOSH_DATA_LENGTH);
+        }
         cmdMsg = msg_;
         post respondWriteBaconTlv();
         return ret;
@@ -247,7 +259,13 @@ module BaconTLVP{
       currentCommandType = call AMPacket.type(msg_);
       if ((call Pool.size()) >= 2){
         message_t* ret = call Pool.get();
+        void* pl;
         responseMsg = call Pool.get();
+        call Packet.clear(responseMsg);
+        pl = call Packet.getPayload(responseMsg, TOSH_DATA_LENGTH);
+        if (pl != NULL){
+          memset(pl, 0, TOSH_DATA_LENGTH);
+        }
         cmdMsg = msg_;
         post loadTLVStorage();
         return ret;

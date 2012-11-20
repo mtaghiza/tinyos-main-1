@@ -20,7 +20,7 @@ configuration MetadataAppC{
   MetadataP.Packet -> SerialActiveMessageC;
   MetadataP.SerialSplitControl -> SerialActiveMessageC;
 
-  components new PoolC(message_t, 16);
+  components new PoolC(message_t, 8);
   MetadataP.Pool -> PoolC;
   UtilitiesC.Pool -> PoolC;
   BusC.Pool -> PoolC;
