@@ -121,9 +121,8 @@ module TLVStorageP{
   }
 
   void writeToB(void* tlvs){
-//    printf("Writing to B\n\r");
-//    debugTLV(tlvs);
     unlockInternalFlash(IFLASH_B_START);
+
     FCTL1 = FWKEY + ERASE;
     *((uint8_t*)IFLASH_B_START) = 0;
     FCTL1 = FWKEY+WRT;
@@ -160,6 +159,7 @@ module TLVStorageP{
     //result is NOT 0, then it is flagged as bad.
     wa[0] = -1*computeChecksum(tlvs);
     writeToB(tlvs);
+
     copyIfDirty();
     return SUCCESS;
   }

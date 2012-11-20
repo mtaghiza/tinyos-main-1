@@ -384,6 +384,7 @@ module ToastTLVP{
       case TAG_VERSION:
         call ReadToastVersionResponseSend.send(0, responseMsg, 
           sizeof(read_toast_version_response_msg_t));
+        break;
       case TAG_GLOBAL_ID:
         call ReadToastBarcodeIdResponseSend.send(0, responseMsg, 
           sizeof(read_toast_barcode_id_response_msg_t));

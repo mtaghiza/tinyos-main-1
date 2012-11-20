@@ -29,7 +29,7 @@ module BaconTLVP{
   am_id_t currentCommandType; 
 
   //TODO: param
-  #define BACON_TLV_LEN 64
+  #define BACON_TLV_LEN 128
   uint8_t tlvs_buf[BACON_TLV_LEN];
   void* tlvs = tlvs_buf;
   
@@ -71,7 +71,8 @@ module BaconTLVP{
   }
 
   task void handleLoaded(){
-    printf("Loaded bacon TLV: %x\n", loadTLVError);
+    printf("Loaded bacon TLV e %x c %x\n", loadTLVError,
+      currentCommandType);
     printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
@@ -85,6 +86,8 @@ module BaconTLVP{
           post respondAddBaconTlvEntry();
           break;
         case AM_READ_BACON_TLV_ENTRY_CMD_MSG:
+          printf("loaded: read generic\n");
+          printfflush();
           post respondReadBaconTlvEntry();
           break;
         default:
@@ -96,8 +99,6 @@ module BaconTLVP{
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
-          printf("Respond: hl +fail + cct\n");
-          printfflush();
           call ReadBaconTlvResponseSend.send(0, responseMsg, 
             sizeof(read_bacon_tlv_response_msg_t));
           break;
@@ -181,8 +182,6 @@ module BaconTLVP{
     read_bacon_tlv_response_msg_t* responsePl = (read_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_bacon_tlv_response_msg_t)));
     memcpy(&(responsePl->tlvs), tlvs, BACON_TLV_LEN);
     responsePl->error = SUCCESS;
-    printf("Respond: respondTask\n");
-    printfflush();
     err = call ReadBaconTlvResponseSend.send(0, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
   }
 
@@ -305,8 +304,14 @@ module BaconTLVP{
     add_bacon_tlv_entry_cmd_msg_t* commandPl = (add_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(add_bacon_tlv_entry_cmd_msg_t)));
     error_t err = SUCCESS;
     //add tag and initialize from commandPl
-    uint8_t offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
+    uint8_t offset;
+    printf("AddEntry %x %u %p %p %u\n", commandPl->tag, commandPl->len,
       (tlv_entry_t*)commandPl, tlvs, 0);
+    printfflush();
+    offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
+      (tlv_entry_t*)commandPl, tlvs, 0);
+    printf("Offset: %u\n", offset);
+    printfflush();
     if (offset == 0){
       err = ESIZE;
     } else {
@@ -358,6 +363,7 @@ module BaconTLVP{
       case TAG_VERSION:
         call ReadBaconVersionResponseSend.send(0, responseMsg, 
           sizeof(read_bacon_version_response_msg_t));
+        break;
       case TAG_GLOBAL_ID:
         call ReadBaconBarcodeIdResponseSend.send(0, responseMsg, 
           sizeof(read_bacon_barcode_id_response_msg_t));

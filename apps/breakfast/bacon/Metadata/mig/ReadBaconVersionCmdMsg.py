@@ -7,16 +7,17 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 0
+DEFAULT_MESSAGE_SIZE = 1
 
 # The Active Message type associated with this message.
 AM_TYPE = 170
 
 class ReadBaconVersionCmdMsg(tinyos.message.Message.Message):
-    # Create a new ReadBaconVersionCmdMsg of size 0.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=0):
+    # Create a new ReadBaconVersionCmdMsg of size 1.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=1):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
+        self.set_tag(0x02)
     
     # Get AM_TYPE
     def get_amType(cls):
@@ -31,7 +32,7 @@ class ReadBaconVersionCmdMsg(tinyos.message.Message.Message):
     def __str__(self):
         s = "Message <ReadBaconVersionCmdMsg> \n"
         try:
-            pass
+            s += "  [tag=0x%x]\n" % (self.get_tag())
         except:
             pass
         return s
@@ -39,116 +40,57 @@ class ReadBaconVersionCmdMsg(tinyos.message.Message.Message):
     # Message-type-specific access methods appear below.
 
     #
-    # Accessor methods for field: dummy
-    #   Field type: short[]
+    # Accessor methods for field: tag
+    #   Field type: short
     #   Offset (bits): 0
-    #   Size of each element (bits): 8
+    #   Size (bits): 8
     #
 
     #
-    # Return whether the field 'dummy' is signed (False).
+    # Return whether the field 'tag' is signed (False).
     #
-    def isSigned_dummy(self):
+    def isSigned_tag(self):
         return False
     
     #
-    # Return whether the field 'dummy' is an array (True).
+    # Return whether the field 'tag' is an array (False).
     #
-    def isArray_dummy(self):
-        return True
+    def isArray_tag(self):
+        return False
     
     #
-    # Return the offset (in bytes) of the field 'dummy'
+    # Return the offset (in bytes) of the field 'tag'
     #
-    def offset_dummy(self, index1):
-        offset = 0
-        if index1 < 0:
-            raise IndexError
-        offset += 0 + index1 * 8
-        return (offset / 8)
+    def offset_tag(self):
+        return (0 / 8)
     
     #
-    # Return the offset (in bits) of the field 'dummy'
+    # Return the offset (in bits) of the field 'tag'
     #
-    def offsetBits_dummy(self, index1):
-        offset = 0
-        if index1 < 0:
-            raise IndexError
-        offset += 0 + index1 * 8
-        return offset
+    def offsetBits_tag(self):
+        return 0
     
     #
-    # Return the entire array 'dummy' as a short[]
+    # Return the value (as a short) of the field 'tag'
     #
-    def get_dummy(self):
-        raise IndexError
+    def get_tag(self):
+        return self.getUIntElement(self.offsetBits_tag(), 8, 1)
     
     #
-    # Set the contents of the array 'dummy' from the given short[]
+    # Set the value of the field 'tag'
     #
-    def set_dummy(self, value):
-        for index0 in range(0, len(value)):
-            self.setElement_dummy(index0, value[index0])
-
-    #
-    # Return an element (as a short) of the array 'dummy'
-    #
-    def getElement_dummy(self, index1):
-        return self.getUIntElement(self.offsetBits_dummy(index1), 8, 1)
+    def set_tag(self, value):
+        self.setUIntElement(self.offsetBits_tag(), 8, value, 1)
     
     #
-    # Set an element of the array 'dummy'
+    # Return the size, in bytes, of the field 'tag'
     #
-    def setElement_dummy(self, index1, value):
-        self.setUIntElement(self.offsetBits_dummy(index1), 8, value, 1)
-    
-    #
-    # Return the size, in bytes, of each element of the array 'dummy'
-    #
-    def elementSize_dummy(self):
+    def size_tag(self):
         return (8 / 8)
     
     #
-    # Return the size, in bits, of each element of the array 'dummy'
+    # Return the size, in bits, of the field 'tag'
     #
-    def elementSizeBits_dummy(self):
+    def sizeBits_tag(self):
         return 8
-    
-    #
-    # Return the number of dimensions in the array 'dummy'
-    #
-    def numDimensions_dummy(self):
-        return 1
-    
-    #
-    # Return the number of elements in the array 'dummy'
-    # for the given dimension.
-    #
-    def numElements_dummy(self, dimension):
-        array_dims = [ 0,  ]
-        if dimension < 0 or dimension >= 1:
-            raise IndexException
-        if array_dims[dimension] == 0:
-            raise IndexError
-        return array_dims[dimension]
-    
-    #
-    # Fill in the array 'dummy' with a String
-    #
-    def setString_dummy(self, s):
-         l = len(s)
-         for i in range(0, l):
-             self.setElement_dummy(i, ord(s[i]));
-         self.setElement_dummy(l, 0) #null terminate
-    
-    #
-    # Read the array 'dummy' as a String
-    #
-    def getString_dummy(self):
-        carr = "";
-        for i in range(0, 4000):
-            if self.getElement_dummy(i) == chr(0):
-                break
-            carr += self.getElement_dummy(i)
-        return carr
     

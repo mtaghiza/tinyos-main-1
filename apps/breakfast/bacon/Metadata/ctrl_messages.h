@@ -26,7 +26,7 @@ typedef nx_struct read_mfr_id_response_msg{
 
 //Read bacon barcode ID
 typedef nx_struct read_bacon_barcode_id_cmd_msg{
-  nx_uint8_t dummy[0];
+  nx_uint8_t tag;
 } read_bacon_barcode_id_cmd_msg_t;
 
 typedef nx_struct read_bacon_barcode_id_response_msg{
@@ -48,7 +48,7 @@ typedef nx_struct write_bacon_barcode_id_response_msg{
 //---Begin Toast commands
 //Read toast barcode ID
 typedef nx_struct read_toast_barcode_id_cmd_msg{
-  nx_uint8_t dummy[0];
+  nx_uint8_t tag;
 } read_toast_barcode_id_cmd_msg_t;
 
 typedef nx_struct read_toast_barcode_id_response_msg{
@@ -69,12 +69,13 @@ typedef nx_struct write_bacon_version_response_msg{
 } write_bacon_version_response_msg_t;
 
 typedef nx_struct read_bacon_version_cmd_msg{
-  nx_uint8_t dummy[0];
+  nx_uint8_t tag;
 } read_bacon_version_cmd_msg_t;
 
 typedef nx_struct read_bacon_version_response_msg{
   nx_uint8_t error;
   nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint16_t version;
 } read_bacon_version_response_msg_t;
 
@@ -128,12 +129,13 @@ typedef nx_struct write_toast_version_response_msg{
 } write_toast_version_response_msg_t;
 
 typedef nx_struct read_toast_version_cmd_msg{
-  nx_uint8_t dummy[0];
+  nx_uint8_t tag;
 } read_toast_version_cmd_msg_t;
 
 typedef nx_struct read_toast_version_response_msg{
   nx_uint8_t error;
   nx_uint8_t tag;
+  nx_uint8_t len;
   nx_uint16_t version;
 } read_toast_version_response_msg_t;
 
