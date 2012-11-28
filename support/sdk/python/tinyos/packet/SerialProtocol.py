@@ -53,6 +53,9 @@ TX_ATTEMPT_LIMIT = 1
 class NoAckException(Exception):
     pass
 
+from threading import Lock, Condition, Thread
+from IO import IODone
+
 def hex(x):
     return "0x%02X" % (ord(x))
 
