@@ -65,6 +65,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         packetSource = sys.argv[1]
 
+    print packetSource
+
     d = Dispatcher(packetSource)
     last = None
     time.sleep(1)
