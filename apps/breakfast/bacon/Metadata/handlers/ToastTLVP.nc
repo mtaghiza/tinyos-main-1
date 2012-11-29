@@ -76,6 +76,8 @@ module ToastTLVP{
   }
 
   task void handleLoaded(){
+//    printf("HL err: %x %x\n", loadTLVError, currentCommandType);
+//    printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
         case AM_READ_TOAST_TLV_CMD_MSG:
@@ -96,6 +98,7 @@ module ToastTLVP{
     } else {
       read_toast_tlv_response_msg_t* responsePl = 
         (read_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_toast_tlv_response_msg_t)));
+      error_t err;
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_TOAST_TLV_CMD_MSG:
@@ -111,12 +114,17 @@ module ToastTLVP{
             sizeof(add_toast_tlv_entry_response_msg_t));
           break;
         case AM_READ_TOAST_TLV_ENTRY_CMD_MSG:
-          call ReadToastTlvEntryResponseSend.send(0, responseMsg, 
-            sizeof(read_toast_tlv_entry_response_msg_t));
+//          err = call ReadToastTlvEntryResponseSend.send(0, responseMsg, 
+//            sizeof(read_toast_tlv_entry_response_msg_t));
+          err = call ReadToastVersionResponseSend.send(0, responseMsg, 
+            sizeof(read_toast_version_response_msg_t));
+//          printf("read entry error response: %x\n", err);
+//          printfflush();
           break;
         default:
           printf("Unrecognized current command: %x\n",
             currentCommandType);
+          printfflush();
           break;
       }
       currentCommandType = 0;
@@ -166,8 +174,11 @@ module ToastTLVP{
       return msg_;
     }else{
       if ((call Pool.size()) >= 2){
+//        printf("LastSlave:%u\n", call LastSlave.get());
+//        printfflush();
         if (call LastSlave.get() == 0){
           loadTLVError = EOFF;
+          responseMsg = call Pool.get();
           post handleLoaded();
           return msg_;
         }else{
@@ -218,6 +229,7 @@ module ToastTLVP{
       if ((call Pool.size()) >= 2){
         if (call LastSlave.get() == 0){
           loadTLVError = EOFF;
+          responseMsg = call Pool.get();
           //TODO: should be handled differently
           post handleLoaded();
           return msg_;
@@ -277,8 +289,11 @@ module ToastTLVP{
     }else{
       currentCommandType = call AMPacket.type(msg_);
       if ((call Pool.size()) >= 2){
+//        printf("LastSlave:%u\n", call LastSlave.get());
+//        printfflush();
         if (call LastSlave.get() == 0){
           loadTLVError = EOFF;
+          responseMsg = call Pool.get();
           post handleLoaded();
           return msg_;
         }else{
@@ -419,6 +434,8 @@ module ToastTLVP{
 
   event void ReadToastTlvEntryResponseSend.sendDone(message_t* msg, 
       error_t error){
+    printf("Response sent\n");
+    printfflush();
     cleanup();
   }
 

@@ -13,7 +13,7 @@ module BusP{
   provides interface Get<uint8_t>;
 } implementation {
   uint8_t slaveCount;
-  uint8_t lastSlave;
+  uint8_t lastSlave = 0;
   error_t scanBus_err;
   error_t setBusPower_error;
 
@@ -32,6 +32,7 @@ module BusP{
 
   event void BusControl.stopDone(error_t error){
     setBusPower_error = error;
+    lastSlave = 0;
     post respondSetBusPower();
   }
 
@@ -93,6 +94,7 @@ module BusP{
 
   task void startDiscovery(){
     slaveCount = 0;
+    lastSlave = 0;
     call I2CDiscoverer.startDiscovery(TRUE, 0x40);
   }
 
