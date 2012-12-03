@@ -419,14 +419,20 @@ module ToastTLVP{
           sizeof(read_toast_version_response_msg_t));
         break;
       case TAG_GLOBAL_ID:
+        printf("barcode\n");
+        printfflush();
         call ReadToastBarcodeIdResponseSend.send(0, responseMsg, 
           sizeof(read_toast_barcode_id_response_msg_t));
         break;
       case TAG_TOAST_ASSIGNMENTS:
+        printf("Assignments\n");
+        printfflush();
         call ReadToastAssignmentsResponseSend.send(0, responseMsg,
           sizeof(read_toast_assignments_response_msg_t));
         break;
       default:
+        printf("generic\n");
+        printfflush();
         call ReadToastTlvEntryResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
         break;
     }

@@ -2,7 +2,8 @@
 
 ##generated with: 
 ## grep 'msg{' ctrl_messages.h | awk '{print $3}' | tr -d '{' | sed -re 's,(_|^)([a-z]),\u\2,g'
-allS='''ReadIvCmdMsg
+allS='''
+ReadIvCmdMsg
 ReadIvResponseMsg
 ReadMfrIdCmdMsg
 ReadMfrIdResponseMsg
@@ -10,6 +11,22 @@ ReadBaconBarcodeIdCmdMsg
 ReadBaconBarcodeIdResponseMsg
 WriteBaconBarcodeIdCmdMsg
 WriteBaconBarcodeIdResponseMsg
+ReadToastBarcodeIdCmdMsg
+ReadToastBarcodeIdResponseMsg
+WriteBaconVersionCmdMsg
+WriteBaconVersionResponseMsg
+ReadBaconVersionCmdMsg
+ReadBaconVersionResponseMsg
+WriteToastBarcodeIdCmdMsg
+WriteToastBarcodeIdResponseMsg
+ReadToastAssignmentsCmdMsg
+ReadToastAssignmentsResponseMsg
+WriteToastAssignmentsCmdMsg
+WriteToastAssignmentsResponseMsg
+WriteToastVersionCmdMsg
+WriteToastVersionResponseMsg
+ReadToastVersionCmdMsg
+ReadToastVersionResponseMsg
 ScanBusCmdMsg
 ScanBusResponseMsg
 PingCmdMsg
@@ -20,42 +37,24 @@ SetBusPowerCmdMsg
 SetBusPowerResponseMsg
 ReadBaconTlvCmdMsg
 ReadBaconTlvResponseMsg
-WriteBaconTlvCmdMsg
-WriteBaconTlvResponseMsg
-DeleteBaconTlvEntryCmdMsg
-DeleteBaconTlvEntryResponseMsg
-AddBaconTlvEntryCmdMsg
-AddBaconTlvEntryResponseMsg
-ReadBaconTlvEntryCmdMsg
-ReadBaconTlvEntryResponseMsg
 ReadToastTlvCmdMsg
 ReadToastTlvResponseMsg
+WriteBaconTlvCmdMsg
+WriteBaconTlvResponseMsg
 WriteToastTlvCmdMsg
 WriteToastTlvResponseMsg
+DeleteBaconTlvEntryCmdMsg
+DeleteBaconTlvEntryResponseMsg
 DeleteToastTlvEntryCmdMsg
 DeleteToastTlvEntryResponseMsg
+AddBaconTlvEntryCmdMsg
+AddBaconTlvEntryResponseMsg
 AddToastTlvEntryCmdMsg
 AddToastTlvEntryResponseMsg
+ReadBaconTlvEntryCmdMsg
+ReadBaconTlvEntryResponseMsg
 ReadToastTlvEntryCmdMsg
 ReadToastTlvEntryResponseMsg
-ReadToastBarcodeIdCmdMsg
-ReadToastBarcodeIdResponseMsg
-WriteToastBarcodeIdCmdMsg
-WriteToastBarcodeIdResponseMsg
-ReadToastAssignmentsCmdMsg
-ReadToastAssignmentsResponseMsg
-WriteToastAssignmentsCmdMsg
-WriteToastAssignmentsResponseMsg
-ReadToastAssignmentsCmdMsg
-ReadToastAssignmentsResponseMsg
-ReadToastVersionCmdMsg
-ReadToastVersionResponseMsg
-WriteToastVersionCmdMsg
-WriteToastVersionResponseMsg
-ReadBaconVersionCmdMsg
-ReadBaconVersionResponseMsg
-WriteBaconVersionCmdMsg
-WriteBaconVersionResponseMsg
 '''
 
 __all__= ['PrintfMsg'] + allS.split()
