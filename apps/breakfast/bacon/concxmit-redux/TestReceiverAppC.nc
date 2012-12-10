@@ -17,7 +17,9 @@ configuration TestReceiverAppC {
   components ActiveMessageC;
   TestP.SplitControl -> ActiveMessageC;
   components Rf1aActiveMessageC;
-  components PDERf1aSettingsP as TestConfigP;
+  
+  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
+
   Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
 
   components LedsC;

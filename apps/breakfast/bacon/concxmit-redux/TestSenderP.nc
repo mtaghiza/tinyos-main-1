@@ -17,6 +17,7 @@ module TestSenderP {
   }
   uses interface HplMsp430GeneralIO as HplResetPin;
   uses interface HplMsp430GeneralIO as HplEnablePin;
+  uses interface Random;
   uses interface Timer<TMilli>;
 } implementation {
   enum{
@@ -43,8 +44,13 @@ module TestSenderP {
   task void loadNextTask();
   
   void initPacket(message_t* msg){
-    uint8_t* pl = call RadioSend.getPayload(msg, 0);
+    uint16_t* pl = call RadioSend.getPayload(msg, 0);
     uint8_t i;
+    #if RANDOMIZE_PACKET == 1
+    for (i = 0; i < call RadioSend.maxPayloadLength() / sizeof(nx_uint16_t); i++){
+      pl[i] = call Random.rand16();
+    }
+    #else
     for (i = 0 ; i < call RadioSend.maxPayloadLength(); i++){
       if (i == MARK_LOCATION + sizeof(test_packet_t)){
         pl[i] = 0xff;
@@ -57,6 +63,7 @@ module TestSenderP {
 //        pl[i] = 0x00;
 //      }
     }
+    #endif
   }
 
   event void Boot.booted(){

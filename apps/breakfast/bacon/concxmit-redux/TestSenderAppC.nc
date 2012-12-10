@@ -9,8 +9,12 @@ configuration TestSenderAppC {
   components new TimerMilliC();
   components MainC;
 
+
+  components RandomC;
+
   TestP.Boot -> MainC;
   TestP.Timer -> TimerMilliC;
+  TestP.Random -> RandomC;
   
   components new DelayedAMSenderC(CONCXMIT_RADIO_AM_TEST);
   TestP.RadioSend -> DelayedAMSenderC;
@@ -21,12 +25,8 @@ configuration TestSenderAppC {
 
   components Rf1aActiveMessageC;
   TestP.Rf1aIf -> Rf1aActiveMessageC;
-  //TODO: use compile flags to select which config to use.
-  //#if TEST_CONFIG == XXX
-  //  components TestConfigXXXP as TestConfigP;
-  //#else
-  components PDERf1aSettingsP as TestConfigP;
-  //#endif
+
+  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
   Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
 
   components LedsC;

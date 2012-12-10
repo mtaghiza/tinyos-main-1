@@ -2,11 +2,18 @@ COMPONENT=TestSenderAppC
 
 PFLAGS += -I$(TOSDIR)/lib/serialprintf
 PFLAGS += -I$(TOSDIR)/lib/rf1a-delayedSend
-PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/includes
-PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/generated
+#PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/includes
+#PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/generated
 
 MARK_LOCATION?=0xff
+RANDOMIZE_PACKET?=0
 CFLAGS += -DMARK_LOCATION=$(MARK_LOCATION)
+CFLAGS += -DRANDOMIZE_PACKET=$(RANDOMIZE_PACKET)
+
+CFLAGS +=-DRF1A_AUTOCAL=1
+
+PATABLE0_SETTING?=0x2D
+CFLAGS += -DPATABLE0_SETTING=$(PATABLE0_SETTING)
 
 #32mhz mclk
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_64MHz_RSEL7

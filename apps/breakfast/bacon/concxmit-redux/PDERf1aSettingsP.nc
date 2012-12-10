@@ -16,7 +16,7 @@ module PDERf1aSettingsP{
     //TODO: this does get set in sw, right?
     pktlen:  0x3D,    // PKTLEN    Packet length.
     pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
-    pktctrl0:0x05,   // PKTCTRL0  Packet automation control.
+    pktctrl0:0x45,   // PKTCTRL0  Packet automation control.
     //TODO: this does get set in sw, right?
     addr:    0x00,   // ADDR      Device address.
     //TODO: this does get set in sw, right?
