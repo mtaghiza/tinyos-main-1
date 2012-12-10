@@ -58,13 +58,14 @@ implementation {
     
 #if defined(__msp430_have_port2) || defined(__MSP430_HAS_PORT2__) || defined(__MSP430_HAS_PORT2_R__)
       //P2.0: VBAT sense (input? out to gnd?)
+      //P2.1: FLASH_EN (gnd)
       //P2.2: light sense (input? out to gnd?)
       //P2.5: thermistor sense (input? out to gnd?)
       //P2.6/2.7: I2C (should be out to GND, but currently seeing
       //  serial port reset when we do this at the point where we
       //  either do a bus or bacon reset.)
-      P2DIR = 0xDA;
-      P2OUT = 0x00;
+      P2DIR = BIT1|BIT3|BIT4|BIT6|BIT7;
+      P2OUT = BIT6|BIT7;
 #endif 
     
 #if defined(__msp430_have_port3) || defined(__MSP430_HAS_PORT3__) || defined(__MSP430_HAS_PORT3_R__)

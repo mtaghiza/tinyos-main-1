@@ -42,6 +42,15 @@ module TestReceiverP {
     P1SEL |= BIT1;
     P2SEL |= BIT4;
     P2DIR |= BIT4;
+    
+    //workaround to re-use SPI pins for GPIO: flash must be powered
+    //but held in shutdown otherwise SPI pins get held to ground. 
+    //Flash_CS# is set by default, but FLASH_EN
+    //needs to be set to 1 so that VCC_FLASH gets connected to 3V
+    P2DIR |= BIT1;
+    P2SEL &= ~BIT1;
+    P2OUT |= BIT1;
+
     //output mode 7: reset/set 
     TA1CCTL1 = OUTMOD_7;
     TA1CTL = TASSEL__SMCLK | MC__UP;
@@ -70,17 +79,18 @@ module TestReceiverP {
     //printf("Starting send pulses\n\r");
     state = S_WAITING;
     call Timer.startOneShot(SEND_TIMEOUT);
-    atomic{
-      //start PWM: negative pulse with width=send1Offset cycles of
-      //  SMCLK, at _end_ of period
-      //Clear SMCLK divider: run at DCOCLKDIV  (> 1 Mhz)
-      UCSCTL5 &= ~(0x07 << 4);
-      TA1CCR0 = 0;
-      //set pulse width
-      TA1CCR1 = PERIOD - SEND_1_OFFSET;
-      //and off it goes
-      TA1CCR0 = PERIOD - 1;
-    }
+//    //TODO: re-enable
+//    atomic{
+//      //start PWM: negative pulse with width=send1Offset cycles of
+//      //  SMCLK, at _end_ of period
+//      //Clear SMCLK divider: run at DCOCLKDIV  (> 1 Mhz)
+//      UCSCTL5 &= ~(0x07 << 4);
+//      TA1CCR0 = 0;
+//      //set pulse width
+//      TA1CCR1 = PERIOD - SEND_1_OFFSET;
+//      //and off it goes
+//      TA1CCR0 = PERIOD - 1;
+//    }
     call EnablePin.clr();
   }
 

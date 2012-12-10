@@ -1722,7 +1722,10 @@ generic module HplMsp430Rf1aP () @safe() {
   default async event void DelayedSend.sendReady[uint8_t clientId](){ 
     call DelayedSend.completeSend[clientId]();
   }
-
+  
+  
+  async command int Rf1aPhysical.enableCca[uint8_t client](){return SUCCESS;}
+  async command int Rf1aPhysical.disableCca[uint8_t client](){return SUCCESS;}
 }
 
 /* 

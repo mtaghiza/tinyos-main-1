@@ -62,6 +62,8 @@ configuration Rf1aActiveMessageC {
 
     interface DelayedSend[am_id_t id];
     interface Rf1aCoreInterrupt;
+
+    interface LowPowerListening;
   }
   uses interface Rf1aConfigure;
 }
@@ -117,6 +119,8 @@ implementation {
   AckC.AckReceive -> TinyOsPhysicalC.Receive[IEEE154_TYPE_ACK];
   AckC.Rf1aPacket -> PhyPacketC;
   AckC.Rf1aPhysicalMetadata -> PhysicalC;
+  AckC.Rf1aPhysical -> PhysicalC;
+  AckC.AMPacket -> PacketC;
   PacketAcknowledgements = AckC;
 
   components new UniqueReceiveC();
@@ -136,6 +140,9 @@ implementation {
   AM.SubSend -> AckC.Send;
   AM.SubReceive -> UniqueReceiveC.Receive;
   AM.SubDelayedSend -> PhysicalC;
+  
+  components DummyLplC;
+  LowPowerListening = DummyLplC;
 
 }
 
