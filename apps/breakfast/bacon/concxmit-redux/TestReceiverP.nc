@@ -79,18 +79,17 @@ module TestReceiverP {
     //printf("Starting send pulses\n\r");
     state = S_WAITING;
     call Timer.startOneShot(SEND_TIMEOUT);
-//    //TODO: re-enable
-//    atomic{
-//      //start PWM: negative pulse with width=send1Offset cycles of
-//      //  SMCLK, at _end_ of period
-//      //Clear SMCLK divider: run at DCOCLKDIV  (> 1 Mhz)
-//      UCSCTL5 &= ~(0x07 << 4);
-//      TA1CCR0 = 0;
-//      //set pulse width
-//      TA1CCR1 = PERIOD - SEND_1_OFFSET;
-//      //and off it goes
-//      TA1CCR0 = PERIOD - 1;
-//    }
+    atomic{
+      //start PWM: negative pulse with width=send1Offset cycles of
+      //  SMCLK, at _end_ of period
+      //Clear SMCLK divider: run at DCOCLKDIV  (> 1 Mhz)
+      UCSCTL5 &= ~(0x07 << 4);
+      TA1CCR0 = 0;
+      //set pulse width
+      TA1CCR1 = PERIOD - SEND_1_OFFSET;
+      //and off it goes
+      TA1CCR0 = PERIOD - 1;
+    }
     call EnablePin.clr();
   }
 
