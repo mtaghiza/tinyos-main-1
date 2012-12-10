@@ -46,7 +46,11 @@ module TestSenderP {
     uint8_t* pl = call RadioSend.getPayload(msg, 0);
     uint8_t i;
     for (i = 0 ; i < call RadioSend.maxPayloadLength(); i++){
-      pl[i] = 0xf0;
+      if (i == MARK_LOCATION + sizeof(test_packet_t)){
+        pl[i] = 0xff;
+      } else{
+        pl[i] = 0xf0;
+      }
 //      if ( i % 2){
 //        pl[i] = 0xff;
 //      }else{

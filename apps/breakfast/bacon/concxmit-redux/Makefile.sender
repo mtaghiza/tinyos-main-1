@@ -5,6 +5,9 @@ PFLAGS += -I$(TOSDIR)/lib/rf1a-delayedSend
 PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/includes
 PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/generated
 
+MARK_LOCATION?=0xff
+CFLAGS += -DMARK_LOCATION=$(MARK_LOCATION)
+
 #32mhz mclk
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_64MHz_RSEL7
 
