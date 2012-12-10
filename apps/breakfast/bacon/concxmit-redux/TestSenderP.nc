@@ -59,6 +59,14 @@ module TestSenderP {
     call ResetPin.makeInput();
     call HplResetPin.setResistor(MSP430_PORT_RESISTOR_PULLDOWN);
     call ResetInterrupt.enableRisingEdge();
+    
+    //workaround to re-use SPI pins for GPIO: flash must be powered
+    //but held in shutdown otherwise SPI pins get held to ground. 
+    //Flash_CS# is set by default, but FLASH_EN
+    //needs to be set to 1 so that VCC_FLASH gets connected to 3V
+    P2DIR |= BIT1;
+    P2SEL &= ~BIT1;
+    P2OUT |= BIT1;
 
     call SplitControl.start();
   }
@@ -121,7 +129,7 @@ module TestSenderP {
   }
 
   task void reportEnableInterrupt(){
-    //printf("EI\n\r");
+//    printf("EI\n\r");
   }
 
   async event void EnableInterrupt.fired(){
@@ -139,7 +147,7 @@ module TestSenderP {
   }
 
   task void reportSendInterrupt(){
-    //printf("SI\n\r");
+//    printf("SI\n\r");
   }
 
   async event void SendInterrupt.fired(){

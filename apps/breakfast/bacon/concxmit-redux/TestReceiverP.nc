@@ -40,7 +40,7 @@ module TestReceiverP {
     }
     P1DIR |= BIT1;
     P1SEL |= BIT1;
-    P2SEL |= BIT4;
+    P2SEL &= ~BIT4;
     P2DIR |= BIT4;
     
     //workaround to re-use SPI pins for GPIO: flash must be powered
