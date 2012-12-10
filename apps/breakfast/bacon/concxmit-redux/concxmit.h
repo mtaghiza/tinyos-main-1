@@ -1,6 +1,9 @@
 #ifndef CONCXMIT_H
 #define CONCXMIT_H
 
+#include "message.h"
+
+
 #define CONCXMIT_RADIO_AM_TEST 0xDC
 
 #define CONCXMIT_SERIAL_AM_CMD 0xDC
@@ -9,6 +12,7 @@
 
 typedef nx_struct {
   nx_uint16_t seqNum;
+  nx_uint8_t data[0];
 } test_packet_t;
 
 #define CONCXMIT_CMD_NEXT 0x01

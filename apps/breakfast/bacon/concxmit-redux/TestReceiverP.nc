@@ -30,7 +30,7 @@ module TestReceiverP {
   uint16_t PERIOD = (1<<15);
 
   event void Boot.booted(){
-    printf("Booted\n\r");
+    printf("Booted\r\n");
     //P1.1: TA1 CCR1 compare output
     atomic{
       PMAPPWD = PMAPKEY;
@@ -76,7 +76,7 @@ module TestReceiverP {
   task void triggerSend(){
     //tell receivers: there is a send coming momentarily.
     call EnablePin.set();
-    //printf("Starting send pulses\n\r");
+    //printf("Starting send pulses\r\n");
     state = S_WAITING;
     call Timer.startOneShot(SEND_TIMEOUT);
     atomic{
@@ -104,7 +104,7 @@ module TestReceiverP {
         TA1CCR0 = 0;
         //restore SMCLK for serial usage
         UCSCTL5 |= (0x05 << 4);
-        printf("TIMEOUT\n\r");
+        printf("TIMEOUT\r\n");
         state = S_INTERPACKET_WAIT;
         call Timer.startOneShot(INTERPACKET_WAIT);
         break;
@@ -114,6 +114,7 @@ module TestReceiverP {
   event void SplitControl.stopDone(error_t err){ }
 
   event message_t* RadioReceive.receive(message_t* msg, void* pl, uint8_t len){ 
+    uint8_t i;
     test_packet_t* tpl = (test_packet_t*) pl;
 
     call Timer.stop();
@@ -124,11 +125,19 @@ module TestReceiverP {
 
     //restore SMCLK for serial usage
     UCSCTL5 |= (0x05 << 4);
-    printf("RX %d %d %d %d\n\r", 
+    printf("RX %d %d %d %d ", 
       tpl->seqNum, 
       call Rf1aPhysicalMetadata.rssi(&metadata), 
       call Rf1aPhysicalMetadata.lqi(&metadata),
       SEND_1_OFFSET);
+    for (i = 0; i < sizeof(message_header_t); i++){
+      printf("%u ", msg->header[i]);
+    }
+    for (i = 0; i < 20; i++){
+      printf("%u ", msg->data[i]);
+    }
+    printf("\r\n");
+
 
     state = S_INTERPACKET_WAIT;
     call Timer.startOneShot(INTERPACKET_WAIT);

@@ -364,9 +364,16 @@ generic module Rf1aAckP () {
     P1OUT |=BIT4;
     #endif
 
-
-    if (!call AMPacket.isForMe(msg) || !call Rf1aPacket.crcPassed(msg))
+    #ifdef DISABLE_CRC
+    #warning "CRC check DISABLED"
+    if (!call AMPacket.isForMe(msg)){
       return msg;
+    }
+    #else
+    if (!call AMPacket.isForMe(msg) || !call Rf1aPacket.crcPassed(msg)) {
+      return msg;
+    }
+    #endif
       
 
     if (fcfp->ack_request) {

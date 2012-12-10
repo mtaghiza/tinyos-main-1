@@ -1,16 +1,17 @@
 COMPONENT=TestReceiverAppC
-
 PFLAGS += -I$(TOSDIR)/lib/serialprintf
 PFLAGS += -I$(TOSDIR)/lib/rf1a-delayedSend
 PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/includes
 PFLAGS += -I$(TOSDIR)/lib/rf1a-multi/configs/generated
 
+CFLAGS += -DDISABLE_CRC
+
 #units are 1/32 of a binary microsecond
 SEND_1_OFFSET?=32
 
 #units are binary milliseconds
-SEND_TIMEOUT?=64
-INTERPACKET_WAIT?=64
+SEND_TIMEOUT?=512
+INTERPACKET_WAIT?=512
 STARTUP_WAIT?=512
 
 CFLAGS += -DSEND_1_OFFSET=$(SEND_1_OFFSET)

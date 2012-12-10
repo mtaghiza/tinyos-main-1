@@ -41,6 +41,19 @@ module TestSenderP {
   uint16_t seqNum = 0;
 
   task void loadNextTask();
+  
+  void initPacket(message_t* msg){
+    uint8_t* pl = call RadioSend.getPayload(msg, 0);
+    uint8_t i;
+    for (i = 0 ; i < call RadioSend.maxPayloadLength(); i++){
+      pl[i] = 0xf0;
+//      if ( i % 2){
+//        pl[i] = 0xff;
+//      }else{
+//        pl[i] = 0x00;
+//      }
+    }
+  }
 
   event void Boot.booted(){
     printf("Booted\n\r");
@@ -67,6 +80,7 @@ module TestSenderP {
     P2DIR |= BIT1;
     P2SEL &= ~BIT1;
     P2OUT |= BIT1;
+    
 
     call SplitControl.start();
   }
@@ -105,15 +119,20 @@ module TestSenderP {
   }
 
   task void loadNextTask(){
-    test_packet_t* pl = (test_packet_t*)call RadioSend.getPayload(&rmsg, sizeof(test_packet_t));
+//    uint8_t sendLen = (call RadioSend.maxPayloadLength()) / 2;
+    uint8_t sendLen = 18;
+    test_packet_t* pl; 
     error_t error;
+    pl = (test_packet_t*)call RadioSend.getPayload(&rmsg, sendLen);
+//    printf("PL: %p \r\n", pl);
+    initPacket(&rmsg);
     pl -> seqNum = seqNum;
     atomic{
       state = S_LOADING;
     }
     error = call RadioSend.send(AM_BROADCAST_ADDR, &rmsg,
-      sizeof(test_packet_t));
-    //printf("RS.send %x \n\r", error);
+      sendLen);
+//    printf("RS.send %d/%d %x \r\n", sendLen, TOSH_DATA_LENGTH, error);
   }
 
   task void unexpectedSendReady(){
@@ -177,7 +196,15 @@ module TestSenderP {
   }
 
   task void reportTask(){
-    printf("TX %u\n\r", seqNum);
+    uint8_t i;
+    printf("TX %d ", seqNum);
+    for (i=0; i< sizeof(message_header_t); i++){
+      printf("%u ", rmsg.header[i]);
+    }
+    for (i=0; i< 20; i++){
+      printf("%u ", rmsg.data[i]);
+    }
+    printf("\r\n");
     seqNum++;
     state = S_NEED_LOAD;
     post loadNextTask();
