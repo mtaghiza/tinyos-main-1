@@ -18,12 +18,6 @@ typedef nx_struct {
 #define CONCXMIT_CMD_NEXT 0x01
 #define CONCXMIT_CMD_SEND 0x02
 
-//Power levels
-//-12   -6      0       10
-//0x25  0x2D    0x8D    0xC3
-
-#define TX_POWER_1 0x25
-#define TX_POWER_2 0x8D
 
 typedef nx_struct {
   nx_uint8_t cmd;

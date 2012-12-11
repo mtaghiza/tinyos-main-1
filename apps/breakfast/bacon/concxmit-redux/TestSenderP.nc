@@ -44,31 +44,33 @@ module TestSenderP {
   task void loadNextTask();
   
   void initPacket(message_t* msg){
-    uint16_t* pl = call RadioSend.getPayload(msg, 0);
+    uint8_t* pl = call RadioSend.getPayload(msg, 0);
     uint8_t i;
     #if RANDOMIZE_PACKET == 1
-    for (i = 0; i < call RadioSend.maxPayloadLength() / sizeof(nx_uint16_t); i++){
+    for (i = 0; i < call RadioSend.maxPayloadLength(); i++){
       pl[i] = call Random.rand16();
     }
     #else
     for (i = 0 ; i < call RadioSend.maxPayloadLength(); i++){
-      if (i == MARK_LOCATION + sizeof(test_packet_t)){
-        pl[i] = 0xff;
-      } else{
-        pl[i] = 0xf0;
-      }
-//      if ( i % 2){
+//      if (i == MARK_LOCATION + sizeof(test_packet_t)){
 //        pl[i] = 0xff;
-//      }else{
-//        pl[i] = 0x00;
+//      } else{
+//        pl[i] = 0xf0;
 //      }
-    }
+      //Flip at MARK_LOCATION
+      if ( (i +((i == MARK_LOCATION)?1:0))% 2){
+        pl[i] = 0xff;
+      }else{
+        pl[i] = 0x00;
+      }
+      
+  }
     #endif
   }
 
   event void Boot.booted(){
     printf("Booted\n\r");
-    #ifdef SENDER1
+    #if SENDER_1 == 1
     printf("Sender 1 (FE)\n\r");
     #else
     printf("Sender 2 (RE)\n\r");
@@ -83,16 +85,38 @@ module TestSenderP {
     call ResetPin.makeInput();
     call HplResetPin.setResistor(MSP430_PORT_RESISTOR_PULLDOWN);
     call ResetInterrupt.enableRisingEdge();
-    
-    //workaround to re-use SPI pins for GPIO: flash must be powered
-    //but held in shutdown otherwise SPI pins get held to ground. 
-    //Flash_CS# is set by default, but FLASH_EN
-    //needs to be set to 1 so that VCC_FLASH gets connected to 3V
-    P2DIR |= BIT1;
-    P2SEL &= ~BIT1;
-    P2OUT |= BIT1;
-    
+    atomic{
+      //Map GDO0 to port 1.2
+      // (should be IOCFG0.GDO0_CFG=0x06 in RF1A config) 
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP2 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+     
+      P1DIR |= BIT2;
+      P1SEL |= BIT2;
 
+      //workaround to re-use SPI pins for GPIO: flash must be powered
+      //but held in shutdown otherwise SPI pins get held to ground. 
+      //Flash_CS# is set by default, but FLASH_EN
+      //needs to be set to 1 so that VCC_FLASH gets connected to 3V
+      P2DIR |= BIT1;
+      P2SEL &= ~BIT1;
+      P2OUT |= BIT1;
+      
+      //Turn on CC1190 in TX+LGM
+      P3SEL &= ~(BIT4|BIT5|BIT6);
+      P3DIR |= (BIT4|BIT5|BIT6);
+      PJDIR |= BIT0;
+      //3.5: LNA_EN
+      P3OUT &= ~(BIT5);
+      //3.4: PA_EN (on)
+      //3.6: RFFE_OFF# (on)
+      P3OUT |= BIT4|BIT6;
+      //J.0: HGM (off)
+      PJOUT &= ~BIT0;
+
+    }
     call SplitControl.start();
   }
 
@@ -119,9 +143,9 @@ module TestSenderP {
     atomic{
       state = S_NEED_LOAD;
       post loadNextTask();
-      //Sender 1 transmits at lower power to reduce impact of catpure
+      //Sender 1 transmits at lower power to reduce impact of capture
       //effect
-      #ifdef SENDER1
+      #if SENDER_1 == 1
       call Rf1aIf.writeSinglePATable(TX_POWER_1);
       #else
       call Rf1aIf.writeSinglePATable(TX_POWER_2);
@@ -181,13 +205,13 @@ module TestSenderP {
   }
 
   async event void SendInterrupt.fired(){
-    post reportSendInterrupt();
+    call SendInterrupt.disable();
+    call DelayedSend.completeSend();
     if (state == S_ENABLED){
       //turn off send interrupt until we're done sending/reporting this
       //one
-      call SendInterrupt.disable();
       state = S_SENDING;
-      call DelayedSend.completeSend();
+      post reportSendInterrupt();
     } else {
       state = S_ERROR;
     }

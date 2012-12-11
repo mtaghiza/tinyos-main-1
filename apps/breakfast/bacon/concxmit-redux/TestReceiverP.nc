@@ -31,12 +31,23 @@ module TestReceiverP {
 
   event void Boot.booted(){
     printf("Booted\r\n");
-    //P1.1: TA1 CCR1 compare output
+    //P1.1: TA1 CCR1 compare output for delay trigger
     atomic{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P1MAP1 = PM_TA1CCR1A;
       PMAPPWD = 0x00;
+
+      //Map GDO0 to port 1.2
+      // (should be IOCFG0.GDO0_CFG=0x06 in RF1A config) 
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP2 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+     
+      P1DIR |= BIT2;
+      P1SEL |= BIT2;
+
     }
     P1DIR |= BIT1;
     P1SEL |= BIT1;
@@ -54,6 +65,18 @@ module TestReceiverP {
     //output mode 7: reset/set 
     TA1CCTL1 = OUTMOD_7;
     TA1CTL = TASSEL__SMCLK | MC__UP;
+
+    //Turn on CC1190 in RX+LGM
+    P3SEL &= ~(BIT4|BIT5|BIT6);
+    P3DIR |= (BIT4|BIT5|BIT6);
+    PJDIR |= BIT0;
+    //3.4: PA_EN (off)
+    P3OUT &= ~(BIT4);
+    //3.5: LNA_EN (on)
+    //3.6: RFFE_OFF# (on)
+    P3OUT |= BIT5|BIT6;
+    //J.0: HGM (off)
+    PJOUT &= ~BIT0;
 
     //prevent senders from transmitting. we're running the compare
     //  timer too fast to reliably send a single pulse and stop it. 
@@ -125,10 +148,11 @@ module TestReceiverP {
 
     //restore SMCLK for serial usage
     UCSCTL5 |= (0x05 << 4);
-    printf("RX %d %d %d %d ", 
+    printf("RX %d %d %d %d %d ", 
       tpl->seqNum, 
       call Rf1aPhysicalMetadata.rssi(&metadata), 
       call Rf1aPhysicalMetadata.lqi(&metadata),
+      call Rf1aPhysicalMetadata.crcPassed(&metadata),
       SEND_1_OFFSET);
     for (i = 0; i < sizeof(message_header_t); i++){
       printf("%u ", msg->header[i]);

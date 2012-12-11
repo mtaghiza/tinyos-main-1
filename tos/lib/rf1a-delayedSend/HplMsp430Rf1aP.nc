@@ -685,7 +685,8 @@ generic module HplMsp430Rf1aP () @safe() {
       #endif
       /* If we've queued data but haven't already started the
        * transmission, do so now. */
-      if (wrote_data_ds && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
+//DC: removed this check to cut down critical path
+//      if (wrote_data_ds && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
         register int loop_limit = RADIO_LOOP_LIMIT;
         /* We're *supposed* to be in FSTXON here, so this strobe can't
          * be rejected.  In fact, it appears that if we're in FSTXON
@@ -713,7 +714,7 @@ generic module HplMsp430Rf1aP () @safe() {
           tx_result = ERETRY;
           cancelTransmit_();
         }
-      }
+//      }
       /* If we've started transmitting, see if we're done yet. */
       if (TX_S_active <= tx_state) {
         /* If there's no more data to be transmitted, the task is
@@ -991,8 +992,8 @@ generic module HplMsp430Rf1aP () @safe() {
        * sendFragment_task. */
       rc = call Rf1aIf.strobe(RF_SNOP);
       if ((RF1A_S_FSTXON != (rc & RF1A_S_MASK)) && (RF1A_S_TX != (rc & RF1A_S_MASK))) {
-        //TODO: this assumes CCA is enabled
-        int rv = startTransmission_(TRUE, TRUE);
+        //NB: turned off CCA check
+        int rv = startTransmission_(FALSE, TRUE);
         if (SUCCESS != rv) {
           return rv;
         }
