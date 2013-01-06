@@ -63,6 +63,6 @@ do
   esac
 done
 set -x 
-make bacon IS_SENDER=$isSender POWER_INDEX=$power HGM=$hgm \
+make bacon2 IS_SENDER=$isSender POWER_INDEX=$power HGM=$hgm \
   CHANNEL=$channel REPORT=$report USE_LONG_IPI=$useLongIpi \
   install bsl,$dev

@@ -41,7 +41,8 @@ configuration TestAppC{
   //TODO: swap settings at compile time. Include in settings (for
   //  logging)
   //SRFS6_868_xxx_CUR_HC.nc
-  components PDERf1aSettingsP as TestConfigP;
+//  components PDERf1aSettingsP as TestConfigP;
+  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
   Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
 
   components Rf1aC;

@@ -157,7 +157,7 @@ class TestbedMap(object):
             plt.ylim(0, 1000)
             plt.xlim(0, 1000)
             F.set_size_inches([8, 8])
-            plt.savefig(outFile, format='png')
+            plt.savefig(outFile, format='pdf')
             pass
 
     def postDraw(self):
@@ -297,29 +297,7 @@ class CXForwarders(TestbedMap):
             self.G.node[n]['shape'] = 'none'
         
         if addKey:
-            key = {}
-            key[70] = {'pos': (25, 30), 'shape':'box'}
-            key[71] = {'pos': (25, 80), 'shape':'box'}
-            key[72] = {'pos': (25, 130), 'shape':'box'}
-            key[73] = {'pos': (25, 180), 'shape':'box'}
-            key[74] = {'pos': (25, 230), 'shape':'box'}
-            self.fwdRatio[70] = 0
-            self.fwdRatio[71] = 0.25
-            self.fwdRatio[72] = 0.50
-            self.fwdRatio[73] = 0.75
-            self.fwdRatio[74] = 1.0
-
-            key[80] = {'pos': (75, 30), 'shape':'empty'}
-            key[81] = {'pos': (75, 80), 'shape':'empty'}
-            key[82] = {'pos': (75, 130), 'shape':'empty'}
-            key[83] = {'pos': (75, 180), 'shape':'empty'}
-            key[84] = {'pos': (75, 230), 'shape':'empty'}
-            self.fwdRatio[80] = 0
-            self.fwdRatio[81] = 0.25
-            self.fwdRatio[82] = 0.50
-            self.fwdRatio[83] = 0.75
-            self.fwdRatio[84] = 1.0
-            self.G.add_nodes_from([(k, key[k]) for k in key])
+            self.addKeyToFigure()
 
         self.setAttr('fwdRatio', self.fwdRatio, 0)
         self.setColAttr('fwdRatio')
@@ -332,6 +310,31 @@ class CXForwarders(TestbedMap):
           for k in self.fwdRatio])
         self.setLabels(rounded)
 
+    def addKeyToFigure(self):
+        key = {}
+        key[70] = {'pos': (25, 30), 'shape':'box'}
+        key[71] = {'pos': (25, 80), 'shape':'box'}
+        key[72] = {'pos': (25, 130), 'shape':'box'}
+        key[73] = {'pos': (25, 180), 'shape':'box'}
+        key[74] = {'pos': (25, 230), 'shape':'box'}
+        self.fwdRatio[70] = 0
+        self.fwdRatio[71] = 0.25
+        self.fwdRatio[72] = 0.50
+        self.fwdRatio[73] = 0.75
+        self.fwdRatio[74] = 1.0
+
+        key[80] = {'pos': (75, 30), 'shape':'empty'}
+        key[81] = {'pos': (75, 80), 'shape':'empty'}
+        key[82] = {'pos': (75, 130), 'shape':'empty'}
+        key[83] = {'pos': (75, 180), 'shape':'empty'}
+        key[84] = {'pos': (75, 230), 'shape':'empty'}
+        self.fwdRatio[80] = 0
+        self.fwdRatio[81] = 0.25
+        self.fwdRatio[82] = 0.50
+        self.fwdRatio[83] = 0.75
+        self.fwdRatio[84] = 1.0
+        self.G.add_nodes_from([(k, key[k]) for k in key])
+
     def loadForwarders(self, src, dest, dbFile):
         c = sqlite3.connect(dbFile)
         self.fwdRatio = dict(c.execute('SELECT fwd, avg(f) FROM routes where src=? and dest=? group by src, fwd, dest', (src, dest)))
@@ -340,6 +343,27 @@ class CXForwarders(TestbedMap):
     def loadErrors(self, dbFile):
         c = sqlite3.connect(dbFile)
         self.errors = [ nodeId for (nodeId,) in c.execute('SELECT node from error_events')]
+
+class CXForwardersSnapshot(CXForwarders):
+    def __init__(self, src, dest, dbFile, outlineErrors=False,
+          addKey=True, routeNum=1, **kwargs):
+        super(CXForwardersSnapshot, self).__init__(src, dest, dbFile,
+        outlineErrors, addKey, **kwargs)
+
+
+    def loadForwarders(self, src, dest, dbFile):
+        c = sqlite3.connect(dbFile)
+        self.fwdRatio = dict(c.execute(
+        '''SELECT fwd, f
+        FROM routes
+        JOIN (
+          SELECT DISTINCT src, dest, sn FROM routes 
+          WHERE src=? AND dest=?
+          ORDER BY SN) x
+        ON x.src=routes.src and x.sn=routes.sn
+        WHERE x.rowid=?''', (src, dest, routeNum)))
+        c.close()
+
 
 class CXPrr(TestbedMap):
     def __init__(self, node, prrFrom, dbFile, **kwargs):
@@ -752,6 +776,17 @@ if __name__ == '__main__':
                 labelAll = int(v)
             if o == '--bgImage':
                 bgImage = int(v)
+    elif t == '--cxfs':
+        src = int(sys.argv[3])
+        dest = int(sys.argv[4])
+        routeNum = int(sys.argv[5])
+        addKey = False
+        for (o, v) in zip(sys.argv, sys.argv[1:]):
+            if o == '--labelAll':
+                labelAll = int(v)
+            if o == '--bgImage':
+                bgImage = int(v)
+        tbm = CXForwardersSnapshot(src, dest, fn, addKey=addKey, routeNum=routeNum)
     elif t == '--cxp':
         prrFrom = True
         nodeId = 0

@@ -360,25 +360,50 @@ function spatial(){
   closeNode=1
   midNode=42
   farNode=46
+  
+  python fig_scripts/TestbedMap.py $f\
+    --cxfs $farNode 0 2 \
+    --labelAll 0\
+    --bgImage 0\
+    --outFile $outDir/map_far_snapshot_no_bg.pdf
+
+  python fig_scripts/TestbedMap.py $f\
+    --cxfs $farNode 0 2 \
+    --labelAll 0\
+    --bgImage 1\
+    --outFile $outDir/map_far_snapshot.pdf
+
+  python fig_scripts/TestbedMap.py $f\
+    --cxfs $midNode 0 2 \
+    --labelAll 0\
+    --bgImage 0\
+    --outFile $outDir/map_mid_snapshot_no_bg.pdf
+
+  python fig_scripts/TestbedMap.py $f\
+    --cxfs $midNode 0 2 \
+    --labelAll 0\
+    --bgImage 1\
+    --outFile $outDir/map_mid_snapshot.pdf
+
   python fig_scripts/TestbedMap.py data_final/connectivity/1009.log.db \
     --simple \
     --txp 0x2D --pl 16 \
     --distanceLabels 1\
     --bgImage 1\
     --labelAll 0\
-    --outFile $outDir/testbed_map.png
+    --outFile $outDir/testbed_map.pdf
   
   python fig_scripts/TestbedMap.py $f\
     --cxf $midNode 0 \
     --labelAll 0\
     --bgImage 0\
-    --outFile $outDir/map_mid.png
+    --outFile $outDir/map_mid.pdf
   
   python fig_scripts/TestbedMap.py $f\
     --cxf $closeNode 0 \
     --labelAll 0\
     --bgImage 0\
-    --outFile $outDir/map_close.png
+    --outFile $outDir/map_close.pdf
   
   
   python fig_scripts/TestbedMap.py $f\
@@ -448,4 +473,103 @@ function listFiles(){
   echo "$fileList"
 }
 
-listFiles
+function prr_v_dc(){
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 1\
+    --plotErrorBars 0\
+    --pdf $outDir/pdf/prr_v_dc_agg.pdf\
+    < $sd/prr_v_dc_scatter.R
+
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 1\
+    --plotErrorBars 1\
+    --pdf $outDir/pdf/prr_v_dc_agg_eb.pdf\
+    < $sd/prr_v_dc_scatter.R
+
+
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 0\
+    --plotErrorBars 0\
+    --pdf $outDir/pdf/prr_v_dc_all.pdf\
+    < $sd/prr_v_dc_scatter.R
+
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 0\
+    --xmin 0.5\
+    --alpha 0.75\
+    --plotErrorBars 0\
+    --pdf $outDir/pdf/prr_v_dc_all_zoom.pdf\
+    < $sd/prr_v_dc_scatter.R
+
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 0\
+    --plotErrorBars 1\
+    --pdf $outDir/pdf/prr_v_dc_all_eb.pdf\
+    < $sd/prr_v_dc_scatter.R
+     
+}
+
+function forwarderCount(){
+  R --no-save --slave \
+    --args\
+    $bwOptions \
+    --removeNode 58\
+    --removeLabel 3\
+    --errorBars 0\
+    --sortEach 1\
+    --pdf $outDir/pdf/forwarder_count_bw_sorted.pdf\
+    < $sd/forwarder_count.R
+
+  R --no-save --slave \
+    --args\
+    $bwOptions \
+    --removeNode 58\
+    --removeLabel 3\
+    --errorBars 0\
+    --sortEach 0\
+    --pdf $outDir/pdf/forwarder_count_bw.pdf\
+    < $sd/forwarder_count.R
+
+  R --no-save --slave \
+    --args\
+    $bwOptions \
+    --removeNode 58\
+    --removeLabel 0\
+    --removeLabel 1\
+    --removeLabel 3\
+    --removeLabel 5\
+    --errorBars 1\
+    --sortLabel 2\
+    --sortEach 0\
+    --pdf $outDir/pdf/forwarder_count_bw_errorbars.pdf\
+    < $sd/forwarder_count.R
+
+}
+
+set -x
+forwarderCount

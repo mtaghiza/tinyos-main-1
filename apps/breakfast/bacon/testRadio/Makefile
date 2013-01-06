@@ -1,6 +1,7 @@
 COMPONENT=TestAppC
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS+=-I../concxmit-redux
+CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
 #defaults
 IS_SENDER?=FALSE
@@ -39,5 +40,8 @@ CFLAGS+=-DQUIET
 #TODO: set from command line. not a big deal, though, if non-amp mote
 # thinks it has one
 CFLAGS+=-DHAS_CC1190
+
+CFLAGS+=-DPATABLE0_SETTING=0x8D
+CFLAGS+=-DRF1A_AUTOCAL=1
 
 include $(MAKERULES)
