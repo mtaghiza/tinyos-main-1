@@ -107,6 +107,12 @@ implementation {
   TinyOsPhysicalC.Rf1aPhysicalMetadata -> PhysicalC;
   TinyOsPhysicalC.Packet -> PacketC;
   TinyOsPhysicalC.Rf1aPacket -> PhyPacketC;
+  //TODO: Rf1aTinyOsPhysicalC/P should provide Rf1aTransmitFragment
+  //TODO: And the coding layer should just use and provide
+  //      Rf1aTransmitFragment, and sit in between the two.
+  //TODO: So, in the CX stack, we replace TinyOsPhysicalC with
+  //      CXTDMAPhysicalC, which should be happy to oblige with
+  //      Rf1aTransmitFragment for packet timestamping
 
   components new Rf1aAckC() as AckC;
   AckC.SubSend -> TinyOsPhysicalC.Send[IEEE154_TYPE_DATA];
@@ -132,9 +138,6 @@ implementation {
   AM.Ieee154Packet -> PhyPacketC;
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
-  //TODO: Rf1aActiveMessageP to multiplex this
-  //TODO: add DelayedAMSender which provides AMSend +
-  //DelayedSendInterface 
   AM.SubDelayedSend -> PhysicalC;
 
 
