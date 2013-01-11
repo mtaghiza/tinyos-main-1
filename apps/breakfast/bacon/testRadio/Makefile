@@ -1,7 +1,11 @@
 COMPONENT=TestAppC
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
-CFLAGS+=-I../concxmit-redux
-CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
+CFLAGS+=-Irf1a_override/
+CFLAGS+=-Irf1a_override/am
+CFLAGS+=-Irf1a_override/interfaces
+CFLAGS+=-Irf1a_override/physical
+CFLAGS+=-Irf1a_override/physical/configs
+#CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
 #defaults
 IS_SENDER?=FALSE
@@ -12,6 +16,7 @@ USE_LONG_IPI?=TRUE
 PRR_BUF_LEN?=200
 REPORT?=TRUE
 HAS_FE?=FALSE
+TOSH_DATA_LENGTH?=64
 
 #NOTE: to specify from command line:
 # TEST_DESC=\\\"TEST_INFO\\\"
@@ -27,6 +32,7 @@ CFLAGS+=-DPRR_BUF_LEN=$(PRR_BUF_LEN)
 CFLAGS+=-DREPORT=$(REPORT)
 CFLAGS+=-DUSE_LONG_IPI=$(USE_LONG_IPI)
 CFLAGS+=-DHAS_FE=$(HAS_FE)
+CFLAGS+=-DTOSH_DATA_LENGTH=$(TOSH_DATA_LENGTH)
 
 CFLAGS+=-DTEST_DESC=$(TEST_DESC)
 CFLAGS+=-DTEST_NUM=$(TEST_NUM)
@@ -43,5 +49,8 @@ CFLAGS+=-DHAS_CC1190
 
 CFLAGS+=-DPATABLE0_SETTING=0x8D
 CFLAGS+=-DRF1A_AUTOCAL=1
+
+#16mhz mclk, 32 mhz dco
+PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 
 include $(MAKERULES)

@@ -29,6 +29,7 @@ report=FALSE
 useLongIpi=FALSE
 channel=16
 power=2
+dl=28
 
 while [ $# -gt 0 ]
 do
@@ -51,6 +52,11 @@ do
       channel=$1
       shift 1
     ;;
+    -l)
+      shift 1
+      dl=$1
+      shift 1
+    ;;
     -p)
       shift 1
       power=$1
@@ -65,4 +71,5 @@ done
 set -x 
 make bacon2 IS_SENDER=$isSender POWER_INDEX=$power HGM=$hgm \
   CHANNEL=$channel REPORT=$report USE_LONG_IPI=$useLongIpi \
+  TOSH_DATA_LENGTH=$dl\
   install bsl,$dev

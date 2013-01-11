@@ -24,6 +24,7 @@ configuration TestAppC{
   TestP.SplitControl -> ActiveMessageC;
   TestP.AMSend -> AMSenderC;
   TestP.AMPacket -> AMSenderC;
+  TestP.Packet -> AMSenderC;
   TestP.Receive -> AMReceiverC;
 
   components Rf1aActiveMessageC;

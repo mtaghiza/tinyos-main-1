@@ -12,6 +12,7 @@ module TestP{
 
   uses interface AMSend;
   uses interface AMPacket;
+  uses interface Packet;
   uses interface Receive;
   uses interface SplitControl;
  
@@ -57,8 +58,9 @@ module TestP{
   }
 
   void printMinimal(test_settings_t* s){
-    printf("%u %lu %d %x %d %x", s->testNum, s->seqNum,
-      POWER_LEVELS[s->powerIndex], s->hgm, s->channel, s->hasFe);
+    printf("%u %lu %d %x %d %x %u", s->testNum, s->seqNum,
+      POWER_LEVELS[s->powerIndex], s->hgm, s->channel, s->hasFe,
+      s->ipi);
   }
 
   task void printSettingsTask(){
@@ -99,7 +101,9 @@ module TestP{
     //memset(prrBuf, 0, PRR_BUF_LEN);
 
     call SplitControl.start();
-    call WDTResetTimer.startPeriodic(500);
+    call WDTResetTimer.startPeriodic(256);
+    printf("Max payload length: %u\r\n", 
+      call AMSend.maxPayloadLength());
     //set WDT to reset at 1 second
     WDTCTL =  WDT_ARST_1000;
   }
@@ -246,6 +250,19 @@ module TestP{
     }
   }
 
+  task void sendOnce(){
+    if (!radioBusy){
+      error_t err;
+      radioBusy = TRUE;
+      call Packet.clear(msg);
+      memcpy(call AMSend.getPayload(msg, sizeof(test_settings_t)),
+        &settings, sizeof(test_settings_t));
+      err = call AMSend.send(AM_BROADCAST_ADDR, msg,
+        call AMSend.maxPayloadLength());
+      printf("Send: %u \r\n", err);
+    }
+  }
+
   event void AMSend.sendDone(message_t* msg_, error_t err){
     test_settings_t* pkt = call AMSend.getPayload(msg,
       sizeof(test_settings_t));
@@ -301,8 +318,11 @@ module TestP{
 
     //TODO: periodic timer component seems to be messed up: in some
     //      cases it starts immediately and fires every few ms.
-    //printf("at %lu spa %lu %u\r\n", rxTime, lostAt, pkt->ipi);
-    call Timer.startPeriodicAt(lostAt, (pkt->ipi));
+//    printf("at %lu spa %lu %u from %p\r\n", rxTime, lostAt, pkt->ipi,
+//      pkt);
+    if (pkt->ipi != 0 && pkt->isSender){
+      call Timer.startPeriodicAt(lostAt, (pkt->ipi));
+    }
 
     call Rf1aPhysicalMetadata.store(&metadata);
     if (settings.report){
@@ -315,6 +335,7 @@ module TestP{
       printf("%x ", HAS_FE);
       printf("%d ", call AMPacket.source(msg_));
       printMinimal(pkt);
+      printf(" %u ", len);
       printf(" %x\r\n", (call Rf1aPhysicalMetadata.crcPassed(&metadata))?1:0);
       #else
       printf(" (rssi, %d)", call Rf1aPhysicalMetadata.rssi(&metadata));
@@ -333,6 +354,9 @@ module TestP{
 
   async event void UartStream.receivedByte(uint8_t byte){
     switch ( byte ){
+      case 's':
+        post sendOnce();
+        break;
       case 't':
         settings.isSender = !settings.isSender;
         post printSettingsTask();
