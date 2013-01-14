@@ -2,11 +2,11 @@ module CC430CRCC{
   provides interface Crc;
 } implementation {
 
-  async command uint16_t Crc.crc16(void* buf, uint8_t len){
+  async command uint16_t Crc.crc16(const void* buf, uint8_t len){
     return call Crc.seededCrc16(0x0000, buf, len);
   }
 
-  async command uint16_t Crc.seededCrc16(uint16_t startCrc, void* buf, uint8_t len){
+  async command uint16_t Crc.seededCrc16(uint16_t startCrc, const void* buf, uint8_t len){
     uint8_t i; 
     uint16_t nw = 0;
     uint16_t result;

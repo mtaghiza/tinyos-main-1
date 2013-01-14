@@ -628,9 +628,17 @@ generic module HplMsp430Rf1aP () @safe() {
          * packet is, if we haven't already. */
         if (need_to_write_length) {
           call Rf1aIf.writeRegister(RF_TXFIFOWR, tx_remain);
+//          printf("wl%u ",tx_remain);
         }
         //actually write the data into the register
         call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
+//        {
+//          uint8_t i;
+//          for (i =0; i < count; i++){
+//            printf("%x ", data[i]);
+//          }
+//          printf("\r\n");
+//        }
         if(tx_state == TX_S_preparing){
           tx_state = TX_S_loaded;
         }
@@ -647,6 +655,8 @@ generic module HplMsp430Rf1aP () @safe() {
          * transmission, do so now. */
         if (tx_startOK && wrote_data && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
           tx_result = startSend();
+        }else{
+//          printf("delay\r\n");
         }
   
       }while(0);
@@ -657,12 +667,15 @@ generic module HplMsp430Rf1aP () @safe() {
            * done.  However, there's an end-game: we don't really want
            * to signal sendDone until it's actually in the air.  */
           if (0 == tx_remain) {
+//            printf("0L");
             if (TX_S_active == tx_state) {
+//              printf("f");
               tx_state = TX_S_flushing;
               tx_cached_fifothr = call Rf1aIf.readRegister(FIFOTHR);
               call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
             }
             if (0 == call Rf1aIf.readRegister(TXBYTES)) {
+//              printf("F");
               result = tx_result;
               call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
   
@@ -707,14 +720,19 @@ generic module HplMsp430Rf1aP () @safe() {
             }
           }
         }else{
+//          printf("s=%u", tx_state);
         }
+//      printf("\r\n");
     } // atomic
 
     if (need_repost) {
       post sendFragment_task();
     }
     if (send_done) {
+      printf("sd\r\n");
       signal Rf1aPhysical.sendDone[client](result);
+    }else{
+      printf("~sd\r\n");
     }
   }
 
@@ -937,6 +955,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
   default event void DelayedSend.sendReady[uint8_t client](){
+    printf("dds.sr\r\n");
     atomic{
       if (tx_state == TX_S_preparing){
 //        call DelayedSend.startSend[client]();
@@ -949,6 +968,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
   async command error_t DelayedSend.startSend[uint8_t client](){
+    printf("ds.ss\r\n");
     return startSend();
   }
 
@@ -970,15 +990,29 @@ generic module HplMsp430Rf1aP () @safe() {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
+          printf("cancel\r\n");
           cancelTransmit_();
           return ERETRY;
         }else{
+          uint16_t ifin = call Rf1aIf.getIn();
           //re-enable TXFIFO threshold interrupt
           call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
+          printf(". %x\r\n", ifin);
+          //With a short packet,
+          //we've written all of our data into the txfifo
+          //but we don't trigger the txfifo interrupt: we're under the
+          //limit to begin with, so it never crosses the threshold.
+          //So we probably want to either:
+          // a. enable the interrupt if we expect it to be
+          //    triggered, otherwise post the task
+          // b. post the task and enable the interrupt, and make sure
+          //    that task is OK with any tx conditions.
+          post sendFragment_task();
           tx_state = TX_S_active;
           return SUCCESS;
         }
       }else{
+        printf("inval s=%u\r\n", tx_state);
         return EINVAL;
       }
     }
@@ -1155,6 +1189,7 @@ generic module HplMsp430Rf1aP () @safe() {
             call Rf1aIf.readBurstRegister(RF_RXFIFORD, &len8, sizeof(len8));
             avail -= 1;
             rx_expected = len8;
+//            printf("rl%u ", rx_expected);
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 
@@ -1205,6 +1240,15 @@ generic module HplMsp430Rf1aP () @safe() {
         rx_pos += consume;
         rx_received += consume;
         avail -= consume;
+//        {
+//          uint8_t i;
+//          uint8_t* s = rx_pos - consume;
+//          for (i =0; i < consume; i++){
+//            printf("%x ", s[i]);
+//          }
+//          printf("\r\n");
+//        }
+
 
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
@@ -1367,6 +1411,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
   async command unsigned int Rf1aPhysical.defaultTransmitReadyCount[uint8_t client] (unsigned int count)
   {
+//    printf("~dtrc\r\n");
     atomic {
       return transmitReadyCount_(client, count);
     }
@@ -1378,6 +1423,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
   async command const uint8_t* Rf1aPhysical.defaultTransmitData[uint8_t client] (unsigned int count)
   {
+//    printf("~dtxd\r\n");
     atomic {
       return transmitData_(client, count);
     }
@@ -1399,6 +1445,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
   {
+    printf("txf\r\n");
     if (TX_S_inactive != tx_state) {
       uint8_t txbytes = call Rf1aIf.readRegister(TXBYTES);
       /* Remember those other comments warning of an odd behavior
@@ -1419,6 +1466,8 @@ generic module HplMsp430Rf1aP () @safe() {
         tx_result = ECANCEL;
       }
       post sendFragment_task();
+    }else{
+      printf("?txf\r\n");
     }
   }
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()

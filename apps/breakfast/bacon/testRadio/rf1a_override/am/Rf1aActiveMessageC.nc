@@ -107,9 +107,6 @@ implementation {
   TinyOsPhysicalC.Rf1aPhysicalMetadata -> PhysicalC;
   TinyOsPhysicalC.Packet -> PacketC;
   TinyOsPhysicalC.Rf1aPacket -> PhyPacketC;
-  //TODO: Rf1aTinyOsPhysicalC/P should provide Rf1aTransmitFragment
-  //TODO: And the coding layer should just use and provide
-  //      Rf1aTransmitFragment, and sit in between the two.
   //TODO: So, in the CX stack, we replace TinyOsPhysicalC with
   //      CXTDMAPhysicalC, which should be happy to oblige with
   //      Rf1aTransmitFragment for packet timestamping

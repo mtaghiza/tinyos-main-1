@@ -16,6 +16,7 @@ Options:
                 2 ~= 0 dbm
                 3 ~= 10 dbm
               (default: 2)
+  -f <0,1>  : 0 = fec OFF, 1 = fec ON (default: fec OFF)
 EOF
   exit 1
 fi
@@ -30,6 +31,7 @@ useLongIpi=FALSE
 channel=16
 power=2
 dl=28
+fecEnabled=0
 
 while [ $# -gt 0 ]
 do
@@ -62,6 +64,11 @@ do
       power=$1
       shift 1
     ;;
+    -f)
+      shift 1
+      fecEnabled=$1
+      shift 1
+    ;;
     *)
       echo "unrecognized"
       shift 1
@@ -71,5 +78,5 @@ done
 set -x 
 make bacon2 IS_SENDER=$isSender POWER_INDEX=$power HGM=$hgm \
   CHANNEL=$channel REPORT=$report USE_LONG_IPI=$useLongIpi \
-  TOSH_DATA_LENGTH=$dl\
+  TOSH_DATA_LENGTH=$dl RF1A_FEC_ENABLED=$fecEnabled\
   install bsl,$dev

@@ -5,6 +5,7 @@ CFLAGS+=-Irf1a_override/am
 CFLAGS+=-Irf1a_override/interfaces
 CFLAGS+=-Irf1a_override/physical
 CFLAGS+=-Irf1a_override/physical/configs
+CFLAGS+=-Irf1a_override/fec
 #CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
 #defaults
@@ -17,6 +18,7 @@ PRR_BUF_LEN?=200
 REPORT?=TRUE
 HAS_FE?=FALSE
 TOSH_DATA_LENGTH?=64
+RF1A_FEC_ENABLED?=0
 
 #NOTE: to specify from command line:
 # TEST_DESC=\\\"TEST_INFO\\\"
@@ -33,6 +35,7 @@ CFLAGS+=-DREPORT=$(REPORT)
 CFLAGS+=-DUSE_LONG_IPI=$(USE_LONG_IPI)
 CFLAGS+=-DHAS_FE=$(HAS_FE)
 CFLAGS+=-DTOSH_DATA_LENGTH=$(TOSH_DATA_LENGTH)
+CFLAGS+=-DRF1A_FEC_ENABLED=$(RF1A_FEC_ENABLED)
 
 CFLAGS+=-DTEST_DESC=$(TEST_DESC)
 CFLAGS+=-DTEST_NUM=$(TEST_NUM)
