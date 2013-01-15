@@ -955,7 +955,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
   default event void DelayedSend.sendReady[uint8_t client](){
-    printf("dds.sr\r\n");
+//    printf("dds.sr\r\n");
     atomic{
       if (tx_state == TX_S_preparing){
 //        call DelayedSend.startSend[client]();
@@ -968,7 +968,7 @@ generic module HplMsp430Rf1aP () @safe() {
   }
 
   async command error_t DelayedSend.startSend[uint8_t client](){
-    printf("ds.ss\r\n");
+//    printf("ds.ss\r\n");
     return startSend();
   }
 

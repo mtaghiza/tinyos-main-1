@@ -64,70 +64,46 @@ generic module Rf1aFECP () {
   //encode as much as possible from the current transmitter, updating
   //encodedReady/rawReady etc as needed.
   task void encodeAMAP(){
-    //driver calls txReadyCount, then transmitData
-    //semantics of txReadyCount: from current position (e.g. position
-    //you're about to return)
-    //This is OK because in practice, we only call txReadyCount and
-    //transmitData from within the same atomic block.
-
-    //TODO: make sure that all of these are safe with a duplicate task
-    //post/no change in how much is ready.
-
-    //find out how much data is available (max dictated by initial
-    //send length/encoded length param)
     uint8_t rawReady 
       = call Rf1aTransmitFragment.transmitReadyCount[txClient](rawLen - encodedSoFar);
     uint8_t* epLocal;
+    uint8_t numEncoded;
 
     //get pointer to start of ready data
     const uint8_t* rawPos = call Rf1aTransmitFragment.transmitData[txClient](rawReady); 
-
+    //stash current encodedPos in case we get interrupted during this
+    //process
     atomic{
       epLocal = encodedPos;
     }
 
-//    printf("amap %p (%p) r=%p rr=%u\r\n", 
-//      epLocal, txEncoded, rawPos, rawReady);
-    //encode whatever's now ready, update position in encoded buffer
-    encodedReady += call FEC.encode(
+    //encode whatever's now ready, update info about how much is
+    //encoded.
+    numEncoded = call FEC.encode(
       rawPos,
       epLocal,
       rawReady
     );
     encodedSoFar += rawReady;
 
-    //update runningCRC from just-provided data
+    //update runningCRC with just-provided data
     runningCRC = call Crc.seededCrc16(runningCRC, rawPos,
       rawReady);
 
-//    {
-//      uint8_t i;
-//      for (i = 0; i < 128; i++){
-//        printf("%x ", txEncoded[i]);
-//      }
-//      printf("\r\n");
-//    }
-
-    //append CRC if we're done and haven't done so yet. 
+    //append encoded CRC if we're finished encoding but haven't already applied it.
     if (rawLen - encodedSoFar == 0 && !crcAppended){
-      //TODO: idiot- you have to encode the CRC.
       nx_uint16_t nxCRC;
       nxCRC = runningCRC;
-      encodedReady += call FEC.encode((const uint8_t*)(&nxCRC), 
+      numEncoded += call FEC.encode((const uint8_t*)(&nxCRC), 
         epLocal + call FEC.encodedLen(rawLen),
         sizeof(nxCRC));
 
-//      //using nx types ensures that byte alignment is not a problem.
-//      nx_uint16_t* crcDest = (nx_uint16_t*)(epLocal + call FEC.encodedLen(rawLen));
-//      nx_uint16_t nxCrc;
-//      nxCrc = runningCRC;
-//      encodedReady += sizeof(runningCRC);
-//
-////      printf("crc=%x @%p (%p + %x)\r\n", 
-////        runningCRC, crcDest, epLocal,
-////        call FEC.encodedLen(rawLen));
-//      *crcDest = nxCrc;
       crcAppended = TRUE;
+    }
+    //now that we're done with this chunk, update the amount of
+    //encoded data available.
+    atomic{
+      encodedReady += numEncoded;
     }
 
   }
@@ -142,15 +118,6 @@ generic module Rf1aFECP () {
     {
       error_t err;
       uint8_t encodedLen;
-      printf("fec.s %p %u\r\n", buffer, length);
-      {
-        uint8_t i;
-        for (i = 0; i < length; i++){
-          printf("%x ", buffer[i]);
-        }
-        printf("\r\n");
-      }
-
       //setup for transmission: initialize vars, save client
       encodedPos = txEncoded;
       encodedSoFar = 0; 
@@ -167,11 +134,9 @@ generic module Rf1aFECP () {
       }
       post encodeAMAP();
   
-      //get encoded length: make sure to include CRC!
       encodedLen = call FEC.encodedLen(length + sizeof(runningCRC));
-      printf("L %u -> %u\r\n", length, encodedLen);
   
-      //pass it down
+      //start up the phy layer's transmission
       atomic{
         err  = call SubRf1aPhysical.send[client](encodedPos, encodedLen);
         sendOutstanding =  (err == SUCCESS);
@@ -182,7 +147,6 @@ generic module Rf1aFECP () {
 
   async event void SubRf1aPhysical.sendDone[uint8_t client] (int result){
     sendOutstanding = FALSE;
-//    printf("TXD %x\r\n", result);
     signal Rf1aPhysical.sendDone[client](result);
   }
 
@@ -202,6 +166,13 @@ generic module Rf1aFECP () {
 //    printf("rxd: %u %u\r\n", count, result);
     atomic{
       if (buffer == rxEncoded && rxBuf != NULL){
+        //TODO: if we're detecting bit errors at the coding layer, 
+        //this is the place to do it. would be something like adding 
+        //a pointer to the decode command which would store bit error 
+        //calculations. Simplest would be an array of bytes (equal 
+        //length to decoded buffer), where the decode process records 
+        //the BER estimate for each byte.
+
         uint8_t decodedLen = call FEC.decode(buffer, rxBuf, count);
         uint8_t decodedPayloadLen = decodedLen - sizeof(uint16_t);
         nx_uint16_t computedCrc; 
@@ -210,31 +181,14 @@ generic module Rf1aFECP () {
 
         decodedCrc = *((nx_uint16_t*)(rxBuf + decodedPayloadLen));
         computedCrc = call Crc.crc16(rxBuf, decodedPayloadLen);
-      {
-        uint8_t i;
-        printf("encoded (%u) ", count);
-        for (i = 0; i < count; i++){
-          printf("%x ", buffer[i]);
-        }
-        printf("\r\n");
-      }
-      {
-        uint8_t i;
-        printf("decoded (%u) ", decodedLen);
-        for (i = 0; i < decodedLen; i++){
-          printf("%x ", rxBuf[i]);
-        }
-        printf("\r\n");
-      }
-      printf("dc %x cc %x\r\n", decodedCrc, computedCrc);
 
         //override crcPassed metadata- store result in this
-        //component and intercept storeMetadata call 
+        //component and intercept storeMetadata call. This is
+        //more-or-less how it's handled in the phy layer (md is
+        //generated but not associated with a message_t until later)
         if (decodedCrc != computedCrc){
-          printf("crc fail\r\n");
           lastCrcPassed = FALSE;
         }else{
-          printf("crc pass\r\n");
           lastCrcPassed = TRUE;
         }
         rxBuf = NULL;
@@ -248,6 +202,7 @@ generic module Rf1aFECP () {
 
   async command void Rf1aPhysicalMetadata.store (rf1a_metadata_t* metadatap){
     call SubRf1aPhysicalMetadata.store(metadatap);
+    //manually set crc pass/fail.
     if (lastCrcPassed){
       metadatap->lqi |= 0x80;
     }else{
@@ -257,7 +212,6 @@ generic module Rf1aFECP () {
   
   async command unsigned int SubRf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
     uint8_t rv = (encodedReady < count)? encodedReady:count;
-//    printf("strc: %u\r\n", rv);
     post encodeAMAP();
     return rv;
   }
@@ -265,19 +219,16 @@ generic module Rf1aFECP () {
   async command const uint8_t* SubRf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
     uint8_t* txStart = encodedPos;
     uint8_t txrc = call SubRf1aTransmitFragment.transmitReadyCount[client](count);
-//    printf("stxd\r\n");
     encodedPos += txrc;
     encodedReady -= txrc;
     return txStart;
   }
 
   default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
-//    printf("trc\r\n");
     return call DefaultRf1aTransmitFragment.transmitReadyCount(count);
   }
 
   default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
-//    printf("txd\r\n");
     return call DefaultRf1aTransmitFragment.transmitData(count);
   }
 
@@ -348,7 +299,6 @@ generic module Rf1aFECP () {
   (unsigned int length){}
   async event void SubRf1aPhysical.receiveStarted[uint8_t client]
   (unsigned int length){
-//    printf("rxs\r\n");
     signal Rf1aPhysical.receiveStarted[client](length);
   }
 
