@@ -60,7 +60,9 @@ for (split(/\n/, <<'EOText'
   %T/chips/msp430/rf1a/interfaces
   %T/chips/msp430/rf1a/system
   %T/chips/msp430/rf1a/physical
+  %T/chips/msp430/rf1a/physical/configs
   %T/chips/msp430/rf1a/am
+  %T/chips/msp430/rf1a/fec
   %T/chips/msp430/rf1a/ieee154
   %T/chips/msp430/rf1a/layers
   %T/chips/msp430/rf1a/lpl

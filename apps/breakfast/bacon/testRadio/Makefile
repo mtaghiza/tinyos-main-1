@@ -1,11 +1,11 @@
 COMPONENT=TestAppC
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
-CFLAGS+=-Irf1a_override/
-CFLAGS+=-Irf1a_override/am
-CFLAGS+=-Irf1a_override/interfaces
-CFLAGS+=-Irf1a_override/physical
-CFLAGS+=-Irf1a_override/physical/configs
-CFLAGS+=-Irf1a_override/fec
+#CFLAGS+=-Irf1a_override/
+#CFLAGS+=-Irf1a_override/am
+#CFLAGS+=-Irf1a_override/interfaces
+#CFLAGS+=-Irf1a_override/physical
+#CFLAGS+=-Irf1a_override/physical/configs
+#CFLAGS+=-Irf1a_override/fec
 #CFLAGS+=-I$(TOSDIR)/lib/rf1a-delayedSend
 
 #defaults

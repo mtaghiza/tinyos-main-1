@@ -38,6 +38,7 @@
 module Rf1aActiveMessageP {
   provides {
     interface AMSend[am_id_t id];
+    interface DelayedSend[am_id_t id];
     interface Receive[am_id_t id];
     interface Receive as Snoop[am_id_t id];
     interface SendNotifier[am_id_t id];
@@ -49,6 +50,7 @@ module Rf1aActiveMessageP {
     interface AMPacket;
     interface Send as SubSend;
     interface Receive as SubReceive;
+    interface DelayedSend as SubDelayedSend;
   }
 }
 implementation {
@@ -106,6 +108,7 @@ implementation {
   event void SubSend.sendDone(message_t* msg, error_t error)
   {
     signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
+    pending_message = NULL;
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* payload_, uint8_t len)
@@ -124,6 +127,37 @@ implementation {
     }
 
     return signal Snoop.receive[call AMPacket.type(msg)](msg, payload, len);
+  }
+
+  task void startSendTask(){
+    call SubDelayedSend.startSend();
+  }
+  
+  am_id_t pendingId;
+
+  event void SubDelayedSend.sendReady(){
+    if (pending_message != NULL){
+      atomic{
+        pendingId = call AMPacket.type(pending_message);
+      }
+      signal DelayedSend.sendReady[call AMPacket.type(pending_message)]();
+    }else{
+      //should not happen: the only time we should get this event is
+      //when we've already called send.
+      post startSendTask();
+    }
+  }
+
+  async command error_t DelayedSend.startSend[am_id_t id](){
+    if (id == pendingId){
+      return call SubDelayedSend.startSend();
+    }else{
+      return EINVAL;
+    }
+  }
+
+  default event void DelayedSend.sendReady[am_id_t id](){
+    post startSendTask();
   }
 
   default event message_t* Receive.receive[am_id_t id](message_t* msg, void* payload, uint8_t len) { return msg; }

@@ -47,6 +47,7 @@ configuration Rf1aC {
     interface Rf1aPhysical[uint8_t client];
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
+    interface DelayedSend[uint8_t client];
   }
   uses {
     interface Rf1aTransmitFragment[uint8_t client];
@@ -64,6 +65,7 @@ configuration Rf1aC {
   Rf1aTransmitFragment = HplRf1aC;
   Rf1aConfigure = HplRf1aC;
   Rf1aStatus = HplRf1aC;
+  DelayedSend = HplRf1aC;
 }
 
 /* 

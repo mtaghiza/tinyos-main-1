@@ -47,6 +47,7 @@ configuration Rf1aActiveMessageC {
   provides {
     interface SplitControl;
     interface AMSend[am_id_t id];
+    interface DelayedSend[am_id_t id];
     interface SendNotifier[am_id_t id];
     interface Receive[am_id_t id];
     interface Receive as Snoop[am_id_t id];
@@ -106,6 +107,9 @@ implementation {
   TinyOsPhysicalC.Rf1aPhysicalMetadata -> PhysicalC;
   TinyOsPhysicalC.Packet -> PacketC;
   TinyOsPhysicalC.Rf1aPacket -> PhyPacketC;
+  //TODO: So, in the CX stack, we replace TinyOsPhysicalC with
+  //      CXTDMAPhysicalC, which should be happy to oblige with
+  //      Rf1aTransmitFragment for packet timestamping
 
   components new Rf1aAckC() as AckC;
   AckC.SubSend -> TinyOsPhysicalC.Send[IEEE154_TYPE_DATA];
@@ -126,10 +130,12 @@ implementation {
   SendNotifier = AM;
   Receive = AM.Receive;
   Snoop = AM.Snoop;
+  DelayedSend = AM.DelayedSend;
   AM.Rf1aPacket -> PhyPacketC;
   AM.Ieee154Packet -> PhyPacketC;
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
+  AM.SubDelayedSend -> PhysicalC;
 
 
 #if defined(LOW_POWER_LISTENING) || defined(ACK_LOW_POWER_LISTENING)

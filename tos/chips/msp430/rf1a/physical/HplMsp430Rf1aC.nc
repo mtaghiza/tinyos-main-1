@@ -58,6 +58,7 @@ generic configuration HplMsp430Rf1aC (
     interface Rf1aConfigure[uint8_t client];
     interface Rf1aTransmitFragment[uint8_t client];
   }
+  provides interface DelayedSend[uint8_t client];
 } implementation {
   enum {
     /** Identifier for this RF1A module, unique across chip */
@@ -71,8 +72,12 @@ generic configuration HplMsp430Rf1aC (
   Resource = ArbiterC;
   ResourceRequested = ArbiterC;
   ArbiterInfo = ArbiterC;
-
+  
+  #if RF1A_FEC_ENABLED != 1
   components new HplMsp430Rf1aP() as HplRf1aP;
+  #else
+  components new HplMsp430Rf1aFECP() as HplRf1aP;
+  #endif
   HplRf1aP.Rf1aIf -> HplRf1aIfP;
   ArbiterC.ResourceConfigure -> HplRf1aP;
   HplRf1aP.ArbiterInfo -> ArbiterC;
@@ -81,6 +86,7 @@ generic configuration HplMsp430Rf1aC (
   Rf1aPhysicalMetadata = HplRf1aP;
   Rf1aTransmitFragment = HplRf1aP;
   Rf1aStatus = HplRf1aP;
+  DelayedSend = HplRf1aP;
 
   components HplMsp430Rf1aInterruptP;
   HplRf1aP.Rf1aInterrupts -> HplMsp430Rf1aInterruptP;
