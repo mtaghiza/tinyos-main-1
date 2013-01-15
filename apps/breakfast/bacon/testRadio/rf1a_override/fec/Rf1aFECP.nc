@@ -110,16 +110,23 @@ generic module Rf1aFECP () {
 
     //append CRC if we're done and haven't done so yet. 
     if (rawLen - encodedSoFar == 0 && !crcAppended){
-      //using nx types ensures that byte alignment is not a problem.
-      nx_uint16_t* crcDest = (nx_uint16_t*)(epLocal + call FEC.encodedLen(rawLen));
-      nx_uint16_t nxCrc;
-      nxCrc = runningCRC;
-      encodedReady += sizeof(runningCRC);
+      //TODO: idiot- you have to encode the CRC.
+      nx_uint16_t nxCRC;
+      nxCRC = runningCRC;
+      encodedReady += call FEC.encode((const uint8_t*)(&nxCRC), 
+        epLocal + call FEC.encodedLen(rawLen),
+        sizeof(nxCRC));
 
-//      printf("crc=%x @%p (%p + %x)\r\n", 
-//        runningCRC, crcDest, epLocal,
-//        call FEC.encodedLen(rawLen));
-      *crcDest = nxCrc;
+//      //using nx types ensures that byte alignment is not a problem.
+//      nx_uint16_t* crcDest = (nx_uint16_t*)(epLocal + call FEC.encodedLen(rawLen));
+//      nx_uint16_t nxCrc;
+//      nxCrc = runningCRC;
+//      encodedReady += sizeof(runningCRC);
+//
+////      printf("crc=%x @%p (%p + %x)\r\n", 
+////        runningCRC, crcDest, epLocal,
+////        call FEC.encodedLen(rawLen));
+//      *crcDest = nxCrc;
       crcAppended = TRUE;
     }
 

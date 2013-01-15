@@ -14,8 +14,8 @@ generic configuration Rf1aFECC () {
 
   //TODO: switch between encodings
   #if RF1A_FEC_ENABLED == 1
-//  components Hamming74FECC as FEC;
-  components DummyFECC as FEC;
+  components Hamming74FECC as FEC;
+//  components DummyFECC as FEC;
   #else
   components DummyFECC as FEC;
   #endif
