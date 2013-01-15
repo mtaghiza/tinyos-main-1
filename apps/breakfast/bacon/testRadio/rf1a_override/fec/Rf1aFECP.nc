@@ -153,6 +153,9 @@ generic module Rf1aFECP () {
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
                                           unsigned int length,
                                           bool single_use){
+    if (sizeof(rxEncoded) < call FEC.encodedLen(length)){
+      return ESIZE;
+    }
     atomic{
       rxBuf = buffer;
       return call SubRf1aPhysical.setReceiveBuffer[client](rxEncoded,
@@ -194,8 +197,12 @@ generic module Rf1aFECP () {
         rxBuf = NULL;
         signal Rf1aPhysical.receiveDone[client](rxBufTmp, decodedLen, result);
       }else{
-        printf("!buffer mismatch: %p != %p or %p == null\r\n",
-          buffer, rxEncoded, rxBuf);
+        //this will happen if we get a failed reception. Leave it to
+        //the next layer to deal with the fallout (most likely by
+        //supplying the last buffer used in setReceiveBuffer)
+        printf("!buffer mismatch: %p != %p or %p == null. Result: %x count %u\r\n",
+          buffer, rxEncoded, rxBuf, result, count);
+        signal Rf1aPhysical.receiveDone[client](buffer, count, result);
       }
     }
   }
