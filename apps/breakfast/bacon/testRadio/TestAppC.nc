@@ -19,10 +19,11 @@ configuration TestAppC{
   TestP.UartStream -> PlatformSerialC;
 
   components ActiveMessageC;
-  components new AMSenderC(AM_RADIO_TEST);
+  components new DelayedAMSenderC(AM_RADIO_TEST) as AMSenderC;
   components new AMReceiverC(AM_RADIO_TEST);
   TestP.SplitControl -> ActiveMessageC;
   TestP.AMSend -> AMSenderC;
+  TestP.DelayedSend -> AMSenderC;
   TestP.AMPacket -> AMSenderC;
   TestP.Packet -> AMSenderC;
   TestP.Receive -> AMReceiverC;

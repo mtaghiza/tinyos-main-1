@@ -11,6 +11,7 @@ module TestP{
   uses interface UartStream;
 
   uses interface AMSend;
+  uses interface DelayedSend;
   uses interface AMPacket;
   uses interface Packet;
   uses interface Receive;
@@ -28,6 +29,7 @@ module TestP{
   bool needsRestart;
 
   bool radioBusy = FALSE;
+  bool delay = FALSE;
 
   norace test_settings_t settings;
   uint32_t rxCounter = 0;
@@ -355,14 +357,38 @@ module TestP{
     return msg_;
   }
 
+  task void completeSend(){
+    error_t err = call DelayedSend.startSend();
+    printf("Complete Send: %x\r\n", err);
+  }
+
+  event void DelayedSend.sendReady(){
+    if (! delay){
+      post completeSend();
+    }else{
+      printf("Send ready: complete with 'S'\r\n");
+    }
+  }
+
   task void requestRestart(){
     needsRestart = TRUE;
   }
 
+  task void toggleDelay(){
+    delay = !delay;
+    printf("Delay: %x\r\n", delay);
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch ( byte ){
+      case 'd':
+        post toggleDelay();
+        break;
       case 's':
         post sendOnce();
+        break;
+      case 'S':
+        post completeSend();
         break;
       case 't':
         settings.isSender = !settings.isSender;
