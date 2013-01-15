@@ -108,14 +108,19 @@ generic module Rf1aFECP () {
 //      printf("\r\n");
 //    }
 
-    //append CRC if we're done and haven't done so yet.
+    //append CRC if we're done and haven't done so yet. 
     if (rawLen - encodedSoFar == 0 && !crcAppended){
-      uint16_t* crcDest = (uint16_t*)(epLocal + call FEC.encodedLen(rawLen));
+      //using nx types ensures that byte alignment is not a problem.
+      nx_uint16_t* crcDest = (nx_uint16_t*)(epLocal + call FEC.encodedLen(rawLen));
+      nx_uint16_t nxCrc;
+      nxCrc = runningCRC;
       encodedReady += sizeof(runningCRC);
-      crcAppended = TRUE;
 
-      printf("crc=%x @%p\r\n", runningCRC, crcDest);
-      *crcDest = runningCRC;
+      printf("crc=%x @%p (%p + %x)\r\n", 
+        runningCRC, crcDest, epLocal,
+        call FEC.encodedLen(rawLen));
+      *crcDest = nxCrc;
+      crcAppended = TRUE;
     }
 
   }
@@ -130,14 +135,14 @@ generic module Rf1aFECP () {
     {
       error_t err;
       uint8_t encodedLen;
-//      printf("fec.s %p %u\r\n", buffer, length);
-//      {
-//        uint8_t i;
-//        for (i = 0; i < length; i++){
-//          printf("%x ", buffer[i]);
-//        }
-//        printf("\r\n");
-//      }
+      printf("fec.s %p %u\r\n", buffer, length);
+      {
+        uint8_t i;
+        for (i = 0; i < length; i++){
+          printf("%x ", buffer[i]);
+        }
+        printf("\r\n");
+      }
 
       //setup for transmission: initialize vars, save client
       encodedPos = txEncoded;
@@ -157,6 +162,7 @@ generic module Rf1aFECP () {
   
       //get encoded length: make sure to include CRC!
       encodedLen = call FEC.encodedLen(length + sizeof(runningCRC));
+      printf("L %u -> %u\r\n", length, encodedLen);
   
       //pass it down
       atomic{
@@ -187,21 +193,34 @@ generic module Rf1aFECP () {
                                 unsigned int count,
                                 int result){
 //    printf("rxd: %u %u\r\n", count, result);
-//    {
-//      uint8_t i;
-//      for (i = 0; i < count; i++){
-//        printf("%x ", buffer[i]);
-//      }
-//      printf("\r\n");
-//    }
     atomic{
       if (buffer == rxEncoded && rxBuf != NULL){
         uint8_t decodedLen = call FEC.decode(buffer, rxBuf, count);
         uint8_t decodedPayloadLen = decodedLen - sizeof(uint16_t);
-        uint16_t computedCrc = call Crc.crc16(rxBuf,
-          decodedPayloadLen);
-        uint16_t decodedCrc = *((uint16_t*)(rxBuf + decodedPayloadLen));
+        nx_uint16_t computedCrc; 
+        nx_uint16_t decodedCrc;
         uint8_t* rxBufTmp = rxBuf;
+
+        decodedCrc = *((nx_uint16_t*)(rxBuf + decodedPayloadLen));
+        computedCrc = call Crc.crc16(rxBuf, decodedPayloadLen);
+      {
+        uint8_t i;
+        printf("encoded (%u) ", count);
+        for (i = 0; i < count; i++){
+          printf("%x ", buffer[i]);
+        }
+        printf("\r\n");
+      }
+      {
+        uint8_t i;
+        printf("decoded (%u) ", decodedLen);
+        for (i = 0; i < decodedLen; i++){
+          printf("%x ", rxBuf[i]);
+        }
+        printf("\r\n");
+      }
+      printf("dc %x cc %x\r\n", decodedCrc, computedCrc);
+
         //override crcPassed metadata- store result in this
         //component and intercept storeMetadata call 
         if (decodedCrc != computedCrc){

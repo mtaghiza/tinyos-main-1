@@ -253,10 +253,17 @@ module TestP{
   task void sendOnce(){
     if (!radioBusy){
       error_t err;
+      uint8_t* pl = (uint8_t*)(call AMSend.getPayload(msg,
+        sizeof(test_settings_t)));
       radioBusy = TRUE;
       call Packet.clear(msg);
-      memcpy(call AMSend.getPayload(msg, sizeof(test_settings_t)),
-        &settings, sizeof(test_settings_t));
+      {
+        uint8_t i;
+        for(i=0; i< call AMSend.maxPayloadLength(); i++){
+          pl[i] = i;
+        }
+      }
+      memcpy(pl, &settings, sizeof(test_settings_t));
       err = call AMSend.send(AM_BROADCAST_ADDR, msg,
         call AMSend.maxPayloadLength());
       printf("Send: %u \r\n", err);
