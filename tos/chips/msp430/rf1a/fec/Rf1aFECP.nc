@@ -109,7 +109,7 @@ generic module Rf1aFECP () {
   }
 
   command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
-      unsigned int length){
+      unsigned int length, rf1a_offmode_t offMode){
     atomic{
       if (sendOutstanding){
         return EBUSY;
@@ -138,7 +138,8 @@ generic module Rf1aFECP () {
   
       //start up the phy layer's transmission
       atomic{
-        err  = call SubRf1aPhysical.send[client](encodedPos, encodedLen);
+        err  = call SubRf1aPhysical.send[client](encodedPos,
+          encodedLen, offMode);
         sendOutstanding =  (err == SUCCESS);
       }
       return err;
@@ -264,25 +265,14 @@ generic module Rf1aFECP () {
   }
 
   async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
-  (){
-    return call SubRf1aPhysical.resumeIdleMode[client]();
+  (rf1a_offmode_t offMode){
+    return call SubRf1aPhysical.resumeIdleMode[client](offMode);
   }
 
   async command error_t Rf1aPhysical.sleep[uint8_t client] (){
     return call SubRf1aPhysical.sleep[client]();
   }
 
-  async command unsigned int
-  Rf1aPhysical.defaultTransmitReadyCount[uint8_t client] (unsigned int
-  count){
-    return call
-    SubRf1aPhysical.defaultTransmitReadyCount[client](count);
-  }
-  async command const uint8_t*
-  Rf1aPhysical.defaultTransmitData[uint8_t client] (unsigned int
-  count){
-    return call SubRf1aPhysical.defaultTransmitData[client](count);
-  }
   async command int Rf1aPhysical.getChannel[uint8_t client] (){
     return call SubRf1aPhysical.getChannel[client]();
   }

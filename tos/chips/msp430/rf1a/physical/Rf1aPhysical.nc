@@ -32,6 +32,7 @@
  */
 
 #include "Rf1aConfigure.h"
+#include "Rf1a.h"
 
 /** The physical-layer interface for the RF1A radio.
  *
@@ -97,7 +98,8 @@ interface Rf1aPhysical {
    * is still transmitting the remainder of a previous packet or if
    * clear-channel assessment fails.  EINVAL if the length is not
    * valid.  */
-  command error_t send (uint8_t* buffer, unsigned int length);
+  command error_t send (uint8_t* buffer, unsigned int length,
+    rf1a_offmode_t offMode);
 
   /* @TODO@ provide a mechanism to delay transition to STX until a
    * specific number of bytes are available in the FIFO */
@@ -164,9 +166,10 @@ interface Rf1aPhysical {
    * sleep().  Invoking this will cancel any in-progress receive or
    * transmission.
    * 
+   * @param rx If TRUE, go to RX. If false, go to IDLE.
    * @return SUCCESS if transition to RX or IDLE succeeded.  EOFF if
    * radio is unassigned; EBUSY if owned by another client. */
-  async command error_t resumeIdleMode ();
+  async command error_t resumeIdleMode (bool rx );
 
   /** Put the radio to sleep.
    *
@@ -246,7 +249,7 @@ interface Rf1aPhysical {
    * @param single_use If TRUE, then the buffer will only be used for
    * one message.  If the incoming message is too large for the
    * buffer, it is dropped with an error.  
-
+   *
    * @return SUCCESS if the buffer was installed.  EOFF if the radio
    * is off.  EBUSY if the radio belongs to another client or there is
    * a message currently being received into an existing buffer.  */
@@ -296,24 +299,6 @@ interface Rf1aPhysical {
    * place the radio in receive mode, then return to sleep if no
    * carrier is detected for some interval. */
   async event void carrierSense ();
-
-  /** A base implementation of Rf1aTransmitFragment.transmitReadyCount.
-   *
-   * The expectation is that this implementation will handle the
-   * buffers provided through the send() interface, while additional
-   * link- and physical-layer data can be prepended or appended by a
-   * Rf1aTransmitFragment implementation that uses this.
-   */
-  async command unsigned int defaultTransmitReadyCount (unsigned int count);
-
-  /** A base implementation of Rf1aTransmitFragment.transmitData.
-   *
-   * The expectation is that this implementation will handle the
-   * buffers provided through the send() interface, while additional
-   * link- and physical-layer data can be prepended or appended by a
-   * Rf1aTransmitFragment implementation that uses this.
-   */
-  async command const uint8_t* defaultTransmitData (unsigned int count);
 
   /** Notification that the radio has been unconfigured.  A feature
    * missing from TEP108 but that enables the SplitControl.stopDone()

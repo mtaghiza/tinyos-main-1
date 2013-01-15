@@ -12,6 +12,11 @@ generic configuration HplMsp430Rf1aFECP() {
   uses interface Rf1aTransmitFragment[uint8_t client];
   uses interface Rf1aInterrupts[uint8_t client];
   uses interface Leds;
+  
+  //These go to HplMsp430Rf1aP
+  uses interface Rf1aTransmitFragment as DefaultRf1aTransmitFragment;
+  uses interface SetNow<uint8_t> as DefaultLength;
+  uses interface SetNow<const uint8_t*> as DefaultBuffer;
 } implementation {
   components new Rf1aFECC();
   
@@ -32,4 +37,8 @@ generic configuration HplMsp430Rf1aFECP() {
 
   Rf1aTransmitFragment = Rf1aFECC.Rf1aTransmitFragment;
   DelayedSend = HplRf1aP.DelayedSend;
+
+  HplRf1aP.DefaultRf1aTransmitFragment = DefaultRf1aTransmitFragment;
+  HplRf1aP.DefaultLength = DefaultLength;
+  HplRf1aP.DefaultBuffer = DefaultBuffer;
 }

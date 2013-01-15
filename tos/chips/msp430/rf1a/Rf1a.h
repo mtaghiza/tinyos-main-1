@@ -68,4 +68,14 @@ typedef enum rf1a_status_e{
   RF1A_S_OFFLINE          = 0xFF,
 } rf1a_status_e;
 
+//Types/enums for off-mode handling (MCSM1)
+typedef uint8_t rf1a_offmode_t;
+
+typedef enum rf1a_offmode_e {
+  RF1A_OM_IDLE = 0x00,
+  RF1A_OM_FSTXON = 0x01,
+  RF1A_OM_TX = 0x02,
+  RF1A_OM_RX = 0x03,
+  RF1A_OM_UNDEFINED = 0x04,
+} rf1a_offmode_e;
 #endif // _Rf1a_h_

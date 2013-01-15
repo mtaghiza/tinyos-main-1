@@ -78,6 +78,10 @@ generic configuration HplMsp430Rf1aC (
   #else
   components new HplMsp430Rf1aFECP() as HplRf1aP;
   #endif
+  components new DefaultRf1aTransmitFragmentC();
+  HplRf1aP.DefaultRf1aTransmitFragment -> DefaultRf1aTransmitFragmentC;
+  HplRf1aP.DefaultLength -> DefaultRf1aTransmitFragmentC;
+  HplRf1aP.DefaultBuffer -> DefaultRf1aTransmitFragmentC;
   HplRf1aP.Rf1aIf -> HplRf1aIfP;
   ArbiterC.ResourceConfigure -> HplRf1aP;
   HplRf1aP.ArbiterInfo -> ArbiterC;

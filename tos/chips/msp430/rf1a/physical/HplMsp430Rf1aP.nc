@@ -67,6 +67,9 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Leds;
   }
   provides interface DelayedSend[uint8_t client];
+  uses interface Rf1aTransmitFragment as DefaultRf1aTransmitFragment;
+  uses interface SetNow<uint8_t> as DefaultLength;
+  uses interface SetNow<const uint8_t*> as DefaultBuffer;
 } implementation {
 
   error_t startSend();
@@ -281,6 +284,18 @@ generic module HplMsp430Rf1aP () @safe() {
    * left. */
   uint8_t tx_cached_fifothr;
 
+  error_t validateClient(uint8_t client){
+    /* Radio must be assigned */
+    if (! call ArbiterInfo.inUse()) {
+      return EOFF;
+    }
+    /* This must be the right client */
+    if (client != call ArbiterInfo.userId()) {
+      return EBUSY;
+    }
+    return SUCCESS;
+  }
+
   /** Place the radio back into whatever state it belongs in when not
    * actively transmitting or receiving.  This is either RX or IDLE.
    * This method is capable of rousing the radio from sleep mode, as
@@ -426,57 +441,6 @@ generic module HplMsp430Rf1aP () @safe() {
     signal Rf1aPhysical.released[client]();
   }
   
-  /* @TODO@ Prevent release of resource when transmission in progress */
-
-  /** Default implementation of transmitReadyCount_ just returns a
-   * value based on the number of bytes left in the buffer provided
-   * through send. */
-  unsigned int transmitReadyCount_ (uint8_t client,
-                                    unsigned int count)
-  {
-    unsigned int rv = count;
-    atomic {
-      if (tx_pos) {
-        unsigned int remaining = (tx_end - tx_pos);
-        if (remaining < rv) {
-          rv = remaining;
-        }
-      } else {
-        rv = 0;
-      }
-    }
-    return rv;
-  }
-
-  /** Default implementation of transmitData_ just returns a pointer
-   * to a region of the buffer provided through send. */
-  uint8_t* transmitData_ (uint8_t client,
-                          unsigned int count)
-  {
-    uint8_t* rp;
-
-    atomic {
-      rp = tx_pos;
-      if (rp) {
-        unsigned int remaining = (tx_end - tx_pos);
-        if (remaining >= count) {
-          /* Have enough to handle the request.  Increment the position for
-           * a following transfer; if this will be the last transfer, mark
-           * it complete by zeroing the position pointer. */
-          tx_pos += count;
-          if (tx_pos == tx_end) {
-            tx_pos = 0;
-          }
-        } else {
-          /* Being asked for more than is available, which is an interface
-           * violation, which aborts the transfer. */
-          rp = tx_pos = 0;
-        }
-      }
-    }
-    return rp;
-  }
-
   // Forward declaration
   void sendFragment_ ();
 
@@ -836,21 +800,16 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
-                                                     unsigned int length)
+  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer, 
+      unsigned int length, 
+      rf1a_offmode_t txOffMode)
   {
     uint8_t rc;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t vcrv = validateClient(client);
+    if (vcrv!= SUCCESS){
+      return vcrv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
-    /* And the length has to be positive */
-    if (0 == length) {
+    if (0 == length){
       return EINVAL;
     }
     atomic {
@@ -929,15 +888,25 @@ generic module HplMsp430Rf1aP () @safe() {
        * sendFragment_task. */
       rc = call Rf1aIf.strobe(RF_SNOP);
       if ((RF1A_S_FSTXON != (rc & RF1A_S_MASK)) && (RF1A_S_TX != (rc & RF1A_S_MASK))) {
-        int rv = startTransmission_(TRUE, TRUE);
+        //only perform CCA if register is set up for it.
+        bool useCca = (call Rf1aIf.readRegister(MCSM1) & 0x30);
+        int rv = startTransmission_(useCca, TRUE);
         if (SUCCESS != rv) {
           return rv;
         }
         rc = RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP);
       }
+      //If we made it this far, then we're all set. Set off-mode as
+      //indicated by param.
+      call Rf1aIf.writeRegister(MCSM1, 
+        (0xfc & call Rf1aIf.readRegister(MCSM1)) | (txOffMode));
       //Disable the TX FIFO threshold interrupt until we've written
       //the first chunk into it.
       call Rf1aIf.setIe(call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
+      atomic{
+        call DefaultLength.setNow(length);
+        call DefaultBuffer.setNow(buffer);
+      }
       tx_remain = length;
       tx_result = SUCCESS;
       tx_state = TX_S_preparing;
@@ -1025,27 +994,21 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async command error_t Rf1aPhysical.startTransmission[uint8_t client] (bool with_cca)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv){
+      return rv;
     }
     return startTransmission_(with_cca, FALSE);
   }
 
-  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client] ()
+  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
+  (rf1a_offmode_t offMode)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
         tx_result = ECANCEL;
@@ -1054,7 +1017,7 @@ generic module HplMsp430Rf1aP () @safe() {
         rx_result = ECANCEL;
         post receiveData_task();
       } else {
-        resumeIdleMode_(TRUE);
+        resumeIdleMode_((offMode == RF1A_OM_RX));
       }
     }
     return SUCCESS;
@@ -1062,13 +1025,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async command error_t Rf1aPhysical.startReception[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv ){
+      return rv;
     }
     atomic {
       if (0 != rx_pos) {
@@ -1081,14 +1040,11 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async command error_t Rf1aPhysical.sleep[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv ){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+    
     atomic {
       uint8_t rc;
 
@@ -1348,17 +1304,13 @@ generic module HplMsp430Rf1aP () @safe() {
       
   
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
-                                                                       unsigned int length,
-                                                                       bool single_use)
+    unsigned int length, bool single_use)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+    
     /* Buffer and length must be realistic; if either bogus, clear them both
      * and disable reception. */
     if ((! buffer) || (0 == length)) {
@@ -1395,15 +1347,18 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       } else if (RX_S_inactive == rx_state) {
         uint8_t off_mode;
-
+        //RX->idle, setRB: RX
+        //TX: only entered through send command, which specifies
+        //    off-mode.
+        //So only mess with the RXOFF_MODE bits, based 
         if (rx_single_use) {
-          // Return to IDLE after RX, RX after TX
-          off_mode = 0x03;
+          // Return to IDLE after RX
+          off_mode = (RF1A_OM_IDLE << 2);
         } else {
-          // Return to RX after RX or TX
-          off_mode = 0x0F;
+          // Return to RX after RX
+          off_mode = (RF1A_OM_RX << 2);
         }
-        call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf0 & call Rf1aIf.readRegister(MCSM1)));
+        call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf3 & call Rf1aIf.readRegister(MCSM1)));
         startReception_();
       }
     }
@@ -1412,26 +1367,12 @@ generic module HplMsp430Rf1aP () @safe() {
 
   default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client] (unsigned int count)
   {
-    return call Rf1aPhysical.defaultTransmitReadyCount[client](count);
-  }
-  async command unsigned int Rf1aPhysical.defaultTransmitReadyCount[uint8_t client] (unsigned int count)
-  {
-//    printf("~dtrc\r\n");
-    atomic {
-      return transmitReadyCount_(client, count);
-    }
+    return call DefaultRf1aTransmitFragment.transmitReadyCount(count);
   }
 
   default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client] (unsigned int count)
   {
-    return call Rf1aPhysical.defaultTransmitData[client](count);
-  }
-  async command const uint8_t* Rf1aPhysical.defaultTransmitData[uint8_t client] (unsigned int count)
-  {
-//    printf("~dtxd\r\n");
-    atomic {
-      return transmitData_(client, count);
-    }
+    return call DefaultRf1aTransmitFragment.transmitData(count);
   }
 
   async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
@@ -1531,19 +1472,12 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     return (rf1a_status_e)(RF1A_S_MASK & rc);
   }
-
-
-  async command int Rf1aPhysical.enableCca[uint8_t client] ()
-  {
+  
+  int setCca(uint8_t client, bool enabled){
     uint8_t mcsm1;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
 
     atomic {
@@ -1555,74 +1489,46 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
 //        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
+        return ERETRY;
       }
-
       mcsm1 = call Rf1aIf.readRegister(MCSM1);
-      call Rf1aIf.writeRegister(MCSM1, 0x30 | (0x0f & mcsm1));
+      if (enabled){
+        call Rf1aIf.writeRegister(MCSM1, 0x30 | (0x0f & mcsm1));
+      } else{
+        call Rf1aIf.writeRegister(MCSM1, (0x0f & mcsm1));
+      }
     }
-
     return SUCCESS;
   }
 
   async command int Rf1aPhysical.disableCca[uint8_t client] ()
   {
-    uint8_t mcsm1;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
-    }
-
-    atomic {
-      uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
-
-      /* The radio must not be actively receiving or transmitting. */
-      if ((TX_S_inactive != tx_state)
-          || (RX_S_listening < rx_state)
-          || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
-          || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
-//        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
-      }
-
-      mcsm1 = call Rf1aIf.readRegister(MCSM1);
-      call Rf1aIf.writeRegister(MCSM1, (0x0f & mcsm1));
-    }
-    return SUCCESS;
+    return setCca(client, FALSE);
   }
 
-
+  async command int Rf1aPhysical.enableCca[uint8_t client] ()
+  {
+    return setCca(client, TRUE);
+  }
 
 
 
   async command int Rf1aPhysical.getChannel[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
     return call Rf1aIf.readRegister(CHANNR);
   }
 
   async command int Rf1aPhysical.setChannel[uint8_t client] (uint8_t channel)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
-    }
+
     atomic {
       bool radio_online;
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
@@ -1633,9 +1539,20 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
 //        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
+        return ERETRY;
       }
 
+      //TODO: manual calibration/fast channel hopping
+      // - check current state: should be IDLE or RX
+      // - set idle
+      // - set channel
+      // - if manual calibration
+      //   - if stashed radio settings available
+      //     - restore stashed settings
+      //   - else 
+      //     - issue manual calibration strobe
+      //     - stash settings
+      // - re-enter original state (IDLE or RX)
       /* If radio is not asleep, make sure it transitions to IDLE then
        * back to its normal mode.  With MCSM0.FS_AUTOCOL set to 1
        * (normal with our configurations) this ensures recalibration
@@ -1671,15 +1588,11 @@ generic module HplMsp430Rf1aP () @safe() {
   async command int Rf1aPhysical.rssi_dBm[uint8_t client] ()
   {
     int rv;
-    
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t vcrv = validateClient(client);
+    if (vcrv != SUCCESS){
+      return vcrv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+
     atomic {
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
       if (RF1A_S_RX == (RF1A_S_MASK & rc)) {

@@ -234,7 +234,9 @@ generic module Rf1aTinyOsPhysicalP() {
 
       /* Tricksy: limit the received length so it stops at the end of
        * the message_t structure. */
-      rv = call Rf1aPhysical.setReceiveBuffer(hp, ((uint8_t*)(rx_message + 1)) - hp, TRUE);
+      rv = call Rf1aPhysical.setReceiveBuffer(hp,
+        ((uint8_t*)(rx_message + 1)) - hp, 
+        TRUE);
 
       /* What do we do if this fails?  Really, it shouldn't: the only
        * way it would is if the radio was actively receiving into an
@@ -282,7 +284,9 @@ generic module Rf1aTinyOsPhysicalP() {
         rv = EBUSY;
       } else {
         fcfp->frame_type = frame_type;
-        rv = call Rf1aPhysical.send(packet_start, packet_length);
+        //Send, and switch to RX after send is finished.
+        rv = call Rf1aPhysical.send(packet_start, 
+          packet_length, RF1A_OM_RX);
         if (SUCCESS == rv) {
           tx_message = msg;
           tx_state = TXS_active;
