@@ -382,6 +382,7 @@ module TestP{
   }
 
   task void changeChannel(){
+    printf("Changing channel to %u\r\n", settings.channel);
     call Rf1aPhysical.setChannel(settings.channel);
   }
 
