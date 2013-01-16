@@ -2,8 +2,14 @@
 #ifndef TEST_CHANNEL
 #define TEST_CHANNEL 0x00
 #endif
+
+#ifndef RF1A_AUTOCAL
+#define RF1A_AUTOCAL 0
+#endif
+
 module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
+  uses interface Rf1aChannelCache;
 } implementation{
   const rf1a_config_t cfg = {
     iocfg2:  0x29,   
@@ -33,16 +39,15 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     deviatn: 0x62,   
     
     mcsm2:   0x07,
-    
     mcsm1:   0x00,
-    #ifndef RF1A_AUTOCAL
-    #define RF1A_AUTOCAL 0
-    #endif
+
     #if RF1A_AUTOCAL == 1
+    #warning "Using auto-calibration"
     mcsm0:   0x10,   
     #else
     mcsm0:   0x00,   
     #endif
+
     foccfg:  0x1D,   
     bscfg:   0x1C,   
     agcctrl2:0xC7,   
@@ -79,6 +84,21 @@ module SRFS7_915_GFSK_125K_SENS_HC{
   async command const rf1a_config_t* Rf1aConfigure.getConfiguration(){
     return &cfg;
   }
+
+  async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL(uint8_t channel){
+    return call Rf1aChannelCache.getFSCAL(channel);
+  }
+  async command void Rf1aConfigure.setFSCAL(uint8_t channel,
+      rf1a_fscal_t fscal){
+    call Rf1aChannelCache.setFSCAL(channel, fscal);
+  }
+  //by default, don't cache anything
+  default async command const rf1a_fscal_t* Rf1aChannelCache.getFSCAL(uint8_t channel){
+    return NULL;
+  }
+  default async command void Rf1aChannelCache.setFSCAL(uint8_t channel,
+    rf1a_fscal_t fscal){ }
+
 
   async command void Rf1aConfigure.preConfigure() { }
   async command void Rf1aConfigure.postConfigure() { }

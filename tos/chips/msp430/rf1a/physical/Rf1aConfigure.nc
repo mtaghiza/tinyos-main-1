@@ -81,6 +81,15 @@ interface Rf1aConfigure {
    *
    * Here if you need it; ignore it if you don't. */
   async command void postUnconfigure ();
+  
+  /**
+   * Get/set pre-calibrated frequency settings (for fast
+   * channel-hopping). 
+   * If no pre-calibrated settings are cached, getFSCAL should return
+   * NULL.
+   */ 
+  async command const rf1a_fscal_t* getFSCAL(uint8_t channel);
+  async command void setFSCAL(uint8_t channel, rf1a_fscal_t fscal);
 }
 
 /* 

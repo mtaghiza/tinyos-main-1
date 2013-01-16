@@ -291,6 +291,9 @@ generic module Rf1aFECP () {
   async command int Rf1aPhysical.disableCca[uint8_t client](){
     return call SubRf1aPhysical.disableCca[client]();
   }
+  async command void Rf1aPhysical.reconfigure[uint8_t client](){
+    call SubRf1aPhysical.reconfigure[client]();
+  }
 
   default async event void Rf1aPhysical.receiveStarted[uint8_t client]
   (unsigned int length){}

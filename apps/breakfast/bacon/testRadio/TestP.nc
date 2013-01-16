@@ -56,7 +56,8 @@ module TestP{
     printf(" (hasFe, %x)", s->hasFe);
     printf("\r\n");
     call Rf1aPhysical.readConfiguration(&config);
-    call Rf1aDumpConfig.display(&config);
+//    call Rf1aDumpConfig.display(&config);
+    printf("Current channel: %u\r\n", config.channr);
   }
 
   void printMinimal(test_settings_t* s){
@@ -132,6 +133,7 @@ module TestP{
     printf("Radio on\r\n");
     #endif
     call AmpControl.start();
+    printf("sc.start: set channel\r\n");
     call Rf1aPhysical.setChannel(settings.channel);
     call Leds.led0Off();
     call Leds.led1Off();
@@ -379,6 +381,10 @@ module TestP{
     printf("Delay: %x\r\n", delay);
   }
 
+  task void changeChannel(){
+    call Rf1aPhysical.setChannel(settings.channel);
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch ( byte ){
       case 'd':
@@ -409,9 +415,10 @@ module TestP{
         break;
 
       case 'c':
-        settings.channel = (settings.channel + CHANNEL_INCREMENT) %NUM_CHANNELS;
-        post printSettingsTask();
-        post requestRestart();
+        settings.channel = (settings.channel + CHANNEL_INCREMENT);
+        post changeChannel();
+//        post printSettingsTask();
+//        post requestRestart();
         break;
 
       case 'i':

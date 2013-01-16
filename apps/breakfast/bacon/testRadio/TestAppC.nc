@@ -45,6 +45,8 @@ configuration TestAppC{
   //SRFS6_868_xxx_CUR_HC.nc
 //  components PDERf1aSettingsP as TestConfigP;
   components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
+  components new Rf1aChannelCacheC(2);
+  TestConfigP.Rf1aChannelCache -> Rf1aChannelCacheC;
   Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
 
   components Rf1aC;

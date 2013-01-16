@@ -112,6 +112,14 @@ typedef struct rf1a_config_t {
   uint8_t vco_vc_dac;         /* 0x39 VCO_VC_DAC - Current setting from PLL calibration module */
 #endif
 } rf1a_config_t;
+
+//Just the registers used in frequency-hopping applications
+typedef struct rf1a_fscal_t{
+  uint8_t channr;
+  uint8_t fscal1;
+  uint8_t fscal2;
+  uint8_t fscal3;
+} rf1a_fscal_t;
  
 /** Most of the rf1a_config_t structure can be accessed via a burst
  * register access starting at address zero.  A burst write should

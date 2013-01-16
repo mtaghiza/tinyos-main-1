@@ -343,7 +343,7 @@ generic module HplMsp430Rf1aP () @safe() {
   /** Configure the radio for a specific client.  This includes
    * client-specific registers and the overrides necessary to ensure
    * the physical-layer assumptions are maintained. */
-  void configure_ (const rf1a_config_t* config)
+  void configure_ (const rf1a_config_t* config, uint8_t client)
   {
     atomic {
       const uint8_t* cp = (const uint8_t*)config;
@@ -370,6 +370,14 @@ generic module HplMsp430Rf1aP () @safe() {
       call Rf1aIf.setIfg(0);
       call Rf1aIf.setIes(IFG_EDGE_Negative | ((~ IFG_EDGE_Positive) & call Rf1aIf.getIes()));
       call Rf1aIf.setIe(IFG_INTERRUPT | call Rf1aIf.getIe());
+      
+
+      //manual calibration: call setChannel to re-calibrate or
+      //  fetch cached calibration
+      if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
+
+        call Rf1aPhysical.setChannel[client](config->channr);
+      }
 
       /* Again regardless of configuration, the control flow in this
        * module assumes that the radio returns to IDLE mode after
@@ -411,10 +419,23 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
+  async command void Rf1aPhysical.reconfigure[uint8_t client](){
+    
+    call ResourceConfigure.unconfigure[client]();
+    call ResourceConfigure.configure[client]();
+  }
+
   default async command const rf1a_config_t*
   Rf1aConfigure.getConfiguration[uint8_t client] ()
   {
     return &rf1a_default_config;
+  }
+
+  default async command void Rf1aConfigure.setFSCAL[uint8_t client](uint8_t channel, rf1a_fscal_t fscal){
+  }
+
+  default async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL[uint8_t client](uint8_t channel){
+    return NULL;
   }
 
   default async command void Rf1aConfigure.preConfigure[ uint8_t client ] () { }
@@ -429,7 +450,7 @@ generic module HplMsp430Rf1aP () @safe() {
       cp = &rf1a_default_config;
     }
     call Rf1aConfigure.preConfigure[client]();
-    configure_(cp);
+    configure_(cp, client);
     call Rf1aConfigure.postConfigure[client]();
   }
 
@@ -1528,9 +1549,11 @@ generic module HplMsp430Rf1aP () @safe() {
     if (rv!= SUCCESS){
       return rv;
     }
+    printf("setchannel %u\r\n", channel);
 
     atomic {
       bool radio_online;
+      bool resumeRX;
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
 
       /* The radio must not be actively receiving or transmitting. */
@@ -1542,17 +1565,9 @@ generic module HplMsp430Rf1aP () @safe() {
         return ERETRY;
       }
 
-      //TODO: manual calibration/fast channel hopping
       // - check current state: should be IDLE or RX
+      resumeRX = (RF1A_S_RX == (rc & RF1A_S_MASK));
       // - set idle
-      // - set channel
-      // - if manual calibration
-      //   - if stashed radio settings available
-      //     - restore stashed settings
-      //   - else 
-      //     - issue manual calibration strobe
-      //     - stash settings
-      // - re-enter original state (IDLE or RX)
       /* If radio is not asleep, make sure it transitions to IDLE then
        * back to its normal mode.  With MCSM0.FS_AUTOCOL set to 1
        * (normal with our configurations) this ensures recalibration
@@ -1562,8 +1577,40 @@ generic module HplMsp430Rf1aP () @safe() {
         resumeIdleMode_(FALSE);
       }
       call Rf1aIf.writeRegister(CHANNR, channel);
+
+      // - if manual calibration
+      if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
+        const rf1a_fscal_t* fscal = call Rf1aConfigure.getFSCAL[client](channel);
+        printf("manual cal ");
+
+        //settings cached, so we can skip the calibration step.
+        if (fscal != NULL){
+          printf("cached: %x %x %x\r\n", 
+            fscal->fscal1, fscal->fscal2, fscal->fscal3);
+          call Rf1aIf.writeRegister(FSCAL1, fscal->fscal1);
+          call Rf1aIf.writeRegister(FSCAL2, fscal->fscal2);
+          call Rf1aIf.writeRegister(FSCAL3, fscal->fscal3);
+        } else {
+          rf1a_fscal_t newCal;
+          printf("calibrate\r\n");
+          //run manual calibration (n.b. this is a ~700 uS operation)
+          rc = call Rf1aIf.strobe(RF_SCAL);
+          while (RF1A_S_IDLE != (RF1A_S_MASK & rc)) {
+            rc = call Rf1aIf.strobe(RF_SNOP);
+          }
+          //stash settings
+          newCal.fscal1 = call Rf1aIf.readRegister(FSCAL1);
+          newCal.fscal2 = call Rf1aIf.readRegister(FSCAL2);
+          newCal.fscal3 = call Rf1aIf.readRegister(FSCAL3);
+          newCal.channr = channel;
+          call Rf1aConfigure.setFSCAL[client](channel, newCal);
+        }
+      }else{
+        printf("autocal\r\n");
+      }
       if (radio_online) {
-        resumeIdleMode_(TRUE);
+        printf("resume idle: %x\r\n", resumeRX);
+        resumeIdleMode_(resumeRX);
       }
     }
     return SUCCESS;
