@@ -25,9 +25,19 @@ generic module Rf1aChannelCacheC(uint8_t cacheSize){
   //roughly many channels we will use at compile time, so it's not
   //worth doing an LRU-type of algorithm.
   async command void Rf1aChannelCache.setFSCAL(uint8_t channel, rf1a_fscal_t fscal){
+    uint8_t i;
     fscal.channr = channel;
+    for(i = 0; i < numValid; i++){
+      if(channelCache[i].channr == channel){
+        printf("update cache[%u]: %u %x %x %x\r\n", 
+          next, fscal.channr, fscal.fscal1, fscal.fscal2, 
+          fscal.fscal3);
+        channelCache[i] = fscal;
+        return;
+      }
+    }
     channelCache[next] = fscal;
-    printf("cache[%u]: %u %x %x %x\r\n", 
+    printf("write cache[%u]: %u %x %x %x\r\n", 
       next, fscal.channr, fscal.fscal1, fscal.fscal2, 
       fscal.fscal3);
     next = (next + 1) % cacheSize;

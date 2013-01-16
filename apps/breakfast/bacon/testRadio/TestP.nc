@@ -56,7 +56,7 @@ module TestP{
     printf(" (hasFe, %x)", s->hasFe);
     printf("\r\n");
     call Rf1aPhysical.readConfiguration(&config);
-//    call Rf1aDumpConfig.display(&config);
+    call Rf1aDumpConfig.display(&config);
     printf("Current channel: %u\r\n", config.channr);
   }
 
@@ -396,6 +396,11 @@ module TestP{
       case 'S':
         post completeSend();
         break;
+
+      case '?':
+        post printSettingsTask();
+        break;
+
       case 't':
         settings.isSender = !settings.isSender;
         post printSettingsTask();

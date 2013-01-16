@@ -1,8 +1,4 @@
 #include "Rf1aConfigure.h"
-#ifndef TEST_CHANNEL
-#define TEST_CHANNEL 0x00
-#endif
-
 #ifndef RF1A_AUTOCAL
 #define RF1A_AUTOCAL 0
 #endif
@@ -25,7 +21,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     pktctrl1:0x04,   
     pktctrl0:0x05,   
     addr:    0x00,   
-    channr:  TEST_CHANNEL,   
+    channr:  0,   
     fsctrl1: 0x0C,   
     fsctrl0: 0x00,   
     freq2:   0x23,   

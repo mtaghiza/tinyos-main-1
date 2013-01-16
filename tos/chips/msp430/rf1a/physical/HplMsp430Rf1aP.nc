@@ -1577,7 +1577,10 @@ generic module HplMsp430Rf1aP () @safe() {
         resumeIdleMode_(FALSE);
       }
       call Rf1aIf.writeRegister(CHANNR, channel);
-
+      { 
+        uint8_t fscal1_0 = 0xdc;
+        uint8_t fscal1_1 = 0xdc;
+        uint8_t marcstate = 0xdc;
       // - if manual calibration
       if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
         const rf1a_fscal_t* fscal = call Rf1aConfigure.getFSCAL[client](channel);
@@ -1591,17 +1594,31 @@ generic module HplMsp430Rf1aP () @safe() {
           call Rf1aIf.writeRegister(FSCAL2, fscal->fscal2);
           call Rf1aIf.writeRegister(FSCAL3, fscal->fscal3);
         } else {
+//        }
+//        {
           rf1a_fscal_t newCal;
           printf("calibrate\r\n");
           //run manual calibration (n.b. this is a ~700 uS operation)
           rc = call Rf1aIf.strobe(RF_SCAL);
-          while (RF1A_S_IDLE != (RF1A_S_MASK & rc)) {
+          while (RF1A_S_IDLE != (RF1A_S_MASK & rc) ) {
             rc = call Rf1aIf.strobe(RF_SNOP);
           }
+
+          do {
+            marcstate = call Rf1aIf.readRegister(MARCSTATE);
+          } while (RF1A_MS_IDLE != (0xff & marcstate));
+
+          //HACK:
+          //  So, it seems like FSCAL1 is not valid immediately after
+          //  the RF_SCAL strobe completes. The status may be idle,
+          //  but MARCSTATE still indicates that we're in MANCAL. We
+          //  have to wait until this has returned to idle.
+//          printf("DELIBERATELY WASTING YOUR TIME\r\n");
           //stash settings
           newCal.fscal1 = call Rf1aIf.readRegister(FSCAL1);
           newCal.fscal2 = call Rf1aIf.readRegister(FSCAL2);
           newCal.fscal3 = call Rf1aIf.readRegister(FSCAL3);
+          fscal1_0 = newCal.fscal1;
           newCal.channr = channel;
           call Rf1aConfigure.setFSCAL[client](channel, newCal);
         }
@@ -1611,6 +1628,12 @@ generic module HplMsp430Rf1aP () @safe() {
       if (radio_online) {
         printf("resume idle: %x\r\n", resumeRX);
         resumeIdleMode_(resumeRX);
+      }
+      fscal1_1 = call Rf1aIf.readRegister(FSCAL1);
+      printf("fscal1:  %x -> %x ", fscal1_0, fscal1_1);
+      printf(" -> %x last marcstate %x\r\n", 
+        call Rf1aIf.readRegister(FSCAL1), 
+        marcstate & 0xff);
       }
     }
     return SUCCESS;

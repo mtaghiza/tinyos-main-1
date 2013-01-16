@@ -68,6 +68,32 @@ typedef enum rf1a_status_e{
   RF1A_S_OFFLINE          = 0xFF,
 } rf1a_status_e;
 
+typedef enum rf1a_marcstate_e{
+  RF1A_MS_SLEEP = 0x00,
+  RF1A_MS_IDLE = 0x01,
+  RF1A_MS_RES = 0x02,
+  RF1A_MS_VCOON_MC = 0x03,
+  RF1A_MS_REGON_MC = 0x04,
+  RF1A_MS_MANCAL = 0x05,
+  RF1A_MS_VCOOON = 0x06,
+  RF1A_MS_REGON = 0x07,
+  RF1A_MS_STARTCAL = 0x08,
+  RF1A_MS_BWBOOST = 0x09,
+  RF1A_MS_FS_LOCK = 0x0A,
+  RF1A_MS_IFADCON = 0x0B,
+  RF1A_MS_ENDCAL = 0x0C,
+  RF1A_MS_RX = 0x0D,
+  RF1A_MS_RX_END = 0x0E,
+  RF1A_MS_RX_RST = 0x0F,
+  RF1A_MS_TXRX_SWITCH = 0x10,
+  RF1A_MS_RX_OVERFLOW = 0x11,
+  RF1A_MS_FSTXON = 0x12,
+  RF1A_MS_TX = 0x13,
+  RF1A_MS_TX_END = 0x14,
+  RF1A_MS_RXTX_SWITCH = 0x15,
+  RF1A_MS_TX_UNDERFLOW = 0x16,
+} rf1a_marcstate_e;
+
 //Types/enums for off-mode handling (MCSM1)
 typedef uint8_t rf1a_offmode_t;
 
