@@ -91,7 +91,6 @@ implementation {
   // according to datasheet, DIR is don't-care for these, but it seems
   // like in practce, that's *not* true (when DIR is set, XT1 fault
   // never clears)
-  #warning "configuring p5 for crystal"
       P5DIR = 0xFC;
       P5SEL = 0x03;
       P5OUT = 0x00;

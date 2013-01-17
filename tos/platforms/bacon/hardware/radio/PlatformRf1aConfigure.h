@@ -2,12 +2,10 @@
 #define PLATFORM_RF1A_CONFIGURE_H
 
 #ifndef CC1101_DEF_CHANNEL 
-#warning use default channel
-#define CC1101_DEF_CHANNEL 255
+#define CC1101_DEF_CHANNEL 0
 #endif
 
 #ifndef CC1101_DEF_RFPOWER 
-#warning using default power
 //-30 0x03 
 //-12 0x25 
 //-6 0x2d 

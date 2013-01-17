@@ -222,7 +222,6 @@ module Msp430XV2ClockControlP @safe() {
       //26mhz / 4/1 = 6.5 mhz
       TA0CTL = TASSEL__SMCLK | ID__1 | TACLR | MC__STOP | TAIE;
       #ifdef TA_DIV
-        #warning Dividing TA
         TA0EX0 = TA_DIV - 1;
       #else
         TA0EX0 = 0x00;
