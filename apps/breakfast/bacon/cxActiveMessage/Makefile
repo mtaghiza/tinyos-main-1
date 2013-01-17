@@ -127,8 +127,8 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/nsfUnreliableBurst
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/transport/reliableBurst
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/dispatch
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/packet
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical/configs
+#CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical
+#CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical/configs
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/routing
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/am
 

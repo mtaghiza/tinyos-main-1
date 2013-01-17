@@ -1359,6 +1359,13 @@ module CXTDMAPhysicalP {
     printf_SCHED_SR("Get configuration: %u\r\n", s_sr);
     return call SubRf1aConfigure.getConfiguration[s_sr]();
   }
+  async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL(uint8_t channel){
+    return call SubRf1aConfigure.getFSCAL[s_sr](channel);
+  }
+  async command void Rf1aConfigure.setFSCAL(uint8_t channel,
+      rf1a_fscal_t fscal){
+    call SubRf1aConfigure.setFSCAL[s_sr](channel, fscal);
+  }
 
   async command void Rf1aConfigure.preConfigure (){ }
   async command void Rf1aConfigure.postConfigure (){ }
