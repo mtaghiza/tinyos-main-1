@@ -24,6 +24,10 @@ module Rf1aCXPacketP{
     return &(((message_metadata_t*)(msg->metadata))->cx);
   }
 
+  const uint8_t* CXPacket.getTimestampAddr(message_t* amsg){
+    return (const uint8_t*)(&(getHeader(msg)->timestamp));
+  }
+
   command void CXPacket.init(message_t* msg){
     call Rf1aPacket.configureAsData(msg);
     call AMPacket.setSource(msg, call AMPacket.address());

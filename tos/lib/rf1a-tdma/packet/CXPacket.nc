@@ -33,4 +33,7 @@ interface CXPacket{
   command uint8_t getTTL(message_t* amsg);
   command void setTTL(message_t* amsg, uint8_t ttl);
   command void decTTL(message_t* amsg);
+  //used for doing precision timestamping: this lets the user know
+  //where to pause in the transmission.
+  command const uint8_t* getTimestampAddr(message_t* amsg);
 }

@@ -41,6 +41,12 @@ module CXTDMAPhysicalP {
   uses interface StateTiming;
 
   uses interface Random;
+
+  uses interface DelayedSend;
+  provides interface Rf1aTransmitFragment;
+
+  //TODO: need setChannel (either add it to TDMAPhySchedule interface
+  //or add it as Set/Get interfaces
 } implementation {
   enum{
     M_TYPE = 0xf0,
@@ -108,6 +114,11 @@ module CXTDMAPhysicalP {
   error_t sdResult;
   bool sdPending;
   uint8_t sdLen;
+  //used for fragmentation/precision timestamping
+  uint8_t* tx_pos;
+  uint8_t tx_left;
+  uint32_t tx_ts;
+  bool tx_tsSet;
 
   //Temporary RX variables
   message_t rx_msg_internal;
@@ -451,17 +462,6 @@ module CXTDMAPhysicalP {
     }
   }
 
-
-  async event bool Rf1aPhysical.getPacket(uint8_t** buffer, 
-      uint8_t* len){
-    *buffer = (uint8_t*)tx_msg;
-    *len = tx_len;
-    return gpResult;
-  }
-
-  async event uint8_t Rf1aPhysical.getChannelToUse(){
-    return s_channel;
-  }
   async event void Rf1aPhysical.frameStarted () { }
   async event void Rf1aPhysical.carrierSense () { }
  
@@ -536,7 +536,7 @@ module CXTDMAPhysicalP {
       return;
     }else if (state == S_INACTIVE 
         && !signal TDMAPhySchedule.isInactive(frameNum)){
-      if (SUCCESS == call Rf1aPhysical.resumeIdleMode()){
+      if (SUCCESS == call Rf1aPhysical.resumeIdleMode(FALSE)){
         atomic{
           radioStateChange(R_IDLE, call TDMAPhySchedule.getNow());
           setState(S_IDLE);
@@ -591,7 +591,7 @@ module CXTDMAPhysicalP {
     bool gpResultLocal;
     gpResultLocal = signal CXTDMA.getPacket((message_t**)(&gpBufLocal), fn);
     tx_msgLocal = (message_t*) gpBufLocal;
-    if (gpResultLocal && tx_msgLocal != NULL){
+    if (gpResultLocal && (tx_msgLocal != NULL)){
       tx_lenLocal = (call Rf1aPacket.metadata(tx_msgLocal))->payload_length;
       call CXPacket.incCount(tx_msgLocal);
       call CXPacket.decTTL(tx_msgLocal);
@@ -601,19 +601,14 @@ module CXTDMAPhysicalP {
           signal TDMAPhySchedule.getScheduleNum());
         call CXPacket.setOriginalFrameNum(tx_msgLocal,
           fn);
-
-        //TODO: precision timestamping: set flag to indicate that
-        //   when synch capture occurs, we should be filling in
-        //   timestamp and completing the transmission.
-
-        //ghetto timestamping: set timestamp to next FSA: receivers
-        //  will have to adjust for retransmission delays.
-        call CXPacket.setTimestamp(tx_msgLocal,
-          call FrameStartAlarm.getAlarm());
+        //NB timestamp obtained at SynchCapture.captured, filled in in
+        //setTimestamp task, and packet fragmentation handled by
+        //Rf1aFragment commands.
       }
       atomic{
-        tx_msg = tx_msgLocal;
-        tx_len = tx_lenLocal;
+        tx_msg = tx_pos = tx_msgLocal;
+        tx_len = tx_left = tx_lenLocal;
+        tx_tsSet = FALSE;
         gpResult = gpResultLocal;
       }
     }
@@ -680,8 +675,7 @@ module CXTDMAPhysicalP {
         radioStateChange(R_RX, call TDMAPhySchedule.getNow());
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
-          TOSH_DATA_LENGTH + sizeof(message_header_t),
-          RF1A_OM_IDLE);
+          TOSH_DATA_LENGTH + sizeof(message_header_t);
         if (error == SUCCESS){
           setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
@@ -692,7 +686,11 @@ module CXTDMAPhysicalP {
       case S_TX_PRESTART:
         radioStateChange(R_FSTXON, call TDMAPhySchedule.getNow());
         //switch radio to FSTXON.
-        error = call Rf1aPhysical.startSend(FALSE, RF1A_OM_IDLE);
+
+        error = call Rf1aPhysical.send( 
+          tx_msg,
+          tx_len,
+          RF1A_OM_IDLE);
         if (error == SUCCESS){
           //NB: if this becomes split-phase, we'll set the state when we
           //get the callback.
@@ -736,7 +734,7 @@ module CXTDMAPhysicalP {
     {
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
-        error_t error = call Rf1aPhysical.completeSend();
+        error_t error = call DelayedSend.startSend();
         recordEvent(4);
         radioStateChange(R_TX, call FrameStartAlarm.getAlarm());
         //Transmission failed: stash results for send-done and post
@@ -753,7 +751,7 @@ module CXTDMAPhysicalP {
             setAsyncState(S_ERROR_0);
           }
           //Try to put the radio back to idle
-          error = call Rf1aPhysical.resumeIdleMode();
+          error = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
           if (error != SUCCESS){
             setAsyncState(S_ERROR_0);
           }else{
@@ -846,6 +844,8 @@ module CXTDMAPhysicalP {
           //TODO: if we are origin-sending, then we need to set the
           //timestamp field of the CX header and indicate that it's OK
           //to finish sending the packet.
+          tx_ts = lastCapture;
+          post setTimestamp();
           break;
         default:
           setAsyncState(S_ERROR_4);
@@ -912,7 +912,7 @@ module CXTDMAPhysicalP {
     //not-yet-handled synch capture interrupt (and treat this the same
     //  as S_RX_RECEIVING)
     if (asyncState == S_RX_WAIT ){
-      error_t error = call Rf1aPhysical.resumeIdleMode();
+      error_t error = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
       if (error == SUCCESS){
         radioStateChange(R_IDLE, call FrameWaitAlarm.getAlarm());
         //resumeIdle alone seems to put us into a stuck state. not
@@ -922,8 +922,9 @@ module CXTDMAPhysicalP {
         //receive sometimes: if this returns EBUSY, then we can assume
         //that and pretend it never happened (except that we called
         //resumeIdleMode above?
-        error = call Rf1aPhysical.setReceiveBuffer(0, 0,
-          RF1A_OM_IDLE);
+        //TODO: verify that the above information is still accurate,
+        //  remove the call below if it is no longer needed
+        error = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE);
         if (error == SUCCESS){
           setAsyncState(S_IDLE);
           postPfs();
@@ -1111,16 +1112,15 @@ module CXTDMAPhysicalP {
 
   }
 
-  async event void Rf1aPhysical.sendDone (uint8_t* buffer, 
-      uint8_t len, int result) { 
+  async event void Rf1aPhysical.sendDone (int result) { 
     recordEvent(10);
     if (asyncState == S_TX_TRANSMITTING){
-      if (sdPending || (message_t*)buffer != tx_msg){
+      if (sdPending ){
         setAsyncState(S_ERROR_9);
       }else {
         sdPending = TRUE;
         sdResult = result;
-        sdLen = len;
+        sdLen = tx_len;
         post completeSendDone();
       }
     }
@@ -1365,6 +1365,35 @@ module CXTDMAPhysicalP {
   async command void Rf1aConfigure.setFSCAL(uint8_t channel,
       rf1a_fscal_t fscal){
     call SubRf1aConfigure.setFSCAL[s_sr](channel, fscal);
+  }
+
+  event void DelayedSend.sendReady(){
+    //TODO: anything? validate state?
+  }
+
+  task void setTimestamp(){
+    call CXPacket.setTimestamp(tx_msg, tx_ts);
+    tx_tsSet = TRUE;
+  }
+  
+  async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){
+    unsigned int available;
+    //pause at the start of the timestamp field if we haven't figured it out
+    //yet.
+    if (tx_tsSet){
+      available = tx_left;
+    }else{
+      available = call CXPacket.getTimestampAddr(tx_msg) - tx_pos;
+    }
+    return (available > count)? count : available;
+  }
+
+  async command const uint8_t* Rf1aTransmitFragment.transmitData(unsigned int count){
+    unsigned int available = call Rf1aTransmitFragment.transmitReadyCount(count);
+    const uint8_t* ret= tx_pos;
+    tx_left -= available;
+    tx_pos += available;
+    return ret;
   }
 
   async command void Rf1aConfigure.preConfigure (){ }
