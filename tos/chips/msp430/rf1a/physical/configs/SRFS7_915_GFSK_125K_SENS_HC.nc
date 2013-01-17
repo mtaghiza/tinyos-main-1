@@ -5,12 +5,8 @@
 
 module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
-  provides interface Get<uint16_t>;
   uses interface Rf1aChannelCache;
 } implementation{
-  command uint16_t Get.get(){
-    return SRFS7_915_GFSK_50K_SENS_H_GLOBAL_ID;
-  }
   const rf1a_config_t cfg = {
     iocfg2:  0x29,   
     

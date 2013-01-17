@@ -107,13 +107,17 @@ module TestP{
     call WDTResetTimer.startPeriodic(256);
     printf("Max payload length: %u\r\n", 
       call AMSend.maxPayloadLength());
-    //set WDT to reset at 1 second
-    WDTCTL =  WDT_ARST_1000;
+    atomic{
+      //set WDT to reset at 1 second
+      WDTCTL =  WDT_ARST_1000;
+    }
   }
 
   event void WDTResetTimer.fired(){
-    //re-up the wdt
-    WDTCTL =  WDT_ARST_1000;
+    atomic{
+      //re-up the wdt
+      WDTCTL =  WDT_ARST_1000;
+    }
   }
 
   task void restartRadio(){

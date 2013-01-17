@@ -1,13 +1,13 @@
 
 generic module Rf1aFECP () {
-  provides interface Rf1aPhysical[uint8_t client];
+  provides interface Rf1aPhysical;
   provides interface Rf1aPhysicalMetadata;
 
-  uses interface Rf1aPhysical as SubRf1aPhysical[uint8_t client];
+  uses interface Rf1aPhysical as SubRf1aPhysical;
   uses interface Rf1aPhysicalMetadata as SubRf1aPhysicalMetadata;
 
-  uses interface Rf1aTransmitFragment[uint8_t client];
-  provides interface Rf1aTransmitFragment as SubRf1aTransmitFragment[uint8_t client];
+  uses interface Rf1aTransmitFragment;
+  provides interface Rf1aTransmitFragment as SubRf1aTransmitFragment;
   
   uses interface Rf1aTransmitFragment as DefaultRf1aTransmitFragment;
   uses interface SetNow<uint8_t> as DefaultLength;
@@ -58,19 +58,18 @@ generic module Rf1aFECP () {
   uint16_t runningCRC;
   bool crcAppended;
 
-  uint8_t txClient;
 
 
   //encode as much as possible from the current transmitter, updating
   //encodedReady/rawReady etc as needed.
   task void encodeAMAP(){
     uint8_t rawReady 
-      = call Rf1aTransmitFragment.transmitReadyCount[txClient](rawLen - encodedSoFar);
+      = call Rf1aTransmitFragment.transmitReadyCount(rawLen - encodedSoFar);
     uint8_t* epLocal;
     uint8_t numEncoded;
 
     //get pointer to start of ready data
-    const uint8_t* rawPos = call Rf1aTransmitFragment.transmitData[txClient](rawReady); 
+    const uint8_t* rawPos = call Rf1aTransmitFragment.transmitData(rawReady); 
     //stash current encodedPos in case we get interrupted during this
     //process
     atomic{
@@ -108,7 +107,7 @@ generic module Rf1aFECP () {
 
   }
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
+  command error_t Rf1aPhysical.send (uint8_t* buffer,
       unsigned int length, rf1a_offmode_t offMode){
     atomic{
       if (sendOutstanding){
@@ -125,7 +124,6 @@ generic module Rf1aFECP () {
       runningCRC = 0;
       crcAppended = FALSE;
       rawLen = length;
-      txClient = client;
       atomic{
         //hmm... I only want to wire this in if there's nothing
         //  connected to the real R1aFragment interface.
@@ -138,7 +136,7 @@ generic module Rf1aFECP () {
   
       //start up the phy layer's transmission
       atomic{
-        err  = call SubRf1aPhysical.send[client](encodedPos,
+        err  = call SubRf1aPhysical.send(encodedPos,
           encodedLen, offMode);
         sendOutstanding =  (err == SUCCESS);
       }
@@ -146,12 +144,12 @@ generic module Rf1aFECP () {
     }
   }
 
-  async event void SubRf1aPhysical.sendDone[uint8_t client] (int result){
+  async event void SubRf1aPhysical.sendDone(int result){
     sendOutstanding = FALSE;
-    signal Rf1aPhysical.sendDone[client](result);
+    signal Rf1aPhysical.sendDone(result);
   }
 
-  async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
+  async command error_t Rf1aPhysical.setReceiveBuffer(uint8_t* buffer,
                                           unsigned int length,
                                           bool single_use){
     if (sizeof(rxEncoded) < call FEC.encodedLen(length)){
@@ -159,12 +157,12 @@ generic module Rf1aFECP () {
     }
     atomic{
       rxBuf = buffer;
-      return call SubRf1aPhysical.setReceiveBuffer[client](rxEncoded,
+      return call SubRf1aPhysical.setReceiveBuffer(rxEncoded,
         call FEC.encodedLen(length), single_use);
     }
   }
 
-  async event void SubRf1aPhysical.receiveDone[uint8_t client] (uint8_t* buffer,
+  async event void SubRf1aPhysical.receiveDone(uint8_t* buffer,
                                 unsigned int count,
                                 int result){
 //    printf("rxd: %u %u\r\n", count, result);
@@ -196,47 +194,49 @@ generic module Rf1aFECP () {
           lastCrcPassed = TRUE;
         }
         rxBuf = NULL;
-        signal Rf1aPhysical.receiveDone[client](rxBufTmp, decodedLen, result);
+        signal Rf1aPhysical.receiveDone(rxBufTmp, decodedLen, result);
       }else{
         //this will happen if we get a failed reception. Leave it to
         //the next layer to deal with the fallout (most likely by
         //supplying the last buffer used in setReceiveBuffer)
         printf("!buffer mismatch: %p != %p or %p == null. Result: %x count %u\r\n",
           buffer, rxEncoded, rxBuf, result, count);
-        signal Rf1aPhysical.receiveDone[client](buffer, count, result);
+        signal Rf1aPhysical.receiveDone(buffer, count, result);
       }
     }
   }
 
   async command void Rf1aPhysicalMetadata.store (rf1a_metadata_t* metadatap){
-    call SubRf1aPhysicalMetadata.store(metadatap);
-    //manually set crc pass/fail.
-    if (lastCrcPassed){
-      metadatap->lqi |= 0x80;
-    }else{
-      metadatap->lqi &= ~0x80;
+    atomic{
+      call SubRf1aPhysicalMetadata.store(metadatap);
+      //manually set crc pass/fail.
+      if (lastCrcPassed){
+        metadatap->lqi |= 0x80;
+      }else{
+        metadatap->lqi &= ~0x80;
+      }
     }
   }
   
-  async command unsigned int SubRf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
+  async command unsigned int SubRf1aTransmitFragment.transmitReadyCount(unsigned int count){
     uint8_t rv = (encodedReady < count)? encodedReady:count;
     post encodeAMAP();
     return rv;
   }
 
-  async command const uint8_t* SubRf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
+  async command const uint8_t* SubRf1aTransmitFragment.transmitData(unsigned int count){
     uint8_t* txStart = encodedPos;
-    uint8_t txrc = call SubRf1aTransmitFragment.transmitReadyCount[client](count);
+    uint8_t txrc = call SubRf1aTransmitFragment.transmitReadyCount(count);
     encodedPos += txrc;
     encodedReady -= txrc;
     return txStart;
   }
 
-  default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
+  default async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){
     return call DefaultRf1aTransmitFragment.transmitReadyCount(count);
   }
 
-  default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
+  default async command const uint8_t* Rf1aTransmitFragment.transmitData(unsigned int count){
     return call DefaultRf1aTransmitFragment.transmitData(count);
   }
 
@@ -254,82 +254,68 @@ generic module Rf1aFECP () {
   }
 
 
-  async command error_t Rf1aPhysical.startTransmission[uint8_t client](
+  async command error_t Rf1aPhysical.startTransmission(
       bool check_cca){
-    return call SubRf1aPhysical.startTransmission[client](check_cca);
+    return call SubRf1aPhysical.startTransmission(check_cca);
   }
 
-  async command error_t Rf1aPhysical.startReception[uint8_t client]
-  (){
-    return call SubRf1aPhysical.startReception[client]();
+  async command error_t Rf1aPhysical.startReception (){
+    return call SubRf1aPhysical.startReception();
   }
 
-  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
+  async command error_t Rf1aPhysical.resumeIdleMode
   (rf1a_offmode_t offMode){
-    return call SubRf1aPhysical.resumeIdleMode[client](offMode);
+    return call SubRf1aPhysical.resumeIdleMode(offMode);
   }
 
-  async command error_t Rf1aPhysical.sleep[uint8_t client] (){
-    return call SubRf1aPhysical.sleep[client]();
+  async command error_t Rf1aPhysical.sleep(){
+    return call SubRf1aPhysical.sleep();
   }
 
-  async command int Rf1aPhysical.getChannel[uint8_t client] (){
-    return call SubRf1aPhysical.getChannel[client]();
+  async command int Rf1aPhysical.getChannel (){
+    return call SubRf1aPhysical.getChannel();
   }
-  async command int Rf1aPhysical.setChannel[uint8_t client] (uint8_t channel){
-    return call SubRf1aPhysical.setChannel[client](channel);
+  async command int Rf1aPhysical.setChannel (uint8_t channel){
+    return call SubRf1aPhysical.setChannel(channel);
   }
-  async command int Rf1aPhysical.rssi_dBm[uint8_t client] (){
-    return call SubRf1aPhysical.rssi_dBm[client]();
+  async command int Rf1aPhysical.rssi_dBm (){
+    return call SubRf1aPhysical.rssi_dBm();
   }
-  async command void Rf1aPhysical.readConfiguration[uint8_t client] (rf1a_config_t* config){
-    return call SubRf1aPhysical.readConfiguration[client](config);
+  async command void Rf1aPhysical.readConfiguration(rf1a_config_t* config){
+    return call SubRf1aPhysical.readConfiguration(config);
   }
-  async command int Rf1aPhysical.enableCca[uint8_t client](){
-    return call SubRf1aPhysical.enableCca[client]();
+  async command int Rf1aPhysical.enableCca(){
+    return call SubRf1aPhysical.enableCca();
   }
-  async command int Rf1aPhysical.disableCca[uint8_t client](){
-    return call SubRf1aPhysical.disableCca[client]();
+  async command int Rf1aPhysical.disableCca(){
+    return call SubRf1aPhysical.disableCca();
   }
-  async command void Rf1aPhysical.reconfigure[uint8_t client](){
-    call SubRf1aPhysical.reconfigure[client]();
-  }
-
-  default async event void Rf1aPhysical.receiveStarted[uint8_t client]
-  (unsigned int length){}
-  async event void SubRf1aPhysical.receiveStarted[uint8_t client]
-  (unsigned int length){
-    signal Rf1aPhysical.receiveStarted[client](length);
+  async command void Rf1aPhysical.reconfigure(){
+    call SubRf1aPhysical.reconfigure();
   }
 
-  default async event void Rf1aPhysical.receiveDone[uint8_t client] (uint8_t* buffer,
-                                unsigned int count,
-                                int result){}
-  default async event void Rf1aPhysical.receiveBufferFilled[uint8_t client] (uint8_t* buffer,
-                                        unsigned int count){}
-  async event void SubRf1aPhysical.receiveBufferFilled[uint8_t client] (uint8_t* buffer,
+  async event void SubRf1aPhysical.receiveStarted (unsigned int length){
+    signal Rf1aPhysical.receiveStarted(length);
+  }
+
+  async event void SubRf1aPhysical.receiveBufferFilled(uint8_t* buffer,
                                         unsigned int count){
-    signal Rf1aPhysical.receiveBufferFilled[client](buffer, count);
+    signal Rf1aPhysical.receiveBufferFilled(buffer, count);
   }
 
-  default async event void Rf1aPhysical.frameStarted[uint8_t client] (){}
-  async event void SubRf1aPhysical.frameStarted[uint8_t client] (){
-    signal Rf1aPhysical.frameStarted[client]();
+  async event void SubRf1aPhysical.frameStarted(){
+    signal Rf1aPhysical.frameStarted();
   }
   
-  default async event void Rf1aPhysical.clearChannel[uint8_t client] (){}
-  async event void SubRf1aPhysical.clearChannel[uint8_t client] (){
-    signal Rf1aPhysical.clearChannel[client]( );
+  async event void SubRf1aPhysical.clearChannel(){
+    signal Rf1aPhysical.clearChannel( );
   }
 
-  default async event void Rf1aPhysical.carrierSense[uint8_t client] (){}
-  async event void SubRf1aPhysical.carrierSense[uint8_t client] (){
-    signal Rf1aPhysical.carrierSense[client]( );
+  async event void SubRf1aPhysical.carrierSense(){
+    signal Rf1aPhysical.carrierSense( );
   }
 
-  default async event void Rf1aPhysical.released[uint8_t client] (){}
-  async event void SubRf1aPhysical.released[uint8_t client] (){
-    signal Rf1aPhysical.released[client]( );
+  async event void SubRf1aPhysical.released(){
+    signal Rf1aPhysical.released( );
   }
-  default async event void Rf1aPhysical.sendDone[uint8_t client] (int result){}
 }

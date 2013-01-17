@@ -73,6 +73,7 @@ configuration CXTDMAPhysicalC {
   CXTDMAPhysicalP.Packet -> CXPacketStackC.Ieee154PacketBody;
   CXTDMAPhysicalP.CXPacket -> CXPacketStackC.CXPacket;
   CXTDMAPhysicalP.CXPacketMetadata -> CXPacketStackC.CXPacketMetadata;
+  CXTDMAPhysicalP.DelayedSend -> Rf1aPhysicalC.DelayedSend;
 
   CXTDMAPhysicalP.Random -> RandomC;
 

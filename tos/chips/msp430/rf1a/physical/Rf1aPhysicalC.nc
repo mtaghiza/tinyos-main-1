@@ -61,12 +61,26 @@ generic configuration Rf1aPhysicalC () {
   components Rf1aC;
   HplMsp430Rf1aIf = Rf1aC;
   Resource = Rf1aC.Resource[CLIENT];
-  Rf1aPhysical = Rf1aC.Rf1aPhysical[CLIENT];
-  Rf1aTransmitFragment = Rf1aC.Rf1aTransmitFragment[CLIENT];
   Rf1aConfigure = Rf1aC.Rf1aConfigure[CLIENT];
-  Rf1aPhysicalMetadata = Rf1aC;
   Rf1aStatus = Rf1aC;
   DelayedSend = Rf1aC.DelayedSend[CLIENT];
+
+  #if RF1A_FEC_ENABLED == 1
+  components new Rf1aFECC();
+  Rf1aPhysical = Rf1aFECC.Rf1aPhysical;
+  Rf1aPhysicalMetadata = Rf1aFECC.Rf1aPhysicalMetadata;
+  Rf1aTransmitFragment = Rf1aFECC.Rf1aTransmitFragment;
+  
+  Rf1aFECC.SubRf1aPhysical -> Rf1aC.Rf1aPhysical[CLIENT];
+  Rf1aFECC.SubRf1aPhysicalMetadata -> Rf1aC.Rf1aPhysicalMetadata;
+  Rf1aC.Rf1aTransmitFragment[CLIENT] -> Rf1aFECC.SubRf1aTransmitFragment;
+
+  #else
+  Rf1aPhysical = Rf1aC.Rf1aPhysical[CLIENT];
+  Rf1aTransmitFragment = Rf1aC.Rf1aTransmitFragment[CLIENT];
+  Rf1aPhysicalMetadata = Rf1aC;
+  #endif
+
 }
 
 /* 

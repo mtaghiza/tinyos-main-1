@@ -1,16 +1,15 @@
 generic configuration Rf1aFECC () {
-  provides interface Rf1aPhysical[uint8_t client];
+  provides interface Rf1aPhysical;
   provides interface Rf1aPhysicalMetadata;
 
-  uses interface Rf1aPhysical as SubRf1aPhysical[uint8_t client];
+  uses interface Rf1aPhysical as SubRf1aPhysical;
   uses interface Rf1aPhysicalMetadata as SubRf1aPhysicalMetadata;
 
-  uses interface Rf1aTransmitFragment [uint8_t client];
-  provides interface Rf1aTransmitFragment as SubRf1aTransmitFragment[uint8_t client];
+  uses interface Rf1aTransmitFragment ;
+  provides interface Rf1aTransmitFragment as SubRf1aTransmitFragment;
 } implementation {
   components new Rf1aFECP();
   components CC430CRCC;
-  components new DefaultRf1aTransmitFragmentC();
 
   //TODO: switch between encodings
   #if RF1A_FEC_ENABLED == 1
@@ -21,6 +20,9 @@ generic configuration Rf1aFECC () {
   #endif
 
   Rf1aFECP.FEC -> FEC;
+  
+  //"normal" fragmentation
+  components new DefaultRf1aTransmitFragmentC();
   Rf1aFECP.DefaultRf1aTransmitFragment -> DefaultRf1aTransmitFragmentC;
   Rf1aFECP.DefaultLength -> DefaultRf1aTransmitFragmentC;
   Rf1aFECP.DefaultBuffer -> DefaultRf1aTransmitFragmentC;

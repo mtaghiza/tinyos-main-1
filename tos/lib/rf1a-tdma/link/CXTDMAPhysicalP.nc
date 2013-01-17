@@ -48,6 +48,9 @@ module CXTDMAPhysicalP {
   //TODO: need setChannel (either add it to TDMAPhySchedule interface
   //or add it as Set/Get interfaces
 } implementation {
+
+  task void setTimestamp();
+
   enum{
     M_TYPE = 0xf0,
 
@@ -481,7 +484,6 @@ module CXTDMAPhysicalP {
   async event void Rf1aPhysical.clearChannel () { }
   async event void Rf1aPhysical.released () { }
 
-  async event bool Rf1aPhysical.idleModeRx () { return FALSE; }
 
   async command uint32_t TDMAPhySchedule.getNow(){
     return call FrameStartAlarm.getNow();
@@ -606,7 +608,8 @@ module CXTDMAPhysicalP {
         //Rf1aFragment commands.
       }
       atomic{
-        tx_msg = tx_pos = tx_msgLocal;
+        tx_msg =  tx_msgLocal;
+        tx_pos = (uint8_t*) tx_msg;
         tx_len = tx_left = tx_lenLocal;
         tx_tsSet = FALSE;
         gpResult = gpResultLocal;
@@ -675,7 +678,8 @@ module CXTDMAPhysicalP {
         radioStateChange(R_RX, call TDMAPhySchedule.getNow());
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
-          TOSH_DATA_LENGTH + sizeof(message_header_t);
+          TOSH_DATA_LENGTH + sizeof(message_header_t),
+          TRUE);
         if (error == SUCCESS){
           setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
@@ -688,7 +692,7 @@ module CXTDMAPhysicalP {
         //switch radio to FSTXON.
 
         error = call Rf1aPhysical.send( 
-          tx_msg,
+          tx_pos,
           tx_len,
           RF1A_OM_IDLE);
         if (error == SUCCESS){
@@ -1406,9 +1410,15 @@ module CXTDMAPhysicalP {
   default async command void SubRf1aConfigure.preUnconfigure [uint8_t client](){}
   default async command void SubRf1aConfigure.postUnconfigure [uint8_t client](){}
 
+  default async command const rf1a_fscal_t* SubRf1aConfigure.getFSCAL[uint8_t client](uint8_t channel){
+    return NULL;
+  }
+  default async command void SubRf1aConfigure.setFSCAL[uint8_t client](uint8_t channel, 
+    rf1a_fscal_t fscal){}
 
   default async command const rf1a_config_t* SubRf1aConfigure.getConfiguration[uint8_t client] ()
   {
     printf("CXTDMAPhysicalP: Unknown sr requested: %u\r\n", client);
     return call SubRf1aConfigure.getConfiguration[1]();
-  }}
+  }
+  }

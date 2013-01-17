@@ -32,6 +32,7 @@
  */
 
 #include "Rf1aPacket.h"
+#include "Rf1a.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -984,7 +985,6 @@ generic module HplMsp430Rf1aP () @safe() {
           cancelTransmit_();
           return ERETRY;
         }else{
-          uint16_t ifin = call Rf1aIf.getIn();
 //          printf("RE\r\n");
           //re-enable TXFIFO threshold interrupt
           call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);

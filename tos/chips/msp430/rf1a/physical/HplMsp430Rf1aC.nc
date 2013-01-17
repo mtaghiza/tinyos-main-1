@@ -73,11 +73,7 @@ generic configuration HplMsp430Rf1aC (
   ResourceRequested = ArbiterC;
   ArbiterInfo = ArbiterC;
   
-  #if RF1A_FEC_ENABLED != 1
   components new HplMsp430Rf1aP() as HplRf1aP;
-  #else
-  components new HplMsp430Rf1aFECP() as HplRf1aP;
-  #endif
   components new DefaultRf1aTransmitFragmentC();
   HplRf1aP.DefaultRf1aTransmitFragment -> DefaultRf1aTransmitFragmentC;
   HplRf1aP.DefaultLength -> DefaultRf1aTransmitFragmentC;
