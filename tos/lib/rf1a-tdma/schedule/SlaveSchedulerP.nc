@@ -78,8 +78,8 @@ module SlaveSchedulerP {
       1, 
       SCHED_INIT_SYMBOLRATE,
       TEST_CHANNEL,
-      isSynched
-      );
+      isSynched,
+      FALSE);
   }
 
   task void claimSlotTask();
@@ -99,7 +99,8 @@ module SlaveSchedulerP {
       schedule->framesPerSlot*schedule->slots,
       schedule->symbolRate,
       schedule->channel,
-      isSynched
+      isSynched,
+      FALSE
     );
     firstIdleFrame = (schedule->firstIdleSlot  * schedule->framesPerSlot);
     lastIdleFrame = (schedule->lastIdleSlot * schedule->framesPerSlot);
