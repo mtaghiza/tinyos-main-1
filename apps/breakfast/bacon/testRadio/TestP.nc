@@ -55,8 +55,10 @@ module TestP{
     printf(" (ipi, %u)", s->ipi);
     printf(" (hasFe, %x)", s->hasFe);
     printf("\r\n");
+    #if RF1A_DUMP_CONFIG == 1
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
+    #endif
     printf("Current channel: %u\r\n", config.channr);
   }
 

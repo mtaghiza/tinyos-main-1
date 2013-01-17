@@ -690,7 +690,11 @@ module CXTDMAPhysicalP {
       case S_TX_PRESTART:
         radioStateChange(R_FSTXON, call TDMAPhySchedule.getNow());
         //switch radio to FSTXON.
-
+        //TODO: resolve async call: 
+        //This should probably do startTransmit_ to set it to FSTXON,
+        //  then post task to call send. Will have to verify that the
+        //  send command handles it correctly when the radio is
+        //  already in FSTXON. I think it should be fine.
         error = call Rf1aPhysical.send( 
           tx_pos,
           tx_len,

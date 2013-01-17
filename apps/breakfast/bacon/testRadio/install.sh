@@ -19,6 +19,7 @@ Options:
   -f <0,1>  : 0 = fec OFF, 1 = fec ON (default: fec OFF)
   -a <0,1>  : 0 = autocalibration off, 1= autocalibration on (default:
                   autocal on)
+  -d <0,1>  : 0 = don't dump config at startup, 1= do (default 0)
 EOF
   exit 1
 fi
@@ -35,6 +36,7 @@ power=2
 dl=28
 fecEnabled=0
 autocal=1
+dumpConfig=0
 
 while [ $# -gt 0 ]
 do
@@ -77,6 +79,11 @@ do
       autocal=$1
       shift 1
     ;;
+    -d)
+      shift 1
+      dumpConfig=$1
+      shift 1
+    ;;
     *)
       echo "unrecognized"
       shift 1
@@ -87,5 +94,5 @@ set -x
 make bacon2 IS_SENDER=$isSender POWER_INDEX=$power HGM=$hgm \
   CHANNEL=$channel REPORT=$report USE_LONG_IPI=$useLongIpi \
   TOSH_DATA_LENGTH=$dl RF1A_FEC_ENABLED=$fecEnabled \
-  RF1A_AUTOCAL=$autocal\
+  RF1A_AUTOCAL=$autocal RF1A_DUMP_CONIFG=$dumpConfig\
   install bsl,$dev
