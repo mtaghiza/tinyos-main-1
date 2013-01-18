@@ -50,7 +50,33 @@ module CXTDMAPhysicalP {
 } implementation {
 
   task void setTimestamp();
+  
+  #define PFS_HISTORY_LEN 8
+  uint32_t pfsHistory[PFS_HISTORY_LEN];
+  uint8_t pfsSetByHistory[PFS_HISTORY_LEN];
+  uint8_t pfsPos = 0;
 
+  void recordPfs(uint8_t setBy){
+    atomic{
+      pfsHistory[pfsPos] = call PrepareFrameStartAlarm.getAlarm();;
+      pfsSetByHistory[pfsPos] = setBy;
+      pfsPos = (pfsPos + 1) % PFS_HISTORY_LEN;
+    }
+  }
+
+  void printPfsHistory(){
+    atomic{
+      uint8_t c;
+      printf("# PFS History\r\n");
+      for (c = 0; c < PFS_HISTORY_LEN; c++){
+        uint8_t i = (c + pfsPos) % PFS_HISTORY_LEN;
+        printf("# by %u : %lu\r\n", 
+          pfsSetByHistory[i],
+          pfsHistory[i]);
+      }
+    }
+  }
+  
   enum{
     M_TYPE = 0xf0,
 
@@ -357,6 +383,7 @@ module CXTDMAPhysicalP {
         call FrameWaitAlarm.getAlarm(),
         fwHandled);
       printf("#fl: %lu fw: %lu\r\n", s_frameLen, s_fwCheckLen);
+      printPfsHistory();
     }
   }
 
@@ -585,6 +612,7 @@ module CXTDMAPhysicalP {
   }
 
 
+  uint32_t origTs;
 
   bool getPacket(uint16_t fn){
     uint8_t* gpBufLocal;
@@ -606,6 +634,7 @@ module CXTDMAPhysicalP {
         //NB timestamp obtained at SynchCapture.captured, filled in in
         //setTimestamp task, and packet fragmentation handled by
         //Rf1aFragment commands.
+        origTs = call FrameStartAlarm.getAlarm();
       }
       atomic{
         tx_msg =  tx_msgLocal;
@@ -655,6 +684,7 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_frameLen);
+      recordPfs(0);
       ////TODO: remove debug
       atomic pt = 0;
 //      post printTimers();
@@ -893,6 +923,7 @@ module CXTDMAPhysicalP {
       }
       call PrepareFrameStartAlarm.startAt(captureFrameStart,
         s_frameLen- s_pfs_slack);
+      recordPfs(1);
       ////TODO: remove debug
       atomic pt = 2;
 //      post printTimers();
@@ -1222,9 +1253,17 @@ module CXTDMAPhysicalP {
         s_frameLen);
     }
     if (call PrepareFrameStartAlarm.isRunning()){
+      uint32_t alarm0 = call PrepareFrameStartAlarm.getAlarm();
+      uint32_t alarm1;
+      uint32_t setAt = call PrepareFrameStartAlarm.getNow();
+      uint32_t t0 = startAt - s_frameLen - s_pfs_slack;
 //      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
+      alarm1 = call PrepareFrameStartAlarm.getAlarm();
+      printf("# AFS %lu -> %lu @ %lu t0 %lu dt %lu\r\n", 
+        alarm0, alarm1, setAt, t0, s_frameLen);
+      recordPfs(2);
 //      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
     }
     //TODO: I would like to make sure that we're not setting up a case
@@ -1315,6 +1354,7 @@ module CXTDMAPhysicalP {
           dt = pfsStartAt - t0;
           call PrepareFrameStartAlarm.startAt(t0,
             dt);
+          recordPfs(3);
 //          printf_TMP("t0 %lu dt %lu a %lu\r\n", 
 //            t0, dt, 
 //            call PrepareFrameStartAlarm.getAlarm());
@@ -1378,10 +1418,17 @@ module CXTDMAPhysicalP {
   event void DelayedSend.sendReady(){
     //TODO: anything? validate state?
   }
+  
+
+  task void printTimestamp(){
+    printf("# TS %lu -> %lu\r\n", origTs, tx_ts);
+  }
 
   task void setTimestamp(){
-    call CXPacket.setTimestamp(tx_msg, tx_ts);
+//    call CXPacket.setTimestamp(tx_msg, tx_ts);
+    call CXPacket.setTimestamp(tx_msg, origTs);
     tx_tsSet = TRUE;
+    post printTimestamp();
   }
   
   async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){

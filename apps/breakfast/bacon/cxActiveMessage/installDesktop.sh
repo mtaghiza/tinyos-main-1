@@ -78,7 +78,8 @@ settingVars=( "testId" "testLabel" "txp" "sr" "channel" "requestAck"
 "queueThreshold" "maxDepth" "numTransmits" "bufferWidth" "fps"
 "staticScheduler" "snifferMap" "forceSlots" "cxEnableSkewCorrection"
 "rootTxp" "leafTxp" "fwdDropRate" "cxForwarderSelection"
-"cxSniffEnabled" "cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74")
+"cxSniffEnabled" "cxFixedLen" "maxAnnouncedSlots" "fecEnabled" "fecHamming74"
+"rs" "rl")
 
 while [ $# -gt 1 ]
 do
