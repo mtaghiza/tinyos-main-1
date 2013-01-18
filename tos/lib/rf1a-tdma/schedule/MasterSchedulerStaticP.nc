@@ -235,26 +235,22 @@ module MasterSchedulerStaticP {
     return msg;
   }
 
-  uint32_t last_announce;
-  uint16_t targetFrame;
-  void doAdjustSlotStart(){
-    if (last_announce != 0 ){
-      call TDMAPhySchedule.adjustFrameStart(
-        last_announce + (targetFrame*(call TDMAPhySchedule.getFrameLen())),
-        targetFrame
-      );
-//      call TDMAPhySchedule.setSchedule( 
-//        last_announce + (targetFrame*(call TDMAPhySchedule.getFrameLen())),
-//        targetFrame,
-//        schedule->framesPerSlot*schedule->slots,
-//        schedule->symbolRate,
-//        schedule->channel, 
-//        TRUE,
-//        CX_ENABLE_SKEW_CORRECTION);
+  void adjustSlotStart(uint32_t lastAnnounceTime, 
+      uint16_t lastAnnounceFrame, uint16_t targetFrame){
+    if (lastAnnounceTime != 0 ){
+      //TODO: we should be able to pass in 
+      uint32_t targetFrameStart = lastAnnounceTime 
+        + ((targetFrame - lastAnnounceFrame)*(call TDMAPhySchedule.getFrameLen()));
+
+//      printf("# ASS %lu %u : %lu %u\r\n", 
+//        lastAnnounceTime,
+//        lastAnnounceFrame,
+//        targetFrameStart,
+//        targetFrame);
+
+      call TDMAPhySchedule.adjustFrameStart(targetFrameStart,
+        targetFrame);
     }
-  }
-  task void adjustSlotStart(){
-    doAdjustSlotStart();
   }
   
   event void FrameStarted.frameStarted(uint16_t frameNum){
@@ -265,11 +261,11 @@ module MasterSchedulerStaticP {
 
     curSlot = getSlot(frameNum); 
     if (frameOfSlot == (call TDMARoutingSchedule.framesPerSlot() - 1)){
-      last_announce = call CXPacket.getTimestamp(schedule_msg);
-      targetFrame = frameNum;
       //self-adjust schedule in case we got bumped during last slot
       //post adjustSlotStart();
-      doAdjustSlotStart();
+      adjustSlotStart(call CXPacket.getTimestamp(schedule_msg),
+        call CXPacket.getOriginalFrameNum(schedule_msg),
+        frameNum);
     }
 
     if (curSlot == INVALID_SLOT || 

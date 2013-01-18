@@ -336,8 +336,7 @@ module SlaveSchedulerStaticP {
         //target frame start is last reception...
         wrapTS = last_leaf;
         //...plus the duration of elapsed frames
-        //TODO: resolve mystery off-by-one
-        wrapTS += ((elapsedFrames -1)*(call TDMAPhySchedule.getFrameLen()));
+        wrapTS += ((elapsedFrames )*(call TDMAPhySchedule.getFrameLen()));
         //...minus the lag introduced for each elapsed slot
         wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*getSlots(schedule)))*lag_per_slot);
 //        printf_TMP("NMT %lu css %u WT %lu\r\n", 

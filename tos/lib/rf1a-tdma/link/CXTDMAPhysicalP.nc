@@ -147,6 +147,7 @@ module CXTDMAPhysicalP {
   uint8_t* tx_pos;
   uint8_t tx_left;
   uint32_t tx_ts;
+  bool tx_needsTs;
   bool tx_tsSet;
 
   //Temporary RX variables
@@ -634,7 +635,10 @@ module CXTDMAPhysicalP {
         //NB timestamp obtained at SynchCapture.captured, filled in in
         //setTimestamp task, and packet fragmentation handled by
         //Rf1aFragment commands.
+        //NB: this is the PRECEDING frame start: e.g. if the packet is
+        //  sent in frame 1, this alarm is frame 0.
         origTs = call FrameStartAlarm.getAlarm();
+        tx_needsTs = TRUE;
       }
       atomic{
         tx_msg =  tx_msgLocal;
@@ -883,7 +887,9 @@ module CXTDMAPhysicalP {
           //timestamp field of the CX header and indicate that it's OK
           //to finish sending the packet.
           tx_ts = lastCapture;
-          post setTimestamp();
+          if (tx_needsTs){
+            post setTimestamp();
+          }
           break;
         default:
           setAsyncState(S_ERROR_4);
@@ -1240,7 +1246,14 @@ module CXTDMAPhysicalP {
 //    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
 //      atFrameNum);
     //we assume that atFrameNum is in the past.
-    while (atFrameNum != nextFrame){
+    //we need to advance atFrameNum forwarder until it hits the
+    //current frame number (since PFSA is matched up with a packet
+    //that was transmitted during that frame).
+
+    //TODO: this shouldn't be in a loop! if atFrameNum < frameNum,
+    //      just get the diff and multiply it out. If atFrameNum >
+    //      frameNum, do it in the reverse direction.
+    while (atFrameNum != frameNum){
       startAt += s_frameLen;
       atFrameNum = (atFrameNum+1)%s_totalFrames;
     }
@@ -1261,8 +1274,8 @@ module CXTDMAPhysicalP {
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
       alarm1 = call PrepareFrameStartAlarm.getAlarm();
-      printf("# AFS %lu -> %lu @ %lu t0 %lu dt %lu\r\n", 
-        alarm0, alarm1, setAt, t0, s_frameLen);
+//      printf("# AFS %lu -> %lu @ %lu t0 %lu dt %lu\r\n", 
+//        alarm0, alarm1, setAt, t0, s_frameLen);
       recordPfs(2);
 //      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
     }
@@ -1425,8 +1438,9 @@ module CXTDMAPhysicalP {
   }
 
   task void setTimestamp(){
-//    call CXPacket.setTimestamp(tx_msg, tx_ts);
-    call CXPacket.setTimestamp(tx_msg, origTs);
+    tx_needsTs = FALSE;
+    call CXPacket.setTimestamp(tx_msg, tx_ts - fsDelays[s_sri]);
+//    call CXPacket.setTimestamp(tx_msg, (origTs + s_frameLen));
     tx_tsSet = TRUE;
     post printTimestamp();
   }
