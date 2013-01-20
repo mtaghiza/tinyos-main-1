@@ -48,12 +48,8 @@ module SlaveSchedulerStaticP {
   uint16_t framesSinceSynch = 0;
 
   #if CX_ENABLE_SKEW_CORRECTION == 1
-  #define SKEW_HISTORY_LOG_2 2
-  #define SKEW_HISTORY 4
-  uint32_t delta_root [SKEW_HISTORY];
-  uint32_t delta_leaf [SKEW_HISTORY];
-  uint8_t skew_index = 0;
   int32_t lag_per_cycle;
+  bool firstLag = TRUE;
   #endif
   uint32_t last_root;
   uint32_t last_leaf;
@@ -89,11 +85,8 @@ module SlaveSchedulerStaticP {
     #if CX_ENABLE_SKEW_CORRECTION == 1
     last_leaf = 0;
     last_root = 0;
-    for(i = 0; i < SKEW_HISTORY; i++){
-      delta_root[i] = 0;
-      delta_leaf[i] = 0;
-      lag_per_slot = 0;
-    }
+    lag_per_slot = 0;
+    firstLag = TRUE;
     //maybe?
     schedule = NULL;
     #endif
@@ -154,56 +147,28 @@ module SlaveSchedulerStaticP {
     cur_leaf = call CXPacketMetadata.getOriginalFrameStartEstimate(schedule_msg);
     #if CX_ENABLE_SKEW_CORRECTION == 1
     if (last_root != 0 && last_leaf != 0){
-      int32_t lagTot = 0;
-      uint8_t i;
-      uint8_t num_measurements = 0;
-
-      // Very conservative bound: should be between 0 and 2*avg
-      // and we should accept it if it's the first lag measurement.
-      {
-        bool firstLag = delta_root[0] == 0;
-        int32_t dr = cur_root - last_root;
-        int32_t dl = cur_leaf - last_leaf;
-        int32_t lag = dr - dl;
-        bool saneLag = (lag > 0 ) ? (lag < (2*lag_per_cycle)): (lag > 2*lag_per_cycle);
-        if (firstLag || saneLag){
-          delta_root[skew_index] = dr;
-          delta_leaf[skew_index] = dl ;
-          printf_TMP("LAG %ld\r\n", 
-            lag);
-        }else{
-          printf_TMP("BAD_LAG %ld\r\n", 
-            lag);
-        }
+      int32_t dr = cur_root - last_root;
+      int32_t dl = cur_leaf - last_leaf;
+      int32_t lag = dr - dl;
+      if (firstLag){
+        firstLag = FALSE;
+        lag_per_cycle = lag;
+//        printf_TMP("LAGINIT %ld\r\n", 
+//          lag);
+      }else{
+        int32_t lpc3 = (lag_per_cycle * 3);
+        int32_t lpcp4 = lpc3 + lag;
+        int32_t lpc = lpcp4 >> 2;
+//        printf_TMP("LAGUP %ld: %ld -> %ld\r\n", 
+//          lag, lag_per_cycle, lpc);
+        lag_per_cycle = lpc;
       }
-
-//      printf_TMP("dr %lu - %lu = %lu\r\n", cur_root, last_root,
-//        delta_root[skew_index]);
-//      printf_TMP("dl %lu - %lu = %lu\r\n", cur_leaf, last_leaf,
-//        delta_leaf[skew_index]);
-      for(i = 0; i< SKEW_HISTORY && delta_root[i] != 0 ; i++){
-//        printf_TMP("LAG %u %ld\r\n", i, delta_root[i] -  delta_leaf[i]);
-        lagTot += delta_root[i] - delta_leaf[i];
-        num_measurements ++;
-      }
-      if (num_measurements > 0){
-        lag_per_cycle = lagTot/(num_measurements);
-        lag_per_slot = lag_per_cycle / getSlots(schedule);
-        printf_TMP("LPC %ld\r\n", lag_per_cycle);
-        printf_TMP("CL %ld\r\n", 
-          (getSlots(schedule)*getFramesPerSlot(schedule))
-          *(call TDMAPhySchedule.getFrameLen()));
-//        printf_TMP("LPS %ld\r\n", lag_per_slot);
-        //why is this computation incorrect? must be an overflow.
-//        printf_TMP("PPM %ld\r\n",
-//          (lag_per_cycle)/((schedule->slots*schedule->framesPerSlot*(call
-//          TDMAPhySchedule.getFrameLen()))/1000000 ));
-      } 
-      skew_index = (skew_index+1)%SKEW_HISTORY;
+      lag_per_slot = lag_per_cycle / getSlots(schedule);
     }
     #else
     lag_per_slot = 0;
     #endif
+
     last_root = cur_root;
     last_leaf = cur_leaf;
     //We don't have this yet if we haven't done a synch.
@@ -224,6 +189,11 @@ module SlaveSchedulerStaticP {
 //      schedule->channel,
 //      hasSchedule,
 //      (lag_per_slot != 0));
+
+    //TODO: use CX_SKEW_ENABLED ( + some sort of skew correction
+    //  applied)
+    //TODO: actually use the skew calculation to set startTS correctly
+    //(currently it's just using the timestamp obtained at reception)
     call TDMAPhySchedule.setSchedule(
       startTS,
       startFN,
@@ -231,7 +201,7 @@ module SlaveSchedulerStaticP {
       getSymbolRate(schedule),
       getChannel(schedule),
       hasSchedule,
-      (lag_per_slot != 0)
+      CX_ENABLE_SKEW_CORRECTION
     );
 //    printf_TMP("updated\r\n");
     framesSinceSynch = 0;
@@ -331,6 +301,10 @@ module SlaveSchedulerStaticP {
 //          - ((curSlot+1)*lag_per_slot);
         uint32_t wrapTS;
         uint16_t elapsedFrames = frameNum;
+//        int32_t lps = lag_per_slot;
+        //TODO: testing whether this is what I saw as bad clock skew
+        //correction
+        int32_t lps = 0;
         elapsedFrames += cyclesSinceSchedule*(
           getFramesPerSlot(schedule)*getSlots(schedule));
         //target frame start is last reception...
@@ -338,7 +312,7 @@ module SlaveSchedulerStaticP {
         //...plus the duration of elapsed frames
         wrapTS += ((elapsedFrames )*(call TDMAPhySchedule.getFrameLen()));
         //...minus the lag introduced for each elapsed slot
-        wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*getSlots(schedule)))*lag_per_slot);
+        wrapTS -= ((curSlot+1 + (cyclesSinceSchedule*getSlots(schedule)))*lps);
 //        printf_TMP("NMT %lu css %u WT %lu\r\n", 
 //          noMissTS,
 //          cyclesSinceSchedule, wrapTS);

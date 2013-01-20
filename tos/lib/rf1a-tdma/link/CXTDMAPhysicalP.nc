@@ -49,9 +49,12 @@ module CXTDMAPhysicalP {
   //or add it as Set/Get interfaces
 } implementation {
 
+  uint32_t lastFsa;
+  bool logNextFsa = FALSE;
+
   task void setTimestamp();
   
-  #define PFS_HISTORY_LEN 8
+  #define PFS_HISTORY_LEN 4
   uint32_t pfsHistory[PFS_HISTORY_LEN];
   uint8_t pfsSetByHistory[PFS_HISTORY_LEN];
   uint8_t pfsPos = 0;
@@ -75,6 +78,10 @@ module CXTDMAPhysicalP {
           pfsHistory[i]);
       }
     }
+  }
+
+  task void printPfsHistoryTask(){
+    printPfsHistory();
   }
   
   enum{
@@ -656,6 +663,12 @@ module CXTDMAPhysicalP {
   //We'll actually do the timing-critical steps at the
   //FrameStartAlarm.fired event.
   void configureRadio();
+  
+  uint32_t nextFsa;
+  task void logNextFsaTask(){
+    printf("nf %lu\r\n", nextFsa);
+  }
+
   async event void PrepareFrameStartAlarm.fired(){
     PFS_TIMING_SET_PIN;
     //we see this at reset...ugh
@@ -680,10 +693,17 @@ module CXTDMAPhysicalP {
 //    }
     //cool, we got the work done in time. reschedule for next frame.
     if (!pfsTaskPending){
+      //hmm. So, we set FSA relative to PFSA here. I imagine that this
+      //could be problematic when we change s_pfs_slack
       //first, set up for FSA (this frame)
       call FrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_pfs_slack);
+      if (logNextFsa){
+        nextFsa = call FrameStartAlarm.getAlarm();
+        logNextFsa = FALSE;
+//        post logNextFsaTask();
+      }
       //now, set up for next PFSA (next frame)
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
@@ -759,21 +779,21 @@ module CXTDMAPhysicalP {
 
 
   task void completeSendDone();
+
+  task void printFsaDelta(){
+    printf("fsad: %ld\r\n", fsHandled - lastFsa);
+  }
+
   async event void FrameStartAlarm.fired(){
     if (frameNum & 0x01){
       FS_CYCLE_SET_PIN;
     }else{
       FS_CYCLE_CLEAR_PIN;
     }
-//    if (fsHandled < 
-//        call FrameStartAlarm.getAlarm()){
-//      printf("!FS early: %lu < %lu\r\n", 
-//        fsHandled,  
-//        call FrameStartAlarm.getAlarm());
-//      setAsyncState(S_ERROR_a);
-//      return;
-//    }else{
     {
+      //non-deterministic completion: delay until send has started.
+      fsHandled = call FrameStartAlarm.getNow();
+
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
         error_t error = call DelayedSend.startSend();
@@ -802,12 +822,9 @@ module CXTDMAPhysicalP {
         }else{
           setAsyncState(S_TX_TRANSMITTING);
         }
-        //non-deterministic completion: delay until send has started.
-        //time!
-        fsHandled = call FrameStartAlarm.getNow();
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         recordEvent(4);
-        fsHandled = call FrameStartAlarm.getNow();
+//        fsHandled = call FrameStartAlarm.getNow();
 //        if ((call FrameStartAlarm.getAlarm() + s_fwCheckLen) > call PrepareFrameStartAlarm.getAlarm()){
 //          printf_TMP("FWA: %lu + %lu (%lu) > PFSA: %lu\r\n", 
 //            call FrameStartAlarm.getAlarm(), 
@@ -834,7 +851,9 @@ module CXTDMAPhysicalP {
         }
       }
     }
+    lastFsa = call FrameStartAlarm.getAlarm();
   }
+
 
   task void reportLateCapture(){
     printf_TMP("~LATE\r\n");
@@ -1070,6 +1089,7 @@ module CXTDMAPhysicalP {
     uint8_t rdCountLocal;
     uint8_t rdS_srLocal;
     uint32_t rdLastRECaptureLocal;
+    post printFsaDelta();
     recordEvent(9);
     atomic{
       msg = (message_t*) rdBuffer;
@@ -1103,6 +1123,9 @@ module CXTDMAPhysicalP {
             frameNum);
           call CXPacketMetadata.setReceivedCount(msg,
             call CXPacket.count(msg));
+//          printf("RX cap %lu last fsa %lu\r\n", 
+//            rdLastRECaptureLocal, lastFsa);
+          logNextFsa = TRUE;
           if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
             captureFrameNum = call CXPacket.getOriginalFrameNum(msg)
               + call CXPacket.count(msg) - 1;
@@ -1178,6 +1201,8 @@ module CXTDMAPhysicalP {
     uint32_t sdRECaptureLocal;
     IS_TX_CLEAR_PIN;
     recordEvent(11);
+    post printFsaDelta();
+//    post logNextFsaTask();
     atomic{
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
@@ -1264,16 +1289,17 @@ module CXTDMAPhysicalP {
     if (call FrameStartAlarm.isRunning()){
       call FrameStartAlarm.startAt(startAt - s_frameLen,
         s_frameLen);
+      printf("live FSA\r\n");
     }
     if (call PrepareFrameStartAlarm.isRunning()){
-      uint32_t alarm0 = call PrepareFrameStartAlarm.getAlarm();
-      uint32_t alarm1;
-      uint32_t setAt = call PrepareFrameStartAlarm.getNow();
+//      uint32_t alarm0 = call PrepareFrameStartAlarm.getAlarm();
+//      uint32_t alarm1;
+//      uint32_t setAt = call PrepareFrameStartAlarm.getNow();
       uint32_t t0 = startAt - s_frameLen - s_pfs_slack;
 //      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
-      alarm1 = call PrepareFrameStartAlarm.getAlarm();
+//      alarm1 = call PrepareFrameStartAlarm.getAlarm();
 //      printf("# AFS %lu -> %lu @ %lu t0 %lu dt %lu\r\n", 
 //        alarm0, alarm1, setAt, t0, s_frameLen);
       recordPfs(2);
@@ -1407,6 +1433,7 @@ module CXTDMAPhysicalP {
 //          state, call Rf1aStatus.get(), decodeError(err));
       }
     }
+//    post printPfsHistoryTask();
 //    printf_TMP("Using s_pfs_slack: %lu s_fwCheckLen: %lu\r\n",
 //      s_pfs_slack, s_fwCheckLen);
     return err;

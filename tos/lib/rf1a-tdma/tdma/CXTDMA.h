@@ -84,7 +84,7 @@
 //#define PFS_SLACK (PFS_SLACK_BASE * TIMING_SCALE)
 //TODO: these should be scaled with symbol rate.
 #define DEFAULT_TDMA_FW_CHECK_LEN 7000UL
-#define PFS_SLACK 2600UL
+#define PFS_SLACK 3500UL
 
 #ifndef FWD_DROP_RATE
 #define FWD_DROP_RATE 0
