@@ -555,6 +555,7 @@ generic module HplMsp430Rf1aP () @safe() {
     bool wrote_data = FALSE;
     bool send_done = FALSE;
     bool need_repost = FALSE;
+    P1OUT |= BIT3;
     atomic {
       do{
         const uint8_t* data;
@@ -720,6 +721,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }else{
 //      printf("~sd\r\n");
     }
+    P1OUT &= ~BIT3;
   }
 
   /** Place the radio into FSTXON or TX, with or without a
@@ -778,7 +780,6 @@ generic module HplMsp430Rf1aP () @safe() {
          * in-progress RX completed) or the target state (good to
          * transmit).  May be in CALIBRATE and SETTLING in between, so
          * loop. */
-        P1OUT |= BIT3;
         (void)call Rf1aIf.strobe(strobe);
         do {
           rc = call Rf1aIf.strobe(RF_SNOP);
@@ -794,7 +795,6 @@ generic module HplMsp430Rf1aP () @safe() {
                  && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
                  && (state != (RF1A_S_MASK & rc))
                  && (0 <= --loop_limit));
-        P1OUT &= ~BIT3;
         if (state != (RF1A_S_MASK & rc)) {
 
 //        printf ("%s: 2\n\r",__FUNCTION__);

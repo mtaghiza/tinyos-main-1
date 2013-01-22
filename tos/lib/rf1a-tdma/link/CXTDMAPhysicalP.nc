@@ -780,10 +780,6 @@ module CXTDMAPhysicalP {
 
   task void completeSendDone();
 
-  task void printFsaDelta(){
-    printf("fsad: %ld\r\n", fsHandled - lastFsa);
-  }
-
   async event void FrameStartAlarm.fired(){
     if (frameNum & 0x01){
       FS_CYCLE_SET_PIN;
@@ -791,12 +787,12 @@ module CXTDMAPhysicalP {
       FS_CYCLE_CLEAR_PIN;
     }
     {
-      //non-deterministic completion: delay until send has started.
-      fsHandled = call FrameStartAlarm.getNow();
 
       //OK, complete the transmission now.
       if (asyncState == S_TX_READY){
         error_t error = call DelayedSend.startSend();
+        //non-deterministic completion: delay until send has started.
+        fsHandled = call FrameStartAlarm.getNow();
         recordEvent(4);
         radioStateChange(R_TX, call FrameStartAlarm.getAlarm());
         //Transmission failed: stash results for send-done and post
@@ -824,27 +820,14 @@ module CXTDMAPhysicalP {
         }
       }else if (asyncState == S_RX_READY || asyncState == S_INACTIVE){
         recordEvent(4);
-//        fsHandled = call FrameStartAlarm.getNow();
-//        if ((call FrameStartAlarm.getAlarm() + s_fwCheckLen) > call PrepareFrameStartAlarm.getAlarm()){
-//          printf_TMP("FWA: %lu + %lu (%lu) > PFSA: %lu\r\n", 
-//            call FrameStartAlarm.getAlarm(), 
-//            s_fwCheckLen,
-//            call FrameStartAlarm.getAlarm() + s_fwCheckLen,
-//            call PrepareFrameStartAlarm.getAlarm());
-//        }
+        fsHandled = call FrameStartAlarm.getNow();
         if (asyncState == S_RX_READY){
           FWA_TIMING_SET_PIN;
           lastFwaStartFrame = totalFrames;
           call FrameWaitAlarm.startAt(call FrameStartAlarm.getAlarm(), 
             s_fwCheckLen);
-  //        if (! s_isSynched){
-  //          printf_TMP("# fwa: %lu pfsa: %lu\r\n", 
-  //            call FrameWaitAlarm.getAlarm(), 
-  //            call PrepareFrameStartAlarm.getAlarm());
-  //        }
         ////TODO: remove debug
           atomic pt = 1;
-  //        post printTimers();
           setAsyncState(S_RX_WAIT);
         }else if (asyncState == S_INACTIVE){
           postPfs();
@@ -1089,7 +1072,6 @@ module CXTDMAPhysicalP {
     uint8_t rdCountLocal;
     uint8_t rdS_srLocal;
     uint32_t rdLastRECaptureLocal;
-    post printFsaDelta();
     recordEvent(9);
     atomic{
       msg = (message_t*) rdBuffer;
@@ -1201,7 +1183,6 @@ module CXTDMAPhysicalP {
     uint32_t sdRECaptureLocal;
     IS_TX_CLEAR_PIN;
     recordEvent(11);
-    post printFsaDelta();
 //    post logNextFsaTask();
     atomic{
       sdMsgLocal = tx_msg;
@@ -1460,16 +1441,15 @@ module CXTDMAPhysicalP {
   }
   
 
-  task void printTimestamp(){
-    printf("# TS %lu -> %lu\r\n", origTs, tx_ts);
-  }
-
   task void setTimestamp(){
     tx_needsTs = FALSE;
+    //This value corresponds to the "ideal" framestart alarm that
+    //  triggered the transmission (sfd - fsDelay). In practice, the
+    //  frame start alarm may be different from this (e.g. due to
+    //  interrupt-handling jitter).
     call CXPacket.setTimestamp(tx_msg, tx_ts - fsDelays[s_sri]);
 //    call CXPacket.setTimestamp(tx_msg, (origTs + s_frameLen));
     tx_tsSet = TRUE;
-    post printTimestamp();
   }
   
   async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){

@@ -1,7 +1,4 @@
 // $Id: SchedulerBasicP.nc,v 1.11 2010-06-29 22:07:56 scipio Exp $
-#ifdef DEBUG_TASK
-#include <stdio.h>
-#endif
 /*
  * Copyright (c) 2000-2003 The Regents of the University  of California.  
  * All rights reserved.
@@ -162,12 +159,21 @@ implementation
 	}
       }
       #ifdef DEBUG_TASK
-      P1OUT |= BIT3;
-      //printf("T%d\n\r", nextTask);
+        #ifndef TASK_SEARCH_L 
+        #define TASK_SEARCH_L 255
+        #endif
+        #ifndef TASK_SEARCH_H 
+        #define TASK_SEARCH_H 255
+        #endif
+        if (nextTask >= SEARCH_L && nextTask < SEARCH_H){
+          P1OUT |= BIT3;
+        }
       #endif
       signal TaskBasic.runTask[nextTask]();
       #ifdef DEBUG_TASK
-      P1OUT &= ~BIT3;
+      if (nextTask >= SEARCH_L && nextTask < SEARCH_H){
+        P1OUT &= ~BIT3;
+      }
       #endif
 
     }
