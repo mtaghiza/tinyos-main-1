@@ -6,13 +6,13 @@ typedef nx_uint8_t cx_routing_method_t;
 
 //size: 19 (18 if am_id is 1 byte)
 typedef nx_struct cx_header_t {
+  nx_uint32_t timestamp;
   nx_am_addr_t destination;
   //would like to reuse the dsn in the 15.4 header, but it's not exposed in a clean way
   nx_uint16_t sn;
   nx_uint8_t count;
   nx_uint8_t scheduleNum;
   nx_uint16_t originalFrameNum;
-  nx_uint32_t timestamp;
   nx_uint8_t nProto;
   nx_uint8_t tProto;
   nx_uint8_t type;

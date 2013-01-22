@@ -470,7 +470,9 @@ generic module HplMsp430Rf1aP () @safe() {
   void receiveData_ ();
   
   /** Task used to do the work of transmitting a fragment of a message. */
-  task void sendFragment_task () { sendFragment_(); }
+  task void sendFragment_task () { 
+    sendFragment_(); 
+  }
 
   /** Task used to do the work of consuming a fragment of a message. */
   task void receiveData_task () { receiveData_(); }
@@ -555,7 +557,6 @@ generic module HplMsp430Rf1aP () @safe() {
     bool wrote_data = FALSE;
     bool send_done = FALSE;
     bool need_repost = FALSE;
-    P1OUT |= BIT3;
     atomic {
       do{
         const uint8_t* data;
@@ -721,7 +722,6 @@ generic module HplMsp430Rf1aP () @safe() {
     }else{
 //      printf("~sd\r\n");
     }
-    P1OUT &= ~BIT3;
   }
 
   /** Place the radio into FSTXON or TX, with or without a

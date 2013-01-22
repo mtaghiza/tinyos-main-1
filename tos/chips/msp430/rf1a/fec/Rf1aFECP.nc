@@ -86,9 +86,10 @@ generic module Rf1aFECP () {
     encodedSoFar += rawReady;
 
     //update runningCRC with just-provided data
+    //N.B: This should be given data in 16-byte chunks. (The hardware
+    //  CRC module works on word data)
     runningCRC = call Crc.seededCrc16(runningCRC, rawPos,
       rawReady);
-
     //append encoded CRC if we're finished encoding but haven't already applied it.
     if (rawLen - encodedSoFar == 0 && !crcAppended){
       nx_uint16_t nxCRC;
@@ -104,7 +105,6 @@ generic module Rf1aFECP () {
     atomic{
       encodedReady += numEncoded;
     }
-
   }
 
   command error_t Rf1aPhysical.send (uint8_t* buffer,
