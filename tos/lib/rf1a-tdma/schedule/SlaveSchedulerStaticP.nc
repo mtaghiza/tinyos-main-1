@@ -76,7 +76,6 @@ module SlaveSchedulerStaticP {
   }
 
   task void startListen(){
-    uint8_t i;
     printf_SCHED_RXTX("start listen\r\n");
     state = S_LISTEN;
     softSynch = FALSE;

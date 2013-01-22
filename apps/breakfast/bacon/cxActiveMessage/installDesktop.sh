@@ -234,6 +234,7 @@ fi
 
 if [ "$rootMap" != "" -a $(grep -c -v '#' $rootMap) -gt 0 ]
 then
+  set -x
   make bacon2 \
     TDMA_ROOT=1 IS_SENDER=$rootSender \
     TEST_DEST_ADDR=$rootDest \

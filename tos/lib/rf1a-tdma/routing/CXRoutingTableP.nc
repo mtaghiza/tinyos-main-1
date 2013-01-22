@@ -12,7 +12,6 @@ generic module CXRoutingTableP(uint8_t numEntries){
   bool dumping = FALSE;
 
   task void nextDumpTask(){
-    cx_route_entry_t* re;
     printf("# INS RT[%d] %d->%d = %d (%d %d) ", 
       curDump, rt[curDump].n0, rt[curDump].n1, 
       rt[curDump].distance, rt[curDump].used, rt[curDump].pinned);

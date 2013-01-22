@@ -50,7 +50,6 @@ module CXTDMAPhysicalP {
 } implementation {
 
   uint32_t lastFsa;
-  bool logNextFsa = FALSE;
 
   task void setTimestamp();
   
@@ -113,6 +112,7 @@ module CXTDMAPhysicalP {
     //TX intermediate states
     M_TX = 0x30, 
     S_TX_START = 0x30,
+    S_TX_LOADING = 0x35,
     S_TX_READY = 0x31,
     S_TX_WAIT = 0x32,
     S_TX_TRANSMITTING = 0x33,
@@ -138,7 +138,21 @@ module CXTDMAPhysicalP {
   };
   
   //Internal state vars
+  //N.B.: The recordEvent function reads this variable in the
+  //interrupt context.  So, if this function is in use, it will
+  //generate an atomicity warning.
+  
+  #ifndef CX_RECORD_EVENTS
+  #define CX_RECORD_EVENTS 0
+  #endif
+
+  #if CX_RECORD_EVENTS == 1
+  #warning "tracing events, mark state as norace"
+  norace uint8_t state = S_OFF;
+  #else
   uint8_t state = S_OFF;
+  #endif
+
   uint8_t asyncState;
   bool pfsTaskPending = FALSE;
 
@@ -154,7 +168,9 @@ module CXTDMAPhysicalP {
   uint8_t* tx_pos;
   uint8_t tx_left;
   uint32_t tx_ts;
-  bool tx_needsTs;
+
+  //only written in task context, read at capture
+  norace bool tx_needsTs;
   bool tx_tsSet;
 
   //Temporary RX variables
@@ -211,7 +227,8 @@ module CXTDMAPhysicalP {
 
   uint32_t pfsHandled;
   uint32_t fsHandled;
-  uint32_t fwHandled;
+  //diagnostic only, don't care if it's inaccurate
+  norace uint32_t fwHandled;
   //appx. time of last receiveDone event.
   uint32_t rxd;
 
@@ -320,8 +337,7 @@ module CXTDMAPhysicalP {
     
   }
   
-  //This should be removed when debugging is done!
-  void recordEventX(uint8_t eventId){}
+  #if CX_RECORD_EVENTS == 1
   void recordEvent(uint8_t eventId){
     atomic{
       uint8_t i = (es+el)%EVENT_HISTORY;
@@ -335,7 +351,9 @@ module CXTDMAPhysicalP {
       }    
     }
   }
-
+  #else
+  void recordEvent(uint8_t eventId){}
+  #endif
 
   task void printEvents(){
     //OK to do atomic: we only do this when we hit an error
@@ -664,11 +682,6 @@ module CXTDMAPhysicalP {
   //FrameStartAlarm.fired event.
   void configureRadio();
   
-  uint32_t nextFsa;
-  task void logNextFsaTask(){
-    printf("nf %lu\r\n", nextFsa);
-  }
-
   async event void PrepareFrameStartAlarm.fired(){
     PFS_TIMING_SET_PIN;
     //we see this at reset...ugh
@@ -699,11 +712,6 @@ module CXTDMAPhysicalP {
       call FrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
         s_pfs_slack);
-      if (logNextFsa){
-        nextFsa = call FrameStartAlarm.getAlarm();
-        logNextFsa = FALSE;
-//        post logNextFsaTask();
-      }
       //now, set up for next PFSA (next frame)
       call PrepareFrameStartAlarm.startAt(
         call PrepareFrameStartAlarm.getAlarm(), 
@@ -722,6 +730,21 @@ module CXTDMAPhysicalP {
     PFS_TIMING_CLEAR_PIN;
   }
   
+  task void loadPacket(){
+    recordEvent(0xc);
+    if (S_TX_LOADING == state){
+      error_t error = call Rf1aPhysical.send( 
+        tx_pos,
+        tx_len,
+        RF1A_OM_IDLE);
+      if (SUCCESS != error){
+        setState(S_ERROR_a);
+      }
+    }else{
+      setState(S_ERROR_a);
+    }
+  }
+
   //actually set up the radio for the coming frame-start
   void configureRadio(){
     error_t error;
@@ -744,19 +767,12 @@ module CXTDMAPhysicalP {
       case S_TX_PRESTART:
         radioStateChange(R_FSTXON, call TDMAPhySchedule.getNow());
         //switch radio to FSTXON.
-        //TODO: resolve async call: 
-        //This should probably do startTransmit_ to set it to FSTXON,
-        //  then post task to call send. Will have to verify that the
-        //  send command handles it correctly when the radio is
-        //  already in FSTXON. I think it should be fine.
-        error = call Rf1aPhysical.send( 
-          tx_pos,
-          tx_len,
-          RF1A_OM_IDLE);
+        error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
         if (error == SUCCESS){
           //NB: if this becomes split-phase, we'll set the state when we
           //get the callback.
-          setAsyncState(S_TX_READY);
+          setAsyncState(S_TX_LOADING);
+          post loadPacket();
           sdFrameNum = totalFrames;
           //get ready to capture your own SFD for re-synch and packet
           //time-stamping.
@@ -885,7 +901,7 @@ module CXTDMAPhysicalP {
         case S_TX_TRANSMITTING:
           txCapture = TRUE;
           //no state change
-          //TODO: if we are origin-sending, then we need to set the
+          //if we are origin-sending, then we need to set the
           //timestamp field of the CX header and indicate that it's OK
           //to finish sending the packet.
           tx_ts = lastCapture;
@@ -939,7 +955,8 @@ module CXTDMAPhysicalP {
     signal TDMAPhySchedule.resynched(frameNum);
   }
   
-  uint32_t lastFw;
+  //diagnostics only, don't care if it's note 100% correct
+  norace uint32_t lastFw;
   task void reportPushback(){
     printf("#pb %lu -> %lu @ %lu\r\n", lastFw, 
       call FrameWaitAlarm.getAlarm(), fwHandled);
@@ -1107,7 +1124,6 @@ module CXTDMAPhysicalP {
             call CXPacket.count(msg));
 //          printf("RX cap %lu last fsa %lu\r\n", 
 //            rdLastRECaptureLocal, lastFsa);
-          logNextFsa = TRUE;
           if (call CXPacket.getScheduleNum(msg) == signal TDMAPhySchedule.getScheduleNum()){
             captureFrameNum = call CXPacket.getOriginalFrameNum(msg)
               + call CXPacket.count(msg) - 1;
@@ -1164,14 +1180,19 @@ module CXTDMAPhysicalP {
 
   async event void Rf1aPhysical.sendDone (int result) { 
     recordEvent(10);
-    if (asyncState == S_TX_TRANSMITTING){
-      if (sdPending ){
-        setAsyncState(S_ERROR_9);
-      }else {
-        sdPending = TRUE;
-        sdResult = result;
-        sdLen = tx_len;
-        post completeSendDone();
+    //OK, so we have to put this in an atomic block b/c the phy layer
+    //actually signals this from the task context (even though it's
+    //marked async).
+    atomic{
+      if (asyncState == S_TX_TRANSMITTING){
+        if (sdPending ){
+          setAsyncState(S_ERROR_9);
+        }else {
+          sdPending = TRUE;
+          sdResult = result;
+          sdLen = tx_len;
+          post completeSendDone();
+        }
       }
     }
   }
@@ -1183,7 +1204,6 @@ module CXTDMAPhysicalP {
     uint32_t sdRECaptureLocal;
     IS_TX_CLEAR_PIN;
     recordEvent(11);
-//    post logNextFsaTask();
     atomic{
       sdMsgLocal = tx_msg;
       sdLenLocal = sdLen;
@@ -1248,9 +1268,6 @@ module CXTDMAPhysicalP {
 //  }
   command error_t TDMAPhySchedule.adjustFrameStart(uint32_t startAt,
       uint16_t atFrameNum){
-    uint16_t nextFrame = (frameNum+1)%s_totalFrames;
-//    printf_TMP("af c %u n %u t %u\r\n", frameNum, nextFrame,
-//      atFrameNum);
     //we assume that atFrameNum is in the past.
     //we need to advance atFrameNum forwarder until it hits the
     //current frame number (since PFSA is matched up with a packet
@@ -1263,28 +1280,16 @@ module CXTDMAPhysicalP {
       startAt += s_frameLen;
       atFrameNum = (atFrameNum+1)%s_totalFrames;
     }
-//    while (atFrameNum > nextFrame){
-//      startAt -= s_frameLen;
-//      atFrameNum = (atFrameNum == 0)? s_totalFrames-1 : atFrameNum - 1;
-//    }
+
     if (call FrameStartAlarm.isRunning()){
       call FrameStartAlarm.startAt(startAt - s_frameLen,
         s_frameLen);
-      printf("live FSA\r\n");
+      printf("~live FSA\r\n");
     }
     if (call PrepareFrameStartAlarm.isRunning()){
-//      uint32_t alarm0 = call PrepareFrameStartAlarm.getAlarm();
-//      uint32_t alarm1;
-//      uint32_t setAt = call PrepareFrameStartAlarm.getNow();
-      uint32_t t0 = startAt - s_frameLen - s_pfs_slack;
-//      printf("rs %lu ->", call PrepareFrameStartAlarm.getAlarm());
       call PrepareFrameStartAlarm.startAt(startAt - s_frameLen - s_pfs_slack,
         s_frameLen);
-//      alarm1 = call PrepareFrameStartAlarm.getAlarm();
-//      printf("# AFS %lu -> %lu @ %lu t0 %lu dt %lu\r\n", 
-//        alarm0, alarm1, setAt, t0, s_frameLen);
       recordPfs(2);
-//      printf(" %lu\r\n", call PrepareFrameStartAlarm.getAlarm());
     }
     //TODO: I would like to make sure that we're not setting up a case
     //  where it will fire immediately, but I'm not sure how at the
@@ -1437,18 +1442,27 @@ module CXTDMAPhysicalP {
   }
 
   event void DelayedSend.sendReady(){
-    //TODO: anything? validate state?
+    recordEvent(0xd);
+    if (state == S_TX_LOADING){
+      setAsyncState(S_TX_READY);
+    }else{
+      setState(S_ERROR_a);
+    }
   }
   
 
   task void setTimestamp(){
-    tx_needsTs = FALSE;
+    uint32_t ts;
+    atomic{
+      tx_needsTs = FALSE;
+      ts = tx_ts;
+    }
+
     //This value corresponds to the "ideal" framestart alarm that
     //  triggered the transmission (sfd - fsDelay). In practice, the
     //  frame start alarm may be different from this (e.g. due to
     //  interrupt-handling jitter).
-    call CXPacket.setTimestamp(tx_msg, tx_ts - fsDelays[s_sri]);
-//    call CXPacket.setTimestamp(tx_msg, (origTs + s_frameLen));
+    call CXPacket.setTimestamp(tx_msg, ts - fsDelays[s_sri]);
     tx_tsSet = TRUE;
   }
   

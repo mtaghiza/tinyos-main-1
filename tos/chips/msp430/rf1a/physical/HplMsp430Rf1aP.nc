@@ -1015,13 +1015,14 @@ generic module HplMsp430Rf1aP () @safe() {
 
   default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
 
-  async command error_t Rf1aPhysical.startTransmission[uint8_t client] (bool with_cca)
+  async command error_t Rf1aPhysical.startTransmission[uint8_t client]
+  (bool with_cca, bool targetFSTXON)
   {
     error_t rv = validateClient(client);
     if (SUCCESS != rv){
       return rv;
     }
-    return startTransmission_(with_cca, FALSE);
+    return startTransmission_(with_cca, targetFSTXON);
   }
 
   async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]

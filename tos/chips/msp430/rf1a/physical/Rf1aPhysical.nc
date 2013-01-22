@@ -139,7 +139,8 @@ interface Rf1aPhysical {
    * @return SUCCESS if transition to TX succeeded.  EOFF if radio is
    * unassigned; EBUSY if owned by another client; ERETRY if CCA was
    * performed and failed. */
-  async command error_t startTransmission (bool check_cca);
+  async command error_t startTransmission (bool check_cca, 
+    bool targetFSTXON);
 
   /** Place the radio in receive mode even if no receive buffer has
    * been provided.

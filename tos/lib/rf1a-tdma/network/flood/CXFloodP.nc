@@ -300,7 +300,7 @@ module CXFloodP{
   event message_t* CXTDMA.receive(message_t* msg, uint8_t len,
       uint16_t frameNum, uint32_t timestamp){
     am_addr_t thisSrc = call CXPacket.source(msg);
-    uint32_t thisSn = call CXPacket.sn(msg);
+//    uint32_t thisSn = call CXPacket.sn(msg);
     printf_F_RX("fcr s %u n %lu", thisSrc, thisSn);
     if (state == S_IDLE){
 //        printf_BF("FU %x %u -> %x %u\r\n", lastSrc, lastSn, thisSrc, thisSn);
@@ -313,14 +313,6 @@ module CXFloodP{
       if (call CXPacket.getNetworkProtocol(msg) & CX_NP_PREROUTED){
         bool isBetween;
         printf_F_RX("p");
-//        //TODO: this should go up into transport if we're keeping things
-//        //clean. 
-//        if (call CXPacket.type(msg) == CX_TYPE_ROUTE_SETUP){
-//          cx_route_t* pl = (cx_route_t*)call Packet.getPayload(msg);
-//          call CXRoutingTable.update(call CXPacket.destination(msg),
-//            thisSrc,
-//            pl->distance);
-//        }
         if ((SUCCESS != call CXRoutingTable.isBetween(thisSrc, 
             call CXPacket.destination(msg), TRUE, &isBetween)) || !isBetween ){
           uint8_t pll = call LayerPacket.payloadLength(msg);

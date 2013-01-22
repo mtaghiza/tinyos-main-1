@@ -192,7 +192,6 @@ implementation {
             return FAIL;
         }
         if(isSending && (nextClient == clientId)) {
-            am_id_t amId = call AMPacket.type(msg);
             uint8_t tProtoId = call CXPacket.getTransportProtocol(msg);
             return call SubSend.cancel[tProtoId](msg);
         }

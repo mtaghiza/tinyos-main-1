@@ -162,7 +162,6 @@ module MasterSchedulerStaticP {
   }
 
   void printSchedule(){
-    uint8_t i;
     printf_TMP("SCHED: sn %u sr %u chan %u slots %u fps %u mr %u fis %u lis %u [",
       schedule->scheduleNum,
       getSymbolRate(schedule),
@@ -173,9 +172,6 @@ module MasterSchedulerStaticP {
       getFirstIdleSlot(schedule),
       getLastIdleSlot(schedule)
     );
-//    for (i = 0; i < MAX_ANNOUNCED_SLOTS; i++){
-//      printf_TMP(" %u, ", schedule->availableSlots[i]);
-//    }
     printf_TMP("]\r\n");
    }
 
@@ -184,17 +180,11 @@ module MasterSchedulerStaticP {
   }
 
   task void recomputeSchedule(){
-    uint16_t i;
     error_t error;
-//    for (i = 0; i< MAX_ANNOUNCED_SLOTS; i++){
-//      schedule->availableSlots[i] = INVALID_SLOT;
-//    }
     setFirstIdleSlot(schedule, STATIC_FIRST_IDLE_SLOT);
     setLastIdleSlot(schedule, SCHED_NUM_SLOTS - 1);
     firstIdleFrame = (getFirstIdleSlot(schedule) * getFramesPerSlot(schedule));
     lastIdleFrame = (getLastIdleSlot(schedule) * getFramesPerSlot(schedule));
-//    printSchedule();
-//    post printScheduleTask();
     error = call AnnounceSend.send(AM_BROADCAST_ADDR, schedule_msg, sizeof(cx_schedule_t));
     if (error != SUCCESS){
       printf("%s: %s\r\n", __FUNCTION__, decodeError(error));

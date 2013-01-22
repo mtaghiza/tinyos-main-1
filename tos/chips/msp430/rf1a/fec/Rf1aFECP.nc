@@ -117,11 +117,15 @@ generic module Rf1aFECP () {
     {
       error_t err;
       uint8_t encodedLen;
-      //setup for transmission: initialize vars, save client
-      encodedPos = txEncoded;
-      encodedSoFar = 0; 
-      encodedReady = 0;
-      runningCRC = 0;
+
+      atomic {
+        //setup for transmission: initialize vars, save client
+        encodedPos = txEncoded;
+        encodedSoFar = 0; 
+        encodedReady = 0;
+        runningCRC = 0;
+        encodedLen = call FEC.encodedLen(length + sizeof(runningCRC));
+      }
       crcAppended = FALSE;
       rawLen = length;
       atomic{
@@ -131,9 +135,8 @@ generic module Rf1aFECP () {
         call DefaultLength.setNow(length);
       }
       post encodeAMAP();
-  
-      encodedLen = call FEC.encodedLen(length + sizeof(runningCRC));
-  
+    
+    
       //start up the phy layer's transmission
       atomic{
         err  = call SubRf1aPhysical.send(encodedPos,
@@ -255,8 +258,9 @@ generic module Rf1aFECP () {
 
 
   async command error_t Rf1aPhysical.startTransmission(
-      bool check_cca){
-    return call SubRf1aPhysical.startTransmission(check_cca);
+      bool check_cca, bool targetFSTXON){
+    return call SubRf1aPhysical.startTransmission(check_cca, 
+      targetFSTXON);
   }
 
   async command error_t Rf1aPhysical.startReception (){
