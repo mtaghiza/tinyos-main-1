@@ -729,10 +729,10 @@ generic module HplMsp430Rf1aP () @safe() {
       post sendFragment_task();
     }
     if (send_done) {
-      printf("sd\r\n");
+//      printf("sd\r\n");
       signal Rf1aPhysical.sendDone[client](result);
     }else{
-      printf("~sd\r\n");
+//      printf("~sd\r\n");
     }
   }
 
@@ -995,9 +995,15 @@ generic module HplMsp430Rf1aP () @safe() {
           return ERETRY;
         }else{
           uint16_t ifin = call Rf1aIf.getIn();
+<<<<<<< HEAD
+=======
+//          printf("RE\r\n");
           //re-enable TXFIFO threshold interrupt
           call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
-          printf(". %x\r\n", ifin);
+>>>>>>> cce2125b... decrease debug, large packet OK
+          //re-enable TXFIFO threshold interrupt
+          call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
+//          printf(". %x\r\n", ifin);
           //With a short packet,
           //we've written all of our data into the txfifo
           //but we don't trigger the txfifo interrupt: we're under the
@@ -1445,7 +1451,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
   {
-    printf("txf\r\n");
+//    printf("txf\r\n");
     if (TX_S_inactive != tx_state) {
       uint8_t txbytes = call Rf1aIf.readRegister(TXBYTES);
       /* Remember those other comments warning of an odd behavior

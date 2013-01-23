@@ -86,8 +86,8 @@ generic module Rf1aFECP () {
       epLocal = encodedPos;
     }
 
-    printf("amap %p (%p) r=%p rr=%u\r\n", 
-      epLocal, txEncoded, rawPos, rawReady);
+//    printf("amap %p (%p) r=%p rr=%u\r\n", 
+//      epLocal, txEncoded, rawPos, rawReady);
     //encode whatever's now ready, update position in encoded buffer
     encodedReady += call FEC.encode(
       rawPos,
@@ -116,9 +116,9 @@ generic module Rf1aFECP () {
       nxCrc = runningCRC;
       encodedReady += sizeof(runningCRC);
 
-      printf("crc=%x @%p (%p + %x)\r\n", 
-        runningCRC, crcDest, epLocal,
-        call FEC.encodedLen(rawLen));
+//      printf("crc=%x @%p (%p + %x)\r\n", 
+//        runningCRC, crcDest, epLocal,
+//        call FEC.encodedLen(rawLen));
       *crcDest = nxCrc;
       crcAppended = TRUE;
     }
@@ -250,7 +250,7 @@ generic module Rf1aFECP () {
   
   async command unsigned int SubRf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
     uint8_t rv = (encodedReady < count)? encodedReady:count;
-    printf("strc: %u\r\n", rv);
+//    printf("strc: %u\r\n", rv);
     post encodeAMAP();
     return rv;
   }
@@ -258,19 +258,19 @@ generic module Rf1aFECP () {
   async command const uint8_t* SubRf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
     uint8_t* txStart = encodedPos;
     uint8_t txrc = call SubRf1aTransmitFragment.transmitReadyCount[client](count);
-    printf("stxd\r\n");
+//    printf("stxd\r\n");
     encodedPos += txrc;
     encodedReady -= txrc;
     return txStart;
   }
 
   default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client](unsigned int count){
-    printf("trc\r\n");
+//    printf("trc\r\n");
     return call DefaultRf1aTransmitFragment.transmitReadyCount(count);
   }
 
   default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client](unsigned int count){
-    printf("txd\r\n");
+//    printf("txd\r\n");
     return call DefaultRf1aTransmitFragment.transmitData(count);
   }
 
