@@ -7,6 +7,7 @@ configuration MetadataAppC{
   components BusC;
   components ToastTLVC;
   components BaconTLVC;
+  components AnalogSensorC;
 
   components new TimerMilliC();
 
@@ -27,8 +28,10 @@ configuration MetadataAppC{
   BusC.Pool -> PoolC;
   ToastTLVC.Pool -> PoolC;
   BaconTLVC.Pool -> PoolC;
+  AnalogSensorC.Pool -> PoolC;
 
   ToastTLVC.LastSlave -> BusC.Get;
+  AnalogSensorC.LastSlave -> BusC.Get;
 
   components LedsC;
   MetadataP.Leds -> LedsC;

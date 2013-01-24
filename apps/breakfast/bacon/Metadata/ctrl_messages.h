@@ -3,6 +3,9 @@
 
 #define BACON_BARCODE_LEN 8 
 #define TOAST_BARCODE_LEN 8 
+
+#include "I2CADCReader.h"
+
 //---- Begin Bacon commands
 //Read interrupt vector (for safe BSL programming)
 typedef nx_struct read_iv_cmd_msg{
@@ -140,6 +143,23 @@ typedef nx_struct read_toast_version_response_msg{
   nx_uint8_t len;
   nx_uint16_t version;
 } read_toast_version_response_msg_t;
+
+typedef nx_struct read_analog_sensor_cmd_msg{
+  nx_uint32_t delayMS;
+  nx_uint16_t samplePeriod;
+  nx_uint8_t inch;
+  nx_uint8_t sref;
+  nx_uint8_t ref2_5v;
+  nx_uint8_t adc12ssel;
+  nx_uint8_t adc12div;
+  nx_uint8_t sht;
+  nx_uint8_t sampcon_ssel;
+  nx_uint8_t sampcon_id;
+} read_analog_sensor_cmd_msg_t;
+
+typedef nx_struct read_analog_sensor_response_msg{
+  adc_sample_t sample;
+} read_analog_sensor_response_msg_t;
 
 //---Utilities
 typedef nx_struct scan_bus_cmd_msg{
@@ -317,6 +337,12 @@ enum{
   //uses generic read tlv
   AM_READ_TOAST_VERSION_CMD_MSG = 0xA8,
   AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
+  
+  //
+  //ANALOG SENSOR COMMANDS
+  //
+  AM_READ_ANALOG_SENSOR_CMD_MSG = 0xB0,
+  AM_READ_ANALOG_SENSOR_RESPONSE_MSG = 0xB1,
 
   //
   //Utilities
