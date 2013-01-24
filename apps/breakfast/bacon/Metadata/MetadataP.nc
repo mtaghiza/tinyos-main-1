@@ -18,6 +18,8 @@ module MetadataP{
   uses interface AMSend as ReadIvResponseSend;
   uses interface AMSend as ReadMfrIdResponseSend;
   uses interface AMSend as ResetBaconResponseSend;
+
+  uses interface AMPacket;
     
 } implementation {
   enum {
@@ -26,6 +28,7 @@ module MetadataP{
   };
 
   uint8_t state = S_BOOTING;
+  am_addr_t cmdSource;
 
   event void Boot.booted(){
     call Leds.led0On();
@@ -65,7 +68,9 @@ module MetadataP{
       {
         reset_bacon_response_msg_t* responsePl = (reset_bacon_response_msg_t*)(call Packet.getPayload(ResetBacon_response_msg, sizeof(reset_bacon_response_msg_t)));
         responsePl->error = SUCCESS;
-        call ResetBaconResponseSend.send(0, ResetBacon_response_msg,
+        //don't know where the request came from, so broadcast this
+        //one.
+        call ResetBaconResponseSend.send(AM_BROADCAST_ADDR, ResetBacon_response_msg,
           sizeof(reset_bacon_response_msg_t));
       }
     }
@@ -96,6 +101,8 @@ module MetadataP{
         message_t* ret = call Pool.get();
         ReadIv_response_msg = call Pool.get();
         ReadIv_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
+        printfflush();
         post respondReadIv();
         return ret;
       }else{
@@ -112,7 +119,7 @@ module MetadataP{
     read_iv_response_msg_t* responsePl = (read_iv_response_msg_t*)(call Packet.getPayload(ReadIv_response_msg, sizeof(read_iv_response_msg_t)));
     memcpy(&(responsePl->iv), (void*)0xFFE0, 32);
     responsePl->error = SUCCESS;
-    call ReadIvResponseSend.send(0, ReadIv_response_msg, sizeof(read_iv_response_msg_t));
+    call ReadIvResponseSend.send(cmdSource, ReadIv_response_msg, sizeof(read_iv_response_msg_t));
   }
 
   event void ReadIvResponseSend.sendDone(message_t* msg, 
@@ -142,6 +149,7 @@ module MetadataP{
         message_t* ret = call Pool.get();
         ReadMfrId_response_msg = call Pool.get();
         ReadMfrId_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post respondReadMfrId();
         return ret;
       }else{
@@ -158,7 +166,7 @@ module MetadataP{
     read_mfr_id_response_msg_t* responsePl = (read_mfr_id_response_msg_t*)(call Packet.getPayload(ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t)));
     memcpy(&(responsePl->mfrId), (void*)0x1A0A, 8);
     responsePl->error = SUCCESS;
-    call ReadMfrIdResponseSend.send(0, ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t));
+    call ReadMfrIdResponseSend.send(cmdSource, ReadMfrId_response_msg, sizeof(read_mfr_id_response_msg_t));
   }
 
   event void ReadMfrIdResponseSend.sendDone(message_t* msg, 

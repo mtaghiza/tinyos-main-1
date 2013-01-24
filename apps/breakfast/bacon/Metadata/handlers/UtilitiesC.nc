@@ -2,12 +2,13 @@ configuration UtilitiesC{
   uses interface Pool<message_t>;
 } implementation{
   components UtilitiesP;
-  components SerialActiveMessageC;
+  components ActiveMessageC;
   UtilitiesP.Pool = Pool;
-  UtilitiesP.Packet -> SerialActiveMessageC;
+  UtilitiesP.Packet -> ActiveMessageC;
+  UtilitiesP.AMPacket -> ActiveMessageC;
 
-  components new SerialAMReceiverC(AM_PING_CMD_MSG) as PingCmdReceive;
+  components new AMReceiverC(AM_PING_CMD_MSG) as PingCmdReceive;
   UtilitiesP.PingCmdReceive -> PingCmdReceive;
-  components new SerialAMSenderC(AM_PING_RESPONSE_MSG) as PingResponseSend;
+  components new AMSenderC(AM_PING_RESPONSE_MSG) as PingResponseSend;
   UtilitiesP.PingResponseSend -> PingResponseSend;
 }

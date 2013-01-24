@@ -2,9 +2,11 @@ module UtilitiesP{
   uses interface Receive as PingCmdReceive;
   uses interface AMSend as PingResponseSend;
   uses interface Packet;
+  uses interface AMPacket;
   uses interface Pool<message_t>;
 } implementation {
-
+ 
+  am_addr_t cmdSource;
 
   message_t* Ping_cmd_msg = NULL;
   message_t* Ping_response_msg = NULL;
@@ -23,6 +25,7 @@ module UtilitiesP{
         message_t* ret = call Pool.get();
         Ping_response_msg = call Pool.get();
         Ping_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post respondPing();
         return ret;
       }else{
@@ -37,7 +40,7 @@ module UtilitiesP{
   task void respondPing(){
     ping_response_msg_t* responsePl = (ping_response_msg_t*)(call Packet.getPayload(Ping_response_msg, sizeof(ping_response_msg_t)));
     responsePl->error = SUCCESS;
-    call PingResponseSend.send(0, Ping_response_msg, sizeof(ping_response_msg_t));
+    call PingResponseSend.send(cmdSource, Ping_response_msg, sizeof(ping_response_msg_t));
   }
 
   event void PingResponseSend.sendDone(message_t* msg, 

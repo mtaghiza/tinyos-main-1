@@ -30,6 +30,8 @@ module ToastTLVP{
   uses interface AMSend as ReadToastBarcodeIdResponseSend;
 
 } implementation {
+  am_addr_t cmdSource;
+
   message_t* responseMsg = NULL;
   message_t* cmdMsg = NULL;
 
@@ -102,21 +104,21 @@ module ToastTLVP{
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_TOAST_TLV_CMD_MSG:
-          call ReadToastTlvResponseSend.send(0, responseMsg, 
+          call ReadToastTlvResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_toast_tlv_response_msg_t));
           break;
         case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
-          call DeleteToastTlvEntryResponseSend.send(0, responseMsg, 
+          call DeleteToastTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(delete_toast_tlv_entry_response_msg_t));
           break;
         case AM_ADD_TOAST_TLV_ENTRY_CMD_MSG:
-          call AddToastTlvEntryResponseSend.send(0, responseMsg, 
+          call AddToastTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(add_toast_tlv_entry_response_msg_t));
           break;
         case AM_READ_TOAST_TLV_ENTRY_CMD_MSG:
 //          err = call ReadToastTlvEntryResponseSend.send(0, responseMsg, 
 //            sizeof(read_toast_tlv_entry_response_msg_t));
-          err = call ReadToastVersionResponseSend.send(0, responseMsg, 
+          err = call ReadToastVersionResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_toast_version_response_msg_t));
 //          printf("read entry error response: %x\n", err);
 //          printfflush();
@@ -139,24 +141,24 @@ module ToastTLVP{
       case AM_ADD_TOAST_TLV_ENTRY_CMD_MSG:
         switch(commandPl->tag){
           case TAG_VERSION:
-            call WriteToastVersionResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            call WriteToastVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
             break;
           case TAG_TOAST_ASSIGNMENTS:
-            call WriteToastAssignmentsResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            call WriteToastAssignmentsResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
             break;
           case TAG_GLOBAL_ID:
-            call WriteToastBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            call WriteToastBarcodeIdResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
             break;
           default:
-            call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+            call AddToastTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
             break;
         }
         break;
       case AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG:
-        call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
+        call DeleteToastTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
         break;
       case AM_WRITE_TOAST_TLV_CMD_MSG:
-        call WriteToastTlvResponseSend.send(0, responseMsg, sizeof(write_toast_tlv_response_msg_t));
+        call WriteToastTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_toast_tlv_response_msg_t));
         break;
       default:
         printf("Unrecognized command: %x\n", currentCommandType);
@@ -191,6 +193,7 @@ module ToastTLVP{
             memset(pl, 0, TOSH_DATA_LENGTH);
           }
           cmdMsg = msg_;
+          cmdSource = call AMPacket.source(msg_);
           post loadToastTLVStorage();
           return ret;
         }
@@ -208,7 +211,7 @@ module ToastTLVP{
     read_toast_tlv_response_msg_t* responsePl = (read_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_toast_tlv_response_msg_t)));
     memcpy(&(responsePl->tlvs), tlvs, 64);
     responsePl->error = SUCCESS;
-    err = call ReadToastTlvResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_response_msg_t));
+    err = call ReadToastTlvResponseSend.send(cmdSource, responseMsg, sizeof(read_toast_tlv_response_msg_t));
   }
 
   event void ReadToastTlvResponseSend.sendDone(message_t* msg, 
@@ -243,6 +246,7 @@ module ToastTLVP{
             memset(pl, 0, TOSH_DATA_LENGTH);
           }
           cmdMsg = msg_;
+          cmdSource = call AMPacket.source(msg_);
           post respondWriteToastTlv();
           return ret;
         }
@@ -272,7 +276,7 @@ module ToastTLVP{
     if (error != SUCCESS){
       write_toast_tlv_response_msg_t* responsePl = (write_toast_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_toast_tlv_response_msg_t)));
       responsePl->error = error;
-      call WriteToastTlvResponseSend.send(0, responseMsg, sizeof(write_toast_tlv_response_msg_t));
+      call WriteToastTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_toast_tlv_response_msg_t));
     }
   }
 
@@ -306,6 +310,7 @@ module ToastTLVP{
             memset(pl, 0, TOSH_DATA_LENGTH);
           }
           cmdMsg = msg_;
+          cmdSource = call AMPacket.source(msg_);
           post loadToastTLVStorage();
           return ret;
         }
@@ -342,7 +347,7 @@ module ToastTLVP{
     if (error != SUCCESS){
       delete_toast_tlv_entry_response_msg_t* responsePl = (delete_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t)));
       responsePl->error = EINVAL;
-      call DeleteToastTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
+      call DeleteToastTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(delete_toast_tlv_entry_response_msg_t));
     }
   }
 
@@ -374,16 +379,16 @@ module ToastTLVP{
       responsePl->error = ESIZE;
       switch(commandPl->tag){
         case TAG_VERSION:
-          call WriteToastVersionResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          call WriteToastVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
           break;
         case TAG_TOAST_ASSIGNMENTS:
-          call WriteToastAssignmentsResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          call WriteToastAssignmentsResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
           break;
         case TAG_GLOBAL_ID:
-          call WriteToastBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          call WriteToastBarcodeIdResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
           break;
         default:
-          call AddToastTlvEntryResponseSend.send(0, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
+          call AddToastTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));
           break;
       }
     }
@@ -415,25 +420,25 @@ module ToastTLVP{
     }
     switch(commandPl->tag){
       case TAG_VERSION:
-        call ReadToastVersionResponseSend.send(0, responseMsg, 
+        call ReadToastVersionResponseSend.send(cmdSource, responseMsg, 
           sizeof(read_toast_version_response_msg_t));
         break;
       case TAG_GLOBAL_ID:
         printf("barcode\n");
         printfflush();
-        call ReadToastBarcodeIdResponseSend.send(0, responseMsg, 
+        call ReadToastBarcodeIdResponseSend.send(cmdSource, responseMsg, 
           sizeof(read_toast_barcode_id_response_msg_t));
         break;
       case TAG_TOAST_ASSIGNMENTS:
         printf("Assignments\n");
         printfflush();
-        call ReadToastAssignmentsResponseSend.send(0, responseMsg,
+        call ReadToastAssignmentsResponseSend.send(cmdSource, responseMsg,
           sizeof(read_toast_assignments_response_msg_t));
         break;
       default:
         printf("generic\n");
         printfflush();
-        call ReadToastTlvEntryResponseSend.send(0, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
+        call ReadToastTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(read_toast_tlv_entry_response_msg_t));
         break;
     }
   }

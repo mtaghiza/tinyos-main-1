@@ -82,7 +82,7 @@ if __name__ == '__main__':
             if not last and not mcn:
                 continue
             if last and not mcn:
-                d.send(last)
+                d.send(last, destination)
                 continue
             if mcn not in mig.__all__:
                 for cn in mig.__all__:

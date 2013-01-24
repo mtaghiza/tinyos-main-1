@@ -10,8 +10,12 @@ module BusP{
   uses interface AMSend as ScanBusResponseSend;
   uses interface AMSend as SetBusPowerResponseSend;
 
+  uses interface AMPacket;
+
   provides interface Get<uint8_t>;
 } implementation {
+  am_addr_t cmdSource;
+
   uint8_t slaveCount;
   uint8_t lastSlave = 0;
   error_t scanBus_err;
@@ -81,6 +85,7 @@ module BusP{
         message_t* ret = call Pool.get();
         ScanBus_response_msg = call Pool.get();
         ScanBus_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post startDiscovery();
         return ret;
       }else{
@@ -104,7 +109,7 @@ module BusP{
     scan_bus_response_msg_t* responsePl = (scan_bus_response_msg_t*)(call Packet.getPayload(ScanBus_response_msg, sizeof(scan_bus_response_msg_t)));
     responsePl->error = scanBus_err;
     responsePl->numFound = slaveCount;
-    call ScanBusResponseSend.send(0, ScanBus_response_msg, sizeof(scan_bus_response_msg_t));
+    call ScanBusResponseSend.send(cmdSource, ScanBus_response_msg, sizeof(scan_bus_response_msg_t));
   }
 
   event void ScanBusResponseSend.sendDone(message_t* msg, 
@@ -124,7 +129,7 @@ module BusP{
   task void reportBusPowerError(){
     set_bus_power_response_msg_t* responsePl = (set_bus_power_response_msg_t*)(call Packet.getPayload(SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t)));
     responsePl->error = setBusPower_error;
-    call SetBusPowerResponseSend.send(0, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
+    call SetBusPowerResponseSend.send(cmdSource, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
   }
 
   task void setPowerTask(){
@@ -152,6 +157,7 @@ module BusP{
         message_t* ret = call Pool.get();
         SetBusPower_response_msg = call Pool.get();
         SetBusPower_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post setPowerTask();
         return ret;
       }else{
@@ -167,7 +173,7 @@ module BusP{
 //    set_bus_power_cmd_msg_t* commandPl = (set_bus_power_cmd_msg_t*)(call Packet.getPayload(SetBusPower_cmd_msg, sizeof(set_bus_power_cmd_msg_t)));
     set_bus_power_response_msg_t* responsePl = (set_bus_power_response_msg_t*)(call Packet.getPayload(SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t)));
     responsePl->error = SUCCESS;
-    call SetBusPowerResponseSend.send(0, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
+    call SetBusPowerResponseSend.send(cmdSource, SetBusPower_response_msg, sizeof(set_bus_power_response_msg_t));
   }
 
   event void SetBusPowerResponseSend.sendDone(message_t* msg, 

@@ -27,6 +27,7 @@ module BaconTLVP{
   message_t* responseMsg = NULL;
   message_t* cmdMsg = NULL;
   am_id_t currentCommandType; 
+  am_addr_t cmdSource;
 
   #define BACON_TLV_LEN 128
   uint8_t tlvs_buf[BACON_TLV_LEN];
@@ -96,19 +97,19 @@ module BaconTLVP{
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
-          call ReadBaconTlvResponseSend.send(0, responseMsg, 
+          call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_bacon_tlv_response_msg_t));
           break;
         case AM_DELETE_BACON_TLV_ENTRY_CMD_MSG:
-          call DeleteBaconTlvEntryResponseSend.send(0, responseMsg, 
+          call DeleteBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(delete_bacon_tlv_entry_response_msg_t));
           break;
         case AM_ADD_BACON_TLV_ENTRY_CMD_MSG:
-          call AddBaconTlvEntryResponseSend.send(0, responseMsg, 
+          call AddBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(add_bacon_tlv_entry_response_msg_t));
           break;
         case AM_READ_BACON_TLV_ENTRY_CMD_MSG:
-          call ReadBaconTlvEntryResponseSend.send(0, responseMsg, 
+          call ReadBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_bacon_tlv_entry_response_msg_t));
           break;
         default:
@@ -128,21 +129,21 @@ module BaconTLVP{
       case AM_ADD_BACON_TLV_ENTRY_CMD_MSG:
         switch(commandPl->tag){
           case TAG_VERSION:
-            call WriteBaconVersionResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+            call WriteBaconVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
             break;
           case TAG_GLOBAL_ID:
-            call WriteBaconBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+            call WriteBaconBarcodeIdResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
             break;
           default:
-            call AddBaconTlvEntryResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+            call AddBaconTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
             break;
         }
         break;
       case AM_DELETE_BACON_TLV_ENTRY_CMD_MSG:
-        call DeleteBaconTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_bacon_tlv_entry_response_msg_t));
+        call DeleteBaconTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(delete_bacon_tlv_entry_response_msg_t));
         break;
       case AM_WRITE_BACON_TLV_CMD_MSG:
-        call WriteBaconTlvResponseSend.send(0, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
+        call WriteBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
         break;
       default:
         printf("Unrecognized command: %x\n", currentCommandType);
@@ -169,6 +170,7 @@ module BaconTLVP{
           memset(pl, 0, TOSH_DATA_LENGTH);
         }
         cmdMsg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post loadTLVStorage();
         return ret;
       }else{
@@ -185,7 +187,7 @@ module BaconTLVP{
     read_bacon_tlv_response_msg_t* responsePl = (read_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_bacon_tlv_response_msg_t)));
     memcpy(&(responsePl->tlvs), tlvs, BACON_TLV_LEN);
     responsePl->error = SUCCESS;
-    err = call ReadBaconTlvResponseSend.send(0, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
+    err = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
   }
 
   event void ReadBaconTlvResponseSend.sendDone(message_t* msg, 
@@ -214,6 +216,7 @@ module BaconTLVP{
           memset(pl, 0, TOSH_DATA_LENGTH);
         }
         cmdMsg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post respondWriteBaconTlv();
         return ret;
       }else{
@@ -240,7 +243,7 @@ module BaconTLVP{
     if (error != SUCCESS){
       write_bacon_tlv_response_msg_t* responsePl = (write_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_bacon_tlv_response_msg_t)));
       responsePl->error = error;
-      call WriteBaconTlvResponseSend.send(0, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
+      call WriteBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
     }
   }
 
@@ -266,6 +269,7 @@ module BaconTLVP{
           memset(pl, 0, TOSH_DATA_LENGTH);
         }
         cmdMsg = msg_;
+        cmdSource = call AMPacket.source(msg_);
         post loadTLVStorage();
         return ret;
       }else{
@@ -300,7 +304,7 @@ module BaconTLVP{
     if (error != SUCCESS){
       delete_bacon_tlv_entry_response_msg_t* responsePl = (delete_bacon_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(delete_bacon_tlv_entry_response_msg_t)));
       responsePl->error = EINVAL;
-      call DeleteBaconTlvEntryResponseSend.send(0, responseMsg, sizeof(delete_bacon_tlv_entry_response_msg_t));
+      call DeleteBaconTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(delete_bacon_tlv_entry_response_msg_t));
     }
   }
 
@@ -336,13 +340,13 @@ module BaconTLVP{
       responsePl->error = ESIZE;
       switch(commandPl->tag){
         case TAG_VERSION:
-          call WriteBaconVersionResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+          call WriteBaconVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
           break;
         case TAG_GLOBAL_ID:
-          call WriteBaconBarcodeIdResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+          call WriteBaconBarcodeIdResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
           break;
         default:
-          call AddBaconTlvEntryResponseSend.send(0, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
+          call AddBaconTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));
           break;
       }
     }
@@ -374,15 +378,15 @@ module BaconTLVP{
     }
     switch(commandPl->tag){
       case TAG_VERSION:
-        call ReadBaconVersionResponseSend.send(0, responseMsg, 
+        call ReadBaconVersionResponseSend.send(cmdSource, responseMsg, 
           sizeof(read_bacon_version_response_msg_t));
         break;
       case TAG_GLOBAL_ID:
-        call ReadBaconBarcodeIdResponseSend.send(0, responseMsg, 
+        call ReadBaconBarcodeIdResponseSend.send(cmdSource, responseMsg, 
           sizeof(read_bacon_barcode_id_response_msg_t));
         break;
       default:
-        call ReadBaconTlvEntryResponseSend.send(0, responseMsg, sizeof(read_bacon_tlv_entry_response_msg_t));
+        call ReadBaconTlvEntryResponseSend.send(cmdSource, responseMsg, sizeof(read_bacon_tlv_entry_response_msg_t));
         break;
     }
   }
