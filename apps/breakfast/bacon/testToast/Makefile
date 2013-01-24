@@ -9,6 +9,8 @@ CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cSynch
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 
+CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
+
 #TODO: argh, shouldn't be here
 CFLAGS+=-I$(TOSDIR)/chips/msp430/x2xxx/internalFlash
 include $(MAKERULES)

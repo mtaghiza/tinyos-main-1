@@ -40,6 +40,7 @@ module I2CADCReaderMasterP{
     if (ret == SUCCESS){
       state = (S_BUSY|S_WRITING);
     }
+    printf("I2C Send: %x\r\n", ret);
     return ret;
   }
 
@@ -47,6 +48,7 @@ module I2CADCReaderMasterP{
     uint8_t i;
     uint32_t delay = 0;
     adc_reader_pkt_t* settings = call I2CADCReaderMaster.getSettings(cmdMsg);
+    printf("I2C Send done: %x\r\n", error);
     //TODO: verify msg==cmdMsg
     if (error == SUCCESS){
       for (i = 0; i< ADC_NUM_CHANNELS && settings->cfg[i].config.inch != INPUT_CHANNEL_NONE; i++){
@@ -66,6 +68,7 @@ module I2CADCReaderMasterP{
     error_t error = call
     I2CComMaster.receive(cmdMsg->body.header.slaveAddr, responseMsg,
       sizeof(adc_response_t));
+    printf("I2C Receive: %x\r\n", error);
     if (error != SUCCESS){
       state = S_IDLE;
       responseMsg = signal I2CADCReaderMaster.sampleDone(error,
@@ -78,6 +81,7 @@ module I2CADCReaderMasterP{
 
   event void I2CComMaster.receiveDone(error_t error, i2c_message_t*
       rMsg){
+    printf("I2C ReceiveDone: %x\r\n", error);
     //TODO: verify rMsg == responseMsg
     state = S_IDLE;
     responseMsg = signal I2CADCReaderMaster.sampleDone(error,

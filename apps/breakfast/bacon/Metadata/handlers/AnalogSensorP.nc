@@ -18,6 +18,39 @@ module AnalogSensorP {
   message_t* read_analog_sensor_response_msg = NULL;
   task void respondReadAnalogSensor();
 
+  const char* sref_str[7] = {
+   "AVcc_AVss",
+   "VREFplus_AVss",
+   "VeREFplus_AVss",
+   "INVAL_3",
+   "AVcc_VREFnegterm",
+   "VREFplus_VREFnegterm",
+   "VeREFplus_VREFnegterm"
+  };
+
+  const char* ref2_5v_str[2] = {
+    "1_5",
+    "2_5",
+  };
+
+  task void printSettings(){
+    uint8_t i;
+    adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
+    printf("Settings (inch delayMS sref_enum ref2_5_enum)\n\r");
+    for (i=0; i < ADC_NUM_CHANNELS; i++){
+      printf("  [%d] : %x ", i, cmd->cfg[i].config.inch);
+      if (cmd->cfg[i].config.inch == INPUT_CHANNEL_NONE){
+        printf("(None)\n\r");
+        break;
+      } else {
+        printf("%lu\t%s\t%s\n\r", cmd->cfg[i].delayMS,
+          sref_str[cmd->cfg[i].config.sref], 
+          ref2_5v_str[cmd->cfg[i].config.ref2_5v]);
+      }
+    }
+  }
+
+
   event message_t* ReadAnalogSensorCmdReceive.receive(message_t* msg_, 
       void* payload,
       uint8_t len){
@@ -44,6 +77,7 @@ module AnalogSensorP {
   }
 
   task void respondReadAnalogSensor(){
+    error_t err;
     read_analog_sensor_cmd_msg_t* commandPl =
       (read_analog_sensor_cmd_msg_t*)(call Packet.getPayload(read_analog_sensor_cmd_msg,
         sizeof(read_analog_sensor_cmd_msg_t)));
@@ -60,7 +94,11 @@ module AnalogSensorP {
     cmd->cfg[0].config.sampcon_id = commandPl->sampcon_id; 
     //mark end of sequence
     cmd->cfg[1].config.inch = INPUT_CHANNEL_NONE;
-    call I2CADCReaderMaster.sample(call LastSlave.get(), i2c_msg);
+    post printSettings();
+    err = call I2CADCReaderMaster.sample(call LastSlave.get(), i2c_msg);
+    printf("sample analog (%u, %p): %x\n", 
+      call LastSlave.get(), i2c_msg, err);
+    printfflush();
   }
 
   task void sendResponse();
@@ -70,6 +108,8 @@ module AnalogSensorP {
       responseMsg, adc_response_t* response){
 
     read_analog_sensor_response_msg_t* responsePl = (read_analog_sensor_response_msg_t*)(call Packet.getPayload(read_analog_sensor_response_msg, sizeof(read_analog_sensor_response_msg_t)));
+    printf("DONE\n");
+    printfflush();
     if (response != NULL){
       responsePl->sample = response->samples[0];
     }
@@ -78,9 +118,11 @@ module AnalogSensorP {
   }
 
   task void sendResponse(){
-    call ReadAnalogSensorResponseSend.send(cmdSource, 
+    error_t err = call ReadAnalogSensorResponseSend.send(cmdSource, 
       read_analog_sensor_response_msg, 
       sizeof(read_analog_sensor_response_msg_t));
+    printf("Send response: %x\n", err);
+    printfflush();
   }
 
   event void ReadAnalogSensorResponseSend.sendDone(message_t* msg, 
