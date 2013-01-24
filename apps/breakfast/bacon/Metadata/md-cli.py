@@ -56,14 +56,17 @@ if __name__ == '__main__':
     # serial access: would need something that implements PacketSource
     # methods and just uses the python serial libs to read/write
     # directly.
-    packetSource = 'sf@localhost:9002'
+    packetSource = 'serial@/dev/ttyUSB0:115200'
+    destination = 1
 
     if len(sys.argv) < 1:
-        print "Usage:", sys.argv[0], "[packetSource=sf@localhost:9002]" 
+        print "Usage:", sys.argv[0], "[packetSource=serial@/dev/ttyUSB0:115200] [destination=0x01]" 
         sys.exit()
 
     if len(sys.argv) > 1:
         packetSource = sys.argv[1]
+    if len(sys.argv) > 2:
+        destination = int(sys.argv[2], 16)
 
     print packetSource
 
@@ -98,7 +101,7 @@ if __name__ == '__main__':
                           {"__builtins__":None}, {})
                         print v
                     getattr(m, setter)(v)
-                d.send(m)
+                d.send(m, destination)
                 last = m
             if mcn == 'q':
                 break
