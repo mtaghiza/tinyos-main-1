@@ -55,6 +55,8 @@ ReadBaconTlvEntryCmdMsg
 ReadBaconTlvEntryResponseMsg
 ReadToastTlvEntryCmdMsg
 ReadToastTlvEntryResponseMsg
+ReadAnalogSensorCmdMsg
+ReadAnalogSensorResponseMsg
 '''
 
 __all__= ['PrintfMsg'] + allS.split()
