@@ -209,6 +209,9 @@ implementation
     call UartPacket.clear(msg);
     call UartAMPacket.setSource(msg, src);
     call UartAMPacket.setGroup(msg, grp);
+    memmove(call UartPacket.getPayload(msg, tmpLen), 
+      call RadioPacket.getPayload(msg, tmpLen),
+      tmpLen);
 
     if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS)
       call Leds.led1Toggle();
@@ -288,6 +291,9 @@ implementation
 
     call RadioPacket.clear(msg);
     call RadioAMPacket.setSource(msg, source);
+    memmove(call RadioPacket.getPayload(msg, tmpLen),
+      call UartPacket.getPayload(msg, tmpLen),
+      tmpLen);
     
     if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
       call Leds.led0Toggle();
