@@ -983,7 +983,7 @@ generic module HplMsp430Rf1aP () @safe() {
           rc = call Rf1aIf.strobe(RF_SNOP);
         }
         if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
-          printf("cancel\r\n");
+//          printf("cancel\r\n");
           cancelTransmit_();
           return ERETRY;
         }else{
@@ -1007,7 +1007,7 @@ generic module HplMsp430Rf1aP () @safe() {
           return SUCCESS;
         }
       }else{
-        printf("inval s=%u\r\n", tx_state);
+//        printf("inval s=%u\r\n", tx_state);
         return EINVAL;
       }
     }
@@ -1267,8 +1267,8 @@ generic module HplMsp430Rf1aP () @safe() {
           /* In one-shot mode, if we didn't get the whole message,
            * mark it failed. */
           if (rx_single_use && (! signal_complete)) {
-            printf("rx full: %u/%u received\r\n", 
-              received, rx_expected);
+//            printf("rx full: %u/%u received\r\n", 
+//              received, rx_expected);
             rx_result = ENOMEM;
           }
         }
@@ -1437,7 +1437,7 @@ generic module HplMsp430Rf1aP () @safe() {
       }
       post sendFragment_task();
     }else{
-      printf("?txf\r\n");
+//      printf("?txf\r\n");
     }
   }
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
