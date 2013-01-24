@@ -89,6 +89,7 @@ module DualActiveMessageP{
       pll);
     
     if (error == SUCCESS){
+      memmove(spl, rpl, pll);
       error = call SerialAMSend.send[id](call RadioAMPacket.destination(msg),
         msg, pll);
       if (error != SUCCESS){

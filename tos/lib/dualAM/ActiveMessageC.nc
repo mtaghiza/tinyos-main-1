@@ -40,25 +40,35 @@ configuration ActiveMessageC {
 
     interface AMSend[am_id_t id];
     interface Receive[am_id_t id];
+    #ifndef DUAL_AM_SERIAL
     interface Receive as Snoop[am_id_t id];
+    interface LowPowerListening;
+    #endif
 
     interface Packet;
     interface AMPacket;
     interface PacketAcknowledgements;
-    interface LowPowerListening;
   }
 }
 implementation {
+  #if defined DUAL_AM_SERIAL
+  components SerialActiveMessageC as AM;
+  #elif defined DUAL_AM_RADIO
+  components RadioActiveMessageC as AM;
+  #else
   components DualActiveMessageC as AM;
+  #endif
 
   SplitControl = AM;
   
   AMSend       = AM;
   Receive      = AM.Receive;
+  #ifndef DUAL_AM_SERIAL
   Snoop        = AM.Snoop;
+  LowPowerListening = AM;
+  #endif
   Packet       = AM;
   AMPacket     = AM;
   PacketAcknowledgements = AM;
-  LowPowerListening = AM;
 
 }
