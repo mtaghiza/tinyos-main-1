@@ -30,9 +30,9 @@ configuration MetadataAppC{
 
   ToastTLVC.LastSlave -> BusC.Get;
 
-//  components AnalogSensorC;
-//  AnalogSensorC.Pool -> PoolC;
-//  AnalogSensorC.LastSlave -> BusC.Get;
+  components AnalogSensorC;
+  AnalogSensorC.Pool -> PoolC;
+  AnalogSensorC.LastSlave -> BusC.Get;
 
   components LedsC;
   MetadataP.Leds -> LedsC;
