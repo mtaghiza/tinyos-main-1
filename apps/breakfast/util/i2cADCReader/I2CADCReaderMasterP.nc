@@ -40,7 +40,7 @@ module I2CADCReaderMasterP{
     if (ret == SUCCESS){
       state = (S_BUSY|S_WRITING);
     }
-    printf("I2C Send: %x\r\n", ret);
+    printf("I2C Send(%u): %x\r\n", sizeof(adc_reader_pkt_t), ret);
     return ret;
   }
 
