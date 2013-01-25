@@ -101,7 +101,7 @@ enum inch_enum
    INPUT_CHANNEL_A13 = 13,                  // input channel A13
    INPUT_CHANNEL_A14 = 14,                  // input channel A14
    INPUT_CHANNEL_A15 = 15,                  // input channel A15
-   INPUT_CHANNEL_NONE,                      // illegal (identifies invalid settings)
+   INPUT_CHANNEL_NONE = 16,                      // illegal (identifies invalid settings)
 };
 
 enum sref_enum
