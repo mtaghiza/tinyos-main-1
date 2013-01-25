@@ -68,7 +68,7 @@ module AnalogSensorP {
         post respondReadAnalogSensor();
         return ret;
       }else{
-        printf("RX: Ping");
+        printf("RX: ReadAnalogSensor");
         printf(" Pool Empty!\n");
         printfflush();
         return msg_;
@@ -113,8 +113,6 @@ module AnalogSensorP {
       responseMsg, adc_response_t* response){
 
     read_analog_sensor_response_msg_t* responsePl = (read_analog_sensor_response_msg_t*)(call Packet.getPayload(read_analog_sensor_response_msg, sizeof(read_analog_sensor_response_msg_t)));
-    printf("DONE\n");
-    printfflush();
     if (response != NULL){
       responsePl->sample = response->samples[0];
     }
@@ -123,15 +121,21 @@ module AnalogSensorP {
   }
 
   task void sendResponse(){
-    error_t err = call ReadAnalogSensorResponseSend.send(cmdSource, 
+    error_t err;
+//    printf("Send: %u %p %u\n", cmdSource, 
+//      read_analog_sensor_response_msg, 
+//      sizeof(read_analog_sensor_response_msg_t));
+    err = call ReadAnalogSensorResponseSend.send(cmdSource, 
       read_analog_sensor_response_msg, 
       sizeof(read_analog_sensor_response_msg_t));
-    printf("Send response: %x\n", err);
-    printfflush();
+//    printf("Send err: %x\n", err);
   }
 
   event void ReadAnalogSensorResponseSend.sendDone(message_t* msg, 
       error_t error){
+    printf("Send done: %p %p\n",
+      read_analog_sensor_response_msg,
+      read_analog_sensor_cmd_msg);
     call Pool.put(read_analog_sensor_response_msg);
     call Pool.put(read_analog_sensor_cmd_msg);
     read_analog_sensor_cmd_msg = NULL;
