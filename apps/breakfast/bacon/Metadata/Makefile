@@ -8,13 +8,13 @@ MIGCLASSES += $(MIGDIR)/PrintfMsg.py
 
 ##Define one of these flags if, for whatever reason, you want the
 ##metadata app to only use radio or only use serial communication.
-CFLAGS += -DDUAL_AM_SERIAL
+#CFLAGS += -DDUAL_AM_SERIAL
 #CFLAGS += -DDUAL_AM_RADIO
 
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
-CFLAGS += -I$(TOSDIR)/lib/dualAM
+#CFLAGS += -I$(TOSDIR)/lib/dualAM
 CFLAGS += -Ihandlers
 CFLAGS += -I.
 CFLAGS +=-DTOSH_DATA_LENGTH=140
