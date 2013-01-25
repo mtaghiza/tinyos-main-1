@@ -12,6 +12,8 @@ configuration MetadataAppC{
 
   components PrintfC;
   components SerialStartC;
+
+  components WatchDogC;
   
   components SerialActiveMessageC as ActiveMessageC;
 
