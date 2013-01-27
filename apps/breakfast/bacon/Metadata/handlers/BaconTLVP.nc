@@ -71,9 +71,9 @@ module BaconTLVP{
   }
 
   task void handleLoaded(){
-//    printf("Loaded bacon TLV e %x c %x\n", loadTLVError,
-//      currentCommandType);
-//    printfflush();
+    printf("Loaded bacon TLV e %x c %x\n", loadTLVError,
+      currentCommandType);
+    printfflush();
     if (loadTLVError == SUCCESS){
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
@@ -92,24 +92,25 @@ module BaconTLVP{
           printf("Unknown command %x\n", currentCommandType);
       }
     } else {
+      error_t error;
       read_bacon_tlv_response_msg_t* responsePl = 
         (read_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(read_bacon_tlv_response_msg_t)));
       responsePl->error = loadTLVError;
       switch (currentCommandType){
         case AM_READ_BACON_TLV_CMD_MSG:
-          call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, 
+          error = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_bacon_tlv_response_msg_t));
           break;
         case AM_DELETE_BACON_TLV_ENTRY_CMD_MSG:
-          call DeleteBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
+          error = call DeleteBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(delete_bacon_tlv_entry_response_msg_t));
           break;
         case AM_ADD_BACON_TLV_ENTRY_CMD_MSG:
-          call AddBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
+          error = call AddBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(add_bacon_tlv_entry_response_msg_t));
           break;
         case AM_READ_BACON_TLV_ENTRY_CMD_MSG:
-          call ReadBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
+          error = call ReadBaconTlvEntryResponseSend.send(cmdSource, responseMsg, 
             sizeof(read_bacon_tlv_entry_response_msg_t));
           break;
         default:
@@ -117,6 +118,7 @@ module BaconTLVP{
             currentCommandType);
           break;
       }
+      printf("Response Send Error: %x\r\n", error);
       currentCommandType = 0;
     }
   }
@@ -188,10 +190,16 @@ module BaconTLVP{
     memcpy(&(responsePl->tlvs), tlvs, BACON_TLV_LEN);
     responsePl->error = SUCCESS;
     err = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
+//    err = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, 
+//      50);
+    printf("Error: %x sending %p (len %u pl %p) to %x\r\n", err, responseMsg,
+      sizeof(read_bacon_tlv_response_msg_t), responsePl, cmdSource);
   }
 
   event void ReadBaconTlvResponseSend.sendDone(message_t* msg, 
       error_t error){
+    printf("TXD\r\n");
+    printfflush();
     cleanup();
   }
   
@@ -243,7 +251,8 @@ module BaconTLVP{
     if (error != SUCCESS){
       write_bacon_tlv_response_msg_t* responsePl = (write_bacon_tlv_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(write_bacon_tlv_response_msg_t)));
       responsePl->error = error;
-      call WriteBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
+      error = call WriteBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(write_bacon_tlv_response_msg_t));
+      printf("error: %x\r\n", error);
     }
   }
 

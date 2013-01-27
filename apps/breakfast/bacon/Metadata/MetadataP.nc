@@ -5,7 +5,7 @@
 module MetadataP{
   uses interface Boot;
   uses interface Packet;
-  uses interface SplitControl as SerialSplitControl;
+  uses interface SplitControl;
   uses interface Pool<message_t>;
 
   uses interface Leds;
@@ -34,18 +34,18 @@ module MetadataP{
     call Leds.led0On();
     printf("Booted.\n");
     printfflush();
-    call SerialSplitControl.start();
+    call SplitControl.start();
   }
   
   task void respondResetBacon();
 
-  event void SerialSplitControl.startDone(error_t error){ 
+  event void SplitControl.startDone(error_t error){ 
     state = S_READY;
     post respondResetBacon();
   }
 
 
-  event void SerialSplitControl.stopDone(error_t error){}
+  event void SplitControl.stopDone(error_t error){}
 
 //Begin completed implementations
   //Reset Bacon

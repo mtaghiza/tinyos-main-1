@@ -81,8 +81,8 @@ module BaseStationP @safe() {
 implementation
 {
   enum {
-    UART_QUEUE_LEN = 12,
-    RADIO_QUEUE_LEN = 12,
+    UART_QUEUE_LEN = 8,
+    RADIO_QUEUE_LEN = 8,
   };
 
   message_t  uartQueueBufs[UART_QUEUE_LEN];

@@ -6,10 +6,8 @@ MIGDIR = mig
 MIGCLASSES =
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
 
-##Define one of these flags if, for whatever reason, you want the
-##metadata app to only use radio or only use serial communication.
-#CFLAGS += -DDUAL_AM_SERIAL
-#CFLAGS += -DDUAL_AM_RADIO
+USE_AM_RADIO?=0
+CFLAGS += -DUSE_AM_RADIO=$(USE_AM_RADIO)
 
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
