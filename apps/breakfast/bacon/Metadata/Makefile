@@ -30,6 +30,8 @@ CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
 CFLAGS+=-I$(TOSDIR)/chips/msp430/msp430xv2/internalFlash
 CFLAGS+=-I$(TOSDIR)/chips/msp430/x2xxx/internalFlash
 
+PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
+
 #CLEAN_EXTRA = $(MIGCLASSES)
 
 $(MIGDIR): 

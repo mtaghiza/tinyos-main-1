@@ -11,7 +11,7 @@ module TestP{
   uses interface UartStream;
 
   uses interface AMSend;
-  uses interface DelayedSend;
+//  uses interface DelayedSend;
   uses interface AMPacket;
   uses interface Packet;
   uses interface Receive;
@@ -365,18 +365,18 @@ module TestP{
     return msg_;
   }
 
-  task void completeSend(){
-    error_t err = call DelayedSend.startSend();
-    printf("Complete Send: %x\r\n", err);
-  }
+//  task void completeSend(){
+//    error_t err = call DelayedSend.startSend();
+//    printf("Complete Send: %x\r\n", err);
+//  }
 
-  event void DelayedSend.sendReady(){
-    if (! delay){
-      post completeSend();
-    }else{
-      printf("Send ready: complete with 'S'\r\n");
-    }
-  }
+//  event void DelayedSend.sendReady(){
+//    if (! delay){
+//      post completeSend();
+//    }else{
+//      printf("Send ready: complete with 'S'\r\n");
+//    }
+//  }
 
   task void requestRestart(){
     needsRestart = TRUE;
@@ -400,9 +400,9 @@ module TestP{
       case 's':
         post sendOnce();
         break;
-      case 'S':
-        post completeSend();
-        break;
+//      case 'S':
+//        post completeSend();
+//        break;
 
       case '?':
         post printSettingsTask();

@@ -19,11 +19,12 @@ configuration TestAppC{
   TestP.UartStream -> PlatformSerialC;
 
   components ActiveMessageC;
-  components new DelayedAMSenderC(AM_RADIO_TEST) as AMSenderC;
+//  components new DelayedAMSenderC(AM_RADIO_TEST) as AMSenderC;
+  components new AMSenderC(AM_RADIO_TEST) as AMSenderC;
   components new AMReceiverC(AM_RADIO_TEST);
   TestP.SplitControl -> ActiveMessageC;
   TestP.AMSend -> AMSenderC;
-  TestP.DelayedSend -> AMSenderC;
+//  TestP.DelayedSend -> AMSenderC;
   TestP.AMPacket -> AMSenderC;
   TestP.Packet -> AMSenderC;
   TestP.Receive -> AMReceiverC;
@@ -44,11 +45,13 @@ configuration TestAppC{
   //  logging)
   //SRFS6_868_xxx_CUR_HC.nc
 //  components PDERf1aSettingsP as TestConfigP;
-  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
-  components new Rf1aChannelCacheC(2);
-  TestConfigP.Rf1aChannelCache -> Rf1aChannelCacheC;
-  Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
-
+//  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
+//  components DefaultRf1aSettingsP as TestConfigP;
+//
+//  components new Rf1aChannelCacheC(2);
+//  TestConfigP.Rf1aChannelCache -> Rf1aChannelCacheC;
+//  Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
+//
   components Rf1aC;
   TestP.Rf1aPhysicalMetadata -> Rf1aC.Rf1aPhysicalMetadata;
 }

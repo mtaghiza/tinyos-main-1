@@ -45,6 +45,7 @@ module UtilitiesP{
 
   event void PingResponseSend.sendDone(message_t* msg, 
       error_t error){
+    printfflush();
     call Pool.put(Ping_response_msg);
     call Pool.put(Ping_cmd_msg);
     Ping_cmd_msg = NULL;

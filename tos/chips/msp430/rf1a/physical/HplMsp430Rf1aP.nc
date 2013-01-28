@@ -719,6 +719,7 @@ generic module HplMsp430Rf1aP () @safe() {
     if (send_done) {
 //      printf("sd\r\n");
       signal Rf1aPhysical.sendDone[client](result);
+//      printfflush();
     }else{
 //      printf("~sd\r\n");
     }
@@ -988,8 +989,6 @@ generic module HplMsp430Rf1aP () @safe() {
           return ERETRY;
         }else{
 //          printf("RE\r\n");
-          //re-enable TXFIFO threshold interrupt
-          call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
           //re-enable TXFIFO threshold interrupt
           call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
 //          printf(". %x\r\n", ifin);
@@ -1388,10 +1387,41 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     return SUCCESS;
   }
+  
+//  #define TRC_LEN 8
+//  unsigned int trcr[TRC_LEN];
+//  unsigned int trc[TRC_LEN];
+//  uint8_t trcFirst = 0;
+//  uint8_t trcCount = 0;
+//  task void reportTRC(){
+//    uint8_t curTRC;
+//    uint8_t curTRCr;
+//    atomic{
+//      if (trcCount == 0){
+//        return;
+//      }
+//      curTRC = trc[trcFirst];
+//      curTRCr = trcr[trcFirst];
+//      trcCount--;
+//      trcFirst = (trcFirst + 1)%TRC_LEN;
+//
+//      if (trcCount > 0){
+//        post reportTRC();
+//      }
+//    }
+//    printf("TRC %u/%u\r\n", curTRC, curTRCr);
+////    printfflush();
+//    
+//  }
 
   default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client] (unsigned int count)
   {
-    return call DefaultRf1aTransmitFragment.transmitReadyCount(count);
+    unsigned int ret = call DefaultRf1aTransmitFragment.transmitReadyCount(count);
+//    trc[(trcFirst+trcCount) % TRC_LEN] = ret;
+//    trcr[(trcFirst+trcCount) % TRC_LEN] = count;
+//    trcCount++;
+//    post reportTRC();
+    return ret;
   }
 
   default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client] (unsigned int count)
@@ -1412,6 +1442,21 @@ generic module HplMsp430Rf1aP () @safe() {
       post receiveData_task();
     }
   }
+  
+//  task void reportTxf(){
+//    printf("txf\r\n");
+////    printfflush();
+//  }
+//
+//  task void reportTxfFail0(){
+//    printf("txf0!\r\n");
+////    printfflush();
+//  }
+//
+//  task void reportTxfFail1(){
+//    printf("txf1!\r\n");
+////    printfflush();
+//  }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
   {
@@ -1434,9 +1479,13 @@ generic module HplMsp430Rf1aP () @safe() {
       //  written the data into the fifo?
       if (0x3F <= (0x7F & txbytes)) {
         tx_result = ECANCEL;
+//        post reportTxfFail0();
+      }else{
+//        post reportTxf();
       }
       post sendFragment_task();
     }else{
+//      post reportTxfFail1();
 //      printf("?txf\r\n");
     }
   }
@@ -1447,8 +1496,12 @@ generic module HplMsp430Rf1aP () @safe() {
       post receiveData_task();
     }
   }
+//  task void reportTxUnderflow(){
+//    printf("UF\r\n");
+//  }
   async event void Rf1aInterrupts.txUnderflow[uint8_t client] ()
   {
+//    post reportTxUnderflow();
     atomic {
       tx_result = FAIL;
       post sendFragment_task();

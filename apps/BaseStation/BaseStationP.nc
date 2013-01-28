@@ -125,6 +125,24 @@ implementation
       radioFull = FALSE;
     if (call SerialControl.start() == EALREADY)
       uartFull = FALSE;
+    
+    #ifdef CC430_PIN_DEBUG
+    atomic{
+      //map SFD to 1.2
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP2 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+  
+      //set as output/function
+      P1SEL |= BIT2;
+      P1DIR |= BIT2;
+  
+      //disable flash chip
+      P2SEL &= ~BIT1;
+      P2OUT |=  BIT1;
+    }
+    #endif
   }
 
   event void RadioControl.startDone(error_t error) {

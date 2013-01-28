@@ -192,13 +192,13 @@ module BaconTLVP{
     err = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, sizeof(read_bacon_tlv_response_msg_t));
 //    err = call ReadBaconTlvResponseSend.send(cmdSource, responseMsg, 
 //      50);
-    printf("Error: %x sending %p (len %u pl %p) to %x\r\n", err, responseMsg,
-      sizeof(read_bacon_tlv_response_msg_t), responsePl, cmdSource);
+//    printf("Error: %x sending %p (len %u pl %p) to %x\r\n", err, responseMsg,
+//      sizeof(read_bacon_tlv_response_msg_t), responsePl, cmdSource);
   }
 
   event void ReadBaconTlvResponseSend.sendDone(message_t* msg, 
       error_t error){
-    printf("TXD\r\n");
+    printf("TXD: %x\r\n", error);
     printfflush();
     cleanup();
   }
