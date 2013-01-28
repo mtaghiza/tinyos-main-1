@@ -176,8 +176,10 @@ module Rf1aDumpConfigC {
            !!(r8 & 0x04), r8 & 0x03, adr_chk[r8 & 0x03]);           
     r8 = cp->pktctrl0;
     i = (r8 >> 4) & 0x03;
-    printf("WHITE_DATA: %u, PKT_FORMAT: %u (%s) ; CRC_EN: %u\r\nLENGTH_CONFIG: %u (%s) ; ",
-           !!(r8 & 0x40), i, pkt_format[i],
+    printf("WHITE_DATA: %u, PKT_FORMAT: %u (%s) ;",
+           !!(r8 & 0x40), i, pkt_format[i]);
+    i = r8 & 0x03;
+    printf(" CRC_EN: %u\r\nLENGTH_CONFIG: %u (%s) ; ",
            !!(r8 & 0x04), i, length_config[i]);
     r8 = cp->mdmcfg1;
     i = 0x07 & (r8 >> 4);
