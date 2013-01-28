@@ -25,8 +25,8 @@ const rf1a_config_t rf1a_default_config = {
     sync1:   0xd3,
     //sync0 default from Rf1aConfigure.h 
     sync1:   0x91,
-    //0x3D max bytes (pktctrl0.length_config is 0b01, var length)
-    pktlen:  0x3D,    // PKTLEN    Packet length.
+    //0xff max bytes (pktctrl0.length_config is 0b01, var length)
+    pktlen:  0xff,    // PKTLEN    Packet length.
     pktctrl1:0x04,   // PKTCTRL1  Packet automation control.
     pktctrl0:0x05,   // PKTCTRL0  Packet automation control.
     //pktrctrl1.adr_chk is 0, no address check
