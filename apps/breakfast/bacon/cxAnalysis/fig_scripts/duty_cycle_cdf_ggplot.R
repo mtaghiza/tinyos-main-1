@@ -15,6 +15,8 @@ x <- c()
 xmin <- -1
 xmax <- -1
 plotType <- 'cdf'
+plotHeight <- 3.5
+plotWidth <- 4
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -39,10 +41,16 @@ for (i in seq(argStart, argc-1)){
     }
   }
 
+  if (opt == '--plotHeight'){
+    plotHeight <- as.numeric(val)
+  }
+  if (opt == '--plotWidth'){
+    plotWidth <- as.numeric(val)
+  }
   if ( opt == '--pdf' ){
     plotFile=T
     #for whatever rason, latex barfs if this is 4x3
-    pdf(val, width=4, height=3.5, title="Duty Cycle Distribution")
+    pdf(val, width=plotWidth, height=plotHeight, title="Duty Cycle Distribution")
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -104,10 +112,10 @@ if (plotType == 'cdf'){
     xmax <- max(aggCDF$dc)
   }
   print(
-    ggplot(aggCDF, aes(x=dc, y=ecdf, linetype=label))
+    ggplot(aggCDF, aes(x=100*dc, y=ecdf, linetype=label))
     + geom_line()
     + scale_y_continuous(limits=c(0,1.0))
-    + scale_x_continuous(limits=c(xmin, xmax))
+    + scale_x_continuous(limits=c(100*xmin, 100*xmax))
     + theme_bw()
     + xlab("Duty Cycle")
     + ylab("CDF")
@@ -119,7 +127,7 @@ if (plotType == 'hist'){
   print(
     ggplot(aggByNode, aes(x=dc))
     + geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.001, color='black', fill='gray')
-    + xlab("Duty Cycle")
+    + xlab("Duty Cycle [0, 1.0]")
     + ylab("Fraction")
     + theme_bw()
     + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())

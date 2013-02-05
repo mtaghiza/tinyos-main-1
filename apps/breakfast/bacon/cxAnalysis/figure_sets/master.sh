@@ -1,5 +1,5 @@
 #!/bin/bash
-outDir=master
+outDir=dfMaster
 sd=fig_scripts
 mkdir -p $outDir/pdf
 
@@ -62,7 +62,7 @@ do
 done
 
 #root flood for distance measures
-rf6Files=$(find . -type f -name '*.db' | grep 'rootFlood' | grep '0x2D')
+rf6Files=$(find $tbd -type f -name '*.db' | grep 'rootFlood' | grep '0x2D')
 
 floodDistanceOptions=""
 for f in $rf6Files
@@ -72,7 +72,7 @@ do
 done
 
 #fixed bw/selection method, vary txp
-txpFiles=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.2' | grep '61440' | grep 'rt.8')
+txpFiles=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.2' | grep '61440' | grep 'rt.8')
 
 txpOptions=""
 txp0Options=""
@@ -104,9 +104,9 @@ done
 
 #Fixed bw/txp, vary selection method
 #these files are for the DCI/PRR v. sel figures
-sel0Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'sel.0')
-sel2Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'sel.2')
-sel3Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+sel0Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+sel2Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'sel.2')
+sel3Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'rt.8')
 
 selOptions=""
 for f in $sel0Tx6Files $sel2Tx6Files $sel3Tx6Files
@@ -118,12 +118,19 @@ do
 done
 
 #Fixed selection method/txp, vary bw
-#these files are for the DCI/PRR v. bw figures
-bw0Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'rt.8')
-bw1Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.1' | grep '61440' |  grep '0x2D' | grep 'rt.8')
-bw2Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.2' | grep '61440' |  grep '0x2D' | grep 'rt.8')
-bw3Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.3' | grep '61440' |  grep '0x2D' | grep 'rt.8')
-bw5Tx6Files=$(find . -type f -name '*.db' | grep 'burst' | grep 'bw.5' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+#these files are for the DCI/PRR v. bw figures: using last
+# bw0Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+# bw1Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.1' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+# bw2Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.2' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+# bw3Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.3' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+# bw5Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.5' | grep '61440' |  grep '0x2D' | grep 'sel.0')
+
+#these files are for the DCI/PRR v. bw figures: using average
+bw0Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.0' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+bw1Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.1' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+bw2Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.2' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+bw3Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.3' | grep '61440' |  grep '0x2D' | grep 'rt.8')
+bw5Tx6Files=$(find $tbd -type f -name '*.db' | grep 'burst' | grep 'bw.5' | grep '61440' |  grep '0x2D' | grep 'rt.8')
 
 bwOptions=""
 for f in $bw0Tx6Files $bw1Tx6Files $bw2Tx6Files $bw3Tx6Files $bw5Tx6Files
@@ -136,9 +143,9 @@ done
 
 
 #Flood results for normalization by txp
-flood12Files=$(find . -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x25')
-flood6Files=$(find . -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x2D')
-flood0Files=$(find . -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x8D')
+flood12Files=$(find $tbd -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x25')
+flood6Files=$(find $tbd -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x2D')
+flood0Files=$(find $tbd -type f -name '*.db' | grep 'flood' | grep '61440' | grep '0x8D')
 
 flood12Options=""
 for f in $flood12Files
@@ -215,10 +222,37 @@ function floodDCHist(){
   echo "Flood DC Histogram"
   R --no-save --slave --args \
     $flood6Options \
-    --pdf $outDir/pdf/dc_flood.pdf \
     --xmin 0.02\
+    --plotWidth 4\
+    --plotHeight 2\
     --plotType hist\
+    --pdf $outDir/pdf/dc_flood.pdf \
     < $sd/duty_cycle_cdf_ggplot.R
+}
+
+function floodPRRCDF(){
+  echo "Flood PRR CDF"
+  R --no-save --slave --args \
+    --dir lr \
+    $flood6Options \
+    --labels flood \
+    --xmin 0.85\
+    --xmax 1.01\
+    --plotHeight 2\
+    --plotWidth 4\
+    --plotType histogram\
+    --pdf $outDir/pdf/prr_flood_hist.pdf \
+    < $sd/prr_cdf_ggplot.R
+
+  R --no-save --slave --args \
+    --dir lr \
+    $flood6Options \
+    --labels flood \
+    --xmin 0.85\
+    --xmax 1.00\
+    --plotType cdf\
+    --pdf $outDir/pdf/prr_flood_cdf.pdf \
+    < $sd/prr_cdf_ggplot.R
 }
 
 function xVTxp(){
@@ -411,6 +445,18 @@ function spatial(){
     --labelAll 0\
     --bgImage 0\
     --outFile $outDir/map_far.png
+
+  python fig_scripts/TestbedMap.py $f\
+    --cxf $midNode 0 \
+    --labelAll 0\
+    --bgImage 1\
+    --outFile $outDir/map_mid_bg.pdf
+
+  python fig_scripts/TestbedMap.py $f\
+    --cxf $farNode 0 \
+    --labelAll 0\
+    --bgImage 1\
+    --outFile $outDir/map_far_bg.pdf
 }
 
 function extrapolation(){
@@ -456,18 +502,6 @@ function extrapolation(){
     < $sd/active_slots.R
 }
 
-function all(){
-  bw
-  sel
-  depthVTime
-  floodDCHist
-  xVTxp
-  dciVTxp
-  phy
-  sim
-  spatial
-  extrapolation
-}
 
 function listFiles(){
   echo "$fileList"
@@ -531,6 +565,23 @@ function prr_v_dc(){
     --plotErrorBars 1\
     --pdf $outDir/pdf/prr_v_dc_all_eb.pdf\
     < $sd/prr_v_dc_scatter.R
+
+  R --no-save --slave \
+    --args \
+    --dir lr \
+    $bwOptions \
+    $flood6Options \
+    --labels bw\
+    --aggByLabel 0\
+    --xmin 0.5\
+    --alpha 0.75\
+    --plotErrorBars 0\
+    --removeLabel 1\
+    --removeLabel 2\
+    --removeLabel 3\
+    --removeLabel 5\
+    --pdf $outDir/pdf/prr_v_dci_bw0_scatter.pdf\
+    < $sd/prr_v_dc_scatter.R
      
 }
 
@@ -571,5 +622,30 @@ function forwarderCount(){
 
 }
 
-set -x
-forwarderCount
+function asym(){
+  f=data_final/testbed/distance_stretch_db/type.flood.bw.0.sel.0.txp.0x2D.ipi.61440.thresh.-100.sm.map.nonroot.tn.4.1349803136.db
+
+  R --no-save --slave \
+  --args \
+  --db $f \
+  --plotHeight 2.5\
+  --plotWidth 4\
+  --pdf asym_hist.pdf \
+  < fig_scripts/asym_hist.R
+}
+
+function all(){
+  bw
+  sel
+  depthVTime
+  floodDCHist
+  xVTxp
+  dciVTxp
+  phy
+  sim
+  spatial
+  forwarderCount
+  prr_v_dc
+#  extrapolation
+}
+asym

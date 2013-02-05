@@ -169,7 +169,7 @@ if (legendSettings == 'txp'){
     + geom_point(position=pd,)
 #    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
 #    + geom_errorbar(aes(ymin=depth, ymax=uq), width=.1, position=pd, color='gray') 
-    + xlab("")
+    + xlab("Node")
     + ylab("Distance")
     + scale_shape_manual(name="TX Power (dBm)",
       breaks=c('0x8D', '0x2D', '0x25'),
@@ -189,7 +189,7 @@ if (legendSettings == 'txp'){
     + geom_point(position=pd,)
 #    + geom_errorbar(aes(ymin=depth-sd, ymax=depth+sd), width=.1, position=pd) 
 #    + geom_errorbar(aes(ymin=depth, ymax=uq), width=.1, position=pd, color='gray') 
-    + xlab("")
+    + xlab("Node")
     + ylab("Distance")
     + scale_shape_manual(name="TX Power (dBm)",
       breaks=c('0x8D', '0x2D', '0x25'),

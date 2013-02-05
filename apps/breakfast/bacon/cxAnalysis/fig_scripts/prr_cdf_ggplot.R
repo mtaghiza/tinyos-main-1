@@ -25,6 +25,9 @@ selectQ <- selectQRL
 labels <- 'none'
 xmin <- 0
 xmax <- 1
+plotType <- 'cdf'
+plotHeight <- 3.5
+plotWidth <- 4
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -59,10 +62,16 @@ for (i in seq(argStart, argc-1)){
       x <- rbind(x, tmp)
     }
   }
+  if (opt == '--plotHeight'){
+    plotHeight <- as.numeric(val)
+  }
+  if (opt == '--plotWidth'){
+    plotWidth <- as.numeric(val)
+  }
 
   if ( opt == '--pdf' ){
     plotFile=T
-    pdf(val, width=4, height=3, title="PRR Comparison CDF")
+    pdf(val, width=plotWidth, height=plotHeight, title="PRR Distribution(s)")
   }
   if ( opt == '--png' ){
     plotFile=T
@@ -76,6 +85,9 @@ for (i in seq(argStart, argc-1)){
   }
   if (opt == '--labels'){
     labels <- val
+  }
+  if (opt == '--plotType'){
+    plotType <- val
   }
 }
 print("raw loaded")
@@ -141,6 +153,39 @@ if (labels == 'sel'){
     + theme(legend.justification=c(0,1), legend.position=c(0,1))
     + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
+}
+if (labels == 'flood'){
+  if (plotType == 'histogram'){
+    bw <- 0.01
+  print(
+    ggplot(aggByNode, aes(prr - bw/2))
+    + geom_histogram(aes(y=..count../sum(..count..)), 
+      fill='white',
+      color='black',
+      binwidth=bw)
+    + xlab("Packet Reception Ratio")
+    + ylab("Fraction")
+    + scale_x_continuous(limits=c(xmin, xmax))
+    + theme_bw()
+    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+  )
+  } else if (plotType == 'cdf'){
+    print(
+      ggplot(aggCDF, aes(x=prr, y=ecdf, linetype=label))
+      + geom_line()
+      + scale_y_continuous(limits=c(0,1.0))
+      + scale_x_continuous(limits=c(xmin,xmax))
+      + scale_linetype_manual(name="Metric",
+        breaks=c('flood'),
+        labels=c('Flood'),
+        values=c(1))
+      + ylab("CDF")
+      + xlab("Packet Reception Ratio")
+      + theme_bw()
+      + theme(legend.justification=c(0,1), legend.position=c(0,1))
+      + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+    )
+  }
 }
 if (labels == 'none'){
   print(

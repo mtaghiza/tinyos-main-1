@@ -149,7 +149,7 @@ if (plotType == 'scatter'){
       labels=c(0, -6, -12),
       values=c(3, 2, 0))
     + xlab("Source Node Distance")
-    + ylab("Avg. DC at Others")
+    + ylab("Avg. DC at Others [0, 1.0]")
     + theme(legend.justification=c(1,0), legend.position=c(1,0))
     + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )

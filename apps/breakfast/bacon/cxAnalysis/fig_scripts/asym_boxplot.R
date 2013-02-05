@@ -40,7 +40,7 @@ boxplot(depth~root*leaf, data=x[x$lr==1,], border='blue', col='blue',
   )
 
 legend('topleft', c('Root->Leaf', 'Leaf->Root'), text.col=c('red', 'blue'))
-title(main="Flood Depth Asymmetry (no retx)")
+title(main="Flood Depth Asymmetry")
 
 if ( plotFile){
   g<-dev.off()
