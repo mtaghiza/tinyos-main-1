@@ -1,6 +1,9 @@
 COMPONENT=MetadataAppC
 MIGDIR = mig
 
+BAUDRATE?=115200
+CFLAGS+=-DTOS_DEFAULT_BAUDRATE=$(BAUDRATE)
+
 ##couldn't entice Make to run this command...
 #grep 'msg{' ctrl_messages.h | awk '{print $3}' | tr -d '{' | sed -re 's,(_|^)([a-z]),\u\2,g' -e 's,^,$(MIGDIR)/,g' -e 's,$,.py,g'
 MIGCLASSES =

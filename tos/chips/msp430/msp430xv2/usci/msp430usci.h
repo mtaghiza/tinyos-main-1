@@ -61,19 +61,23 @@ typedef struct msp430_usci_config_t {
   
   #if 9600 == TOS_DEFAULT_BAUDRATE
     /* SLAU259 Table 16-4 2^20Hz 9600: UBR=109, BRS=2, BRF=0 */
-    brw : 109, // 9600
+    br1 : 0
+    br0 : 109, // 9600
     mctl : UCBRF_0 + UCBRS_2
   #elif 19200 == TOS_DEFAULT_BAUDRATE
     /* SLAU259 Table 16-4 2^20Hz 19200: UBR=54, BRS=2, BRF=0 */
-    brw : 54, // 19200
+    br1 : 0,
+    br0 : 54, // 19200
     mctl : UCBRF_0 + UCBRS_2
   #elif 38400 == TOS_DEFAULT_BAUDRATE
     /* SLAU259 Table 16-4 2^20Hz 38400: UBR=27, BRS=2, BRF=0 */
-    brw : 27, // 38400
+    br1 : 0,
+    br0 : 27, // 38400
     mctl : UCBRF_0 + UCBRS_2
   #elif 57600 == TOS_DEFAULT_BAUDRATE
     /* SLAU259 Table 16-4 2^20Hz 57600: UBR=18, BRS=1, BRF=0 */
-    brw : 18, // 57600
+    br1 : 0,  // 57600
+    br0 : 18, // 57600
     mctl : UCBRF_0 + UCBRS_1
   #elif 115200 == TOS_DEFAULT_BAUDRATE
     /* SLAU259 Table 16-4 2^20Hz 115200: UBR=9, BRS=1, BRF=0 */

@@ -50,6 +50,11 @@ module MetadataP{
       //disable flash chip
       P2SEL &= ~BIT1;
       P2OUT |=  BIT1;
+      
+      //set up 1.3 for GPIO (used for identifying atomic sections)
+      P1SEL &= ~BIT3;
+      P1DIR |=  BIT3;
+      P1OUT &= ~BIT3;
     }
     
   }
