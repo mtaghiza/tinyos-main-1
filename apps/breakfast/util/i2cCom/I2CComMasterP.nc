@@ -47,6 +47,15 @@ generic module I2CComMasterP(uint8_t clientId){
 
   task void write(){
     error_t error;
+//    atomic {
+//      uint8_t i;
+//      printf("WRITE\r\n");
+//      for (i=0; i < msg->body.header.len + sizeof(i2c_message_header_t); i++){
+//        printf("[%u] %02x\r\n", i, msg->buf[i]);
+//      }
+//      printfflush();
+//    }
+
     //printf("writing %d bytes\n\r", msg->body.header.len);
     error = call I2CPacket.write(I2C_START|I2C_STOP,
       msg->body.header.slaveAddr, 
@@ -134,6 +143,14 @@ generic module I2CComMasterP(uint8_t clientId){
 
   async event void I2CPacket.readDone(error_t error, uint16_t addr,
       uint8_t length, uint8_t* data){
+//    atomic {
+//      uint8_t i;
+//      printf("READDONE\r\n");
+//      for (i=0; i < length; i++){
+//        printf("[%u] %02x\r\n", i, data[i]);
+//      }
+//      printfflush();
+//    }
     msg->body.header.len = length;
     signalError = error;
     post signalReceiveDone();

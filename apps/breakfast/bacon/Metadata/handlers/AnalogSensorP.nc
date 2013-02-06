@@ -82,6 +82,7 @@ module AnalogSensorP {
       (read_analog_sensor_cmd_msg_t*)(call Packet.getPayload(read_analog_sensor_cmd_msg,
         sizeof(read_analog_sensor_cmd_msg_t)));
     adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg); 
+    memset(cmd, 0, sizeof(adc_reader_pkt_t));
     {
       uint8_t i;
       for (i=0; i < ADC_NUM_CHANNELS; i++){
@@ -101,21 +102,68 @@ module AnalogSensorP {
 
     post printSettings();
     err = call I2CADCReaderMaster.sample(call LastSlave.get(), i2c_msg);
-    printf("sample analog (%u, %p): %x\n", 
-      call LastSlave.get(), i2c_msg, err);
+    printf("sample analog (%u, %p, %p): %x\n", 
+      call LastSlave.get(), i2c_msg, cmd, err);
     printfflush();
   }
 
   task void sendResponse();
+  
+  i2c_message_t* cmdMsg;
+  i2c_message_t* responseMsg;
+  uint8_t i2c_index;
+
+  task void printRead(){
+    //odd.. it seems like the LA is only reporting the body
+    if (i2c_index < responseMsg->body.header.len + sizeof(i2c_message_header_t)){
+      printf("[%u] %02X\n", i2c_index, responseMsg->body.buf[i2c_index]);
+//      printfflush();
+      i2c_index++;
+      post printRead();
+    }else{
+      printfflush();
+    }
+    
+  }
+
+  task void printWritten(){
+    if (i2c_index < cmdMsg->body.header.len + sizeof(i2c_message_header_t)){
+      printf("[%u] %02X\n", i2c_index, cmdMsg->buf[i2c_index]);
+ //     printfflush();
+      i2c_index++;
+      post printWritten();
+    }else{
+      i2c_index = 0;
+      printf("READ\n");
+      post printRead();
+    }
+  }
+
+  task void printExchange(){
+    i2c_index = 0;
+    printf("WROTE\n");
+    post printWritten();
+
+  }
 
   event i2c_message_t* I2CADCReaderMaster.sampleDone(error_t error,
-      uint16_t slaveAddr, i2c_message_t* cmdMsg, i2c_message_t*
-      responseMsg, adc_response_t* response){
-
+      uint16_t slaveAddr, i2c_message_t* cmdMsg_, i2c_message_t*
+      responseMsg_, adc_response_t* response){
+   
     read_analog_sensor_response_msg_t* responsePl = (read_analog_sensor_response_msg_t*)(call Packet.getPayload(read_analog_sensor_response_msg, sizeof(read_analog_sensor_response_msg_t)));
+    responseMsg = responseMsg_;
+    cmdMsg = cmdMsg_;
     if (response != NULL){
       responsePl->sample = response->samples[0];
     }
+//    printf("sampleDone: error: %x i2c cmd %p i2c response %p AM c %p AM r %p st %lu st' %lu\n", 
+//      error,
+//      cmdMsg, 
+//      responseMsg,
+//      read_analog_sensor_cmd_msg,
+//      read_analog_sensor_response_msg,
+//      response->samples[0].sampleTime,
+//      responsePl->sample.sampleTime);
     post sendResponse();
     return responseMsg;
   }
@@ -133,13 +181,14 @@ module AnalogSensorP {
 
   event void ReadAnalogSensorResponseSend.sendDone(message_t* msg, 
       error_t error){
-    printf("Send done: %p %p\n",
-      read_analog_sensor_response_msg,
-      read_analog_sensor_cmd_msg);
+//    printf("Send done: response %p cmd %p\n",
+//      read_analog_sensor_response_msg,
+//      read_analog_sensor_cmd_msg);
     call Pool.put(read_analog_sensor_response_msg);
     call Pool.put(read_analog_sensor_cmd_msg);
     read_analog_sensor_cmd_msg = NULL;
     read_analog_sensor_response_msg = NULL;
+//    post printExchange();
   }
  
 }
