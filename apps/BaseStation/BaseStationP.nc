@@ -202,8 +202,6 @@ implementation
     
     return ret;
   }
-
-  uint8_t tmpLen;
   
   task void uartSendTask() {
     uint8_t len;
@@ -211,6 +209,7 @@ implementation
     am_addr_t addr, src;
     message_t* msg;
     am_group_t grp;
+    uint8_t aux[TOSH_DATA_LENGTH];
     atomic
       if (uartIn == uartOut && !uartFull)
 	{
@@ -219,7 +218,11 @@ implementation
 	}
 
     msg = uartQueue[uartOut];
-    tmpLen = len = call RadioPacket.payloadLength(msg);
+    len = call RadioPacket.payloadLength(msg);
+    memcpy(aux,
+      call RadioPacket.getPayload(msg, len),
+      len);
+
     id = call RadioAMPacket.type(msg);
     addr = call RadioAMPacket.destination(msg);
     src = call RadioAMPacket.source(msg);
@@ -227,9 +230,9 @@ implementation
     call UartPacket.clear(msg);
     call UartAMPacket.setSource(msg, src);
     call UartAMPacket.setGroup(msg, grp);
-    memmove(call UartPacket.getPayload(msg, tmpLen), 
-      call RadioPacket.getPayload(msg, tmpLen),
-      tmpLen);
+    memcpy(call UartPacket.getPayload(msg, len), 
+      aux,
+      len);
 
     if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS)
       call Leds.led1Toggle();
@@ -293,6 +296,7 @@ implementation
     am_id_t id;
     am_addr_t addr,source;
     message_t* msg;
+    uint8_t aux[TOSH_DATA_LENGTH];
     
     atomic
       if (radioIn == radioOut && !radioFull)
@@ -303,15 +307,19 @@ implementation
 
     msg = radioQueue[radioOut];
     len = call UartPacket.payloadLength(msg);
+    memcpy(aux,
+      call UartPacket.getPayload(msg, len),
+      len);
+
     addr = call UartAMPacket.destination(msg);
     source = call UartAMPacket.source(msg);
     id = call UartAMPacket.type(msg);
 
     call RadioPacket.clear(msg);
     call RadioAMPacket.setSource(msg, source);
-    memmove(call RadioPacket.getPayload(msg, tmpLen),
-      call UartPacket.getPayload(msg, tmpLen),
-      tmpLen);
+    memcpy(call RadioPacket.getPayload(msg, len),
+      aux,      
+      len);
     
     if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
       call Leds.led0Toggle();
