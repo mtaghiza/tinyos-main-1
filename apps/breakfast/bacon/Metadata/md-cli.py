@@ -53,11 +53,6 @@ class Dispatcher:
         self.sendCount += 1
 
 if __name__ == '__main__':
-    #TODO: unclear why serial@/dev/ttyUSBx:115200 doesn't work.
-    #Seems like the python serial libraries from TOS don't support raw
-    # serial access: would need something that implements PacketSource
-    # methods and just uses the python serial libs to read/write
-    # directly.
     packetSource = 'serial@/dev/ttyUSB0:115200'
     destination = 1
 
@@ -126,6 +121,8 @@ if __name__ == '__main__':
                     for setter in [s for s in dir(m) if s.startswith('set_')]:
                         if setter == 'set_dummy':
                             v = []
+                        elif setter == 'set_tag':
+                            continue
                         else:
                             v = eval(raw_input('%s:'%setter),
                               {"__builtins__":None}, {})
