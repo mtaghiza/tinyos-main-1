@@ -10,6 +10,8 @@ from tinyos.packet.Serial import Serial
 import mig
 from mig import *
 
+import math
+
 
 class PrintfLogger:
     def __init__(self):
@@ -52,6 +54,17 @@ class Dispatcher:
             m)
         self.sendCount += 1
 
+    def initialize(self, destination):
+        #turn on bus
+        sbp = SetBusPowerCmdMsg.SetBusPowerCmdMsg()
+        sbp.set_powerOn(1)
+        self.send(sbp, destination)
+        time.sleep(0.25)
+        #scan
+        sb = ScanBusCmdMsg.ScanBusCmdMsg()
+        self.send(sb, destination)
+        time.sleep(2)
+
 REFERENCE_AVcc_AVss = 0
 REFERENCE_VREFplus_AVss = 1
 REFERENCE_VeREFplus_AVss = 2
@@ -64,9 +77,15 @@ REFERENCE_VeREFplus_VREFnegterm = 6
 sht_enum_vals = [ 4, 8, 16, 32, 64, 96, 128, 192, 256, 384, 512, 768, 1024]
 
 
-def readAnalog(channel, sensorImpedance, warmUpMs = 0,
+
+def readAnalog(channel, sensorImpedance=10000, warmUpMs = 10, 
   sref = REFERENCE_VREFplus_AVss, ref2_5v = True, samplePeriod32k = 0):
-    m = ReadAnalogSensorCmdMsg()
+    '''Construct a ReadAnalogSensorCmdMsg based on the sensor
+    requirements (computes the various register values required).
+    Channels 0-7 are the external sensors. Default impedance and warm-up
+    time are chosen fairly conservatively.'''
+
+    m = ReadAnalogSensorCmdMsg.ReadAnalogSensorCmdMsg()
     #direct inputs:
     #input channel
     #voltage range (sref, ref2_5v)
@@ -91,8 +110,8 @@ def readAnalog(channel, sensorImpedance, warmUpMs = 0,
     #computed values (from sensorImpedance)
     #sht
 
-    #sample time from msp430x2xx user guide, 23.2.4.3
-    t_sample = (sensorImpedance*2000)*3.6e-10 + 800e-9
+    #sample time from msp430x2xx user guide, 23.2.4.3. Ci is 40 pF.
+    t_sample = (sensorImpedance + 2000)*math.log(2**13)*40e-12 + 800e-9
     #inverse, fyi
     # r = (t_sample - 800e-9)/3.6e-10 - 2000
 
@@ -106,6 +125,7 @@ def readAnalog(channel, sensorImpedance, warmUpMs = 0,
         raise Exception("Sensor impedance too high: maximum sample-hold-time is 1 binary ms, roughly 2.8M ohm impedance") 
 
     return m
+    
 
 if __name__ == '__main__':
     packetSource = 'serial@/dev/ttyUSB0:115200'
@@ -128,32 +148,32 @@ if __name__ == '__main__':
     if '--auto' in sys.argv:
         autoType = sys.argv[sys.argv.index('--auto')+1]
         limit = int(sys.argv[sys.argv.index('--auto')+2])
-        if autoType == 'ping':
-            rm = PingCmdMsg.PingCmdMsg()
-        elif autoType == 'readAnalog':
-            rm = ReadAnalogSensorCmdMsg()
-            rm.set_inch(11)
+        if autoType == 'readAnalog':
+            inch = 0
             
         try:
-            #turn on bus
-            sbp = SetBusPowerCmdMsg.SetBusPowerCmdMsg()
-            sbp.set_powerOn(1)
-            d.send(sbp, destination)
-            time.sleep(0.25)
-            #scan
-            sb = ScanBusCmdMsg.ScanBusCmdMsg()
-            d.send(sb, destination)
-            time.sleep(1)
+            d.initialize(destination)
             while limit != 0:
+                if autoType == 'ping':
+                    rm = PingCmdMsg.PingCmdMsg()
+                elif autoType == 'readInternal':
+                    rm = ReadAnalogSensorCmdMsg.ReadAnalogSensorCmdMsg()
+                    rm.set_inch(11)
+                elif autoType == 'readAnalog':
+                    rm = readAnalog(inch, 2000, 10)
+                
                 d.send(rm, destination)
-                time.sleep(0.25)
+                time.sleep(0.5)
                 limit -= 1
+                if autoType == 'readAnalog':
+                    inch = (inch + 1)%8
         except KeyboardInterrupt:
             pass
         finally:
             d.stop()
     else:
         try:
+            d.initialize(destination)
             while True:
                 time.sleep(0.25)
                 mcn = raw_input('''Input message class name (q to quit, blank to resend last). 
