@@ -112,13 +112,16 @@ def readAnalog(channel, sensorImpedance=10000, warmUpMs = 10,
 
     #sample time from msp430x2xx user guide, 23.2.4.3. Ci is 40 pF.
     t_sample = (sensorImpedance + 2000)*math.log(2**13)*40e-12 + 800e-9
+    #print "t_sample:", t_sample
     #inverse, fyi
     # r = (t_sample - 800e-9)/3.6e-10 - 2000
 
     #frequency = 1 binary MHz 
     smclkTickLen = 1.0/(2**20.0)
     smclkTicks = t_sample/smclkTickLen
+    #print "t_sample (ticks):", smclkTicks
     valid_sht_enums = [i for (i,v) in enumerate(sht_enum_vals) if v > smclkTicks]
+    #print "valid enums:", valid_sht_enums
     if valid_sht_enums:
         m.set_sht(valid_sht_enums[0])
     else:
