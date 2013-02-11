@@ -16,6 +16,16 @@
 #define ADC_NUM_CHANNELS 8 + 2
 #endif
 
+#if ADC_NUM_CHANNELS > 9
+#ifndef SUPPRESS_ADC_OVERFLOW_WARNING
+//OK, due to a stupid mistake, there is only space for 9 channels on
+//the toast boards programmed by elektromont. Happily, as long as the
+//last in the sequence is INPUT_CHANNEL_NONE, we won't overflow any
+//buffers.
+#warning "size of adc-read command exceeds elektromont toast buffer size! ADC_NUM_CHANNELS should be defined to be <= 9 to prevent overflows. Suppress this warning by defining SUPPRESS_ADC_OVERFLOW_WARNING."
+#endif
+#endif
+
 //built-in delay required for slave to configure channel/set up
 //measurement (in binary ms)
 #ifndef CHANNEL_DELAY

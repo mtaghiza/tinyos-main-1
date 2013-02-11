@@ -82,13 +82,18 @@ module AnalogSensorP {
       (read_analog_sensor_cmd_msg_t*)(call Packet.getPayload(read_analog_sensor_cmd_msg,
         sizeof(read_analog_sensor_cmd_msg_t)));
     adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg); 
-    memset(cmd, 0, sizeof(adc_reader_pkt_t));
-    {
-      uint8_t i;
-      for (i=0; i < ADC_NUM_CHANNELS; i++){
-        cmd->cfg[i].config.inch = INPUT_CHANNEL_NONE;
-      }
-    }
+    cmd -> cfg[1].config.inch = INPUT_CHANNEL_NONE;
+    printf("cmd: %u each %u (x%u)\n", 
+      sizeof(adc_reader_pkt_t), 
+      sizeof(adc_reader_config_t),
+      ADC_NUM_CHANNELS);
+//    memset(cmd, 0, sizeof(adc_reader_pkt_t));
+//    {
+//      uint8_t i;
+//      for (i=0; i < ADC_NUM_CHANNELS; i++){
+//        cmd->cfg[i].config.inch = INPUT_CHANNEL_NONE;
+//      }
+//    }
     cmd->cfg[0].delayMS = commandPl->delayMS;
     cmd->cfg[0].samplePeriod = commandPl->samplePeriod;
     cmd->cfg[0].config.inch = commandPl->inch;
