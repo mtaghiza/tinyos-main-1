@@ -15,7 +15,9 @@ module WatchDogP{
   }
 
   event void Timer.fired(){
-    //write to WDTCNTCL: must use PW in upper byte
-    WDTCTL = (WDTPW | (0x00FF & (WDTCTL | WDTCNTCL)));
+    atomic{
+      //write to WDTCNTCL: must use PW in upper byte
+      WDTCTL = (WDTPW | (0x00FF & (WDTCTL | WDTCNTCL)));
+    }
   }
 }

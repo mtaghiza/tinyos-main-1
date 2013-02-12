@@ -61,9 +61,10 @@ implementation {
   } 
   
   command error_t Init.init() {
-    WDTCTL = WDTPW + WDTHOLD;             // Stop watchdog timer
-    SFRRPCR = SYSRSTUP | SYSRSTRE; //pullup, enable
-
+    atomic{
+      WDTCTL = WDTPW + WDTHOLD;             // Stop watchdog timer
+      SFRRPCR = SYSRSTUP | SYSRSTRE; //pullup, enable
+    }
     call PlatformPins.init();
     call PlatformLed.init();
     call Msp430Pmm.init();
