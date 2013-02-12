@@ -28,7 +28,7 @@ int8_t POWER_SETTINGS[NUM_POWER_LEVELS] = {0x25, 0x2d, 0x8d, 0xc3 };
 
 #define MAX_RX_COUNTER 100
 
-#define SHORT_IPI 256
+#define SHORT_IPI 32
 //32 looks good (reporting OK + SA shows smooth output)
 //nope, 32 triggers some TOO FAST at transmitter.
 #define LONG_IPI 512

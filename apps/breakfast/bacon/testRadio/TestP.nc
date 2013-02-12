@@ -5,7 +5,7 @@ module TestP{
   uses interface Leds;
   uses interface Timer<TMilli>;
   uses interface Timer<TMilli> as IndicatorTimer;
-  uses interface Timer<TMilli> as WDTResetTimer;
+  uses interface Timer<TMilli> as StartTimer;
 
   uses interface StdControl as SerialControl;
   uses interface UartStream;
@@ -106,19 +106,23 @@ module TestP{
     //memset(prrBuf, 0, PRR_BUF_LEN);
 
     call SplitControl.start();
-    call WDTResetTimer.startPeriodic(256);
     printf("Max payload length: %u\r\n", 
       call AMSend.maxPayloadLength());
-    atomic{
-      //set WDT to reset at 1 second
-      WDTCTL =  WDT_ARST_1000;
-    }
-  }
 
-  event void WDTResetTimer.fired(){
     atomic{
-      //re-up the wdt
-      WDTCTL =  WDT_ARST_1000;
+      //map SFD to 1.2
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P1MAP2 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+  
+      //set as output/function
+      P1SEL |= BIT2;
+      P1DIR |= BIT2;
+  
+      //disable flash chip
+      P2SEL &= ~BIT1;
+      P2OUT |=  BIT1;
     }
   }
 
@@ -130,7 +134,21 @@ module TestP{
   event void SplitControl.stopDone(error_t error){
     call SplitControl.start();
   }
-
+  
+  event void StartTimer.fired(){
+    if (settings.isSender){
+      //settings.seqNum = 0;
+      memcpy(call AMSend.getPayload(msg, sizeof(test_settings_t)),
+        &settings, sizeof(test_settings_t));
+      call CC1190.TXMode(settings.hgm);
+      call Rf1aIf.writeSinglePATable(POWER_SETTINGS[settings.powerIndex]);
+      call Timer.startPeriodic(settings.ipi);
+      call IndicatorTimer.stop();
+    }else{
+      call CC1190.RXMode(settings.hgm);
+      call IndicatorTimer.startPeriodic(256);
+    }
+  }
 
   event void SplitControl.startDone(error_t error){
     needsRestart = FALSE;
@@ -144,18 +162,8 @@ module TestP{
     call Leds.led0Off();
     call Leds.led1Off();
     call Leds.led2Off();
-    if (settings.isSender){
-      //settings.seqNum = 0;
-      memcpy(call AMSend.getPayload(msg, sizeof(test_settings_t)),
-        &settings, sizeof(test_settings_t));
-      call CC1190.TXMode(settings.hgm);
-      call Rf1aIf.writeSinglePATable(POWER_SETTINGS[settings.powerIndex]);
-      call Timer.startPeriodic(settings.ipi);
-      call IndicatorTimer.stop();
-    }else{
-      call CC1190.RXMode(settings.hgm);
-      call IndicatorTimer.startPeriodic(256);
-    }
+    call StartTimer.startOneShot(5120);
+
     post printSettingsTask();
   }
 
@@ -235,9 +243,28 @@ module TestP{
     }else{
       if (settings.isSender){
         if (!radioBusy){
+          uint8_t* pl = (uint8_t*)(call AMSend.getPayload(msg,
+            sizeof(test_settings_t)));
+          error_t err;
           radioBusy = TRUE;
-          call AMSend.send(AM_BROADCAST_ADDR, msg,
-            sizeof(test_settings_t));
+          call Packet.clear(msg);
+          {
+            uint8_t i;
+            for(i=0; i< call AMSend.maxPayloadLength(); i++){
+              pl[i] = i;
+            }
+          }
+          memcpy(pl, &settings, sizeof(test_settings_t));
+          err = call AMSend.send(AM_BROADCAST_ADDR, msg,
+            call AMSend.maxPayloadLength());
+          if (err != SUCCESS){
+            printf("err: %x\r\n", err);
+          }else{
+//            printf("%p (%u) -> %x\r\n", 
+//              msg, 
+//              call AMSend.maxPayloadLength(), 
+//              AM_BROADCAST_ADDR);
+          }
         }else{
           printf("TOO FAST-RESTART RADIO\r\n");
           call Timer.stop();
@@ -277,6 +304,10 @@ module TestP{
       err = call AMSend.send(AM_BROADCAST_ADDR, msg,
         call AMSend.maxPayloadLength());
       printf("Send: %u \r\n", err);
+//      printf("%p (%u) -> %x\r\n", 
+//        msg, 
+//        call AMSend.maxPayloadLength(), 
+//        AM_BROADCAST_ADDR);
     }
   }
 
@@ -287,6 +318,7 @@ module TestP{
     if (settings.report){
       //printf("TX %lu", call Timer.getNow());
       printf("TX ");
+      printf("%x ", err);
       #ifdef QUIET
       printf("%d ", TOS_NODE_ID);
       printMinimal(pkt);
@@ -298,7 +330,7 @@ module TestP{
     }
     if ((pkt->ipi == LONG_IPI) || 
       ((pkt->ipi == SHORT_IPI) 
-        && ((pkt->seqNum % LONG_IPI) == 0))){
+        && ((pkt->seqNum % 8) == 0))){
       call Leds.led0Toggle();
       call Leds.led1Toggle();
       call Leds.led2Toggle();
@@ -352,7 +384,7 @@ module TestP{
       printf("%x ", HAS_FE);
       printf("%d ", call AMPacket.source(msg_));
       printMinimal(pkt);
-      printf(" %u ", len);
+      printf(" %u", len);
       printf(" %x\r\n", (call Rf1aPhysicalMetadata.crcPassed(&metadata))?1:0);
       #else
       printf(" (rssi, %d)", call Rf1aPhysicalMetadata.rssi(&metadata));
@@ -360,6 +392,8 @@ module TestP{
       printf(" (crcPassed, %x)", (call Rf1aPhysicalMetadata.crcPassed(&metadata))?1:0);
       printSettings(pkt);
       #endif
+    }else{
+      printf("shhh\r\n");
     }
 
     return msg_;
@@ -450,7 +484,9 @@ module TestP{
         break;
 
       case 'q':
-        WDTCTL = 0;
+        atomic{
+          WDTCTL = 0;
+        }
         break;
       case '\r':
         printf("\r\n");

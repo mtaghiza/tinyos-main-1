@@ -1,5 +1,8 @@
 COMPONENT=TestAppC
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+
+CFLAGS+=-I$(TOSDIR)/chips/cc430
+
 #CFLAGS+=-Irf1a_override/
 #CFLAGS+=-Irf1a_override/am
 #CFLAGS+=-Irf1a_override/interfaces
@@ -13,7 +16,7 @@ IS_SENDER?=FALSE
 POWER_INDEX?=3
 HGM?=FALSE
 CHANNEL?=0
-USE_LONG_IPI?=TRUE
+USE_LONG_IPI?=FALSE
 PRR_BUF_LEN?=200
 REPORT?=TRUE
 HAS_FE?=FALSE

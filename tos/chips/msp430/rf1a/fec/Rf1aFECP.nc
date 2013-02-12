@@ -202,8 +202,8 @@ generic module Rf1aFECP () {
         //this will happen if we get a failed reception. Leave it to
         //the next layer to deal with the fallout (most likely by
         //supplying the last buffer used in setReceiveBuffer)
-        printf("!buffer mismatch: %p != %p or %p == null. Result: %x count %u\r\n",
-          buffer, rxEncoded, rxBuf, result, count);
+//        printf("!buffer mismatch: %p != %p or %p == null. Result: %x count %u\r\n",
+//          buffer, rxEncoded, rxBuf, result, count);
         signal Rf1aPhysical.receiveDone(buffer, count, result);
       }
     }

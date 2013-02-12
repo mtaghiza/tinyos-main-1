@@ -10,8 +10,10 @@ configuration TestAppC{
   TestP.Timer -> TimerMilliC;
   components new TimerMilliC() as IndicatorTimer;
   TestP.IndicatorTimer -> IndicatorTimer;
-  components new TimerMilliC() as WDTResetTimer;
-  TestP.WDTResetTimer -> WDTResetTimer;
+  components new TimerMilliC() as StartupTimer;
+  TestP.StartTimer -> StartupTimer;
+
+  components WatchDogC;
 
   components PlatformSerialC;
   components SerialPrintfC;
@@ -45,13 +47,13 @@ configuration TestAppC{
   //  logging)
   //SRFS6_868_xxx_CUR_HC.nc
 //  components PDERf1aSettingsP as TestConfigP;
-//  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
+  components SRFS7_915_GFSK_125K_SENS_HC as TestConfigP;
 //  components DefaultRf1aSettingsP as TestConfigP;
 //
 //  components new Rf1aChannelCacheC(2);
 //  TestConfigP.Rf1aChannelCache -> Rf1aChannelCacheC;
-//  Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
-//
+  Rf1aActiveMessageC.Rf1aConfigure -> TestConfigP.Rf1aConfigure;
+
   components Rf1aC;
   TestP.Rf1aPhysicalMetadata -> Rf1aC.Rf1aPhysicalMetadata;
 }
