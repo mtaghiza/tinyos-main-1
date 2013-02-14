@@ -40,6 +40,7 @@
 configuration HplStm25pPinsC {
 
   provides interface GeneralIO as CSN;
+  provides interface GeneralIO as FLASH_EN;
 
 }
 
@@ -54,6 +55,10 @@ implementation {
   CSNM -> HplGeneralIOC.Port17;
 
   CSN = CSNM;
+
+  components new Msp430GpioC() as FLASH_ENM;
+  FLASH_ENM -> HplGeneralIOC.Port21;
+  FLASH_EN = FLASH_ENM;
 /*
   components Msp430UsciSpiB0P;
   Msp430UsciSpiB0P.SIMO -> HplGeneralIOC.UCB0SIMO;

@@ -59,8 +59,12 @@ implementation {
 
   components HplStm25pPinsC as PinsC;
   SpiP.CSN -> PinsC.CSN;
+  SpiP.FLASH_EN -> PinsC.FLASH_EN;
 
   components LedsC as Leds;
   SpiP.Leds -> Leds;
+
+  components new AlarmMilli16C();
+  SpiP.PowerTimeout -> AlarmMilli16C;
 
 }

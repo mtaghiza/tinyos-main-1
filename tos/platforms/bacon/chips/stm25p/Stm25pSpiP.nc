@@ -44,9 +44,12 @@ module Stm25pSpiP {
 
   uses interface Resource as SpiResource;
   uses interface GeneralIO as CSN;
+  uses interface GeneralIO as FLASH_EN;
   uses interface SpiByte;
   uses interface SpiPacket;
   uses interface Leds;
+
+  uses interface Alarm<TMilli, uint16_t> as PowerTimeout;
 
 }
 
@@ -99,22 +102,39 @@ implementation {
 
   command error_t Init.init() {
     call CSN.makeOutput();
-    P1DIR |= BIT1;
-    P1SEL &= ~BIT1;
-    call CSN.set(); // P1OUT |= BIT1;
+    call CSN.set(); 
+    call FLASH_EN.makeOutput();
+    call FLASH_EN.clr();
     return SUCCESS;
   }
 
+  async event void PowerTimeout.fired(){
+    call FLASH_EN.clr();
+  }
+
   async command error_t ClientResource.request() {
+    call PowerTimeout.stop();
     return call SpiResource.request();
   }
 
   async command error_t ClientResource.immediateRequest() {
-    return call SpiResource.immediateRequest();
+    error_t err = call SpiResource.immediateRequest();
+    if (err == SUCCESS){
+      call FLASH_EN.set();
+    }
+    return err;
   }
   
   async command error_t ClientResource.release() {
-    return call SpiResource.release();
+    error_t err = call SpiResource.release();
+    //According to datasheet, status reg. operations take up to 15 ms.
+    //leave power on for 30 ms after the spi is released to let it
+    //finish whatever it's doing.
+    call PowerTimeout.start(30);
+//    if (err == SUCCESS){
+//      call FLASH_EN.clr();
+//    }
+    return err;
   }
 
   async command uint8_t ClientResource.isOwner() {
@@ -237,13 +257,14 @@ implementation {
   }
 
   event void SpiResource.granted() {
-
-    if ( !m_is_writing )
+    call FLASH_EN.set();
+    if ( !m_is_writing ){
       signal ClientResource.granted();
-    else if ( sendCmd( S_READ_STATUS_REGISTER, 2 ) & 0x1 )
+    } else if ( sendCmd( S_READ_STATUS_REGISTER, 2 ) & 0x1 ){
       releaseAndRequest();
-    else
+    } else{
       signalDone( SUCCESS );
+    }
 
   }
 
