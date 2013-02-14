@@ -55,11 +55,7 @@ module TestP{
     printf("  a: append to log\r\n");
     printf("  r: read\r\n");
     printf("  ?: print current state info\r\n");
-//    atomic{
-//      P2SEL &= ~BIT1;
-//      P2DIR |=  BIT1;
-//      P2OUT |=  BIT1;
-//    }
+    printf("  0-9*: set seek location (cleared to 0 on newline)\r\n");
     fillRecord(record, curRL);
     printRecord(record);
   }

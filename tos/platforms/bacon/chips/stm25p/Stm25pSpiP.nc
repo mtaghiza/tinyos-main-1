@@ -109,6 +109,8 @@ implementation {
   }
 
   async event void PowerTimeout.fired(){
+//TODO: FIXME: figure out how the hell to get this working without
+//breaking everything
     call FLASH_EN.clr();
   }
 
@@ -138,6 +140,7 @@ implementation {
   }  
 
   async command error_t Spi.powerDown() {
+    //TODO: I don't see this command in the datasheet for the p64 ...
     sendCmd( S_DEEP_SLEEP, 1 );
     call PowerTimeout.start(10);
     return SUCCESS;
