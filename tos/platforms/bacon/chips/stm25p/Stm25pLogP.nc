@@ -119,7 +119,6 @@ implementation {
   //TODO: replicate Read in RecordRead, but store recordLens and set
   //  recordRead flag in request. 
   command error_t Read.read[ uint8_t id ]( void* buf, storage_len_t len ) {
-    
     m_req.req = S_READ;
     m_req.buf = buf;
     m_req.len = len;
@@ -127,13 +126,14 @@ implementation {
     m_req.recordRead = FALSE;
     m_len = len;
     return newRequest( id );
-    
   }
+
   //TODO: replicate in RecordRead, set recordRead to TRUE.
   command error_t Read.seek[ uint8_t id ]( storage_addr_t cookie ) {
     
-    if ( cookie > m_log_info[ id ].write_addr )
+    if ( cookie > m_log_info[ id ].write_addr ){
       return FAIL;
+    }
     
     m_req.req = S_SEEK;
     m_req.cookie = cookie;
@@ -148,7 +148,7 @@ implementation {
   
   command storage_cookie_t Read.getSize[ uint8_t id ]() {
     return ( (storage_len_t)call Sector.getNumSectors[ id ]()
-             << STM25P_SECTOR_SIZE_LOG2 );
+      << STM25P_SECTOR_SIZE_LOG2 );
   }
   
   command storage_cookie_t Write.currentOffset[ uint8_t id ]() {
@@ -166,18 +166,21 @@ implementation {
     bytes_left = BLOCK_SIZE - bytes_left;
     
     // don't allow appends larger than maximum record size
-    if ( len > MAX_RECORD_SIZE )
+    if ( len > MAX_RECORD_SIZE ){
       return EINVAL;
+    }
     
     // move to next block if current block doesn't have enough space
-    if ( sizeof( m_header ) + len > bytes_left )
+    if ( sizeof( m_header ) + len > bytes_left ){
       m_log_info[ id ].write_addr += bytes_left;
+    }
     
     // if log is not circular, make sure it doesn't grow too large
     if ( !call Circular.get[ id ]() &&
-	 ( (uint8_t)(m_log_info[ id ].write_addr >> STM25P_SECTOR_SIZE_LOG2) >=
-	   call Sector.getNumSectors[ id ]() ) )
+       ( (uint8_t)(m_log_info[ id ].write_addr >> STM25P_SECTOR_SIZE_LOG2) >=
+         call Sector.getNumSectors[ id ]() ) ){
       return ESIZE;
+    }
     
     m_records_lost = FALSE;
     m_req.req = S_APPEND;
@@ -195,8 +198,9 @@ implementation {
   
   error_t newRequest( uint8_t client ) {
     
-    if ( m_log_state[ client ].req != S_IDLE )
+    if ( m_log_state[ client ].req != S_IDLE ){
       return FAIL;
+    }
     
     call ClientResource.request[ client ]();
     m_log_state[ client ] = m_req;
@@ -221,59 +225,60 @@ implementation {
 
     // log never used, need to find start and end of log
     if ( m_log_info[ id ].read_addr == STM25P_INVALID_ADDRESS &&
-	 m_log_state[ id ].req != S_ERASE ) {
+       m_log_state[ id ].req != S_ERASE ) {
+      printf("searching\r\n");
       m_rw_state = S_SEARCH_BLOCKS;
       call Sector.read[ id ]( 0, (uint8_t*)&m_addr, sizeof( m_addr ) );
-    }
+    } else {
     // start and end of log known, do the requested operation
-    else {
       switch( m_log_state[ id ].req ) {
-      case S_READ:
-    //remaining=0: state is read_header. !=0 : read data
-	m_rw_state = (m_log_info[ id ].remaining) ? S_DATA : S_HEADER;
-	continueReadOp( id );
-	break;
-      case S_SEEK:
-	{
-	  // make sure the cookie is still within the range of valid data
-	  uint8_t numSectors = call Sector.getNumSectors[ id ]();
-	  uint8_t readSector = 
-	    (m_log_state[ id ].cookie >> STM25P_SECTOR_SIZE_LOG2);
-	  uint8_t writeSector =
-	    ((m_log_info[ id ].write_addr-1)>>STM25P_SECTOR_SIZE_LOG2)+1;
-	  // if cookie is overwritten, advance to beginning of log
-	  if ( (writeSector - readSector) > numSectors ) {
-	    m_log_state[ id ].cookie = 
-	      (storage_cookie_t)(writeSector-numSectors)
-		<<STM25P_SECTOR_SIZE_LOG2;
-	  }
-	  m_log_info[ id ].read_addr = m_log_state[ id ].cookie & ~BLOCK_MASK;
-	  m_log_info[ id ].remaining = 0;
-	  m_rw_state = S_SEARCH_SEEK;
-	  if ( m_log_info[ id ].read_addr != m_log_state[ id ].cookie ) {
-	    m_log_info[ id ].read_addr += sizeof( m_addr );
-	    call Sector.read[ id ]( calcAddr( id, m_log_info[ id ].read_addr ),
-				    &m_header, sizeof( m_header ) );
-	  }
-	  else
-	    signalDone( id, SUCCESS );
-	}
-	break;
+        case S_READ:
+          printf("starting read\r\n");
+        //remaining=0: state is read_header. !=0 : read data
+          m_rw_state = (m_log_info[ id ].remaining) ? S_DATA : S_HEADER;
+          continueReadOp( id );
+          break;
+        case S_SEEK:
+        {
+          // make sure the cookie is still within the range of valid data
+          uint8_t numSectors = call Sector.getNumSectors[ id ]();
+          uint8_t readSector = 
+            (m_log_state[ id ].cookie >> STM25P_SECTOR_SIZE_LOG2);
+          uint8_t writeSector =
+            ((m_log_info[ id ].write_addr-1)>>STM25P_SECTOR_SIZE_LOG2)+1;
+          // if cookie is overwritten, advance to beginning of log
+          if ( (writeSector - readSector) > numSectors ) {
+            m_log_state[ id ].cookie = 
+              (storage_cookie_t)(writeSector-numSectors)
+              <<STM25P_SECTOR_SIZE_LOG2;
+          }
+          m_log_info[ id ].read_addr = m_log_state[ id ].cookie & ~BLOCK_MASK;
+          m_log_info[ id ].remaining = 0;
+          m_rw_state = S_SEARCH_SEEK;
+          if ( m_log_info[ id ].read_addr != m_log_state[ id ].cookie ) {
+            m_log_info[ id ].read_addr += sizeof( m_addr );
+            call Sector.read[ id ]( 
+              calcAddr( id, m_log_info[ id ].read_addr ), 
+              &m_header, sizeof( m_header ) );
+          }else{
+            signalDone( id, SUCCESS );
+          }
+        }
+        break;
       case S_ERASE:
-	call Sector.erase[ id ]( 0, call Sector.getNumSectors[ id ]() );
-	break;
+        call Sector.erase[ id ]( 0, call Sector.getNumSectors[ id ]() );
+        break;
       case S_APPEND:
-	m_rw_state = S_HEADER;
-	continueAppendOp( id );
-	break;
+        m_rw_state = S_HEADER;
+        continueAppendOp( id );
+        break;
       case S_SYNC:
-	signalDone( id, SUCCESS );
-	break;
+        signalDone( id, SUCCESS );
+        break;
       case S_IDLE:
-	break;
+        break;
       }
     }
-    
   }
 
   void continueReadOp( uint8_t client ) {
@@ -281,9 +286,11 @@ implementation {
     stm25p_addr_t read_addr = m_log_info[ client ].read_addr;
     uint8_t* buf;
     uint8_t len;
-
+    error_t error;
+//    printf("continueReadOp ");
     // check if all done
     if ( m_len == 0 || read_addr >= m_log_info[ client ].write_addr ) {
+//      printf("done.\r\n");
       signalDone( client, SUCCESS );
       return;
     }
@@ -292,160 +299,170 @@ implementation {
     len = sizeof( m_header );
 
     if ( m_rw_state == S_DATA ) {
+//      printf("data ");
       // if header is invalid, move to next block
       if ( m_header == INVALID_HEADER ) {
-	m_rw_state = S_HEADER;
-	read_addr += BLOCK_SIZE;
-	read_addr &= ~BLOCK_MASK;
+        m_rw_state = S_HEADER;
+        read_addr += BLOCK_SIZE;
+        read_addr &= ~BLOCK_MASK;
+      } else {
+        //TODO: single-record- set len/m_len to 
+        //  m_log_info[client].remaining
+        //  - i.e. read the rest of the current record.
+        //  - should verify that the provided buffer is large enough
+        //TODO: no-partial-records- when cur record is longer than
+        //      request, we set len/m_len to 0 and wrap it up.
+        //  - we cannot read another full record into the provided
+        //    buffer.
+        //  - TODO: should also append this to the resulting record
+        //    length-map
+        //read into &(buffer + requested len - read-so-far)
+        buf = m_log_state[ client ].buf + m_log_state[ client ].len - m_len;
+        // truncate if record is shorter than requested length
+        if ( m_log_info[ client ].remaining < m_len ){
+          len = m_log_info[ client ].remaining;
+        }else{
+          len = m_len;
+        }
       }
-      else {
-      //TODO: single-record- set len/m_len to 
-      //  m_log_info[client].remaining
-      //  - i.e. read the rest of the current record.
-      //  - should verify that the provided buffer is large enough
-      //TODO: no-partial-records- when cur record is longer than
-      //      request, we set len/m_len to 0 and wrap it up.
-      //  - we cannot read another full record into the provided
-      //    buffer.
-      //  - TODO: should also append this to the resulting record
-      //    length-map
-      //read into &(buffer + requested len - read-so-far)
-	buf = m_log_state[ client ].buf + m_log_state[ client ].len - m_len;
-	// truncate if record is shorter than requested length
-	if ( m_log_info[ client ].remaining < m_len )
-	  len = m_log_info[ client ].remaining;
-	else
-	  len = m_len;
-      }
+    }else{
+//      printf("non-data ");
     }
     
     // if on block boundary
     //at block boundary: advance read_addr to first record start
-    if ( !((uint16_t)read_addr & BLOCK_MASK ) )
+    if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
+//      printf("block boundary ");
       read_addr += sizeof( m_addr );
+    }
     
     m_log_info[ client ].read_addr = read_addr;
-    call Sector.read[ client ]( calcAddr( client, read_addr ), buf, len );
-    
+//    printf("reading from %lu (%lu) into %p. &m_header=%p\r\n", 
+//      read_addr,
+//      calcAddr(client, read_addr), 
+//      buf, 
+//      &m_header);
+    error = call Sector.read[ client ]( calcAddr( client, read_addr ), buf, len );
+//    printf("sr.r: %x\r\n", error);
   }
   
   event void Sector.readDone[ uint8_t id ]( stm25p_addr_t addr, uint8_t* buf,
-					    stm25p_len_t len, error_t error ) {
-
+                                  stm25p_len_t len, error_t error ) {
+ 
     stm25p_log_info_t* log_info = &m_log_info[ id ];
-
+//    printf("s.rd %x\r\n", error);
     // searching for the first and last log blocks
     switch( m_rw_state ) {
-    case S_SEARCH_BLOCKS: 
-      {
-	uint16_t block = addr >> BLOCK_SIZE_LOG2;
-	// record potential starting and ending addresses
-	if ( m_addr != STM25P_INVALID_ADDRESS ) {
-	  if ( m_addr < log_info->read_addr )
-	    log_info->read_addr = m_addr;
-	  if ( m_addr > log_info->write_addr )
-	    log_info->write_addr = m_addr;
-	}
-	// move on to next log block
-	if (++block < (call Sector.getNumSectors[ id ]()*BLOCKS_PER_SECTOR)) {
-	  addr += BLOCK_SIZE;
-	  call Sector.read[ id ]( addr, (uint8_t*)&m_addr, sizeof( m_addr ) );
-	}
-	// if log is empty, continue operation
-	else if ( log_info->read_addr == STM25P_INVALID_ADDRESS ) {
-	  log_info->read_addr = 0;
-	  log_info->write_addr = 0;
-	  signal ClientResource.granted[ id ]();
-	}
-	// search for last record
-	else {
-	  log_info->write_addr += sizeof( m_addr );
-	  m_rw_state = S_SEARCH_RECORDS;
-	  call Sector.read[ id ]( calcAddr(id, log_info->write_addr), &m_header,
-				  sizeof( m_header ) );
-	}
-      }
-      break;
+      case S_SEARCH_BLOCKS: 
+        {
+          uint16_t block = addr >> BLOCK_SIZE_LOG2;
+          // record potential starting and ending addresses
+          if ( m_addr != STM25P_INVALID_ADDRESS ) {
+            if ( m_addr < log_info->read_addr )
+              log_info->read_addr = m_addr;
+            if ( m_addr > log_info->write_addr )
+              log_info->write_addr = m_addr;
+          }
+          // move on to next log block
+          if (++block < (call Sector.getNumSectors[ id ]()*BLOCKS_PER_SECTOR)) {
+            addr += BLOCK_SIZE;
+            call Sector.read[ id ]( addr, 
+              (uint8_t*)&m_addr, 
+              sizeof( m_addr ) );
+          } else if ( log_info->read_addr == STM25P_INVALID_ADDRESS ) {
+            // if log is empty, continue operation
+            log_info->read_addr = 0;
+            log_info->write_addr = 0;
+            signal ClientResource.granted[ id ]();
+          } else {
+          // search for last record
+            log_info->write_addr += sizeof( m_addr );
+            m_rw_state = S_SEARCH_RECORDS;
+            call Sector.read[ id ]( 
+              calcAddr(id, log_info->write_addr), 
+              &m_header, 
+              sizeof( m_header ) );
+          }
+        }
+        break;
+  
+      case S_SEARCH_RECORDS: 
+        {
+          // searching for the last log record to write
+          uint16_t cur_block = log_info->write_addr >> BLOCK_SIZE_LOG2;
+          uint16_t new_block = ( log_info->write_addr + sizeof( m_header ) + m_header ) >> BLOCK_SIZE_LOG2;
+          // if header is valid and is on same block, move to next record
+          if ( m_header != INVALID_HEADER && cur_block == new_block ) {
+            log_info->write_addr += sizeof( m_header ) + m_header;
+            call Sector.read[ id ]( 
+              calcAddr( id, log_info->write_addr ), 
+              &m_header, 
+              sizeof( m_header ) );
+          } else {
+          // found last record
+            signal ClientResource.granted[ id ]();
+          }
+        }
+        break;
+  
+      case S_SEARCH_SEEK:
+        {
+          // searching for last log record to read
+          //advances read_addr to next record start 
+          // (+=header len + header val)
+          //TODO: stash log_info->read_addr before advancing
+          log_info->read_addr += sizeof( m_header ) + m_header;
+          // if not yet at cookie, keep searching
+          if ( log_info->read_addr < m_log_state[ id ].cookie ) {
+            call Sector.read[ id ]( 
+              calcAddr(id, log_info->read_addr), 
+              &m_header, 
+              sizeof( m_header ) );
+          } else {
+  // at or passed cookie, stop        
+          //TODO: i think this is the point where the seek should be
+          //pushed back to the previous record's start
+          //yes: remaining is the remaining-in-this-record. we've advanced
+          //it to next log record (overshooting our target), so we
+          //subtract the seek cookie from the real address to figure out
+          //how much is left in this record. Incidentally, I think that
+          //this is where the problems with seeks around block boundaries
+          //were coming from in K2.
+          //So, this should set read_addr back to its original stashed
+          //value, and remaining should be m_header, i believe
+            log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
+            log_info->read_addr = m_log_state[ id ].cookie;
+            signalDone( id, error );
+          }
+        }
+        break;
 
-    case S_SEARCH_RECORDS: 
-      {
-	// searching for the last log record to write
-	uint16_t cur_block = log_info->write_addr >> BLOCK_SIZE_LOG2;
-	uint16_t new_block = ( log_info->write_addr + sizeof( m_header ) + 
-			       m_header ) >> BLOCK_SIZE_LOG2;
-	// if header is valid and is on same block, move to next record
-	if ( m_header != INVALID_HEADER && cur_block == new_block ) {
-	  log_info->write_addr += sizeof( m_header ) + m_header;
-	  call Sector.read[ id ]( calcAddr( id, log_info->write_addr ), 
-				  &m_header, sizeof( m_header ) );
-	}
-	// found last record
-	else {
-	  signal ClientResource.granted[ id ]();
-	}
-      }
-      break;
+      case S_HEADER:
+        {
+          // if header is invalid, move to next block
+          if ( m_header == INVALID_HEADER ) {
+            log_info->read_addr += BLOCK_SIZE;
+            log_info->read_addr &= ~BLOCK_MASK;
+          } else {
+          //remaining = remaining in this record
+            log_info->read_addr += sizeof( m_header );
+            log_info->remaining = m_header;
+            m_rw_state = S_DATA;
+          }
+          continueReadOp( id );
+        }
+        break;
 
-    case S_SEARCH_SEEK:
-      {
-	// searching for last log record to read
-    //advances read_addr to next record start 
-    // (+=header len + header val)
-    //TODO: stash log_info->read_addr before advancing
-	log_info->read_addr += sizeof( m_header ) + m_header;
-	// if not yet at cookie, keep searching
-	if ( log_info->read_addr < m_log_state[ id ].cookie ) {
-	  call Sector.read[ id ]( calcAddr(id, log_info->read_addr), &m_header,
-				  sizeof( m_header ) );
-	}
-	// at or passed cookie, stop
-	else {
-      //TODO: i think this is the point where the seek should be
-      //pushed back to the previous record's start
-      //yes: remaining is the remaining-in-this-record. we've advanced
-      //it to next log record (overshooting our target), so we
-      //subtract the seek cookie from the real address to figure out
-      //how much is left in this record. Incidentally, I think that
-      //this is where the problems with seeks around block boundaries
-      //were coming from in K2.
-      //So, this should set read_addr back to its original stashed
-      //value, and remaining should be m_header, i believe
-	  log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
-	  log_info->read_addr = m_log_state[ id ].cookie;
-	  signalDone( id, error );
-	}
-      }
-      break;
-
-    case S_HEADER:
-      {
-	// if header is invalid, move to next block
-	if ( m_header == INVALID_HEADER ) {
-	  log_info->read_addr += BLOCK_SIZE;
-	  log_info->read_addr &= ~BLOCK_MASK;
-	}
-	else {
-      //remaining = remaining in this record
-	  log_info->read_addr += sizeof( m_header );
-	  log_info->remaining = m_header;
-	  m_rw_state = S_DATA;
-	}
-	continueReadOp( id );
-      }
-      break;
-
-    case S_DATA:
-      {
-	log_info->read_addr += len;
-	log_info->remaining -= len;
-	m_len -= len;
-	m_rw_state = S_HEADER;
-	continueReadOp( id );
-	break;
-      }
-      
+      case S_DATA:
+        {
+          log_info->read_addr += len;
+          log_info->remaining -= len;
+          m_len -= len;
+          m_rw_state = S_HEADER;
+          continueReadOp( id );
+          break;
+        }
     }
-    
   }
 
   void continueAppendOp( uint8_t client ) {
@@ -459,65 +476,60 @@ implementation {
     if ( !(uint16_t)write_addr ) {
       m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, write_addr ), 1 );
-    }
-    else {
+    } else {
       //start of new block? write write_addr
       if ( !((uint16_t)write_addr & BLOCK_MASK) ) {
-	buf = &m_log_info[ client ].write_addr;
-	len = sizeof( m_addr );
-      }
-      //need to write header (len)? do so.
-      else if ( m_rw_state == S_HEADER ) {
-	buf = &m_log_state[ client ].len;
-	len = sizeof( m_log_state[ client ].len );
-      }
-      else {
-      //write actual data
-	buf = m_log_state[ client ].buf;
-	len = m_log_state[ client ].len;
+        buf = &m_log_info[ client ].write_addr;
+        len = sizeof( m_addr );
+      } else if ( m_rw_state == S_HEADER ) {
+        //need to write header (len)? do so.
+        buf = &m_log_state[ client ].len;
+        len = sizeof( m_log_state[ client ].len );
+      } else {
+        //write actual data
+        buf = m_log_state[ client ].buf;
+        len = m_log_state[ client ].len;
       }
       call Sector.write[ client ]( calcAddr( client, write_addr ), buf, len );
     }
-
   }
 
   event void Sector.eraseDone[ uint8_t id ]( uint8_t sector, 
-					     uint8_t num_sectors,
-					     error_t error ) {
+                                   uint8_t num_sectors,
+                                   error_t error ) {
     if ( m_log_state[ id ].req == S_ERASE ) {
       m_log_info[ id ].read_addr = 0;
       m_log_info[ id ].write_addr = 0;
       signalDone( id, error );
-    }
-    else {
+    } else {
       // advance read pointer if write pointer has gone too far ahead
       // (the log could have cycled around)
       stm25p_addr_t volume_size = 
-	STM25P_SECTOR_SIZE * ( call Sector.getNumSectors[ id ]() - 1 );
+      STM25P_SECTOR_SIZE * ( call Sector.getNumSectors[ id ]() - 1 );
       if ( m_log_info[ id ].write_addr > volume_size ) {
-	stm25p_addr_t read_addr = m_log_info[ id ].write_addr - volume_size;
-	if ( m_log_info[ id ].read_addr < read_addr )
-	  m_log_info[ id ].read_addr = read_addr;
+      stm25p_addr_t read_addr = m_log_info[ id ].write_addr - volume_size;
+      if ( m_log_info[ id ].read_addr < read_addr )
+        m_log_info[ id ].read_addr = read_addr;
       }
       m_addr = m_log_info[ id ].write_addr;
       call Sector.write[ id ]( calcAddr( id, m_addr ), (uint8_t*)&m_addr, 
-			      sizeof( m_addr ) );
+                        sizeof( m_addr ) );
     }
   }
 
   event void Sector.writeDone[ uint8_t id ]( storage_addr_t addr, 
-					     uint8_t* buf, 
-					     storage_len_t len, 
-					     error_t error ) {
+                                   uint8_t* buf, 
+                                   storage_len_t len, 
+                                   error_t error ) {
     //unclear how this ensures writes don't span block boundaries.
     //maybe that's done by Sector?
     m_log_info[ id ].write_addr += len;
     if ( m_rw_state == S_HEADER ) {
-      if ( len == sizeof( m_header ) )
-	m_rw_state = S_DATA;
+      if ( len == sizeof( m_header ) ){
+        m_rw_state = S_DATA;
+      }
       continueAppendOp( id );
-    }
-    else {
+    } else {
       signalDone( id, error );
     }
   }
@@ -531,23 +543,23 @@ implementation {
     call ClientResource.release[ id ]();
     m_log_state[ id ].req = S_IDLE;
     switch( req ) {
-    case S_IDLE:
-      break;
-    case S_READ:
-      signal Read.readDone[ id ]( buf, len - m_len, error );
-      break;
-    case S_SEEK:
-      signal Read.seekDone[ id ]( error );
-      break;
-    case S_ERASE:
-      signal Write.eraseDone[ id ]( error );
-      break;
-    case S_APPEND:
-      signal Write.appendDone[ id ]( buf, len, m_records_lost, error );
-      break;
-    case S_SYNC:
-      signal Write.syncDone[ id ]( error );
-      break;
+      case S_IDLE:
+        break;
+      case S_READ:
+        signal Read.readDone[ id ]( buf, len - m_len, error );
+        break;
+      case S_SEEK:
+        signal Read.seekDone[ id ]( error );
+        break;
+      case S_ERASE:
+        signal Write.eraseDone[ id ]( error );
+        break;
+      case S_APPEND:
+        signal Write.appendDone[ id ]( buf, len, m_records_lost, error );
+        break;
+      case S_SYNC:
+        signal Write.syncDone[ id ]( error );
+        break;
     }
   }
 
