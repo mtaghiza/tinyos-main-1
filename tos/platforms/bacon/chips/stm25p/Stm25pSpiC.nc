@@ -37,8 +37,6 @@
  * @version $Revision$ $Date$
  */
 
-#warning using bacon Stm25pSpiC
-
 configuration Stm25pSpiC {
 
   provides interface Init;
