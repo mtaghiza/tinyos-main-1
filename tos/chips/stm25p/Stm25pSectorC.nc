@@ -57,7 +57,7 @@ implementation {
   components new FcfsArbiterC( "Stm25p.Volume" ) as ArbiterC;
   SectorP.Stm25pResource -> ArbiterC;
 
-  components new SplitControlDeferredPowerManagerC( 1024 ) as PowerManagerC;
+  components new SplitControlDeferredPowerManagerC( 1*1024 ) as PowerManagerC;
   PowerManagerC.SplitControl -> SectorP;
   PowerManagerC.ResourceDefaultOwner -> ArbiterC;
   PowerManagerC.ArbiterInfo -> ArbiterC;

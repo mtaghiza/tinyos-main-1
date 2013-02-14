@@ -113,27 +113,19 @@ implementation {
   }
 
   async command error_t ClientResource.request() {
-    call PowerTimeout.stop();
     return call SpiResource.request();
   }
 
   async command error_t ClientResource.immediateRequest() {
     error_t err = call SpiResource.immediateRequest();
     if (err == SUCCESS){
-      call FLASH_EN.set();
+      call PowerTimeout.stop();
     }
     return err;
   }
   
   async command error_t ClientResource.release() {
     error_t err = call SpiResource.release();
-    //According to datasheet, status reg. operations take up to 15 ms.
-    //leave power on for 30 ms after the spi is released to let it
-    //finish whatever it's doing.
-    call PowerTimeout.start(30);
-//    if (err == SUCCESS){
-//      call FLASH_EN.clr();
-//    }
     return err;
   }
 
@@ -147,10 +139,13 @@ implementation {
 
   async command error_t Spi.powerDown() {
     sendCmd( S_DEEP_SLEEP, 1 );
+    call PowerTimeout.start(10);
     return SUCCESS;
   }
 
   async command error_t Spi.powerUp() {
+    call PowerTimeout.stop();
+    call FLASH_EN.set();
     sendCmd( S_POWER_ON, 5 );
     return SUCCESS;
   }
