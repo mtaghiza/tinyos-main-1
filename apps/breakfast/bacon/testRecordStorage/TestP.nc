@@ -10,6 +10,7 @@ module TestP{
   uses interface LogRead;
   uses interface LogWrite;
 } implementation {
+  storage_addr_t seekLoc = SEEK_BEGINNING;
   enum{
     MAX_RECORD_LEN=0x0F,
   };
@@ -101,12 +102,16 @@ module TestP{
   }
 
   task void seekTask(){
-    printf("seeking\r\n");
-    call LogRead.seek(SEEK_BEGINNING);
+    storage_addr_t sl;
+    atomic{
+      sl = seekLoc;
+    }
+    printf("seeking to: %lu\r\n", sl);
+    call LogRead.seek(sl);
   }
 
   task void readTask(){
-    printf("read:");
+    printf("read (%lu):", call LogRead.currentOffset());
     printf(" %x\r\n", 
       call LogRead.read(genBuf, MAX_RECORD_LEN+1));
   }
@@ -146,9 +151,13 @@ module TestP{
         break;
       case '\r':
         printf("\r\n");
+        seekLoc = 0;
         break;
       default:
         printf("%c", byte);
+        if ( byte >= '0' && byte <= '9'){
+          seekLoc = (seekLoc *10)+ (byte-'0');
+        }
         break;
     }
   }

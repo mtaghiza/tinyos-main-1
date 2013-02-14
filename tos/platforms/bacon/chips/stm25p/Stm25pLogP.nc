@@ -415,9 +415,10 @@ implementation {
       case S_SEARCH_SEEK:
         {
           // searching for last log record to read
+          //stash log_info->read_addr before advancing
+          storage_addr_t last_read_addr = log_info->read_addr;
           //advances read_addr to next record start 
           // (+=header len + header val)
-          //TODO: stash log_info->read_addr before advancing
           log_info->read_addr += sizeof( m_header ) + m_header;
           // if not yet at cookie, keep searching
           if ( log_info->read_addr < m_log_state[ id ].cookie ) {
@@ -427,6 +428,7 @@ implementation {
               sizeof( m_header ) );
           } else {
   // at or passed cookie, stop        
+            if (SINGLE_RECORD_READ){
           //TODO: i think this is the point where the seek should be
           //pushed back to the previous record's start
           //yes: remaining is the remaining-in-this-record. we've advanced
@@ -437,8 +439,17 @@ implementation {
           //were coming from in K2.
           //So, this should set read_addr back to its original stashed
           //value, and remaining should be m_header, i believe
-            log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
-            log_info->read_addr = m_log_state[ id ].cookie;
+              if ( log_info->read_addr > m_log_state[ id ].cookie ) {
+
+                log_info->remaining = 0;
+                log_info->read_addr = last_read_addr;
+              }else{
+                //cool. we hit it exactly.
+              }
+            } else{
+              log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
+              log_info->read_addr = m_log_state[ id ].cookie;
+            }
             signalDone( id, error );
           }
         }
