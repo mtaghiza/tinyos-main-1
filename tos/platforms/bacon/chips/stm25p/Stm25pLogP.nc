@@ -50,6 +50,13 @@ module Stm25pLogP {
 }
 
 implementation {
+  #ifndef SINGLE_RECORD_READ
+  #define SINGLE_RECORD_READ 0
+  #endif
+
+  #if SINGLE_RECORD_READ == 1
+  #warning "Using single-record log read"
+  #endif
 
   enum {
     NUM_LOGS = uniqueCount( "Stm25p.Log" ),
@@ -75,8 +82,6 @@ implementation {
     void* buf;
     uint8_t len;
     stm25p_log_req_t req;
-    uint8_t* recordLens;
-    uint8_t recordRead;
   } stm25p_log_state_t;
 
   typedef struct stm25p_log_info_t {
@@ -116,19 +121,15 @@ implementation {
     }
     return SUCCESS;
   }
-  //TODO: replicate Read in RecordRead, but store recordLens and set
-  //  recordRead flag in request. 
+  
   command error_t Read.read[ uint8_t id ]( void* buf, storage_len_t len ) {
     m_req.req = S_READ;
     m_req.buf = buf;
     m_req.len = len;
-    m_req.recordLens = NULL;
-    m_req.recordRead = FALSE;
     m_len = len;
     return newRequest( id );
   }
 
-  //TODO: replicate in RecordRead, set recordRead to TRUE.
   command error_t Read.seek[ uint8_t id ]( storage_addr_t cookie ) {
     
     if ( cookie > m_log_info[ id ].write_addr ){
@@ -137,7 +138,6 @@ implementation {
     
     m_req.req = S_SEEK;
     m_req.cookie = cookie;
-    m_req.recordRead = FALSE;
     return newRequest( id );
     
   }
@@ -234,7 +234,7 @@ implementation {
       switch( m_log_state[ id ].req ) {
         case S_READ:
           printf("starting read\r\n");
-        //remaining=0: state is read_header. !=0 : read data
+          //remaining=0: state is read_header. !=0 : read data
           m_rw_state = (m_log_info[ id ].remaining) ? S_DATA : S_HEADER;
           continueReadOp( id );
           break;
@@ -294,9 +294,6 @@ implementation {
       signalDone( client, SUCCESS );
       return;
     }
-    //default to S_HEADER behavior: reading next record's len
-    buf = &m_header;
-    len = sizeof( m_header );
 
     if ( m_rw_state == S_DATA ) {
 //      printf("data ");
@@ -305,28 +302,38 @@ implementation {
         m_rw_state = S_HEADER;
         read_addr += BLOCK_SIZE;
         read_addr &= ~BLOCK_MASK;
+        buf = &m_header;
+        len = sizeof( m_header );
       } else {
-        //TODO: single-record- set len/m_len to 
-        //  m_log_info[client].remaining
-        //  - i.e. read the rest of the current record.
-        //  - should verify that the provided buffer is large enough
-        //TODO: no-partial-records- when cur record is longer than
-        //      request, we set len/m_len to 0 and wrap it up.
-        //  - we cannot read another full record into the provided
-        //    buffer.
-        //  - TODO: should also append this to the resulting record
-        //    length-map
-        //read into &(buffer + requested len - read-so-far)
-        buf = m_log_state[ client ].buf + m_log_state[ client ].len - m_len;
-        // truncate if record is shorter than requested length
-        if ( m_log_info[ client ].remaining < m_len ){
-          len = m_log_info[ client ].remaining;
+        if (SINGLE_RECORD_READ){
+          if (m_log_info[client].remaining > m_log_state[client].len){
+            m_len = m_log_state[client].len;
+            //Not enough space for record, we're done
+            signalDone(client, ESIZE);
+            return;
+          } else{
+            //it fits, I sits.
+            // m_len is the remaining data to read,
+            // m_log_info[client].len is the filled part of the buffer
+            len = m_log_info[client].remaining;
+            //read into client buffer
+            buf = m_log_state[client].buf;
+          }
         }else{
-          len = m_len;
+          //read into &(buffer + requested len - read-so-far)
+          buf = m_log_state[ client ].buf + m_log_state[ client ].len - m_len;
+          // truncate if record is shorter than requested length
+          if ( m_log_info[ client ].remaining < m_len ){
+            len = m_log_info[ client ].remaining;
+          }else{
+            len = m_len;
+          }
         }
       }
     }else{
-//      printf("non-data ");
+      //S_HEADER behavior if not S_DATA.
+      buf = &m_header;
+      len = sizeof( m_header );
     }
     
     // if on block boundary
@@ -457,9 +464,15 @@ implementation {
         {
           log_info->read_addr += len;
           log_info->remaining -= len;
+          //m_len is the number of bytes requested but not yet read
           m_len -= len;
-          m_rw_state = S_HEADER;
-          continueReadOp( id );
+          if (SINGLE_RECORD_READ){
+            //single-record read: stop here.
+            signalDone(id, error);
+          }else{
+            m_rw_state = S_HEADER;
+            continueReadOp( id );
+          }
           break;
         }
     }

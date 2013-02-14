@@ -36,7 +36,6 @@
 #define __STM25P_H__
 
 #include "Storage.h"
-//TODO adjust sizes for stmp25p32
 typedef storage_addr_t stm25p_addr_t;
 typedef storage_len_t stm25p_len_t;
 
