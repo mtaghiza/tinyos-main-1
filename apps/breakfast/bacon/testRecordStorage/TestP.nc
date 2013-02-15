@@ -116,6 +116,12 @@ module TestP{
       call LogRead.read(genBuf, MAX_RECORD_LEN+1));
   }
 
+  task void littleReadTask(){
+    printf("little-read (%lu):", call LogRead.currentOffset());
+    printf(" %x\r\n", 
+      call LogRead.read(genBuf, 3));
+  }
+
   task void appendTask(){
     printf("append\r\n");
     fillRecord(record, curRL);
@@ -145,6 +151,9 @@ module TestP{
         break;
       case 'r':
         post readTask();
+        break;
+      case 'R':
+        post littleReadTask();
         break;
       case '?':
         post printState();
