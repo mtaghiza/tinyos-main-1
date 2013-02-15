@@ -253,15 +253,35 @@ implementation {
               <<STM25P_SECTOR_SIZE_LOG2;
           }
           m_log_info[ id ].read_addr = m_log_state[ id ].cookie & ~BLOCK_MASK;
+          printf("set read_addr to start of block: %lu\r\n",
+            m_log_info[ id ].read_addr);
           m_log_info[ id ].remaining = 0;
           m_rw_state = S_SEARCH_SEEK;
-          if ( m_log_info[ id ].read_addr != m_log_state[ id ].cookie ) {
-            m_log_info[ id ].read_addr += sizeof( m_addr );
-            call Sector.read[ id ]( 
-              calcAddr( id, m_log_info[ id ].read_addr ), 
-              &m_header, sizeof( m_header ) );
-          }else{
-            signalDone( id, SUCCESS );
+          if (SINGLE_RECORD_READ){
+            //advance to first record header on this block
+            m_log_info[id].read_addr += sizeof(m_addr);
+            //if we aren't there yet, then we need to read the first
+            //record header and proceed from there.
+            if ( m_log_info[ id ].read_addr < m_log_state[ id ].cookie ) {
+              call Sector.read[ id ]( 
+                calcAddr( id, m_log_info[ id ].read_addr ), 
+                &m_header, sizeof( m_header ) );
+            }else{
+              printf("all set.\r\n");
+              signalDone( id, SUCCESS );
+            }
+
+          } else{
+            if ( m_log_info[ id ].read_addr != m_log_state[ id ].cookie ) {
+              printf("advance to first header\r\n");
+              m_log_info[ id ].read_addr += sizeof( m_addr );
+              call Sector.read[ id ]( 
+                calcAddr( id, m_log_info[ id ].read_addr ), 
+                &m_header, sizeof( m_header ) );
+            }else{
+              printf("all set.\r\n");
+              signalDone( id, SUCCESS );
+            }
           }
         }
         break;
@@ -288,6 +308,14 @@ implementation {
     uint8_t len;
     error_t error;
 //    printf("continueReadOp ");
+
+    // if on block boundary
+    //at block boundary: advance read_addr to first record start
+    if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
+//      printf("block boundary ");
+      read_addr += sizeof( m_addr );
+    }
+
     // check if all done
     if ( m_len == 0 || read_addr >= m_log_info[ client ].write_addr ) {
 //      printf("done.\r\n");
@@ -336,12 +364,6 @@ implementation {
       len = sizeof( m_header );
     }
     
-    // if on block boundary
-    //at block boundary: advance read_addr to first record start
-    if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
-//      printf("block boundary ");
-      read_addr += sizeof( m_addr );
-    }
     
     m_log_info[ client ].read_addr = read_addr;
 //    printf("reading from %lu (%lu) into %p. &m_header=%p\r\n", 
@@ -363,6 +385,7 @@ implementation {
       case S_SEARCH_BLOCKS: 
         {
           uint16_t block = addr >> BLOCK_SIZE_LOG2;
+          printf("s.rd: SB\r\n");
           // record potential starting and ending addresses
           if ( m_addr != STM25P_INVALID_ADDRESS ) {
             if ( m_addr < log_info->read_addr )
@@ -398,6 +421,7 @@ implementation {
           // searching for the last log record to write
           uint16_t cur_block = log_info->write_addr >> BLOCK_SIZE_LOG2;
           uint16_t new_block = ( log_info->write_addr + sizeof( m_header ) + m_header ) >> BLOCK_SIZE_LOG2;
+          printf("s.rd: SR\r\n");
           // if header is valid and is on same block, move to next record
           if ( m_header != INVALID_HEADER && cur_block == new_block ) {
             log_info->write_addr += sizeof( m_header ) + m_header;
@@ -417,6 +441,7 @@ implementation {
           // searching for last log record to read
           //stash log_info->read_addr before advancing
           storage_addr_t last_read_addr = log_info->read_addr;
+          printf("s.rd: SS\r\n");
           //advances read_addr to next record start 
           // (+=header len + header val)
           log_info->read_addr += sizeof( m_header ) + m_header;
@@ -427,24 +452,30 @@ implementation {
               &m_header, 
               sizeof( m_header ) );
           } else {
+            printf("%lu at or past %lu\r\n", 
+              log_info->read_addr,
+              m_log_state[id].cookie);
   // at or passed cookie, stop        
             if (SINGLE_RECORD_READ){
-          //TODO: i think this is the point where the seek should be
-          //pushed back to the previous record's start
-          //yes: remaining is the remaining-in-this-record. we've advanced
-          //it to next log record (overshooting our target), so we
-          //subtract the seek cookie from the real address to figure out
-          //how much is left in this record. Incidentally, I think that
-          //this is where the problems with seeks around block boundaries
-          //were coming from in K2.
-          //So, this should set read_addr back to its original stashed
-          //value, and remaining should be m_header, i believe
+              //backtrack to start of record. remaining=0 means "this
+              //pointing at a header"
               if ( log_info->read_addr > m_log_state[ id ].cookie ) {
+                printf("backtrack -> %lu\r\n", last_read_addr);
 
                 log_info->remaining = 0;
                 log_info->read_addr = last_read_addr;
               }else{
+                printf("hit exactly: masked %lu ->",
+                  (log_info->read_addr & BLOCK_MASK));
                 //cool. we hit it exactly.
+                //if we are now pointing at a block header, advance
+                //it to the next record header to disambiguate
+                if ( (log_info->read_addr & BLOCK_MASK) < sizeof(m_addr)){
+                  printf(" BH -> ");
+                  log_info->read_addr =
+                    (log_info->read_addr & BLOCK_MASK) + sizeof(m_addr);
+                }
+                printf("%lu\r\n", log_info->read_addr);
               }
             } else{
               log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
