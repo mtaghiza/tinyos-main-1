@@ -324,9 +324,15 @@ implementation {
       } else {
         if (SINGLE_RECORD_READ){
           if (m_log_info[client].remaining > m_log_state[client].len){
-            m_len = m_log_state[client].len;
-            //Not enough space for record, we're done
-            signalDone(client, ESIZE);
+            //Not enough space for record, we're done.
+            //Note that we explicitly check for this in
+            //Sector.readDone and shouldn't reach this point. If we
+            //have reached this point, read_addr is not pointing at a
+            //record header. While this should still work OK, calling
+            //currentOffset right now would give a result that is 1+
+            //the correct/unambiguous cookie value. Since we require
+            //that cookie 
+            signalDone(client, FAIL);
             return;
           } else{
             //it fits, I sits.
@@ -464,10 +470,20 @@ implementation {
             log_info->read_addr += BLOCK_SIZE;
             log_info->read_addr &= ~BLOCK_MASK;
           } else {
-          //remaining = remaining in this record
+            //remaining = remaining in this record
             log_info->read_addr += sizeof( m_header );
             log_info->remaining = m_header;
             m_rw_state = S_DATA;
+            if (SINGLE_RECORD_READ){
+              //check for fit
+              if (log_info->remaining > m_log_state[id].len){
+                //doesn't fit: go back to header, signal done
+                log_info->read_addr -= sizeof(m_header);
+                log_info->remaining = 0;
+                signalDone(id, ESIZE);
+                return;
+              }
+            }
           }
           continueReadOp( id );
         }
