@@ -47,7 +47,7 @@ module BusP{
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t i;
     slaveCount++;
-    printf("Assigned %x to ", discovery->val.localAddr);
+    printf("#Assigned %x to ", discovery->val.localAddr);
     for ( i = 0 ; i < GLOBAL_ID_LEN; i++){
       printf("%x ", discovery->val.globalAddr[i]);
     }
@@ -118,8 +118,8 @@ module BusP{
     call Pool.put(ScanBus_cmd_msg);
     ScanBus_cmd_msg = NULL;
     ScanBus_response_msg = NULL;
-    printf("Response sent\n");
-    printfflush();
+//     printf("Response sent\n");
+//     printfflush();
   }
 
 
@@ -138,9 +138,9 @@ module BusP{
       setBusPower_error = call BusControl.start();
     } else {
       setBusPower_error = call BusControl.stop();
-      if (setBusPower_error != SUCCESS){
-        post reportBusPowerError();
-      }
+    }
+    if (setBusPower_error != SUCCESS){
+      post reportBusPowerError();
     }
   }
 
