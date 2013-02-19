@@ -46,10 +46,10 @@ generic configuration LogStorageC( volume_id_t volume_id, bool circular ) {
 
   provides interface LogRead;
   provides interface LogWrite;
-  //TODO: add RecordLogRead interface
 }
 
 implementation {
+  components LogNotifyC;
 
   enum {
     LOG_ID = unique( "Stm25p.Log" ),
@@ -59,6 +59,8 @@ implementation {
   components Stm25pLogP as LogP;
   LogRead = LogP.Read[ LOG_ID ];
   LogWrite = LogP.Write[ LOG_ID ];
+
+  LogNotifyC.SubNotify -> LogP.Notify;
   
   components Stm25pSectorC as SectorC;
   LogP.ClientResource[ LOG_ID ] -> SectorC.ClientResource[ VOLUME_ID ];

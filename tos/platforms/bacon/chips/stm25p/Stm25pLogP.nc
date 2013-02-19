@@ -47,6 +47,9 @@ module Stm25pLogP {
   uses interface Get<bool> as Circular[ uint8_t id ];
   uses interface Leds;
 
+  //for informing other code when an append is completed (indicates
+  //  how much data was appended)
+  provides interface Notify<uint8_t>;
 }
 
 implementation {
@@ -597,6 +600,7 @@ implementation {
         signal Write.eraseDone[ id ]( error );
         break;
       case S_APPEND:
+        signal Notify.notify(len);
         signal Write.appendDone[ id ]( buf, len, m_records_lost, error );
         break;
       case S_SYNC:
@@ -606,7 +610,7 @@ implementation {
   }
 
   event void Sector.computeCrcDone[ uint8_t id ]( stm25p_addr_t addr, stm25p_len_t len, uint16_t crc, error_t error ) {}
-
+  
   default event void Read.readDone[ uint8_t id ]( void* data, storage_len_t len, error_t error ) {}
   default event void Read.seekDone[ uint8_t id ]( error_t error ) {}
   default event void Write.eraseDone[ uint8_t id ]( error_t error ) {}
@@ -623,4 +627,7 @@ implementation {
   default async command error_t ClientResource.release[ uint8_t id ]() { return FAIL; }
   default command bool Circular.get[ uint8_t id ]() { return FALSE; }
   
+  default event void Notify.notify(uint8_t val){}
+  command error_t Notify.enable(){ return SUCCESS;}
+  command error_t Notify.disable(){ return FAIL;}
 }
