@@ -83,10 +83,10 @@ module AnalogSensorP {
         sizeof(read_analog_sensor_cmd_msg_t)));
     adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg); 
     cmd -> cfg[1].config.inch = INPUT_CHANNEL_NONE;
-    printf("cmd: %u each %u (x%u)\n", 
-      sizeof(adc_reader_pkt_t), 
-      sizeof(adc_reader_config_t),
-      ADC_NUM_CHANNELS);
+//     printf("cmd: %u each %u (x%u)\n", 
+//       sizeof(adc_reader_pkt_t), 
+//       sizeof(adc_reader_config_t),
+//       ADC_NUM_CHANNELS);
 //    memset(cmd, 0, sizeof(adc_reader_pkt_t));
 //    {
 //      uint8_t i;
@@ -105,11 +105,11 @@ module AnalogSensorP {
     cmd->cfg[0].config.sampcon_ssel = commandPl->sampcon_ssel;
     cmd->cfg[0].config.sampcon_id = commandPl->sampcon_id; 
 
-    post printSettings();
+//    post printSettings();
     err = call I2CADCReaderMaster.sample(call LastSlave.get(), i2c_msg);
-    printf("sample analog (%u, %p, %p): %x\n", 
-      call LastSlave.get(), i2c_msg, cmd, err);
-    printfflush();
+//    printf("sample analog (%u, %p, %p): %x\n", 
+//      call LastSlave.get(), i2c_msg, cmd, err);
+//    printfflush();
   }
 
   task void sendResponse();
@@ -169,6 +169,10 @@ module AnalogSensorP {
 //      read_analog_sensor_response_msg,
 //      response->samples[0].sampleTime,
 //      responsePl->sample.sampleTime);
+//     printf("sd: %x inch %u st %lu\n", error,
+//       response->samples[0].inputChannel,
+//       response->samples[0].sampleTime);
+//     printfflush();
     post sendResponse();
     return responseMsg;
   }
