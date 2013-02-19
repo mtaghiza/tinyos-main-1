@@ -45,8 +45,9 @@ class ADCLogger(object):
 
     def receive(self, src, msg):
         with self.responseCV:
-            print msg.get_sample_inputChannel(), 
-            print "%0.4f"%((msg.get_sample_sample() * 2.5)/4096.0)
+            print "%0.2f %u %0.4f"%(time.time(), 
+              msg.get_sample_inputChannel(),
+              ((msg.get_sample_sample() * 2.5)/4096.0))
             self.responseCV.notify()
 
 
