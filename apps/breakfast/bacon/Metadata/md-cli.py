@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, time, thread
+from threading import Lock, Condition
 
 from tinyos.message import *
 from tinyos.message.Message import *
@@ -13,7 +14,7 @@ from mig import *
 import math
 
 
-class PrintfLogger:
+class PrintfLogger(object):
     def __init__(self):
         self.buf=''
         pass
@@ -24,30 +25,55 @@ class PrintfLogger:
             mb = mb[:mb.index(0)]
         sys.stdout.write(''.join(chr(v) for v in mb))
 
-class GenericLogger:
-    def __init__(self):
+class GenericLogger(object):
+    
+    def __init__(self, quiet):
+        self.quiet = quiet
         pass
 
     def receive(self, src, msg):
-        print msg
+        if not self.quiet:
+            print msg
+
+class ADCLogger(object):
+    """Prettier ADC sampling output. Notify listeners on response
+    condition variable when response received."""
+
+    def __init__(self, responseCV):
+        self.responseCV = responseCV
+        pass
+
+    def receive(self, src, msg):
+        with self.responseCV:
+            print msg.get_sample_inputChannel(), 
+            print "%0.4f"%((msg.get_sample_sample() * 2.5)/4096.0)
+            self.responseCV.notify()
 
 
 class Dispatcher:
-    def __init__(self, motestring):
+    def __init__(self, motestring, quiet=False):
+        self.quiet = quiet
         self.sendCount = 0
+        #hook up to mote
         self.mif = MoteIF.MoteIF()
         self.tos_source = self.mif.addSource(motestring)
+        #format printf's correctly
         self.mif.addListener(PrintfLogger(), PrintfMsg.PrintfMsg)
+        #ADC responses: permit blocking behavior
+        self.responseLock = Lock()
+        self.responseCV = Condition(self.responseLock)
+        self.mif.addListener(ADCLogger(self.responseCV), ReadAnalogSensorResponseMsg.ReadAnalogSensorResponseMsg)
         for messageClass in mig.__all__:
             if 'Response' in messageClass:
-                self.mif.addListener(GenericLogger(), 
+                self.mif.addListener(GenericLogger(self.quiet), 
                   getattr(getattr(mig, messageClass), messageClass))
 
     def stop(self):
         self.mif.finishAll()
 
     def send(self, m, dest=0):
-        print "Sending",self.sendCount, m
+        if not self.quiet:
+            print "Sending",self.sendCount, m
         self.mif.sendMsg(self.tos_source,
             dest,
             m.get_amType(), 0,
@@ -55,6 +81,9 @@ class Dispatcher:
         self.sendCount += 1
 
     def initialize(self, destination):
+        #ugh: not guaranteed that the serial connection is fully
+        # opened by the time that you get done with the constructor...
+        time.sleep(1)
         #turn on bus
         sbp = SetBusPowerCmdMsg.SetBusPowerCmdMsg()
         sbp.set_powerOn(1)
@@ -145,14 +174,18 @@ if __name__ == '__main__':
     
     print packetSource
 
-    d = Dispatcher(packetSource)
     last = None
-    time.sleep(1)
     if '--auto' in sys.argv:
         autoType = sys.argv[sys.argv.index('--auto')+1]
         limit = int(sys.argv[sys.argv.index('--auto')+2])
+        waitForResponse = True
+        quiet = True
         if autoType == 'readAnalog':
             inch = 0
+        if autoType == 'ping':
+            waitForResponse = False
+            quiet = False
+        d = Dispatcher(packetSource, quiet)
             
         try:
             d.initialize(destination)
@@ -160,21 +193,32 @@ if __name__ == '__main__':
                 if autoType == 'ping':
                     rm = PingCmdMsg.PingCmdMsg()
                 elif autoType == 'readInternal':
-                    rm = ReadAnalogSensorCmdMsg.ReadAnalogSensorCmdMsg()
-                    rm.set_inch(11)
+                    rm = readAnalog(11, 2000, 10)
                 elif autoType == 'readAnalog':
                     rm = readAnalog(inch, 2000, 10)
                 
-                d.send(rm, destination)
-                time.sleep(0.5)
+                #acquire response lock, send the request, and then
+                # block until response or timeout 
+                if waitForResponse:
+                    with d.responseCV:
+                        d.send(rm, destination)
+                        d.responseCV.wait(0.25)
+                else:
+                    d.send(rm, destination)
+                    time.sleep(0.25)
+
                 limit -= 1
                 if autoType == 'readAnalog':
                     inch = (inch + 1)%8
+                    #sleep 
+                    if inch == 0:
+                        time.sleep(1.0)
         except KeyboardInterrupt:
             pass
         finally:
             d.stop()
     else:
+        d = Dispatcher(packetSource, quiet=False)
         try:
             d.initialize(destination)
             while True:
@@ -199,8 +243,8 @@ if __name__ == '__main__':
                     for setter in [s for s in dir(m) if s.startswith('set_')]:
                         if setter == 'set_dummy':
                             v = []
-                        elif setter == 'set_tag':
-                            continue
+#                         elif setter == 'set_tag':
+#                             continue
                         else:
                             v = eval(raw_input('%s:'%setter),
                               {"__builtins__":None}, {})
