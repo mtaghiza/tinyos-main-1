@@ -49,7 +49,7 @@ module Stm25pLogP {
 
   //for informing other code when an append is completed (indicates
   //  how much data was appended)
-  provides interface Notify<uint8_t>;
+  provides interface Notify<uint8_t>[uint8_t id];
 }
 
 implementation {
@@ -600,7 +600,7 @@ implementation {
         signal Write.eraseDone[ id ]( error );
         break;
       case S_APPEND:
-        signal Notify.notify(len);
+        signal Notify.notify[id](len);
         signal Write.appendDone[ id ]( buf, len, m_records_lost, error );
         break;
       case S_SYNC:
@@ -627,7 +627,7 @@ implementation {
   default async command error_t ClientResource.release[ uint8_t id ]() { return FAIL; }
   default command bool Circular.get[ uint8_t id ]() { return FALSE; }
   
-  default event void Notify.notify(uint8_t val){}
-  command error_t Notify.enable(){ return SUCCESS;}
-  command error_t Notify.disable(){ return FAIL;}
+  default event void Notify.notify[uint8_t id](uint8_t val){}
+  command error_t Notify.enable[uint8_t id](){ return SUCCESS;}
+  command error_t Notify.disable[uint8_t id](){ return FAIL;}
 }

@@ -49,7 +49,7 @@ generic configuration LogStorageC( volume_id_t volume_id, bool circular ) {
 }
 
 implementation {
-  components LogNotifyC;
+  components LogNotifyCollectC;
 
   enum {
     LOG_ID = unique( "Stm25p.Log" ),
@@ -59,8 +59,8 @@ implementation {
   components Stm25pLogP as LogP;
   LogRead = LogP.Read[ LOG_ID ];
   LogWrite = LogP.Write[ LOG_ID ];
-
-  LogNotifyC.SubNotify -> LogP.Notify;
+  
+  LogNotifyCollectC.SubNotify[volume_id] -> LogP.Notify[LOG_ID];
   
   components Stm25pSectorC as SectorC;
   LogP.ClientResource[ LOG_ID ] -> SectorC.ClientResource[ VOLUME_ID ];

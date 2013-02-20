@@ -1,4 +1,4 @@
-module LogNotifyP{
+generic module LogNotifyP(){
   provides interface LogNotify as RecordsNotify;
 //  provides interface LogNotify as BytesNotify;
 
