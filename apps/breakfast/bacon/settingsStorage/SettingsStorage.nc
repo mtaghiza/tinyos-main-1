@@ -10,6 +10,7 @@ interface SettingsStorage {
    *          if the key was found and its size was correct (contents
    *          copied to val).
    */
+  //TODO: val should be void*.
   command error_t get(uint8_t key, uint8_t* val, uint8_t len);
 
   /**
