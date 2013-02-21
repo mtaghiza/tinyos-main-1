@@ -1,0 +1,79 @@
+AM ID's in common use:
+======================
+SettingsStorage: 0xC0 - 0xC3 in use, 0xC4-0xCF reserved
+--------------
+bacon/settingsStorage/SettingsStorage.h: AM_SET_SETTINGS_STORAGE_MSG = 0xC0,
+bacon/settingsStorage/SettingsStorage.h: AM_GET_SETTINGS_STORAGE_CMD_MSG = 0xC1,
+bacon/settingsStorage/SettingsStorage.h: AM_GET_SETTINGS_STORAGE_RESPONSE_MSG = 0xC2,
+bacon/settingsStorage/SettingsStorage.h: AM_CLEAR_SETTINGS_STORAGE_MSG = 0xC3,
+
+
+Metadata: 0x80 - 0xB1 in use, 0xB2-0xBF reserved
+--------
+bacon/Metadata/ctrl_messages.h:  AM_READ_IV_CMD_MSG = 0x80,
+bacon/Metadata/ctrl_messages.h:  AM_READ_IV_RESPONSE_MSG = 0x81,
+bacon/Metadata/ctrl_messages.h:  AM_READ_MFR_ID_CMD_MSG = 0x82,
+bacon/Metadata/ctrl_messages.h:  AM_READ_MFR_ID_RESPONSE_MSG = 0x83,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_BARCODE_ID_CMD_MSG = 0xAA,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_BARCODE_ID_RESPONSE_MSG = 0x85,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_BARCODE_ID_CMD_MSG = 0xA4,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_BARCODE_ID_RESPONSE_MSG = 0x87,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_VERSION_CMD_MSG = 0xA4,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_VERSION_RESPONSE_MSG = 0xAE,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_VERSION_CMD_MSG = 0xAA,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_VERSION_RESPONSE_MSG = 0xAF,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_BARCODE_ID_CMD_MSG = 0xA8,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_BARCODE_ID_RESPONSE_MSG = 0x89,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_BARCODE_ID_CMD_MSG = 0xA6,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_BARCODE_ID_RESPONSE_MSG = 0x8B,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_ASSIGNMENTS_CMD_MSG = 0xA8,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_ASSIGNMENTS_RESPONSE_MSG = 0x8D,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_ASSIGNMENTS_CMD_MSG = 0xA6,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_ASSIGNMENTS_RESPONSE_MSG = 0x8F,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_VERSION_CMD_MSG = 0xA6,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_VERSION_RESPONSE_MSG = 0xAC,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_VERSION_CMD_MSG = 0xA8,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
+bacon/Metadata/ctrl_messages.h:  AM_READ_ANALOG_SENSOR_CMD_MSG = 0xB0,
+bacon/Metadata/ctrl_messages.h:  AM_READ_ANALOG_SENSOR_RESPONSE_MSG = 0xB1,
+bacon/Metadata/ctrl_messages.h:  AM_SCAN_BUS_CMD_MSG = 0x90,
+bacon/Metadata/ctrl_messages.h:  AM_SCAN_BUS_RESPONSE_MSG = 0x91,
+bacon/Metadata/ctrl_messages.h:  AM_PING_CMD_MSG = 0x92,
+bacon/Metadata/ctrl_messages.h:  AM_PING_RESPONSE_MSG = 0x93,
+bacon/Metadata/ctrl_messages.h:  AM_RESET_BACON_CMD_MSG = 0x94,
+bacon/Metadata/ctrl_messages.h:  AM_RESET_BACON_RESPONSE_MSG = 0x95,
+bacon/Metadata/ctrl_messages.h:  AM_SET_BUS_POWER_CMD_MSG = 0x96,
+bacon/Metadata/ctrl_messages.h:  AM_SET_BUS_POWER_RESPONSE_MSG = 0x97,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_CMD_MSG = 0x98,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_RESPONSE_MSG = 0x99,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_TLV_CMD_MSG = 0x9A,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_TLV_RESPONSE_MSG = 0x9B,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_TLV_CMD_MSG = 0x9C,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_BACON_TLV_RESPONSE_MSG = 0x9D,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_TLV_CMD_MSG = 0x9E,
+bacon/Metadata/ctrl_messages.h:  AM_WRITE_TOAST_TLV_RESPONSE_MSG = 0x9F,
+bacon/Metadata/ctrl_messages.h:  AM_DELETE_BACON_TLV_ENTRY_CMD_MSG = 0xA0,
+bacon/Metadata/ctrl_messages.h:  AM_DELETE_BACON_TLV_ENTRY_RESPONSE_MSG = 0xA1,
+bacon/Metadata/ctrl_messages.h:  AM_DELETE_TOAST_TLV_ENTRY_CMD_MSG = 0xA2,
+bacon/Metadata/ctrl_messages.h:  AM_DELETE_TOAST_TLV_ENTRY_RESPONSE_MSG = 0xA3,
+bacon/Metadata/ctrl_messages.h:  AM_ADD_BACON_TLV_ENTRY_CMD_MSG = 0xA4,
+bacon/Metadata/ctrl_messages.h:  AM_ADD_BACON_TLV_ENTRY_RESPONSE_MSG = 0xA5,
+bacon/Metadata/ctrl_messages.h:  AM_ADD_TOAST_TLV_ENTRY_CMD_MSG = 0xA6,
+bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_TLV_ENTRY_RESPONSE_MSG = 0xA9,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_ENTRY_CMD_MSG = 0xAA,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_ENTRY_RESPONSE_MSG = 0xAB,
+
+Misc. Tests: 0xD0 - 0xDF
+---------
+bacon/cxActiveMessage/test.h:#define AM_ID_CX_TESTBED 0xdc
+
+
+Printf: 0x64
+-------
+$(TOSDIR)/lib/printf/printf.h: AM_PRINTF_MSG = 100, //0x64
+
+Log Records: 0xE0 - 0xEF
+-------
+AM_LOG_RECORD_DATA_MSG: = 0xE0,
+
+CX collection control: 0xF0 - 0xFF
