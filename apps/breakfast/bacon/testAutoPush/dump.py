@@ -27,7 +27,8 @@ class GenericLogger(object):
         pass
 
     def receive(self, src, msg):
-        print msg
+#        print msg
+        print "$R$",
 
 
 class Dispatcher:
