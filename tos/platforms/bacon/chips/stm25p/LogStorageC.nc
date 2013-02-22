@@ -49,7 +49,6 @@ generic configuration LogStorageC( volume_id_t volume_id, bool circular ) {
 }
 
 implementation {
-  components LogNotifyCollectC;
 
   enum {
     LOG_ID = unique( "Stm25p.Log" ),
@@ -60,6 +59,7 @@ implementation {
   LogRead = LogP.Read[ LOG_ID ];
   LogWrite = LogP.Write[ LOG_ID ];
   
+  components LogNotifyCollectC;
   LogNotifyCollectC.SubNotify[volume_id] -> LogP.Notify[LOG_ID];
   
   components Stm25pSectorC as SectorC;
@@ -68,6 +68,7 @@ implementation {
   
   components new Stm25pBinderP( volume_id ) as BinderP;
   BinderP.Volume -> SectorC.Volume[ VOLUME_ID ];
+  BinderP.Volume -> LogP.Volume[LOG_ID];
   
   components new Stm25pLogConfigP( circular ) as ConfigP;
   LogP.Circular[ LOG_ID ] -> ConfigP;
