@@ -8,7 +8,7 @@ module TestP{
   
   uint8_t testRec[8] = { 8, 7, 6, 5, 4, 3, 2, 1};
   uint8_t curLen = 8;
-  uint8_t appendLimit = 6;
+  uint16_t appendLimit = 0;
   
   command am_addr_t Get.get(){
     return AM_BROADCAST_ADDR;
@@ -21,14 +21,14 @@ module TestP{
   event void SplitControl.startDone(error_t error){
     printf("Booted\n");
     printfflush();
-    call Timer.startPeriodic(2048);
+    call Timer.startOneShot(2048);
   } 
 
   event void Timer.fired(){
-    if (appendLimit --){
+    if (-- appendLimit ){
+      call Timer.startOneShot(128);
       call LogWrite.append(testRec, curLen);
     }else{
-      call Timer.stop();
       printf("Done\r\n");
       printfflush();
     }
