@@ -101,9 +101,11 @@ generic module AutoPushP(){
 
   void send(){
     state = S_SENDING;
-//    printf("sending\n"); 
-//    printfflush();
-    call AMSend.send(call Get.get(), msg, (uint8_t*)recordPtr - bufferStart);
+    printf("sending\n"); 
+    printfflush();
+    call AMSend.send(call Get.get(), 
+      msg, 
+      sizeof(log_record_data_msg_t));
   }
 
   event void LogRead.readDone(void* buf, storage_len_t len, 
@@ -113,6 +115,7 @@ generic module AutoPushP(){
     if(error == SUCCESS){
       recordPtr -> length = len;
       if (len == 0){
+        recordPtr -> cookie = 0xFFFFFFFF;
 //        printf("no more data.\n");
         //no more data, send it.
         send();
@@ -166,12 +169,18 @@ generic module AutoPushP(){
       if (msg != NULL){
         recordsRead = 0;
         recordPtr = (log_record_t*)(call AMSend.getPayload(msg, 
-          call AMSend.maxPayloadLength()));
-        bufferStart = (uint8_t*)recordPtr; 
-        bufferEnd = bufferStart + call AMSend.maxPayloadLength();
+          sizeof(log_record_data_msg_t)));
+        if (recordPtr){
+          bufferStart = (uint8_t*)recordPtr; 
+          bufferEnd = bufferStart + call AMSend.maxPayloadLength();
+          memset(bufferStart, 0xFF, sizeof(log_record_data_msg_t));
+        post readNext();
+        }else{
+          printf("Payload error\n");
+          state = S_ERROR;
+        }
 //        printf("RP %p BS %p BE %p\n", recordPtr, bufferStart,
 //          bufferEnd);
-        post readNext();
       }else{
         state = S_ERROR;
       }
