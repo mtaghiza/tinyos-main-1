@@ -256,7 +256,8 @@ if __name__ == '__main__':
       print "    { base : %d, size : %d }," % \
             ( volumeOffsets[ i ], volumeSizes[ i ] )
   print "};"
-  
+  print ""
+  print "#define NUM_VOLUMES %d" % len(volumeNames)
   print ""
   print "#endif"
   
