@@ -111,7 +111,7 @@ implementation {
   async event void PowerTimeout.fired(){
 //TODO: FIXME: figure out how the hell to get this working without
 //breaking everything
-    call FLASH_EN.clr();
+//    call FLASH_EN.clr();
   }
 
   async command error_t ClientResource.request() {
