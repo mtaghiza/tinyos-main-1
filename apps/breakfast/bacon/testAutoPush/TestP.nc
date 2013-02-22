@@ -8,6 +8,7 @@ module TestP{
   
   uint8_t testRec[8] = { 8, 7, 6, 5, 4, 3, 2, 1};
   uint8_t curLen = 8;
+  uint8_t appendLimit = 6;
   
   command am_addr_t Get.get(){
     return AM_BROADCAST_ADDR;
@@ -24,14 +25,19 @@ module TestP{
   } 
 
   event void Timer.fired(){
-    call LogWrite.append(testRec, curLen);
+    if (appendLimit --){
+      call LogWrite.append(testRec, curLen);
+    }else{
+      call Timer.stop();
+      printf("Done\r\n");
+      printfflush();
+    }
   }
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
       bool recordsLost, error_t error){ 
     curLen = (curLen == 1)? 8 : curLen-1;
     printf("Append done.\n");
-    printfflush();
   }
 
   event void LogWrite.eraseDone(error_t error){}
