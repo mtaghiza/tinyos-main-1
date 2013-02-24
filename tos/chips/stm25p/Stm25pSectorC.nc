@@ -56,8 +56,12 @@ implementation {
   
   components new FcfsArbiterC( "Stm25p.Volume" ) as ArbiterC;
   SectorP.Stm25pResource -> ArbiterC;
+  
+  #ifndef STM25P_SHUTDOWN_TIMEOUT 
+  #define STM25P_SHUTDOWN_TIMEOUT 256
+  #endif
 
-  components new SplitControlDeferredPowerManagerC( 4*1024 ) as PowerManagerC;
+  components new SplitControlDeferredPowerManagerC( STM25P_SHUTDOWN_TIMEOUT ) as PowerManagerC;
   PowerManagerC.SplitControl -> SectorP;
   PowerManagerC.ResourceDefaultOwner -> ArbiterC;
   PowerManagerC.ArbiterInfo -> ArbiterC;

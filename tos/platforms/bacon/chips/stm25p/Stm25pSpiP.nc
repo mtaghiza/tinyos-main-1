@@ -111,7 +111,7 @@ implementation {
   async event void PowerTimeout.fired(){
 //TODO: FIXME: figure out how the hell to get this working without
 //breaking everything
-//    call FLASH_EN.clr();
+    call FLASH_EN.clr();
   }
 
   async command error_t ClientResource.request() {
@@ -258,6 +258,8 @@ implementation {
     call FLASH_EN.set();
     if ( !m_is_writing ){
       signal ClientResource.granted();
+      //write READ_STATUS_REGISTER, then dummy byte, and checks LSB
+      //(WIP bit)
     } else if ( sendCmd( S_READ_STATUS_REGISTER, 2 ) & 0x1 ){
       releaseAndRequest();
     } else{
