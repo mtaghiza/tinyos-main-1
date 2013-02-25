@@ -1,3 +1,7 @@
+#include "ToastSampler.h"
+#include "I2CDiscoverable.h"
+#include "GlobalID.h"
+#include "metadata.h"
 module ToastSamplerP{
   uses interface Boot;
   uses interface LogWrite;
@@ -27,9 +31,15 @@ module ToastSamplerP{
     NEW = 0x04,
   };
 
+  i2c_message_t i2c_msg_internal;
+  i2c_message_t* i2c_msg = &i2c_msg_internal;
+
   discoverer_register_union_t attached[MAX_BUS_LEN];
   uint8_t toastState[MAX_BUS_LEN];
   uint8_t numSensors[MAX_BUS_LEN];
+
+  toast_disconnection_record_t disconnection;
+  sensor_association_record_t assoc;
 
   event void Boot.booted(){
     //TODO: read scan interval/sample interval from setting storage
@@ -37,9 +47,14 @@ module ToastSamplerP{
   }
 
   event void Timer.fired(){
+    uint8_t i;
     for (i=0; i < MAX_BUS_LEN; i++){
       toastState[i] = (toastState[i] == PRESENT)? UNKNOWN : FREE;
     }
+    call SplitControl.start();
+  }
+
+  event void SplitControl.startDone(error_t error){
     call I2CDiscoverer.startDiscovery(TRUE, TOAST_ADDR_START);
   }
 
@@ -52,7 +67,7 @@ module ToastSamplerP{
     for (i = 0; i < MAX_BUS_LEN; i++){
       bool found = TRUE;
       for (k = 0; k < GLOBAL_ID_LEN; k++){
-        if (globalAddr[k] != attached[i]->val.globalAddr[k]){
+        if (globalAddr[k] != attached[i].val.globalAddr[k]){
           found = FALSE;
           break;
         }
@@ -66,7 +81,7 @@ module ToastSamplerP{
   }
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
-    uint8_t i,k;
+    uint8_t k;
     bool isNew = TRUE;
 
     //check if this was previously-attached
@@ -79,8 +94,8 @@ module ToastSamplerP{
       for (k = 0; k < MAX_BUS_LEN; k++){
         if (toastState[k] == FREE){
           toastState[k] = NEW;
-          attached[k].localAddr =  discovery->val.localAddr;
-          memcpy(&attached[k].globalAddr, 
+          attached[k].val.localAddr =  discovery->val.localAddr;
+          memcpy(&attached[k].val.globalAddr, 
             discovery->val.globalAddr, 
             GLOBAL_ID_LEN);
         }
@@ -91,6 +106,13 @@ module ToastSamplerP{
   }
   
   uint8_t mdSynchIndex;
+  uint8_t toastSampleIndex;
+
+  task void nextMdSynch();
+  task void nextSampleSensors();
+  
+  task void recordDisconnection();
+
   event void I2CDiscoverer.discoveryDone(error_t error){
     mdSynchIndex = 0;
     post nextMdSynch();
@@ -100,7 +122,7 @@ module ToastSamplerP{
     if (mdSynchIndex == MAX_BUS_LEN){
       //ok, ready to sample
       toastSampleIndex = 0;
-      post sampleSensors();
+      post nextSampleSensors();
     }else{
       if (toastState[mdSynchIndex] == NEW){
         error_t error = call I2CTLVStorageMaster.loadTLVStorage(
@@ -119,16 +141,12 @@ module ToastSamplerP{
       } else if (toastState[mdSynchIndex] == PRESENT ||
           toastState[mdSynchIndex] == FREE){
         mdSynchIndex ++;
-        post nextMdSynch;
+        post nextMdSynch();
       }
 
     }
   }
-  typedef struct toast_disconnection_record_t{
-    uint8_t recordType;
-    uint8_t globalAddr[GLOBAL_ID_LEN];
-  } toast_disconnection_record_t;
-  toast_disconnection_record_t disconnection;
+
 
   task void recordDisconnection(){
     disconnection.recordType = RECORD_TYPE_TOAST_DISCONNECTED;
@@ -141,27 +159,19 @@ module ToastSamplerP{
     }
   }
   
-  //TODO: make this a union to save RAM?
-  typedef struct sensor_association_record_t{
-    uint8_t recordType;
-    uint8_t globalAddr[GLOBAL_ID_LEN];
-    sensor_assignment_t assignments[8];
-  } sensor_association_record_t;
-
-  sensor_association_record_t assoc;
 
   event void I2CTLVStorageMaster.loaded(error_t error, i2c_message_t* msg_){
     tlv_entry_t* entry;
-    tlvs = call I2CTLVStorageMaster.getPayload(msg_);
+    void* tlvs = call I2CTLVStorageMaster.getPayload(msg_);
     if (error == SUCCESS){
       uint8_t i;
       //set up association record header
-      assoc.recordType = RECORD_TOAST_ATTACHED;
+      assoc.recordType = RECORD_TYPE_TOAST_DISCONNECTED;
       memcpy(&assoc.globalAddr,
         attached[mdSynchIndex].val.globalAddr, 
         GLOBAL_ID_LEN);
       //fill in association record body
-      if( SUCCESS == call TLVUtils.findEntry(SENSOR_ATTACHMENTS_ID,
+      if( SUCCESS == call TLVUtils.findEntry(TAG_TOAST_ASSIGNMENTS,
           0,
           &entry,
           tlvs)){
@@ -169,7 +179,7 @@ module ToastSamplerP{
           (sensor_assignment_t*)&entry->data.b;
         //fill in/count up assignments
         for (i = 0; i< 8; i++){
-          assoc.assignments[i].sensorType = 
+          assoc.assignments[i].sensorType = assignments[i].sensorType;
           if( assignments[i].sensorType != SENSOR_TYPE_NONE){
             numSensors[mdSynchIndex]++;
             assoc.assignments[i].sensorId = assignments[i].sensorId;
@@ -216,8 +226,9 @@ module ToastSamplerP{
     post nextMdSynch();
   }
   
-  task void sampleSensors(){
+  task void nextSampleSensors(){
     if (toastSampleIndex == MAX_BUS_LEN){
+      call SplitControl.stop();
       return;
     }else{
       if (toastState[toastSampleIndex] == PRESENT){
@@ -227,13 +238,26 @@ module ToastSamplerP{
         //TODO: send sample command to current toast's local addr
         //TODO: remove this (debug code)
         toastSampleIndex++;
-        post sampleSensors();
+        post nextSampleSensors();
       } else {
         toastSampleIndex++;
-        post sampleSensors();
+        post nextSampleSensors();
       }
     }
   }
 
+  event i2c_message_t* I2CADCReaderMaster.sampleDone(error_t error,
+      uint16_t slaveAddr, i2c_message_t* cmdMsg_, i2c_message_t*
+      responseMsg_, adc_response_t* response){
+    return responseMsg_;
+  }
+
+
+  event void LogWrite.syncDone(error_t error){ }
+  event void LogWrite.eraseDone(error_t error){}
+  event void SplitControl.stopDone(error_t error){
+  }
+
+  event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){}
 
 }
