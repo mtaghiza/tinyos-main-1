@@ -76,4 +76,17 @@ Log Records: 0xE0 - 0xEF
 -------
 AM_LOG_RECORD_DATA_MSG: = 0xE0,
 
+
 CX collection control: 0xF0 - 0xFF
+------
+
+
+
+Log record types
+==============
+ToastSampler.h: RECORD_TYPE_TOAST_DISCONNECTED 0x10
+ToastSampler.h: RECORD_TYPE_TOAST_CONNECTED 0x11
+
+TLV Tags
+=========
+metadata.h: #define TAG_TOAST_ASSIGNMENTS (0x05)
