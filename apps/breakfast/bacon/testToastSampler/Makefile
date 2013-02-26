@@ -7,6 +7,8 @@ CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 CFLAGS +=-DTOSH_DATA_LENGTH=140
 
+CFLAGS+=-DSINGLE_RECORD_READ=1
+
 CFLAGS += -I../ToastSampler
 CFLAGS += -I../settingsStorage
 
