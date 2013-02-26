@@ -46,6 +46,7 @@ generic configuration Msp430UsciI2CB0C() {
   provides interface Msp430UsciError;
 
   uses interface Msp430UsciConfigure;
+  uses interface Msp430PortMappingConfigure;
 } implementation {
   enum {
     CLIENT_ID = unique(MSP430_USCI_B0_RESOURCE),
@@ -59,6 +60,7 @@ generic configuration Msp430UsciI2CB0C() {
   I2CPacket = I2CP.I2CPacket[CLIENT_ID];
   I2CSlave = I2CP.I2CSlave[CLIENT_ID];
   Msp430UsciConfigure = I2CP.Msp430UsciConfigure[ CLIENT_ID ];
+  Msp430PortMappingConfigure = I2CP.Msp430PortMappingConfigure[ CLIENT_ID ];
   Msp430UsciError = I2CP.Msp430UsciError[CLIENT_ID];
 
   UsciC.ResourceConfigure[CLIENT_ID] -> I2CP.ResourceConfigure[CLIENT_ID];

@@ -7,6 +7,7 @@ configuration Msp430UsciI2CB0P {
   }
   uses {
     interface Msp430UsciConfigure[ uint8_t client ];
+    interface Msp430PortMappingConfigure[ uint8_t client ];
     interface HplMsp430GeneralIO as SCL;
     interface HplMsp430GeneralIO as SDA;
   }
@@ -22,6 +23,7 @@ configuration Msp430UsciI2CB0P {
   I2CC.ArbiterInfo -> UsciC;
 
   Msp430UsciConfigure = I2CC;
+  Msp430PortMappingConfigure = I2CC;
   ResourceConfigure = I2CC;
   I2CPacket = I2CC;
   I2CSlave = I2CC;

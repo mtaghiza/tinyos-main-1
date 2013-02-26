@@ -49,6 +49,7 @@ generic module Msp430UsciI2CP () @safe() {
   uses interface HplMsp430GeneralIO as SCL;
 
   uses interface Msp430UsciConfigure[ uint8_t client ];
+  uses interface Msp430PortMappingConfigure[ uint8_t client ];
 
   uses interface ArbiterInfo;
   
@@ -84,7 +85,8 @@ generic module Msp430UsciI2CP () @safe() {
     printf("---\n\r");
   }
 
-  error_t configure_(const msp430_usci_config_t* config){
+  error_t configure_(const msp430_usci_config_t* config, 
+    uint8_t client){
 //    printf("config:\n\r");
 //    printf("ctlw0= %x\n\r", config->ctlw0);
 //    printf("brw=   %x\n\r", config->brw);
@@ -96,6 +98,7 @@ generic module Msp430UsciI2CP () @safe() {
     }
     //basic config (leave in reset)
     call Usci.configure(config, TRUE);
+    call Msp430PortMappingConfigure.configure[client]();
     //direction is don't-care in datasheet
     call SCL.selectModuleFunc();
     call SDA.selectModuleFunc();
@@ -133,8 +136,9 @@ generic module Msp430UsciI2CP () @safe() {
     return SUCCESS;
   }
 
-  error_t unconfigure_(){
+  error_t unconfigure_(uint8_t client){
     call Usci.enterResetMode_();
+    call Msp430PortMappingConfigure.unconfigure[client]();
     call SCL.selectIOFunc();
     call SDA.selectIOFunc();
  
@@ -142,11 +146,12 @@ generic module Msp430UsciI2CP () @safe() {
   }
 
   async command void ResourceConfigure.configure[ uint8_t client ]() {
-    configure_(call Msp430UsciConfigure.getConfiguration[client]());
+    configure_(call Msp430UsciConfigure.getConfiguration[client](),
+      client);
   }
   
   async command void ResourceConfigure.unconfigure[ uint8_t client ]() {
-    unconfigure_();
+    unconfigure_(client);
   }
   
   /*************************************************************************/
@@ -422,6 +427,9 @@ generic module Msp430UsciI2CP () @safe() {
 //    printf("Using default i2c config\n\r");
     return &msp430_usci_i2c_default_config;
   }
+
+  default async command error_t Msp430PortMappingConfigure.configure[uint8_t client](){ return SUCCESS; }
+  default async command error_t Msp430PortMappingConfigure.unconfigure[uint8_t client](){ return SUCCESS; }
 
   /***** Slave-mode functions ***/
   command error_t I2CSlave.setOwnAddress[uint8_t client](uint16_t addr)
