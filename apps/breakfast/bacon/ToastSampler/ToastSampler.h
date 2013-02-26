@@ -21,7 +21,7 @@ typedef struct sensor_association_record_t{
   uint8_t recordType;
   uint8_t globalAddr[GLOBAL_ID_LEN];
   sensor_assignment_t assignments[8];
-} sensor_association_record_t;
+} __attribute__((packed)) sensor_association_record_t;
 
 
 #ifndef DEFAULT_SAMPLE_INTERVAL

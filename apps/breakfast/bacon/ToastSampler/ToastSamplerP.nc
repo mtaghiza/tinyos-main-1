@@ -203,7 +203,7 @@ module ToastSamplerP{
     if (error == SUCCESS){
       uint8_t i;
       //set up association record header
-      assoc.recordType = RECORD_TYPE_TOAST_DISCONNECTED;
+      assoc.recordType = RECORD_TYPE_TOAST_CONNECTED;
       memcpy(&assoc.globalAddr,
         attached[mdSynchIndex].val.globalAddr, 
         GLOBAL_ID_LEN);
