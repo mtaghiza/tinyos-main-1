@@ -43,6 +43,7 @@ generic configuration Msp430UsciSpiB0C() {
     interface SpiByte;
     interface Msp430UsciError;
   }
+  uses interface Msp430PortMappingConfigure;
 
 } implementation {
   enum {
@@ -56,6 +57,7 @@ generic configuration Msp430UsciSpiB0C() {
   SpiPacket = SpiC.SpiPacket[CLIENT_ID];
   SpiByte = SpiC.SpiByte;
   Msp430UsciError = SpiC.Msp430UsciError;
+  Msp430PortMappingConfigure = SpiC.Msp430PortMappingConfigure[CLIENT_ID];
 
   UsciC.ResourceConfigure[CLIENT_ID] -> SpiC.ResourceConfigure[CLIENT_ID];
 }

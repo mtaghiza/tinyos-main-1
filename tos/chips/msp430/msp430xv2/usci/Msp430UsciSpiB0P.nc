@@ -7,6 +7,7 @@ configuration Msp430UsciSpiB0P {
   }
   uses {
     interface Msp430UsciConfigure[ uint8_t client ];
+    interface Msp430PortMappingConfigure[ uint8_t client ];
     interface HplMsp430GeneralIO as SIMO;
     interface HplMsp430GeneralIO as SOMI;
     interface HplMsp430GeneralIO as CLK;
@@ -21,6 +22,7 @@ configuration Msp430UsciSpiB0P {
   SpiC.ArbiterInfo -> UsciC;
 
   Msp430UsciConfigure = SpiC;
+  Msp430PortMappingConfigure = SpiC;
   ResourceConfigure = SpiC;
   SpiPacket = SpiC;
   SpiByte = SpiC;

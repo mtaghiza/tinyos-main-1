@@ -52,6 +52,7 @@ generic module Msp430UsciSpiP () @safe() {
     interface HplMsp430GeneralIO as CLK;
 
     interface Msp430UsciConfigure[ uint8_t client ];
+    interface Msp430PortMappingConfigure[ uint8_t client ];
 
     interface ArbiterInfo;
     
@@ -98,7 +99,7 @@ generic module Msp430UsciSpiP () @safe() {
    *
    * The USCI is left in software reset mode to avoid power drain per
    * CC430 errata UCS6. */
-  void unconfigure_ ()
+  void unconfigure_ (uint8_t client)
   {
     while (UCBUSY & (call Usci.getStat())) {
       ;/* busy-wait */
@@ -106,6 +107,7 @@ generic module Msp430UsciSpiP () @safe() {
 
     call Usci.setIe(call Usci.getIe() & ~ (UCTXIE | UCRXIE));
     call Usci.enterResetMode_();
+    call Msp430PortMappingConfigure.unconfigure[client]();
     call SIMO.makeOutput();
     call SIMO.selectIOFunc();
     call SOMI.makeOutput();
@@ -121,7 +123,8 @@ generic module Msp430UsciSpiP () @safe() {
    * follows up by setting the SPI-related pins to their module role
    * prior to taking the USCI out of reset mode.  All interrupts are
    * left off. */
-  error_t configure_ (const msp430_usci_config_t* config)
+  error_t configure_ (const msp430_usci_config_t* config, 
+    uint8_t client)
   {
     if (! config) {
       return FAIL;
@@ -130,6 +133,7 @@ generic module Msp430UsciSpiP () @safe() {
     /* Do basic configuration, leaving USCI in reset mode.  Configure
      * the SPI pins, enable the USCI, and turn on the interrupts. */
     call Usci.configure(config, TRUE);
+    call Msp430PortMappingConfigure.configure[client]();
     call SIMO.makeOutput();
     call SIMO.selectModuleFunc();
     call SOMI.makeInput();
@@ -242,15 +246,19 @@ generic module Msp430UsciSpiP () @safe() {
   {
     return &msp430_usci_spi_default_config;
   }
+  
+  default async command error_t Msp430PortMappingConfigure.configure[uint8_t client](){ return SUCCESS; }
+  default async command error_t Msp430PortMappingConfigure.unconfigure[uint8_t client](){ return SUCCESS; }
 
   async command void ResourceConfigure.configure[uint8_t client] ()
   {
-    configure_(call Msp430UsciConfigure.getConfiguration[client]());
+    configure_(call Msp430UsciConfigure.getConfiguration[client](),
+      client);
   }
 
   async command void ResourceConfigure.unconfigure[uint8_t client] ()
   {
-    unconfigure_();
+    unconfigure_(client);
   }
 
   default async event void Msp430UsciError.condition (unsigned int errors) { }
