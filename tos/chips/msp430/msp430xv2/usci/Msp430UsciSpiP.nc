@@ -59,6 +59,11 @@ generic module Msp430UsciSpiP () @safe() {
   }
 } implementation {
 
+  norace uint16_t m_len;
+  norace uint8_t * COUNT_NOK(m_len) m_tx_buf, * COUNT_NOK(m_len) m_rx_buf;
+  norace uint16_t m_pos;
+
+
   /** The SPI is busy if it's actively transmitting/receiving, or if
    * there is an active buffered I/O operation. */
   bool isBusy ()
@@ -160,19 +165,76 @@ generic module Msp430UsciSpiP () @safe() {
 
   async command error_t SpiPacket.send[uint8_t client] (uint8_t* txBuf, uint8_t* rxBuf, uint16_t len)
   {
-    /* Not supported yet */
-    return FAIL;
+    uint8_t counter = 0xFF;
+
+    /* check if usci is busy */    
+    if (UCBUSY & (call Usci.getStat())) 
+      return EBUSY;
+
+    if (len == 0)
+      return FAIL;
+
+    /* store parameters */      
+    m_rx_buf = rxBuf;
+    m_tx_buf = txBuf;
+    m_len = len;
+    m_pos = 0;
+    
+    /* wait until usci is ready to transmit */
+    while ( !(UCTXIFG & call Usci.getIfg()) && (counter > 0x01) ) 
+      counter--;
+
+    /* transmit first byte */
+    if ( counter > 0x01 )
+    {
+      call Usci.setIe(call Usci.getIe() | UCRXIE);
+      
+      call Usci.setTxbuf( m_tx_buf ? m_tx_buf[m_pos] : 0x00);
+
+      return SUCCESS;
+    }
+    else
+      return FAIL;
   }
 
   default async event void SpiPacket.sendDone[uint8_t client] (uint8_t* txBuf, uint8_t* rxBuf, uint16_t len, error_t error ) { }
 
-  async event void Interrupts.interrupted (uint8_t iv) {
+  async event void Interrupts.interrupted (uint8_t iv) 
+  {
+    uint8_t current_client;
+
     if (! call ArbiterInfo.inUse()) {
       return;
     }
-    if (USCI_UCRXIFG == iv) {
-    } else if (USCI_UCTXIFG == iv) {
-    }
+
+    /* Reading interrupt vector clears highest priority interrupt flag. */
+    /* (UCRXIFG > UCTXIFG) */
+    if ( USCI_UCRXIFG == iv ) 
+    {
+      /* read receive buffer */
+      if ( m_rx_buf )
+        m_rx_buf[m_pos] = call Usci.getRxbuf();
+      else
+        call Usci.getRxbuf();
+
+      if ( m_pos + 1 == m_len )
+      {
+        call Usci.setIe(call Usci.getIe() & ~UCRXIE);
+
+        current_client = call ArbiterInfo.userId();
+        signal SpiPacket.sendDone[current_client](m_tx_buf, m_rx_buf, m_len, SUCCESS);
+
+      }
+      else
+      {
+        m_pos++;
+        
+        /* transmit next byte from buffer */
+        call Usci.setTxbuf( m_tx_buf ? m_tx_buf[m_pos] : 0x00);
+      }
+    } 
+    
+    else if ( USCI_UCTXIFG == iv ) { ; }
   }
 
   default async command const msp430_usci_config_t*
