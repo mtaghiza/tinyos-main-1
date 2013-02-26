@@ -3,9 +3,11 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   components ToastSamplerP;
   components MainC;
   components new TimerMilliC();
+  components new TimerMilliC() as StartupTimer;
 
   ToastSamplerP.Boot -> MainC;
   ToastSamplerP.Timer -> TimerMilliC;
+  ToastSamplerP.StartupTimer -> StartupTimer;
 
   //result storage
   components new LogStorageC(VOLUME_ID, circular);

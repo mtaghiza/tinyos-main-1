@@ -23,4 +23,11 @@ typedef struct sensor_association_record_t{
   sensor_assignment_t assignments[8];
 } sensor_association_record_t;
 
+
+#ifndef DEFAULT_SAMPLE_INTERVAL
+#define DEFAULT_SAMPLE_INTERVAL (5UL*1024UL)
+#endif
+
+#define SS_KEY_SAMPLE_INTERVAL 0x12
+
 #endif
