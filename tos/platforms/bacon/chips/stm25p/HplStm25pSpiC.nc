@@ -52,4 +52,7 @@ implementation {
   SpiByte = SpiC;
   SpiPacket = SpiC;
 
+  components BaconSpiB0PortMappingP;
+  SpiC.Msp430PortMappingConfigure -> BaconSpiB0PortMappingP;
+
 }
