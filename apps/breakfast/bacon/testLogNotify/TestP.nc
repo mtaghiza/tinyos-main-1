@@ -32,8 +32,7 @@ module TestP{
   test_record_t record_internal;
   test_record_t* record = &record_internal;
 
-  uint8_t genBuf[2*MAX_RECORD_LEN];
-  uint8_t recordLens[2*MAX_RECORD_LEN];
+  uint8_t genBuf[254];
 
   uint8_t curRL = 1;
   
@@ -132,7 +131,7 @@ module TestP{
   task void readTask(){
     printf("read (%lu):", call LogRead.currentOffset());
     printf(" %x\r\n", 
-      call LogRead.read(genBuf, MAX_RECORD_LEN+1));
+      call LogRead.read(genBuf, 254));
   }
 
   task void littleReadTask(){
