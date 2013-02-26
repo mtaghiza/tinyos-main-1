@@ -6,6 +6,8 @@ configuration TestAppC{
   components MainC;
   components TestP;
 
+  components WatchDogC;
+
   components PrintfC;
   components SerialStartC;
 
