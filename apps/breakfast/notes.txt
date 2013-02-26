@@ -90,3 +90,9 @@ ToastSampler.h: RECORD_TYPE_TOAST_CONNECTED 0x11
 TLV Tags
 =========
 metadata.h: #define TAG_TOAST_ASSIGNMENTS (0x05)
+
+SettingsStorage Keys
+=========
+SS_KEY_LOW_PUSH_THRESHOLD 0x10 (uint8_t)
+SS_KEY_HIGH_PUSH_THRESHOLD 0x11 (uint8_t)
+SS_KEY_SAMPLE_INTERVAL 0x12 (uint32_t)
