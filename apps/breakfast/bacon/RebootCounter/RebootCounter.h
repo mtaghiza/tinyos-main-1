@@ -1,0 +1,5 @@
+#ifndef REBOOT_COUNTER_H
+#define REBOOT_COUNTER_H
+
+#define SS_KEY_REBOOT_COUNTER 0x13
+#endif
