@@ -308,7 +308,7 @@ module ToastSamplerP{
   event void LogWrite.eraseDone(error_t error){}
   event void SplitControl.stopDone(error_t error){
     printf("bus off\n");
-//    call Timer.startOneShot(sampleInterval);
+    call Timer.startOneShot(sampleInterval);
   }
 
   event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){}
