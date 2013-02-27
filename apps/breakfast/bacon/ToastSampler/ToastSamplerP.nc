@@ -87,8 +87,8 @@ module ToastSamplerP{
     printf("\n");
 
     for (i = 0; i < MAX_BUS_LEN; i++){
-      bool found = TRUE;
-      for (k = 0; k < GLOBAL_ID_LEN; k++){
+      bool found = (toastState[i] != FREE);
+      for (k = 0; k < GLOBAL_ID_LEN && found; k++){
         if (globalAddr[k] != attached[i].val.globalAddr[k]){
           found = FALSE;
           break;
