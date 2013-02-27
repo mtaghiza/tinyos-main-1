@@ -21,6 +21,5 @@ CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/Metadata
 
 CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
-CFLAGS+=-I$(TOSDIR)/chips/msp430/x2xxx/internalFlash
 
 include $(MAKERULES)

@@ -48,10 +48,8 @@ module ToastSamplerP{
 
   event void Boot.booted(){
     printf("sampler booting\n");
-    printfflush();
-    //TODO: some problem with this line?
-//    call SettingsStorage.get(SS_KEY_SAMPLE_INTERVAL,
-//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    call SettingsStorage.get(SS_KEY_SAMPLE_INTERVAL,
+      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     printf("sampler booted: using interval %lu\n", sampleInterval);
     printfflush();
     call Timer.startOneShot(sampleInterval);
