@@ -11,6 +11,7 @@
 
 #define RECORD_TYPE_TOAST_DISCONNECTED 0x10
 #define RECORD_TYPE_TOAST_CONNECTED 0x11
+#define RECORD_TYPE_SAMPLE 0x12
 
 //Heads-up: sensor_assignment_t is an nx type.
 typedef struct toast_disconnection_record_t{
@@ -25,6 +26,7 @@ typedef struct toast_connection_record_t{
 
 
 typedef struct sample_record_t{
+  uint8_t recordType;
   uint16_t rebootCounter;
   int32_t baseTime;
   uint8_t toastAddr[GLOBAL_ID_LEN];
