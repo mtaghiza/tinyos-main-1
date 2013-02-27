@@ -2,7 +2,7 @@
 generic configuration I2CDiscovererC(){
   provides interface I2CDiscoverer;
 } implementation {
-  components new Msp430UsciI2CB0C() as Msp430I2C0C;
+  components new BaconI2CB0C() as Msp430I2C0C;
   components new TimerMilliC();
   components new QueueC(discoverer_register_union_t*, I2C_DISCOVERY_POOL_SIZE);
   components new PoolC(discoverer_register_union_t, I2C_DISCOVERY_POOL_SIZE);
