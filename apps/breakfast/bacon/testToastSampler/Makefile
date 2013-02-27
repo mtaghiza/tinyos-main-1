@@ -11,6 +11,7 @@ CFLAGS+=-DSINGLE_RECORD_READ=1
 
 CFLAGS += -I../ToastSampler
 CFLAGS += -I../settingsStorage
+CFLAGS += -I../RebootCounter
 
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
