@@ -5,5 +5,5 @@ configuration RebootCounterC{
   components RebootCounterP;
 
   MainC.SoftwareInit -> RebootCounterP;
-  RebootCounterP.SettingsStorage -> SettingStorageC;
+  RebootCounterP.SettingsStorage -> SettingsStorageC;
 }
