@@ -24,6 +24,13 @@ typedef struct toast_connection_record_t{
 } __attribute__((packed)) toast_connection_record_t;
 
 
+typedef struct sample_record_t{
+  uint16_t rebootCounter;
+  int32_t baseTime;
+  uint8_t toastAddr[GLOBAL_ID_LEN];
+  adc_sample_t samples[ADC_NUM_CHANNELS];
+} __attribute__((packed)) sample_record_t;
+
 #ifndef DEFAULT_SAMPLE_INTERVAL
 #define DEFAULT_SAMPLE_INTERVAL (5UL*1024UL)
 #endif

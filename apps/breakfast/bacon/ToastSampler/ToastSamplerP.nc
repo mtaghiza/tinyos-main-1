@@ -18,6 +18,8 @@ module ToastSamplerP{
 
   uses interface I2CADCReaderMaster;
 
+  uses interface I2CSynchMaster;
+
   uses interface SettingsStorage;
 } implementation {
 
@@ -36,6 +38,7 @@ module ToastSamplerP{
 
   i2c_message_t i2c_msg_internal;
   i2c_message_t* i2c_msg = &i2c_msg_internal;
+  adc_response_t* lastSample;
 
   discoverer_register_union_t attached[MAX_BUS_LEN];
   uint8_t toastState[MAX_BUS_LEN];
@@ -50,6 +53,9 @@ module ToastSamplerP{
     printf("sampler booting\n");
     call SettingsStorage.get(SS_KEY_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
+      (uint8_t*)(&sampleRec.rebootCounter), 
+      sizeof(sampleRec.rebootCounter));
     printf("sampler booted: using interval %lu\n", sampleInterval);
     printfflush();
     call Timer.startOneShot(sampleInterval);
@@ -78,8 +84,6 @@ module ToastSamplerP{
 
   bool find(uint8_t* globalAddr, uint8_t* index){
     uint8_t i, k;
-    printf("Checking for");
-    printf("\n");
 
     for (i = 0; i < MAX_BUS_LEN; i++){
       bool found = (toastState[i] != FREE);
@@ -99,17 +103,17 @@ module ToastSamplerP{
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t k;
-    printf("discovered ");
-    {
-      uint8_t i;
-      for (i = 0; i < GLOBAL_ID_LEN; i++){
-        printf(" %x", discovery->val.globalAddr[i]);
-      }
-      printf(": ");
-    }
+//    printf("discovered ");
+//    {
+//      uint8_t i;
+//      for (i = 0; i < GLOBAL_ID_LEN; i++){
+//        printf(" %x", discovery->val.globalAddr[i]);
+//      }
+//      printf(": ");
+//    }
     //check if this was previously-attached
     if( find(discovery->val.globalAddr, &k) ){
-      printf("found @%u ", k);
+//      printf("found @%u ", k);
       toastState[k] = PRESENT;
     }else{
       for (k = 0; k < MAX_BUS_LEN; k++){
@@ -118,7 +122,7 @@ module ToastSamplerP{
           memcpy(&attached[k].val.globalAddr, 
             discovery->val.globalAddr, 
             GLOBAL_ID_LEN);
-          printf("stored @%u ", k);
+//          printf("stored @%u ", k);
           break;
         }
       }
@@ -127,7 +131,7 @@ module ToastSamplerP{
       //always required: even if it's a re-discover, no guarantee that
       //local toast addr is constant
       attached[k].val.localAddr =  discovery->val.localAddr;
-      printf("local: %x\r\n", attached[k].val.localAddr);
+//      printf("local: %x\r\n", attached[k].val.localAddr);
     } else {
       printf("No space left on bus, ignore!");
     }
@@ -144,13 +148,13 @@ module ToastSamplerP{
   task void recordDisconnection();
 
   event void I2CDiscoverer.discoveryDone(error_t error){
-    printf("discovery done\n");
+//    printf("discovery done\n");
     mdSynchIndex = 0;
     post nextMdSynch();
   }
 
   task void nextMdSynch(){
-    printf("synch %u\n", mdSynchIndex);
+//    printf("synch %u\n", mdSynchIndex);
 
     if (mdSynchIndex == MAX_BUS_LEN){
       printf("synch done\n");
@@ -177,7 +181,7 @@ module ToastSamplerP{
         post recordDisconnection();
       } else if (toastState[mdSynchIndex] == PRESENT ||
           toastState[mdSynchIndex] == FREE){
-        printf("no synch for %u\n", mdSynchIndex);
+//        printf("no synch for %u\n", mdSynchIndex);
         mdSynchIndex ++;
         post nextMdSynch();
       }
@@ -280,16 +284,61 @@ module ToastSamplerP{
       call SplitControl.stop();
       return;
     }else{
-      if (toastState[toastSampleIndex] == PRESENT){
-        //TODO: set up an i2c adc-read message (use sensorMap for
-        //  toast)
-        //TODO: sampler settings should come from settings storage
-        //  (alt. part of toast's TLVStorage or internalFlash)
-        //TODO: send sample command to current toast's local addr
+      if (toastState[toastSampleIndex] == PRESENT 
+          && sensorMaps[toastSampleIndex]){
+        //TODO: if we're being precise, we should do an i2c-synch here
+        //so that the times we get back can be put into bacon-local
+        //time
+        adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
+        error_t err;
+        uint8_t i;
+        uint8_t cmdIndex = 0;
+        for (i=0; i < ADC_NUM_CHANNELS; i++){
+          if ( (0x01 << i) & sensorMaps[toastSampleIndex]){
+            //TODO: read these from settings storage? Toast flash?
+            //delay MS is the most important factor (warm-up time)
+            uint32_t delayMS = 0;
+            uint16_t samplePeriod = 0;
+            uint8_t sref = 1;
+            uint8_t ref2_5v = TRUE;
+            uint8_t adc12ssel = 3;
+            uint8_t adc12div = 0;
+            //sht: set to 1024 ticks = 1 mS (good to 2.8 ohms)
+            uint8_t sht = 0xff;
+            uint8_t sampcon_ssel = 1;
+            uint8_t sampcon_id = 0;
 
-        //TODO: remove toastSampleIndex++ (debug code)
-        toastSampleIndex++;
-        post nextSampleSensors();
+            printf("setting slot %u (channel %u)\r\n", 
+              cmdIndex, 
+              i);
+            printfflush();
+
+            cmd->cfg[cmdIndex].delayMS = delayMS;
+            cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
+            cmd->cfg[cmdIndex].config.inch = i;
+            cmd->cfg[cmdIndex].config.sref = sref;
+            cmd->cfg[cmdIndex].config.ref2_5v = ref2_5v;
+            cmd->cfg[cmdIndex].config.adc12ssel = adc12ssel;
+            cmd->cfg[cmdIndex].config.adc12div = adc12div;
+            cmd->cfg[cmdIndex].config.sht = sht;
+            cmd->cfg[cmdIndex].config.sampcon_ssel = sampcon_ssel;
+            cmd->cfg[cmdIndex].config.sampcon_id = sampcon_id;
+            cmdIndex++;
+          }
+        }
+        printf("EOS @ %u\r\n", cmdIndex);
+        //mark end-of-sequence
+        cmd->cfg[cmdIndex].config.inch = INPUT_CHANNEL_NONE;
+        
+        err = call I2CADCReaderMaster.sample(
+          attached[toastSampleIndex].val.localAddr, 
+          i2c_msg);
+        printf("sample err: %x\r\n", err);
+        printfflush();
+        if (err != SUCCESS){
+          toastSampleIndex++;
+          post nextSampleSensors();
+        }
       } else {
         toastSampleIndex++;
         post nextSampleSensors();
@@ -297,10 +346,66 @@ module ToastSamplerP{
     }
   }
 
+  sample_record_t sampleRec;
+   
+  task void appendSample(){
+    uint8_t i;
+    storage_len_t recordLen = sizeof(sample_record_t) - (sizeof(adc_sample_t)*ADC_NUM_CHANNELS);
+    memcpy(&sampleRec.toastAddr, 
+      &attached[toastSampleIndex].val.globalAddr,
+      GLOBAL_ID_LEN);
+    for (i = 0; i < ADC_NUM_CHANNELS; i++){
+      if (lastSample->samples[i].inputChannel == INCH_NONE){
+        break;
+      }else{
+        //TODO: please don't give me any word alignment bullshit
+        recordLen += sizeof(adc_sample_t);
+        //is this assignment legit?
+        sampleRec.samples[i] = lastSample->samples[i];
+      }
+    }
+      
+    //TODO: append results to flash
+    //TODO: move index++/post to appendDone
+    toastSampleIndex++;
+    post nextSampleSensors();
+  }
+
+  event void I2CSynchMaster.synchDone(error_t error, 
+      uint16_t slaveAddr, 
+      synch_tuple_t tuple){
+    printf("Synch done: %x\r\n", error);
+    if (error == SUCCESS){
+      //e.g. local = 100, remote = 10, sample = 50
+      //local-remote = 90  
+      // +50 = 140 
+      sampleRec.baseTime = tuple.localTime - tuple.remoteTime;
+      post appendSample();
+    }else{
+      toastSampleIndex++;
+      post nextSampleSensors();
+    }
+
+  }
+
   event i2c_message_t* I2CADCReaderMaster.sampleDone(error_t error,
-      uint16_t slaveAddr, i2c_message_t* cmdMsg_, i2c_message_t*
-      responseMsg_, adc_response_t* response){
-    return responseMsg_;
+      uint16_t slaveAddr, i2c_message_t* cmdMsg_, 
+      i2c_message_t* responseMsg_, 
+      adc_response_t* response){
+
+    printf("sample done: %x\r\n", error);
+    printfflush();
+    if (error == SUCCESS){
+      i2c_message_t* swp = i2c_msg;
+      i2c_msg = responseMsg_;
+      lastSample = response;
+      call I2CSynchMaster.synch(slaveAddr);
+      return swp;
+    }else{
+      toastSampleIndex++;
+      post nextSampleSensors();
+      return responseMsg_;
+    }
   }
 
 

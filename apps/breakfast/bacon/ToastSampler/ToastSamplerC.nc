@@ -27,6 +27,10 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   //sampling
   components I2CADCReaderMasterC;
   ToastSamplerP.I2CADCReaderMaster -> I2CADCReaderMasterC;
+  
+  //time-synch
+  components I2CSynchMasterC;
+  ToastSamplerP.I2CSynchMaster -> I2CSynchMasterC;
 
   //sampling settings
   components SettingsStorageC;
