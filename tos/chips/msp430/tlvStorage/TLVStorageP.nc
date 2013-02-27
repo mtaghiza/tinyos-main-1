@@ -61,10 +61,10 @@ generic module TLVStorageP(uint16_t tlv_start,
   command error_t TLVStorage.loadTLVStorage(void* tlvs){
     uint8_t* ba = (uint8_t*) tlvs;
     version_entry_t e;
-    printf("Load %u from %p to %p\n", 
-      tlv_len,
-      (void*)tlv_start, 
-      tlvs);
+//    printf("Load %u from %p to %p\n", 
+//      tlv_len,
+//      (void*)tlv_start, 
+//      tlvs);
     memcpy((void*)tlvs, (void*)tlv_start, tlv_len);
     if (!verifyChecksum(tlvs)){
 //      printf("invalid TLV checksum in A, clearing\n\r");
