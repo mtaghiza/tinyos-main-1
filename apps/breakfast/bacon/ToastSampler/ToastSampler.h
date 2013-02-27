@@ -3,6 +3,7 @@
 
 #include "GlobalID.h"
 #include "ctrl_messages.h"
+#include "I2CTLVStorage.h"
 
 #ifndef MAX_BUS_LEN
 #define MAX_BUS_LEN 4
@@ -17,11 +18,10 @@ typedef struct toast_disconnection_record_t{
   uint8_t globalAddr[GLOBAL_ID_LEN];
 } toast_disconnection_record_t;
 
-typedef struct sensor_association_record_t{
+typedef struct toast_connection_record_t{
   uint8_t recordType;
-  uint8_t globalAddr[GLOBAL_ID_LEN];
-  sensor_assignment_t assignments[8];
-} __attribute__((packed)) sensor_association_record_t;
+  uint8_t tlvContents[SLAVE_TLV_LEN];
+} __attribute__((packed)) toast_connection_record_t;
 
 
 #ifndef DEFAULT_SAMPLE_INTERVAL

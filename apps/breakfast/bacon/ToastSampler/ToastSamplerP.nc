@@ -39,10 +39,10 @@ module ToastSamplerP{
 
   discoverer_register_union_t attached[MAX_BUS_LEN];
   uint8_t toastState[MAX_BUS_LEN];
-  uint8_t numSensors[MAX_BUS_LEN];
+  uint8_t sensorMaps[MAX_BUS_LEN];
 
   toast_disconnection_record_t disconnection;
-  sensor_association_record_t assoc;
+  toast_connection_record_t connection;
   
   uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
 
@@ -81,9 +81,6 @@ module ToastSamplerP{
   bool find(uint8_t* globalAddr, uint8_t* index){
     uint8_t i, k;
     printf("Checking for");
-    for (k = 0; k < GLOBAL_ID_LEN; k++){
-      printf(" %x", globalAddr[k]);
-    }
     printf("\n");
 
     for (i = 0; i < MAX_BUS_LEN; i++){
@@ -104,28 +101,37 @@ module ToastSamplerP{
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t k;
-    bool isNew = TRUE;
-    printf("discovered\n");
+    printf("discovered ");
+    {
+      uint8_t i;
+      for (i = 0; i < GLOBAL_ID_LEN; i++){
+        printf(" %x", discovery->val.globalAddr[i]);
+      }
+      printf(": ");
+    }
     //check if this was previously-attached
     if( find(discovery->val.globalAddr, &k) ){
-      printf("found @%u\n", k);
+      printf("found @%u ", k);
       toastState[k] = PRESENT;
-      isNew = FALSE;
-    }
-
-    if (isNew){
-      printf("new\n");
+    }else{
       for (k = 0; k < MAX_BUS_LEN; k++){
         if (toastState[k] == FREE){
           toastState[k] = NEW;
-          attached[k].val.localAddr =  discovery->val.localAddr;
           memcpy(&attached[k].val.globalAddr, 
             discovery->val.globalAddr, 
             GLOBAL_ID_LEN);
-          printf("stored @%u\n", k);
+          printf("stored @%u ", k);
           break;
         }
       }
+    }
+    if (k < MAX_BUS_LEN){
+      //always required: even if it's a re-discover, no guarantee that
+      //local toast addr is constant
+      attached[k].val.localAddr =  discovery->val.localAddr;
+      printf("local: %x\r\n", attached[k].val.localAddr);
+    } else {
+      printf("No space left on bus, ignore!");
     }
 
     return discovery;
@@ -201,46 +207,40 @@ module ToastSamplerP{
 
     printf("TLV loaded: %x\n", error);
     if (error == SUCCESS){
-      uint8_t i;
-      //set up association record header
-      assoc.recordType = RECORD_TYPE_TOAST_CONNECTED;
-      memcpy(&assoc.globalAddr,
-        attached[mdSynchIndex].val.globalAddr, 
-        GLOBAL_ID_LEN);
-      //fill in association record body
-      if( SUCCESS == call TLVUtils.findEntry(TAG_TOAST_ASSIGNMENTS,
+      //set up connection record header
+      connection.recordType = RECORD_TYPE_TOAST_CONNECTED;
+      //copy in the contents of the TLV storage
+      memcpy(&connection.tlvContents,
+        tlvs, 
+        SLAVE_TLV_LEN);
+
+      //record number of sensors locally
+      if( 0 == call TLVUtils.findEntry(TAG_TOAST_ASSIGNMENTS,
           0,
           &entry,
           tlvs)){
+        printf("no sensor assignments found.\r\n");
+        //no sensors attached.
+        sensorMaps[mdSynchIndex] = 0x00;
+      } else{
+        uint8_t i;
         sensor_assignment_t* assignments =
           (sensor_assignment_t*)&entry->data.b;
-        printf("Toast assignments found\n");
-        //fill in/count up assignments
-        for (i = 0; i< 8; i++){
-          assoc.assignments[i].sensorType = assignments[i].sensorType;
+        printf("Sensor assignments found.\n");
+        sensorMaps[mdSynchIndex] = 0x00;
+        //mark connected sensor channels in RAM
+        for (i = 0; i < 8; i++){
           if( assignments[i].sensorType != SENSOR_TYPE_NONE){
-            numSensors[mdSynchIndex]++;
-            assoc.assignments[i].sensorId = assignments[i].sensorId;
-          }else{
-            assoc.assignments[i].sensorId = 0;
+            sensorMaps[mdSynchIndex] |= (0x01 << i);
           }
         }
-      } else{
-        printf("no assignments found.\n");
-        //No sensor-assignments? record none-found
-        for (i = 0; i < 8 ; i++){
-          assoc.assignments[i].sensorType = SENSOR_TYPE_NONE; 
-          assoc.assignments[i].sensorId = 0; 
-        }
-        numSensors[mdSynchIndex] = 0;
       }
-      printf("Sensors for %u: %u\n", 
+      printf("Sensor map for %u: %x\n", 
         mdSynchIndex, 
-        numSensors[mdSynchIndex]);
+        sensorMaps[mdSynchIndex]);
 
-      //TODO: this append call is never getting a matching appendDone.
-      err = call LogWrite.append(&assoc, sizeof(assoc));
-      printf("Appending: %p %u: %x\n", &assoc, sizeof(assoc), err);
+      err = call LogWrite.append(&connection, sizeof(connection));
+      printf("Appending: %p %u: %x\n", &connection, sizeof(connection), err);
       printfflush();
       if( SUCCESS != err){
         printf("append failed\n");
@@ -283,11 +283,13 @@ module ToastSamplerP{
       return;
     }else{
       if (toastState[toastSampleIndex] == PRESENT){
-        //TODO: set up an i2c adc-read message (use number of sensors for
-        //toast)
-        //TODO: sampler settings should come from settings storage?
+        //TODO: set up an i2c adc-read message (use sensorMap for
+        //  toast)
+        //TODO: sampler settings should come from settings storage
+        //  (alt. part of toast's TLVStorage or internalFlash)
         //TODO: send sample command to current toast's local addr
-        //TODO: remove this (debug code)
+
+        //TODO: remove toastSampleIndex++ (debug code)
         toastSampleIndex++;
         post nextSampleSensors();
       } else {
