@@ -4,6 +4,7 @@
  #include "GlobalID.h"
  #include "metadata.h"
  #include "printf.h"
+ #include "RebootCounter.h"
 module ToastSamplerP{
   uses interface Boot;
   uses interface LogWrite;
@@ -39,6 +40,7 @@ module ToastSamplerP{
   i2c_message_t i2c_msg_internal;
   i2c_message_t* i2c_msg = &i2c_msg_internal;
   adc_response_t* lastSample;
+  sample_record_t sampleRec;
 
   discoverer_register_union_t attached[MAX_BUS_LEN];
   uint8_t toastState[MAX_BUS_LEN];
@@ -46,6 +48,7 @@ module ToastSamplerP{
 
   toast_disconnection_record_t disconnection;
   toast_connection_record_t connection;
+  bool synchingMetadata = FALSE;
   
   uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
 
@@ -150,6 +153,7 @@ module ToastSamplerP{
   event void I2CDiscoverer.discoveryDone(error_t error){
 //    printf("discovery done\n");
     mdSynchIndex = 0;
+    synchingMetadata = TRUE;
     post nextMdSynch();
   }
 
@@ -160,6 +164,7 @@ module ToastSamplerP{
       printf("synch done\n");
       //ok, ready to sample
       toastSampleIndex = 0;
+      synchingMetadata = FALSE;
       post nextSampleSensors();
     }else{
       if (toastState[mdSynchIndex] == NEW){
@@ -264,19 +269,24 @@ module ToastSamplerP{
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
       bool recordsLost, error_t error){
-    printf("append done\n");
+    printf("append done: %x\r\n", error);
     printfflush();
-    if (error == SUCCESS){
-      if (toastState[mdSynchIndex] == NEW){
-        toastState[mdSynchIndex] = PRESENT;
-      } else if (toastState[mdSynchIndex] == ABSENT){
+    if (synchingMetadata){
+      if (error == SUCCESS){
+        if (toastState[mdSynchIndex] == NEW){
+          toastState[mdSynchIndex] = PRESENT;
+        } else if (toastState[mdSynchIndex] == ABSENT){
+          toastState[mdSynchIndex] = FREE;
+        }
+      } else {
         toastState[mdSynchIndex] = FREE;
       }
-    } else {
-      toastState[mdSynchIndex] = FREE;
+      mdSynchIndex++;
+      post nextMdSynch();
+    }else{
+      toastSampleIndex++;
+      post nextSampleSensors();
     }
-    mdSynchIndex++;
-    post nextMdSynch();
   }
   
   task void nextSampleSensors(){
@@ -286,9 +296,6 @@ module ToastSamplerP{
     }else{
       if (toastState[toastSampleIndex] == PRESENT 
           && sensorMaps[toastSampleIndex]){
-        //TODO: if we're being precise, we should do an i2c-synch here
-        //so that the times we get back can be put into bacon-local
-        //time
         adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
         error_t err;
         uint8_t i;
@@ -346,16 +353,16 @@ module ToastSamplerP{
     }
   }
 
-  sample_record_t sampleRec;
    
   task void appendSample(){
     uint8_t i;
+    error_t err;
     storage_len_t recordLen = sizeof(sample_record_t) - (sizeof(adc_sample_t)*ADC_NUM_CHANNELS);
     memcpy(&sampleRec.toastAddr, 
       &attached[toastSampleIndex].val.globalAddr,
       GLOBAL_ID_LEN);
     for (i = 0; i < ADC_NUM_CHANNELS; i++){
-      if (lastSample->samples[i].inputChannel == INCH_NONE){
+      if (lastSample->samples[i].inputChannel == INPUT_CHANNEL_NONE){
         break;
       }else{
         //TODO: please don't give me any word alignment bullshit
@@ -364,11 +371,12 @@ module ToastSamplerP{
         sampleRec.samples[i] = lastSample->samples[i];
       }
     }
-      
-    //TODO: append results to flash
-    //TODO: move index++/post to appendDone
-    toastSampleIndex++;
-    post nextSampleSensors();
+    err = call LogWrite.append(&sampleRec, recordLen);
+    printf("Append sample: %x\r\n", err);
+    if (err != SUCCESS){
+      toastSampleIndex++;
+      post nextSampleSensors();
+    }
   }
 
   event void I2CSynchMaster.synchDone(error_t error, 
@@ -379,6 +387,9 @@ module ToastSamplerP{
       //e.g. local = 100, remote = 10, sample = 50
       //local-remote = 90  
       // +50 = 140 
+      // local = 200 remote =110 sample =50
+      // local - remote = 90
+      // +50 = 140
       sampleRec.baseTime = tuple.localTime - tuple.remoteTime;
       post appendSample();
     }else{
