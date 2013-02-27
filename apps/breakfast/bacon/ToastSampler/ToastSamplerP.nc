@@ -59,7 +59,9 @@ module ToastSamplerP{
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
-    printf("sampler booted: using interval %lu\n", sampleInterval);
+    sampleRec.recordType = RECORD_TYPE_SAMPLE;
+    printf("sampler booted: using interval %lu reboot counter %u\n",
+    sampleInterval, sampleRec.rebootCounter);
     printfflush();
     call Timer.startOneShot(sampleInterval);
   }

@@ -35,4 +35,6 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   //sampling settings
   components SettingsStorageC;
   ToastSamplerP.SettingsStorage -> SettingsStorageC;
+
+  components RebootCounterC;
 }
