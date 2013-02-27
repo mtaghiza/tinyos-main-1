@@ -1,10 +1,12 @@
-#include "TLVStorage.h"
-#include "InternalFlash.h"
-#include "InternalFlashFunctions.h"
 
-#include <stdio.h>
+ #include "TLVStorage.h"
+ #include "InternalFlashFunctions.h"
+ 
+ #include "printf.h"
 
-module TLVStorageP{
+generic module TLVStorageP(uint16_t tlv_start, 
+    uint16_t tlv_copy, 
+    uint8_t tlv_len){
   provides interface TLVStorage;
   provides interface Init;
   uses interface TLVUtils;
@@ -45,7 +47,7 @@ module TLVStorageP{
     int16_t* wa = (int16_t*) tlvs;
     int16_t crc = 0x00;
     uint8_t i;
-    for (i = 1; i < IFLASH_SEGMENT_SIZE / sizeof(uint16_t); i++){
+    for (i = 1; i < tlv_len / sizeof(uint16_t); i++){
       crc ^= wa[i];
     }
     return crc;
@@ -59,14 +61,18 @@ module TLVStorageP{
   command error_t TLVStorage.loadTLVStorage(void* tlvs){
     uint8_t* ba = (uint8_t*) tlvs;
     version_entry_t e;
-    memcpy(tlvs, IFLASH_A_START, IFLASH_SEGMENT_SIZE);
+    printf("Load %u from %p to %p\n", 
+      tlv_len,
+      (void*)tlv_start, 
+      tlvs);
+    memcpy((void*)tlvs, (void*)tlv_start, tlv_len);
     if (!verifyChecksum(tlvs)){
 //      printf("invalid TLV checksum in A, clearing\n\r");
 //      printf("In A:\n\r");
-//      debugTLV(IFLASH_A_START);
+//      debugTLV(tlv_start);
 //      printf("In buffer:\n\r");
 //      debugTLV(tlvs);
-      memset(tlvs, 0xff, IFLASH_SEGMENT_SIZE);
+      memset(tlvs, 0xff, tlv_len);
       e.version = 0;
       ba[TLV_CHECKSUM_LENGTH] = TAG_EMPTY;
       ba[TLV_CHECKSUM_LENGTH+1] = 60;
@@ -78,8 +84,8 @@ module TLVStorageP{
   }
   
   void copyIfDirty(){
-    void* tlvsA = IFLASH_A_START;
-    void* tlvsB = IFLASH_B_START;
+    void* tlvsA = (void*)tlv_start;
+    void* tlvsB = (void*)tlv_copy;
     tlv_entry_t* va;
     tlv_entry_t* vb;
     call TLVUtils.findEntry(TAG_VERSION, 0, &va, tlvsA);
@@ -100,13 +106,13 @@ module TLVStorageP{
     if ((va == NULL && vb != NULL) 
       || (vb->data.w[0]  == 1 + va->data.w[0])){
 //      printf("copying from B to A\n\r");
-      unlockInternalFlash(IFLASH_A_START);
+      unlockInternalFlash((void*)tlv_start);
       FCTL1 = FWKEY+ERASE;
-      *((uint8_t*)IFLASH_A_START) = 0;
+      *((uint8_t*)tlv_start) = 0;
       FCTL1 = FWKEY + WRT;
-      memcpy(IFLASH_A_START, IFLASH_B_START, IFLASH_SEGMENT_SIZE);
+      memcpy((void*)tlv_start, (void*)tlv_copy, tlv_len);
       FCTL1 = FWKEY;
-      lockInternalFlash(IFLASH_A_START);
+      lockInternalFlash((void*)tlv_start);
 //      printf("copy done\n\r");
     }else{
 //      printf("no copy needed: va %p vb %p.\n\r", va, vb);
@@ -121,16 +127,16 @@ module TLVStorageP{
   }
 
   void writeToB(void* tlvs){
-    unlockInternalFlash(IFLASH_B_START);
+    unlockInternalFlash((void*)tlv_copy);
 
     FCTL1 = FWKEY + ERASE;
-    *((uint8_t*)IFLASH_B_START) = 0;
+    *((uint8_t*)tlv_copy) = 0;
     FCTL1 = FWKEY+WRT;
-    memcpy(IFLASH_B_START, tlvs, IFLASH_SEGMENT_SIZE);
+    memcpy((void*)tlv_copy, tlvs, tlv_len);
     FCTL1 = FWKEY;
-    lockInternalFlash(IFLASH_B_START);
+    lockInternalFlash((void*)tlv_copy);
 //    printf("Done. Now in B:\n\r");
-//    debugTLV(IFLASH_B_START);
+//    debugTLV(tlv_copy);
   }
 
   //persist TLV structure (to internal flash)

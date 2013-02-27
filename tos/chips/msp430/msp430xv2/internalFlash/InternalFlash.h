@@ -1,6 +1,8 @@
 #ifndef INTERNAL_FLASH_H
 #define INTERNAL_FLASH_H
 
+#warning "using cc430 internal flash"
+
 //Values taken from CC430F5137 datasheet, Table 3
 #define IFLASH_A_START (void*)0x1980
 #define IFLASH_A_END   (void*)0x19ff

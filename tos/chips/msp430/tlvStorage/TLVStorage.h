@@ -1,6 +1,8 @@
 #ifndef TLVSTORAGE_H
 #define TLVSTORAGE_H
 
+#define TLV_UTILS_CLIENT "TLVUtilsClient"
+
 #define TAG_VERSION    (0x02)
 #define TAG_DCO_CUSTOM (0x03)
 //flag value for "match any tag"

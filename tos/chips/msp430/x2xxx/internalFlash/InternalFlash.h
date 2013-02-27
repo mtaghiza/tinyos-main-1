@@ -1,6 +1,8 @@
 #ifndef INTERNAL_FLASH_H
 #define INTERNAL_FLASH_H
 
+#warning "using x2xxx internal flash"
+
 //Values taken from msp430f235 datasheet, Table 12
 #define IFLASH_A_START (void*)0x10c0
 #define IFLASH_A_END   (void*)0x10ff
