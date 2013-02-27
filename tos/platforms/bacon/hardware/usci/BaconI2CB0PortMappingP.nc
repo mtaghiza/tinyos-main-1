@@ -2,10 +2,6 @@ module BaconI2CB0PortMappingP{
   provides interface Msp430PortMappingConfigure;
 } implementation {
 
-  task void reportConfig(){
-    printf("i2c config\r\n");
-  }
-
   async command error_t Msp430PortMappingConfigure.configure(){
     atomic{
       PMAPPWD = PMAPKEY;
@@ -16,12 +12,7 @@ module BaconI2CB0PortMappingP{
       P2MAP7 = PM_UCB0SCL;
       PMAPPWD = 0x0;
     }
-    post reportConfig();
     return SUCCESS;
-  }
-
-  task void reportUnconfig(){
-    printf("i2c unconfig\r\n");
   }
 
   async command error_t Msp430PortMappingConfigure.unconfigure(){
@@ -32,7 +23,6 @@ module BaconI2CB0PortMappingP{
       P2MAP7 = PM_NONE;
       PMAPPWD = 0x0;
     }
-    post reportUnconfig();
     return SUCCESS;
   }
   
