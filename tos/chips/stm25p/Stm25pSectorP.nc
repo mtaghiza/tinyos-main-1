@@ -48,7 +48,6 @@ module Stm25pSectorP {
   uses interface Resource as SpiResource;
   uses interface Stm25pSpi as Spi;
   uses interface Leds;
-
 }
 
 implementation {
@@ -175,7 +174,6 @@ implementation {
     m_addr = addr;
     m_buf = buf;
     m_len = len;
-    
     return call Spi.read( physicalAddr( id, addr ), buf, len );
     
   }

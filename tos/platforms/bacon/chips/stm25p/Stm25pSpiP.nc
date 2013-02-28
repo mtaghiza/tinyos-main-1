@@ -71,6 +71,7 @@ implementation {
   } stm25p_cmd_t;
 
   norace uint8_t m_cmd[ 4 ];
+  norace uint8_t m_cmd_len;
 
   norace bool m_is_writing = FALSE;
   norace bool m_computing_crc = FALSE;
@@ -191,15 +192,45 @@ implementation {
     return newRequest( TRUE, 1 );
   }
 
+
+  error_t enableWrite(){
+    //send the write-enable instruction, check for WEL bit in status
+    //register.
+    sendCmd( S_WRITE_ENABLE, 1 );
+    if (! (sendCmd(S_READ_STATUS_REGISTER, 2)&0x02)){
+      return ERETRY;
+    }else{
+      return SUCCESS;
+    }
+  }
+
+  task void retryEnableWrite(){
+    //try to enable write: repost if it fails, continue write command
+    //if it succeeds.
+    if (SUCCESS == enableWrite()){
+      call CSN.clr(); // P1OUT &= ~BIT1;
+      call SpiPacket.send( m_cmd, NULL, m_cmd_len );
+    }else{
+      post retryEnableWrite();
+    }
+  }
+
   error_t newRequest( bool write, stm25p_len_t cmd_len ) {
     m_cmd[ 1 ] = m_addr >> 16;
     m_cmd[ 2 ] = m_addr >> 8;
     m_cmd[ 3 ] = m_addr;
-    if ( write )
-      sendCmd( S_WRITE_ENABLE, 1 );
+    if ( write ){
+      //send write-enable until WEL is set: this can take several
+      //milliseconds, and is potentially running in interrupt context.
+      if (ERETRY == enableWrite()){
+        m_cmd_len = cmd_len;
+        post retryEnableWrite();
+        return SUCCESS;
+      }
+    }
+    //non-write or write enabled on first shot. send now.
     call CSN.clr(); // P1OUT &= ~BIT1;
     call SpiPacket.send( m_cmd, NULL, cmd_len );
-
     return SUCCESS;
   }
 

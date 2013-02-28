@@ -48,12 +48,12 @@ configuration Stm25pSectorC {
 implementation {
 
   components MainC;
-
+  
   components Stm25pSectorP as SectorP;
   ClientResource = SectorP;
   Sector = SectorP;
   Volume = SectorP;
-  
+
   components new FcfsArbiterC( "Stm25p.Volume" ) as ArbiterC;
   SectorP.Stm25pResource -> ArbiterC;
   
