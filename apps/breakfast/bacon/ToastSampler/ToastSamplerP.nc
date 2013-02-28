@@ -3,8 +3,8 @@
  #include "I2CDiscoverable.h"
  #include "GlobalID.h"
  #include "metadata.h"
- #include "printf.h"
  #include "RebootCounter.h"
+ #include "printf.h"
 module ToastSamplerP{
   uses interface Boot;
   uses interface LogWrite;
@@ -36,6 +36,8 @@ module ToastSamplerP{
     ABSENT = 0x03,
     NEW = 0x04,
   };
+  
+  bool busy = FALSE;
 
   i2c_message_t i2c_msg_internal;
   i2c_message_t* i2c_msg = &i2c_msg_internal;
@@ -52,30 +54,29 @@ module ToastSamplerP{
   
   uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
 
+
   event void Boot.booted(){
-    printf("sampler booting\n");
     call SettingsStorage.get(SS_KEY_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
     sampleRec.recordType = RECORD_TYPE_SAMPLE;
-    printf("sampler booted: using interval %lu reboot counter %u\n",
-    sampleInterval, sampleRec.rebootCounter);
-    printfflush();
-    call Timer.startOneShot(sampleInterval);
+    call Timer.startPeriodic(sampleInterval);
   }
 
   event void Timer.fired(){
     uint8_t i;
-    for (i=0; i < MAX_BUS_LEN; i++){
-      toastState[i] = (toastState[i] == PRESENT)? UNKNOWN : FREE;
+    if (!busy){
+      busy = TRUE;
+      for (i=0; i < MAX_BUS_LEN; i++){
+        toastState[i] = (toastState[i] == PRESENT)? UNKNOWN : FREE;
+      }
+      call SplitControl.start();
     }
-    call SplitControl.start();
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("startdone\n");
     call StartupTimer.startOneShot(256);
   }
   
@@ -108,17 +109,8 @@ module ToastSamplerP{
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t k;
-//    printf("discovered ");
-//    {
-//      uint8_t i;
-//      for (i = 0; i < GLOBAL_ID_LEN; i++){
-//        printf(" %x", discovery->val.globalAddr[i]);
-//      }
-//      printf(": ");
-//    }
     //check if this was previously-attached
     if( find(discovery->val.globalAddr, &k) ){
-//      printf("found @%u ", k);
       toastState[k] = PRESENT;
     }else{
       for (k = 0; k < MAX_BUS_LEN; k++){
@@ -127,7 +119,6 @@ module ToastSamplerP{
           memcpy(&attached[k].val.globalAddr, 
             discovery->val.globalAddr, 
             GLOBAL_ID_LEN);
-//          printf("stored @%u ", k);
           break;
         }
       }
@@ -136,7 +127,6 @@ module ToastSamplerP{
       //always required: even if it's a re-discover, no guarantee that
       //local toast addr is constant
       attached[k].val.localAddr =  discovery->val.localAddr;
-//      printf("local: %x\r\n", attached[k].val.localAddr);
     } else {
       printf("No space left on bus, ignore!");
     }
@@ -153,17 +143,14 @@ module ToastSamplerP{
   task void recordDisconnection();
 
   event void I2CDiscoverer.discoveryDone(error_t error){
-//    printf("discovery done\n");
     mdSynchIndex = 0;
     synchingMetadata = TRUE;
     post nextMdSynch();
   }
 
   task void nextMdSynch(){
-//    printf("synch %u\n", mdSynchIndex);
 
     if (mdSynchIndex == MAX_BUS_LEN){
-      printf("synch done\n");
       //ok, ready to sample
       toastSampleIndex = 0;
       synchingMetadata = FALSE;
@@ -173,7 +160,6 @@ module ToastSamplerP{
         error_t error = call I2CTLVStorageMaster.loadTLVStorage(
           attached[mdSynchIndex].val.localAddr,
           i2c_msg);
-        printf("synch new @%u\n", mdSynchIndex);
 
         //skip it if we can't read it.
         if (error != SUCCESS){
@@ -183,12 +169,10 @@ module ToastSamplerP{
         }
 
       } else if (toastState[mdSynchIndex] == UNKNOWN){
-        printf("synch absent @%u\n", mdSynchIndex);
         toastState[mdSynchIndex] = ABSENT;
         post recordDisconnection();
       } else if (toastState[mdSynchIndex] == PRESENT ||
           toastState[mdSynchIndex] == FREE){
-//        printf("no synch for %u\n", mdSynchIndex);
         mdSynchIndex ++;
         post nextMdSynch();
       }
@@ -214,7 +198,6 @@ module ToastSamplerP{
     void* tlvs = call I2CTLVStorageMaster.getPayload(msg_);
     error_t err;
 
-    printf("TLV loaded: %x\n", error);
     if (error == SUCCESS){
       //set up connection record header
       connection.recordType = RECORD_TYPE_TOAST_CONNECTED;
@@ -228,14 +211,12 @@ module ToastSamplerP{
           0,
           &entry,
           tlvs)){
-        printf("no sensor assignments found.\r\n");
         //no sensors attached.
         sensorMaps[mdSynchIndex] = 0x00;
       } else{
         uint8_t i;
         sensor_assignment_t* assignments =
           (sensor_assignment_t*)&entry->data.b;
-        printf("Sensor assignments found.\n");
         sensorMaps[mdSynchIndex] = 0x00;
         //mark connected sensor channels in RAM
         for (i = 0; i < 8; i++){
@@ -244,13 +225,8 @@ module ToastSamplerP{
           }
         }
       }
-      printf("Sensor map for %u: %x\n", 
-        mdSynchIndex, 
-        sensorMaps[mdSynchIndex]);
 
       err = call LogWrite.append(&connection, sizeof(connection));
-      printf("Appending: %p %u: %x\n", &connection, sizeof(connection), err);
-      printfflush();
       if( SUCCESS != err){
         printf("append failed\n");
         printfflush();
@@ -271,8 +247,6 @@ module ToastSamplerP{
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
       bool recordsLost, error_t error){
-    printf("append done: %x\r\n", error);
-    printfflush();
     if (synchingMetadata){
       if (error == SUCCESS){
         if (toastState[mdSynchIndex] == NEW){
@@ -317,10 +291,6 @@ module ToastSamplerP{
             uint8_t sampcon_ssel = 1;
             uint8_t sampcon_id = 0;
 
-            printf("setting slot %u (channel %u)\r\n", 
-              cmdIndex, 
-              i);
-            printfflush();
 
             cmd->cfg[cmdIndex].delayMS = delayMS;
             cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
@@ -335,15 +305,12 @@ module ToastSamplerP{
             cmdIndex++;
           }
         }
-        printf("EOS @ %u\r\n", cmdIndex);
         //mark end-of-sequence
         cmd->cfg[cmdIndex].config.inch = INPUT_CHANNEL_NONE;
         
         err = call I2CADCReaderMaster.sample(
           attached[toastSampleIndex].val.localAddr, 
           i2c_msg);
-        printf("sample err: %x\r\n", err);
-        printfflush();
         if (err != SUCCESS){
           toastSampleIndex++;
           post nextSampleSensors();
@@ -371,10 +338,12 @@ module ToastSamplerP{
         recordLen += sizeof(adc_sample_t);
         //is this assignment legit?
         sampleRec.samples[i] = lastSample->samples[i];
+        //TODO: remove debug code: make it easier to spot in dump
+        sampleRec.samples[i].sampleTime = sampleRec.samples[i].inputChannel;
+        sampleRec.samples[i].sample = sampleRec.samples[i].inputChannel;
       }
     }
     err = call LogWrite.append(&sampleRec, recordLen);
-    printf("Append sample: %x\r\n", err);
     if (err != SUCCESS){
       toastSampleIndex++;
       post nextSampleSensors();
@@ -384,7 +353,6 @@ module ToastSamplerP{
   event void I2CSynchMaster.synchDone(error_t error, 
       uint16_t slaveAddr, 
       synch_tuple_t tuple){
-    printf("Synch done: %x\r\n", error);
     if (error == SUCCESS){
       //e.g. local = 100, remote = 10, sample = 50
       //local-remote = 90  
@@ -406,8 +374,6 @@ module ToastSamplerP{
       i2c_message_t* responseMsg_, 
       adc_response_t* response){
 
-    printf("sample done: %x\r\n", error);
-    printfflush();
     if (error == SUCCESS){
       i2c_message_t* swp = i2c_msg;
       i2c_msg = responseMsg_;
@@ -424,9 +390,8 @@ module ToastSamplerP{
 
   event void LogWrite.syncDone(error_t error){ }
   event void LogWrite.eraseDone(error_t error){}
-  event void SplitControl.stopDone(error_t error){
-    printf("bus off\n");
-    call Timer.startOneShot(sampleInterval);
+  event void SplitControl.stopDone(error_t error){ 
+    busy = FALSE;
   }
 
   event void I2CTLVStorageMaster.persisted(error_t error, i2c_message_t* msg){}
