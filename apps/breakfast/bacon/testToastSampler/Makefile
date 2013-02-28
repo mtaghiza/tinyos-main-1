@@ -1,6 +1,6 @@
 COMPONENT=TestAppC
 
-CFLAGS +=-DADC_NUM_CHANNELS=8
+CFLAGS +=-DADC_NUM_CHANNELS=9
 
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -I$(TOSDIR)/lib/printf
@@ -21,6 +21,7 @@ CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cTLVStorage
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cSynch
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/Metadata
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/autoPush
 
 CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
 

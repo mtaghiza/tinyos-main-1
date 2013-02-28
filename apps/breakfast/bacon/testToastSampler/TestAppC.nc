@@ -1,5 +1,7 @@
 
  #include "StorageVolumes.h"
+ #include "RecordStorage.h"
+ #include "message.h"
 configuration TestAppC{
 } implementation {
   components new ToastSamplerC(VOLUME_RECORD, TRUE);
@@ -12,5 +14,15 @@ configuration TestAppC{
   components SerialStartC;
 
   TestP.Boot -> MainC;
+
+  components new PoolC(message_t, 2);
+
+  components SerialActiveMessageC;
+  components new SerialAMSenderC(AM_LOG_RECORD_DATA_MSG) as AMSenderC;
+
+  components new AutoPushC(VOLUME_RECORD, TRUE);
+  AutoPushC.AMSend -> AMSenderC;
+  AutoPushC.Pool -> PoolC;
+  AutoPushC.Get -> TestP.Get;
 
 }
