@@ -74,7 +74,7 @@ $(TOSDIR)/lib/printf/printf.h: AM_PRINTF_MSG = 100, //0x64
 
 Log Records: 0xE0 - 0xEF
 -------
-AM_LOG_RECORD_DATA_MSG: = 0xE0,
+RecordStorage.h AM_LOG_RECORD_DATA_MSG: = 0xE0,
 
 
 CX collection control: 0xF0 - 0xFF
