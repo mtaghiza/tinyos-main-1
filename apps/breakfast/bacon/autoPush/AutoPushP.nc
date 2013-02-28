@@ -96,6 +96,7 @@ generic module AutoPushP(){
     }else{
       printf("ERR\n");
       state = S_ERROR;
+      call LogNotify.forceFlushed();
     }
   }
 
@@ -159,9 +160,12 @@ generic module AutoPushP(){
     state = S_IDLE;
     call LogNotify.reportSent(recordsRead);
     call Pool.put(msg);
+    if (recordsRead == 0){
+      printf("none read, force flush\r\n");
+      call LogNotify.forceFlushed();
+    }
   }
 
-  //TODO: handle error conditions better
   event void LogNotify.sendRequested(uint16_t left){
 //    printf("%u requested\n", left);
     if (state == S_IDLE){
@@ -174,17 +178,20 @@ generic module AutoPushP(){
           bufferStart = (uint8_t*)recordPtr; 
           bufferEnd = bufferStart + call AMSend.maxPayloadLength();
           memset(bufferStart, 0xFF, sizeof(log_record_data_msg_t));
-        post readNext();
+          post readNext();
         }else{
+          call LogNotify.forceFlushed();
           printf("Payload error\n");
           state = S_ERROR;
         }
 //        printf("RP %p BS %p BE %p\n", recordPtr, bufferStart,
 //          bufferEnd);
       }else{
+        call LogNotify.forceFlushed();
         state = S_ERROR;
       }
     } else {
+      call LogNotify.forceFlushed();
       printf("!sr\n");
       state = S_ERROR;
     }

@@ -53,6 +53,11 @@ generic module LogNotifyP(){
     }
   }
 
+  command void RecordsNotify.forceFlushed(){
+    outstandingRecords = 0;
+    checkRecordState(FALSE);
+  }
+
   command error_t Init.init(){
     return call SubNotify.enable();
   }
