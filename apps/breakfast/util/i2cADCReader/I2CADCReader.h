@@ -11,14 +11,15 @@
 #define ADC_NUM_SAMPLES 5
 #endif
 
-//8 external, (Vcc-Vss)/2, temp
+//8 external, (Vcc-Vss)/2, temp. limited to 9 due to sizing mistake in toast
+//binary
 #ifndef ADC_NUM_CHANNELS
-#define ADC_NUM_CHANNELS 8 + 2
+#define ADC_NUM_CHANNELS 9
 #endif
 
-#if ADC_NUM_CHANNELS > 8
+#if ADC_NUM_CHANNELS > 9
 #ifndef SUPPRESS_ADC_OVERFLOW_WARNING
-//OK, due to a stupid mistake, there is only space for 8 channels on
+//OK, due to a stupid mistake, there is only space for 8 data channels on
 //the toast boards programmed by elektromont. Happily, as long as the
 //last in the sequence is INPUT_CHANNEL_NONE, we won't overflow any
 //buffers.
