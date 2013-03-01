@@ -53,12 +53,8 @@ generic module AutoPushP(){
   event void LogRead.seekDone(error_t error){
     if (SUCCESS == error){
       if (state == S_SEEK_BEGINNING){
-        printf("Seek begin OK: begin %lu end %lu\n", 
-          call LogRead.currentOffset(),
-          call LogWrite.currentOffset());
         post seekEnd();
       }else if (state == S_SEEK_END){
-        printf("Seek end OK: %lu\n", call LogRead.currentOffset());
         state = S_IDLE;
       } else {
         //from this point on, we are just reading from current
@@ -72,7 +68,6 @@ generic module AutoPushP(){
   }
 
   task void seekEnd(){
-    printf("Seek end -> %lu\n", call LogWrite.currentOffset());
     if (SUCCESS == call LogRead.seek(call LogWrite.currentOffset())){
       state = S_SEEK_END;
     }else{
@@ -84,9 +79,6 @@ generic module AutoPushP(){
     storage_len_t left = bufferEnd - (uint8_t*)recordPtr->data;
     //write cookie of current record to buffer.
     recordPtr->cookie = call LogRead.currentOffset();
-    printf("rn [%lu, %lu] to %p (max %lu)\n", 
-      recordPtr->cookie, call LogWrite.currentOffset(),
-      recordPtr->data, left);
 
     //read current record: account for log_record_t's 5-byte header
 
@@ -102,8 +94,6 @@ generic module AutoPushP(){
 
   void send(){
     state = S_SENDING;
-    printf("sending\n"); 
-    printfflush();
     call AMSend.send(call Get.get(), 
       msg, 
       sizeof(log_record_data_msg_t));
@@ -155,8 +145,6 @@ generic module AutoPushP(){
   event void AMSend.sendDone(message_t* msg_, error_t error){
     //if there's more data outstanding, we'll get another
     //  sendRequested event and start the process over.
-    printf("sent %p %u %x\n", msg_, recordsRead, error);
-    printfflush();
     state = S_IDLE;
     call LogNotify.reportSent(recordsRead);
     call Pool.put(msg);

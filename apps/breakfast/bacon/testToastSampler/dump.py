@@ -25,7 +25,7 @@ class PrintfLogger(object):
         mb = msg.get_buffer()
         if 0 in mb:
             mb = mb[:mb.index(0)]
-#         sys.stdout.write(''.join(chr(v) for v in mb))
+        sys.stdout.write(''.join(chr(v) for v in mb))
 
 class SensorSampleLogger(object):
     def __init__(self):
