@@ -42,7 +42,7 @@ module ToastSamplerP{
   i2c_message_t i2c_msg_internal;
   i2c_message_t* i2c_msg = &i2c_msg_internal;
   adc_response_t* lastSample;
-  sample_record_t sampleRec;
+  short_sample_record_t sampleRec;
 
   discoverer_register_union_t attached[MAX_BUS_LEN];
   uint8_t toastState[MAX_BUS_LEN];
@@ -326,21 +326,17 @@ module ToastSamplerP{
   task void appendSample(){
     uint8_t i;
     error_t err;
-    storage_len_t recordLen = sizeof(sample_record_t) - (sizeof(adc_sample_t)*ADC_NUM_CHANNELS);
-    memcpy(&sampleRec.toastAddr, 
+    storage_len_t recordLen = sizeof(short_sample_record_t) -
+      (sizeof(uint16_t)*ADC_NUM_CHANNELS);
+    memcpy(&sampleRec.samplerID, 
       &attached[toastSampleIndex].val.globalAddr,
       GLOBAL_ID_LEN);
     for (i = 0; i < ADC_NUM_CHANNELS; i++){
       if (lastSample->samples[i].inputChannel == INPUT_CHANNEL_NONE){
         break;
       }else{
-        //TODO: please don't give me any word alignment bullshit
-        recordLen += sizeof(adc_sample_t);
-        //is this assignment legit?
-        sampleRec.samples[i] = lastSample->samples[i];
-        //TODO: remove debug code: make it easier to spot in dump
-        sampleRec.samples[i].sampleTime = sampleRec.samples[i].inputChannel;
-        sampleRec.samples[i].sample = sampleRec.samples[i].inputChannel;
+        recordLen += sizeof(uint16_t);
+        sampleRec.samples[i] = lastSample->samples[i].sample;
       }
     }
     err = call LogWrite.append(&sampleRec, recordLen);
@@ -360,7 +356,7 @@ module ToastSamplerP{
       // local = 200 remote =110 sample =50
       // local - remote = 90
       // +50 = 140
-      sampleRec.baseTime = tuple.localTime - tuple.remoteTime;
+      sampleRec.baseTime = tuple.localTimeMilli;
       post appendSample();
     }else{
       toastSampleIndex++;
