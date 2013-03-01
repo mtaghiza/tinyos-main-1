@@ -6,7 +6,8 @@
 #define SYNCH_CMD_READY 0x0a
 
 typedef struct synch_tuple_t{
-  uint32_t localTime;
+  uint32_t localTime32k;
+  uint32_t localTimeMilli;
   uint32_t remoteTime;
 } synch_tuple_t;
 

@@ -3,10 +3,12 @@
 
 module I2CSynchMasterP{
   uses interface I2CComMaster;
-  uses interface LocalTime<T32khz>;
+  uses interface LocalTime<T32khz> as  LocalTime32k;
+  uses interface LocalTime<TMilli> as LocalTimeMilli;
   provides interface I2CSynchMaster;
 } implementation {
-  uint32_t localTime;
+  uint32_t localTime32k;
+  uint32_t localTimeMilli;
   i2c_message_t msg_internal;
   i2c_message_t* msg = &msg_internal;
   bool busy;
@@ -41,7 +43,8 @@ module I2CSynchMasterP{
   task void readTask(){
     error_t error;
     synch_tuple_t ret = {0, 0};
-    localTime = call LocalTime.get();
+    localTime32k = call LocalTime32k.get();
+    localTimeMilli = call LocalTimeMilli.get();
     error = call I2CComMaster.receive(msg->body.header.slaveAddr, msg,
       sizeof(nx_uint32_t));
     if (error != SUCCESS){
@@ -61,7 +64,8 @@ module I2CSynchMasterP{
     } else {
       synch_response_t* pl = (synch_response_t*) call
         I2CComMaster.getPayload(msg);
-      ret.localTime = localTime;
+      ret.localTimeMilli = localTimeMilli;
+      ret.localTime32k = localTime32k;
       ret.remoteTime = pl->remoteTime;
       busy = FALSE;
       signal I2CSynchMaster.synchDone(SUCCESS,
