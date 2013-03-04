@@ -34,7 +34,6 @@
  * @author Peter A. Bigot <pab@peoplepowerco.com> 
  */
 
-#include <stdio.h>
 #include "msp430usci.h"
 
 generic module Msp430UsciI2CP () @safe() {

@@ -4,7 +4,6 @@
  #include "GlobalID.h"
  #include "metadata.h"
  #include "RebootCounter.h"
- #include "printf.h"
 module ToastSamplerP{
   uses interface Boot;
   uses interface LogWrite;

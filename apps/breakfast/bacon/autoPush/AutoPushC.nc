@@ -1,3 +1,4 @@
+ #include "message.h"
 generic configuration AutoPushC(volume_id_t VOLUME_ID, bool circular){
   //external component provides data destination
   uses interface Get<am_addr_t>;

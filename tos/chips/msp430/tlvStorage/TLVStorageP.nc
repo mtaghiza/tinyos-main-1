@@ -2,7 +2,6 @@
  #include "TLVStorage.h"
  #include "InternalFlashFunctions.h"
  
- #include "printf.h"
 
 generic module TLVStorageP(uint16_t tlv_start, 
     uint16_t tlv_copy, 
@@ -13,35 +12,35 @@ generic module TLVStorageP(uint16_t tlv_start,
 } implementation {
   int16_t computeChecksum(void* tlvs);
 
-  void debugTLV(void* tlvs_){
-    tlv_entry_t* e;
-    uint8_t offset = 0;
-    uint8_t i;
-    printf("======== %p =====\n\r", tlvs_);
-    printf("Stored checksum: %d (%x)\n\r", 
-      *(uint16_t*)tlvs_, *(uint16_t*)tlvs_);
-    printf("Computed checksum: %d (%x)\n\r", 
-      computeChecksum(tlvs_),
-      computeChecksum(tlvs_));
-    do{
-      offset = call TLVUtils.findEntry(TAG_ANY, offset+1, &e, tlvs_);
-      if (e != NULL){
-        printf("------------\n\r");
-        printf(" Offset: %d\n\r", offset);
-        printf(" Tag:\t[%d]\t%x\n\r", offset, e->tag);
-        printf(" Len:\t[%d]\t%x\n\r", offset+1, e->len);
-        if (e->tag != TAG_EMPTY){
-        printf(" Data:\n\r");
-        for (i = 0; i < e->len; i++){
-          printf("  [%d]\t(%d)\t%x\n\r", offset+2+i, i, e->data.b[i]);
-        }
-        }else{
-          printf("  [%d]->[%d] (empty)\n\r", offset+2,
-          offset+2+e->len-1);
-        }
-      }
-    } while( offset != 0);
-  }
+//  void debugTLV(void* tlvs_){
+//    tlv_entry_t* e;
+//    uint8_t offset = 0;
+//    uint8_t i;
+//    printf("======== %p =====\n\r", tlvs_);
+//    printf("Stored checksum: %d (%x)\n\r", 
+//      *(uint16_t*)tlvs_, *(uint16_t*)tlvs_);
+//    printf("Computed checksum: %d (%x)\n\r", 
+//      computeChecksum(tlvs_),
+//      computeChecksum(tlvs_));
+//    do{
+//      offset = call TLVUtils.findEntry(TAG_ANY, offset+1, &e, tlvs_);
+//      if (e != NULL){
+//        printf("------------\n\r");
+//        printf(" Offset: %d\n\r", offset);
+//        printf(" Tag:\t[%d]\t%x\n\r", offset, e->tag);
+//        printf(" Len:\t[%d]\t%x\n\r", offset+1, e->len);
+//        if (e->tag != TAG_EMPTY){
+//        printf(" Data:\n\r");
+//        for (i = 0; i < e->len; i++){
+//          printf("  [%d]\t(%d)\t%x\n\r", offset+2+i, i, e->data.b[i]);
+//        }
+//        }else{
+//          printf("  [%d]->[%d] (empty)\n\r", offset+2,
+//          offset+2+e->len-1);
+//        }
+//      }
+//    } while( offset != 0);
+//  }
 
   int16_t computeChecksum(void* tlvs){
     int16_t* wa = (int16_t*) tlvs;
