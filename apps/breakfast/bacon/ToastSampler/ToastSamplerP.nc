@@ -53,6 +53,7 @@ module ToastSamplerP{
   bool synchingMetadata = FALSE;
   
   uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
+  uint32_t toastBase;
 
 
   event void Boot.booted(){
@@ -139,6 +140,7 @@ module ToastSamplerP{
 
   task void nextMdSynch();
   task void nextSampleSensors();
+  task void nextSynch();
   
   task void recordDisconnection();
 
@@ -154,7 +156,7 @@ module ToastSamplerP{
       //ok, ready to sample
       toastSampleIndex = 0;
       synchingMetadata = FALSE;
-      post nextSampleSensors();
+      post nextSynch();
     }else{
       if (toastState[mdSynchIndex] == NEW){
         error_t error = call I2CTLVStorageMaster.loadTLVStorage(
@@ -261,88 +263,27 @@ module ToastSamplerP{
       post nextMdSynch();
     }else{
       toastSampleIndex++;
-      post nextSampleSensors();
+      post nextSynch();
     }
   }
   
-  task void nextSampleSensors(){
+  task void nextSynch(){
     if (toastSampleIndex == MAX_BUS_LEN){
       call SplitControl.stop();
       return;
     }else{
       if (toastState[toastSampleIndex] == PRESENT 
           && sensorMaps[toastSampleIndex]){
-        adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
-        error_t err;
-        uint8_t i;
-        uint8_t cmdIndex = 0;
-        for (i=0; i < ADC_NUM_CHANNELS; i++){
-          if ( (0x01 << i) & sensorMaps[toastSampleIndex]){
-            //TODO: read these from settings storage? Toast flash?
-            //delay MS is the most important factor (warm-up time)
-            uint32_t delayMS = 0;
-            uint16_t samplePeriod = 0;
-            uint8_t sref = 1;
-            uint8_t ref2_5v = TRUE;
-            uint8_t adc12ssel = 3;
-            uint8_t adc12div = 0;
-            //sht: set to 1024 ticks = 1 mS (good to 2.8 ohms)
-            uint8_t sht = 0xff;
-            uint8_t sampcon_ssel = 1;
-            uint8_t sampcon_id = 0;
+        error_t error = call I2CSynchMaster.synch(attached[toastSampleIndex].val.localAddr);
 
-
-            cmd->cfg[cmdIndex].delayMS = delayMS;
-            cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
-            cmd->cfg[cmdIndex].config.inch = i;
-            cmd->cfg[cmdIndex].config.sref = sref;
-            cmd->cfg[cmdIndex].config.ref2_5v = ref2_5v;
-            cmd->cfg[cmdIndex].config.adc12ssel = adc12ssel;
-            cmd->cfg[cmdIndex].config.adc12div = adc12div;
-            cmd->cfg[cmdIndex].config.sht = sht;
-            cmd->cfg[cmdIndex].config.sampcon_ssel = sampcon_ssel;
-            cmd->cfg[cmdIndex].config.sampcon_id = sampcon_id;
-            cmdIndex++;
-          }
-        }
-        //mark end-of-sequence
-        cmd->cfg[cmdIndex].config.inch = INPUT_CHANNEL_NONE;
-        
-        err = call I2CADCReaderMaster.sample(
-          attached[toastSampleIndex].val.localAddr, 
-          i2c_msg);
-        if (err != SUCCESS){
+        if (SUCCESS != error){
           toastSampleIndex++;
-          post nextSampleSensors();
+          post nextSynch();
         }
       } else {
         toastSampleIndex++;
-        post nextSampleSensors();
+        post nextSynch();
       }
-    }
-  }
-
-   
-  task void appendSample(){
-    uint8_t i;
-    error_t err;
-    storage_len_t recordLen = sizeof(short_sample_record_t) -
-      (sizeof(uint16_t)*ADC_NUM_CHANNELS);
-    memcpy(&sampleRec.samplerID, 
-      &attached[toastSampleIndex].val.globalAddr,
-      GLOBAL_ID_LEN);
-    for (i = 0; i < ADC_NUM_CHANNELS; i++){
-      if (lastSample->samples[i].inputChannel == INPUT_CHANNEL_NONE){
-        break;
-      }else{
-        recordLen += sizeof(uint16_t);
-        sampleRec.samples[i] = lastSample->samples[i].sample;
-      }
-    }
-    err = call LogWrite.append(&sampleRec, recordLen);
-    if (err != SUCCESS){
-      toastSampleIndex++;
-      post nextSampleSensors();
     }
   }
 
@@ -357,13 +298,96 @@ module ToastSamplerP{
       // local - remote = 90
       // +50 = 140
       sampleRec.baseTime = tuple.localTimeMilli;
-      post appendSample();
+      toastBase = tuple.remoteTime;
+      post nextSampleSensors();
     }else{
       toastSampleIndex++;
-      post nextSampleSensors();
+      post nextSynch();
     }
-
   }
+
+  task void nextSampleSensors(){
+    adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
+    error_t err;
+    uint8_t i;
+    uint8_t cmdIndex = 0;
+    for (i=0; i < ADC_NUM_CHANNELS; i++){
+      if ( (0x01 << i) & sensorMaps[toastSampleIndex]){
+        //TODO: read these from settings storage? Toast flash?
+        //delay MS is the most important factor (warm-up time)
+        uint32_t delayMS = 0;
+        uint16_t samplePeriod = 0;
+        uint8_t sref = 1;
+        uint8_t ref2_5v = TRUE;
+        uint8_t adc12ssel = 3;
+        uint8_t adc12div = 0;
+        //sht: set to 1024 ticks = 1 mS (good to 2.8 ohms)
+        uint8_t sht = 0xff;
+        uint8_t sampcon_ssel = 1;
+        uint8_t sampcon_id = 0;
+
+
+        cmd->cfg[cmdIndex].delayMS = delayMS;
+        cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
+        cmd->cfg[cmdIndex].config.inch = i;
+        cmd->cfg[cmdIndex].config.sref = sref;
+        cmd->cfg[cmdIndex].config.ref2_5v = ref2_5v;
+        cmd->cfg[cmdIndex].config.adc12ssel = adc12ssel;
+        cmd->cfg[cmdIndex].config.adc12div = adc12div;
+        cmd->cfg[cmdIndex].config.sht = sht;
+        cmd->cfg[cmdIndex].config.sampcon_ssel = sampcon_ssel;
+        cmd->cfg[cmdIndex].config.sampcon_id = sampcon_id;
+        cmdIndex++;
+      }
+    }
+    //mark end-of-sequence
+    cmd->cfg[cmdIndex].config.inch = INPUT_CHANNEL_NONE;
+    
+    err = call I2CADCReaderMaster.sample(
+      attached[toastSampleIndex].val.localAddr, 
+      i2c_msg);
+    if (err != SUCCESS){
+      toastSampleIndex++;
+      post nextSynch();
+    }
+  }
+
+   
+  task void appendSample(){
+    uint8_t i;
+    error_t err;
+    uint32_t sampleTimeAcc = 0;
+    uint8_t numSamples = 0;
+    storage_len_t recordLen = sizeof(short_sample_record_t) -
+      (sizeof(uint16_t)*ADC_NUM_CHANNELS);
+    memcpy(&sampleRec.samplerID, 
+      &attached[toastSampleIndex].val.globalAddr,
+      GLOBAL_ID_LEN);
+    for (i = 0; i < ADC_NUM_CHANNELS; i++){
+      if (lastSample->samples[i].inputChannel == INPUT_CHANNEL_NONE){
+        break;
+      }else{
+        recordLen += sizeof(uint16_t);
+        sampleRec.samples[i] = lastSample->samples[i].sample;
+        //accumulate sample TS delta from synch point
+        sampleTimeAcc += lastSample->samples[i].sampleTime - toastBase;
+        numSamples++;
+      }
+    }
+    //convert sum of deltas from 32K to milliseconds
+    sampleTimeAcc >>= 5;
+    //divide sum of deltas by numSamples to get mean delta (ms)
+    sampleTimeAcc /= numSamples; 
+    //add the mean delta (ms) to the previously-stored bacon ms synch
+    //point.
+    sampleRec.baseTime += sampleTimeAcc;
+    err = call LogWrite.append(&sampleRec, recordLen);
+    if (err != SUCCESS){
+      toastSampleIndex++;
+      post nextSynch();
+    }
+  }
+
 
   event i2c_message_t* I2CADCReaderMaster.sampleDone(error_t error,
       uint16_t slaveAddr, i2c_message_t* cmdMsg_, 
@@ -374,11 +398,11 @@ module ToastSamplerP{
       i2c_message_t* swp = i2c_msg;
       i2c_msg = responseMsg_;
       lastSample = response;
-      call I2CSynchMaster.synch(slaveAddr);
+      post appendSample();
       return swp;
     }else{
       toastSampleIndex++;
-      post nextSampleSensors();
+      post nextSynch();
       return responseMsg_;
     }
   }
