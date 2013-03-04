@@ -77,7 +77,7 @@ module SlaveSchedulerP {
       0, 
       1, 
       SCHED_INIT_SYMBOLRATE,
-      TEST_CHANNEL,
+      SCHED_INIT_CHANNEL,
       isSynched,
       FALSE);
   }

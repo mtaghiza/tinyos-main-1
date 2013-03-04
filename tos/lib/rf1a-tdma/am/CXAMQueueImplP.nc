@@ -46,6 +46,14 @@
 
 #include "AM.h"
 #include "schedule.h"
+#include "decodeError.h"
+
+#ifndef printf_APP 
+#define printf_APP(...) 
+#endif
+#ifndef printf_TMP 
+#define printf_TMP(...) 
+#endif
 
 generic module CXAMQueueImplP(int numClients) @safe() {
     provides interface Send[uint8_t client];

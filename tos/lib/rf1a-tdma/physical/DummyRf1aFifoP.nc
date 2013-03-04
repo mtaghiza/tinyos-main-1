@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "FECDebug.h"
 
 module DummyRf1aFifoP{

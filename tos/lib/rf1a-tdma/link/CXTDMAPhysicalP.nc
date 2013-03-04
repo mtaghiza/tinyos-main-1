@@ -36,8 +36,11 @@ module CXTDMAPhysicalP {
   uses interface Alarm<TMicro, uint32_t> as FrameStartAlarm;
   uses interface Alarm<TMicro, uint32_t> as FrameWaitAlarm;
   uses interface GpioCapture as SynchCapture;
-
+  
+  #if DEBUG_CONFIG == 1
   uses interface Rf1aDumpConfig;
+  #endif
+
   uses interface StateTiming;
 
   uses interface Random;
@@ -196,7 +199,7 @@ module CXTDMAPhysicalP {
 
   //Current radio settings
   uint8_t s_sr = SCHED_INIT_SYMBOLRATE;
-  uint8_t s_channel = TEST_CHANNEL;
+  uint8_t s_channel = SCHED_INIT_CHANNEL;
 
   //other schedule settings
   uint32_t s_totalFrames;
@@ -494,11 +497,11 @@ module CXTDMAPhysicalP {
       //NB: Phy impl starts the radio in IDLE
       setState(S_IDLE);
       signal SplitControl.startDone(SUCCESS);
-      if (DEBUG_CONFIG){
+      #if DEBUG_CONFIG == 1
         rf1a_config_t config;
         call Rf1aPhysical.readConfiguration(&config);
         call Rf1aDumpConfig.display(&config);
-      }
+      #endif
     }else{
       setState(S_ERROR_0);
     }

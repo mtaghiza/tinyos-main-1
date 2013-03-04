@@ -35,6 +35,18 @@
 #define CX_KEEPALIVE_CYCLES 10
 #endif
 
+#ifndef SCHED_INIT_SYMBOLRATE
+#define SCHED_INIT_SYMBOLRATE 125
+#endif
+
+#ifndef SCHED_INIT_CHANNEL
+#define SCHED_INIT_CHANNEL 0
+#endif
+
+#ifndef SCHED_MAX_DEPTH
+#define SCHED_MAX_DEPTH 8
+#endif
+
 enum {
   UNCLAIMED = 0xffff,
   INVALID_SCHEDULE_NUM= 0xff,

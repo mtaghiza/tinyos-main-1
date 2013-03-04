@@ -1,5 +1,4 @@
 #include "hamming74.h"
-#include <stdio.h>
 #include "FECDebug.h"
 
 module Hamming74Rf1aFifoP{

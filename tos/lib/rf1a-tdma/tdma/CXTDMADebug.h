@@ -277,5 +277,8 @@
 #define FWA_TIMING_SET_PIN 
 #endif
 
+#ifndef DEBUG_CONFIG
+#define DEBUG_CONFIG 0
+#endif
 
 #endif

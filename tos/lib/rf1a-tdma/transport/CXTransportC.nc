@@ -1,4 +1,5 @@
  #include "CXTransport.h"
+ #include "CXNetwork.h"
 
 configuration CXTransportC{ 
   provides interface Send[uint8_t tproto]; 
@@ -40,10 +41,12 @@ configuration CXTransportC{
   UnreliableBurstSchedulerC.FloodReceive 
     -> CXNetworkC.FloodReceive[CX_TP_UNRELIABLE_BURST];
 
+  #if INCLUDE_SCOPED_FLOOD == 1
   UnreliableBurstSchedulerC.ScopedFloodSend 
     -> CXNetworkC.ScopedFloodSend[CX_TP_UNRELIABLE_BURST];
   UnreliableBurstSchedulerC.ScopedFloodReceive 
     -> CXNetworkC.ScopedFloodReceive[CX_TP_UNRELIABLE_BURST];
+  #endif
 
   UnreliableBurstSchedulerC.AMPacket -> CXPacketStackC.AMPacket;
   UnreliableBurstSchedulerC.AMPacketBody 
