@@ -71,18 +71,18 @@ generic module Msp430UsciI2CP () @safe() {
   void nextWrite();
   void signalDone( error_t error );
 
-  void printRegisters(){
-    printf("---\n\r");
-    printf(" CTL0: %x\n\r", call Usci.getCtl0());
-    printf(" CTL1: %x\n\r", call Usci.getCtl1());
-    //printf(" CTLW: %x\n\r", call Usci.getCtlw0());
-    //printf(" BRw:  %x\n\r", call Usci.getBrw());
-    printf(" OA:   %x\n\r", call Usci.getI2coa());
-    printf(" SA:   %x\n\r", call Usci.getI2csa());
-    printf(" IE:   %x\n\r", call Usci.getIe());
-    printf(" IFG:  %x\n\r", call Usci.getIfg());
-    printf("---\n\r");
-  }
+//  void printRegisters(){
+//    printf("---\n\r");
+//    printf(" CTL0: %x\n\r", call Usci.getCtl0());
+//    printf(" CTL1: %x\n\r", call Usci.getCtl1());
+//    //printf(" CTLW: %x\n\r", call Usci.getCtlw0());
+//    //printf(" BRw:  %x\n\r", call Usci.getBrw());
+//    printf(" OA:   %x\n\r", call Usci.getI2coa());
+//    printf(" SA:   %x\n\r", call Usci.getI2csa());
+//    printf(" IE:   %x\n\r", call Usci.getIe());
+//    printf(" IFG:  %x\n\r", call Usci.getIfg());
+//    printf("---\n\r");
+//  }
 
   error_t configure_(const msp430_usci_config_t* config, 
     uint8_t client){
