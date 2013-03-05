@@ -49,6 +49,7 @@ module Msp430XV2ClockControlP @safe() {
     interface McuPowerOverride;
     interface StdControl as InhibitUcs7WorkaroundControl;
   }
+  uses interface Alarm<T32khz,uint16_t> as UCS7Alarm;
 } implementation {
 
   async command void Msp430XV2ClockControl.configureUnifiedClockSystem (int dco_config)
@@ -77,7 +78,7 @@ module Msp430XV2ClockControlP @safe() {
 
       #ifdef XT2_SMCLK
       #warning Using XT2 for SMCLK
-      UCSCTL6 = (((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2))) & ~XT2OFF;
+      UCSCTL6 = ((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2));
       #else
       UCSCTL6 = ((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2));
       #endif
@@ -190,7 +191,7 @@ module Msp430XV2ClockControlP @safe() {
 
 
       #ifdef XT2_SMCLK
-      UCSCTL4 = SELA__XT1CLK | SELS__XT2CLK | SELM__DCOCLKDIV;;
+      UCSCTL4 = SELA__XT1CLK | SELS__XT2CLK | SELM__DCOCLKDIV;
 
       /* DIVPA routes ACLK to external pin, undivided
        * DIVA uses ACLK at 2^15 Hz, undivided
@@ -199,7 +200,7 @@ module Msp430XV2ClockControlP @safe() {
        */
       UCSCTL5 = DIVPA__1 | DIVA__1 | DIVS__4 | DIVM__1;
       #else
-      UCSCTL4 = SELA__XT1CLK | SELS__DCOCLKDIV | SELM__DCOCLKDIV;;
+      UCSCTL4 = SELA__XT1CLK | SELS__DCOCLKDIV | SELM__DCOCLKDIV;
 
       /* DIVPA routes ACLK to external pin, undivided
        * DIVA uses ACLK at 2^15 Hz, undivided
@@ -218,7 +219,7 @@ module Msp430XV2ClockControlP @safe() {
       TA0CTL = TASSEL__ACLK | TACLR | MC__STOP | TAIE;
       TA0R = 0;
       #ifdef XT2_SMCLK
-      //26mhz / 4/1 = ~6.4 mhz
+      //26mhz / 4/1 = ~6.5 mhz
       TA1CTL = TASSEL__SMCLK | ID__1 | TACLR | MC__STOP | TAIE;
       #else
       TA1CTL = TASSEL__SMCLK | TACLR | MC__STOP | TAIE;
@@ -282,7 +283,34 @@ module Msp430XV2ClockControlP @safe() {
    * about power may implement their own workaround, disabling this
    * one through the InhibitUcs7WorkaroundControl interface.
    */
-
+  //Q1. Do we care that DCO drifts? What is it sourcing?
+  //   - if we're running SMCLK from XT2, then DCO is only sourcing
+  //     MCLK. 
+  //     - MCLK may be used by ADC12.
+  //   - if we're running SMCLK from DCOCLKDIV, then DCO is sourcing
+  //     SMCLK
+  //     - SMCLK is used basically everywhere: TA1, USCI (all modes).
+  //   - So: if we're using XT2, we can inhibit this workaround and
+  //     accept that MCLK may drift. This would vary execution times
+  //     across devices, though, which is not great.
+  //
+  //Q2. Is there a workaround that lets us drop into the better LPM's
+  //    more reliably?
+  //    - problem occurs when:
+  //      - in an LPM with FLL disabled
+  //      - enter FLL-enabled state at time t0 (?enter ISR from LPM0/2 or exit
+  //        active from ISR)
+  //      - exit FLL-enabled state at some time 
+  //        t1 < t0 + 3*REFCLK (XT1, 32KHz)
+  //    - The current workaround stashes the refclk when waking up
+  //      from fll-disabled state, and when queried for lowest-state
+  //      it checks to see if at least 3 ticks have elapsed since then.
+  //    - so we should look at the loop that calls into
+  //      McuPowerOverride.lowestState and have it set a short timer
+  //      if LPM0 is returned. it will run FLL until that timer
+  //      expires, then wake up, do basically nothing, call
+  //      McuPowerOverrid.lowestState again and this time it will
+  //      enter LPM2+
   enum {
     /** UCS7 suggests waiting at least 3 reference clock periods
      * before disabling FLL. */
@@ -321,6 +349,8 @@ module Msp430XV2ClockControlP @safe() {
       }
       if (MinimumFLLActiveDuration_refclk > fll_active_refclk) {
         rv = MSP430_POWER_LPM0;
+        call UCS7Alarm.startAt(fllRestart_refclk,
+          MinimumFLLActiveDuration_refclk);
       }
     }
     return rv;
@@ -334,5 +364,8 @@ module Msp430XV2ClockControlP @safe() {
       atomic fllRestart_refclk = TA0R;
     }
   }
+
+  //do nothing: just used to trigger LPM re-entry when errata UCS7 is present.
+  async event void UCS7Alarm.fired(){}
 
 }
