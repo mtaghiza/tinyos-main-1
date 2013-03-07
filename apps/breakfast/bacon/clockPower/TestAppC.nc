@@ -3,10 +3,17 @@
 #define USE_ALARM 0
 #endif
 
-#ifndef USE_TIMER 
-#define USE_TIMER 0
+#ifndef USE_MICRO_TIMER
+#define USE_MICRO_TIMER 0
 #endif
 
+#ifndef USE_32KHZ_TIMER
+#define USE_32KHZ_TIMER 0
+#endif
+
+#ifndef TEST_BUSY 
+#define TEST_BUSY 0
+#endif
 
 #if USE_SERIAL == 1
 #include <stdio.h>
@@ -39,7 +46,9 @@ configuration TestAppC{
   components Msp430XV2ClockC;
   
   components new TestP(USE_ALARM,
-    USE_TIMER,
+    USE_MICRO_TIMER,
+    USE_32KHZ_TIMER,
+    TEST_BUSY,
     (6347UL*ALARM_MILLIS)
     + (ALARM_MILLIS/32UL)*21);
   TestP.Boot -> MainC;
