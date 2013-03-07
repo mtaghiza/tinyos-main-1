@@ -230,7 +230,6 @@ module ToastSamplerP{
       err = call LogWrite.append(&connection, sizeof(connection));
       if( SUCCESS != err){
         printf("append failed\n");
-        printfflush();
         //if append fails, mark this as free so that it will try again
         // on the next scan.
         toastState[mdSynchIndex] = FREE;
