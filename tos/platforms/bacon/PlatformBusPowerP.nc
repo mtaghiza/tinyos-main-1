@@ -10,7 +10,8 @@ module PlatformBusPowerP{
 } implementation {
   bool on = FALSE;
   command error_t Init.init(){
-    call Term1WB.makeInput();
+    call Term1WB.makeOutput();
+    call Term1WB.clr();
     call I2CData.makeOutput();
     call I2CData.clr();
     call I2CClk.makeOutput();
@@ -33,19 +34,25 @@ module PlatformBusPowerP{
     }else {
       on = TRUE;
       call Term1WB.makeInput();
+      //start powering up the bus over the I2C lines
+      //This is a bit of a hack: if we just flip the switch from GND
+      //to 3V0, the resulting rush of current browns out the cc430.
       call I2CData.set();
       call I2CClk.set();
+
       //Ideally, we'd wait until the input to Term1WB was high, but:
       // 1. if there's nothing connected to the bus, this might not
       //    ever happen
       // 2. There may still be a voltage difference of 1.5V when this
       //    occurs
+      // So, we just wait some short period of time.
       call Timer.startOneShot(BUS_STARTUP_TIME);
       return SUCCESS;
     }
   }
 
   event void Timer.fired(){
+    // bus should be ready now, flip the switch.
     call EnablePin.set();
     post startDoneTask();
   }
