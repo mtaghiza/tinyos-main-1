@@ -120,11 +120,11 @@ generic module TestP(bool useAlarm,
   }
 
   event void Boot.booted(){
-    atomic{
-      //power up flash: otherwise, it forces SPI lines to GND
-      P2SEL &= ~BIT1;
-      P2OUT |=  BIT1;
-    }
+//    atomic{
+//      //power up flash: otherwise, it forces SPI lines to GND
+//      P2SEL &= ~BIT1;
+//      P2OUT |=  BIT1;
+//    }
 //    configureClockPins();
 
     call StdControl.start();
@@ -140,7 +140,7 @@ generic module TestP(bool useAlarm,
       post busyTask();
     }
     post printConfig();
-    configurePins();
+//    configurePins();
   }
 
   async event void Alarm.fired(){
