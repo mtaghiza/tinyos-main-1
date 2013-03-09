@@ -50,7 +50,7 @@ typedef struct long_sample_record_t{
 } __attribute__((packed)) long_sample_record_t;
 
 #ifndef DEFAULT_SAMPLE_INTERVAL
-#define DEFAULT_SAMPLE_INTERVAL (5UL*1024UL)
+#define DEFAULT_SAMPLE_INTERVAL (30UL*1024UL)
 #endif
 
 #define SS_KEY_SAMPLE_INTERVAL 0x12
