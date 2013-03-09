@@ -1,4 +1,4 @@
-SOURCES=LPM4_bacon2.c LPM4.c LPM4_switched_flash_on.c LPM4_photo_bacon2.c busy.c cc430x513x_UCS_4.c busy_bacon2.c LPM4_flash_active_bacon2.c LPM4_flash_on_bacon2.c LPM4_LED.c
+SOURCES=dco_div.c LPM4_bacon2.c LPM4.c LPM4_switched_flash_on.c LPM4_photo_bacon2.c busy.c cc430x513x_UCS_4.c busy_bacon2.c LPM4_flash_active_bacon2.c LPM4_flash_on_bacon2.c LPM4_LED.c
 CC=msp430-gcc
 CCFLAGS=-mmcu=cc430x5137
 OBJCOPY=msp430-objcopy
