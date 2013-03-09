@@ -15,7 +15,10 @@ configuration TestAppC{
 //  components PrintfC;
 //  components SerialStartC;
 
+  components Msp430XV2ClockC;
+
   TestP.Boot -> MainC;
+  TestP.Msp430XV2ClockControl -> Msp430XV2ClockC;
 
   components new PoolC(message_t, 2);
 
