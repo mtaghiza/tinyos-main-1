@@ -1,0 +1,4 @@
+<volume_table>
+  <volume name="TEST" size="131072"/>
+  <volume name="GARBAGE" size="8257536"/>
+</volume_table>
