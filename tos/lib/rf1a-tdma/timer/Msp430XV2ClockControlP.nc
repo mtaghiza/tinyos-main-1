@@ -50,6 +50,7 @@ module Msp430XV2ClockControlP @safe() {
     interface McuPowerOverride;
     interface StdControl as InhibitUcs7WorkaroundControl;
   }
+  uses interface Alarm<T32khz,uint16_t> as UCS7Alarm;
 } implementation {
 
   async command void Msp430XV2ClockControl.configureUnifiedClockSystem (int dco_config)
@@ -327,6 +328,8 @@ module Msp430XV2ClockControlP @safe() {
       }
       if (MinimumFLLActiveDuration_refclk > fll_active_refclk) {
         rv = MSP430_POWER_LPM0;
+        call UCS7Alarm.startAt(fllRestart_refclk,
+          MinimumFLLActiveDuration_refclk);
       }
     }
     return rv;
@@ -340,5 +343,7 @@ module Msp430XV2ClockControlP @safe() {
       atomic fllRestart_refclk = TA1R;
     }
   }
+  //do nothing: just used to trigger LPM re-entry when errata UCS7 is present.
+  async event void UCS7Alarm.fired(){}
 
 }
