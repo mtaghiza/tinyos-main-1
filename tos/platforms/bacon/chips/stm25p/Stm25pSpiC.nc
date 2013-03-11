@@ -64,7 +64,4 @@ implementation {
   components LedsC as Leds;
   SpiP.Leds -> Leds;
 
-  components new AlarmMilli16C();
-  SpiP.PowerTimeout -> AlarmMilli16C;
-
 }

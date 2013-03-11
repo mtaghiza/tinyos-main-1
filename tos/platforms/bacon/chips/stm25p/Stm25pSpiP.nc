@@ -49,8 +49,6 @@ module Stm25pSpiP {
   uses interface SpiPacket;
   uses interface Leds;
 
-  uses interface Alarm<TMilli, uint16_t> as PowerTimeout;
-
 }
 
 implementation {
@@ -109,20 +107,12 @@ implementation {
     return SUCCESS;
   }
 
-  async event void PowerTimeout.fired(){
-    call FLASH_EN.clr();
-  }
-
   async command error_t ClientResource.request() {
     return call SpiResource.request();
   }
 
   async command error_t ClientResource.immediateRequest() {
-    error_t err = call SpiResource.immediateRequest();
-    if (err == SUCCESS){
-      call PowerTimeout.stop();
-    }
-    return err;
+    return call SpiResource.immediateRequest();
   }
   
   async command error_t ClientResource.release() {
@@ -141,12 +131,12 @@ implementation {
   async command error_t Spi.powerDown() {
     //TODO: I don't see this command in the datasheet for the p64 ...
     sendCmd( S_DEEP_SLEEP, 1 );
-    call PowerTimeout.start(10);
+    //actually cut the power
+    call FLASH_EN.clr();
     return SUCCESS;
   }
 
   async command error_t Spi.powerUp() {
-    call PowerTimeout.stop();
     call FLASH_EN.set();
     sendCmd( S_POWER_ON, 5 );
     return SUCCESS;
