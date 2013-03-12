@@ -1,6 +1,13 @@
 #ifndef CX_LINK_H
 #define CX_LINK_H
 
+#include "requestQueue.h"
+
+#ifndef REQUEST_QUEUE_LEN 
+//cycle sleep/wake, forward sleep/wake, net tx, trans tx, rx
+#define REQUEST_QUEUE_LEN 10
+#endif
+
 //32k = 2**15
 #define FRAMELEN_32K 1024
 //6.5M = 2**5 * 5**16 * 13

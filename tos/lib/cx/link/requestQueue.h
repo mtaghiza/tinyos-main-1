@@ -30,16 +30,23 @@ typedef struct cx_request{
 } cx_request_t;
 
 bool requestLeq(cx_request_t* l, cx_request_t* r){
-  {
-    int32_t lfn = l->baseFrame + l->frameOffset;
-    int32_t rfn = r->baseFrame + r->frameOffset;
-
-    if (lfn < rfn){
-      return TRUE;
-    }else if (rfn < lfn){
+  { 
+    //NULL's are always considered to have lowest priority.
+    if(l == NULL){
       return FALSE;
-    }else{
-      return l->requestType <= r->requestType;
+    }else if (r == NULL){
+      return TRUE;
+    } else {
+      int32_t lfn = l->baseFrame + l->frameOffset;
+      int32_t rfn = r->baseFrame + r->frameOffset;
+  
+      if (lfn < rfn){
+        return TRUE;
+      }else if (rfn < lfn){
+        return FALSE;
+      }else{
+        return l->requestType <= r->requestType;
+      }
     }
   }
 }
