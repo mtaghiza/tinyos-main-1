@@ -4,6 +4,8 @@
 #include "message.h"
 #include "CXLink.h"
 
+#include <stdio.h>
+
 //sleep takes priority, then wakeup, then TX, and finally RX
 typedef enum {
   RT_SLEEP = 0,
@@ -14,7 +16,7 @@ typedef enum {
 
 typedef struct cx_request{
   uint32_t tsBase32k;
-  uint8_t frameOffset;
+  int32_t frameOffset;
   uint32_t requestedTime;
   request_type_t requestType;
   uint32_t duration; //only germane to rx
@@ -30,12 +32,18 @@ bool requestLeq(cx_request_t* l, cx_request_t* r,
   if (l->useTsMicro || r->useTsMicro){
     if (!microRunning){
       //at least one uses micro ref, but timer's not running.
-      return l->tsMicro ? TRUE : FALSE;
-    }else if (lastMicroStart > l->requestedTime){
+      return l->useTsMicro ? TRUE : FALSE;
+    }else if (l->useTsMicro && lastMicroStart > l->requestedTime){
+      printf("L lms %lu > rt %lu\r\n", 
+        lastMicroStart,
+        l->requestedTime);
       //l was requested, but the micro timer was started some time
       // later, so l's tsMicro is no longer valid.
       return TRUE;
-    }else if (lastMicroStart > r->requestedTime){
+    }else if (r-> useTsMicro && lastMicroStart > r->requestedTime){
+      printf("R lms %lu > rt %lu\r\n", 
+        lastMicroStart,
+        r->requestedTime);
       return FALSE;
     }else{
       //ok, micro times are valid!
@@ -43,10 +51,26 @@ bool requestLeq(cx_request_t* l, cx_request_t* r,
   }
   {
     //TODO: assess signed/unsigned threat here
-    int32_t lFrame = ((l->tsBase32k - ref32k) / FRAMELEN_32K) +
-      l->frameOffset;
-    int32_t rFrame = ((r->tsBase32k - ref32k) / FRAMELEN_32K) +
-      r->frameOffset;
+    // A. apparently gcc is not quite smart enough here and leaves me
+    //    with an unsigned int.
+    // B. division rounds down, so 1 tick short = wrong
+    //    frame
+    int32_t lBaseDiff = (l->tsBase32k - ref32k);
+    int32_t rBaseDiff = (l->tsBase32k - ref32k);
+    int32_t lFrame;
+    int32_t rFrame;
+    if (lBaseDiff < 0){
+      lFrame = l->frameOffset - (-1*lBaseDiff)/FRAMELEN_32K;
+    }else{
+      lFrame = l->frameOffset + (lBaseDiff)/FRAMELEN_32K;
+    }
+    if (rBaseDiff < 0){
+      rFrame =  r->frameOffset - (-1*rBaseDiff)/FRAMELEN_32K;
+    }else{
+      rFrame =  r->frameOffset + (rBaseDiff)/FRAMELEN_32K ;
+    }
+    printf("lFrame: %li rFrame %li\r\n", lFrame, rFrame);
+
     if (lFrame < rFrame){
       return TRUE;
     }else if (rFrame < lFrame){

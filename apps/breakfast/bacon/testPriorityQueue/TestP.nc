@@ -39,7 +39,7 @@ module TestP{
 
   void printRequest(cx_request_t* r){
     printf("r: %p", r);
-    printf(" t %x tsb %lu fo %u rt %lu duration %lu useM %x tsm %lu msg %p\r\n",
+    printf(" t %x tsb %lu fo %li rt %lu duration %lu useM %x tsm %lu msg %p\r\n",
       r->requestType,
       r->tsBase32k,
       r->frameOffset,
@@ -60,6 +60,56 @@ module TestP{
     }
   }
 
+  task void compareTask(){
+    uint32_t lmsValid = 1000;
+    uint32_t lmsInvalid = 2000;
+    uint32_t ref = 2048;
+
+    cx_request_t l;
+    cx_request_t r;
+    l.requestType = RT_SLEEP;
+    r.requestType = RT_SLEEP;
+    l.requestedTime = 1500;
+    r.requestedTime = 1500;
+
+    l.tsBase32k = 1023;
+    r.tsBase32k = 1025;
+    l.frameOffset = 2;
+    r.frameOffset = 2;
+
+    //test micro off
+    l.useTsMicro = TRUE;
+    r.useTsMicro = FALSE;
+    printf("micro off l <= r: %x\r\n", 
+      requestLeq(&l, &r, 
+        lmsValid, FALSE,
+        ref));
+    printf("micro off r <= l: %x\r\n", 
+      requestLeq(&r, &l, 
+        lmsValid, FALSE,
+        ref));
+
+    //test micro invalid
+    printf("micro inval l <= r: %x\r\n",
+      requestLeq(&l, &r, 
+        lmsInvalid, TRUE,
+        ref));
+    printf("micro inval r <= l: %x\r\n",
+      requestLeq(&r, &l, 
+        lmsInvalid, TRUE,
+        ref));
+    
+    //test valid: should be equal
+    printf("val l <= r:%x\r\n",
+      requestLeq(&l, &r,
+        lmsValid, TRUE,
+        ref));
+    printf("val r <= l:%x\r\n",
+      requestLeq(&r, &l,
+        lmsValid, TRUE,
+        ref));
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
     switch(byte){
       case 'q':
@@ -73,6 +123,9 @@ module TestP{
         break;
       case 'd':
         post dequeueTask();
+        break;
+      case 'c':
+        post compareTask();
         break;
       case '\r':
         printf("\n");
