@@ -1465,6 +1465,10 @@ module CXTDMAPhysicalP {
     //  triggered the transmission (sfd - fsDelay). In practice, the
     //  frame start alarm may be different from this (e.g. due to
     //  interrupt-handling jitter).
+    // - if we were really hardcore, we could use a SW capture at the
+    //   right before STX to get this jitter down basically to 0
+    //   (asynchrony between XT2 and MCLK DCO, somewhere around 1/16M
+    //   seconds)
     call CXPacket.setTimestamp(tx_msg, ts - fsDelays[s_sri]);
     tx_tsSet = TRUE;
   }
