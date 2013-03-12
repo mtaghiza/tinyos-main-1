@@ -16,7 +16,7 @@ module TestP{
 
   command bool Compare.leq(cx_request_t* l, cx_request_t* r){
     return requestLeq(l, r,
-      0, FALSE, 0);
+      0, FALSE);
   }
   
   void enqueue(request_type_t requestType){
@@ -39,9 +39,9 @@ module TestP{
 
   void printRequest(cx_request_t* r){
     printf("r: %p", r);
-    printf(" t %x tsb %lu fo %li rt %lu duration %lu useM %x tsm %lu msg %p\r\n",
+    printf(" t %x bf %lu fo %li rt %lu duration %lu useM %x tsm %lu msg %p\r\n",
       r->requestType,
-      r->tsBase32k,
+      r->baseFrame,
       r->frameOffset,
       r->requestedTime,
       r->duration,
@@ -72,8 +72,8 @@ module TestP{
     l.requestedTime = 1500;
     r.requestedTime = 1500;
 
-    l.tsBase32k = 1023;
-    r.tsBase32k = 1025;
+    l.baseFrame = 5;
+    r.baseFrame = 5;
     l.frameOffset = 2;
     r.frameOffset = 2;
 
@@ -82,32 +82,26 @@ module TestP{
     r.useTsMicro = FALSE;
     printf("micro off l <= r: %x\r\n", 
       requestLeq(&l, &r, 
-        lmsValid, FALSE,
-        ref));
+        lmsValid, FALSE));
     printf("micro off r <= l: %x\r\n", 
       requestLeq(&r, &l, 
-        lmsValid, FALSE,
-        ref));
+        lmsValid, FALSE));
 
     //test micro invalid
     printf("micro inval l <= r: %x\r\n",
       requestLeq(&l, &r, 
-        lmsInvalid, TRUE,
-        ref));
+        lmsInvalid, TRUE));
     printf("micro inval r <= l: %x\r\n",
       requestLeq(&r, &l, 
-        lmsInvalid, TRUE,
-        ref));
+        lmsInvalid, TRUE));
     
     //test valid: should be equal
     printf("val l <= r:%x\r\n",
       requestLeq(&l, &r,
-        lmsValid, TRUE,
-        ref));
+        lmsValid, TRUE));
     printf("val r <= l:%x\r\n",
       requestLeq(&r, &l,
-        lmsValid, TRUE,
-        ref));
+        lmsValid, TRUE));
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 

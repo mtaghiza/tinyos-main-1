@@ -14,8 +14,12 @@ typedef enum {
   RT_RX = 3,
 } request_type_t;
 
+//frame number increments every 2**-15 * 2**10 = 2**-5 seconds
+//32 bit unsigned int: 2**32 * 2**-5 => 2**27 seconds to rollover
+//there's between 2**16 and 2**17 seconds in a day (2**16.4)
+//This comes out to ~1500 days between rollovers.
 typedef struct cx_request{
-  uint32_t tsBase32k;
+  uint32_t baseFrame;
   int32_t frameOffset;
   uint32_t requestedTime;
   request_type_t requestType;
@@ -26,61 +30,47 @@ typedef struct cx_request{
 } cx_request_t;
 
 bool requestLeq(cx_request_t* l, cx_request_t* r,
-    uint32_t lastMicroStart, bool microRunning, 
-    uint32_t ref32k){
+    uint32_t lastMicroStart, bool microRunning){
+  //notes w.r.t rollovers
+  // - valid condition near rollover: lastMicroStart, requestedTime
+  //   gets misread as lastMicroStart 1.5 days after requestedTime. 
+  // - invalid condition near rollover: requestTime, lms 
+  //   misread as the timer having been on for 1.5 days prior to
+  //   request being made
 
+  //Valid -> invalid: happens if a node is between RX and forward when
+  //  the rollover happens. result should be dequeue the TX and throw
+  //  it out as having invalid timing info.
+
+  //Invalid -> valid: Shouldn't happen if we're managing the
+  //  timer correctly. if it happens, we'd pull it out in the right
+  //  order but then decide to throw it out.
   if (l->useTsMicro || r->useTsMicro){
     if (!microRunning){
       //at least one uses micro ref, but timer's not running.
       return l->useTsMicro ? TRUE : FALSE;
     }else if (l->useTsMicro && lastMicroStart > l->requestedTime){
-      printf("L lms %lu > rt %lu\r\n", 
-        lastMicroStart,
-        l->requestedTime);
       //l was requested, but the micro timer was started some time
       // later, so l's tsMicro is no longer valid.
       return TRUE;
     }else if (r-> useTsMicro && lastMicroStart > r->requestedTime){
-      printf("R lms %lu > rt %lu\r\n", 
-        lastMicroStart,
-        r->requestedTime);
       return FALSE;
     }else{
-      //ok, micro times are valid!
+      //ok, micro times are valid! fall-through.
     }
   }
   {
-    //TODO: assess signed/unsigned threat here
-    // A. apparently gcc is not quite smart enough here and leaves me
-    //    with an unsigned int.
-    // B. division rounds down, so 1 tick short = wrong
-    //    frame
-    int32_t lBaseDiff = (l->tsBase32k - ref32k);
-    int32_t rBaseDiff = (l->tsBase32k - ref32k);
-    int32_t lFrame;
-    int32_t rFrame;
-    if (lBaseDiff < 0){
-      lFrame = l->frameOffset - (-1*lBaseDiff)/FRAMELEN_32K;
-    }else{
-      lFrame = l->frameOffset + (lBaseDiff)/FRAMELEN_32K;
-    }
-    if (rBaseDiff < 0){
-      rFrame =  r->frameOffset - (-1*rBaseDiff)/FRAMELEN_32K;
-    }else{
-      rFrame =  r->frameOffset + (rBaseDiff)/FRAMELEN_32K ;
-    }
-    printf("lFrame: %li rFrame %li\r\n", lFrame, rFrame);
+    int32_t lfn = l->baseFrame + l->frameOffset;
+    int32_t rfn = r->baseFrame + r->frameOffset;
 
-    if (lFrame < rFrame){
+    if (lfn < rfn){
       return TRUE;
-    }else if (rFrame < lFrame){
+    }else if (rfn < lfn){
       return FALSE;
     }else{
-      return l->requestType < r->requestType;
+      return l->requestType <= r->requestType;
     }
   }
-
 }
-
 
 #endif
