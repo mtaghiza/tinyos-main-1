@@ -29,36 +29,7 @@ typedef struct cx_request{
   message_t* msg;
 } cx_request_t;
 
-bool requestLeq(cx_request_t* l, cx_request_t* r,
-    uint32_t lastMicroStart, bool microRunning){
-  //notes w.r.t rollovers
-  // - valid condition near rollover: lastMicroStart, requestedTime
-  //   gets misread as lastMicroStart 1.5 days after requestedTime. 
-  // - invalid condition near rollover: requestTime, lms 
-  //   misread as the timer having been on for 1.5 days prior to
-  //   request being made
-
-  //Valid -> invalid: happens if a node is between RX and forward when
-  //  the rollover happens. result should be dequeue the TX and throw
-  //  it out as having invalid timing info.
-
-  //Invalid -> valid: Shouldn't happen if we're managing the
-  //  timer correctly. if it happens, we'd pull it out in the right
-  //  order but then decide to throw it out.
-  if (l->useTsMicro || r->useTsMicro){
-    if (!microRunning){
-      //at least one uses micro ref, but timer's not running.
-      return l->useTsMicro ? TRUE : FALSE;
-    }else if (l->useTsMicro && lastMicroStart > l->requestedTime){
-      //l was requested, but the micro timer was started some time
-      // later, so l's tsMicro is no longer valid.
-      return TRUE;
-    }else if (r-> useTsMicro && lastMicroStart > r->requestedTime){
-      return FALSE;
-    }else{
-      //ok, micro times are valid! fall-through.
-    }
-  }
+bool requestLeq(cx_request_t* l, cx_request_t* r){
   {
     int32_t lfn = l->baseFrame + l->frameOffset;
     int32_t rfn = r->baseFrame + r->frameOffset;
