@@ -9,10 +9,10 @@ configuration CXLinkC {
   components CXLinkP;
 
   components GDO1CaptureC;
-  components new AlarmMicro32C() as TransmitAlarm;
+  components new AlarmMicro32C() as FastAlarm;
   components new Timer32khzC() as FrameTimer;
   components Msp430XV2ClockC;
-  CXLinkP.TransmitAlarm -> TransmitAlarm;
+  CXLinkP.FastAlarm -> FastAlarm;
   CXLinkP.FrameTimer -> FrameTimer;
   CXLinkP.SynchCapture -> GDO1CaptureC;
   CXLinkP.Msp430XV2ClockControl -> Msp430XV2ClockC;

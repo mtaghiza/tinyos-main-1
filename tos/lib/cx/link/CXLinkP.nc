@@ -13,7 +13,7 @@ module CXLinkP {
   uses interface DelayedSend;
   uses interface Rf1aPhysicalMetadata;
 
-  uses interface Alarm<TMicro, uint32_t> as TransmitAlarm;
+  uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface Timer<T32khz> as FrameTimer;
   uses interface GpioCapture as SynchCapture;
 
@@ -116,7 +116,7 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             requestError = FAIL;
-            //TODO: set TransmitAlarm
+            //TODO: set FastAlarm
             //TODO: enable RE GDO capture 
             //TODO: configure radio/load in start of packet
             post requestHandled();
@@ -309,7 +309,7 @@ module CXLinkP {
     //TODO: note that we're ready for transmit alarm
   }
 
-  async event void TransmitAlarm.fired(){
+  async event void FastAlarm.fired(){
     //TX
     //TODO: call DelayedSend.startSend()
     //RX (frame wait)
