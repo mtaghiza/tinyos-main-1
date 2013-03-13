@@ -17,6 +17,8 @@ module CXLinkP {
   uses interface Timer<T32khz> as FrameTimer;
   uses interface GpioCapture as SynchCapture;
 
+  uses interface Msp430XV2ClockControl;
+
 } implementation {
   //TODO: require some command to adjust frame timing: should just
   //have to goose lastFrameTime?
@@ -76,6 +78,13 @@ module CXLinkP {
         //shouldn't happen
         break;
     }
+    if (nextRequest->useTsMicro){
+      alarmUsers --;
+    }
+    if (alarmUsers == 0){
+      call Msp430XV2ClockControl.stopMicroTimer();
+    }
+
     call Pool.put(nextRequest);
     if (! call Queue.empty()){
       nextRequest = call Queue.dequeue();
@@ -102,6 +111,10 @@ module CXLinkP {
             post requestHandled();
             break;
           case RT_TX:
+            if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+              call Msp430XV2ClockControl.startMicroTimer();
+              lastMicroStart = lastFrameTime;
+            }
             requestError = FAIL;
             //TODO: set TransmitAlarm
             //TODO: enable RE GDO capture 
@@ -109,6 +122,10 @@ module CXLinkP {
             post requestHandled();
             break;
           case RT_RX:
+            if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+              call Msp430XV2ClockControl.startMicroTimer();
+              lastMicroStart = lastFrameTime;
+            }
             requestError = FAIL;
             //TODO: set timeout alarm
             //TODO: enable RE GDO capture 
@@ -158,7 +175,7 @@ module CXLinkP {
     //micro timer required but it's either off or has been stopped
     //since the request was made
     }else if(r->useTsMicro && 
-      (( ! call TransmitAlarm.isRunning()) 
+      (( ! call Msp430XV2ClockControl.isMicroTimerRunning()) 
          || (lastMicroStart > r->requestedTime))){
       return FAIL;
     }

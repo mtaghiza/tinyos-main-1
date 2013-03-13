@@ -12,7 +12,11 @@ interface CXRequestQueue{
   event void receiveHandled(error_t error, 
     uint32_t atFrame, bool didReceive, 
     uint32_t microRef, message_t* msg); 
-
+  
+  //N.B.: generally, if you need something sent based on a previous
+  // capture event, you should request the send from the *handled
+  // event. Otherwise, there's a possibility that the timer will be
+  // shut off at the completion of the *handled event.
   command error_t requestSend(uint32_t baseFrame, 
     int32_t frameOffset, 
     bool useMicro, uint32_t microRef,
