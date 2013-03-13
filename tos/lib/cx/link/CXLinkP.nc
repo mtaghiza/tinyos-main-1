@@ -83,8 +83,6 @@ module CXLinkP {
     updateLastFrameNum();
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
-      printf("frame %lu @ %lu\r\n", lastFrameNum, 
-        call FrameTimer.gett0() + call FrameTimer.getdt());
       if (targetFrame == lastFrameNum){
         switch (nextRequest -> requestType){
           case RT_SLEEP:
