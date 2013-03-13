@@ -13,7 +13,7 @@ configuration CXLinkC {
   CXLinkP.FrameTimer -> FrameTimer;
   CXLinkP.SynchCapture -> GDO1CaptureC;
 
-  components new Rf1aPhysicalC()
+  components new Rf1aPhysicalC();
   CXLinkP.Rf1aPhysical -> Rf1aPhysicalC;
   CXLinkP.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
   CXLinkP.DelayedSend -> Rf1aPhysicalC;
