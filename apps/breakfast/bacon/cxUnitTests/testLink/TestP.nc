@@ -18,6 +18,7 @@ module TestP{
     printf("---- Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
     printf("s : sleep/wakeup\r\n");
+    printf("c : check current frame\r\n");
   }
 
   event void Boot.booted(){
@@ -80,6 +81,10 @@ module TestP{
     }
   }
 
+  task void checkFrame(){
+    printf("nf: %lu\r\n", call CXRequestQueue.nextFrame());
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -90,6 +95,9 @@ module TestP{
          break;
        case 's':
          post sleepWake();
+         break;
+       case 'c':
+         post checkFrame();
          break;
        case '?':
          post usage();
