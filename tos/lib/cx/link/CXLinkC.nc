@@ -3,6 +3,8 @@
 configuration CXLinkC {
   provides interface SplitControl;
   provides interface CXRequestQueue;
+  //for debug only
+  provides interface Rf1aStatus;
 } implementation {
   components CXLinkP;
 
@@ -27,4 +29,7 @@ configuration CXLinkC {
 
   SplitControl = CXLinkP;
   CXRequestQueue = CXLinkP;
+
+  //for debug only
+  Rf1aStatus = Rf1aPhysicalC;
 }

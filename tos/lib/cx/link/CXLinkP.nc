@@ -16,7 +16,7 @@ module CXLinkP {
   uses interface Alarm<TMicro, uint32_t> as TransmitAlarm;
   uses interface Timer<T32khz> as FrameTimer;
   uses interface GpioCapture as SynchCapture;
-
+  
 } implementation {
   //TODO: require some command to adjust frame timing
   
@@ -37,7 +37,7 @@ module CXLinkP {
   task void readyNextRequest();
 
   command uint32_t CXRequestQueue.nextFrame(){
-    return frameNum;
+    return frameNum + 1;
   }
 
   task void requestHandled(){
@@ -61,6 +61,9 @@ module CXLinkP {
         break;
     }
     call Pool.put(nextRequest);
+    if (! call Queue.empty()){
+      nextRequest = call Queue.dequeue();
+    }
     post readyNextRequest();
   }
 
@@ -127,16 +130,23 @@ module CXLinkP {
     if ( r->useTsMicro){
       alarmUsers++;
     }
+    printf("enq %p (%p): ", r, nextRequest);
     if (requestLeq(r, nextRequest)){
+      printf("supersede ");
       //r supersedes: re-enqueue nextRequest, keep this dude out.
       if (nextRequest != NULL){
+        printf("reenqueue\r\n");
         call Queue.enqueue(nextRequest);
+      }else{
+        printf("drop null\r\n");
       }
       nextRequest = r;
       post readyNextRequest();
     }else{
       call Queue.enqueue(r);
     }
+    printf("cur %lu next %lu\r\n", frameNum, 
+      nextRequest->baseFrame + nextRequest->frameOffset);
   }
 
   command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
