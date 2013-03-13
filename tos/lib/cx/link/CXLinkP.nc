@@ -108,13 +108,19 @@ module CXLinkP {
   task void readyNextRequest(){
     //TODO: if it requires adjusting preparation time, go ahead and do
     //so.
+    //TODO: if request is not valid, we need to signal its handling
+    //  and pull the next one from the queue.
+  }
+
+  error_t validateRequest(cx_request_t* r){
+    //TODO: check for event in past
+    //TODO: check for alarm stoppage
+    return SUCCESS;
   }
   
   cx_request_t* newRequest(uint32_t baseFrame, 
       int32_t frameOffset, request_type_t requestType){
     cx_request_t* r = call Pool.get();
-    //TODO: should probably validate that this isn't in the past and
-    //  return an error if it can't be scheduled.
     if (r != NULL){
       r->requestedTime = call FrameTimer.getNow();
       r->baseFrame = baseFrame;
@@ -169,8 +175,11 @@ module CXLinkP {
       int32_t frameOffset){
     cx_request_t* r = newRequest(baseFrame, frameOffset, RT_SLEEP);
     if (r != NULL){
-      enqueue(r);
-      return SUCCESS;
+      error_t error = validateRequest(r);
+      if (SUCCESS == error){
+        enqueue(r);
+      }
+      return error;
     } else{ 
       return ENOMEM;
     }
@@ -182,8 +191,11 @@ module CXLinkP {
       int32_t frameOffset){
     cx_request_t* r = newRequest(baseFrame, frameOffset, RT_WAKEUP);
     if (r != NULL){
-      enqueue(r);
-      return SUCCESS;
+      error_t error = validateRequest(r);
+      if (SUCCESS == error){
+        enqueue(r);
+      }
+      return error;
     } else{ 
       return ENOMEM;
     }
