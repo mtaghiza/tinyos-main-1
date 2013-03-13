@@ -16,11 +16,13 @@ module CXLinkP {
   uses interface Alarm<TMicro, uint32_t> as TransmitAlarm;
   uses interface Timer<T32khz> as FrameTimer;
   uses interface GpioCapture as SynchCapture;
-  
+
 } implementation {
-  //TODO: require some command to adjust frame timing
+  //TODO: require some command to adjust frame timing: should just
+  //have to goose lastFrameTime?
   
-  uint32_t frameNum = 0;
+  uint32_t lastFrameNum = 0;
+  uint32_t lastFrameTime = 0;
 
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
@@ -35,9 +37,19 @@ module CXLinkP {
 
   //forward declarations
   task void readyNextRequest();
+  
+  void updateLastFrameNum(){
+    //this should be safe from integer wrap
+    uint32_t now = call FrameTimer.getNow();
+    uint32_t elapsedTime = now - lastFrameTime;
+    uint32_t elapsedFrames = elapsedTime/FRAMELEN_32K;
+    lastFrameTime += (elapsedFrames*FRAMELEN_32K);
+    lastFrameNum += elapsedFrames;
+  }
 
   command uint32_t CXRequestQueue.nextFrame(){
-    return frameNum + 1;
+    updateLastFrameNum();
+    return lastFrameNum + 1;
   }
 
   task void requestHandled(){
@@ -68,20 +80,23 @@ module CXLinkP {
   }
 
   event void FrameTimer.fired(){
-    frameNum ++;
+    updateLastFrameNum();
     if (nextRequest != NULL){
-      if (nextRequest->baseFrame + nextRequest -> frameOffset == frameNum){
+      uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
+      printf("frame %lu @ %lu\r\n", lastFrameNum, 
+        call FrameTimer.gett0() + call FrameTimer.getdt());
+      if (targetFrame == lastFrameNum){
         switch (nextRequest -> requestType){
           case RT_SLEEP:
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
-            handledFrame = frameNum;
+            handledFrame = lastFrameNum;
             post requestHandled();
             break;
           case RT_WAKEUP:
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
             //if radio is off, turn it on (idle)
-            handledFrame = frameNum;
+            handledFrame = lastFrameNum;
             post requestHandled();
             break;
           case RT_TX:
@@ -101,15 +116,29 @@ module CXLinkP {
           default:
             //should not happen.
         }
+      }else if (targetFrame < lastFrameNum){
+        //TODO: we have missed the intended frame. signal handled
+      }else if (targetFrame > lastFrameNum){
+        //shouldn't happen. re-doing readyNextRequest should work it
+        //out. 
+        call Queue.enqueue(nextRequest);
+        nextRequest = call Queue.dequeue();
+        post readyNextRequest();
       }
     }
   }
 
   task void readyNextRequest(){
-    //TODO: if it requires adjusting preparation time, go ahead and do
-    //so.
     //TODO: if request is not valid, we need to signal its handling
     //  and pull the next one from the queue.
+
+    uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
+    uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
+    //TODO: if it requires adjusting preparation time, go ahead and do
+    //so: this slack should be stored so that when frametimer fires,
+    //  we can account for it.
+    call FrameTimer.startOneShotAt(lastFrameTime, dt);
+
   }
 
   error_t validateRequest(cx_request_t* r){
@@ -212,7 +241,6 @@ module CXLinkP {
   }
 
   event void Resource.granted(){
-    call FrameTimer.startPeriodic(FRAMELEN_32K);
     signal SplitControl.startDone(SUCCESS);
   }
 
