@@ -130,23 +130,16 @@ module CXLinkP {
     if ( r->useTsMicro){
       alarmUsers++;
     }
-    printf("enq %p (%p): ", r, nextRequest);
     if (requestLeq(r, nextRequest)){
-      printf("supersede ");
       //r supersedes: re-enqueue nextRequest, keep this dude out.
       if (nextRequest != NULL){
-        printf("reenqueue\r\n");
         call Queue.enqueue(nextRequest);
-      }else{
-        printf("drop null\r\n");
       }
       nextRequest = r;
       post readyNextRequest();
     }else{
       call Queue.enqueue(r);
     }
-    printf("cur %lu next %lu\r\n", frameNum, 
-      nextRequest->baseFrame + nextRequest->frameOffset);
   }
 
   command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
