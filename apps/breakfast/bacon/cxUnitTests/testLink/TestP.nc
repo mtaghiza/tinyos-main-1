@@ -9,7 +9,7 @@ module TestP{
 } implementation {
   bool started = FALSE;
   task void usage(){
-    printf("---- Commands ----");
+    printf("---- Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
     printf("s : sleep\r\n");
     printf("w : wakeup\r\n");
@@ -29,9 +29,11 @@ module TestP{
 
   event void SplitControl.startDone(error_t error){
     printf("started %x\r\n", error);
+    started = TRUE;
   }
   event void SplitControl.stopDone(error_t error){
     printf("stopped %x\r\n", error);
+    started = FALSE;
   }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
