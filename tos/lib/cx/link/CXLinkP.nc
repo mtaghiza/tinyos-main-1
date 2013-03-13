@@ -6,6 +6,7 @@ module CXLinkP {
 
   uses interface Pool<cx_request_t>;
   uses interface Queue<cx_request_t*>;
+  provides interface Compare<cx_request_t*>;
 
   uses interface Resource;
   uses interface Rf1aPhysical;
@@ -13,8 +14,9 @@ module CXLinkP {
   uses interface Rf1aPhysicalMetadata;
 
   uses interface Alarm<TMicro, uint32_t> as TransmitAlarm;
-  uses interface Timer<T32khz, uint32_t> as FrameTimer;
+  uses interface Timer<T32khz> as FrameTimer;
   uses interface GpioCapture as SynchCapture;
+
 } implementation {
   //TODO: require some command to adjust frame timing
   
@@ -27,7 +29,12 @@ module CXLinkP {
   //value to be signaled up at request completion
   error_t requestError;
   uint32_t handledFrame;
+  uint32_t sfdCapture;
+  bool didReceive;
   cx_request_t* nextRequest = NULL;
+
+  //forward declarations
+  task void readyNextRequest();
 
   command uint32_t CXRequestQueue.nextFrame(){
     return frameNum;
@@ -47,7 +54,7 @@ module CXLinkP {
         break;
       case RT_RX:
         signal CXRequestQueue.receiveHandled(requestError,
-          handledFrame, didReceive, nextRequest->msg);
+          handledFrame, didReceive, sfdCapture, nextRequest->msg);
         break;
       default:
         //shouldn't happen
@@ -66,23 +73,27 @@ module CXLinkP {
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
             handledFrame = frameNum;
-            post requestHandledTask();
+            post requestHandled();
             break;
           case RT_WAKEUP:
-            requestError = call RF1aPhysical.resumeIdleMode(FALSE);
+            requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
             //if radio is off, turn it on (idle)
             handledFrame = frameNum;
-            post requestHandledTask();
+            post requestHandled();
             break;
           case RT_TX:
+            requestError = FAIL;
             //TODO: set TransmitAlarm
             //TODO: enable RE GDO capture 
             //TODO: configure radio/load in start of packet
+            post requestHandled();
             break;
           case RT_RX:
+            requestError = FAIL;
             //TODO: set timeout alarm
             //TODO: enable RE GDO capture 
             //TODO: configure radio/provide rx buffer.
+            post requestHandled();
             break;
           default:
             //should not happen.
@@ -137,14 +148,15 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
-    uint32_t atFrame, bool didReceive, 
+    uint32_t atFrame, bool didReceive_, 
     uint32_t microRef, message_t* msg){}
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
     int32_t frameOffset, 
     bool useMicro, uint32_t microRef,
-    message_t* msg);
+    message_t* msg){
     return FAIL;
+  }
 
   default event void CXRequestQueue.sendHandled(error_t error, 
     uint32_t atFrame, uint32_t microRef, 
@@ -161,7 +173,7 @@ module CXLinkP {
     }
   }
 
-  default event void error_t CXRequestQueue.sleepHandled(error_t error, uint32_t atFrame){ }
+  default event void CXRequestQueue.sleepHandled(error_t error, uint32_t atFrame){ }
 
   command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
       int32_t frameOffset){
@@ -174,14 +186,14 @@ module CXLinkP {
     }
   }
 
-  default event void error_t CXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame){}
+  default event void CXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame){}
 
   command error_t SplitControl.start(){
     return call Resource.request();
   }
 
   event void Resource.granted(){
-    call FrameTimer.startPeriodic(FRAMELEN_32KHZ);
+    call FrameTimer.startPeriodic(FRAMELEN_32K);
     signal SplitControl.startDone(SUCCESS);
   }
 
@@ -193,5 +205,43 @@ module CXLinkP {
     post signalStopDone();
     return call Resource.release();
   }
+
+  command bool Compare.leq(cx_request_t* l, cx_request_t* r){
+    return requestLeq(l, r);
+  }
+
+  async event void SynchCapture.captured(uint16_t time){
+    //TODO: fix overflow
+    //TODO: rising? 
+      //TODO: store as sfdCapture
+      //TODO: cancel micro alarm (frame-wait)
+    //falling? not used.
+    //TODO: switch capture mode
+  }
+
+  event void DelayedSend.sendReady(){
+    //TODO: note that we're ready for transmit alarm
+  }
+
+  async event void TransmitAlarm.fired(){
+    //TX
+    //TODO: call DelayedSend.startSend()
+    //RX (frame wait)
+    //  if we're not mid-reception, resume idle mode.
+    //  signal handled with nothing received
+  }
+
+  async event void Rf1aPhysical.sendDone (int result) { }
+  async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
+                                             unsigned int count,
+                                             int result) {}
+
+  async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
+  async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
+                                                     unsigned int count) { }
+  async event void Rf1aPhysical.clearChannel () { }
+  async event void Rf1aPhysical.released () { }
+  async event void Rf1aPhysical.frameStarted () { }
+  async event void Rf1aPhysical.carrierSense () { }
 
 }

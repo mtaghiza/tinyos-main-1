@@ -21,6 +21,7 @@ configuration CXLinkC {
 
   components new PoolC(cx_request_t, REQUEST_QUEUE_LEN);
   components new PriorityQueueC(cx_request_t*, REQUEST_QUEUE_LEN);
+  PriorityQueueC.Compare -> CXLinkP;
 
   SplitControl = CXLinkP;
   CXRequestQueue = CXLinkP;

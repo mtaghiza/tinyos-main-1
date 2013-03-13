@@ -1,3 +1,5 @@
+
+ #include "message.h"
 interface CXRequestQueue{
   command uint32_t nextFrame();
 
@@ -22,11 +24,11 @@ interface CXRequestQueue{
 
   command error_t requestSleep(uint32_t baseFrame, 
     int32_t frameOffset);
-  event void error_t sleepHandled(error_t error, uint32_t atFrame);
+  event void sleepHandled(error_t error, uint32_t atFrame);
 
   command error_t requestWakeup(uint32_t baseFrame, 
     int32_t frameOffset);
-  event void error_t wakeupHandled(error_t error, uint32_t atFrame);
+  event void wakeupHandled(error_t error, uint32_t atFrame);
 
 
 }
