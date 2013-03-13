@@ -20,9 +20,6 @@ module CXLinkP {
   uses interface Msp430XV2ClockControl;
 
 } implementation {
-  //TODO: require some command to adjust frame timing: should just
-  //have to goose lastFrameTime?
-  
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
 
@@ -58,8 +55,13 @@ module CXLinkP {
     return lastFrameNum + 1;
   }
 
+
   task void requestHandled(){
     switch(nextRequest -> requestType){
+      case RT_FRAMESHIFT:
+        signal CXRequestQueue.frameShiftHandled(requestError,
+          handledFrame);
+        break;
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, handledFrame);
         break;
@@ -97,7 +99,16 @@ module CXLinkP {
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       if (targetFrame == lastFrameNum){
+        printf("handle %lu @ %lu\r\n", 
+          lastFrameNum, 
+          call FrameTimer.gett0() + call FrameTimer.getdt());
         switch (nextRequest -> requestType){
+          case RT_FRAMESHIFT:
+            lastFrameTime += nextRequest->frameShift;
+            handledFrame = lastFrameNum;
+            requestError = SUCCESS;
+            post requestHandled();
+            break;
           case RT_SLEEP:
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
@@ -152,8 +163,9 @@ module CXLinkP {
   task void readyNextRequest(){
     //if request is not valid, we need to signal its handling
     //  and pull the next one from the queue.
-    if (SUCCESS != validateRequest(nextRequest)){
-      requestError = FAIL;
+    error_t err = validateRequest(nextRequest);
+    if (SUCCESS != err){
+      requestError = err;
       post requestHandled();
     }else{
       uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
@@ -168,16 +180,16 @@ module CXLinkP {
   }
 
   error_t validateRequest(cx_request_t* r){
-    //event in the past?
+    //event in the past? I guess we were busy.
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame()){
-      return FAIL;
+      return EBUSY;
 
     //micro timer required but it's either off or has been stopped
     //since the request was made
     }else if(r->useTsMicro && 
       (( ! call Msp430XV2ClockControl.isMicroTimerRunning()) 
          || (lastMicroStart > r->requestedTime))){
-      return FAIL;
+      return EINVAL;
     }
     return SUCCESS;
   }
@@ -209,6 +221,21 @@ module CXLinkP {
       post readyNextRequest();
     }else{
       call Queue.enqueue(r);
+    }
+  }
+
+  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
+      int32_t frameOffset, int32_t frameShift){
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_FRAMESHIFT);
+    if (r != NULL){
+      error_t error = validateRequest(r);
+      if (SUCCESS == error){
+        r->frameShift = frameShift;
+        enqueue(r);
+      }
+      return error;
+    } else{ 
+      return ENOMEM;
     }
   }
 
@@ -286,7 +313,6 @@ module CXLinkP {
     if (! call Resource.isOwner()){
       return EALREADY;
     }else{
-      call FrameTimer.stop();
       post signalStopDone();
       return call Resource.release();
     }

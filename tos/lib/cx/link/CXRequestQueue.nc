@@ -34,5 +34,9 @@ interface CXRequestQueue{
     int32_t frameOffset);
   event void wakeupHandled(error_t error, uint32_t atFrame);
 
+  command error_t requestFrameShift(uint32_t baseFrame, 
+    int32_t frameOffset, int32_t frameShift);
+  event void frameShiftHandled(error_t error, uint32_t atFrame);
+
 
 }
