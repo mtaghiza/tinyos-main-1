@@ -189,7 +189,11 @@ module CXLinkP {
   default event void CXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame){}
 
   command error_t SplitControl.start(){
-    return call Resource.request();
+    if (call Resource.isOwner()){
+      return EALREADY;
+    }else{
+      return call Resource.request();
+    }
   }
 
   event void Resource.granted(){
@@ -201,9 +205,13 @@ module CXLinkP {
     signal SplitControl.stopDone(SUCCESS);
   }
   command error_t SplitControl.stop(){
-    call FrameTimer.stop();
-    post signalStopDone();
-    return call Resource.release();
+    if (! call Resource.isOwner()){
+      return EALREADY;
+    }else{
+      call FrameTimer.stop();
+      post signalStopDone();
+      return call Resource.release();
+    }
   }
 
   command bool Compare.leq(cx_request_t* l, cx_request_t* r){
