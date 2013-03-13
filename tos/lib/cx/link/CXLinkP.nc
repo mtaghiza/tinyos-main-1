@@ -27,6 +27,9 @@ module CXLinkP {
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
   uint8_t alarmUsers = 0;
+  //keep track of the last time the fast timer was started (so we can
+  //detect cases where timing state is lost)
+  uint32_t lastMicroStart = 0xFFFFFFFF;
   
   //value to be signaled up at request completion
   error_t requestError;
@@ -37,6 +40,7 @@ module CXLinkP {
 
   //forward declarations
   task void readyNextRequest();
+  error_t validateRequest(cx_request_t* r);
   
   void updateLastFrameNum(){
     //this should be safe from integer wrap
@@ -115,7 +119,9 @@ module CXLinkP {
             //should not happen.
         }
       }else if (targetFrame < lastFrameNum){
-        //TODO: we have missed the intended frame. signal handled
+        //we have missed the intended frame. signal handled
+        requestError = FAIL;
+        post requestHandled();
       }else if (targetFrame > lastFrameNum){
         //shouldn't happen. re-doing readyNextRequest should work it
         //out. 
@@ -127,21 +133,35 @@ module CXLinkP {
   }
 
   task void readyNextRequest(){
-    //TODO: if request is not valid, we need to signal its handling
+    //if request is not valid, we need to signal its handling
     //  and pull the next one from the queue.
+    if (SUCCESS != validateRequest(nextRequest)){
+      requestError = FAIL;
+      post requestHandled();
+    }else{
+      uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
+      uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
 
-    uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
-    uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
-    //TODO: if it requires adjusting preparation time, go ahead and do
-    //so: this slack should be stored so that when frametimer fires,
-    //  we can account for it.
-    call FrameTimer.startOneShotAt(lastFrameTime, dt);
+      //TODO: if the request requires additional preparation time, go ahead and do
+      //so: this slack should be stored so that when frametimer fires,
+      //  we can account for it.
+      call FrameTimer.startOneShotAt(lastFrameTime, dt);
+    }
 
   }
 
   error_t validateRequest(cx_request_t* r){
-    //TODO: check for event in past
-    //TODO: check for alarm stoppage
+    //event in the past?
+    if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame()){
+      return FAIL;
+
+    //micro timer required but it's either off or has been stopped
+    //since the request was made
+    }else if(r->useTsMicro && 
+      (( ! call TransmitAlarm.isRunning()) 
+         || (lastMicroStart > r->requestedTime))){
+      return FAIL;
+    }
     return SUCCESS;
   }
   
