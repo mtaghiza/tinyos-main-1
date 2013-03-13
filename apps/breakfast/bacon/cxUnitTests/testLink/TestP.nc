@@ -6,17 +6,23 @@ module TestP{
   
   uses interface SplitControl;
   uses interface CXRequestQueue;
+  uses interface Rf1aStatus;
 } implementation {
   bool started = FALSE;
+  bool dutyCycling = FALSE;
+
+  uint32_t cycleLen = 100;
+  uint32_t activeFrames = 10;
+
   task void usage(){
     printf("---- Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
-    printf("s : sleep\r\n");
-    printf("w : wakeup\r\n");
+    printf("s : sleep/wakeup\r\n");
   }
 
   event void Boot.booted(){
     printf("Booted.\r\n");
+    post usage();
   }
 
   task void toggleStartStop(){
@@ -28,12 +34,22 @@ module TestP{
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("started %x\r\n", error);
+    printf("started %x status %x\r\n", error, call Rf1aStatus.get());
     started = TRUE;
   }
   event void SplitControl.stopDone(error_t error){
-    printf("stopped %x\r\n", error);
+    printf("stopped %x status %x\r\n", error, call Rf1aStatus.get());
     started = FALSE;
+  }
+
+  task void sleepWake(){
+    if (! dutyCycling){
+      uint32_t fn = call CXRequestQueue.nextFrame();
+      printf("wakeup req %x\r\n", call CXRequestQueue.requestWakeup(fn, 0));
+      printf("sleep req %x\r\n", call CXRequestQueue.requestSleep(fn,
+      activeFrames));
+      dutyCycling = TRUE;
+    }
   }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
@@ -43,10 +59,26 @@ module TestP{
   event void CXRequestQueue.sendHandled(error_t error, 
     uint32_t atFrame, uint32_t microRef, 
     message_t* msg){}
+
   event void CXRequestQueue.sleepHandled(error_t error,
-    uint32_t atFrame){}
+      uint32_t atFrame){
+    printf("sleep handled %x status %x\r\n", error, 
+      call Rf1aStatus.get());
+    if (dutyCycling){
+      printf("sleep req %x \r\n", 
+        call CXRequestQueue.requestSleep(atFrame, cycleLen));
+    }
+  }
+
   event void CXRequestQueue.wakeupHandled(error_t error,
-    uint32_t atFrame){}
+    uint32_t atFrame){
+    printf("wakeup handled %x status %x\r\n", error, 
+      call Rf1aStatus.get());
+    if (dutyCycling){
+      printf("wake req %x \r\n", 
+        call CXRequestQueue.requestWakeup(atFrame, cycleLen));
+    }
+  }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -55,6 +87,9 @@ module TestP{
          break;
        case 'S':
          post toggleStartStop();
+         break;
+       case 's':
+         post sleepWake();
          break;
        case '?':
          post usage();

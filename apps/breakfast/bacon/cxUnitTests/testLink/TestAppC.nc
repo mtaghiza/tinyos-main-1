@@ -12,4 +12,6 @@ configuration TestAppC{
   components CXLinkC;
   TestP.CXRequestQueue -> CXLinkC;
   TestP.SplitControl -> CXLinkC;
+
+  TestP.Rf1aStatus -> CXLinkC;
 }
