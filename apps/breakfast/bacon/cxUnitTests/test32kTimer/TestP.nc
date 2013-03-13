@@ -11,11 +11,20 @@ module TestP{
       P2OUT ^= BIT4;
     }
     printf("Fired %lu\r\n", call Timer.getNow());
+    printf("t0 %lu dt %lu\r\n", 
+      call Timer.gett0(), 
+      call Timer.getdt());
+    call Timer.startOneShotAt(
+      call Timer.gett0() + call Timer.getdt(),
+      32768UL);
   }
 
   event void Boot.booted(){
     printf("Booted.\r\n");
-    call Timer.startPeriodic(32768UL);
+    call Timer.startOneShot(32768UL);
+    printf("t0 %lu dt %lu\r\n", 
+      call Timer.gett0(), 
+      call Timer.getdt());
     atomic{
       P2SEL &= ~BIT4;
       P2DIR |= BIT4;
