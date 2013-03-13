@@ -25,6 +25,8 @@ module TestP{
   event void Boot.booted(){
     printf("Booted.\r\n");
     post usage();
+    //TODO: map SMCLK to pin: should only be active when outstanding
+    //TX or RX active
   }
 
   task void toggleStartStop(){
