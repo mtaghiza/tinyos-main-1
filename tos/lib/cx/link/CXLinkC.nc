@@ -3,8 +3,10 @@
 configuration CXLinkC {
   provides interface SplitControl;
   provides interface CXRequestQueue;
+
   //for debug only
   provides interface Rf1aStatus;
+  provides interface Rf1aPacket;
 } implementation {
   components CXLinkP;
 
@@ -39,6 +41,7 @@ configuration CXLinkC {
   //TODO: FIXME put into packet stack component
   components new Rf1aIeee154PacketC();
   CXLinkP.Rf1aPacket -> Rf1aIeee154PacketC.Rf1aPacket;
+  Rf1aPacket = Rf1aIeee154PacketC;
 
   //for debug only
   Rf1aStatus = Rf1aPhysicalC;

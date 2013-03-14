@@ -285,10 +285,25 @@ module CXLinkP {
     uint32_t microRef, message_t* msg){}
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
-    int32_t frameOffset, 
-    bool useMicro, uint32_t microRef,
-    message_t* msg){
-    return FAIL;
+      int32_t frameOffset, 
+      bool useMicro, uint32_t microRef,
+      message_t* msg){
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX);
+    if (r != NULL){
+      error_t error;
+      r->useTsMicro = useMicro;
+      r->tsMicro = microRef;
+      r->msg = msg;
+      error = validateRequest(r);
+      if (SUCCESS == error){
+        enqueue(r);
+      }else{
+        call Pool.put(r);
+      }
+      return error;
+    } else{ 
+      return ENOMEM;
+    }
   }
 
   default event void CXRequestQueue.sendHandled(error_t error, 
@@ -302,6 +317,8 @@ module CXLinkP {
       error_t error = validateRequest(r);
       if (SUCCESS == error){
         enqueue(r);
+      }else{
+        call Pool.put(r);
       }
       return error;
     } else{ 
@@ -318,6 +335,8 @@ module CXLinkP {
       error_t error = validateRequest(r);
       if (SUCCESS == error){
         enqueue(r);
+      } else{
+        call Pool.put(r);
       }
       return error;
     } else{ 
