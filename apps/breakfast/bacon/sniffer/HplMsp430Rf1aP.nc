@@ -32,22 +32,7 @@
  */
 
 #include "Rf1aPacket.h"
-
-typedef nx_struct cx_header_t {
-  nx_am_addr_t destination;
-  //would like to reuse the dsn in the 15.4 header, but it's not exposed in a clean way
-  nx_uint16_t sn;
-  nx_uint8_t count;
-  nx_uint8_t scheduleNum;
-  nx_uint16_t originalFrameNum;
-  nx_uint32_t timestamp;
-  nx_uint8_t nProto;
-  nx_uint8_t tProto;
-  nx_uint8_t type;
-  nx_uint8_t ttl;
-} cx_header_t;
-
-
+#include "Rf1a.h"
 /** Implement the physical layer of the radio stack.
  *
  * This module follows TEP108-style resource management.  Each client
@@ -81,14 +66,18 @@ generic module HplMsp430Rf1aP () @safe() {
     interface Rf1aTransmitFragment[uint8_t client];
     interface Rf1aInterrupts[uint8_t client];
     interface Leds;
-    interface Counter<TMicro,uint32_t>;
   }
+  provides interface DelayedSend[uint8_t client];
+  uses interface Rf1aTransmitFragment as DefaultRf1aTransmitFragment;
+  uses interface SetNow<uint8_t> as DefaultLength;
+  uses interface SetNow<const uint8_t*> as DefaultBuffer;
 } implementation {
-  int rssiConvert_dBm(uint8_t rssi_dec_);
+
+  int rssiConvert_dBm (uint8_t rssi_dec_);
   void sniffPacket(uint8_t* pkt, uint8_t received, uint8_t rssi,
       uint8_t lqi);
 
-  uint32_t rxTime;
+  error_t startSend();
 
   /* See configure_ for details. on how these signals are used. */
   enum {
@@ -250,20 +239,25 @@ generic module HplMsp430Rf1aP () @safe() {
    * preamble signalling or jamming, are not reflected in tx_state. */
   enum {
     /** No transmission active */
-    TX_S_inactive,
+    TX_S_inactive = 0,
     /** A transmission has been queued, but data has not yet been
      * supplied and the radio is still in FSTXON.  This is an active
      * state. */
-    TX_S_preparing,
+    TX_S_preparing = 1,
+    //Radio is in FSTXON and length (+ some data) is in FIFO
+    TX_S_loaded = 2,
     /** A transmission is active.  This is an active state. */
-    TX_S_active,
+    TX_S_active = 3,
     /** All data has been queued for transmission, but has not yet
      * left the TXFIFO.  This is an active state. */
-    TX_S_flushing,
+    TX_S_flushing = 4,
   };
 
   /** Current state of the transmission automaton */
   uint8_t tx_state;
+  //True if transmission should begin as soon as data is provided.
+  //False if we should load the TXFIFO but not send the STX strobe.
+  bool tx_startOK = FALSE;
 
   /** The success or failure value for the current transmission */
   int tx_result;
@@ -294,6 +288,18 @@ generic module HplMsp430Rf1aP () @safe() {
    * TX_S_flushing; must be rewritten to FIFOTHR if that state is
    * left. */
   uint8_t tx_cached_fifothr;
+
+  error_t validateClient(uint8_t client){
+    /* Radio must be assigned */
+    if (! call ArbiterInfo.inUse()) {
+      return EOFF;
+    }
+    /* This must be the right client */
+    if (client != call ArbiterInfo.userId()) {
+      return EBUSY;
+    }
+    return SUCCESS;
+  }
 
   /** Place the radio back into whatever state it belongs in when not
    * actively transmitting or receiving.  This is either RX or IDLE.
@@ -342,7 +348,7 @@ generic module HplMsp430Rf1aP () @safe() {
   /** Configure the radio for a specific client.  This includes
    * client-specific registers and the overrides necessary to ensure
    * the physical-layer assumptions are maintained. */
-  void configure_ (const rf1a_config_t* config)
+  void configure_ (const rf1a_config_t* config, uint8_t client)
   {
     atomic {
       const uint8_t* cp = (const uint8_t*)config;
@@ -369,6 +375,14 @@ generic module HplMsp430Rf1aP () @safe() {
       call Rf1aIf.setIfg(0);
       call Rf1aIf.setIes(IFG_EDGE_Negative | ((~ IFG_EDGE_Positive) & call Rf1aIf.getIes()));
       call Rf1aIf.setIe(IFG_INTERRUPT | call Rf1aIf.getIe());
+      
+
+      //manual calibration: call setChannel to re-calibrate or
+      //  fetch cached calibration
+      if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
+
+        call Rf1aPhysical.setChannel[client](config->channr);
+      }
 
       /* Again regardless of configuration, the control flow in this
        * module assumes that the radio returns to IDLE mode after
@@ -386,16 +400,6 @@ generic module HplMsp430Rf1aP () @safe() {
       tx_pos = tx_end = 0;
       tx_remain = 0;
       rx_result = tx_result = SUCCESS;
-
-      //if we are not using one of the auto-cal settings, then
-      //  we need to do a manual calibration here.
-      if ( 0x00 == ((config->mcsm0 >> 4) & 0x03)){
-        uint8_t rc;
-        rc = call Rf1aIf.strobe(RF_SCAL);
-        while (RF1A_S_IDLE != (RF1A_S_MASK & rc)) {
-          rc = call Rf1aIf.strobe(RF_SNOP);
-        }
-      }
     }
   }
 
@@ -420,10 +424,23 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
+  async command void Rf1aPhysical.reconfigure[uint8_t client](){
+    
+    call ResourceConfigure.unconfigure[client]();
+    call ResourceConfigure.configure[client]();
+  }
+
   default async command const rf1a_config_t*
   Rf1aConfigure.getConfiguration[uint8_t client] ()
   {
     return &rf1a_default_config;
+  }
+
+  default async command void Rf1aConfigure.setFSCAL[uint8_t client](uint8_t channel, rf1a_fscal_t fscal){
+  }
+
+  default async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL[uint8_t client](uint8_t channel){
+    return NULL;
   }
 
   default async command void Rf1aConfigure.preConfigure[ uint8_t client ] () { }
@@ -438,7 +455,7 @@ generic module HplMsp430Rf1aP () @safe() {
       cp = &rf1a_default_config;
     }
     call Rf1aConfigure.preConfigure[client]();
-    configure_(cp);
+    configure_(cp, client);
     call Rf1aConfigure.postConfigure[client]();
   }
 
@@ -450,57 +467,6 @@ generic module HplMsp430Rf1aP () @safe() {
     signal Rf1aPhysical.released[client]();
   }
   
-  /* @TODO@ Prevent release of resource when transmission in progress */
-
-  /** Default implementation of transmitReadyCount_ just returns a
-   * value based on the number of bytes left in the buffer provided
-   * through send. */
-  unsigned int transmitReadyCount_ (uint8_t client,
-                                    unsigned int count)
-  {
-    unsigned int rv = count;
-    atomic {
-      if (tx_pos) {
-        unsigned int remaining = (tx_end - tx_pos);
-        if (remaining < rv) {
-          rv = remaining;
-        }
-      } else {
-        rv = 0;
-      }
-    }
-    return rv;
-  }
-
-  /** Default implementation of transmitData_ just returns a pointer
-   * to a region of the buffer provided through send. */
-  uint8_t* transmitData_ (uint8_t client,
-                          unsigned int count)
-  {
-    uint8_t* rp;
-
-    atomic {
-      rp = tx_pos;
-      if (rp) {
-        unsigned int remaining = (tx_end - tx_pos);
-        if (remaining >= count) {
-          /* Have enough to handle the request.  Increment the position for
-           * a following transfer; if this will be the last transfer, mark
-           * it complete by zeroing the position pointer. */
-          tx_pos += count;
-          if (tx_pos == tx_end) {
-            tx_pos = 0;
-          }
-        } else {
-          /* Being asked for more than is available, which is an interface
-           * violation, which aborts the transfer. */
-          rp = tx_pos = 0;
-        }
-      }
-    }
-    return rp;
-  }
-
   // Forward declaration
   void sendFragment_ ();
 
@@ -508,7 +474,9 @@ generic module HplMsp430Rf1aP () @safe() {
   void receiveData_ ();
   
   /** Task used to do the work of transmitting a fragment of a message. */
-  task void sendFragment_task () { sendFragment_(); }
+  task void sendFragment_task () { 
+    sendFragment_(); 
+  }
 
   /** Task used to do the work of consuming a fragment of a message. */
   task void receiveData_task () { receiveData_(); }
@@ -593,14 +561,12 @@ generic module HplMsp430Rf1aP () @safe() {
     bool wrote_data = FALSE;
     bool send_done = FALSE;
     bool need_repost = FALSE;
-    uint8_t rc;
-
     atomic {
-      do {
+      do{
         const uint8_t* data;
         unsigned int count;
         unsigned int inuse;
-
+  
         /* Did somebody cancel the transmit? */
         if (SUCCESS != tx_result) {
           cancelTransmit_();
@@ -611,7 +577,7 @@ generic module HplMsp430Rf1aP () @safe() {
         if (0 >= tx_remain) {
           break;
         }
-
+  
         /* How much room do we have available?  If none, give up for
          * now. */
         inuse = 0x7f & call Rf1aIf.readRegister(TXBYTES);
@@ -623,7 +589,7 @@ generic module HplMsp430Rf1aP () @safe() {
          * written anything yet, we've got to reserve room for (and
          * send) the length byte. */
         need_to_write_length = (TX_S_preparing == tx_state) && (0x01 == (0x03 & call Rf1aIf.readRegister(PKTCTRL0)));
-
+  
         /* Calculate the headroom, adjust for the length byte if we
          * need to write it, and adjust down to no more than we
          * need */
@@ -634,13 +600,13 @@ generic module HplMsp430Rf1aP () @safe() {
         if (count > tx_remain) {
           count = tx_remain;
         }
-
+  
         /* Is there any data ready?  If not, try again later. */
         count = call Rf1aTransmitFragment.transmitReadyCount[client](count);
         if (0 == count) {
           break;
         }
-
+  
         /* Get the data to be written.  If the callee returns a null
          * pointer, the transmission is canceled; otherwise, stuff it
          * into the transmit buffer. */
@@ -649,112 +615,117 @@ generic module HplMsp430Rf1aP () @safe() {
           cancelTransmit_();
           break;
         }
-
+  
         /* We're committed to the write: tell the radio how long the
          * packet is, if we haven't already. */
         if (need_to_write_length) {
-          uint8_t len8 = tx_remain;
-          call Rf1aIf.writeBurstRegister(RF_TXFIFOWR, &len8, sizeof(len8));
+          call Rf1aIf.writeRegister(RF_TXFIFOWR, tx_remain);
+//          printf("wl%u ",tx_remain);
         }
+        //actually write the data into the register
         call Rf1aIf.writeBurstRegister (RF_TXFIFOWR, data, count);
-        tx_state = TX_S_active;
+//        {
+//          uint8_t i;
+//          for (i =0; i < count; i++){
+//            printf("%x ", data[i]);
+//          }
+//          printf("\r\n");
+//        }
+        if(tx_state == TX_S_preparing){
+          tx_state = TX_S_loaded;
+        }
         wrote_data = TRUE;
         
         /* Account for what we just queued. */
         tx_remain -= count;
-      } while (0);
-
-      /* Request task repost if we have more data and the fifo is not
-       * already above the threshold at which we'll be re-posted. */
-      need_repost = (0 < tx_remain) && ! (IFG_txFifoAboveThreshold & call Rf1aIf.getIn());
-
-      /* If we've queued data but haven't already started the
-       * transmission, do so now. */
-      if (wrote_data && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
-        register int loop_limit = RADIO_LOOP_LIMIT;
-        /* We're *supposed* to be in FSTXON here, so this strobe can't
-         * be rejected.  In fact, it appears that if we're in FSTXON
-         * and CCA fails, the radio transitions to RX mode.  In other
-         * cases, it somehow ends up in IDLE.  Try anyway, and if it
-         * doesn't work, fail the transmission. */
-        rc = call Rf1aIf.strobe(RF_STX);
-        while ((RF1A_S_TX != (RF1A_S_MASK & rc))
-               && (RF1A_S_RX != (RF1A_S_MASK & rc))
-               && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
-               && (0 <= --loop_limit)) {
-          rc = call Rf1aIf.strobe(RF_SNOP);
+  
+        /* Request task repost if we have more data and the fifo is not
+         * already above the threshold at which we'll be re-posted. */
+        need_repost = (0 < tx_remain) && ! (IFG_txFifoAboveThreshold & call Rf1aIf.getIn());
+    
+        /* If we've queued data AND it's OK to start TX, but haven't already started the
+         * transmission, do so now. */
+        if (tx_startOK && wrote_data && (RF1A_S_TX != (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))) {
+          tx_result = startSend();
+        }else{
+//          printf("delay\r\n");
         }
-        if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
+  
+      }while(0);
 
-//        printf ("%s\n\r",__FUNCTION__);
-          tx_result = ERETRY;
-          cancelTransmit_();
-        }
-      }
-
-      /* If we've started transmitting, see if we're done yet. */
-      if (TX_S_active <= tx_state) {
-        /* If there's no more data to be transmitted, the task is
-         * done.  However, there's an end-game: we don't really want
-         * to signal sendDone until it's actually in the air.  */
-        if (0 == tx_remain) {
-          if (TX_S_active == tx_state) {
-            tx_state = TX_S_flushing;
-            tx_cached_fifothr = call Rf1aIf.readRegister(FIFOTHR);
-            call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
-          }
-          if (0 == call Rf1aIf.readRegister(TXBYTES)) {
-            result = tx_result;
-            call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
-
-            /* This might be an erratum, but I think it's really that
-             * the fact the TXFIFO has flushed still doesn't mean the
-             * transmission is done: that last character still needs
-             * to be spat out the antenna.  Unfortunately, I don't
-             * know of another way to detect that the transmission has
-             * really-and-fortrue completed.
-             *
-             * Without this check, we can return to main program
-             * control and proceed to initiate a second send before
-             * the MRCSM finishes cleaning up from the previous
-             * transmit.  When this happens, the radio appears to
-             * accept the subsequent command but never actually
-             * transmits it.
-             *
-             * What this does is busy-wait until MARCSTATE gets out of
-             * TX; this appears to be sufficient (in the test
-             * configuration, it reaches TX_END).  Instrumentation
-             * indicates this loop runs about 350 times before MRCSM
-             * transitions out of TX.  I'm not going to put a limit on
-             * it, because if this ever stops working I want it to
-             * hang here, where inspection via the debugger will find
-             * it and the poor maintainer will at least have this
-             * comment to provide a clue as to what might be going on.
-             *
-             * When that happens, consider checking whether TX_OFF is
-             * set to "stay in TX", since in that case I don't know
-             * MRCSM ever transitions to TX_END.  I would expect it
-             * does, but then I'd expect the radio to work better than
-             * it does.... */
-            {
-              uint8_t ms;
-              do {
-                ms = call Rf1aIf.readRegister(MARCSTATE);
-              } while (MRCSM_TX == ms);
+        /* If we've started transmitting, see if we're done yet. */
+        if (TX_S_active <= tx_state) {
+          /* If there's no more data to be transmitted, the task is
+           * done.  However, there's an end-game: we don't really want
+           * to signal sendDone until it's actually in the air.  */
+          if (0 == tx_remain) {
+//            printf("0L");
+            if (TX_S_active == tx_state) {
+//              printf("f");
+              tx_state = TX_S_flushing;
+              tx_cached_fifothr = call Rf1aIf.readRegister(FIFOTHR);
+              call Rf1aIf.writeRegister(FIFOTHR, (0x0F | tx_cached_fifothr));
             }
-
-            tx_state = TX_S_inactive;
-            send_done = TRUE;
+            if (0 == call Rf1aIf.readRegister(TXBYTES)) {
+//              printf("F");
+              result = tx_result;
+              call Rf1aIf.writeRegister(FIFOTHR, tx_cached_fifothr);
+  
+              /* This might be an erratum, but I think it's really that
+               * the fact the TXFIFO has flushed still doesn't mean the
+               * transmission is done: that last character still needs
+               * to be spat out the antenna.  Unfortunately, I don't
+               * know of another way to detect that the transmission has
+               * really-and-fortrue completed.
+               *
+               * Without this check, we can return to main program
+               * control and proceed to initiate a second send before
+               * the MRCSM finishes cleaning up from the previous
+               * transmit.  When this happens, the radio appears to
+               * accept the subsequent command but never actually
+               * transmits it.
+               *
+               * What this does is busy-wait until MARCSTATE gets out of
+               * TX; this appears to be sufficient (in the test
+               * configuration, it reaches TX_END).  Instrumentation
+               * indicates this loop runs about 350 times before MRCSM
+               * transitions out of TX.  I'm not going to put a limit on
+               * it, because if this ever stops working I want it to
+               * hang here, where inspection via the debugger will find
+               * it and the poor maintainer will at least have this
+               * comment to provide a clue as to what might be going on.
+               *
+               * When that happens, consider checking whether TX_OFF is
+               * set to "stay in TX", since in that case I don't know
+               * MRCSM ever transitions to TX_END.  I would expect it
+               * does, but then I'd expect the radio to work better than
+               * it does.... */
+              {
+                uint8_t ms;
+                do {
+                  ms = call Rf1aIf.readRegister(MARCSTATE);
+                } while (MRCSM_TX == ms);
+              }
+  
+              tx_state = TX_S_inactive;
+              send_done = TRUE;
+            }
           }
+        }else{
+//          printf("s=%u", tx_state);
         }
-      }
+//      printf("\r\n");
     } // atomic
 
     if (need_repost) {
       post sendFragment_task();
     }
     if (send_done) {
+//      printf("sd\r\n");
       signal Rf1aPhysical.sendDone[client](result);
+//      printfflush();
+    }else{
+//      printf("~sd\r\n");
     }
   }
 
@@ -858,21 +829,16 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer,
-                                                     unsigned int length)
+  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer, 
+      unsigned int length, 
+      rf1a_offmode_t txOffMode)
   {
     uint8_t rc;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t vcrv = validateClient(client);
+    if (vcrv!= SUCCESS){
+      return vcrv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
-    /* And the length has to be positive */
-    if (0 == length) {
+    if (0 == length){
       return EINVAL;
     }
     atomic {
@@ -880,19 +846,19 @@ generic module HplMsp430Rf1aP () @safe() {
 
       /* And we can't be actively receiving anything */
       if (RX_S_listening < rx_state) {
-	rc = call Rf1aIf.strobe(RF_RXSTAT | RF_SNOP);
-	
-	/* Another special case.  If noise on the channel causes a
-	 * packet reception to begin, but doesn't last long enough for
-	 * the interpreted packet length to be received, the radio
-	 * will return to idle mode.  Detect that we're in idle mode
-	 * with data required but not available and abort the
-	 * receive. */
-	if ((RF1A_S_IDLE == (RF1A_S_MASK & rc))
-	    && (rx_received < rx_expected)
-	    && (0 == (rc & RF1A_S_FIFOMASK))) {
-	  rx_result = FAIL;
-	  post receiveData_task();
+        rc = call Rf1aIf.strobe(RF_RXSTAT | RF_SNOP);
+        
+        /* Another special case.  If noise on the channel causes a
+         * packet reception to begin, but doesn't last long enough for
+         * the interpreted packet length to be received, the radio
+         * will return to idle mode.  Detect that we're in idle mode
+         * with data required but not available and abort the
+         * receive. */
+        if ((RF1A_S_IDLE == (RF1A_S_MASK & rc))
+            && (rx_received < rx_expected)
+            && (0 == (rc & RF1A_S_FIFOMASK))) {
+          rx_result = FAIL;
+          post receiveData_task();
 	}
         return EBUSY;
       }
@@ -951,13 +917,25 @@ generic module HplMsp430Rf1aP () @safe() {
        * sendFragment_task. */
       rc = call Rf1aIf.strobe(RF_SNOP);
       if ((RF1A_S_FSTXON != (rc & RF1A_S_MASK)) && (RF1A_S_TX != (rc & RF1A_S_MASK))) {
-        int rv = startTransmission_(TRUE, TRUE);
+        //only perform CCA if register is set up for it.
+        bool useCca = (call Rf1aIf.readRegister(MCSM1) & 0x30);
+        int rv = startTransmission_(useCca, TRUE);
         if (SUCCESS != rv) {
           return rv;
         }
         rc = RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP);
       }
-
+      //If we made it this far, then we're all set. Set off-mode as
+      //indicated by param.
+      call Rf1aIf.writeRegister(MCSM1, 
+        (0xfc & call Rf1aIf.readRegister(MCSM1)) | (txOffMode));
+      //Disable the TX FIFO threshold interrupt until we've written
+      //the first chunk into it.
+      call Rf1aIf.setIe(call Rf1aIf.getIe() & ~IFG_txFifoAboveThreshold);
+      atomic{
+        call DefaultLength.setNow(length);
+        call DefaultBuffer.setNow(buffer);
+      }
       tx_remain = length;
       tx_result = SUCCESS;
       tx_state = TX_S_preparing;
@@ -967,36 +945,97 @@ generic module HplMsp430Rf1aP () @safe() {
       } else {
         tx_pos = tx_end = 0;
       }
+      tx_startOK = FALSE;
+      post sendFragment_task();
+      signal DelayedSend.sendReady[client]();
     }
-    post sendFragment_task();
     return SUCCESS;
+  }
+
+  default event void DelayedSend.sendReady[uint8_t client](){
+//    printf("dds.sr\r\n");
+    atomic{
+      if (tx_state == TX_S_preparing){
+//        call DelayedSend.startSend[client]();
+        tx_startOK = TRUE;
+        post sendFragment_task();
+      }else{
+        //TODO: log error
+      }
+    }
+  }
+
+  async command error_t DelayedSend.startSend[uint8_t client](){
+//    printf("ds.ss\r\n");
+    return startSend();
+  }
+
+  error_t startSend(){
+    atomic{
+      if (tx_state == TX_S_loaded){
+        /* We're *supposed* to be in FSTXON here, so this strobe can't
+         * be rejected.  In fact, it appears that if we're in FSTXON
+         * and CCA fails, the radio transitions to RX mode.  In other
+         * cases, it somehow ends up in IDLE.  Try anyway, and if it
+         * doesn't work, fail the transmission. */
+        register int loop_limit = RADIO_LOOP_LIMIT;
+        uint8_t rc;
+        rc = call Rf1aIf.strobe(RF_STX);
+        while ((RF1A_S_TX != (RF1A_S_MASK & rc))
+               && (RF1A_S_RX != (RF1A_S_MASK & rc))
+               && (RF1A_S_IDLE != (RF1A_S_MASK & rc))
+               && (0 <= --loop_limit)) {
+          rc = call Rf1aIf.strobe(RF_SNOP);
+        }
+        if (RF1A_S_TX != (RF1A_S_MASK & rc)) {
+//          printf("cancel\r\n");
+          cancelTransmit_();
+          return ERETRY;
+        }else{
+//          printf("RE\r\n");
+          //re-enable TXFIFO threshold interrupt
+          call Rf1aIf.setIe(call Rf1aIf.getIe() | IFG_txFifoAboveThreshold);
+//          printf(". %x\r\n", ifin);
+          //With a short packet,
+          //we've written all of our data into the txfifo
+          //but we don't trigger the txfifo interrupt: we're under the
+          //limit to begin with, so it never crosses the threshold.
+          //So we probably want to either:
+          // a. enable the interrupt if we expect it to be
+          //    triggered, otherwise post the task
+          // b. post the task and enable the interrupt, and make sure
+          //    that task is OK with any tx conditions.
+          post sendFragment_task();
+          tx_state = TX_S_active;
+          return SUCCESS;
+        }
+      }else{
+//        printf("inval s=%u\r\n", tx_state);
+        return EINVAL;
+      }
+    }
   }
 
   default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
 
-  async command error_t Rf1aPhysical.startTransmission[uint8_t client] (bool with_cca)
+  async command error_t Rf1aPhysical.startTransmission[uint8_t client]
+  (bool with_cca, bool targetFSTXON)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
-    return startTransmission_(with_cca, FALSE);
+    return startTransmission_(with_cca, targetFSTXON);
   }
 
-  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client] ()
+  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
+  (rf1a_offmode_t offMode)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
         tx_result = ECANCEL;
@@ -1005,7 +1044,7 @@ generic module HplMsp430Rf1aP () @safe() {
         rx_result = ECANCEL;
         post receiveData_task();
       } else {
-        resumeIdleMode_(TRUE);
+        resumeIdleMode_((offMode == RF1A_OM_RX));
       }
     }
     return SUCCESS;
@@ -1013,13 +1052,9 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async command error_t Rf1aPhysical.startReception[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv ){
+      return rv;
     }
     atomic {
       if (0 != rx_pos) {
@@ -1032,14 +1067,11 @@ generic module HplMsp430Rf1aP () @safe() {
 
   async command error_t Rf1aPhysical.sleep[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (SUCCESS != rv ){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+    
     atomic {
       uint8_t rc;
 
@@ -1099,7 +1131,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     resumeIdleMode_(TRUE);
   }
- 
+
   /** Do the actual work of consuming data from the RX FIFO and
    * storing it in the appropriate location. */
   void receiveData_ ()
@@ -1114,7 +1146,6 @@ generic module HplMsp430Rf1aP () @safe() {
     unsigned int expected;
     unsigned int received;
     int result;
-    uint8_t i;
 
     atomic {
       do {
@@ -1144,6 +1175,7 @@ generic module HplMsp430Rf1aP () @safe() {
             call Rf1aIf.readBurstRegister(RF_RXFIFORD, &len8, sizeof(len8));
             avail -= 1;
             rx_expected = len8;
+//            printf("rl%u ", rx_expected);
           }
           /* @TODO@ set rx_expected when not using variable packet length mode */
 
@@ -1194,6 +1226,15 @@ generic module HplMsp430Rf1aP () @safe() {
         rx_pos += consume;
         rx_received += consume;
         avail -= consume;
+//        {
+//          uint8_t i;
+//          uint8_t* s = rx_pos - consume;
+//          for (i =0; i < consume; i++){
+//            printf("%x ", s[i]);
+//          }
+//          printf("\r\n");
+//        }
+
 
         /* Have we reached the end of the message? */
         if (rx_received == rx_expected) {
@@ -1229,6 +1270,8 @@ generic module HplMsp430Rf1aP () @safe() {
           /* In one-shot mode, if we didn't get the whole message,
            * mark it failed. */
           if (rx_single_use && (! signal_complete)) {
+//            printf("rx full: %u/%u received\r\n", 
+//              received, rx_expected);
             rx_result = ENOMEM;
           }
         }
@@ -1279,19 +1322,14 @@ generic module HplMsp430Rf1aP () @safe() {
       signal Rf1aPhysical.receiveStarted[client](expected);
     }
     if (signal_complete) {
-
-
-/* sniffer begin *************************************************************/
       sniffPacket(start, received, rx_rssi_raw, rx_lqi_raw);
-/* sniffer end ***************************************************************/
-    
       signal Rf1aPhysical.receiveDone[client](start, received, result);
     }
     if (signal_filled) {
       signal Rf1aPhysical.receiveBufferFilled[client](start, received);
     }
   }
-  
+
   #define SNIFFER_PKT_LEN 64
   #define SNIFFER_QUEUE_LEN 16
   typedef struct sniffed_packet_t {
@@ -1350,7 +1388,7 @@ generic module HplMsp430Rf1aP () @safe() {
       uint8_t lqiVal = (lqi&0x7f);
       int8_t rssiConv = rssiConvert_dBm(rssi); 
 
-      cx_header_t* cxHdr = (cx_header_t*)(&msg->data[-1]);
+//      cx_header_t* cxHdr = (cx_header_t*)(&msg->data[-1]);
       message_header_t* msgHdr = (message_header_t*)(msg->header);
       rf1a_ieee154_t* ieee154Hdr = (rf1a_ieee154_t*)msgHdr;
       printf("S ");
@@ -1361,31 +1399,28 @@ generic module HplMsp430Rf1aP () @safe() {
         rssiConv,
         lqiVal,
         crcPassed);
-      //To match with SD:
-      //np source sn count frameNum
-      printf("CXS %u %u %u %u %u %d %u %x\r\n",
-        cxHdr -> nProto,
-        ieee154Hdr -> src,
-        cxHdr -> sn,
-        cxHdr -> count,
-        cxHdr -> count + cxHdr -> originalFrameNum - 1,
-        rssiConv,
-        lqiVal,
-        crcPassed);
+//      //To match with SD:
+//      //np source sn count frameNum
+//      printf("CXS %u %u %u %u %u %d %u %x\r\n",
+//        cxHdr -> nProto,
+//        ieee154Hdr -> src,
+//        cxHdr -> sn,
+//        cxHdr -> count,
+//        cxHdr -> count + cxHdr -> originalFrameNum - 1,
+//        rssiConv,
+//        lqiVal,
+//        crcPassed);
   }
+      
   
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
-                                                                       unsigned int length,
-                                                                       bool single_use)
+    unsigned int length, bool single_use)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+    
     /* Buffer and length must be realistic; if either bogus, clear them both
      * and disable reception. */
     if ((! buffer) || (0 == length)) {
@@ -1422,52 +1457,67 @@ generic module HplMsp430Rf1aP () @safe() {
         }
       } else if (RX_S_inactive == rx_state) {
         uint8_t off_mode;
-
+        //RX->idle, setRB: RX
+        //TX: only entered through send command, which specifies
+        //    off-mode.
+        //So only mess with the RXOFF_MODE bits, based 
         if (rx_single_use) {
-          // Return to IDLE after RX, RX after TX
-          off_mode = 0x03;
+          // Return to IDLE after RX
+          off_mode = (RF1A_OM_IDLE << 2);
         } else {
-          // Return to RX after RX or TX
-          off_mode = 0x0F;
+          // Return to RX after RX
+          off_mode = (RF1A_OM_RX << 2);
         }
-        call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf0 & call Rf1aIf.readRegister(MCSM1)));
+        call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf3 & call Rf1aIf.readRegister(MCSM1)));
         startReception_();
       }
     }
     return SUCCESS;
   }
+  
+//  #define TRC_LEN 8
+//  unsigned int trcr[TRC_LEN];
+//  unsigned int trc[TRC_LEN];
+//  uint8_t trcFirst = 0;
+//  uint8_t trcCount = 0;
+//  task void reportTRC(){
+//    uint8_t curTRC;
+//    uint8_t curTRCr;
+//    atomic{
+//      if (trcCount == 0){
+//        return;
+//      }
+//      curTRC = trc[trcFirst];
+//      curTRCr = trcr[trcFirst];
+//      trcCount--;
+//      trcFirst = (trcFirst + 1)%TRC_LEN;
+//
+//      if (trcCount > 0){
+//        post reportTRC();
+//      }
+//    }
+//    printf("TRC %u/%u\r\n", curTRC, curTRCr);
+////    printfflush();
+//    
+//  }
 
   default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client] (unsigned int count)
   {
-    return call Rf1aPhysical.defaultTransmitReadyCount[client](count);
-  }
-  async command unsigned int Rf1aPhysical.defaultTransmitReadyCount[uint8_t client] (unsigned int count)
-  {
-    atomic {
-      return transmitReadyCount_(client, count);
-    }
+    unsigned int ret = call DefaultRf1aTransmitFragment.transmitReadyCount(count);
+//    trc[(trcFirst+trcCount) % TRC_LEN] = ret;
+//    trcr[(trcFirst+trcCount) % TRC_LEN] = count;
+//    trcCount++;
+//    post reportTRC();
+    return ret;
   }
 
   default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client] (unsigned int count)
   {
-    return call Rf1aPhysical.defaultTransmitData[client](count);
+    return call DefaultRf1aTransmitFragment.transmitData(count);
   }
-  async command const uint8_t* Rf1aPhysical.defaultTransmitData[uint8_t client] (unsigned int count)
-  {
-    atomic {
-      return transmitData_(client, count);
-    }
-  }
-
-  async event void Counter.overflow() {}
 
   async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
   {
-/* sniffer begin *************************************************************/
-    rxTime = call Counter.get();
-/* sniffer end ***************************************************************/
-
-  
     if (RX_S_inactive < rx_state) {
       /* If we have data, and the state doesn't reflect that we're
        * receiving, bump the state so we know to fast-exit out of
@@ -1479,12 +1529,27 @@ generic module HplMsp430Rf1aP () @safe() {
       post receiveData_task();
     }
   }
+  
+//  task void reportTxf(){
+//    printf("txf\r\n");
+////    printfflush();
+//  }
+//
+//  task void reportTxfFail0(){
+//    printf("txf0!\r\n");
+////    printfflush();
+//  }
+//
+//  task void reportTxfFail1(){
+//    printf("txf1!\r\n");
+////    printfflush();
+//  }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
   {
+//    printf("txf\r\n");
     if (TX_S_inactive != tx_state) {
       uint8_t txbytes = call Rf1aIf.readRegister(TXBYTES);
-
       /* Remember those other comments warning of an odd behavior
        * where we can pass CCA, put the radio into TX, load up the
        * TXFIFO, then find ourselves in RX with a new tattoo, no
@@ -1493,10 +1558,22 @@ generic module HplMsp430Rf1aP () @safe() {
        * radio's saying there's room, and there isn't, something's
        * wrong. No idea why we get this interrupt in that case, but
        * we're grateful nonetheless. */
+      //This doesn't make sense: we are writing the length byte + 62
+      //  data bytes into the FIFO while radio's in FSTXON, 
+      //  but then this interrupt is raised while 
+      //  there's > FIFO_THR bytes in the TXFIFO.
+      //  Maybe we should only enable the TXFIFO interrupt after we've
+      //  written the data into the fifo?
       if (0x3F <= (0x7F & txbytes)) {
         tx_result = ECANCEL;
+//        post reportTxfFail0();
+      }else{
+//        post reportTxf();
       }
       post sendFragment_task();
+    }else{
+//      post reportTxfFail1();
+//      printf("?txf\r\n");
     }
   }
   async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
@@ -1506,8 +1583,12 @@ generic module HplMsp430Rf1aP () @safe() {
       post receiveData_task();
     }
   }
+//  task void reportTxUnderflow(){
+//    printf("UF\r\n");
+//  }
   async event void Rf1aInterrupts.txUnderflow[uint8_t client] ()
   {
+//    post reportTxUnderflow();
     atomic {
       tx_result = FAIL;
       post sendFragment_task();
@@ -1555,19 +1636,12 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     return (rf1a_status_e)(RF1A_S_MASK & rc);
   }
-
-
-  async command int Rf1aPhysical.enableCca[uint8_t client] ()
-  {
+  
+  int setCca(uint8_t client, bool enabled){
     uint8_t mcsm1;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
 
     atomic {
@@ -1579,76 +1653,50 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
 //        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
+        return ERETRY;
       }
-
       mcsm1 = call Rf1aIf.readRegister(MCSM1);
-      call Rf1aIf.writeRegister(MCSM1, 0x30 | (0x0f & mcsm1));
+      if (enabled){
+        call Rf1aIf.writeRegister(MCSM1, 0x30 | (0x0f & mcsm1));
+      } else{
+        call Rf1aIf.writeRegister(MCSM1, (0x0f & mcsm1));
+      }
     }
-
     return SUCCESS;
   }
 
   async command int Rf1aPhysical.disableCca[uint8_t client] ()
   {
-    uint8_t mcsm1;
-
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
-    }
-
-    atomic {
-      uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
-
-      /* The radio must not be actively receiving or transmitting. */
-      if ((TX_S_inactive != tx_state)
-          || (RX_S_listening < rx_state)
-          || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
-          || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
-//        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
-      }
-
-      mcsm1 = call Rf1aIf.readRegister(MCSM1);
-      call Rf1aIf.writeRegister(MCSM1, (0x0f & mcsm1));
-    }
-    return SUCCESS;
+    return setCca(client, FALSE);
   }
 
-
+  async command int Rf1aPhysical.enableCca[uint8_t client] ()
+  {
+    return setCca(client, TRUE);
+  }
 
 
 
   async command int Rf1aPhysical.getChannel[uint8_t client] ()
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
     return call Rf1aIf.readRegister(CHANNR);
   }
 
   async command int Rf1aPhysical.setChannel[uint8_t client] (uint8_t channel)
   {
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return -EOFF;
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return -EBUSY;
-    }
+//    printf("setchannel %u\r\n", channel);
+
     atomic {
       bool radio_online;
+      bool resumeRX;
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
 
       /* The radio must not be actively receiving or transmitting. */
@@ -1657,9 +1705,12 @@ generic module HplMsp430Rf1aP () @safe() {
           || (RF1A_S_FSTXON == (rc & RF1A_S_MASK))
           || (RF1A_S_TX == (rc & RF1A_S_MASK))) {
 //        printf ("%s\n\r",__FUNCTION__);
-        return -ERETRY;
+        return ERETRY;
       }
 
+      // - check current state: should be IDLE or RX
+      resumeRX = (RF1A_S_RX == (rc & RF1A_S_MASK));
+      // - set idle
       /* If radio is not asleep, make sure it transitions to IDLE then
        * back to its normal mode.  With MCSM0.FS_AUTOCOL set to 1
        * (normal with our configurations) this ensures recalibration
@@ -1669,8 +1720,47 @@ generic module HplMsp430Rf1aP () @safe() {
         resumeIdleMode_(FALSE);
       }
       call Rf1aIf.writeRegister(CHANNR, channel);
+
+      // - if manual calibration
+      if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
+        const rf1a_fscal_t* fscal = call Rf1aConfigure.getFSCAL[client](channel);
+
+        //settings cached, so we can skip the calibration step.
+        if (fscal != NULL){
+          call Rf1aIf.writeRegister(FSCAL1, fscal->fscal1);
+          call Rf1aIf.writeRegister(FSCAL2, fscal->fscal2);
+          call Rf1aIf.writeRegister(FSCAL3, fscal->fscal3);
+        } else {
+          uint8_t marcstate;
+          rf1a_fscal_t newCal;
+
+          //run manual calibration: n.b. this is a ~700 uS operation
+          rc = call Rf1aIf.strobe(RF_SCAL);
+          while (RF1A_S_IDLE != (RF1A_S_MASK & rc) ) {
+            rc = call Rf1aIf.strobe(RF_SNOP);
+          }
+
+          //HACK:
+          //  So, it seems like FSCAL1 is not valid immediately after
+          //  the RF_SCAL strobe completes. RF1ASTATUS may indicate
+          //  we're idle,
+          //  but MARCSTATE still indicates that we're in MANCAL. We
+          //  have to wait until this has returned to idle.
+          //  Seems like errata to me, but I don't see it and can't
+          //  figure out how to report it :(
+          do {
+            marcstate = call Rf1aIf.readRegister(MARCSTATE);
+          } while (RF1A_MS_IDLE != (0xff & marcstate));
+
+          newCal.fscal1 = call Rf1aIf.readRegister(FSCAL1);
+          newCal.fscal2 = call Rf1aIf.readRegister(FSCAL2);
+          newCal.fscal3 = call Rf1aIf.readRegister(FSCAL3);
+          newCal.channr = channel;
+          call Rf1aConfigure.setFSCAL[client](channel, newCal);
+        }
+      }
       if (radio_online) {
-        resumeIdleMode_(TRUE);
+        resumeIdleMode_(resumeRX);
       }
     }
     return SUCCESS;
@@ -1695,15 +1785,11 @@ generic module HplMsp430Rf1aP () @safe() {
   async command int Rf1aPhysical.rssi_dBm[uint8_t client] ()
   {
     int rv;
-    
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
+    error_t vcrv = validateClient(client);
+    if (vcrv != SUCCESS){
+      return vcrv;
     }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
+
     atomic {
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
       if (RF1A_S_RX == (RF1A_S_MASK & rc)) {
@@ -1738,7 +1824,6 @@ generic module HplMsp430Rf1aP () @safe() {
     /* Return only the CRC check bit */
     return metadatap->lqi & 0x80;
   }
-
 
 }
 
