@@ -121,7 +121,8 @@ module CXLinkP {
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       if (targetFrame == lastFrameNum){
-        printf("handle %lu @ %lu\r\n", 
+        printf("handle %x @ %lu / %lu\r\n", 
+          nextRequest->requestType,         
           lastFrameNum, 
           call FrameTimer.gett0() + call FrameTimer.getdt());
         switch (nextRequest -> requestType){
@@ -152,6 +153,7 @@ module CXLinkP {
             TRUE);
             if (SUCCESS == requestError){
               atomic{
+                aNextRequestType = nextRequest->requestType;
                 tx_pos = (uint8_t*)nextRequest -> msg;
                 aSfdCapture = 0;
                 tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
@@ -162,8 +164,10 @@ module CXLinkP {
               requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
             }
             if (SUCCESS != requestError){
+              handledFrame = lastFrameNum;
               post requestHandled();
             }
+            handledFrame = lastFrameNum;
             break;
           case RT_RX:
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
