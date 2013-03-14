@@ -150,7 +150,7 @@ module TestP{
   void doTransmit(){
     if (nextWakeup){
       call Rf1aPacket.configureAsData(msg);
-      (call Rf1aPacket.metadata(msg))->payload_length = 20;
+      (call Rf1aPacket.metadata(msg))->payload_length = 60;
       printf("tx: %x\r\n", call CXRequestQueue.requestSend(
         nextWakeup, 1,
         FALSE, 0, msg));
