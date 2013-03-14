@@ -15,6 +15,7 @@ configuration TestAppC{
 
   TestP.Rf1aStatus -> CXLinkC;
   TestP.Rf1aPacket -> CXLinkC;
+  TestP.Packet -> CXLinkC;
 
   TestP.SerialControl -> PlatformSerialC;
   components new TimerMilliC();

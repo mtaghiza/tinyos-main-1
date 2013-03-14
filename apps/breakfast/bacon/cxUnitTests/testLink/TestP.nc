@@ -9,6 +9,7 @@ module TestP{
 
   uses interface Rf1aStatus;
   uses interface Rf1aPacket;
+  uses interface Packet;
 
   uses interface StdControl as SerialControl;
   uses interface Timer<TMilli>;
@@ -24,6 +25,13 @@ module TestP{
   message_t* msg = &msg_internal;
 
   bool transmitAgain = FALSE;
+  
+  enum{
+    PAYLOAD_LEN= 60,
+  };
+  typedef nx_struct test_payload {
+    nx_uint8_t buffer[PAYLOAD_LEN];
+  } test_payload_t;
 
   task void usage(){
     printf("---- Commands ----\r\n");
@@ -149,11 +157,22 @@ module TestP{
   }
   void doTransmit(){
     if (nextWakeup){
+      test_payload_t * pl;
       call Rf1aPacket.configureAsData(msg);
-      (call Rf1aPacket.metadata(msg))->payload_length = 60;
-      printf("tx: %x\r\n", call CXRequestQueue.requestSend(
-        nextWakeup, 1,
-        FALSE, 0, msg));
+      pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
+      if (pl != NULL){
+        uint8_t i;
+        for (i = 0; i < PAYLOAD_LEN; i++){
+          pl->buffer[i] = i;
+        }
+        call Packet.setPayloadLength(msg, sizeof(test_payload_t));
+  
+        printf("tx: %x\r\n", call CXRequestQueue.requestSend(
+          nextWakeup, 1,
+          FALSE, 0, msg));
+      }else{
+        printf("PL size error?\r\n");
+      }
     }
   }
 
