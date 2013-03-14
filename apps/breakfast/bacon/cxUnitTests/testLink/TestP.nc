@@ -1,5 +1,6 @@
 
  #include <stdio.h>
+ #include "CXLink.h"
 module TestP{
   uses interface Boot;
   uses interface UartStream;
@@ -45,6 +46,7 @@ module TestP{
     printf("t : transmit\r\n");
     printf("T : transmit x2\r\n");
     printf("p : pause serial (for 5 seconds)\r\n");
+    printf("r : request long-duration receive\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
   }
 
@@ -112,8 +114,11 @@ module TestP{
   }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
-    uint32_t atFrame, bool didReceive, 
-    uint32_t microRef, message_t* msg_){}
+      uint32_t atFrame, bool didReceive, 
+      uint32_t microRef, message_t* msg_){
+    printf("rx handled: %x %lu %x %lu\r\n",
+      error, atFrame, didReceive, microRef);
+  }
 
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t microRef, 
@@ -218,6 +223,14 @@ module TestP{
     printf("resume serial\r\n");
   }
 
+  task void requestLongReceive(){
+    printf("rx req: %x\r\n", 
+      call CXRequestQueue.requestReceive(nextWakeup, 1,
+        FALSE, 0,
+        RX_MAX_WAIT,
+        msg));
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -252,6 +265,9 @@ module TestP{
          break;
        case 'k':
          post killSerial();
+         break;
+       case 'r':
+         post requestLongReceive();
          break;
        case '?':
          post usage();
