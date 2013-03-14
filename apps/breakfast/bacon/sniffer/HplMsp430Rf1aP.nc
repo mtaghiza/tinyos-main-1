@@ -1392,7 +1392,7 @@ generic module HplMsp430Rf1aP () @safe() {
       message_header_t* msgHdr = (message_header_t*)(msg->header);
       rf1a_ieee154_t* ieee154Hdr = (rf1a_ieee154_t*)msgHdr;
       printf("S %u ", received);
-      for(k = 0; k < SNIFFER_PKT_LEN ; k++){
+      for(k = 0; k < received ; k++){
         printf("%02X", pkt[k]);
       }
       printf(" %d %u %x\r\n", 
