@@ -246,7 +246,7 @@ module Msp430XV2ClockControlP @safe() {
 
   async command bool Msp430XV2ClockControl.is32khzTimerRunning ()
   {
-    atomic return (MC_STOP != (TA1CTL & ~(MC0|MC1)));
+    atomic return (MC_STOP != (TA1CTL & (MC0|MC1)));
   }
 
   async command void Msp430XV2ClockControl.startMicroTimer ()
@@ -261,7 +261,7 @@ module Msp430XV2ClockControlP @safe() {
 
   async command bool Msp430XV2ClockControl.isMicroTimerRunning ()
   {
-    atomic return (MC_STOP != (TA0CTL & ~(MC0|MC1)));
+    atomic return (MC_STOP != (TA0CTL & (MC0|MC1)) );
   }
 
   /* Support for UCS7 workaround.  This chip erratum causes DCO
