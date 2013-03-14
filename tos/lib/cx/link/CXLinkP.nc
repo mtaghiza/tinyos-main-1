@@ -154,9 +154,9 @@ module CXLinkP {
                 tx_pos = (uint8_t*)nextRequest -> msg;
                 aSfdCapture = 0;
                 aRequestError = SUCCESS;
-                //TODO: tx_len from nextRequest->msg metadata
-                //TODO: CX link header setup
-                //TODO: timestamping setup
+                //TODO: TX tx_len from nextRequest->msg metadata
+                //TODO: TX CX link header setup
+                //TODO: TIME timestamping setup
               }
               requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
             }
@@ -170,9 +170,9 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             requestError = FAIL;
-            //TODO: set timeout alarm
-            //TODO: enable RE GDO capture 
-            //TODO: configure radio/provide rx buffer.
+            //TODO: RX set timeout alarm
+            //TODO: RX enable RE GDO capture 
+            //TODO: RX configure radio/provide rx buffer.
             post requestHandled();
             break;
           default:
@@ -203,7 +203,7 @@ module CXLinkP {
       uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
       uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
 
-      //TODO: if the request requires additional preparation time, go ahead and do
+      //TODO: FIXME if the request requires additional preparation time, go ahead and do
       //so: this slack should be stored so that when frametimer fires,
       //  we can account for it.
       call FrameTimer.startOneShotAt(lastFrameTime, dt);
@@ -363,8 +363,8 @@ module CXLinkP {
     }
     //expand to 32 bits
     aSfdCapture = (ft & 0xffff0000) | time;
-    //TODO: TX timestamp: post task to set timestamp
-    //TODO: extend/cancel micro alarm (frame-wait)
+    //TODO: TIME post task to set timestamp
+    //TODO: RX extend/cancel micro alarm (frame-wait)
     call SynchCapture.disable();
 
     asyncHandled = TRUE;
@@ -378,7 +378,7 @@ module CXLinkP {
     if (nextRequest->useTsMicro){
       int32_t dt = (nextRequest->frameOffset)*FRAMELEN_6_5M;
       uint32_t t0 = nextRequest->tsMicro;
-      //TODO: Wrapping logic/signedness issues. could mandate that
+      //TODO: FIXME Wrapping logic/signedness issues? could mandate that
       //  frameOffset is always non-negative, that could simplify
       //  matters.
       if ( t0 + dt < call FastAlarm.getNow() + MIN_FASTALARM_SLACK ){

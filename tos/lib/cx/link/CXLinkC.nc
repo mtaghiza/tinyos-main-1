@@ -25,7 +25,7 @@ configuration CXLinkC {
 
   components SRFS7_915_GFSK_125K_SENS_HC as RadioConfigC;
   Rf1aPhysicalC.Rf1aConfigure -> RadioConfigC;
-  //TODO: wire up a channel cache if desired
+  //TODO: FUTURE wire up a channel cache if desired
 
   components new PoolC(cx_request_t, REQUEST_QUEUE_LEN);
   components new PriorityQueueC(cx_request_t*, REQUEST_QUEUE_LEN);
