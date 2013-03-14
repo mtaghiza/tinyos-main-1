@@ -15,6 +15,7 @@ module TestP{
 
   uint32_t cycleLen = 100;
   uint32_t activeFrames = 10;
+  uint32_t nextWakeup = 0;
 
   message_t msg_internal;
   message_t* msg = &msg_internal;
@@ -33,8 +34,20 @@ module TestP{
   event void Boot.booted(){
     printf("Booted.\r\n");
     post usage();
-    //TODO: map SMCLK to pin: should only be active when outstanding
-    //TX or RX active
+    atomic{
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      //SMCLK to 1.1
+      P1MAP1 = PM_SMCLK;
+      //GDO to 2.4 (synch)
+      P2MAP4 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+
+      P1DIR |= BIT1;
+      P1SEL |= BIT1;
+      P2DIR |= BIT4;
+      P2SEL |= BIT4;
+    }
   }
 
   task void toggleStartStop(){
@@ -94,22 +107,23 @@ module TestP{
 
   event void CXRequestQueue.sleepHandled(error_t error,
       uint32_t atFrame){
-    printf("sleep handled %x status %x\r\n", error, 
-      call Rf1aStatus.get());
+//    printf("sleep handled %x status %x\r\n", error, 
+//      call Rf1aStatus.get());
     if (dutyCycling){
-      printf("sleep req %x \r\n", 
-        call CXRequestQueue.requestSleep(atFrame, cycleLen));
+      error = call CXRequestQueue.requestSleep(atFrame, cycleLen);
+//      printf("sleep req %x \r\n", error); 
     }
   }
 
   event void CXRequestQueue.wakeupHandled(error_t error,
     uint32_t atFrame){
-    printf("wakeup handled %x status %x\r\n", error, 
-      call Rf1aStatus.get());
+//    printf("wakeup handled %x status %x\r\n", error, 
+//      call Rf1aStatus.get());
     if (dutyCycling){
-      printf("wake req %x \r\n", 
-        call CXRequestQueue.requestWakeup(atFrame, cycleLen));
+      error = call CXRequestQueue.requestWakeup(atFrame, cycleLen);
+//      printf("wake req %x \r\n", error);
     }
+    nextWakeup = atFrame + cycleLen;
   }
 
   task void checkFrame(){
@@ -122,11 +136,13 @@ module TestP{
   }
 
   task void transmit(){
-    call Rf1aPacket.configureAsData(msg);
-    (call Rf1aPacket.metadata(msg))->payload_length = 20;
-    printf("tx: %x\r\n", call CXRequestQueue.requestSend(
-      call CXRequestQueue.nextFrame(), 5,
-      FALSE, 0, msg));
+    if (nextWakeup){
+      call Rf1aPacket.configureAsData(msg);
+      (call Rf1aPacket.metadata(msg))->payload_length = 20;
+      printf("tx: %x\r\n", call CXRequestQueue.requestSend(
+        nextWakeup, 1,
+        FALSE, 0, msg));
+    }
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
