@@ -27,10 +27,11 @@ module TestP{
   bool transmitAgain = FALSE;
   
   enum{
-    PAYLOAD_LEN= 60,
+    PAYLOAD_LEN= 50,
   };
   typedef nx_struct test_payload {
     nx_uint8_t buffer[PAYLOAD_LEN];
+    nx_uint32_t timestamp;
   } test_payload_t;
 
   task void usage(){
@@ -117,11 +118,13 @@ module TestP{
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t microRef, 
       message_t* msg_){
-    printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
-      microRef, msg_);
+    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
+      microRef, msg_, 
+      (call Rf1aPacket.metadata(msg))->payload_length);
     if (transmitAgain){
+      test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
       printf("resend %x\r\n", call CXRequestQueue.requestSend(atFrame, 1, 
-        TRUE, microRef, msg));
+        TRUE, microRef, &pl->timestamp, msg));
       transmitAgain = FALSE;
     }
   }
@@ -167,9 +170,14 @@ module TestP{
         }
         call Packet.setPayloadLength(msg, sizeof(test_payload_t));
   
-        printf("tx: %x\r\n", call CXRequestQueue.requestSend(
+        printf("tx: %x %p %p\r\n", call CXRequestQueue.requestSend(
           nextWakeup, 1,
-          FALSE, 0, msg));
+          FALSE, 0, 
+          NULL,
+//          &(pl->timestamp),
+          msg),
+          pl,
+          &(pl->timestamp));
       }else{
         printf("PL size error?\r\n");
       }
