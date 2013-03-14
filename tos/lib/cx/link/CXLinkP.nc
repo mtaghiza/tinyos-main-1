@@ -480,10 +480,6 @@ module CXLinkP {
     asyncHandled = TRUE;
   }
   
-  uint8_t* getTimestampAddr(message_t* msg){
-    //TODO: TIME replace with call to CXPacket.getTimestampAddr(msg)
-    return ((uint8_t*)msg)+50;
-  }
   
   unsigned int transmitReadyCount(unsigned int count, bool report){
     unsigned int ret;
@@ -494,7 +490,7 @@ module CXLinkP {
       if (tx_tsSet || tx_tsLoc == NULL){
         available = tx_left;
       }else{
-        available = getTimestampAddr(tx_msg) - tx_pos;
+        available = (uint8_t*)tx_tsLoc - tx_pos;
       }
       ret = (available > count)? count : available;
     }else {
