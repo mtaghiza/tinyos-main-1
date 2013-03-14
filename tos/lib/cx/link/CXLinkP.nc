@@ -12,6 +12,7 @@ module CXLinkP {
   uses interface Rf1aPhysical;
   uses interface DelayedSend;
   uses interface Rf1aPhysicalMetadata;
+  uses interface Rf1aPacket;
 
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface Timer<T32khz> as FrameTimer;
@@ -153,10 +154,10 @@ module CXLinkP {
               atomic{
                 tx_pos = (uint8_t*)nextRequest -> msg;
                 aSfdCapture = 0;
-                aRequestError = SUCCESS;
-                //TODO: TX tx_len from nextRequest->msg metadata
+                tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
                 //TODO: TX CX link header setup
                 //TODO: TIME timestamping setup
+                aRequestError = SUCCESS;
               }
               requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
             }

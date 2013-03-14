@@ -36,6 +36,9 @@ configuration CXLinkC {
   SplitControl = CXLinkP;
   CXRequestQueue = CXLinkP;
 
+  //TODO: FIXME put into packet stack component
+  components new Rf1aIeee154PacketC();
+  CXLinkP.Rf1aPacket -> Rf1aIeee154PacketC.Rf1aPacket;
 
   //for debug only
   Rf1aStatus = Rf1aPhysicalC;
