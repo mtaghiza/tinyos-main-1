@@ -9,6 +9,9 @@ module TestP{
 
   uses interface Rf1aStatus;
   uses interface Rf1aPacket;
+
+  uses interface StdControl as SerialControl;
+  uses interface Timer<TMilli>;
 } implementation {
   bool started = FALSE;
   bool dutyCycling = FALSE;
@@ -29,6 +32,8 @@ module TestP{
     printf("f : + frame shift request\r\n");
     printf("F : - frame shift request\r\n");
     printf("t : transmit\r\n");
+    printf("p : pause serial (for 5 seconds)\r\n");
+    printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
   }
 
   event void Boot.booted(){
@@ -145,6 +150,34 @@ module TestP{
     }
   }
 
+    uint16_t ctl6;
+    uint16_t ctl8;
+  task void pauseSerial(){
+    printf("pausing serial\r\n");
+    call SerialControl.stop();
+    atomic{
+      ctl6 = UCSCTL6;
+      ctl8 = UCSCTL8;
+    }
+    printf("nothing, right?\r\n");
+    call Timer.startOneShot(5120);
+  }
+
+  task void killSerial(){
+    printf("killing serial\r\n");
+    call SerialControl.stop();
+  }
+
+  event void Timer.fired(){
+    call SerialControl.start();
+    printf("and we're back: %x %x ", ctl6, ctl8);
+    atomic{
+      ctl6 = UCSCTL6;
+      ctl8 = UCSCTL8;
+    }
+    printf("-> %x %x\r\n", ctl6, ctl8);
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -170,6 +203,12 @@ module TestP{
          break;
        case 't':
          post transmit();
+         break;
+       case 'p':
+         post pauseSerial();
+         break;
+       case 'k':
+         post killSerial();
          break;
        case '?':
          post usage();
