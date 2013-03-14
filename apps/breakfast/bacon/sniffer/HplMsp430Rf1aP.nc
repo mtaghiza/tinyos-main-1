@@ -1330,7 +1330,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  #define SNIFFER_PKT_LEN 64
+  #define SNIFFER_PKT_LEN (TOSH_DATA_LENGTH + 20)
   #define SNIFFER_QUEUE_LEN 16
   typedef struct sniffed_packet_t {
     uint8_t pkt[SNIFFER_PKT_LEN];
@@ -1391,7 +1391,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      cx_header_t* cxHdr = (cx_header_t*)(&msg->data[-1]);
       message_header_t* msgHdr = (message_header_t*)(msg->header);
       rf1a_ieee154_t* ieee154Hdr = (rf1a_ieee154_t*)msgHdr;
-      printf("S ");
+      printf("S %u ", received);
       for(k = 0; k < SNIFFER_PKT_LEN ; k++){
         printf("%02X", pkt[k]);
       }
