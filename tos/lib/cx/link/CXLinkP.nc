@@ -20,6 +20,8 @@ module CXLinkP {
 
   uses interface Msp430XV2ClockControl;
 
+  uses interface Boot;
+
 } implementation {
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
@@ -452,5 +454,9 @@ module CXLinkP {
   async event void Rf1aPhysical.released () { }
   async event void Rf1aPhysical.frameStarted () { }
   async event void Rf1aPhysical.carrierSense () { }
+
+  event void Boot.booted(){
+    call Msp430XV2ClockControl.stopMicroTimer();
+  }
 
 }
