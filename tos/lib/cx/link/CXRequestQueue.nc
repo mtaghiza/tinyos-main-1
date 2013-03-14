@@ -19,7 +19,8 @@ interface CXRequestQueue{
   // shut off at the completion of the *handled event.
   command error_t requestSend(uint32_t baseFrame, 
     int32_t frameOffset, 
-    bool useMicro, uint32_t microRef,
+    bool useMicro, uint32_t microRef, 
+    nx_uint32_t* tsLoc,
     message_t* msg);
 
   event void sendHandled(error_t error, 

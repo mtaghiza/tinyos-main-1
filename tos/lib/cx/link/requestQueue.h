@@ -26,11 +26,20 @@ typedef struct cx_request{
   int32_t frameOffset;
   uint32_t requestedTime;
   request_type_t requestType;
-  int32_t frameShift;//only germane to frame shift
-  uint32_t duration; //only germane to rx
-  bool useTsMicro;
-  uint32_t tsMicro;
   message_t* msg;
+  union{
+    struct{
+      int32_t frameShift;
+    } frameShift;
+    struct{
+      uint32_t duration;
+    } rx;
+    struct{
+      bool useTsMicro;
+      uint32_t tsMicro;
+      nx_uint32_t* tsLoc;
+    } tx;
+  } typeSpecific;
 } cx_request_t;
 
 bool requestLeq(cx_request_t* l, cx_request_t* r){

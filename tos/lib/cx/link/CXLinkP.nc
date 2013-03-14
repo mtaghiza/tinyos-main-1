@@ -46,6 +46,7 @@ module CXLinkP {
   uint8_t tx_left;
   uint8_t tx_len;
   bool tx_tsSet;
+  nx_uint32_t* tx_tsLoc;
 
   //async-context variables/mirrors
   error_t aRequestError;
@@ -129,7 +130,8 @@ module CXLinkP {
         //shouldn't happen
         break;
     }
-    if (nextRequest->useTsMicro){
+    if (nextRequest->requestType == RT_TX &&
+        nextRequest->typeSpecific.tx.useTsMicro){
       alarmUsers --;
     }
     if (alarmUsers == 0){
@@ -154,7 +156,7 @@ module CXLinkP {
 //          call FrameTimer.gett0() + call FrameTimer.getdt());
         switch (nextRequest -> requestType){
           case RT_FRAMESHIFT:
-            lastFrameTime += nextRequest->frameShift;
+            lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
             handledFrame = lastFrameNum;
             requestError = SUCCESS;
             post requestHandled();
@@ -186,6 +188,7 @@ module CXLinkP {
                 aSfdCapture = 0;
                 tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
                 tx_left = tx_len;
+                tx_tsLoc = nextRequest->typeSpecific.tx.tsLoc;
                 tx_tsSet = FALSE;
                 //TODO: TX CX link header setup
                 aRequestError = SUCCESS;
@@ -258,7 +261,7 @@ module CXLinkP {
 
     //micro timer required but it's either off or has been stopped
     //since the request was made
-    }else if(r->useTsMicro && 
+    }else if(r->requestType == RT_TX && r->typeSpecific.tx.useTsMicro && 
       (( ! call Msp430XV2ClockControl.isMicroTimerRunning()) 
          || (lastMicroStart > r->requestedTime))){
       return EINVAL;
@@ -274,14 +277,13 @@ module CXLinkP {
       r->baseFrame = baseFrame;
       r->requestType = requestType;
       r->frameOffset = frameOffset;
-      r->useTsMicro = FALSE;
       r->msg = NULL;
     }
     return r;
   }
 
   void enqueue(cx_request_t* r){
-    if ( r->useTsMicro){
+    if ( r->requestType == RT_TX && r->typeSpecific.tx.useTsMicro){
       alarmUsers++;
     }
     if (requestLeq(r, nextRequest)){
@@ -302,7 +304,7 @@ module CXLinkP {
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){
-        r->frameShift = frameShift;
+        r->typeSpecific.frameShift.frameShift = frameShift;
         enqueue(r);
       }
       return error;
@@ -326,12 +328,14 @@ module CXLinkP {
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
+      nx_uint32_t* tsLoc,
       message_t* msg){
     cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX);
     if (r != NULL){
       error_t error;
-      r->useTsMicro = useMicro;
-      r->tsMicro = microRef;
+      r->typeSpecific.tx.useTsMicro = useMicro;
+      r->typeSpecific.tx.tsMicro = microRef;
+      r->typeSpecific.tx.tsLoc = tsLoc;
       r->msg = msg;
       error = validateRequest(r);
       if (SUCCESS == error){
@@ -416,9 +420,8 @@ module CXLinkP {
   task void setTimestamp(){
     atomic{
       events[eventIndex++] = 3;
-      //TODO: TIME uncomment setTS call when wired
-//      call CXPacket.setTimestamp(tx_msg, aSfdCapture);
       tx_tsSet = TRUE;
+      *tx_tsLoc = aSfdCapture;
     }
   }
 
@@ -432,8 +435,7 @@ module CXLinkP {
     //expand to 32 bits
     aSfdCapture = (ft & 0xffff0000) | time;
     events[eventIndex++]=2;
-    if (ENABLE_TIMESTAMPING){
-//      tx_tsSet = TRUE;
+    if (ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
       post setTimestamp();
     }
     //TODO: RX extend/cancel micro alarm (frame-wait)
@@ -447,9 +449,9 @@ module CXLinkP {
   }
 
   event void DelayedSend.sendReady(){
-    if (nextRequest->useTsMicro){
+    if (nextRequest->typeSpecific.tx.useTsMicro){
       int32_t dt = (nextRequest->frameOffset)*FRAMELEN_6_5M;
-      uint32_t t0 = nextRequest->tsMicro;
+      uint32_t t0 = nextRequest->typeSpecific.tx.tsMicro;
       //TODO: FIXME Wrapping logic/signedness issues? could mandate that
       //  frameOffset is always non-negative, that could simplify
       //  matters.
@@ -487,9 +489,9 @@ module CXLinkP {
     unsigned int ret;
     if(ENABLE_TIMESTAMPING){
       unsigned int available;
-      //pause at the start of the timestamp field if we haven't figured it out
+      //pause at the start of the timestamp field if it's required but we haven't figured it out
       //yet.
-      if (tx_tsSet){
+      if (tx_tsSet || tx_tsLoc == NULL){
         available = tx_left;
       }else{
         available = getTimestampAddr(tx_msg) - tx_pos;
