@@ -21,5 +21,6 @@
 #define MIN_FASTALARM_SLACK 0UL
 //3250 = 0.5 ms
 #define RX_DEFAULT_WAIT 3250UL
+#define RX_MAX_WAIT (0xFFFFFFFF)
 
 #endif
