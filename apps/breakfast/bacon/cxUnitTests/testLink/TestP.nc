@@ -23,6 +23,8 @@ module TestP{
   message_t msg_internal;
   message_t* msg = &msg_internal;
 
+  bool transmitAgain = FALSE;
+
   task void usage(){
     printf("---- Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
@@ -32,6 +34,7 @@ module TestP{
     printf("f : + frame shift request\r\n");
     printf("F : - frame shift request\r\n");
     printf("t : transmit\r\n");
+    printf("T : transmit x2\r\n");
     printf("p : pause serial (for 5 seconds)\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
   }
@@ -108,6 +111,11 @@ module TestP{
       message_t* msg_){
     printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
       microRef, msg_);
+    if (transmitAgain){
+      printf("resend %x\r\n", call CXRequestQueue.requestSend(atFrame, 1, 
+        TRUE, microRef, msg));
+      transmitAgain = FALSE;
+    }
   }
 
   event void CXRequestQueue.sleepHandled(error_t error,
@@ -139,8 +147,7 @@ module TestP{
     printf("invalid sleep: %x\r\n", 
       call CXRequestQueue.requestWakeup(call CXRequestQueue.nextFrame(), -1));
   }
-
-  task void transmit(){
+  void doTransmit(){
     if (nextWakeup){
       call Rf1aPacket.configureAsData(msg);
       (call Rf1aPacket.metadata(msg))->payload_length = 20;
@@ -150,8 +157,19 @@ module TestP{
     }
   }
 
-    uint16_t ctl6;
-    uint16_t ctl8;
+  task void transmit(){
+    transmitAgain = FALSE;
+    doTransmit();
+  }
+
+  task void transmitx2(){
+    transmitAgain = TRUE;
+    doTransmit();
+  }
+
+  uint16_t ctl6;
+  uint16_t ctl8;
+
   task void pauseSerial(){
     printf("pausing serial\r\n");
     call SerialControl.stop();
@@ -170,12 +188,7 @@ module TestP{
 
   event void Timer.fired(){
     call SerialControl.start();
-    printf("and we're back: %x %x ", ctl6, ctl8);
-    atomic{
-      ctl6 = UCSCTL6;
-      ctl8 = UCSCTL8;
-    }
-    printf("-> %x %x\r\n", ctl6, ctl8);
+    printf("resume serial\r\n");
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -203,6 +216,9 @@ module TestP{
          break;
        case 't':
          post transmit();
+         break;
+       case 'T':
+         post transmitx2();
          break;
        case 'p':
          post pauseSerial();
