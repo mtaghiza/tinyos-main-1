@@ -13,6 +13,7 @@ module CXLinkP {
   uses interface DelayedSend;
   uses interface Rf1aPhysicalMetadata;
   uses interface Rf1aPacket;
+  provides interface Rf1aTransmitFragment;
 
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface Timer<T32khz> as FrameTimer;
@@ -40,14 +41,24 @@ module CXLinkP {
   cx_request_t* nextRequest = NULL;
 
   //Timestamping/transmit fragmentation
+  message_t* tx_msg;
   uint8_t* tx_pos;
+  uint8_t tx_left;
   uint8_t tx_len;
+  bool tx_tsSet;
 
   //async-context variables/mirrors
   error_t aRequestError;
   request_type_t aNextRequestType;
   uint32_t aSfdCapture;
   bool asyncHandled = FALSE;
+
+  //debug-only
+  #define EVENT_LEN 20
+  uint8_t events[EVENT_LEN];
+  uint8_t eventIndex=0;
+  uint8_t trcReady[EVENT_LEN];
+  uint8_t trcIndex = 0;
 
   //forward declarations
   task void readyNextRequest();
@@ -91,6 +102,20 @@ module CXLinkP {
         signal CXRequestQueue.wakeupHandled(requestError, handledFrame);
         break;
       case RT_TX:
+        {
+          uint8_t i;
+          printf("#E");
+          for (i = 0; i < EVENT_LEN ; i++){
+            printf(" %x", events[i]);
+          }
+          printf("\r\n");
+          printf("#TRC");
+          for (i = 0; i < EVENT_LEN ; i++){
+            printf(" %u", trcReady[i]);
+          }
+          printf("\r\n");
+
+        }
         signal CXRequestQueue.sendHandled(requestError, handledFrame,
           sfdCapture, nextRequest->msg);
         sfdCapture = 0;
@@ -123,10 +148,10 @@ module CXLinkP {
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       if (targetFrame == lastFrameNum){
-        printf("handle %x @ %lu / %lu\r\n", 
-          nextRequest->requestType,         
-          lastFrameNum, 
-          call FrameTimer.gett0() + call FrameTimer.getdt());
+//        printf("handle %x @ %lu / %lu\r\n", 
+//          nextRequest->requestType,         
+//          lastFrameNum, 
+//          call FrameTimer.gett0() + call FrameTimer.getdt());
         switch (nextRequest -> requestType){
           case RT_FRAMESHIFT:
             lastFrameTime += nextRequest->frameShift;
@@ -156,15 +181,23 @@ module CXLinkP {
             if (SUCCESS == requestError){
               atomic{
                 aNextRequestType = nextRequest->requestType;
+                tx_msg = nextRequest->msg;
                 tx_pos = (uint8_t*)nextRequest -> msg;
                 aSfdCapture = 0;
                 tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
+                tx_left = tx_len;
+                tx_tsSet = FALSE;
                 //TODO: TX CX link header setup
-                //TODO: TIME timestamping setup
                 aRequestError = SUCCESS;
+                requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
+
+                memset(events, EVENT_LEN, 0);
+                eventIndex=0;
+                memset(trcReady, EVENT_LEN, 0);
+                trcIndex=0;
               }
-              requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
             }
+//            printf("len %u left %u\r\n", tx_len, tx_left);
             if (SUCCESS != requestError){
               handledFrame = lastFrameNum;
               post requestHandled();
@@ -380,6 +413,15 @@ module CXLinkP {
     return requestLeq(l, r);
   }
 
+  task void setTimestamp(){
+    atomic{
+      events[eventIndex++] = 3;
+      //TODO: TIME uncomment setTS call when wired
+//      call CXPacket.setTimestamp(tx_msg, aSfdCapture);
+      tx_tsSet = TRUE;
+    }
+  }
+
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
     //overflow detected: assumes that 16-bit capture time has
@@ -389,7 +431,11 @@ module CXLinkP {
     }
     //expand to 32 bits
     aSfdCapture = (ft & 0xffff0000) | time;
-    //TODO: TIME post task to set timestamp
+    events[eventIndex++]=2;
+    if (ENABLE_TIMESTAMPING){
+//      tx_tsSet = TRUE;
+      post setTimestamp();
+    }
     //TODO: RX extend/cancel micro alarm (frame-wait)
     call SynchCapture.disable();
 
@@ -432,6 +478,44 @@ module CXLinkP {
     asyncHandled = TRUE;
   }
   
+  uint8_t* getTimestampAddr(message_t* msg){
+    //TODO: TIME replace with call to CXPacket.getTimestampAddr(msg)
+    return ((uint8_t*)msg)+50;
+  }
+  
+  unsigned int transmitReadyCount(unsigned int count, bool report){
+    unsigned int ret;
+    if(ENABLE_TIMESTAMPING){
+      unsigned int available;
+      //pause at the start of the timestamp field if we haven't figured it out
+      //yet.
+      if (tx_tsSet){
+        available = tx_left;
+      }else{
+        available = getTimestampAddr(tx_msg) - tx_pos;
+      }
+      ret = (available > count)? count : available;
+    }else {
+      ret = tx_left > count? count: tx_left;
+    } 
+    if (report){
+      trcReady[trcIndex++] = ret;
+    }
+    return ret;
+  }
+
+  async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){
+    return transmitReadyCount(count, TRUE);
+  }
+
+  async command const uint8_t* Rf1aTransmitFragment.transmitData(unsigned int count){
+    unsigned int available = transmitReadyCount(count, FALSE);
+    const uint8_t* ret= tx_pos;
+    events[eventIndex++] = 1;
+    tx_left -= available;
+    tx_pos += available;
+    return ret;
+  }
 
   //even though this is marked async, it's actually only signalled
   //  from task context in HplMsp430Rf1aP.

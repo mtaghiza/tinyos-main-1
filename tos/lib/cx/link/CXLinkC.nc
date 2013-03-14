@@ -24,6 +24,7 @@ configuration CXLinkC {
   CXLinkP.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
   CXLinkP.DelayedSend -> Rf1aPhysicalC;
   CXLinkP.Resource -> Rf1aPhysicalC;
+  Rf1aPhysicalC.Rf1aTransmitFragment -> CXLinkP;
 
   components SRFS7_915_GFSK_125K_SENS_HC as RadioConfigC;
   Rf1aPhysicalC.Rf1aConfigure -> RadioConfigC;
