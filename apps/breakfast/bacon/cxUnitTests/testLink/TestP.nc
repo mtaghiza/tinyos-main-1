@@ -6,13 +6,18 @@ module TestP{
   
   uses interface SplitControl;
   uses interface CXRequestQueue;
+
   uses interface Rf1aStatus;
+  uses interface Rf1aPacket;
 } implementation {
   bool started = FALSE;
   bool dutyCycling = FALSE;
 
   uint32_t cycleLen = 100;
   uint32_t activeFrames = 10;
+
+  message_t msg_internal;
+  message_t* msg = &msg_internal;
 
   task void usage(){
     printf("---- Commands ----\r\n");
@@ -22,6 +27,7 @@ module TestP{
     printf("i : make invalid sleep request\r\n");
     printf("f : + frame shift request\r\n");
     printf("F : - frame shift request\r\n");
+    printf("t : transmit\r\n");
   }
 
   event void Boot.booted(){
@@ -77,11 +83,14 @@ module TestP{
 
   event void CXRequestQueue.receiveHandled(error_t error, 
     uint32_t atFrame, bool didReceive, 
-    uint32_t microRef, message_t* msg){}
+    uint32_t microRef, message_t* msg_){}
 
   event void CXRequestQueue.sendHandled(error_t error, 
-    uint32_t atFrame, uint32_t microRef, 
-    message_t* msg){}
+      uint32_t atFrame, uint32_t microRef, 
+      message_t* msg_){
+    printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
+      microRef, msg_);
+  }
 
   event void CXRequestQueue.sleepHandled(error_t error,
       uint32_t atFrame){
@@ -112,6 +121,14 @@ module TestP{
       call CXRequestQueue.requestWakeup(call CXRequestQueue.nextFrame(), -1));
   }
 
+  task void transmit(){
+    call Rf1aPacket.configureAsData(msg);
+    (call Rf1aPacket.metadata(msg))->payload_length = 20;
+    printf("tx: %x\r\n", call CXRequestQueue.requestSend(
+      call CXRequestQueue.nextFrame(), 5,
+      FALSE, 0, msg));
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -134,6 +151,9 @@ module TestP{
          break;
        case 'F':
          post shiftNegative();
+         break;
+       case 't':
+         post transmit();
          break;
        case '?':
          post usage();

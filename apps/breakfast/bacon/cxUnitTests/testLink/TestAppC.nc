@@ -14,4 +14,5 @@ configuration TestAppC{
   TestP.SplitControl -> CXLinkC;
 
   TestP.Rf1aStatus -> CXLinkC;
+  TestP.Rf1aPacket -> CXLinkC;
 }
