@@ -17,6 +17,9 @@
 //n.b. it seems like mspgcc is smart enough to see /1024 and translate
 //it to >> 10. so, it's fine to divide by this defined constant.
 
+//TODO: FIXME define these.
 #define MIN_FASTALARM_SLACK 0UL
+//3250 = 0.5 ms
+#define RX_DEFAULT_WAIT 3250UL
 
 #endif

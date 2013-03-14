@@ -53,6 +53,7 @@ module CXLinkP {
   request_type_t aNextRequestType;
   uint32_t aSfdCapture;
   bool asyncHandled = FALSE;
+  unsigned int aCount;
 
   //debug-only
   #define EVENT_LEN 20
@@ -212,11 +213,21 @@ module CXLinkP {
               call Msp430XV2ClockControl.startMicroTimer();
               lastMicroStart = lastFrameTime;
             }
-            requestError = FAIL;
-            //TODO: RX set timeout alarm
-            //TODO: RX enable RE GDO capture 
-            //TODO: RX configure radio/provide rx buffer.
-            post requestHandled();
+            requestError = call Rf1aPhysical.setReceiveBuffer(
+              (uint8_t*)nextRequest->msg,
+              TOSH_DATA_LENGTH + sizeof(message_header_t),
+              TRUE);
+            if (SUCCESS == requestError ){
+              atomic{
+                aNextRequestType = nextRequest->requestType;
+                aRequestError = SUCCESS;
+                aSfdCapture = 0;
+                call FastAlarm.start(nextRequest->typeSpecific.rx.duration);
+                call SynchCapture.captureRisingEdge();
+              }
+            }else{
+              post requestHandled();
+            }
             break;
           default:
             //should not happen.
@@ -318,7 +329,27 @@ module CXLinkP {
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       message_t* msg){
-    return FAIL;
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX);
+    if (r != NULL){
+      error_t error;
+      //TODO: would be nice to use microRef/useMicro for more precise
+      //wakeups, i guess.
+      if (duration == 0){
+        r->typeSpecific.rx.duration = RX_DEFAULT_WAIT;
+      } else{
+        r->typeSpecific.rx.duration = duration;
+      }
+      r->msg = msg;
+      error = validateRequest(r);
+      if (SUCCESS == error){
+        enqueue(r);
+      }else{
+        call Pool.put(r);
+      }
+      return error;
+    } else{
+      return ENOMEM;
+    }
   }
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
@@ -435,10 +466,16 @@ module CXLinkP {
     //expand to 32 bits
     aSfdCapture = (ft & 0xffff0000) | time;
     events[eventIndex++]=2;
-    if (ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
-      post setTimestamp();
+    if (aNextRequestType == RT_TX){
+      if(ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
+        post setTimestamp();
+      }
+    }else if (aNextRequestType == RT_RX){
+      //TODO: CHECKME do we have to extend the timeout, or can we just
+      //cancel it?
+      // should we set a falling edge capture? 
+      call FastAlarm.stop();
     }
-    //TODO: RX extend/cancel micro alarm (frame-wait)
     call SynchCapture.disable();
 
     asyncHandled = TRUE;
@@ -467,15 +504,38 @@ module CXLinkP {
     }
     call SynchCapture.captureRisingEdge();
   }
+  
+  task void signalNoneReceived(){
+    didReceive = FALSE;
+    post requestHandled();
+  }
+
+  task void signalReceived(){
+    didReceive = TRUE;
+    atomic{
+      (call Rf1aPacket.metadata(nextRequest->msg))->payload_length =
+      aCount;
+    }
+    post requestHandled();
+  }
 
   async event void FastAlarm.fired(){
     //TX
     if (aNextRequestType == RT_TX){
+      //TODO: FUTURE maybe do a busy-wait here on the timer register
+      //and issue the strobe at a more precise instant.
       aRequestError = call DelayedSend.startSend();
-    }else{
+    }else if (aNextRequestType == RT_RX){
       //RX (frame wait)
       //  if we're not mid-reception, resume idle mode.
       //  signal handled with nothing received
+
+      aRequestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+      if (aRequestError == SUCCESS){
+        //TODO: FIXME this was required in older version, still needed?
+        aRequestError = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE);
+      }
+      post signalNoneReceived();
     }
     asyncHandled = TRUE;
   }
@@ -524,10 +584,19 @@ module CXLinkP {
     }
     post requestHandled();
   }
+  
 
+  //again, marked async but signaled from task sometimes
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
-                                             int result) {}
+                                             int result) {
+    atomic{
+      call FastAlarm.stop();
+      aRequestError = result;
+      aCount = count;
+      post signalReceived();
+    }
+  }
 
   async event void Rf1aPhysical.receiveStarted (unsigned int length) { }
   async event void Rf1aPhysical.receiveBufferFilled (uint8_t* buffer,
