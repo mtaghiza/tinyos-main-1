@@ -160,7 +160,6 @@ generic module Rf1aFECP () {
     if (sizeof(rxEncoded) < call FEC.encodedLen(length)){
       return ESIZE;
     }
-    printf("give rxb len %u->%u\r\n", length, call FEC.encodedLen(length));
     atomic{
       rxBuf = buffer;
       return call SubRf1aPhysical.setReceiveBuffer(rxEncoded,
