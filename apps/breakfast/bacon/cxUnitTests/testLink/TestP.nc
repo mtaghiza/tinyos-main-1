@@ -37,8 +37,8 @@ module TestP{
 
   task void usage(){
     printf("---- Commands ----\r\n");
-    printf("S : toggle start/stop\r\n");
-    printf("s : sleep/wakeup\r\n");
+    printf("S : toggle start/stop + wakeup at startDone\r\n");
+    printf("d : duty cycle sleep/wakeup\r\n");
     printf("c : check current frame\r\n");
     printf("i : make invalid sleep request\r\n");
     printf("f : + frame shift request\r\n");
@@ -80,13 +80,17 @@ module TestP{
   event void SplitControl.startDone(error_t error){
     printf("started %x status %x\r\n", error, call Rf1aStatus.get());
     started = TRUE;
+    printf("wakeup req %x\r\n", 
+      call CXRequestQueue.requestWakeup(
+        call CXRequestQueue.nextFrame(), 0));
   }
+
   event void SplitControl.stopDone(error_t error){
     printf("stopped %x status %x\r\n", error, call Rf1aStatus.get());
     started = FALSE;
   }
 
-  task void sleepWake(){
+  task void dutyCycle(){
     if (! dutyCycling){
       uint32_t fn = call CXRequestQueue.nextFrame() + 5;
       printf("wakeup req %x\r\n", call CXRequestQueue.requestWakeup(fn, 0));
@@ -167,6 +171,7 @@ module TestP{
     printf("invalid sleep: %x\r\n", 
       call CXRequestQueue.requestWakeup(call CXRequestQueue.nextFrame(), -1));
   }
+
   void doTransmit(){
     if (nextWakeup){
       test_payload_t * pl;
@@ -180,8 +185,8 @@ module TestP{
         call Packet.setPayloadLength(msg, sizeof(test_payload_t));
   
         printf("tx: %x %p %p\r\n", call CXRequestQueue.requestSend(
-          nextWakeup, 1,
-          FALSE, 0, 
+        dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
+          FALSE, 1, 
           NULL,
 //          &(pl->timestamp),
           msg),
@@ -229,9 +234,10 @@ module TestP{
 
   task void requestLongReceive(){
     printf("rx req: %x\r\n", 
-      call CXRequestQueue.requestReceive(nextWakeup, 1,
+      call CXRequestQueue.requestReceive(
+        dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
         FALSE, 0,
-        RX_MAX_WAIT >> 7,
+        RX_MAX_WAIT >> 5,
         msg));
   }
 
@@ -243,8 +249,8 @@ module TestP{
        case 'S':
          post toggleStartStop();
          break;
-       case 's':
-         post sleepWake();
+       case 'd':
+         post dutyCycle();
          break;
        case 'c':
          post checkFrame();
