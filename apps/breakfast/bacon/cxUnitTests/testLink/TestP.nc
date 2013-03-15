@@ -136,21 +136,23 @@ module TestP{
 
   event void CXRequestQueue.sleepHandled(error_t error,
       uint32_t atFrame){
-//    printf("sleep handled %x status %x\r\n", error, 
-//      call Rf1aStatus.get());
-    if (dutyCycling){
-      error = call CXRequestQueue.requestSleep(atFrame, cycleLen);
-//      printf("sleep req %x \r\n", error); 
+    if (error != SUCCESS){
+      printf("sleep handled: %x %lu\r\n", error, atFrame);
+    }else{
+      if (dutyCycling){
+        error = call CXRequestQueue.requestSleep(atFrame, cycleLen);
+      }
     }
   }
 
   event void CXRequestQueue.wakeupHandled(error_t error,
-    uint32_t atFrame){
-//    printf("wakeup handled %x status %x\r\n", error, 
-//      call Rf1aStatus.get());
-    if (dutyCycling){
-      error = call CXRequestQueue.requestWakeup(atFrame, cycleLen);
-//      printf("wake req %x \r\n", error);
+      uint32_t atFrame){
+    if (error != SUCCESS){
+      printf("wakeup handled: %x %lu\r\n", error, atFrame);
+    }else{
+      if (dutyCycling){
+        error = call CXRequestQueue.requestWakeup(atFrame, cycleLen);
+      }
     }
     nextWakeup = atFrame + cycleLen;
   }
@@ -227,7 +229,7 @@ module TestP{
     printf("rx req: %x\r\n", 
       call CXRequestQueue.requestReceive(nextWakeup, 1,
         FALSE, 0,
-        RX_MAX_WAIT,
+        RX_MAX_WAIT >> 5,
         msg));
   }
 
