@@ -142,8 +142,10 @@ module CXLinkP {
     call Pool.put(nextRequest);
     if (! call Queue.empty()){
       nextRequest = call Queue.dequeue();
+      post readyNextRequest();
+    }else{
+      nextRequest = NULL;
     }
-    post readyNextRequest();
   }
 
   event void FrameTimer.fired(){
@@ -213,6 +215,7 @@ module CXLinkP {
               call Msp430XV2ClockControl.startMicroTimer();
               lastMicroStart = lastFrameTime;
             }
+            didReceive = FALSE;
             requestError = call Rf1aPhysical.setReceiveBuffer(
               (uint8_t*)nextRequest->msg,
               TOSH_DATA_LENGTH + sizeof(message_header_t),
@@ -247,22 +250,24 @@ module CXLinkP {
   }
 
   task void readyNextRequest(){
-    //if request is not valid, we need to signal its handling
-    //  and pull the next one from the queue.
-    error_t err = validateRequest(nextRequest);
-    if (SUCCESS != err){
-      requestError = err;
-      post requestHandled();
-    }else{
-      uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
-      uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
-
-      //TODO: FIXME if the request requires additional preparation time, go ahead and do
-      //so: this slack should be stored so that when frametimer fires,
-      //  we can account for it.
-      call FrameTimer.startOneShotAt(lastFrameTime, dt);
+    if (nextRequest != NULL){
+      //if request is not valid, we need to signal its handling
+      //  and pull the next one from the queue.
+      error_t err = validateRequest(nextRequest);
+      if (SUCCESS != err){
+        requestError = err;
+  //      printf("rnR: %x %x\r\n", error, nextRequest->requestType);
+        post requestHandled();
+      }else{
+        uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
+        uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
+  
+        //TODO: FIXME if the request requires additional preparation time, go ahead and do
+        //so: this slack should be stored so that when frametimer fires,
+        //  we can account for it.
+        call FrameTimer.startOneShotAt(lastFrameTime, dt);
+      }
     }
-
   }
 
   error_t validateRequest(cx_request_t* r){
@@ -329,7 +334,7 @@ module CXLinkP {
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       message_t* msg){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX);
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_RX);
     if (r != NULL){
       error_t error;
       //TODO: would be nice to use microRef/useMicro for more precise
