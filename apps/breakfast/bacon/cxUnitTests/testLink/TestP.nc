@@ -64,6 +64,7 @@ module TestP{
 
       P1DIR |= BIT1;
       P1SEL &= ~BIT1;
+      P1OUT &= ~BIT1;
 //      P1SEL |= BIT1;
       P2DIR |= BIT4;
       P2SEL |= BIT4;
@@ -140,13 +141,20 @@ module TestP{
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
       message_t* msg_){
-    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
-      microRef, msg_, 
-      (call Rf1aPacket.metadata(msg))->payload_length);
+    if (error != SUCCESS){
+      printf("send handled: %x\r\n", error);
+    }
+//    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
+//      microRef, msg_, 
+//      (call Rf1aPacket.metadata(msg))->payload_length);
     if (transmitAgain){
       test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
-      printf("resend %x\r\n", call CXRequestQueue.requestSend(atFrame, 1, 
-        TRUE, microRef, &pl->timestamp, msg));
+      error = call CXRequestQueue.requestSend(atFrame, 1, 
+          TRUE, microRef, 
+          &pl->timestamp, msg);
+      if (SUCCESS != error){
+        printf("resend %x\r\n", error);
+      }
       transmitAgain = FALSE;
     }
   }
