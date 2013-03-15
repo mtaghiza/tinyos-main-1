@@ -1,5 +1,6 @@
 
  #include "CXLink.h"
+ #include "CXLinkDebug.h"
 module CXLinkP {
   provides interface SplitControl;
   provides interface CXRequestQueue;
@@ -55,9 +56,14 @@ module CXLinkP {
   bool asyncHandled = FALSE;
   unsigned int aCount;
 
+  //frame-resynch
+  uint32_t a32kCapture;
+
   //forward declarations
   task void readyNextRequest();
   error_t validateRequest(cx_request_t* r);
+  cx_request_t* newRequest(uint32_t baseFrame, 
+      int32_t frameOffset, request_type_t requestType);
   
   void updateLastFrameNum(){
     //this should be safe from integer wrap
@@ -73,6 +79,10 @@ module CXLinkP {
     return lastFrameNum + 1;
   }
 
+  uint32_t fastToSlow(uint32_t fastTicks){
+    //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
+    return (1024UL*fastTicks)/203125UL;
+  }
 
   task void requestHandled(){
     //if the request finished in the async context, need to copy
@@ -83,6 +93,17 @@ module CXLinkP {
       if (asyncHandled){
         sfdCapture = aSfdCapture;
         requestError = aRequestError;
+      }
+
+      //TODO: make sure packet was good to synch with (from self or
+      //  crc passed)
+      if (sfdCapture != 0){
+        uint32_t fastRef1 = call FastAlarm.getNow();
+        uint32_t slowRef = call FrameTimer.getNow();
+        uint32_t fastRef2 = call FastAlarm.getNow();
+        uint32_t fastTicks = ((fastRef1+fastRef2)/2) - sfdCapture;
+        uint32_t slowTicks = fastToSlow(fastTicks);
+        lastFrameTime = slowRef-slowTicks;
       }
       asyncHandled = FALSE;
     }
@@ -113,6 +134,10 @@ module CXLinkP {
           didReceive, sfdCapture, nextRequest->msg);
         sfdCapture = 0;
         break;
+
+      case RT_MARK:
+        break;
+
       default:
         //shouldn't happen
         break;
@@ -130,17 +155,28 @@ module CXLinkP {
       nextRequest = call Queue.dequeue();
       post readyNextRequest();
     }else{
-      nextRequest = NULL;
+      if (LINK_DEBUG_FRAME_BOUNDARIES){
+        //TODO: DEBUG: replace with =NULL
+        nextRequest = newRequest(lastFrameNum, 1, RT_MARK);
+        post readyNextRequest();
+      }else{
+        nextRequest = NULL;
+      }
     }
   }
 
   event void FrameTimer.fired(){
     updateLastFrameNum();
-
+    
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       handledFrame = lastFrameNum;
       if (targetFrame == lastFrameNum){
+        if (LINK_DEBUG_FRAME_BOUNDARIES){
+          //TODO: DEBUG remove 
+          atomic P1OUT ^= BIT1;
+        }
+
 //        printf("handle %x @ %lu / %lu\r\n", 
 //          nextRequest->requestType,         
 //          lastFrameNum, 
@@ -167,7 +203,7 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             requestError = call Rf1aPhysical.startTransmission(FALSE,
-            TRUE);
+              TRUE);
             if (SUCCESS == requestError){
               atomic{
                 aNextRequestType = nextRequest->requestType;
@@ -178,7 +214,8 @@ module CXLinkP {
                 tx_left = tx_len;
                 tx_tsLoc = nextRequest->typeSpecific.tx.tsLoc;
                 tx_tsSet = FALSE;
-                //TODO: TX CX link header setup
+                //TODO: TX CX link header setup-- decrement TTL (if
+                //  non-0), increment hop count.
                 aRequestError = SUCCESS;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
 
@@ -188,6 +225,7 @@ module CXLinkP {
               post requestHandled();
             }
             break;
+
           case RT_RX:
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
@@ -210,6 +248,12 @@ module CXLinkP {
               post requestHandled();
             }
             break;
+
+          case RT_MARK:
+            //TODO: DEBUG remove
+            post requestHandled();
+            break;
+
           default:
             //should not happen.
         }
@@ -246,7 +290,7 @@ module CXLinkP {
         //so: this slack should be stored so that when frametimer fires,
         //  we can account for it.
         call FrameTimer.startOneShotAt(lastFrameTime, dt);
-        printf("Next: %x @%lu (%lu)\r\n", 
+        printf_LINK("Next: %x @%lu (%lu)\r\n", 
           nextRequest->requestType,
           targetFrame,
           lastFrameTime+dt);
@@ -448,6 +492,7 @@ module CXLinkP {
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
+
     //overflow detected: assumes that 16-bit capture time has
     //  overflowed at most once before this event runs
     if (time > (ft & 0x0000ffff)){

@@ -14,6 +14,7 @@ typedef enum {
   RT_WAKEUP = 2,
   RT_TX = 3,
   RT_RX = 4,
+  RT_MARK = 5,
 } request_type_t;
 
 //frame number increments every 2**-15 * 2**10 = 2**-5 seconds
