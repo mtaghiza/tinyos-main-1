@@ -55,13 +55,6 @@ module CXLinkP {
   bool asyncHandled = FALSE;
   unsigned int aCount;
 
-  //debug-only
-  #define EVENT_LEN 20
-  uint8_t events[EVENT_LEN];
-  uint8_t eventIndex=0;
-  uint8_t trcReady[EVENT_LEN];
-  uint8_t trcIndex = 0;
-
   //forward declarations
   task void readyNextRequest();
   error_t validateRequest(cx_request_t* r);
@@ -107,20 +100,6 @@ module CXLinkP {
           handledFrame, reqFrame); 
         break;
       case RT_TX:
-        {
-          uint8_t i;
-          printf("#E");
-          for (i = 0; i < EVENT_LEN ; i++){
-            printf(" %x", events[i]);
-          }
-          printf("\r\n");
-          printf("#TRC");
-          for (i = 0; i < EVENT_LEN ; i++){
-            printf(" %u", trcReady[i]);
-          }
-          printf("\r\n");
-
-        }
         signal CXRequestQueue.sendHandled(requestError, 
           handledFrame,
           reqFrame,
@@ -203,13 +182,8 @@ module CXLinkP {
                 aRequestError = SUCCESS;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
 
-                memset(events, EVENT_LEN, 0);
-                eventIndex=0;
-                memset(trcReady, EVENT_LEN, 0);
-                trcIndex=0;
               }
             }
-//            printf("len %u left %u\r\n", tx_len, tx_left);
             if (SUCCESS != requestError){
               post requestHandled();
             }
@@ -467,7 +441,6 @@ module CXLinkP {
 
   task void setTimestamp(){
     atomic{
-      events[eventIndex++] = 3;
       tx_tsSet = TRUE;
       *tx_tsLoc = aSfdCapture;
     }
@@ -482,7 +455,6 @@ module CXLinkP {
     }
     //expand to 32 bits
     aSfdCapture = (ft & 0xffff0000) | time;
-    events[eventIndex++]=2;
     if (aNextRequestType == RT_TX){
       if(ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
         post setTimestamp();
@@ -557,39 +529,36 @@ module CXLinkP {
     asyncHandled = TRUE;
   }
   
-  
-  unsigned int transmitReadyCount(unsigned int count, bool report){
-    unsigned int ret;
+
+  async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){
     if(ENABLE_TIMESTAMPING){
       unsigned int available;
       //pause at the start of the timestamp field if it's required but we haven't figured it out
       //yet.
-      if (tx_tsSet || tx_tsLoc == NULL){
-        available = tx_left;
-      }else{
-        available = (uint8_t*)tx_tsLoc - tx_pos;
+      //This is marked async, but called from task context by FEC
+      //  component.
+      atomic{
+        if (tx_tsSet || tx_tsLoc == NULL){
+          available = tx_left;
+        }else{
+          available = (uint8_t*)tx_tsLoc - tx_pos;
+        }
       }
-      ret = (available > count)? count : available;
+      return (available > count)? count : available;
     }else {
-      ret = tx_left > count? count: tx_left;
+      return tx_left > count? count: tx_left;
     } 
-    if (report){
-      trcReady[trcIndex++] = ret;
-    }
-    return ret;
-  }
-
-  async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count){
-    return transmitReadyCount(count, TRUE);
   }
 
   async command const uint8_t* Rf1aTransmitFragment.transmitData(unsigned int count){
-    unsigned int available = transmitReadyCount(count, FALSE);
-    const uint8_t* ret= tx_pos;
-    events[eventIndex++] = 1;
-    tx_left -= available;
-    tx_pos += available;
-    return ret;
+    unsigned int available = call Rf1aTransmitFragment.transmitReadyCount(count);
+    //called from task context by FEC component
+    atomic{
+      const uint8_t* ret= tx_pos;
+      tx_left -= available;
+      tx_pos += available;
+      return ret;
+    }
   }
 
   //even though this is marked async, it's actually only signalled
