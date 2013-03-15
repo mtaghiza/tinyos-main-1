@@ -629,6 +629,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //        }
         if(tx_state == TX_S_preparing){
           tx_state = TX_S_loaded;
+          signal DelayedSend.sendReady[client]();
         }
         wrote_data = TRUE;
         
@@ -943,7 +944,6 @@ generic module HplMsp430Rf1aP () @safe() {
       }
       tx_startOK = FALSE;
       post sendFragment_task();
-      signal DelayedSend.sendReady[client]();
     }
     return SUCCESS;
   }

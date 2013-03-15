@@ -81,7 +81,7 @@ module CXLinkP {
 
   uint32_t fastToSlow(uint32_t fastTicks){
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
-    return (1024UL*fastTicks)/203125UL;
+    return (FRAMELEN_32K*fastTicks)/FRAMELEN_6_5M;
   }
 
   task void requestHandled(){
@@ -108,8 +108,14 @@ module CXLinkP {
         fastTicks = ((fastRef1+fastRef2)/2) - microRef;
         //elapsed slow-ticks since strobe
         slowTicks = fastToSlow(fastTicks);
+        printf_LINK("cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
+          aSfdCapture, microRef,
+          fastRef1, fastRef2, slowRef,
+          fastTicks, slowTicks);
+        printf_LINK("%lu -> ", lastFrameTime);
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
+        printf_LINK("%lu \r\n", lastFrameTime);
       }
       asyncHandled = FALSE;
     }
@@ -287,15 +293,12 @@ module CXLinkP {
         requestError = err;
         updateLastFrameNum();
         handledFrame = lastFrameNum;
-  //      printf("rnR: %x %x\r\n", error, nextRequest->requestType);
+        printf("rnR: %x %x\r\n", requestError, nextRequest->requestType);
         post requestHandled();
       }else{
         uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
         uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
   
-        //TODO: FIXME if the request requires additional preparation time, go ahead and do
-        //so: this slack should be stored so that when frametimer fires,
-        //  we can account for it.
         call FrameTimer.startOneShotAt(lastFrameTime, dt);
         printf_LINK("Next: %x @%lu (%lu)\r\n", 
           nextRequest->requestType,
@@ -525,6 +528,11 @@ module CXLinkP {
   task void signalFastAlarm(){
     atomic signal FastAlarm.fired();
   }
+  
+  uint32_t setAt;
+  task void reportMicro(){
+    printf("SR @ %lu for %lu\r\n", setAt, call FastAlarm.getAlarm());
+  }
 
   event void DelayedSend.sendReady(){
     if (nextRequest->typeSpecific.tx.useTsMicro){
@@ -546,7 +554,8 @@ module CXLinkP {
         post requestHandled();
         return;
       }else{
-        printf_LINK("SR\r\n");
+        setAt = call FastAlarm.getNow();
+        post reportMicro();
         call FastAlarm.startAt(t0, dt);
       }
     }else{
@@ -577,6 +586,11 @@ module CXLinkP {
       //TODO: FUTURE maybe do a busy-wait here on the timer register
       //and issue the strobe at a more precise instant.
       aRequestError = call DelayedSend.startSend();
+      //TODO: BUG this is giving me EINVAL, which indicates that the
+      //  state is NOT TX_loaded. huh?
+      if (aRequestError != SUCCESS){
+        post requestHandled();
+      }
     }else if (aNextRequestType == RT_RX){
       //RX (frame wait)
       //  if we're not mid-reception, resume idle mode.
