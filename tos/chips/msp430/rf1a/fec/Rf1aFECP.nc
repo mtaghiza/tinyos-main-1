@@ -31,6 +31,8 @@ generic module Rf1aFECP () {
   //acquire/encode next n, wait until first are cleared, then
   //continue.  This would be a huge increase in code space, I should
   //think (for a few hundred bytes RAM), so not worth it.
+  
+  //TODO: throw an error if the encoded length of body + header > 255 bytes.
   uint8_t txEncoded[2*sizeof(message_t)];
   uint8_t rxEncoded[2*sizeof(message_t)];
   
@@ -158,6 +160,7 @@ generic module Rf1aFECP () {
     if (sizeof(rxEncoded) < call FEC.encodedLen(length)){
       return ESIZE;
     }
+    printf("give rxb len %u->%u\r\n", length, call FEC.encodedLen(length));
     atomic{
       rxBuf = buffer;
       return call SubRf1aPhysical.setReceiveBuffer(rxEncoded,
