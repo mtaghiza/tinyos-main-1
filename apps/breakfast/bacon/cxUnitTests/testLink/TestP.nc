@@ -56,14 +56,15 @@ module TestP{
     atomic{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
-      //SMCLK to 1.1
-      P1MAP1 = PM_SMCLK;
+//      //SMCLK to 1.1
+//      P1MAP1 = PM_SMCLK;
       //GDO to 2.4 (synch)
       P2MAP4 = PM_RFGDO0;
       PMAPPWD = 0x00;
 
       P1DIR |= BIT1;
-      P1SEL |= BIT1;
+      P1SEL &= ~BIT1;
+//      P1SEL |= BIT1;
       P2DIR |= BIT4;
       P2SEL |= BIT4;
     }
@@ -117,12 +118,24 @@ module TestP{
     printf("shift handled: %x\r\n", error);
   }
 
+  task void requestShortReceive(){
+    call CXRequestQueue.requestReceive(
+      dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
+      FALSE, 0,
+      RX_DEFAULT_WAIT,
+      msg);
+  }
+
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, bool didReceive, 
       uint32_t microRef, message_t* msg_){
     printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
       error, atFrame, reqFrame, didReceive, microRef);
+    if (didReceive){
+      post requestShortReceive();
+    }
   }
+
 
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
