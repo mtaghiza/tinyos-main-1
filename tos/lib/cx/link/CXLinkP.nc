@@ -85,6 +85,7 @@ module CXLinkP {
     //if the request finished in the async context, need to copy
     //results back to the task context
     uint32_t sfdCapture;
+    uint32_t reqFrame = nextRequest->baseFrame + nextRequest->frameOffset;
     atomic{
       if (asyncHandled){
         sfdCapture = aSfdCapture;
@@ -95,13 +96,15 @@ module CXLinkP {
     switch(nextRequest -> requestType){
       case RT_FRAMESHIFT:
         signal CXRequestQueue.frameShiftHandled(requestError,
-          handledFrame);
+          handledFrame, reqFrame);
         break;
       case RT_SLEEP:
-        signal CXRequestQueue.sleepHandled(requestError, handledFrame);
+        signal CXRequestQueue.sleepHandled(requestError, 
+          handledFrame, reqFrame);
         break;
       case RT_WAKEUP:
-        signal CXRequestQueue.wakeupHandled(requestError, handledFrame);
+        signal CXRequestQueue.wakeupHandled(requestError,
+          handledFrame, reqFrame); 
         break;
       case RT_TX:
         {
@@ -118,13 +121,17 @@ module CXLinkP {
           printf("\r\n");
 
         }
-        signal CXRequestQueue.sendHandled(requestError, handledFrame,
+        signal CXRequestQueue.sendHandled(requestError, 
+          handledFrame,
+          reqFrame,
           sfdCapture, nextRequest->msg);
         sfdCapture = 0;
         break;
       case RT_RX:
         signal CXRequestQueue.receiveHandled(requestError,
-          handledFrame, didReceive, sfdCapture, nextRequest->msg);
+          handledFrame, 
+          reqFrame,
+          didReceive, sfdCapture, nextRequest->msg);
         sfdCapture = 0;
         break;
       default:
@@ -150,8 +157,10 @@ module CXLinkP {
 
   event void FrameTimer.fired(){
     updateLastFrameNum();
+
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
+      handledFrame = lastFrameNum;
       if (targetFrame == lastFrameNum){
 //        printf("handle %x @ %lu / %lu\r\n", 
 //          nextRequest->requestType,         
@@ -160,20 +169,17 @@ module CXLinkP {
         switch (nextRequest -> requestType){
           case RT_FRAMESHIFT:
             lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
-            handledFrame = lastFrameNum;
             requestError = SUCCESS;
             post requestHandled();
             break;
           case RT_SLEEP:
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
-            handledFrame = lastFrameNum;
             post requestHandled();
             break;
           case RT_WAKEUP:
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
             //if radio is off, turn it on (idle)
-            handledFrame = lastFrameNum;
             post requestHandled();
             break;
           case RT_TX:
@@ -205,10 +211,8 @@ module CXLinkP {
             }
 //            printf("len %u left %u\r\n", tx_len, tx_left);
             if (SUCCESS != requestError){
-              handledFrame = lastFrameNum;
               post requestHandled();
             }
-            handledFrame = lastFrameNum;
             break;
           case RT_RX:
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
@@ -256,6 +260,8 @@ module CXLinkP {
       error_t err = validateRequest(nextRequest);
       if (SUCCESS != err){
         requestError = err;
+        updateLastFrameNum();
+        handledFrame = lastFrameNum;
   //      printf("rnR: %x %x\r\n", error, nextRequest->requestType);
         post requestHandled();
       }else{
@@ -266,6 +272,10 @@ module CXLinkP {
         //so: this slack should be stored so that when frametimer fires,
         //  we can account for it.
         call FrameTimer.startOneShotAt(lastFrameTime, dt);
+        printf("Next: %x @%lu (%lu)\r\n", 
+          nextRequest->requestType,
+          targetFrame,
+          lastFrameTime+dt);
       }
     }
   }
@@ -358,7 +368,7 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
-    uint32_t atFrame, bool didReceive_, 
+    uint32_t atFrame, uint32_t reqFrame, bool didReceive_, 
     uint32_t microRef, message_t* msg){}
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
@@ -386,7 +396,7 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.sendHandled(error_t error, 
-    uint32_t atFrame, uint32_t microRef, 
+    uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
     message_t* msg){}
 
   command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
@@ -405,7 +415,8 @@ module CXLinkP {
     }
   }
 
-  default event void CXRequestQueue.sleepHandled(error_t error, uint32_t atFrame){ }
+  default event void CXRequestQueue.sleepHandled(error_t error,
+  uint32_t atFrame, uint32_t reqFrame){ }
 
   command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
       int32_t frameOffset){
@@ -423,7 +434,8 @@ module CXLinkP {
     }
   }
 
-  default event void CXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame){}
+  default event void CXRequestQueue.wakeupHandled(error_t error,
+  uint32_t atFrame, uint32_t reqFrame){}
 
   command error_t SplitControl.start(){
     if (call Resource.isOwner()){

@@ -10,7 +10,8 @@ interface CXRequestQueue{
     message_t* msg);
 
   event void receiveHandled(error_t error, 
-    uint32_t atFrame, bool didReceive, 
+    uint32_t atFrame, uint32_t reqFrame, 
+    bool didReceive, 
     uint32_t microRef, message_t* msg); 
   
   //N.B.: generally, if you need something sent based on a previous
@@ -24,20 +25,23 @@ interface CXRequestQueue{
     message_t* msg);
 
   event void sendHandled(error_t error, 
-    uint32_t atFrame, uint32_t microRef, 
-    message_t* msg);
+    uint32_t atFrame, uint32_t reqFrame, 
+    uint32_t microRef, message_t* msg);
 
   command error_t requestSleep(uint32_t baseFrame, 
     int32_t frameOffset);
-  event void sleepHandled(error_t error, uint32_t atFrame);
+  event void sleepHandled(error_t error, uint32_t atFrame, 
+    uint32_t reqFrame);
 
   command error_t requestWakeup(uint32_t baseFrame, 
     int32_t frameOffset);
-  event void wakeupHandled(error_t error, uint32_t atFrame);
+  event void wakeupHandled(error_t error, uint32_t atFrame, 
+    uint32_t reqFrame);
 
   command error_t requestFrameShift(uint32_t baseFrame, 
     int32_t frameOffset, int32_t frameShift);
-  event void frameShiftHandled(error_t error, uint32_t atFrame);
+  event void frameShiftHandled(error_t error, uint32_t atFrame,
+    uint32_t reqFrame);
 
 
 }
