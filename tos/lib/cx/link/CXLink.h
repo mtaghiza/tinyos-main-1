@@ -17,8 +17,40 @@
 //n.b. it seems like mspgcc is smart enough to see /1024 and translate
 //it to >> 10. so, it's fine to divide by this defined constant.
 
-//TODO: FIXME define these.
-#define MIN_FASTALARM_SLACK 0UL
+//TIMING PARAMETERS
+//These are all in 6.5MHz ticks.
+
+//require 30uS from the time where we are 100% ready to go to the
+//  scheduled transmission time.
+#define MIN_STROBE_CLEARANCE 195UL
+
+//Datasheet: IDLE->RX/FSTXON/TX 88.4 uS 
+#define T_IDLE_RXTX 575UL
+//difference between transmitter SFD and receiver SFD: 60.45 uS
+#define T_SFD_PROP_TIME 61UL
+//time from strobe command to SFD: 0.00523 S
+#define T_STROBE_SFD 3400UL
+
+//scale up the nominal minimum prep time
+#define SETUP_SLACK_RATIO 4UL
+
+//Working backwards:
+// receiver
+//   t_sfd - T_SFD_PROP_TIME - T_STROBE_SFD = t_strobe'
+// transmitter
+//   t_sfd - T_STROBE_SFD = t_strobe'
+//
+#define RX_STROBE_CORRECTION (T_SFD_PROP_TIME + T_STROBE_SFD)
+#define TX_STROBE_CORRECTION (T_SFD_PROP_TIME)
+
+// be ready by: t_strobe'-MIN_STROBE_CLEARANCE
+// start prep at: t_strobe' - SETUP_SLACK_RATIO*T_IDLE_RXTX
+// Receiver FrameTimer:
+//  t_sfd - T_SFD_PROP_TIME - T_STROBE_SFD - SETUP_SLACK_RATIO*T_IDLE_RXTX
+#define PREP_TIME_FAST (SETUP_SLACK_RATIO*T_IDLE_RXTX)
+#define PREP_TIME_32KHZ ((FRAMELEN_32K * PREP_TIME_FAST)/FRAMELEN_6_5M)
+
+
 //3250 = 0.5 ms
 #define RX_DEFAULT_WAIT 3250UL
 #define RX_MAX_WAIT (0x7FFFFFFF)

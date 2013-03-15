@@ -87,23 +87,29 @@ module CXLinkP {
   task void requestHandled(){
     //if the request finished in the async context, need to copy
     //results back to the task context
-    uint32_t sfdCapture;
+    uint32_t microRef;
     uint32_t reqFrame = nextRequest->baseFrame + nextRequest->frameOffset;
     atomic{
       if (asyncHandled){
-        sfdCapture = aSfdCapture;
+        microRef = aSfdCapture;
         requestError = aRequestError;
       }
 
       //TODO: make sure packet was good to synch with (from self or
       //  crc passed)
-      if (sfdCapture != 0){
+      if (microRef != 0){
         uint32_t fastRef1 = call FastAlarm.getNow();
         uint32_t slowRef = call FrameTimer.getNow();
         uint32_t fastRef2 = call FastAlarm.getNow();
-        uint32_t fastTicks = ((fastRef1+fastRef2)/2) - sfdCapture;
-        uint32_t slowTicks = fastToSlow(fastTicks);
-        lastFrameTime = slowRef-slowTicks;
+        uint32_t fastTicks;
+        uint32_t slowTicks;
+        microRef -= (aNextRequestType == RT_TX)? TX_STROBE_CORRECTION : RX_STROBE_CORRECTION;
+        //elapsed fast-ticks since strobe
+        fastTicks = ((fastRef1+fastRef2)/2) - microRef;
+        //elapsed slow-ticks since strobe
+        slowTicks = fastToSlow(fastTicks);
+        //push frame time back to allow for rx/tx preparation
+        lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
       }
       asyncHandled = FALSE;
     }
@@ -124,15 +130,13 @@ module CXLinkP {
         signal CXRequestQueue.sendHandled(requestError, 
           handledFrame,
           reqFrame,
-          sfdCapture, nextRequest->msg);
-        sfdCapture = 0;
+          microRef, nextRequest->msg);
         break;
       case RT_RX:
         signal CXRequestQueue.receiveHandled(requestError,
           handledFrame, 
           reqFrame,
-          didReceive, sfdCapture, nextRequest->msg);
-        sfdCapture = 0;
+          didReceive, microRef, nextRequest->msg);
         break;
 
       case RT_MARK:
@@ -167,7 +171,6 @@ module CXLinkP {
 
   event void FrameTimer.fired(){
     updateLastFrameNum();
-    
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       handledFrame = lastFrameNum;
@@ -177,10 +180,10 @@ module CXLinkP {
           atomic P1OUT ^= BIT1;
         }
 
-//        printf("handle %x @ %lu / %lu\r\n", 
-//          nextRequest->requestType,         
-//          lastFrameNum, 
-//          call FrameTimer.gett0() + call FrameTimer.getdt());
+        printf_LINK("handle %x @ %lu / %lu\r\n", 
+          nextRequest->requestType,         
+          lastFrameNum, 
+          call FrameTimer.gett0() + call FrameTimer.getdt());
         switch (nextRequest -> requestType){
           case RT_FRAMESHIFT:
             lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
@@ -258,16 +261,20 @@ module CXLinkP {
             //should not happen.
         }
       }else if (targetFrame < lastFrameNum){
+        printf_LINK("Missed\r\n");
         //we have missed the intended frame. signal handled
         requestError = FAIL;
         post requestHandled();
       }else if (targetFrame > lastFrameNum){
+        printf_LINK("Early\r\n");
         //shouldn't happen. re-doing readyNextRequest should work it
         //out. 
         call Queue.enqueue(nextRequest);
         nextRequest = call Queue.dequeue();
         post readyNextRequest();
       }
+    }else{
+      printf_LINK("nextRequest NULL\r\n");
     }
   }
 
@@ -523,16 +530,27 @@ module CXLinkP {
     if (nextRequest->typeSpecific.tx.useTsMicro){
       int32_t dt = (nextRequest->frameOffset)*FRAMELEN_6_5M;
       uint32_t t0 = nextRequest->typeSpecific.tx.tsMicro;
+      uint32_t now = call FastAlarm.getNow();
       //TODO: FIXME Wrapping logic/signedness issues? could mandate that
       //  frameOffset is always non-negative, that could simplify
       //  matters.
-      if ( t0 + dt < call FastAlarm.getNow() + MIN_FASTALARM_SLACK ){
+      if ( t0 + dt < now + MIN_STROBE_CLEARANCE ){
+        atomic{ P1OUT ^= BIT1; P1OUT ^=BIT1;}
+        printf("%lu + %lu = %lu < %lu + %lu = %lu\r\n",
+          t0, dt, t0+dt, now, MIN_STROBE_CLEARANCE,
+          now+MIN_STROBE_CLEARANCE);
         //not enough time, so fail.
         requestError = FAIL;
+        //cancel the transmission.
+        call Rf1aPhysical.resumeIdleMode(FALSE);
+        post requestHandled();
+        return;
       }else{
+        printf_LINK("SR\r\n");
         call FastAlarm.startAt(t0, dt);
       }
     }else{
+      printf_LINK("no micro\r\n");
       post signalFastAlarm();
       //not used, so just go ahead.
     }
