@@ -109,19 +109,19 @@ module TestP{
   }
 
   event void CXRequestQueue.frameShiftHandled(error_t error, 
-      uint32_t atFrame){
+      uint32_t atFrame, uint32_t reqFrame){
     printf("shift handled: %x\r\n", error);
   }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
-      uint32_t atFrame, bool didReceive, 
+      uint32_t atFrame, uint32_t reqFrame, bool didReceive, 
       uint32_t microRef, message_t* msg_){
-    printf("rx handled: %x %lu %x %lu\r\n",
-      error, atFrame, didReceive, microRef);
+    printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
+      error, atFrame, reqFrame, didReceive, microRef);
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
-      uint32_t atFrame, uint32_t microRef, 
+      uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
       message_t* msg_){
     printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
       microRef, msg_, 
@@ -135,9 +135,10 @@ module TestP{
   }
 
   event void CXRequestQueue.sleepHandled(error_t error,
-      uint32_t atFrame){
+      uint32_t atFrame, uint32_t reqFrame){
     if (error != SUCCESS){
-      printf("sleep handled: %x %lu\r\n", error, atFrame);
+      printf("sleep handled: %x @ %lu req %lu\r\n", error, atFrame,
+        reqFrame);
     }else{
       if (dutyCycling){
         error = call CXRequestQueue.requestSleep(atFrame, cycleLen);
@@ -146,9 +147,10 @@ module TestP{
   }
 
   event void CXRequestQueue.wakeupHandled(error_t error,
-      uint32_t atFrame){
+      uint32_t atFrame, uint32_t reqFrame){
     if (error != SUCCESS){
-      printf("wakeup handled: %x %lu\r\n", error, atFrame);
+      printf("wakeup handled: %x @ %lu req %lu\r\n", error, atFrame,
+        reqFrame);
     }else{
       if (dutyCycling){
         error = call CXRequestQueue.requestWakeup(atFrame, cycleLen);
@@ -229,7 +231,7 @@ module TestP{
     printf("rx req: %x\r\n", 
       call CXRequestQueue.requestReceive(nextWakeup, 1,
         FALSE, 0,
-        RX_MAX_WAIT >> 5,
+        RX_MAX_WAIT >> 7,
         msg));
   }
 
