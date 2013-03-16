@@ -246,10 +246,20 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             didReceive = FALSE;
+            atomic{P1OUT |= BIT2;}
+            //TODO FUTURE: the longer we can put off entering RX mode,
+            //the more energy we can save. with slack ratio=6, it
+            //looks like we typically spend 0.38 ms in RX before the
+            //transmission begins.
+            //another way to be hardcore about this would be to set
+            //one fastalarm for just after tx start is expected and
+            //check for channel activity. If there is nothing, stop
+            //immediately rather than waiting for SFD timeout.
             requestError = call Rf1aPhysical.setReceiveBuffer(
               (uint8_t*)nextRequest->msg,
               TOSH_DATA_LENGTH + sizeof(message_header_t),
               TRUE);
+            atomic{P1OUT &= ~BIT2;}
             if (SUCCESS == requestError ){
               atomic{
                 aNextRequestType = nextRequest->requestType;
@@ -298,7 +308,9 @@ module CXLinkP {
         requestError = err;
         updateLastFrameNum();
         handledFrame = lastFrameNum;
-        printf("rnR: %x %x\r\n", requestError, nextRequest->requestType);
+        if (nextRequest->requestType != RT_MARK){
+          printf("rnR: %x %x\r\n", requestError, nextRequest->requestType);
+        }
         post requestHandled();
       }else{
         uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
