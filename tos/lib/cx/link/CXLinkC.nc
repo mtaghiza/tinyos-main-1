@@ -43,7 +43,8 @@ configuration CXLinkC {
   components MainC;
   CXLinkP.Boot -> MainC;
 
-  //TODO: FIXME put into packet stack component
+  //TODO: FIXME properly layer: CXLinkP should use Rf1aPacket, and
+  //  should use Packet as SubPacket (and provide Packet)
   components new Rf1aIeee154PacketC();
   CXLinkP.Rf1aPacket -> Rf1aIeee154PacketC.Rf1aPacket;
   Rf1aPacket = Rf1aIeee154PacketC;
