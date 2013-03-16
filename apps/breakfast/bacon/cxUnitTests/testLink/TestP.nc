@@ -1,6 +1,8 @@
 
  #include <stdio.h>
  #include "CXLink.h"
+
+ #define RETX_DELAY 1
 module TestP{
   uses interface Boot;
   uses interface UartStream;
@@ -15,6 +17,7 @@ module TestP{
   uses interface StdControl as SerialControl;
   uses interface Timer<TMilli>;
 } implementation {
+  bool retx = FALSE;
   bool started = FALSE;
   bool dutyCycling = FALSE;
 
@@ -41,12 +44,14 @@ module TestP{
     printf("d : duty cycle sleep/wakeup\r\n");
     printf("c : check current frame\r\n");
     printf("i : make invalid sleep request\r\n");
-    printf("f : + frame shift request\r\n");
-    printf("F : - frame shift request\r\n");
+    printf("+ : + frame shift request\r\n");
+    printf("- : - frame shift request\r\n");
     printf("t : transmit\r\n");
     printf("T : transmit x2\r\n");
     printf("p : pause serial (for 5 seconds)\r\n");
     printf("r : request long-duration receive\r\n");
+    printf("R : request long-duration receive followed by short duration receive\r\n");
+    printf("f : request long-duration receive followed by forward in next frame\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
   }
 
@@ -68,6 +73,14 @@ module TestP{
 //      P1SEL |= BIT1;
       P2DIR |= BIT4;
       P2SEL |= BIT4;
+      
+      //power on flash chip
+      P2SEL &=~BIT1;
+      P2OUT |=BIT1;
+      //enable p1.2,3,4 for gpio
+      P1DIR |= BIT2 | BIT3 | BIT4;
+      P1SEL &= ~(BIT2 | BIT3 | BIT4);
+
     }
   }
 
@@ -119,9 +132,10 @@ module TestP{
     printf("shift handled: %x\r\n", error);
   }
 
+  uint32_t lastRxFrame;
   task void requestShortReceive(){
     call CXRequestQueue.requestReceive(
-      dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
+      lastRxFrame, RETX_DELAY, 
       FALSE, 0,
       RX_DEFAULT_WAIT,
       msg);
@@ -133,7 +147,17 @@ module TestP{
     printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
       error, atFrame, reqFrame, didReceive, microRef);
     if (didReceive){
-      post requestShortReceive();
+      lastRxFrame = atFrame;
+      if (retx){
+        error = call CXRequestQueue.requestSend(atFrame, RETX_DELAY,
+          TRUE, microRef,
+          NULL, msg);
+        if (SUCCESS != error){
+          printf("forward: %x\r\n", error);
+        }
+      } else{
+        post requestShortReceive();
+      }
     }
   }
 
@@ -149,9 +173,9 @@ module TestP{
 //      (call Rf1aPacket.metadata(msg))->payload_length);
     if (transmitAgain){
       test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
-      error = call CXRequestQueue.requestSend(atFrame, 1, 
+      error = call CXRequestQueue.requestSend(atFrame, RETX_DELAY, 
           TRUE, microRef, 
-          &pl->timestamp, msg);
+          &(pl->timestamp), msg);
       if (SUCCESS != error){
         printf("resend %x\r\n", error);
       }
@@ -254,7 +278,18 @@ module TestP{
   }
 
   task void requestLongReceive(){
+    retx = FALSE;
     printf("rx req: %x\r\n", 
+      call CXRequestQueue.requestReceive(
+        dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
+        FALSE, 0,
+        RX_MAX_WAIT >> 5,
+        msg));
+  }
+
+  task void requestForward(){
+    retx = TRUE;
+    printf("fwd req: %x\r\n",
       call CXRequestQueue.requestReceive(
         dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
         FALSE, 0,
@@ -279,10 +314,10 @@ module TestP{
        case 'i':
          post invalidSleep();
          break;
-       case 'f':
+       case '+':
          post shiftPositive();
          break;
-       case 'F':
+       case '-':
          post shiftNegative();
          break;
        case 't':
@@ -299,6 +334,9 @@ module TestP{
          break;
        case 'r':
          post requestLongReceive();
+         break;
+       case 'f':
+         post requestForward();
          break;
        case '?':
          post usage();
