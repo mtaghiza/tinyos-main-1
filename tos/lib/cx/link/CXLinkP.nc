@@ -27,6 +27,7 @@ module CXLinkP {
 } implementation {
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
+  uint32_t fastAlarmAtFrameTimerFired;
 
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
@@ -95,7 +96,7 @@ module CXLinkP {
         requestError = aRequestError;
       }
 
-      //TODO: make sure packet was good to synch with (from self or
+      //TODO: SYNCH make sure packet was good to synch with (from self or
       //  crc passed)
       if (microRef != 0){
         uint32_t fastRef1 = call FastAlarm.getNow();
@@ -108,7 +109,8 @@ module CXLinkP {
         fastTicks = ((fastRef1+fastRef2)/2) - microRef;
         //elapsed slow-ticks since strobe
         slowTicks = fastToSlow(fastTicks);
-        printf_LINK("cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
+        printf_LINK("lms %lu cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
+          lastMicroStart,
           aSfdCapture, microRef,
           fastRef1, fastRef2, slowRef,
           fastTicks, slowTicks);
@@ -211,6 +213,7 @@ module CXLinkP {
               call Msp430XV2ClockControl.startMicroTimer();
               lastMicroStart = lastFrameTime;
             }
+            fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
             requestError = call Rf1aPhysical.startTransmission(FALSE,
               TRUE);
             if (SUCCESS == requestError){
@@ -226,7 +229,9 @@ module CXLinkP {
                 //TODO: TX CX link header setup-- decrement TTL (if
                 //  non-0), increment hop count.
                 aRequestError = SUCCESS;
+                P1OUT |= BIT4;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
+                P1OUT &= ~BIT4;
 
               }
             }
@@ -525,45 +530,39 @@ module CXLinkP {
     asyncHandled = TRUE;
   }
 
-  task void signalFastAlarm(){
-    atomic signal FastAlarm.fired();
-  }
-  
-  uint32_t setAt;
-  task void reportMicro(){
-    printf("SR @ %lu for %lu\r\n", setAt, call FastAlarm.getAlarm());
-  }
 
   event void DelayedSend.sendReady(){
+    int32_t dt;
+    uint32_t t0;
+    uint32_t now = call FastAlarm.getNow();
+    atomic{ P1OUT |= BIT2;}
     if (nextRequest->typeSpecific.tx.useTsMicro){
-      int32_t dt = (nextRequest->frameOffset)*FRAMELEN_6_5M;
-      uint32_t t0 = nextRequest->typeSpecific.tx.tsMicro;
-      uint32_t now = call FastAlarm.getNow();
       //TODO: FIXME Wrapping logic/signedness issues? could mandate that
       //  frameOffset is always non-negative, that could simplify
       //  matters.
-      if ( t0 + dt < now + MIN_STROBE_CLEARANCE ){
-        atomic{ P1OUT ^= BIT1; P1OUT ^=BIT1;}
-        printf("%lu + %lu = %lu < %lu + %lu = %lu\r\n",
-          t0, dt, t0+dt, now, MIN_STROBE_CLEARANCE,
-          now+MIN_STROBE_CLEARANCE);
-        //not enough time, so fail.
-        requestError = FAIL;
-        //cancel the transmission.
-        call Rf1aPhysical.resumeIdleMode(FALSE);
-        post requestHandled();
-        return;
-      }else{
-        setAt = call FastAlarm.getNow();
-        post reportMicro();
-        call FastAlarm.startAt(t0, dt);
-      }
-    }else{
-      printf_LINK("no micro\r\n");
-      post signalFastAlarm();
-      //not used, so just go ahead.
+      dt = (nextRequest->frameOffset)*FRAMELEN_6_5M;
+      t0 = nextRequest->typeSpecific.tx.tsMicro;
+    } else{
+      t0 = fastAlarmAtFrameTimerFired;
+      dt = PREP_TIME_FAST;
     }
-    call SynchCapture.captureRisingEdge();
+
+    if ( t0 + dt < now + MIN_STROBE_CLEARANCE ){
+      printf("%lu + %lu = %lu < %lu + %lu = %lu\r\n",
+        t0, dt, t0+dt, now, MIN_STROBE_CLEARANCE,
+        now+MIN_STROBE_CLEARANCE);
+      //not enough time, so fail.
+      requestError = FAIL;
+      //cancel the transmission.
+      call Rf1aPhysical.resumeIdleMode(FALSE);
+      post requestHandled();
+    }else{
+//      setAt = call FastAlarm.getNow();
+//      post reportMicro();
+      call FastAlarm.startAt(t0, dt);
+      call SynchCapture.captureRisingEdge();
+    }
+    atomic{P1OUT &= ~BIT2;}
   }
   
   task void signalNoneReceived(){
@@ -580,14 +579,23 @@ module CXLinkP {
     post requestHandled();
   }
 
+  norace uint32_t txAlarm;
+
+  task void reportTx(){
+    printf("tx@ %lu\r\n", txAlarm);
+  }
+
   async event void FastAlarm.fired(){
     //TX
     if (aNextRequestType == RT_TX){
+      P1OUT |= BIT3;
       //TODO: FUTURE maybe do a busy-wait here on the timer register
       //and issue the strobe at a more precise instant.
       aRequestError = call DelayedSend.startSend();
-      //TODO: BUG this is giving me EINVAL, which indicates that the
-      //  state is NOT TX_loaded. huh?
+      P1OUT &= ~BIT3;
+      txAlarm = call FastAlarm.getAlarm();
+      post reportTx();
+
       if (aRequestError != SUCCESS){
         post requestHandled();
       }

@@ -29,10 +29,10 @@
 //difference between transmitter SFD and receiver SFD: 60.45 uS
 #define T_SFD_PROP_TIME 61UL
 //time from strobe command to SFD: 0.00523 S
-#define T_STROBE_SFD 3400UL
+#define T_STROBE_SFD 3395UL
 
 //scale up the nominal minimum prep time
-#define SETUP_SLACK_RATIO 4UL
+#define SETUP_SLACK_RATIO 6UL
 
 //Working backwards:
 // receiver
@@ -40,8 +40,8 @@
 // transmitter
 //   t_sfd - T_STROBE_SFD = t_strobe'
 //
-#define RX_STROBE_CORRECTION (T_SFD_PROP_TIME + T_STROBE_SFD)
-#define TX_STROBE_CORRECTION (T_SFD_PROP_TIME)
+#define TX_STROBE_CORRECTION (T_STROBE_SFD)
+#define RX_STROBE_CORRECTION (T_SFD_PROP_TIME + TX_STROBE_CORRECTION)
 
 // be ready by: t_strobe'-MIN_STROBE_CLEARANCE
 // start prep at: t_strobe' - SETUP_SLACK_RATIO*T_IDLE_RXTX
