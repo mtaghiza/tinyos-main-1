@@ -168,9 +168,9 @@ module TestP{
     if (error != SUCCESS){
       printf("send handled: %x\r\n", error);
     }
-//    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
-//      microRef, msg_, 
-//      (call Rf1aPacket.metadata(msg))->payload_length);
+    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
+      microRef, msg_, 
+      (call Rf1aPacket.metadata(msg))->payload_length);
     if (transmitAgain){
       test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
       error = call CXRequestQueue.requestSend(atFrame, RETX_DELAY, 
