@@ -168,7 +168,6 @@ module CXLinkP {
       post readyNextRequest();
     }else{
       if (LINK_DEBUG_FRAME_BOUNDARIES){
-        //TODO: DEBUG: replace with =NULL
         nextRequest = newRequest(lastFrameNum, 1, RT_MARK);
         post readyNextRequest();
       }else{
@@ -214,8 +213,10 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
+            P1OUT |= BIT3;
             requestError = call Rf1aPhysical.startTransmission(FALSE,
               TRUE);
+            P1OUT &= ~BIT3;
             if (SUCCESS == requestError){
               atomic{
                 aNextRequestType = nextRequest->requestType;
@@ -594,17 +595,15 @@ module CXLinkP {
   norace uint32_t txAlarm;
 
   task void reportTx(){
-    printf("tx@ %lu\r\n", txAlarm);
+    printf_LINK("tx@ %lu\r\n", txAlarm);
   }
 
   async event void FastAlarm.fired(){
     //TX
     if (aNextRequestType == RT_TX){
-      P1OUT |= BIT3;
       //TODO: FUTURE maybe do a busy-wait here on the timer register
       //and issue the strobe at a more precise instant.
       aRequestError = call DelayedSend.startSend();
-      P1OUT &= ~BIT3;
       txAlarm = call FastAlarm.getAlarm();
       post reportTx();
 
