@@ -231,7 +231,7 @@ module TestP{
   
         printf("tx: %x %p %p\r\n", call CXRequestQueue.requestSend(
         dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
-          FALSE, 1, 
+          FALSE, 0, 
           NULL,
 //          &(pl->timestamp),
           msg),
