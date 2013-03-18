@@ -6,7 +6,7 @@ module CXNetworkP {
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
 
-  uses interface PoolC<cx_network_metadata_t>;
+  uses interface Pool<cx_network_metadata_t>;
 } implementation {
 
   bool shouldForward(message_t* msg){

@@ -20,5 +20,6 @@ configuration CXNetworkC {
   CXNetworkP.SubPacket -> CXLinkC;
 
   components new PoolC(cx_network_metadata_t);
+  CXNetworkP.Pool -> PoolC;
 
 }

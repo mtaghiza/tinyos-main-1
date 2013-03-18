@@ -96,7 +96,7 @@ module TestP{
 
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
-      uint32_t microRef, message_t* msg_){
+      uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
     printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
       error, atFrame, reqFrame_, didReceive, microRef);
     receivePending = FALSE;
@@ -109,7 +109,7 @@ module TestP{
 
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef, 
-      message_t* msg_){
+      void* md, message_t* msg_){
     printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
       microRef, msg_);
   }
@@ -132,7 +132,7 @@ module TestP{
       baseFrame, frameOffset, 
       FALSE, 0,
       duration,
-      msg);
+      NULL, msg);
     printf("rx req: %x\r\n", error);
     if (SUCCESS == error){
       receivePending = TRUE;
@@ -178,7 +178,7 @@ module TestP{
         call CXRequestQueue.nextFrame(), 1,
         FALSE, 0,
         &(pl->timestamp),
-        msg);
+        NULL, msg);
     }else{
       printf("PL size error?\r\n");
     }
