@@ -186,7 +186,7 @@ module TestP{
       uint8_t i;
 
       call CXNetworkPacket.init(msg);
-      call CXNetworkPacket.setTTL(msg, 1);
+      call CXNetworkPacket.setTTL(msg, 2);
       for (i = 0; i < PAYLOAD_LEN; i++){
         pl->buffer[i] = i;
       }
