@@ -3,9 +3,10 @@
 configuration CXLinkC {
   provides interface SplitControl;
   provides interface CXRequestQueue;
-
-  provides interface Rf1aPacket;
+  
+  provides interface CXLinkPacket;
   provides interface Packet;
+  provides interface Rf1aPacket;
   //for debug only
   provides interface Rf1aStatus;
 } implementation {
@@ -43,12 +44,11 @@ configuration CXLinkC {
   components MainC;
   CXLinkP.Boot -> MainC;
 
-  //TODO: FIXME properly layer: CXLinkP should use Rf1aPacket, and
-  //  should use Packet as SubPacket (and provide Packet)
-  components new Rf1aIeee154PacketC();
-  CXLinkP.Rf1aPacket -> Rf1aIeee154PacketC.Rf1aPacket;
-  Rf1aPacket = Rf1aIeee154PacketC;
-  Packet = Rf1aIeee154PacketC;
+  components CXLinkPacketC;
+  CXLinkP.Rf1aPacket -> CXLinkPacketC.Rf1aPacket;
+  Packet = CXLinkPacketC.Packet;
+  Rf1aPacket = CXLinkPacketC.Rf1aPacket;
+  CXLinkPacket = CXLinkPacketC;
 
   //for debug only
   Rf1aStatus = Rf1aPhysicalC;

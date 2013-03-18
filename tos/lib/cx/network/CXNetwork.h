@@ -15,4 +15,15 @@ typedef struct cx_network_metadata {
   void* next;
 } cx_network_metadata_t;
 
+#ifndef CX_NETWORK_POOL_SIZE
+//1 for forwarding, 1 for self. Expand if we ever support multiple
+//  ongoing floods.
+#define CX_NETWORK_POOL_SIZE 2
+#endif
+
+#ifndef CX_NETWORK_FORWARD_DELAY 
+//forward received packet immediately.
+#define CX_NETWORK_FORWARD_DELAY 1
+#endif
+
 #endif

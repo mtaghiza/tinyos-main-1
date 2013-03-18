@@ -19,7 +19,9 @@ configuration CXNetworkC {
   CXNetworkP.SubCXRequestQueue -> CXLinkC;
   CXNetworkP.SubPacket -> CXLinkC;
 
-  components new PoolC(cx_network_metadata_t);
+  CXNetworkP.CXLinkPacket -> CXLinkC;
+
+  components new PoolC(cx_network_metadata_t, CX_NETWORK_POOL_SIZE);
   CXNetworkP.Pool -> PoolC;
 
 }

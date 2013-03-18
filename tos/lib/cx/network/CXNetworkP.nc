@@ -2,6 +2,7 @@ module CXNetworkP {
   provides interface CXNetworkPacket;
   provides interface Packet;
   uses interface Packet as SubPacket;
+  uses interface CXLinkPacket;
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
@@ -26,7 +27,7 @@ module CXNetworkP {
       uint32_t microRef, uint32_t t32kRef, 
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*)md;
-    nmd -> rxFrame = atFrame;
+    nmd -> atFrame = atFrame;
     nmd -> reqFrame = reqFrame;
     nmd -> microRef = microRef;
     nmd -> t32kRef = t32kRef;
@@ -34,11 +35,14 @@ module CXNetworkP {
     if (SUCCESS == error) {
       if (didReceive){
         nmd -> rxHopCount = call CXNetworkPacket.getHops(msg);
+        printf("#r %u %u\r\n", 
+          call CXNetworkPacket.getHops(msg),
+          call CXNetworkPacket.getTTL(msg));
         if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
             call CXNetworkPacket.readyNextHop(msg);
             error = call SubCXRequestQueue.requestSend(
-              atFrame, 1,     //send next frame
+              atFrame, CX_NETWORK_FORWARD_DELAY,
               TRUE, microRef, //use last RX as ref
               NULL,           //don't apply timestamp
               nmd, msg);      //pointer to stashed md
@@ -51,7 +55,7 @@ module CXNetworkP {
     }
     //not forwarding, so we're done with it. signal up.
     signal CXRequestQueue.receiveHandled(error, 
-     nmd->rxFrame, nmd->reqFrame, 
+     nmd->atFrame, nmd->reqFrame, 
      didReceive, nmd->microRef, nmd->t32kRef, 
      nmd->next, msg);
     call Pool.put(nmd);
@@ -68,14 +72,17 @@ module CXNetworkP {
 
       //we are origin, so signal up as sendHandled.
       if (call CXLinkPacket.getSource(msg) == call CXLinkPacket.addr()){
+        printf("origin\r\n");
         signal CXRequestQueue.sendHandled(error, 
-          atFrame, microRef, t32kRef, 
+          atFrame, reqFrame, microRef, t32kRef, 
           nmd->next, msg);
         call Pool.put(nmd);
       }else{
+        printf("non-origin\r\n");
         //restore stashed reception info and signal up.
         signal CXRequestQueue.receiveHandled(error,
           nmd -> atFrame, nmd -> reqFrame,
+          TRUE,  //we are forwarding, so we must have received
           nmd -> microRef, nmd -> t32kRef,
           nmd -> next,
           msg);
@@ -149,6 +156,11 @@ module CXNetworkP {
       return ENOMEM;
     }else{
       nmd -> next = md; 
+      nmd -> reqFrame = baseFrame + frameOffset;
+      //at this point, a new sequence number is assigned. We don't
+      //want to call this lower (because then we will mess up SN's for
+      //forwarded packets).
+      call CXNetworkPacket.init(msg);
       return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
         useMicro, microRef, 
         tsLoc, 
@@ -166,6 +178,7 @@ module CXNetworkP {
   command error_t CXNetworkPacket.init(message_t* msg){
     cx_network_header_t* hdr = getHeader(msg);
     hdr -> hops = 0;
+    call CXLinkPacket.init(msg);
     return SUCCESS;
   }
 
@@ -190,6 +203,7 @@ module CXNetworkP {
     cx_network_header_t* hdr = getHeader(msg);
     if (hdr -> ttl > 0){
       hdr -> ttl --;
+      hdr -> hops ++;
       return (hdr->ttl > 0);
     } else {
       return FALSE;
