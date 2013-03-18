@@ -26,4 +26,8 @@ typedef struct cx_network_metadata {
 #define CX_NETWORK_FORWARD_DELAY 1
 #endif
 
+#ifndef CX_SELF_RETX
+#define CX_SELF_RETX 0
+#endif
+
 #endif

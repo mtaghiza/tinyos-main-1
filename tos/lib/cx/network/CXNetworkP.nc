@@ -11,8 +11,12 @@ module CXNetworkP {
 } implementation {
 
   bool shouldForward(message_t* msg){
-    //TODO: check distance / is-broadcast
-    return TRUE;
+    bool ret = TRUE;
+    if ( ! CX_SELF_RETX){
+      ret = (call CXLinkPacket.getSource(msg) != call CXLinkPacket.addr());
+    }
+    //TODO: check distance / is-broadcast, && it with ret
+    return ret;
   }
 
   cx_network_metadata_t* newMd(){
@@ -66,19 +70,36 @@ module CXNetworkP {
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
-//    if (call CXNetworkPacket.getTTL(msg)){
-//      //TODO: still forwarding? see logic above, same as RX.
-//    } else{
+    if (SUCCESS != error){
+      printf("SCXRQ.sh: %x\r\n", error);
+      //TODO: signal relevant *handled event
+    } else if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
+      //OK, so we obviously forwarded it last time, so let's do it
+      //again. Use last TX as ref. 
+      //now the frame # stuff is somewhat ambiguous: we have
+      //transmitted it in multiple frames, so what is reqFrame and
+      //what is atFrame? req = first, at=last?
+      //what do we keep as the reference?
+      call CXNetworkPacket.readyNextHop(msg);
+      error = call SubCXRequestQueue.requestSend(
+        atFrame, CX_NETWORK_FORWARD_DELAY,
+        TRUE, microRef,
+        NULL,
+        nmd, msg);
+      if (error != SUCCESS){
+        //TODO: need to signal relevant *handled event here so that
+        //upper layer isn't left hanging.
+        printf("SCXRQ.s: %x\r\n", error);
+      }
+    } else{
 
       //we are origin, so signal up as sendHandled.
       if (call CXLinkPacket.getSource(msg) == call CXLinkPacket.addr()){
-        printf("origin\r\n");
         signal CXRequestQueue.sendHandled(error, 
           atFrame, reqFrame, microRef, t32kRef, 
           nmd->next, msg);
         call Pool.put(nmd);
       }else{
-        printf("non-origin\r\n");
         //restore stashed reception info and signal up.
         signal CXRequestQueue.receiveHandled(error,
           nmd -> atFrame, nmd -> reqFrame,
@@ -88,7 +109,7 @@ module CXNetworkP {
           msg);
         call Pool.put(nmd); 
       }
-//    }
+    }
   }
 
 
