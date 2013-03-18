@@ -138,12 +138,12 @@ module TestP{
       lastRxFrame, RETX_DELAY, 
       FALSE, 0,
       RX_DEFAULT_WAIT,
-      msg);
+      NULL, msg);
   }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, bool didReceive, 
-      uint32_t microRef, message_t* msg_){
+      uint32_t microRef, void* md, message_t* msg_){
     printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
       error, atFrame, reqFrame, didReceive, microRef);
     if (didReceive){
@@ -151,6 +151,7 @@ module TestP{
       if (retx){
         error = call CXRequestQueue.requestSend(atFrame, RETX_DELAY,
           TRUE, microRef,
+          NULL, 
           NULL, msg);
         if (SUCCESS != error){
           printf("forward: %x\r\n", error);
@@ -164,7 +165,7 @@ module TestP{
 
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
-      message_t* msg_){
+      void* md, message_t* msg_){
     if (error != SUCCESS){
       printf("send handled: %x\r\n", error);
     }
@@ -175,7 +176,8 @@ module TestP{
       test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
       error = call CXRequestQueue.requestSend(atFrame, RETX_DELAY, 
           TRUE, microRef, 
-          &(pl->timestamp), msg);
+          &(pl->timestamp), 
+          NULL, msg);
       if (SUCCESS != error){
         printf("resend %x\r\n", error);
       }
@@ -234,7 +236,7 @@ module TestP{
           FALSE, 0, 
           NULL,
 //          &(pl->timestamp),
-          msg),
+          NULL, msg),
           pl,
           &(pl->timestamp));
       }else{
@@ -284,7 +286,7 @@ module TestP{
         dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
         FALSE, 0,
         RX_MAX_WAIT >> 5,
-        msg));
+        NULL, msg));
   }
 
   task void requestForward(){
@@ -294,7 +296,7 @@ module TestP{
         dutyCycling ? nextWakeup: call CXRequestQueue.nextFrame(), 1, 
         FALSE, 0,
         RX_MAX_WAIT >> 5,
-        msg));
+        NULL, msg));
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 

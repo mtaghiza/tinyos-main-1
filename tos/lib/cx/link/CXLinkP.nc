@@ -64,7 +64,7 @@ module CXLinkP {
   task void readyNextRequest();
   error_t validateRequest(cx_request_t* r);
   cx_request_t* newRequest(uint32_t baseFrame, 
-      int32_t frameOffset, request_type_t requestType);
+      int32_t frameOffset, request_type_t requestType, void* md);
   
   void updateLastFrameNum(){
     //this should be safe from integer wrap
@@ -138,13 +138,15 @@ module CXLinkP {
         signal CXRequestQueue.sendHandled(requestError, 
           handledFrame,
           reqFrame,
-          microRef, nextRequest->msg);
+          microRef, 
+          nextRequest-> next,
+          nextRequest->msg);
         break;
       case RT_RX:
         signal CXRequestQueue.receiveHandled(requestError,
           handledFrame, 
           reqFrame,
-          didReceive, microRef, nextRequest->msg);
+          didReceive, microRef, nextRequest->next, nextRequest->msg);
         break;
 
       case RT_MARK:
@@ -168,7 +170,7 @@ module CXLinkP {
       post readyNextRequest();
     }else{
       if (LINK_DEBUG_FRAME_BOUNDARIES){
-        nextRequest = newRequest(lastFrameNum, 1, RT_MARK);
+        nextRequest = newRequest(lastFrameNum, 1, RT_MARK, NULL);
         post readyNextRequest();
       }else{
         nextRequest = NULL;
@@ -342,13 +344,14 @@ module CXLinkP {
   }
   
   cx_request_t* newRequest(uint32_t baseFrame, 
-      int32_t frameOffset, request_type_t requestType){
+      int32_t frameOffset, request_type_t requestType, void* md){
     cx_request_t* r = call Pool.get();
     if (r != NULL){
       r->requestedTime = call FrameTimer.getNow();
       r->baseFrame = baseFrame;
       r->requestType = requestType;
       r->frameOffset = frameOffset;
+      r->next = md;
       r->msg = NULL;
     }
     return r;
@@ -372,7 +375,8 @@ module CXLinkP {
 
   command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
       int32_t frameOffset, int32_t frameShift){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_FRAMESHIFT);
+    cx_request_t* r = newRequest(baseFrame, frameOffset,
+      RT_FRAMESHIFT, NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){
@@ -389,8 +393,8 @@ module CXLinkP {
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration,
-      message_t* msg){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_RX);
+      void* md, message_t* msg){
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_RX, md);
     if (r != NULL){
       error_t error;
       //TODO: would be nice to use microRef/useMicro for more precise
@@ -415,14 +419,14 @@ module CXLinkP {
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, bool didReceive_, 
-    uint32_t microRef, message_t* msg){}
+    uint32_t microRef, void* md, message_t* msg){}
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       nx_uint32_t* tsLoc,
-      message_t* msg){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX);
+      void* md, message_t* msg){
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX, md);
     if (r != NULL){
       error_t error;
       r->typeSpecific.tx.useTsMicro = useMicro;
@@ -443,11 +447,12 @@ module CXLinkP {
 
   default event void CXRequestQueue.sendHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
-    message_t* msg){}
+    void* md, message_t* msg){}
 
   command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
       int32_t frameOffset){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_SLEEP);
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_SLEEP,
+      NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){
@@ -466,7 +471,8 @@ module CXLinkP {
 
   command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
       int32_t frameOffset){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_WAKEUP);
+    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_WAKEUP,
+      NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){

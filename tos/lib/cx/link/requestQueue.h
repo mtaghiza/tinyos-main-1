@@ -27,6 +27,8 @@ typedef struct cx_request{
   int32_t frameOffset;
   uint32_t requestedTime;
   request_type_t requestType;
+  //pointer to aux storage for next layer up
+  void* next;
   message_t* msg;
   union{
     struct{
