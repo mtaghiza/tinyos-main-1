@@ -6,13 +6,14 @@ interface CXRequestQueue{
   command error_t requestReceive(uint32_t baseFrame, 
     int32_t frameOffset, 
     bool useMicro, uint32_t microRef,
-    uint32_t duration,
-    message_t* msg);
+    uint32_t duration, 
+    void* md, message_t* msg);
 
   event void receiveHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, 
     bool didReceive, 
-    uint32_t microRef, message_t* msg); 
+    uint32_t microRef, 
+    void* md, message_t* msg); 
   
   //N.B.: generally, if you need something sent based on a previous
   // capture event, you should request the send from the *handled
@@ -22,11 +23,12 @@ interface CXRequestQueue{
     int32_t frameOffset, 
     bool useMicro, uint32_t microRef, 
     nx_uint32_t* tsLoc,
-    message_t* msg);
+    void* md, message_t* msg);
 
   event void sendHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, 
-    uint32_t microRef, message_t* msg);
+    uint32_t microRef, 
+    void* md, message_t* msg);
 
   command error_t requestSleep(uint32_t baseFrame, 
     int32_t frameOffset);

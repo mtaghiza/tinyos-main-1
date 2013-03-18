@@ -1,3 +1,5 @@
+
+ #include "CXNetwork.h"
 configuration CXNetworkC {
   provides interface SplitControl;
   provides interface CXRequestQueue;
@@ -16,5 +18,7 @@ configuration CXNetworkC {
 
   CXNetworkP.SubCXRequestQueue -> CXLinkC;
   CXNetworkP.SubPacket -> CXLinkC;
+
+  components new PoolC(cx_network_metadata_t);
 
 }

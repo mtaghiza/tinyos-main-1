@@ -5,59 +5,83 @@ module CXNetworkP {
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
+
+  uses interface PoolC<cx_network_metadata_t>;
 } implementation {
 
   bool shouldForward(message_t* msg){
     //TODO: check distance / is-broadcast
     return TRUE;
   }
+
+  cx_network_metadata_t* newMd(){
+    cx_network_metadata_t* ret = call Pool.get();
+    memset(ret, 0, sizeof(cx_network_metadata_t));
+    return ret;
+  }
   
   event void SubCXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, 
       bool didReceive, 
-      uint32_t microRef, message_t* msg){
+      uint32_t microRef, uint32_t t32kRef, 
+      void* md, message_t* msg){
+    cx_network_metadata_t* nmd = (cx_network_metadata_t*)md;
+    nmd -> rxFrame = atFrame;
+    nmd -> reqFrame = reqFrame;
+    nmd -> microRef = microRef;
+    nmd -> t32kRef = t32kRef;
+
     if (SUCCESS == error) {
       if (didReceive){
-        //TODO: update distances
-        if (call CXNetworkPacket.readyNextHop(msg)){
+        nmd -> rxHopCount = call CXNetworkPacket.getHops(msg);
+        if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
+            call CXNetworkPacket.readyNextHop(msg);
             error = call SubCXRequestQueue.requestSend(
-              atFrame, 1,
-              TRUE, microRef,
-              NULL, msg);
+              atFrame, 1,     //send next frame
+              TRUE, microRef, //use last RX as ref
+              NULL,           //don't apply timestamp
+              nmd, msg);      //pointer to stashed md
             if (SUCCESS == error){
-              //TODO: stash header/reception info (to signal up later)
-              // hey, here's an idea: each requestX command should
-              // also take in a void* that points to auxiliary info.
-              // In this case, it would be a pointer to the original
-              // reception state: timestamp, hop-count, etc.
-              // This would also go into the request struct. 
-              // These could be nested--
-              //  Link layer stores message, timing info, ptr->network
-              //    info
-              //  network layer provides pointers to network info
-              //    structs from network layer pool. 
-              //    these can also contain pointers to aux info from
-              //    the layer above.
-              //  Transport layer: same deal.
-              //I like this plan. It should be quite memory-efficient.
               return;
             }
           }
         }
       }
     }
-    signal CXRequestQueue.receiveHandled(error, atFrame, reqFrame,
-      didReceive, microRef, msg);
+    //not forwarding, so we're done with it. signal up.
+    signal CXRequestQueue.receiveHandled(error, 
+     nmd->rxFrame, nmd->reqFrame, 
+     didReceive, nmd->microRef, nmd->t32kRef, 
+     nmd->next, msg);
+    call Pool.put(nmd);
   }
 
   event void SubCXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, 
-      uint32_t microRef, message_t* msg){
-    //TODO: still forwarding? see logic above, same as RX.
-    //TODO: done forwarding? signal sendHandled if we are origin,
-    //      restore stashed reception info and signal receiveHandled
-    //      if we aren't.
+      uint32_t microRef, uint32_t t32kRef,
+      void* md, message_t* msg){
+    cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
+//    if (call CXNetworkPacket.getTTL(msg)){
+//      //TODO: still forwarding? see logic above, same as RX.
+//    } else{
+
+      //we are origin, so signal up as sendHandled.
+      if (call CXLinkPacket.getSource(msg) == call CXLinkPacket.addr()){
+        signal CXRequestQueue.sendHandled(error, 
+          atFrame, microRef, t32kRef, 
+          nmd->next, msg);
+        call Pool.put(nmd);
+      }else{
+        //restore stashed reception info and signal up.
+        signal CXRequestQueue.receiveHandled(error,
+          nmd -> atFrame, nmd -> reqFrame,
+          nmd -> microRef, nmd -> t32kRef,
+          nmd -> next,
+          msg);
+        call Pool.put(nmd); 
+      }
+//    }
   }
 
 
@@ -101,18 +125,35 @@ module CXNetworkP {
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration,
+      void* md,
       message_t* msg){
-    return call SubCXRequestQueue.requestReceive(baseFrame, frameOffset,
-      useMicro, microRef, duration, msg);
+    cx_network_metadata_t* nmd = newMd();
+    if (nmd == NULL){
+      return ENOMEM;
+    }else{
+      nmd -> next = md; 
+      nmd -> reqFrame = baseFrame + frameOffset;
+      return call SubCXRequestQueue.requestReceive(baseFrame, frameOffset,
+        useMicro, microRef, duration, nmd, msg);
+    }
   }
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
+      void* md,
       message_t* msg){
-    return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
-      useMicro, microRef, tsLoc, msg);
+    cx_network_metadata_t* nmd = newMd();
+    if (nmd == NULL){
+      return ENOMEM;
+    }else{
+      nmd -> next = md; 
+      return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
+        useMicro, microRef, 
+        tsLoc, 
+        nmd, msg);
+    }
   }
 
 
