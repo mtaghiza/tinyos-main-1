@@ -49,8 +49,7 @@ module TestP{
     printf("t : transmit\r\n");
     printf("T : transmit x2\r\n");
     printf("p : pause serial (for 5 seconds)\r\n");
-    printf("r : request long-duration receive\r\n");
-    printf("R : request long-duration receive followed by short duration receive\r\n");
+    printf("r : request long-duration receive followed by short-duration receive\r\n");
     printf("f : request long-duration receive followed by forward in next frame\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
   }
@@ -165,12 +164,13 @@ module TestP{
 
   event void CXRequestQueue.sendHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
+      uint32_t t32kRef,
       void* md, message_t* msg_){
     if (error != SUCCESS){
       printf("send handled: %x\r\n", error);
     }
-    printf("send handled: %x %lu %lu %p %u\r\n", error, atFrame,
-      microRef, msg_, 
+    printf("send handled: %x %lu %lu / %lu %p %u\r\n", error, atFrame,
+      microRef, t32kRef, msg_, 
       (call Rf1aPacket.metadata(msg))->payload_length);
     if (transmitAgain){
       test_payload_t* pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
