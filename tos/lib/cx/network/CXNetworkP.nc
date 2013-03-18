@@ -182,10 +182,15 @@ module CXNetworkP {
       //want to call this lower (because then we will mess up SN's for
       //forwarded packets).
       call CXNetworkPacket.init(msg);
-      return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
-        useMicro, microRef, 
-        tsLoc, 
-        nmd, msg);
+      if (call CXNetworkPacket.readyNextHop(msg)){
+        return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
+          useMicro, microRef, 
+          tsLoc, 
+          nmd, msg);
+      }else{
+        //TTL was provided as 0.
+        return EINVAL;
+      }
     }
   }
 
