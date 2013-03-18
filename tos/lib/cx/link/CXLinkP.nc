@@ -204,10 +204,12 @@ module CXLinkP {
           case RT_SLEEP:
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
+            //TODO: FUTURE frequency-scaling: turn it down
             post requestHandled();
             break;
           case RT_WAKEUP:
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
+            //TODO: FUTURE frequency-scaling: turn it up.
             //if radio is off, turn it on (idle)
             post requestHandled();
             break;
