@@ -97,18 +97,31 @@ module TestP{
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
-    printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
-      error, atFrame, reqFrame_, didReceive, microRef);
+    if (!forwarding || error != SUCCESS || didReceive){
+      printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
+        error, atFrame, reqFrame_, didReceive, microRef);
+    }
     receivePending = FALSE;
     if (forwarding){
-      reqFrame = call CXRequestQueue.nextFrame();
-      reqOffset = 0;
+      if (!didReceive){
+        //nothing: try to receive at next frame.
+        reqFrame = atFrame;
+        reqOffset = 1;
+      }else{
+        //atFrame is the frame in which we actually received the
+        //packet. Since we also forwarded it, atFrame+1 is in the
+        //past. hmmm.
+        reqFrame = call CXRequestQueue.nextFrame();
+        reqOffset = 1;
+        printf("rrx %lu %li\r\n", reqFrame, reqOffset);
+      }
       post requestShortReceive();
     }
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
-      uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef, 
+      uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef,
+      uint32_t t32kRef,
       void* md, message_t* msg_){
     printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
       microRef, msg_);
@@ -133,13 +146,15 @@ module TestP{
       FALSE, 0,
       duration,
       NULL, msg);
-    printf("rx req: %x\r\n", error);
     if (SUCCESS == error){
       receivePending = TRUE;
+    }else{
+      printf("rx req %lu %li: %x\r\n", baseFrame, frameOffset, error);
     }
   }
 
   task void requestLongReceive(){
+    printf("request long\r\n");
     requestReceive(RX_MAX_WAIT >> 5, 
       call CXRequestQueue.nextFrame(), 
       1);
@@ -151,8 +166,10 @@ module TestP{
 
   task void toggleForward(){
     if (forwarding){
+      printf("forwarding off\r\n");
       forwarding = FALSE;
     } else {
+      printf("forwarding on\r\n");
       forwarding = TRUE;
       reqFrame = call CXRequestQueue.nextFrame();
       reqOffset = 1;
@@ -169,7 +186,7 @@ module TestP{
       uint8_t i;
 
       call CXNetworkPacket.init(msg);
-      call CXNetworkPacket.setTTL(msg, 2);
+      call CXNetworkPacket.setTTL(msg, 1);
       for (i = 0; i < PAYLOAD_LEN; i++){
         pl->buffer[i] = i;
       }
