@@ -9,7 +9,6 @@ typedef nx_struct cx_network_header {
 typedef struct cx_network_metadata {
   uint32_t atFrame;
   uint32_t reqFrame;
-  uint8_t  rxHopCount;
   uint32_t microRef;
   uint32_t t32kRef;
   void* next;

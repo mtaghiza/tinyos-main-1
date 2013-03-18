@@ -9,17 +9,21 @@ configuration CXNetworkC {
 } implementation {
   components CXNetworkP;
 
+  components CXNetworkPacketC;
+  //convenience interfaces
+  Packet = CXNetworkPacketC;
+  CXNetworkPacket = CXNetworkPacketC;
+
   components CXLinkC;
   
   SplitControl = CXLinkC;
-  CXRequestQueue = CXNetworkP;
-  Packet = CXNetworkP;
-  CXNetworkPacket = CXNetworkP;
 
+  CXRequestQueue = CXNetworkP;
   CXNetworkP.SubCXRequestQueue -> CXLinkC;
-  CXNetworkP.SubPacket -> CXLinkC;
 
   CXNetworkP.CXLinkPacket -> CXLinkC;
+
+  CXNetworkP.CXNetworkPacket -> CXNetworkPacketC;
 
   components new PoolC(cx_network_metadata_t, CX_NETWORK_POOL_SIZE);
   CXNetworkP.Pool -> PoolC;

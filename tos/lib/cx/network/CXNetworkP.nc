@@ -1,8 +1,6 @@
 module CXNetworkP {
-  provides interface CXNetworkPacket;
-  provides interface Packet;
-  uses interface Packet as SubPacket;
   uses interface CXLinkPacket;
+  uses interface CXNetworkPacket;
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
@@ -38,7 +36,12 @@ module CXNetworkP {
 
     if (SUCCESS == error) {
       if (didReceive){
-        nmd -> rxHopCount = call CXNetworkPacket.getHops(msg);
+        call CXNetworkPacket.setRXHopCount(msg, 
+          call CXNetworkPacket.getHops(msg));
+        call CXNetworkPacket.setOriginFrameNumber(msg,
+          atFrame - call CXNetworkPacket.getRXHopCount(msg));
+        call CXNetworkPacket.setOriginFrameStart(msg,
+          t32kRef - (FRAMELEN_32K * call CXNetworkPacket.getRXHopCount(msg)));
         printf("#r %u %u\r\n", 
           call CXNetworkPacket.getHops(msg),
           call CXNetworkPacket.getTTL(msg));
@@ -112,43 +115,6 @@ module CXNetworkP {
     }
   }
 
-
-  //pass-throughs
-  command uint32_t CXRequestQueue.nextFrame(){
-    return call SubCXRequestQueue.nextFrame();
-  }
-
-  command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
-      int32_t frameOffset){
-    return call SubCXRequestQueue.requestSleep(baseFrame, frameOffset);
-  }
-  event void SubCXRequestQueue.sleepHandled(error_t error, 
-      uint32_t atFrame, 
-      uint32_t reqFrame){
-    signal CXRequestQueue.sleepHandled(error, atFrame, reqFrame);
-  }
-
-  command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
-      int32_t frameOffset){
-    return call SubCXRequestQueue.requestWakeup(baseFrame, frameOffset);
-  }
-
-  event void SubCXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame, 
-      uint32_t reqFrame){
-    signal CXRequestQueue.wakeupHandled(error, atFrame, reqFrame);
-  }
-
-  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
-      int32_t frameOffset, int32_t frameShift){
-    return call SubCXRequestQueue.requestFrameShift(baseFrame, frameOffset,
-      frameShift);
-  }
-
-  event void SubCXRequestQueue.frameShiftHandled(error_t error, uint32_t atFrame,
-      uint32_t reqFrame){
-    signal CXRequestQueue.frameShiftHandled(error, atFrame, reqFrame);
-  }
-
   command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
@@ -194,72 +160,40 @@ module CXNetworkP {
     }
   }
 
-
-  //CX header stuffs
-  cx_network_header_t* getHeader(message_t* msg){
-    return (cx_network_header_t*)(call SubPacket.getPayload(msg,
-      sizeof(cx_network_header_t)));
+  //------------  pass-throughs    --------
+  command uint32_t CXRequestQueue.nextFrame(){
+    return call SubCXRequestQueue.nextFrame();
   }
 
-  command error_t CXNetworkPacket.init(message_t* msg){
-    cx_network_header_t* hdr = getHeader(msg);
-    hdr -> hops = 0;
-    call CXLinkPacket.init(msg);
-    return SUCCESS;
+  command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
+      int32_t frameOffset){
+    return call SubCXRequestQueue.requestSleep(baseFrame, frameOffset);
+  }
+  event void SubCXRequestQueue.sleepHandled(error_t error, 
+      uint32_t atFrame, 
+      uint32_t reqFrame){
+    signal CXRequestQueue.sleepHandled(error, atFrame, reqFrame);
   }
 
-  command void CXNetworkPacket.setTTL(message_t* msg, uint8_t ttl){
-    cx_network_header_t* hdr = getHeader(msg);
-    hdr -> ttl = ttl;
+  command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
+      int32_t frameOffset){
+    return call SubCXRequestQueue.requestWakeup(baseFrame, frameOffset);
   }
 
-  command uint8_t CXNetworkPacket.getTTL(message_t* msg){
-    cx_network_header_t* hdr = getHeader(msg);
-    return hdr->ttl;
+  event void SubCXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame, 
+      uint32_t reqFrame){
+    signal CXRequestQueue.wakeupHandled(error, atFrame, reqFrame);
   }
 
-  command uint8_t CXNetworkPacket.getHops(message_t* msg){
-    cx_network_header_t* hdr = getHeader(msg);
-    return hdr->hops;
-  }
-  
-  //if TTL positive, decrement TTL and increment hop count.
-  //Return true if TTL is still positive after this step.
-  command bool CXNetworkPacket.readyNextHop(message_t* msg){
-    cx_network_header_t* hdr = getHeader(msg);
-    if (hdr -> ttl > 0){
-      hdr -> ttl --;
-      hdr -> hops ++;
-      return (hdr->ttl > 0);
-    } else {
-      return FALSE;
-    }
-  }
-  //----------packet stuffs 
-  command void Packet.setPayloadLength(message_t* msg, uint8_t len){
-    call SubPacket.setPayloadLength(msg, len +
-      sizeof(cx_network_header_t));
+  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
+      int32_t frameOffset, int32_t frameShift){
+    return call SubCXRequestQueue.requestFrameShift(baseFrame, frameOffset,
+      frameShift);
   }
 
-  command void Packet.clear(message_t* msg){
-    call SubPacket.clear(msg);
+  event void SubCXRequestQueue.frameShiftHandled(error_t error, uint32_t atFrame,
+      uint32_t reqFrame){
+    signal CXRequestQueue.frameShiftHandled(error, atFrame, reqFrame);
   }
-
-  command uint8_t Packet.payloadLength(message_t* msg){
-    return call SubPacket.payloadLength(msg) - sizeof(cx_network_header_t);
-  }
-
-  command uint8_t Packet.maxPayloadLength(){
-    return call SubPacket.maxPayloadLength() - sizeof(cx_network_header_t);
-  }
-
-  command void* Packet.getPayload(message_t* msg, uint8_t len){
-    if (len <= call Packet.maxPayloadLength()){
-      return (call SubPacket.getPayload(msg, sizeof(cx_network_header_t))) + sizeof(cx_network_header_t);
-    } else {
-      return NULL;
-    }
-  }
-
   
 }

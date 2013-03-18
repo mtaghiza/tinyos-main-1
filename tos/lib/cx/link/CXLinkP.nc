@@ -233,8 +233,6 @@ module CXLinkP {
                 tx_left = tx_len;
                 tx_tsLoc = nextRequest->typeSpecific.tx.tsLoc;
                 tx_tsSet = FALSE;
-                //TODO: TX CX link header setup-- decrement TTL (if
-                //  non-0), increment hop count.
                 aRequestError = SUCCESS;
                 P1OUT |= BIT4;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
@@ -682,6 +680,7 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    //TODO: BUG store rf1aphysical metadata
     atomic{
       call FastAlarm.stop();
       aRequestError = result;
