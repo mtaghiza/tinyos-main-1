@@ -89,6 +89,7 @@ module CXLinkP {
     //if the request finished in the async context, need to copy
     //results back to the task context
     uint32_t microRef;
+    uint32_t t32kRef = 0;
     uint32_t reqFrame = nextRequest->baseFrame + nextRequest->frameOffset;
     atomic{
       if (asyncHandled){
@@ -115,6 +116,7 @@ module CXLinkP {
           fastRef1, fastRef2, slowRef,
           fastTicks, slowTicks);
         printf_LINK("%lu -> ", lastFrameTime);
+        t32kRef = slowRef - slowTicks;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
         printf_LINK("%lu \r\n", lastFrameTime);
@@ -146,7 +148,7 @@ module CXLinkP {
         signal CXRequestQueue.receiveHandled(requestError,
           handledFrame, 
           reqFrame,
-          didReceive, microRef, nextRequest->next, nextRequest->msg);
+          didReceive, microRef, t32kRef, nextRequest->next, nextRequest->msg);
         break;
 
       case RT_MARK:
@@ -419,7 +421,7 @@ module CXLinkP {
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, bool didReceive_, 
-    uint32_t microRef, void* md, message_t* msg){}
+    uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg){}
 
   command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
       int32_t frameOffset, 

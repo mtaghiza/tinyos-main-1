@@ -12,7 +12,7 @@ interface CXRequestQueue{
   event void receiveHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, 
     bool didReceive, 
-    uint32_t microRef, 
+    uint32_t microRef, uint32_t t32kRef,
     void* md, message_t* msg); 
   
   //N.B.: generally, if you need something sent based on a previous

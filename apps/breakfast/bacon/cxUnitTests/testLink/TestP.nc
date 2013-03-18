@@ -143,9 +143,9 @@ module TestP{
 
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint32_t atFrame, uint32_t reqFrame, bool didReceive, 
-      uint32_t microRef, void* md, message_t* msg_){
-    printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
-      error, atFrame, reqFrame, didReceive, microRef);
+      uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
+    printf("rx handled: %x @ %lu req %lu %x %lu / %lu\r\n",
+      error, atFrame, reqFrame, didReceive, microRef, t32kRef);
     if (didReceive){
       lastRxFrame = atFrame;
       if (retx){
