@@ -140,7 +140,7 @@ module CXLinkP {
         signal CXRequestQueue.sendHandled(requestError, 
           handledFrame,
           reqFrame,
-          microRef, 
+          microRef, t32kRef,
           nextRequest-> next,
           nextRequest->msg);
         break;
@@ -449,7 +449,7 @@ module CXLinkP {
 
   default event void CXRequestQueue.sendHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
-    void* md, message_t* msg){}
+    uint32_t t32kRef, void* md, message_t* msg){}
 
   command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
       int32_t frameOffset){

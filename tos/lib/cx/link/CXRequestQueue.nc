@@ -27,7 +27,7 @@ interface CXRequestQueue{
 
   event void sendHandled(error_t error, 
     uint32_t atFrame, uint32_t reqFrame, 
-    uint32_t microRef, 
+    uint32_t microRef, uint32_t t32kRef,
     void* md, message_t* msg);
 
   command error_t requestSleep(uint32_t baseFrame, 
