@@ -1,10 +1,18 @@
-configuration CXMasterSchedulerP{
+
+ #include "CXScheduler.h"
+module CXMasterSchedulerP{
   provides interface SplitControl;
   provides interface CXRequestQueue;
   
   uses interface SplitControl as SubSplitControl;
   uses interface CXRequestQueue as SubCXRQ;
+
+  uses interface CXSchedulerPacket;
+  uses interface Packet;
 } implementation {
+  message_t schedMsg_internal;
+  message_t* schedMsg = &schedMsg_internal;
+  cx_schedule_t* sched;
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     return 0;
@@ -36,8 +44,8 @@ configuration CXMasterSchedulerP{
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
 
-    call CXSchedulerPacket.setSchedulerNumber(msg, 
-      sched->sn);
+    call CXSchedulerPacket.setScheduleNumber(msg, 
+      call CXSchedulerPacket.getScheduleNumber(schedMsg));
     return call SubCXRQ.requestSend(baseFrame, frameOffset, useMicro,
     microRef, tsLoc, md, msg);
   }
@@ -70,11 +78,16 @@ configuration CXMasterSchedulerP{
   }
 
   command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
-    int32_t frameOffset, int32_t frameShift){
+      int32_t frameOffset, int32_t frameShift){
+    return call SubCXRQ.requestFrameShift(baseFrame, frameOffset,
+      frameShift);
   }
 
-  event void SubCXRQ.frameShiftHandled(error_t error, uint32_t atFrame,
-    uint32_t reqFrame);
+  event void SubCXRQ.frameShiftHandled(error_t error, 
+      uint32_t atFrame, uint32_t reqFrame){
+    //TODO: only signal if we didn't request it 
+    signal CXRequestQueue.frameShiftHandled(error, atFrame, reqFrame);
+  }
 
   command error_t SplitControl.start(){
     return call SubSplitControl.start();
@@ -86,6 +99,7 @@ configuration CXMasterSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (error == SUCCESS){
+      sched = (cx_schedule_t*)call Packet.getPayload(schedMsg, sizeof(cx_schedule_t));
       //TODO: start duty cycling
       //TODO: set up schedule
       //TODO: schedule send
@@ -94,6 +108,6 @@ configuration CXMasterSchedulerP{
   }
 
   event void SubSplitControl.stopDone(error_t error){
-    signal SplitControl.stopDone();
+    signal SplitControl.stopDone(error);
   }
 }

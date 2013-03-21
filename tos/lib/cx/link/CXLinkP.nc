@@ -75,7 +75,7 @@ module CXLinkP {
     lastFrameNum += elapsedFrames;
   }
 
-  command uint32_t CXRequestQueue.nextFrame(){
+  command uint32_t CXRequestQueue.nextFrame(bool isTX){
     updateLastFrameNum();
     return lastFrameNum + 1;
   }
@@ -332,7 +332,7 @@ module CXLinkP {
 
   error_t validateRequest(cx_request_t* r){
     //event in the past? I guess we were busy.
-    if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame()){
+    if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
       return EBUSY;
 
     //micro timer required but it's either off or has been stopped

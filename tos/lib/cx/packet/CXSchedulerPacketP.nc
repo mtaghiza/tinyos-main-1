@@ -26,15 +26,17 @@ module CXSchedulerPacketP {
 
   command uint8_t Packet.maxPayloadLength(){
     return call SubPacket.maxPayloadLength() -
-      sizeof(cx_schedule__header_t);
+      sizeof(cx_schedule_header_t);
   }
 
   command void* Packet.getPayload(message_t* msg, 
       uint8_t len){
     void* pl = call SubPacket.getPayload(msg,
-      len + sizeof(cx_schedule_header_t))
+      len + sizeof(cx_schedule_header_t));
     if (pl){
       return pl + sizeof(cx_schedule_header_t);
+    }else{
+      return pl;
     }
   }
 

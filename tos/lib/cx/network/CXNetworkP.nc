@@ -161,8 +161,8 @@ module CXNetworkP {
   }
 
   //------------  pass-throughs    --------
-  command uint32_t CXRequestQueue.nextFrame(){
-    return call SubCXRequestQueue.nextFrame();
+  command uint32_t CXRequestQueue.nextFrame(bool isTX){
+    return call SubCXRequestQueue.nextFrame(isTX);
   }
 
   command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 

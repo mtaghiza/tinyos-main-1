@@ -1,6 +1,8 @@
 #ifndef CX_SCHEDULER_H
 #define CX_SCHEDULER_H
 
+#include "AM.h"
+
 #ifndef CX_MAX_SLOTS
 #define CX_MAX_SLOTS 10
 #endif
@@ -21,6 +23,7 @@ typedef nx_struct cx_schedule_header {
 }cx_schedule_header_t; 
 
 typedef nx_struct cx_schedule {
+  nx_uint8_t sn;
   nx_uint32_t timestamp; //32K timestamp of origin
   nx_uint32_t cycleLen;
   nx_uint32_t slotLen;

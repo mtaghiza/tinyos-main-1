@@ -9,12 +9,13 @@ configuration CXMasterSchedulerC{
   components CXNetworkC;
 
   components CXSchedulerPacketC;
-  SplitControl = CXSlaveSchedulerP;
+  SplitControl = CXMasterSchedulerP;
   CXRequestQueue = CXMasterSchedulerP;
 
   CXMasterSchedulerP.SubCXRQ -> CXNetworkC;
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
   CXMasterSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
+  CXMasterSchedulerP.Packet -> CXSchedulerPacketC;
 
   Packet = CXSchedulerPacketC;
 }
