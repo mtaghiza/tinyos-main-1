@@ -11,7 +11,6 @@ module TestP{
   uses interface CXRequestQueue;
 
   uses interface Packet;
-  uses interface CXNetworkPacket;
 
   uses interface StdControl as SerialControl;
 } implementation {
@@ -38,9 +37,6 @@ module TestP{
   task void usage(){
     printf("---- Commands ----\r\n");
     printf("S : toggle start/stop + wakeup at startDone\r\n");
-    printf("r : request long-duration receive\r\n");
-    printf("f : toggle repeated short-duration receive/forward\r\n");
-    printf("t : transmit a packet\r\n");
     printf("q : reset\r\n");
   }
 
@@ -81,9 +77,6 @@ module TestP{
   event void SplitControl.startDone(error_t error){
     printf("started %x \r\n", error);
     started = TRUE;
-    printf("wakeup req %x\r\n", 
-      call CXRequestQueue.requestWakeup(
-        call CXRequestQueue.nextFrame(), 0));
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -100,22 +93,6 @@ module TestP{
     if (!forwarding || error != SUCCESS || didReceive){
       printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
         error, atFrame, reqFrame_, didReceive, microRef);
-    }
-    receivePending = FALSE;
-    if (forwarding){
-      if (!didReceive){
-        //nothing: try to receive at next frame.
-        reqFrame = atFrame;
-        reqOffset = 1;
-      }else{
-        //atFrame is the frame in which we actually received the
-        //packet. Since we also forwarded it, atFrame+1 is in the
-        //past. hmmm.
-        reqFrame = call CXRequestQueue.nextFrame();
-        reqOffset = 1;
-        printf("rrx %lu %li\r\n", reqFrame, reqOffset);
-      }
-      post requestShortReceive();
     }
   }
 
@@ -138,69 +115,6 @@ module TestP{
     }
   }
 
-  void requestReceive(uint32_t duration, 
-      uint32_t baseFrame, 
-      int32_t frameOffset){
-    error_t error = call CXRequestQueue.requestReceive(
-      baseFrame, frameOffset, 
-      FALSE, 0,
-      duration,
-      NULL, msg);
-    if (SUCCESS == error){
-      receivePending = TRUE;
-    }else{
-      printf("rx req %lu %li: %x\r\n", baseFrame, frameOffset, error);
-    }
-  }
-
-  task void requestLongReceive(){
-    printf("request long\r\n");
-    requestReceive(RX_MAX_WAIT >> 5, 
-      call CXRequestQueue.nextFrame(), 
-      1);
-  }
-
-  task void requestShortReceive(){
-    requestReceive(0, reqFrame, reqOffset);
-  }
-
-  task void toggleForward(){
-    if (forwarding){
-      printf("forwarding off\r\n");
-      forwarding = FALSE;
-    } else {
-      printf("forwarding on\r\n");
-      forwarding = TRUE;
-      reqFrame = call CXRequestQueue.nextFrame();
-      reqOffset = 1;
-      if (!receivePending){
-        post requestShortReceive();
-      }
-    }
-  }
-
-  task void transmit(){
-    test_payload_t * pl = (test_payload_t*)call Packet.getPayload(msg, sizeof(test_payload_t));
-    if (pl != NULL){
-      error_t error;
-      uint8_t i;
-
-      call CXNetworkPacket.init(msg);
-      call CXNetworkPacket.setTTL(msg, 4);
-      for (i = 0; i < PAYLOAD_LEN; i++){
-        pl->buffer[i] = i;
-      }
-      call Packet.setPayloadLength(msg, sizeof(test_payload_t));
-      error = call CXRequestQueue.requestSend(
-        call CXRequestQueue.nextFrame(), 1,
-        FALSE, 0,
-        &(pl->timestamp),
-        NULL, msg);
-    }else{
-      printf("PL size error?\r\n");
-    }
-  }
-
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -209,15 +123,6 @@ module TestP{
          break;
        case 'S':
          post toggleStartStop();
-         break;
-       case 'r':
-         post requestLongReceive();
-         break;
-       case 't':
-         post transmit();
-         break;
-       case 'f':
-         post toggleForward();
          break;
        case '?':
          post usage();

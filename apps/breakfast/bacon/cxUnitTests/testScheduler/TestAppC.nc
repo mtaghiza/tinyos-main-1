@@ -9,12 +9,11 @@ configuration TestAppC{
   TestP.Boot -> MainC;
   TestP.UartStream -> PlatformSerialC;
   
-  components CXNetworkC;
-  TestP.CXRequestQueue -> CXNetworkC;
-  TestP.SplitControl -> CXNetworkC;
+  components CXMasterSchedulerC;
+  TestP.CXRequestQueue -> CXMasterSchedulerC;
+  TestP.SplitControl -> CXMasterSchedulerC;
 
-  TestP.Packet -> CXNetworkC;
-  TestP.CXNetworkPacket -> CXNetworkC;
+  TestP.Packet -> CXMasterSchedulerC;
 
   TestP.SerialControl -> PlatformSerialC;
 }
