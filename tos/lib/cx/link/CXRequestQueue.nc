@@ -1,8 +1,16 @@
 
  #include "message.h"
 interface CXRequestQueue{
-  command uint32_t nextFrame();
 
+  //return the next available frame, according to this layer. A return
+  //value of 0 indicates "no valid next frame, try again later"
+  //This can happen, for instance, if we were not assigned any slots
+  //in the current schedule.
+  command uint32_t nextFrame(bool isTX);
+  
+  //specifying duration of 0 means "use whatever default is
+  //appropriate" e.g. if we are not synched, the scheduler will set
+  //this to some huge value.
   command error_t requestReceive(uint32_t baseFrame, 
     int32_t frameOffset, 
     bool useMicro, uint32_t microRef,
