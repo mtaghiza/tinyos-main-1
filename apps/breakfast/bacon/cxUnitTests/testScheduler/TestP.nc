@@ -32,7 +32,6 @@ module TestP{
     nx_uint32_t timestamp;
   } test_payload_t;
 
-  task void requestShortReceive();
 
   task void usage(){
     printf("---- Commands ----\r\n");
