@@ -89,7 +89,7 @@ module CXSlaveSchedulerP{
       md, msg);
   }
 
-  command error_t requestSend(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
