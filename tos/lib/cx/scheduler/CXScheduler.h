@@ -15,6 +15,21 @@
 #define CX_MAX_CYCLE_LENGTH 20000
 #endif
 
+//2000 frames = 62.5 s ~= 1 minute
+#ifndef CX_DEFAULT_CYCLE_LENGTH
+#define CX_DEFAULT_CYCLE_LENGTH 2000
+#endif
+
+//in a 5-hop network, 10 frames to establish forwarder set, 5 frames
+//per packet. 100 frames is enough for 18 packets at max depth.
+#ifndef CX_DEFAULT_SLOT_LENGTH
+#define CX_DEFAULT_SLOT_LENGTH 100
+#endif
+
+#ifndef CX_DEFAULT_MAX_DEPTH
+#define CX_DEFAULT_MAX_DEPTH 10
+#endif
+
 #define INVALID_SCHEDULE 0xFF
 
 typedef nx_struct cx_schedule_header {
@@ -25,8 +40,9 @@ typedef nx_struct cx_schedule_header {
 typedef nx_struct cx_schedule {
   nx_uint8_t sn;
   nx_uint32_t timestamp; //32K timestamp of origin
-  nx_uint32_t cycleLen;
-  nx_uint32_t slotLen;
+  nx_uint32_t cycleLength;
+  nx_uint32_t slotLength;
+  nx_uint8_t maxDepth;
   nx_uint8_t numAssigned;
   nx_am_addr_t slotAssignments[CX_MAX_SLOTS];
 } cx_schedule_t;

@@ -6,16 +6,27 @@ configuration CXMasterSchedulerC{
 
 } implementation {
   components CXMasterSchedulerP;
-  components CXNetworkC;
+ 
+  components MainC;
+  CXMasterSchedulerP.Boot -> MainC.Boot;
+  components RandomC;
+  CXMasterSchedulerP.Random -> RandomC;
 
-  components CXSchedulerPacketC;
   SplitControl = CXMasterSchedulerP;
   CXRequestQueue = CXMasterSchedulerP;
 
+  components CXNetworkC;
   CXMasterSchedulerP.SubCXRQ -> CXNetworkC;
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
+
+  components CXSchedulerPacketC;
   CXMasterSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
   CXMasterSchedulerP.Packet -> CXSchedulerPacketC;
-
   Packet = CXSchedulerPacketC;
+   
+  //for addr
+  components CXLinkPacketC;
+  CXMasterSchedulerP.CXLinkPacket -> CXLinkPacketC;
+  CXMasterSchedulerP.CXNetworkPacket -> CXNetworkC;
+
 }
