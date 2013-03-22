@@ -1,7 +1,7 @@
 configuration TestSlaveC{
 } implementation {
   components MainC;
-  components TestP;
+  components TestSlaveP as TestP;
   
   components PlatformSerialC;
   components SerialPrintfC;
@@ -10,6 +10,7 @@ configuration TestSlaveC{
   TestP.UartStream -> PlatformSerialC;
   
   components CXSlaveSchedulerC;
+  CXSlaveSchedulerC.Receive -> TestP;
   TestP.CXRequestQueue -> CXSlaveSchedulerC;
   TestP.SplitControl -> CXSlaveSchedulerC;
 

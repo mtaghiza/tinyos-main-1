@@ -18,8 +18,9 @@ CFLAGS += -DCX_SELF_RETX=1
 
 CFLAGS +=-DENABLE_TIMESTAMPING=1
 
-#320 frames = 10 seconds
+#160 frames = 5 seconds
 CFLAGS +=-DCX_DEFAULT_CYCLE_LENGTH=320
+CFLAGS +=-DCX_DEFAULT_SLOT_LENGTH=20
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
@@ -31,7 +32,7 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 #enable link layer printf's
 CFLAGS += -DDEBUG_LINK=0
 #toggle P1.1 at every frame boundary
-CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=0
+CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=1
 
 include $(MAKERULES)
 
