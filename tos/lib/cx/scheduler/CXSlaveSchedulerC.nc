@@ -1,7 +1,9 @@
 configuration CXSlaveSchedulerC{
   provides interface SplitControl;
   provides interface CXRequestQueue;
-  
+
+  provides interface Packet; 
+
   //TODO: remove when AMReceive available
   uses interface Receive;
 } implementation {
@@ -16,8 +18,8 @@ configuration CXSlaveSchedulerC{
   CXSlaveSchedulerP.SubCXRQ -> CXNetworkC;
   CXSlaveSchedulerP.SubSplitControl -> CXNetworkC;
   CXSlaveSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
-  CXSlaveSchedulerP.CXPacketMetadata -> CXSchedulerPacketC;
-
+  
+  Packet = CXSchedulerPacketC;
 
 //TODO: wire to AM Receive when available
   CXSlaveSchedulerP.ScheduleReceive = Receive;

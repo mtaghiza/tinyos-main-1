@@ -1,12 +1,12 @@
+ #include "CXScheduler.h"
 module CXSlaveSchedulerP{
   provides interface SplitControl;
-  uses interface SubSplitControl;
+  uses interface SplitControl as SubSplitControl;
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRQ;
 
   uses interface CXSchedulerPacket;
-  uses interface CXPacketMetadata;
 
   uses interface Receive as ScheduleReceive;
 } implementation {
@@ -24,6 +24,8 @@ module CXSlaveSchedulerP{
   };
 
   uint8_t state = S_OFF;
+  uint32_t lastWakeup;
+  uint32_t nextWakeup;
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     if (isTX){
@@ -43,8 +45,8 @@ module CXSlaveSchedulerP{
     }
   }
 
-  command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
-      int32_t frameOffset, 
+  command error_t CXRequestQueue.requestReceive(uint8_t layerCount, 
+      uint32_t baseFrame, int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
@@ -64,6 +66,7 @@ module CXSlaveSchedulerP{
   }
 
   event void SubCXRQ.receiveHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
@@ -83,13 +86,18 @@ module CXSlaveSchedulerP{
       //TODO: handle fail-safe logic here. We should sleep the
       //  radio for a while and try again later.
     }
-
-    signal CXRequestQueue.receiveHandled(error,
-      atFrame, reqFrame, didReceive, microRef, t32kRef,
-      md, msg);
+    if (layerCount){
+      signal CXRequestQueue.receiveHandled(error,
+        layerCount - 1, 
+        atFrame, reqFrame, didReceive, microRef, t32kRef,
+        md, msg);
+    }else{
+      //there shouldn't be any RX requests originating at this layer.
+    }
   }
 
-  command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSend(uint8_t layerCount, 
+      uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
@@ -98,60 +106,83 @@ module CXSlaveSchedulerP{
       return ERETRY;
     }
 
-    call CXSchedulerPacket.setSchedulerNumber(msg, 
+    call CXSchedulerPacket.setScheduleNumber(msg, 
       sched->sn);
-    return call SubCXRQ.requestSend(baseFrame,
+    return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
       frameOffset, useMicro, microRef, tsLoc, md, msg);
   }
 
   event void SubCXRQ.sendHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    //TODO: only signal it up if this was not a CLAIM packet (from
-    //this layer)
-    signal SubCXRQ.sendHandled(error, 
-      atFrame, reqFrame,
-      microRef, t32kRef, 
-      md, msg);
+    if (layerCount){
+      signal SubCXRQ.sendHandled(error, 
+        layerCount - 1,
+        atFrame, reqFrame,
+        microRef, t32kRef, 
+        md, msg);
+    }else{
+      //TODO: from this layer: was a CLAIM packet.
+    }
   }
 
-  event void ScheduleReceive.receive(message_t* msg, 
+  event message_t* ScheduleReceive.receive(message_t* msg, 
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
-    sched = (cx_schedule_t*)pl;
+    sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;
     return ret;
   }
 
-  command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    return call SubCXRQ.requestSleep(baseFrame, frameOffset);
+    return call SubCXRQ.requestSleep(layerCount + 1, baseFrame, frameOffset);
   }
-  event void SubCXRQ.sleepHandled(error_t error, uint32_t atFrame, 
+  event void SubCXRQ.sleepHandled(error_t error, uint8_t layerCount, uint32_t atFrame, 
       uint32_t reqFrame){
-    //TODO: only signal up if we didn't request it
-    signal CXRequestQueue.sleepHandled(error, atFrame, reqFrame);
+    if (layerCount){
+      signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
+    }else{
+      //TODO update state
+    }
   }
 
-  command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    return call SubCXRQ.requestWakeup(baseFrame, frameOffset);
+    return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame, frameOffset);
   }
 
   event void SubCXRQ.wakeupHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame){
-    //TODO: only signal up if we didn't request it
-    signal CXRequestQueue.wakeupHandled(error, atFrame, reqFrame);
+    if (layerCount){
+      signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
+    }else {
+      //TODO: update state
+
+    }
   }
 
-  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
-    int32_t frameOffset, int32_t frameShift){
+  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, 
+      uint32_t baseFrame, int32_t frameOffset, int32_t frameShift){
+    return call SubCXRQ.requestFrameShift(layerCount + 1, 
+      baseFrame, frameOffset, frameShift);
   }
 
-  event void SubCXRQ.frameShiftHandled(error_t error, uint32_t atFrame,
-    uint32_t reqFrame);
+  event void SubCXRQ.frameShiftHandled(error_t error, 
+      uint8_t layerCount, 
+      uint32_t atFrame, uint32_t reqFrame){
+    if (layerCount){
+      signal CXRequestQueue.frameShiftHandled(error, 
+        layerCount - 1, 
+        atFrame, reqFrame);
+    }else{
+      //TODO: update state
+    }
+  }
 
   command error_t SplitControl.start(){
     return call SubSplitControl.start();
@@ -164,7 +195,7 @@ module CXSlaveSchedulerP{
     if (error == SUCCESS){
       state = S_OFF;
     }
-    signal SplitControl.stopDone();
+    signal SplitControl.stopDone(error);
   }
 
   event void SubSplitControl.startDone(error_t error){
