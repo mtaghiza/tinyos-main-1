@@ -77,7 +77,14 @@ module CXNetworkP {
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
     if (SUCCESS != error){
       printf("SCXRQ.sh: %x\r\n", error);
-      //TODO: signal relevant *handled event
+      if (layerCount){
+        signal CXRequestQueue.sendHandled(error, 
+          layerCount-1,
+          atFrame, reqFrame, microRef, t32kRef, 
+          ((cx_network_metadata_t*)md)->next,
+          msg);
+      }
+      call Pool.put(md);
     } else if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
       //OK, so we obviously forwarded it last time, so let's do it
       //again. Use last TX as ref. 
@@ -133,11 +140,16 @@ module CXNetworkP {
     if (nmd == NULL){
       return ENOMEM;
     }else{
+      error_t error;
       nmd -> next = md; 
       nmd -> layerCount = layerCount;
       nmd -> reqFrame = baseFrame + frameOffset;
-      return call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
+      error = call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
         useMicro, microRef, duration, nmd, msg);
+      if (error != SUCCESS){
+        call Pool.put(nmd);
+      }
+      return error;
     }
   }
 
@@ -166,6 +178,7 @@ module CXNetworkP {
           tsLoc, 
           nmd, msg);
       }else{
+        call Pool.put(nmd);
         //TTL was provided as 0.
         return EINVAL;
       }
