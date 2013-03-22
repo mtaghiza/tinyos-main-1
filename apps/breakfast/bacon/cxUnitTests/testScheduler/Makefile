@@ -1,4 +1,4 @@
-COMPONENT=TestAppC
+COMPONENT=TestMasterC
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/priorityQueue

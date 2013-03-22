@@ -1,4 +1,4 @@
-configuration TestAppC{
+configuration TestMasterC{
 } implementation {
   components MainC;
   components TestP;
