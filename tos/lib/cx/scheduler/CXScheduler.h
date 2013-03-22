@@ -39,12 +39,13 @@ typedef nx_struct cx_schedule_header {
 
 typedef nx_struct cx_schedule {
   nx_uint8_t sn;
-  nx_uint32_t timestamp; //32K timestamp of origin
   nx_uint32_t cycleLength;
   nx_uint32_t slotLength;
   nx_uint8_t maxDepth;
   nx_uint8_t numAssigned;
   nx_am_addr_t slotAssignments[CX_MAX_SLOTS];
+  //have to place it at the end for timestamping to be happy
+  nx_uint32_t timestamp; //32K timestamp of origin
 } cx_schedule_t;
 
 #endif
