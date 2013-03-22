@@ -13,7 +13,7 @@ module CXNetworkP {
     if ( ! CX_SELF_RETX){
       ret = (call CXLinkPacket.getSource(msg) != call CXLinkPacket.addr());
     }
-    //TODO: check distance / is-broadcast, && it with ret
+    //anything else we should be checking here?
     return ret;
   }
 
