@@ -24,11 +24,13 @@ module CXNetworkP {
   }
   
   event void SubCXRequestQueue.receiveHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, 
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*)md;
+    nmd -> layerCount = layerCount;
     nmd -> atFrame = atFrame;
     nmd -> reqFrame = reqFrame;
     nmd -> microRef = microRef;
@@ -49,6 +51,7 @@ module CXNetworkP {
           if (shouldForward(msg)){
             call CXNetworkPacket.readyNextHop(msg);
             error = call SubCXRequestQueue.requestSend(
+              0, //Forwarding: originates at THIS layer, not above.
               atFrame, CX_NETWORK_FORWARD_DELAY,
               TRUE, microRef, //use last RX as ref
               NULL,           //don't apply timestamp
@@ -62,13 +65,15 @@ module CXNetworkP {
     }
     //not forwarding, so we're done with it. signal up.
     signal CXRequestQueue.receiveHandled(error, 
-     nmd->atFrame, nmd->reqFrame, 
-     didReceive, nmd->microRef, nmd->t32kRef, 
-     nmd->next, msg);
+      nmd->layerCount - 1,
+      nmd->atFrame, nmd->reqFrame, 
+      didReceive, nmd->microRef, nmd->t32kRef, 
+      nmd->next, msg);
     call Pool.put(nmd);
   }
 
   event void SubCXRequestQueue.sendHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
@@ -84,7 +89,11 @@ module CXNetworkP {
       //what is atFrame? req = first, at=last?
       //what do we keep as the reference?
       call CXNetworkPacket.readyNextHop(msg);
+      //layer count stays the same: e.g. if we are forwarding, this
+      //  event is signalled with lc=0, and we should re-send with lc=0
+      //  as well.  if we are origin, it will have lc > 0
       error = call SubCXRequestQueue.requestSend(
+        layerCount,
         atFrame, CX_NETWORK_FORWARD_DELAY,
         TRUE, microRef,
         NULL,
@@ -97,14 +106,16 @@ module CXNetworkP {
     } else{
 
       //we are origin, so signal up as sendHandled.
-      if (call CXLinkPacket.getSource(msg) == call CXLinkPacket.addr()){
+      if (layerCount > 0 ){
         signal CXRequestQueue.sendHandled(error, 
+          layerCount - 1,
           atFrame, reqFrame, microRef, t32kRef, 
           nmd->next, msg);
         call Pool.put(nmd);
       }else{
         //restore stashed reception info and signal up.
         signal CXRequestQueue.receiveHandled(error,
+          nmd -> layerCount - 1,
           nmd -> atFrame, nmd -> reqFrame,
           TRUE,  //we are forwarding, so we must have received
           nmd -> microRef, nmd -> t32kRef,
@@ -115,7 +126,7 @@ module CXNetworkP {
     }
   }
 
-  command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestReceive(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration,
@@ -126,13 +137,14 @@ module CXNetworkP {
       return ENOMEM;
     }else{
       nmd -> next = md; 
+      nmd -> layerCount = layerCount;
       nmd -> reqFrame = baseFrame + frameOffset;
-      return call SubCXRequestQueue.requestReceive(baseFrame, frameOffset,
+      return call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
         useMicro, microRef, duration, nmd, msg);
     }
   }
 
-  command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSend(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
@@ -142,6 +154,7 @@ module CXNetworkP {
     if (nmd == NULL){
       return ENOMEM;
     }else{
+      nmd -> layerCount = layerCount;
       nmd -> next = md; 
       nmd -> reqFrame = baseFrame + frameOffset;
       //at this point, a new sequence number is assigned. We don't
@@ -149,7 +162,9 @@ module CXNetworkP {
       //forwarded packets).
       call CXNetworkPacket.init(msg);
       if (call CXNetworkPacket.readyNextHop(msg)){
-        return call SubCXRequestQueue.requestSend(baseFrame, frameOffset, 
+        return call SubCXRequestQueue.requestSend(
+          nmd->layerCount + 1, 
+          baseFrame, frameOffset, 
           useMicro, microRef, 
           tsLoc, 
           nmd, msg);
@@ -165,35 +180,39 @@ module CXNetworkP {
     return call SubCXRequestQueue.nextFrame(isTX);
   }
 
-  command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    return call SubCXRequestQueue.requestSleep(baseFrame, frameOffset);
+    return call SubCXRequestQueue.requestSleep(layerCount + 1, baseFrame, frameOffset);
   }
   event void SubCXRequestQueue.sleepHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, 
       uint32_t reqFrame){
-    signal CXRequestQueue.sleepHandled(error, atFrame, reqFrame);
+    signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
   }
 
-  command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    return call SubCXRequestQueue.requestWakeup(baseFrame, frameOffset);
+    return call SubCXRequestQueue.requestWakeup(layerCount+1, baseFrame, frameOffset);
   }
 
-  event void SubCXRequestQueue.wakeupHandled(error_t error, uint32_t atFrame, 
-      uint32_t reqFrame){
-    signal CXRequestQueue.wakeupHandled(error, atFrame, reqFrame);
+  event void SubCXRequestQueue.wakeupHandled(error_t error, 
+      uint8_t layerCount, 
+      uint32_t atFrame, uint32_t reqFrame){
+    signal CXRequestQueue.wakeupHandled(error, layerCount-1, atFrame, reqFrame);
   }
 
-  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, int32_t frameShift){
-    return call SubCXRequestQueue.requestFrameShift(baseFrame, frameOffset,
+    return call SubCXRequestQueue.requestFrameShift(layerCount+1,baseFrame, frameOffset,
       frameShift);
   }
 
-  event void SubCXRequestQueue.frameShiftHandled(error_t error, uint32_t atFrame,
+  event void SubCXRequestQueue.frameShiftHandled(error_t error, 
+      uint8_t layerCount,
+      uint32_t atFrame, 
       uint32_t reqFrame){
-    signal CXRequestQueue.frameShiftHandled(error, atFrame, reqFrame);
+    signal CXRequestQueue.frameShiftHandled(error, layerCount-1, atFrame, reqFrame);
   }
   
 }

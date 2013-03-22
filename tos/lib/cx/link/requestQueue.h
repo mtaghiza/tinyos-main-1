@@ -23,6 +23,9 @@ typedef enum {
 //This comes out to ~1500 days between rollovers. so, we don't worry
 //about it.
 typedef struct cx_request{
+  uint8_t layerCount;  //incremented on every requestX, decremented at
+  // every xHandled. Passed along with all of the commands/events that
+  // can affect the state of the priority queue.
   uint32_t baseFrame;
   int32_t frameOffset;
   uint32_t requestedTime;

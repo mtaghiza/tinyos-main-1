@@ -63,7 +63,7 @@ module CXLinkP {
   //forward declarations
   task void readyNextRequest();
   error_t validateRequest(cx_request_t* r);
-  cx_request_t* newRequest(uint32_t baseFrame, 
+  cx_request_t* newRequest(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, request_type_t requestType, void* md);
   
   void updateLastFrameNum(){
@@ -126,18 +126,22 @@ module CXLinkP {
     switch(nextRequest -> requestType){
       case RT_FRAMESHIFT:
         signal CXRequestQueue.frameShiftHandled(requestError,
+          nextRequest -> layerCount - 1,
           handledFrame, reqFrame);
         break;
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, 
+          nextRequest -> layerCount - 1,
           handledFrame, reqFrame);
         break;
       case RT_WAKEUP:
         signal CXRequestQueue.wakeupHandled(requestError,
+          nextRequest -> layerCount - 1,
           handledFrame, reqFrame); 
         break;
       case RT_TX:
         signal CXRequestQueue.sendHandled(requestError, 
+          nextRequest -> layerCount - 1,
           handledFrame,
           reqFrame,
           microRef, t32kRef,
@@ -146,6 +150,7 @@ module CXLinkP {
         break;
       case RT_RX:
         signal CXRequestQueue.receiveHandled(requestError,
+          nextRequest -> layerCount - 1,
           handledFrame, 
           reqFrame,
           didReceive, microRef, t32kRef, nextRequest->next, nextRequest->msg);
@@ -172,7 +177,7 @@ module CXLinkP {
       post readyNextRequest();
     }else{
       if (LINK_DEBUG_FRAME_BOUNDARIES){
-        nextRequest = newRequest(lastFrameNum, 1, RT_MARK, NULL);
+        nextRequest = newRequest(0, lastFrameNum, 1, RT_MARK, NULL);
         post readyNextRequest();
       }else{
         nextRequest = NULL;
@@ -345,10 +350,11 @@ module CXLinkP {
     return SUCCESS;
   }
   
-  cx_request_t* newRequest(uint32_t baseFrame, 
+  cx_request_t* newRequest(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, request_type_t requestType, void* md){
     cx_request_t* r = call Pool.get();
     if (r != NULL){
+      r->layerCount = layerCount;
       r->requestedTime = call FrameTimer.getNow();
       r->baseFrame = baseFrame;
       r->requestType = requestType;
@@ -375,9 +381,9 @@ module CXLinkP {
     }
   }
 
-  command error_t CXRequestQueue.requestFrameShift(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, int32_t frameShift){
-    cx_request_t* r = newRequest(baseFrame, frameOffset,
+    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset,
       RT_FRAMESHIFT, NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
@@ -391,12 +397,12 @@ module CXLinkP {
     }
   }
 
-  command error_t CXRequestQueue.requestReceive(uint32_t baseFrame, 
-      int32_t frameOffset, 
+  command error_t CXRequestQueue.requestReceive(uint8_t layerCount,
+      uint32_t baseFrame, int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       void* md, message_t* msg){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_RX, md);
+    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_RX, md);
     if (r != NULL){
       error_t error;
       //TODO: would be nice to use microRef/useMicro for more precise
@@ -420,15 +426,15 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.receiveHandled(error_t error, 
-    uint32_t atFrame, uint32_t reqFrame, bool didReceive_, 
+    uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame, bool didReceive_, 
     uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg){}
 
-  command error_t CXRequestQueue.requestSend(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSend(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_TX, md);
+    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_TX, md);
     if (r != NULL){
       error_t error;
       r->typeSpecific.tx.useTsMicro = useMicro;
@@ -448,12 +454,12 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.sendHandled(error_t error, 
-    uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
+    uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame, uint32_t microRef, 
     uint32_t t32kRef, void* md, message_t* msg){}
 
-  command error_t CXRequestQueue.requestSleep(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_SLEEP,
+    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_SLEEP,
       NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
@@ -469,11 +475,11 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.sleepHandled(error_t error,
-  uint32_t atFrame, uint32_t reqFrame){ }
+  uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){ }
 
-  command error_t CXRequestQueue.requestWakeup(uint32_t baseFrame, 
+  command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    cx_request_t* r = newRequest(baseFrame, frameOffset, RT_WAKEUP,
+    cx_request_t* r = newRequest(layerCount + 1, baseFrame, frameOffset, RT_WAKEUP,
       NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
@@ -489,7 +495,7 @@ module CXLinkP {
   }
 
   default event void CXRequestQueue.wakeupHandled(error_t error,
-  uint32_t atFrame, uint32_t reqFrame){}
+  uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){}
 
   command error_t SplitControl.start(){
     if (call Resource.isOwner()){
