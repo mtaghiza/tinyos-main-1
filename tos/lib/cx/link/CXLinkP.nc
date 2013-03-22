@@ -396,26 +396,31 @@ module CXLinkP {
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       void* md, message_t* msg){
-    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_RX, md);
-    if (r != NULL){
-      error_t error;
-      //TODO: would be nice to use microRef/useMicro for more precise
-      //wakeups, i guess.
-      if (duration == 0){
-        r->typeSpecific.rx.duration = RX_DEFAULT_WAIT;
-      } else{
-        r->typeSpecific.rx.duration = duration;
-      }
-      r->msg = msg;
-      error = validateRequest(r);
-      if (SUCCESS == error){
-        enqueue(r);
-      }else{
-        call Pool.put(r);
-      }
-      return error;
+    if (msg == NULL){
+      printf("link.cxrq.rr null\r\n");
+      return EINVAL;
     } else{
-      return ENOMEM;
+      cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_RX, md);
+      if (r != NULL){
+        error_t error;
+        //TODO: would be nice to use microRef/useMicro for more precise
+        //wakeups, i guess.
+        if (duration == 0){
+          r->typeSpecific.rx.duration = RX_DEFAULT_WAIT;
+        } else{
+          r->typeSpecific.rx.duration = duration;
+        }
+        r->msg = msg;
+        error = validateRequest(r);
+        if (SUCCESS == error){
+          enqueue(r);
+        }else{
+          call Pool.put(r);
+        }
+        return error;
+      } else{
+        return ENOMEM;
+      }
     }
   }
 

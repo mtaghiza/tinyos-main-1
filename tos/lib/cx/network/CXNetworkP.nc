@@ -76,15 +76,21 @@ module CXNetworkP {
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
     if (SUCCESS != error){
-      printf("SCXRQ.sh: %x\r\n", error);
+      printf("nSCXRQ.sh: %x\r\n", error);
       if (layerCount){
         signal CXRequestQueue.sendHandled(error, 
           layerCount-1,
           atFrame, reqFrame, microRef, t32kRef, 
-          ((cx_network_metadata_t*)md)->next,
+          nmd->next,
           msg);
+      }else{
+        signal CXRequestQueue.receiveHandled(error,
+          nmd->layerCount - 1,
+          nmd->atFrame, nmd->reqFrame,
+          TRUE, nmd->microRef, nmd->t32kRef,
+          nmd->next, msg);
       }
-      call Pool.put(md);
+      call Pool.put(nmd);
     } else if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
       //OK, so we obviously forwarded it last time, so let's do it
       //again. Use last TX as ref. 
@@ -136,20 +142,25 @@ module CXNetworkP {
       uint32_t duration,
       void* md,
       message_t* msg){
-    cx_network_metadata_t* nmd = newMd();
-    if (nmd == NULL){
-      return ENOMEM;
-    }else{
-      error_t error;
-      nmd -> next = md; 
-      nmd -> layerCount = layerCount;
-      nmd -> reqFrame = baseFrame + frameOffset;
-      error = call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
-        useMicro, microRef, duration, nmd, msg);
-      if (error != SUCCESS){
-        call Pool.put(nmd);
+    if (msg == NULL){
+      printf("net.cxrq.rr null\r\n");
+      return EINVAL;
+    } else{
+      cx_network_metadata_t* nmd = newMd();
+      if (nmd == NULL){
+        return ENOMEM;
+      }else{
+        error_t error;
+        nmd -> next = md; 
+        nmd -> layerCount = layerCount;
+        nmd -> reqFrame = baseFrame + frameOffset;
+        error = call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
+          useMicro, microRef, duration, nmd, msg);
+        if (error != SUCCESS){
+          call Pool.put(nmd);
+        }
+        return error;
       }
-      return error;
     }
   }
 

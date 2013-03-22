@@ -11,7 +11,7 @@ module CXSlaveSchedulerP{
   uses interface Receive as ScheduleReceive;
 } implementation {
   message_t msg_internal;
-  message_t* schedMsg;
+  message_t* schedMsg = &msg_internal;
 
   cx_schedule_t* sched;
   
@@ -30,8 +30,7 @@ module CXSlaveSchedulerP{
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     if (isTX){
       if (state == S_SYNCHED){
-        uint32_t subNext = call SubCXRQ.nextFrame(isTX);
-        
+//        uint32_t subNext = call SubCXRQ.nextFrame(isTX);
         //TODO: return first frame of our next-owned slot.
         return 0;
       } else {
@@ -40,8 +39,7 @@ module CXSlaveSchedulerP{
       }
     }else{
       uint32_t subNext = call SubCXRQ.nextFrame(isTX);
-      (nextWakeup+1) > subNext ? nextWakeup+1: subNext;
-      return subNext;
+      return (nextWakeup+1) > subNext ? nextWakeup+1: subNext;
     }
   }
 
@@ -50,6 +48,10 @@ module CXSlaveSchedulerP{
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
+    if (msg == NULL){
+      printf("sched.cxrq.rr null\r\n");
+      return EINVAL;
+    }
     if(duration == 0){
       switch(state){
         case S_SYNCHED:
@@ -63,6 +65,11 @@ module CXSlaveSchedulerP{
           break;
       }
     }
+    return call SubCXRQ.requestReceive(layerCount + 1,
+      baseFrame, frameOffset, 
+      FALSE, 0,
+      duration,
+      NULL, msg);
   }
 
   event void SubCXRQ.receiveHandled(error_t error, 
@@ -128,12 +135,23 @@ module CXSlaveSchedulerP{
     }
   }
 
+  task void reportSched(){
+    printf("RX Sched: %p sn %u cl %lu sl %lu md %u na %u\r\n", 
+      sched, 
+      sched->sn,
+      sched->cycleLength, 
+      sched->slotLength, 
+      sched->maxDepth,
+      sched->numAssigned);
+  }
+
   event message_t* ScheduleReceive.receive(message_t* msg, 
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;
+    post reportSched();
     return ret;
   }
 
@@ -162,6 +180,10 @@ module CXSlaveSchedulerP{
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
       //TODO: update state
+      lastWakeup = atFrame;
+      if (state == S_SYNCHED){
+        //ok, set wakeup for next slot boundary 
+      }
 
     }
   }
@@ -199,6 +221,11 @@ module CXSlaveSchedulerP{
   }
 
   event void SubSplitControl.startDone(error_t error){
+    if (error == SUCCESS){
+      error = call CXRequestQueue.requestWakeup(0, 
+        call SubCXRQ.nextFrame(FALSE), 2);
+
+    }
     if (error == SUCCESS){
       state = S_SEARCH;
     }
