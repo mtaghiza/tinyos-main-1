@@ -35,7 +35,7 @@ module TestP{
 
   task void usage(){
     printf("---- Commands ----\r\n");
-    printf("S : toggle start/stop + wakeup at startDone\r\n");
+    printf("S : toggle start/stop\r\n");
     printf("q : reset\r\n");
   }
 

@@ -16,7 +16,10 @@ CFLAGS+=-DXT2_SMCLK
 
 CFLAGS += -DCX_SELF_RETX=1
 
-CFLAGS +=-DENABLE_TIMESTAMPING=1
+CFLAGS +=-DENABLE_TIMESTAMPING=0
+
+#320 frames = 10 seconds
+CFLAGS +=-DCX_DEFAULT_CYCLE_LENGTH=320
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
