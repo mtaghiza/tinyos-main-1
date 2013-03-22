@@ -44,6 +44,15 @@ module CXSchedulerPacketP {
     return getHeader(msg)->sn;
   }
 
+  command void CXSchedulerPacket.setOriginFrame(message_t* msg,
+      uint32_t originFrame){
+    getHeader(msg)->originFrame = originFrame;
+  }
+
+  command uint32_t CXSchedulerPacket.getOriginFrame(message_t* msg){
+    return getHeader(msg)->originFrame;
+  }
+
   command void CXSchedulerPacket.setScheduleNumber(message_t* msg,
       uint8_t sn){
     getHeader(msg)->sn = sn;
