@@ -84,10 +84,10 @@ module TestP{
   }
 
   event void CXRequestQueue.frameShiftHandled(error_t error, 
-      uint32_t atFrame, uint32_t reqFrame_){ }
+      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){ }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
-      uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
+      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
     if (!forwarding || error != SUCCESS || didReceive){
       printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
@@ -96,7 +96,7 @@ module TestP{
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
-      uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef,
+      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef,
       uint32_t t32kRef,
       void* md, message_t* msg_){
     printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
@@ -104,10 +104,10 @@ module TestP{
   }
 
   event void CXRequestQueue.sleepHandled(error_t error,
-      uint32_t atFrame, uint32_t reqFrame_){ }
+      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){ }
 
   event void CXRequestQueue.wakeupHandled(error_t error,
-      uint32_t atFrame, uint32_t reqFrame_){
+      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){
     if (error != SUCCESS){
       printf("wakeup handled: %x @ %lu req %lu\r\n", error, atFrame,
         reqFrame_);
