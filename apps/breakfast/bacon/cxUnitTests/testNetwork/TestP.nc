@@ -82,8 +82,8 @@ module TestP{
     printf("started %x \r\n", error);
     started = TRUE;
     printf("wakeup req %x\r\n", 
-      call CXRequestQueue.requestWakeup(
-        call CXRequestQueue.nextFrame(), 0));
+      call CXRequestQueue.requestWakeup(0,
+        call CXRequestQueue.nextFrame(FALSE), 0));
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -92,14 +92,16 @@ module TestP{
   }
 
   event void CXRequestQueue.frameShiftHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame_){ }
 
   event void CXRequestQueue.receiveHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
     if (!forwarding || error != SUCCESS || didReceive){
-      printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
-        error, atFrame, reqFrame_, didReceive, microRef);
+      printf("rx handled: %x %u @ %lu req %lu %x %lu\r\n",
+        error, layerCount, atFrame, reqFrame_, didReceive, microRef);
     }
     receivePending = FALSE;
     if (forwarding){
@@ -111,7 +113,7 @@ module TestP{
         //atFrame is the frame in which we actually received the
         //packet. Since we also forwarded it, atFrame+1 is in the
         //past. hmmm.
-        reqFrame = call CXRequestQueue.nextFrame();
+        reqFrame = call CXRequestQueue.nextFrame(FALSE);
         reqOffset = 1;
         printf("rrx %lu %li\r\n", reqFrame, reqOffset);
       }
@@ -120,28 +122,30 @@ module TestP{
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame_, uint32_t microRef,
       uint32_t t32kRef,
       void* md, message_t* msg_){
-    printf("send handled: %x %lu %lu %p\r\n", error, atFrame,
+    printf("send handled: %x %u %lu %lu %p\r\n", error, layerCount, atFrame,
       microRef, msg_);
   }
 
   event void CXRequestQueue.sleepHandled(error_t error,
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame_){ }
 
   event void CXRequestQueue.wakeupHandled(error_t error,
+      uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame_){
-    if (error != SUCCESS){
-      printf("wakeup handled: %x @ %lu req %lu\r\n", error, atFrame,
-        reqFrame_);
-    }
+    printf("wakeup handled: %x %u @ %lu req %lu\r\n", error,
+      layerCount, atFrame,
+      reqFrame_);
   }
 
   void requestReceive(uint32_t duration, 
       uint32_t baseFrame, 
       int32_t frameOffset){
-    error_t error = call CXRequestQueue.requestReceive(
+    error_t error = call CXRequestQueue.requestReceive(0,
       baseFrame, frameOffset, 
       FALSE, 0,
       duration,
@@ -156,7 +160,7 @@ module TestP{
   task void requestLongReceive(){
     printf("request long\r\n");
     requestReceive(RX_MAX_WAIT >> 5, 
-      call CXRequestQueue.nextFrame(), 
+      call CXRequestQueue.nextFrame(FALSE), 
       1);
   }
 
@@ -171,7 +175,7 @@ module TestP{
     } else {
       printf("forwarding on\r\n");
       forwarding = TRUE;
-      reqFrame = call CXRequestQueue.nextFrame();
+      reqFrame = call CXRequestQueue.nextFrame(FALSE);
       reqOffset = 1;
       if (!receivePending){
         post requestShortReceive();
@@ -191,8 +195,8 @@ module TestP{
         pl->buffer[i] = i;
       }
       call Packet.setPayloadLength(msg, sizeof(test_payload_t));
-      error = call CXRequestQueue.requestSend(
-        call CXRequestQueue.nextFrame(), 1,
+      error = call CXRequestQueue.requestSend(0,
+        call CXRequestQueue.nextFrame(TRUE), 1,
         FALSE, 0,
         &(pl->timestamp),
         NULL, msg);
