@@ -44,9 +44,6 @@ module CXNetworkP {
           atFrame - call CXNetworkPacket.getRXHopCount(msg));
         call CXNetworkPacket.setOriginFrameStart(msg,
           t32kRef - (FRAMELEN_32K * call CXNetworkPacket.getRXHopCount(msg)));
-        printf("#r %u %u\r\n", 
-          call CXNetworkPacket.getHops(msg),
-          call CXNetworkPacket.getTTL(msg));
         if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
             call CXNetworkPacket.readyNextHop(msg);

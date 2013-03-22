@@ -402,7 +402,7 @@ module CXLinkP {
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       void* md, message_t* msg){
-    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_RX, md);
+    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_RX, md);
     if (r != NULL){
       error_t error;
       //TODO: would be nice to use microRef/useMicro for more precise
@@ -434,7 +434,7 @@ module CXLinkP {
       bool useMicro, uint32_t microRef,
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
-    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_TX, md);
+    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_TX, md);
     if (r != NULL){
       error_t error;
       r->typeSpecific.tx.useTsMicro = useMicro;
@@ -459,7 +459,7 @@ module CXLinkP {
 
   command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    cx_request_t* r = newRequest(layerCount, baseFrame, frameOffset, RT_SLEEP,
+    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_SLEEP,
       NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
