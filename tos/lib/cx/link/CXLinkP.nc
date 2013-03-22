@@ -224,10 +224,8 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
-            P1OUT |= BIT3;
             requestError = call Rf1aPhysical.startTransmission(FALSE,
               TRUE);
-            P1OUT &= ~BIT3;
             if (SUCCESS == requestError){
               atomic{
                 aNextRequestType = nextRequest->requestType;
@@ -239,9 +237,7 @@ module CXLinkP {
                 tx_tsLoc = nextRequest->typeSpecific.tx.tsLoc;
                 tx_tsSet = FALSE;
                 aRequestError = SUCCESS;
-                P1OUT |= BIT4;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
-                P1OUT &= ~BIT4;
 
               }
             }
@@ -256,7 +252,6 @@ module CXLinkP {
               lastMicroStart = lastFrameTime;
             }
             didReceive = FALSE;
-            atomic{P1OUT |= BIT2;}
             //TODO FUTURE: the longer we can put off entering RX mode,
             //the more energy we can save. with slack ratio=6, it
             //looks like we typically spend 0.38 ms in RX before the
@@ -269,7 +264,6 @@ module CXLinkP {
               (uint8_t*)nextRequest->msg,
               TOSH_DATA_LENGTH + sizeof(message_header_t),
               TRUE);
-            atomic{P1OUT &= ~BIT2;}
             if (SUCCESS == requestError ){
               atomic{
                 aNextRequestType = nextRequest->requestType;
@@ -562,7 +556,6 @@ module CXLinkP {
     int32_t dt;
     uint32_t t0;
     uint32_t now = call FastAlarm.getNow();
-    atomic{ P1OUT |= BIT2;}
     if (nextRequest->typeSpecific.tx.useTsMicro){
       //TODO: FIXME Wrapping logic/signedness issues? could mandate that
       //  frameOffset is always non-negative, that could simplify
@@ -589,7 +582,6 @@ module CXLinkP {
       call FastAlarm.startAt(t0, dt);
       call SynchCapture.captureRisingEdge();
     }
-    atomic{P1OUT &= ~BIT2;}
   }
   
   task void signalNoneReceived(){
