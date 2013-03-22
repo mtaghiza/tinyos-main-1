@@ -36,6 +36,7 @@ module TestP{
   task void usage(){
     printf("---- Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
+    printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
     printf("q : reset\r\n");
   }
 
@@ -47,13 +48,19 @@ module TestP{
       PMAPCTL = PMAPRECFG;
       //GDO to 2.4 (synch)
       P2MAP4 = PM_RFGDO0;
+      P1MAP1 = PM_SMCLK;
       PMAPPWD = 0x00;
-
-      P1DIR |= BIT1;
-      P1SEL &= ~BIT1;
-      P1OUT &= ~BIT1;
+      
       P2DIR |= BIT4;
       P2SEL |= BIT4;
+      if (LINK_DEBUG_FRAME_BOUNDARIES){
+        P1DIR |= BIT1;
+        P1SEL &= ~BIT1;
+        P1OUT &= ~BIT1;
+      }else{
+        P1SEL |= BIT1;
+        P1DIR |= BIT1;
+      }
       
       //power on flash chip to open p1.1-4
       P2SEL &=~BIT1;
@@ -114,6 +121,10 @@ module TestP{
     }
   }
 
+  task void killSerial(){
+    printf("killing serial\r\n");
+    call SerialControl.stop();
+  }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -122,6 +133,9 @@ module TestP{
          break;
        case 'S':
          post toggleStartStop();
+         break;
+       case 'k':
+         post killSerial();
          break;
        case '?':
          post usage();
