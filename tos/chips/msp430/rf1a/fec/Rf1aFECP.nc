@@ -199,7 +199,7 @@ generic module Rf1aFECP () {
           lastCrcPassed = TRUE;
         }
         rxBuf = NULL;
-        signal Rf1aPhysical.receiveDone(rxBufTmp, decodedLen, result);
+        signal Rf1aPhysical.receiveDone(rxBufTmp, decodedPayloadLen, result);
       }else{
         //this will happen if we get a failed reception. Leave it to
         //the next layer to deal with the fallout (most likely by
