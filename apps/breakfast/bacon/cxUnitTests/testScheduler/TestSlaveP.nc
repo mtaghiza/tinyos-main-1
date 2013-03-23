@@ -3,7 +3,7 @@
  #include "CXLink.h"
  #include "CXNetwork.h"
 
-module TestP{
+module TestSlaveP{
   uses interface Boot;
   uses interface UartStream;
   
@@ -13,9 +13,12 @@ module TestP{
   uses interface Packet;
 
   uses interface StdControl as SerialControl;
+  
+  //loopback down to scheduler: this role should be handled by an
+  //AMReceiver, generally speaking
+  provides interface Receive;
 } implementation {
   bool started = FALSE;
-  bool forwarding = FALSE;
   bool receivePending = FALSE;
   uint32_t reqFrame;
   int32_t reqOffset;
@@ -34,7 +37,7 @@ module TestP{
 
 
   task void usage(){
-    printf("---- Commands ----\r\n");
+    printf("---- SLAVE Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
     printf("q : reset\r\n");
@@ -65,8 +68,7 @@ module TestP{
       //power on flash chip to open p1.1-4
       P2SEL &=~BIT1;
       P2OUT |=BIT1;
-
-      //enable p1.2,3,4 for gpio
+      //enable p1.1,2,3,4 for gpio
       P1DIR |= BIT2 | BIT3 | BIT4;
       P1SEL &= ~(BIT2 | BIT3 | BIT4);
 
@@ -81,9 +83,20 @@ module TestP{
     }
   }
 
+  task void receiveNext(){
+    error_t error = call CXRequestQueue.requestReceive(0,
+      call CXRequestQueue.nextFrame(FALSE), 1,
+      FALSE, 0,
+      0, NULL, msg);
+    if (error != SUCCESS){
+      printf("reqR: %x\r\n", error);
+    }
+  }
+
   event void SplitControl.startDone(error_t error){
     printf("started %x \r\n", error);
     started = TRUE;
+    post receiveNext();
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -97,9 +110,22 @@ module TestP{
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
-    if (!forwarding || error != SUCCESS || didReceive){
-      printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
-        error, atFrame, reqFrame_, didReceive, microRef);
+    if (didReceive){
+      uint8_t len = call Packet.payloadLength(msg_);
+      printf("RX %p %u\r\n", msg_, len);
+      msg = signal Receive.receive(msg_, 
+        call Packet.getPayload(msg_, len), 
+        len);
+      post receiveNext();
+    }else{
+      error = call CXRequestQueue.requestReceive(0,
+        atFrame, 1,
+        FALSE, 0,
+        0,
+        NULL, msg_);
+      if (SUCCESS != error){
+        printf("reqR: %x\r\n", error);
+      }
     }
   }
 

@@ -21,6 +21,7 @@ CFLAGS +=-DENABLE_TIMESTAMPING=1
 #160 frames = 5 seconds
 CFLAGS +=-DCX_DEFAULT_CYCLE_LENGTH=320
 CFLAGS +=-DCX_DEFAULT_SLOT_LENGTH=20
+CFLAGS +=-DCX_DEFAULT_MAX_DEPTH=4
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
