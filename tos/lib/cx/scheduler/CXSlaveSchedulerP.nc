@@ -14,6 +14,7 @@ module CXSlaveSchedulerP{
   message_t* schedMsg = &msg_internal;
 
   cx_schedule_t* sched;
+  bool startDonePending = FALSE;
   
   enum { 
     S_OFF = 0x00,  
@@ -179,6 +180,10 @@ module CXSlaveSchedulerP{
     if (layerCount){
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
+      if (startDonePending == TRUE){
+        startDonePending = FALSE;
+        signal SplitControl.startDone(error);
+      }
       //TODO: update state
       lastWakeup = atFrame;
       if (state == S_SYNCHED){
@@ -222,13 +227,13 @@ module CXSlaveSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (error == SUCCESS){
-      error = call CXRequestQueue.requestWakeup(0, 
+      error = call SubCXRQ.requestWakeup(0, 
         call SubCXRQ.nextFrame(FALSE), 2);
 
     }
     if (error == SUCCESS){
+      startDonePending = TRUE;
       state = S_SEARCH;
     }
-    signal SplitControl.startDone(error);
   }
 }
