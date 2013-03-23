@@ -325,7 +325,7 @@ module CXLinkP {
         uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
   
         call FrameTimer.startOneShotAt(lastFrameTime, dt);
-        printf_LINK("Next: %x @%lu (%lu)\r\n", 
+        printf_LINK("N: %x @%lu (%lu)\r\n", 
           nextRequest->requestType,
           targetFrame,
           lastFrameTime+dt);
