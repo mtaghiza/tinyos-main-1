@@ -110,16 +110,16 @@ module CXLinkP {
         fastTicks = ((fastRef1+fastRef2)/2) - microRef;
         //elapsed slow-ticks since strobe
         slowTicks = fastToSlow(fastTicks);
-        printf_LINK("lms %lu cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
-          lastMicroStart,
-          aSfdCapture, microRef,
-          fastRef1, fastRef2, slowRef,
-          fastTicks, slowTicks);
-        printf_LINK("%lu -> ", lastFrameTime);
+//        printf_LINK("lms %lu cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
+//          lastMicroStart,
+//          aSfdCapture, microRef,
+//          fastRef1, fastRef2, slowRef,
+//          fastTicks, slowTicks);
+//        printf_LINK("%lu -> ", lastFrameTime);
         t32kRef = slowRef - slowTicks;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
-        printf_LINK("%lu \r\n", lastFrameTime);
+//        printf_LINK("%lu \r\n", lastFrameTime);
       }
       asyncHandled = FALSE;
     }
@@ -195,11 +195,12 @@ module CXLinkP {
           //TODO: DEBUG remove 
           atomic P1OUT ^= BIT1;
         }
-
-        printf_LINK("handle %x @ %lu / %lu\r\n", 
-          nextRequest->requestType,         
-          lastFrameNum, 
-          call FrameTimer.gett0() + call FrameTimer.getdt());
+//        if (nextRequest -> requestType != RT_MARK){
+//          printf_LINK("handle %x @ %lu / %lu\r\n", 
+//            nextRequest->requestType,         
+//            lastFrameNum, 
+//            call FrameTimer.gett0() + call FrameTimer.getdt());
+//        }
         switch (nextRequest -> requestType){
           case RT_FRAMESHIFT:
             lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
@@ -265,6 +266,7 @@ module CXLinkP {
               TOSH_DATA_LENGTH + sizeof(message_header_t),
               TRUE);
             if (SUCCESS == requestError ){
+              atomic{P1OUT |= BIT2;}
               atomic{
                 aNextRequestType = nextRequest->requestType;
                 aRequestError = SUCCESS;
@@ -313,7 +315,9 @@ module CXLinkP {
         updateLastFrameNum();
         handledFrame = lastFrameNum;
         if (nextRequest->requestType != RT_MARK){
-          printf("rnR: %x %x\r\n", requestError, nextRequest->requestType);
+          printf("rnR: %x %x@ %lu\r\n", requestError,
+            nextRequest->requestType, 
+            nextRequest->baseFrame + nextRequest->frameOffset);
         }
         post requestHandled();
       }else{
@@ -419,6 +423,7 @@ module CXLinkP {
         }
         return error;
       } else{
+        printf("Link.NOMEM\r\n");
         return ENOMEM;
       }
     }
@@ -614,6 +619,7 @@ module CXLinkP {
     if (aNextRequestType == RT_TX){
       //TODO: FUTURE maybe do a busy-wait here on the timer register
       //and issue the strobe at a more precise instant.
+      atomic{P1OUT |= BIT2;}
       aRequestError = call DelayedSend.startSend();
       txAlarm = call FastAlarm.getAlarm();
       post reportTx();
@@ -625,7 +631,11 @@ module CXLinkP {
       //RX (frame wait)
       //  if we're not mid-reception, resume idle mode.
       //  signal handled with nothing received
-
+      atomic{
+        P1OUT^=BIT4;
+        P1OUT ^= BIT4;
+        P1OUT &= ~BIT2;
+      }
       aRequestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
       if (aRequestError == SUCCESS){
         //TODO: FIXME this was required in older version, still needed?
@@ -671,6 +681,7 @@ module CXLinkP {
   //even though this is marked async, it's actually only signalled
   //  from task context in HplMsp430Rf1aP.
   async event void Rf1aPhysical.sendDone (int result) { 
+    atomic{P1OUT &= ~BIT2;}
     atomic {
       aRequestError = result;
       asyncHandled = TRUE;
@@ -683,6 +694,7 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    atomic{P1OUT &= ~BIT2;}
     //TODO: BUG store rf1aphysical metadata
     atomic{
       call FastAlarm.stop();
