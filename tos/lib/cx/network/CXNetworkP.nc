@@ -83,14 +83,16 @@ module CXNetworkP {
           atFrame, reqFrame, microRef, t32kRef, 
           nmd->next,
           msg);
+        call Pool.put(nmd);
       }else{
+        //TODO: check TTL-- if it's still hot, try to send it again.
         signal CXRequestQueue.receiveHandled(error,
           nmd->layerCount - 1,
           nmd->atFrame, nmd->reqFrame,
           TRUE, nmd->microRef, nmd->t32kRef,
           nmd->next, msg);
+        call Pool.put(nmd);
       }
-      call Pool.put(nmd);
     } else if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
       //OK, so we obviously forwarded it last time, so let's do it
       //again. Use last TX as ref. 
@@ -112,6 +114,7 @@ module CXNetworkP {
         //TODO: need to signal relevant *handled event here so that
         //upper layer isn't left hanging.
         printf("SCXRQ.s: %x\r\n", error);
+        call Pool.put(nmd);
       }
     } else{
 
@@ -123,7 +126,7 @@ module CXNetworkP {
           nmd->next, msg);
         call Pool.put(nmd);
       }else{
-        //restore stashed reception info and signal up.
+        //restore stashed reception info and signal up as receive
         signal CXRequestQueue.receiveHandled(error,
           nmd -> layerCount - 1,
           nmd -> atFrame, nmd -> reqFrame,
@@ -148,6 +151,7 @@ module CXNetworkP {
     } else{
       cx_network_metadata_t* nmd = newMd();
       if (nmd == NULL){
+        printf("net.NOMEM\r\n");
         return ENOMEM;
       }else{
         error_t error;
