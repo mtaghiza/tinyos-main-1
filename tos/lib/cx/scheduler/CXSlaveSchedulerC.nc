@@ -11,6 +11,7 @@ configuration CXSlaveSchedulerC{
   components CXNetworkC;
 
   components CXSchedulerPacketC;
+  components CXNetworkPacketC;
 
   SplitControl = CXSlaveSchedulerP;
   CXRequestQueue = CXSlaveSchedulerP;
@@ -18,6 +19,7 @@ configuration CXSlaveSchedulerC{
   CXSlaveSchedulerP.SubCXRQ -> CXNetworkC;
   CXSlaveSchedulerP.SubSplitControl -> CXNetworkC;
   CXSlaveSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
+  CXSlaveSchedulerP.CXNetworkPacket -> CXNetworkPacketC;
   
   Packet = CXSchedulerPacketC;
 

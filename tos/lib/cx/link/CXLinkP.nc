@@ -1,8 +1,7 @@
 
  #include "CXLink.h"
  #include "CXLinkDebug.h"
-module CXLinkP {
-  provides interface SplitControl;
+module CXLinkP { provides interface SplitControl;
   provides interface CXRequestQueue;
 
   uses interface Pool<cx_request_t>;
@@ -176,11 +175,25 @@ module CXLinkP {
       nextRequest = call Queue.dequeue();
       post readyNextRequest();
     }else{
-      if (LINK_DEBUG_FRAME_BOUNDARIES){
+      nextRequest = NULL;
+    }
+    
+    if (LINK_DEBUG_FRAME_BOUNDARIES){
+      //nothing scheduled or next scheduled event is some frame other
+      //than the upcoming one.
+      if (nextRequest == NULL ||
+          nextRequest -> baseFrame + nextRequest->frameOffset 
+          != lastFrameNum+1){
+
+        //re-enqueue nextRequest
+        if (nextRequest != NULL){
+          call Queue.enqueue(nextRequest);
+        }else{
+          //rnr will already be posted if nextRequest != NULL.
+          post readyNextRequest();
+        }
+        //we'll do an RT_MARK instead
         nextRequest = newRequest(0, lastFrameNum, 1, RT_MARK, NULL);
-        post readyNextRequest();
-      }else{
-        nextRequest = NULL;
       }
     }
   }
@@ -530,10 +543,23 @@ module CXLinkP {
   }
 
   task void setTimestamp(){
+    nx_uint32_t tsVal;
     atomic{
+      //best fast/slow ref we can get
+      uint32_t fastRef1 = call FastAlarm.getNow();
+      uint32_t slowRef = call FrameTimer.getNow();
+      uint32_t fastRef2 = call FastAlarm.getNow();
+      //elapsed fast-ticks since capture
+      uint32_t fastTicks = ((fastRef1+fastRef2)/2) - aSfdCapture;
+      //convert to slow ticks
+      uint32_t slowTicks = fastToSlow(fastTicks);
+      tsVal = slowRef - slowTicks;
+
+      //set approximate timestamp 
+      *tx_tsLoc = tsVal;
       tx_tsSet = TRUE;
-      *tx_tsLoc = aSfdCapture;
     }
+    printf("ts %lu\r\n", tsVal);
   }
 
   async event void SynchCapture.captured(uint16_t time){

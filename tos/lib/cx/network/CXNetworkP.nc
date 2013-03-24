@@ -42,6 +42,9 @@ module CXNetworkP {
           call CXNetworkPacket.getHops(msg));
         call CXNetworkPacket.setOriginFrameNumber(msg,
           atFrame - call CXNetworkPacket.getRXHopCount(msg));
+        //n.b. this is an estimate of the CAPTURE time (in 32K units),
+        //so, the PREP_TIME_32KHZ needs to be accounted for when
+        //scheduling frames based on it. 
         call CXNetworkPacket.setOriginFrameStart(msg,
           t32kRef - (FRAMELEN_32K * call CXNetworkPacket.getRXHopCount(msg)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
