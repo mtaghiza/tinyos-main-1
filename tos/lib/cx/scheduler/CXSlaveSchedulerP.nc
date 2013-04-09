@@ -1,4 +1,5 @@
  #include "CXScheduler.h"
+ #include "CXSchedulerDebug.h"
  #include "fixedPointUtils.h"
 module CXSlaveSchedulerP{
   provides interface SplitControl;
@@ -191,9 +192,9 @@ module CXSlaveSchedulerP{
   #define stoInt(a) toInt(a, TPF_DECIMAL_PLACES)
   int32_t lastDelta;
   task void printResults(){
-    printf(" Cumulative TPF: 0x%lx last delta: %li\r\n", 
+    printf_SCHED(" Cumulative TPF: 0x%lx last delta: %li\r\n", 
       cumulativeTpf, lastDelta);
-    printf("  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
+    printf_SCHED("  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
       stoInt(cumulativeTpf*50),
       stoInt(cumulativeTpf*51),
       stoInt(cumulativeTpf*100),

@@ -29,6 +29,8 @@ CFLAGS+= -DRF1A_FEC_ENABLED=0
 CFLAGS+= -DPATABLE0_SETTING=0x8D
 
 #Debug settings
+#enable scheduler printf's
+CFLAGS += -DDEBUG_SCHED=0
 #enable link layer printf's
 CFLAGS += -DDEBUG_LINK=0
 #toggle P1.1 at every frame boundary
