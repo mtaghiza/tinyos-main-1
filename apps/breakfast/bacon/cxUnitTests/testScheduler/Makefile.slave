@@ -11,13 +11,16 @@ CFLAGS += -I$(TOSDIR)/lib/cx/packet
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK
 
 CFLAGS += -DCX_SELF_RETX=1
 
 CFLAGS +=-DENABLE_TIMESTAMPING=1
-CFLAGS +=-DCX_ENABLE_SKEW_CORRECTION=0
+CFLAGS +=-DCX_ENABLE_SKEW_CORRECTION=1
+CFLAGS +=-DSKEW_EWMA_ALPHA_INVERSE=2
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.

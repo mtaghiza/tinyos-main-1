@@ -1,4 +1,5 @@
  #include "CXScheduler.h"
+ #include "fixedPointUtils.h"
 module CXSlaveSchedulerP{
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
@@ -162,17 +163,47 @@ module CXSlaveSchedulerP{
       sched->timestamp);
   }
   
+
   uint32_t lastTimestamp = 0;
   uint32_t lastCapture = 0;
   uint32_t lastOriginFrame = 0;
-  //to keep things simple, alpha (EWMA adaptation rate) has to be 1/n for some n.
-  //at alpha=1, no history. v_i = ((v_(i-1)*0) + cur)/1
-  int32_t alphaInv = 1;
   int32_t cumulativeTpf = 0;
 
   #ifndef TPF_DECIMAL_PLACES 
-  #define TPF_DECIMAL_PLACES 8
+  #define TPF_DECIMAL_PLACES 16
   #endif
+  
+  //alpha is also fixed point.
+  #define FP_1 (1L << TPF_DECIMAL_PLACES)
+
+  #ifndef SKEW_EWMA_ALPHA_INVERSE
+  #define SKEW_EWMA_ALPHA_INVERSE 2
+  #endif
+
+  int32_t alpha = FP_1 / SKEW_EWMA_ALPHA_INVERSE;
+
+  #ifndef TPF_DECIMAL_PLACES 
+  #define TPF_DECIMAL_PLACES 16
+  #endif
+
+  #define sfpMult(a, b) fpMult(a, b, TPF_DECIMAL_PLACES)
+  #define stoFP(a) toFP(a, TPF_DECIMAL_PLACES)
+  #define stoInt(a) toInt(a, TPF_DECIMAL_PLACES)
+  int32_t lastDelta;
+  task void printResults(){
+    printf(" Cumulative TPF: 0x%lx last delta: %li\r\n", 
+      cumulativeTpf, lastDelta);
+    printf("  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
+      stoInt(cumulativeTpf*50),
+      stoInt(cumulativeTpf*51),
+      stoInt(cumulativeTpf*100),
+      stoInt(cumulativeTpf*200),
+      stoInt(cumulativeTpf*300),
+      stoInt(cumulativeTpf*320),
+      stoInt(cumulativeTpf*400),
+      stoInt(cumulativeTpf*500),
+      stoInt(cumulativeTpf*1000));
+  }
 
   task void updateSkew(){
     if (lastTimestamp != 0 && lastCapture != 0 && lastOriginFrame != 0){
@@ -185,38 +216,22 @@ module CXSlaveSchedulerP{
         lastOriginFrame;
       //positive = we are slow = require shift forward
       int32_t delta = remoteElapsed - localElapsed;
-
       //this is fixed point, TPF_DECIMAL_PLACES bits after decimal
-      int32_t tpf = (delta << TPF_DECIMAL_PLACES) / framesElapsed;
+      int32_t deltaFP = (delta << TPF_DECIMAL_PLACES);
+
+      int32_t tpf = deltaFP / framesElapsed;
+
       //next EWMA step
       //n.b. we let TPF = 0 initially to keep things simple. In
       //general, we should be reasonably close to this. 
-      cumulativeTpf = (tpf+(cumulativeTpf * (alphaInv-1)))/alphaInv;
-      printf("local %lu - %lu = %lu\r\n",
-        call CXNetworkPacket.getOriginFrameStart(schedMsg),
-        lastCapture,
-        localElapsed);
-      printf("remote %lu - %lu = %lu\r\n", 
-        sched->timestamp,
-        lastTimestamp,
-        remoteElapsed);
-      printf("frames %lu - %lu = %lu\r\n",
-        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
-        lastOriginFrame,
-        framesElapsed);
-      printf("delta raw %lx tpf raw %lx over 160: %li 320: %li 640: %li\r\n",
-        delta,
-        tpf, 
-        (tpf*160)>>TPF_DECIMAL_PLACES,
-        (tpf*320)>>TPF_DECIMAL_PLACES,
-        (tpf*640)>>TPF_DECIMAL_PLACES);
-      printf("ctpf over 320 %li\r\n", 
-        (cumulativeTpf*320)>>TPF_DECIMAL_PLACES);
-
+      cumulativeTpf = sfpMult(cumulativeTpf, (FP_1 - alpha)) 
+        + sfpMult(tpf, alpha);
+      lastDelta = delta;
     }
     lastTimestamp = sched -> timestamp;
     lastCapture = call CXNetworkPacket.getOriginFrameStart(schedMsg);
     lastOriginFrame = call CXNetworkPacket.getOriginFrameNumber(schedMsg);
+    post printResults();
   }
 
   event message_t* ScheduleReceive.receive(message_t* msg, 
