@@ -118,13 +118,17 @@ module TestSlaveP{
         len);
       post receiveNext();
     }else{
-      error = call CXRequestQueue.requestReceive(0,
-        atFrame, 1,
-        FALSE, 0,
-        0,
-        NULL, msg_);
-      if (SUCCESS != error){
-        printf("reqR: %x\r\n", error);
+      if (error == SUCCESS || error == EBUSY){
+        error = call CXRequestQueue.requestReceive(0,
+          call CXRequestQueue.nextFrame(FALSE), 0,
+          FALSE, 0,
+          0,
+          NULL, msg_);
+        if (SUCCESS != error){
+          printf("reqR: %x\r\n", error);
+        }
+      } else {
+        printf("RX error: %x\r\n", error);
       }
     }
   }

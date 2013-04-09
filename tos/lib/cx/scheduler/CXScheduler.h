@@ -50,4 +50,8 @@ typedef nx_struct cx_schedule {
   nx_uint8_t padding1;
 } cx_schedule_t;
 
+#ifndef CX_ENABLE_SKEW_CORRECTION 
+#define CX_ENABLE_SKEW_CORRECTION 1
+#endif
+
 #endif

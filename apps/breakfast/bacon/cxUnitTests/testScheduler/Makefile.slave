@@ -17,6 +17,7 @@ CFLAGS+=-DXT2_SMCLK
 CFLAGS += -DCX_SELF_RETX=1
 
 CFLAGS +=-DENABLE_TIMESTAMPING=1
+CFLAGS +=-DCX_ENABLE_SKEW_CORRECTION=0
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
