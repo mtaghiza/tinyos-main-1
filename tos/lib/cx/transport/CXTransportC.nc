@@ -14,7 +14,7 @@ configuration CXTransportC {
   components CXTransportDispatchP;
   components CXSchedulerC;
 
-  CXTransportDispatchP.SubCXRequestQueue -> CXSchedulerC;
+  CXTransportDispatchP.SubCXRQ -> CXSchedulerC;
   //needed so that we can notify sub-protocols when to put in their RX
   //requests
   CXTransportDispatchP.SubSplitControl -> CXSchedulerC;
@@ -23,10 +23,10 @@ configuration CXTransportC {
   //hook up sub-protocols
   components FloodBurstP;
   components RRBurstP;
-  CXTransportShimC.BroadcastSend -> FloodBurstP;
-  CXTransportShimC.BroadcastReceive -> FloodBurstP;
-  CXTransportShimC.UnicastSend -> RRBurstP;
-  CXTransportShimC.UnicastReceive -> RRBurstP;
+  CXTransportShimP.BroadcastSend -> FloodBurstP;
+  CXTransportShimP.BroadcastReceive -> FloodBurstP;
+  CXTransportShimP.UnicastSend -> RRBurstP;
+  CXTransportShimP.UnicastReceive -> RRBurstP;
 
   FloodBurstP.CXRequestQueue 
     -> CXTransportDispatchP.CXRequestQueue[CX_TP_FLOOD_BURST];
