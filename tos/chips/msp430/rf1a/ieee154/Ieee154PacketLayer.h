@@ -31,7 +31,7 @@ typedef nx_struct ieee154_header_t
 	nxle_uint16_t destpan;
 	nxle_uint16_t dest;
 	nxle_uint16_t src;
-} ieee154_header_t;
+} __attribute__((packed)) ieee154_header_t;
 
 typedef nx_struct ieee154_fcf_t {
   nxle_uint16_t frame_type: 3;
