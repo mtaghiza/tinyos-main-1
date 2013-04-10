@@ -102,6 +102,9 @@ module TestP{
     if (!forwarding || error != SUCCESS || didReceive){
       printf("rx handled: %x %u @ %lu req %lu %x %lu\r\n",
         error, layerCount, atFrame, reqFrame_, didReceive, microRef);
+      if (didReceive){
+        printf("RX PL [%u]\r\n", call Packet.payloadLength(msg_));
+      }
     }
     receivePending = FALSE;
     if (forwarding){
@@ -194,7 +197,10 @@ module TestP{
       for (i = 0; i < PAYLOAD_LEN; i++){
         pl->buffer[i] = i;
       }
+      printf("Set PL to [%u]", sizeof(test_payload_t));
       call Packet.setPayloadLength(msg, sizeof(test_payload_t));
+      printf("Verify PL [%u]", call Packet.payloadLength(msg));
+
       error = call CXRequestQueue.requestSend(0,
         call CXRequestQueue.nextFrame(TRUE), 1,
         FALSE, 0,

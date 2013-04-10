@@ -112,7 +112,7 @@ module TestSlaveP{
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
     if (didReceive){
       uint8_t len = call Packet.payloadLength(msg_);
-      printf("RX %p %u\r\n", msg_, len);
+      printf("RX %p [%u]\r\n", msg_, len);
       msg = signal Receive.receive(msg_, 
         call Packet.getPayload(msg_, len), 
         len);

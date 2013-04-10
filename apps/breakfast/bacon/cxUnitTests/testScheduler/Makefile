@@ -25,8 +25,8 @@ CFLAGS +=-DCX_DEFAULT_MAX_DEPTH=4
 
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
-CFLAGS+= -DTOSH_DATA_LENGTH=110
-CFLAGS+= -DRF1A_FEC_ENABLED=0
+CFLAGS+= -DTOSH_DATA_LENGTH=109
+CFLAGS+= -DRF1A_FEC_ENABLED=1
 CFLAGS+= -DPATABLE0_SETTING=0x8D
 
 #Debug settings
