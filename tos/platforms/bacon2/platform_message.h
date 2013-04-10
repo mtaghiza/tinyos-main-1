@@ -10,7 +10,6 @@
 #define PLATFORM_MESSAGE_H
 
 #include "Rf1aPacket.h"
-#include "CXPacketMetadata.h"
 #include <Serial.h>
 
 typedef union message_header {
@@ -23,7 +22,6 @@ typedef union TOSRadioFooter {
 
 typedef struct TOSRadioMetadata {
   rf1a_metadata_t rf1a;
-  cx_metadata_t cx;
 } message_metadata_t;
 
 #endif
