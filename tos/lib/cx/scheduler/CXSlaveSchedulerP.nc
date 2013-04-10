@@ -154,7 +154,7 @@ module CXSlaveSchedulerP{
   }
 
   task void reportSched(){
-    printf("RX Sched: %p sn %u cl %lu sl %lu md %u na %u ts %lu\r\n", 
+    printf("RX Sched: %p sn %u cl %lu sl %lu md %u na %u ts %lu",
       sched, 
       sched->sn,
       sched->cycleLength, 
@@ -162,6 +162,14 @@ module CXSlaveSchedulerP{
       sched->maxDepth,
       sched->numAssigned,
       sched->timestamp);
+//    printf(" p %x %x %x %x %x %x", 
+//      sched->padding0,
+//      sched->padding1,
+//      sched->padding2,
+//      sched->padding3,
+//      sched->padding4,
+//      sched->padding5);
+    printf("\r\n");
   }
   
 

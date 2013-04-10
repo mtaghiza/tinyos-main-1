@@ -91,9 +91,19 @@ module CXMasterSchedulerP{
         call CXSchedulerPacket.setScheduleNumber(schedMsg,
           sched->sn);
         call CXSchedulerPacket.setOriginFrame(schedMsg, schedOF);
+        printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
         call Packet.setPayloadLength(schedMsg, 
           sizeof(cx_schedule_t));
+        printf("Verify PL [%u]\r\n", 
+          call Packet.payloadLength(schedMsg));
         call CXNetworkPacket.setTTL(schedMsg, sched->maxDepth);
+//        sched->padding0 = 0x10;
+//        sched->padding1 = 0x11;
+//        sched->padding2 = 0x12;
+//        sched->padding3 = 0x13;
+//        sched->padding4 = 0x14;
+//        sched->padding5 = 0x15;
+
         error = call SubCXRQ.requestSend(0,
           lastWakeup, schedOF,
           FALSE, 0,

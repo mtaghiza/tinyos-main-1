@@ -45,9 +45,13 @@ typedef nx_struct cx_schedule {
   nx_uint8_t numAssigned;
   nx_am_addr_t slotAssignments[CX_MAX_SLOTS];
   //have to place it at the end for timestamping to be happy
+//  nx_uint8_t padding0;
+//  nx_uint8_t padding1;
+//  nx_uint8_t padding2;
+//  nx_uint8_t padding3;
   nx_uint32_t timestamp; //32K timestamp of origin
-  nx_uint8_t padding0;
-  nx_uint8_t padding1;
+//  nx_uint8_t padding4;
+//  nx_uint8_t padding5;
 } cx_schedule_t;
 
 #ifndef CX_ENABLE_SKEW_CORRECTION 
