@@ -23,8 +23,12 @@ module TestSlaveP{
   uint32_t reqFrame;
   int32_t reqOffset;
 
-  message_t msg_internal;
-  message_t* msg = &msg_internal;
+  message_t rxMsg_internal;
+  message_t* rxMsg = &rxMsg_internal;
+
+  message_t txMsg_internal;
+  message_t* txMsg = &txMsg_internal;
+
 
   enum{
     PAYLOAD_LEN= 50,
@@ -87,7 +91,7 @@ module TestSlaveP{
     error_t error = call CXRequestQueue.requestReceive(0,
       call CXRequestQueue.nextFrame(FALSE), 0,
       FALSE, 0,
-      0, NULL, msg);
+      0, NULL, rxMsg);
     if (error != SUCCESS){
       printf("reqR: %x\r\n", error);
     }
@@ -113,7 +117,7 @@ module TestSlaveP{
     if (didReceive){
       uint8_t len = call Packet.payloadLength(msg_);
       printf("RX %p [%u]\r\n", msg_, len);
-      msg = signal Receive.receive(msg_, 
+      rxMsg = signal Receive.receive(msg_, 
         call Packet.getPayload(msg_, len), 
         len);
       post receiveNext();
@@ -154,7 +158,7 @@ module TestSlaveP{
 
   task void transmit(){
     test_payload_t* pl = 
-      (test_payload_t*)(call Packet.getPayload(msg,
+      (test_payload_t*)(call Packet.getPayload(txMsg,
         sizeof(test_payload_t)));
     error_t error;
     uint32_t nextFrame;
@@ -164,13 +168,13 @@ module TestSlaveP{
         pl->buffer[i] = i;
       }
     }
-    call Packet.setPayloadLength(msg, sizeof(test_payload_t));
+    call Packet.setPayloadLength(txMsg, sizeof(test_payload_t));
     nextFrame = call CXRequestQueue.nextFrame(TRUE);
     error = call CXRequestQueue.requestSend(0,
       nextFrame, 0,
       FALSE, 0, 
       &pl->timestamp,
-      NULL, msg);
+      NULL, txMsg);
     printf("TX @%lu: %x\r\n", nextFrame, error);
   }
 
