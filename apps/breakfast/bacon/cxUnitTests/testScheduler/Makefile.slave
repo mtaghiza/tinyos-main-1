@@ -32,7 +32,7 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 #enable scheduler printf's
 CFLAGS += -DDEBUG_SCHED=0
 #enable link layer printf's
-CFLAGS += -DDEBUG_LINK=1
+CFLAGS += -DDEBUG_LINK=0
 #toggle P1.1 at every frame boundary
 CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=0
 
