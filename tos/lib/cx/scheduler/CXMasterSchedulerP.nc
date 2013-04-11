@@ -93,11 +93,11 @@ module CXMasterSchedulerP{
           sched->sn);
         call CXSchedulerPacket.setOriginFrame(schedMsg, 
           schedOF + lastWakeup);
-        printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
+//        printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
         call Packet.setPayloadLength(schedMsg, 
           sizeof(cx_schedule_t));
-        printf("Verify PL [%u]\r\n", 
-          call Packet.payloadLength(schedMsg));
+//        printf("Verify PL [%u]\r\n", 
+//          call Packet.payloadLength(schedMsg));
         call CXNetworkPacket.setTTL(schedMsg, sched->maxDepth);
 //        sched->padding0 = 0x10;
 //        sched->padding1 = 0x11;
@@ -105,7 +105,7 @@ module CXMasterSchedulerP{
 //        sched->padding3 = 0x13;
 //        sched->padding4 = 0x14;
 //        sched->padding5 = 0x15;
-        printf("lw %lu schedOF %lu ", lastWakeup, schedOF);
+//        printf("lw %lu schedOF %lu ", lastWakeup, schedOF);
         sched->cycleStartFrame = lastWakeup + schedOF - 1;
         printf("csf %lu\r\n", sched->cycleStartFrame);
         error = call SubCXRQ.requestSend(0,

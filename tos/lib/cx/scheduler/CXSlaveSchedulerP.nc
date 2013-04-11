@@ -103,6 +103,7 @@ module CXSlaveSchedulerP{
           return myNextSlotStart(subNext) + 1;
         }
       } else {
+        printf("not synched\r\n");
         //not synched, so we won't permit any TX.
         return INVALID_FRAME;
       }
@@ -260,6 +261,7 @@ module CXSlaveSchedulerP{
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
       sched->sn);
+    call CXNetworkPacket.setTTL(msg, sched->maxDepth);
     //don't want to go to sleep here
     slotState = S_ACTIVE;
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
@@ -272,7 +274,7 @@ module CXSlaveSchedulerP{
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     if (layerCount){
-      signal SubCXRQ.sendHandled(error, 
+      signal CXRequestQueue.sendHandled(error, 
         layerCount - 1,
         atFrame, reqFrame,
         microRef, t32kRef, 

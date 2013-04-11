@@ -39,7 +39,7 @@ module TestSlaveP{
   task void usage(){
     printf("---- SLAVE Commands ----\r\n");
     printf("S : toggle start/stop\r\n");
-    printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
+    printf("t : transmit a packet\r\n");
     printf("q : reset\r\n");
   }
 
@@ -152,9 +152,26 @@ module TestSlaveP{
     }
   }
 
-  task void killSerial(){
-    printf("killing serial\r\n");
-    call SerialControl.stop();
+  task void transmit(){
+    test_payload_t* pl = 
+      (test_payload_t*)(call Packet.getPayload(msg,
+        sizeof(test_payload_t)));
+    error_t error;
+    uint32_t nextFrame;
+    {
+      uint8_t i;
+      for (i = 0; i < PAYLOAD_LEN; i++){
+        pl->buffer[i] = i;
+      }
+    }
+    call Packet.setPayloadLength(msg, sizeof(test_payload_t));
+    nextFrame = call CXRequestQueue.nextFrame(TRUE);
+    error = call CXRequestQueue.requestSend(0,
+      nextFrame, 0,
+      FALSE, 0, 
+      &pl->timestamp,
+      NULL, msg);
+    printf("TX @%lu: %x\r\n", nextFrame, error);
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -165,11 +182,11 @@ module TestSlaveP{
        case 'S':
          post toggleStartStop();
          break;
-       case 'k':
-         post killSerial();
-         break;
        case '?':
          post usage();
+         break;
+       case 't':
+         post transmit();
          break;
        case '\r':
          printf("\n");
