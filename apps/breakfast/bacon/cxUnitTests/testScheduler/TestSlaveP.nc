@@ -85,7 +85,7 @@ module TestSlaveP{
 
   task void receiveNext(){
     error_t error = call CXRequestQueue.requestReceive(0,
-      call CXRequestQueue.nextFrame(FALSE), 1,
+      call CXRequestQueue.nextFrame(FALSE), 0,
       FALSE, 0,
       0, NULL, msg);
     if (error != SUCCESS){

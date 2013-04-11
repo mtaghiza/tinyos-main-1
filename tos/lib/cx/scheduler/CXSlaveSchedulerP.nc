@@ -47,10 +47,17 @@ module CXSlaveSchedulerP{
   uint8_t wakeupPending = 0;
 
   uint32_t slotNumber(uint32_t frame){
+    if (sched == NULL){
+      return INVALID_SLOT;
+    }
     if (frame < lastCycleStart){
       return INVALID_SLOT;
     }else{
-      return (frame - lastCycleStart)/sched->slotLength;
+      frame -= lastCycleStart;
+      while (frame >= sched->cycleLength){
+        frame -= sched->cycleLength;
+      }
+      return frame/sched->slotLength;
     }
   }
 
@@ -59,11 +66,12 @@ module CXSlaveSchedulerP{
   }
 
   uint32_t frameOfSlot(uint32_t frame){
-    return frame - slotStart(frame);
+    return frame - slotStart(slotNumber(frame));
   }
 
   bool isOwned(uint32_t frame){
-    return slotNumber(frame) == mySlot;
+    uint32_t sn =  slotNumber(frame);
+    return sn != INVALID_SLOT && sn == mySlot;
   }
 
   uint32_t myNextSlotStart(uint32_t frame){
@@ -140,13 +148,14 @@ module CXSlaveSchedulerP{
   }
 
   task void sleepToNextSlot(){
+    printf("stns\r\n");
     if (wakeupPending){
       error_t error = call SubCXRQ.requestSleep(0,
         call SubCXRQ.nextFrame(FALSE),
         0);
-      if (error != SUCCESS){
-        printf("req slot sleep: %x\r\n", error);
-      }
+      printf("req slot sleep: %x @%lu\r\n", 
+        error, 
+        call SubCXRQ.nextFrame(FALSE));
     } else {
       printf("Slot sleep requested, but no wakeup pending\r\n");
     }
@@ -158,11 +167,15 @@ module CXSlaveSchedulerP{
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-
     if ((state == S_SOFT_SYNCH || state == S_SYNCHED) 
         && !didReceive 
         && slotState == S_UNKNOWN 
-        && frameOfSlot(atFrame) > sched -> maxDepth){
+        && frameOfSlot(atFrame) >= sched -> maxDepth){
+      printf("f %lu ss %lu fos %lu md %u\r\n",
+        atFrame,
+        slotStart(atFrame),
+        frameOfSlot(atFrame),
+        sched->maxDepth);
       //We didn't receive anything, we had not yet ascertained that
       //this was an active slot, and according to the schedule, we
       //should have received something by this point if anything was
@@ -341,7 +354,9 @@ module CXSlaveSchedulerP{
     error = call SubCXRQ.requestSleep(0,
       lastCycleStart, 
       sched->slotLength*(sched->activeSlots + 1));
-    if (error == SUCCESS){
+    printf("stnc sleep %lu\r\n", 
+      lastCycleStart + (sched->activeSlots + 1)*sched->slotLength);
+    if (error == SUCCESS) {
       nextSleep = lastCycleStart 
         + sched->slotLength*sched->activeSlots;
 
@@ -349,13 +364,12 @@ module CXSlaveSchedulerP{
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->cycleLength);
-      if (error != SUCCESS){
-        printf("req cycle wakeup: %x\r\n",
-          error);
-      }else{
+      if (error == SUCCESS){
         wakeupPending++;
         nextWakeup = lastCycleStart + sched->cycleLength;
       }
+      printf("req cw: %x p %u\r\n",
+        error, wakeupPending);
     }else{
       printf("req cycle sleep: %x\r\n",
        error);
@@ -374,14 +388,13 @@ module CXSlaveSchedulerP{
     error = call SubCXRQ.requestWakeup(0,
       lastCycleStart,
       sched->slotLength*(slotNumber(lastSlotStart)+1));
-    if (error != SUCCESS){
-      printf("req slot wakeup: %x\r\n",
-        error);
-    }else{
+    if (error == SUCCESS){
       wakeupPending ++; 
       nextWakeup = lastCycleStart +
         sched->slotLength*(slotNumber(lastSlotStart)+1);
     }
+    printf("req sw: %x p %u\r\n",
+      error, wakeupPending);
   }
 
 
@@ -448,9 +461,9 @@ module CXSlaveSchedulerP{
   event void SubCXRQ.wakeupHandled(error_t error, 
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame){
-    printf("WH %lu\r\n", atFrame);
+    printf("WH %lu p %u\r\n", atFrame, wakeupPending);
     if (layerCount){
-//      printf("wh up\r\n");
+      printf("wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
       if (startDonePending == TRUE){
@@ -470,7 +483,8 @@ module CXSlaveSchedulerP{
       if (state == S_SYNCHED || state == S_SOFT_SYNCH){
         //If we're synched or soft-synched...
         uint32_t sn = slotNumber(atFrame);
-        if (sn == sched->activeSlots){
+        printf("sn %lu as %lu\r\n", sn, sched->activeSlots);
+        if (sn == (sched->activeSlots - 1)){
           //this is last active slot: sleep at end of this slot,
           //wakeup at start of next cycle
           post sleepToNextCycle();
@@ -480,7 +494,7 @@ module CXSlaveSchedulerP{
         } else {
           //woke up some time during the inactive period, shouldn't
           //  happen.
-          printf("Unexpected wakeup %lu slot %lu\r\n", 
+          printf("inactive period wakeup %lu slot %lu\r\n", 
             atFrame, sn);
         }
       }

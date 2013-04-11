@@ -40,8 +40,10 @@ module CXNetworkP {
       if (didReceive){
         call CXNetworkPacket.setRXHopCount(msg, 
           call CXNetworkPacket.getHops(msg));
+        //RX hop-count is 1 when received in the original transmission
+        //frame.
         call CXNetworkPacket.setOriginFrameNumber(msg,
-          atFrame - call CXNetworkPacket.getRXHopCount(msg));
+          atFrame - (call CXNetworkPacket.getRXHopCount(msg) - 1));
         //n.b. this is an estimate of the CAPTURE time (in 32K units),
         //so, the PREP_TIME_32KHZ needs to be accounted for when
         //scheduling frames based on it. 
