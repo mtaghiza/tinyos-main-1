@@ -36,9 +36,10 @@ module CXMasterSchedulerP{
     sched -> sn = call Random.rand16() & 0xFF;
     sched -> cycleLength = CX_DEFAULT_CYCLE_LENGTH;
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
+    sched -> activeSlots = 1;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
-    sched -> slotAssignments[0] = call CXLinkPacket.addr();
     sched -> numAssigned = 1;
+    sched -> slotAssignments[0] = call CXLinkPacket.addr();
   }
 
   void setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
@@ -90,7 +91,8 @@ module CXMasterSchedulerP{
         //make sure that msg is set up correctly
         call CXSchedulerPacket.setScheduleNumber(schedMsg,
           sched->sn);
-        call CXSchedulerPacket.setOriginFrame(schedMsg, schedOF);
+        call CXSchedulerPacket.setOriginFrame(schedMsg, 
+          schedOF + lastWakeup);
         printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
         call Packet.setPayloadLength(schedMsg, 
           sizeof(cx_schedule_t));
@@ -103,7 +105,9 @@ module CXMasterSchedulerP{
 //        sched->padding3 = 0x13;
 //        sched->padding4 = 0x14;
 //        sched->padding5 = 0x15;
-
+        printf("lw %lu schedOF %lu ", lastWakeup, schedOF);
+        sched->cycleStartFrame = lastWakeup + schedOF - 1;
+        printf("csf %lu\r\n", sched->cycleStartFrame);
         error = call SubCXRQ.requestSend(0,
           lastWakeup, schedOF,
           FALSE, 0,
