@@ -38,7 +38,8 @@ module CXSlaveSchedulerP{
   uint8_t state = S_OFF;
   uint32_t lastSlotStart;
   uint32_t lastCycleStart;
-
+  
+  uint32_t lastSleep;
   uint32_t nextSleep;
   uint32_t nextWakeup;
 
@@ -92,28 +93,46 @@ module CXSlaveSchedulerP{
     if (isTX){
       if (state == S_SYNCHED){
         if (isOwned(slotNumber(subNext) )){
-          return subNext;
+          if (subNext == myNextSlotStart(subNext)){
+            //avoiding conflict with wakeup
+            return subNext + 1;
+          }else{
+            return subNext;
+          }
         }else{
-          return myNextSlotStart(subNext);
+          return myNextSlotStart(subNext) + 1;
         }
-        return INVALID_FRAME;
       } else {
         //not synched, so we won't permit any TX.
         return INVALID_FRAME;
       }
     }else{
+      //We only push nextFrame back farther. so, it should suffice to
+      //determine whether:
+      // - subNext is exactly a sleep (nextSleep): return nextWakeup + 1 
+      // - else check lastWakeup, lastSleep, subNext ordering
+      //   - w, s, n: we are currently asleep. return nextWakeup+1
+      //   - s, w, n: we are currently awake. return subNext.
+      //   - else: should not happen: if subNext is not highest
+      //     numbered, something has gone horribly wrong.
       //if the sub-layer says next frame is during duty-cycled period,
       //then push it forward to just after the next wakeup.
-      if (subNext >= nextSleep && subNext <= nextWakeup + 1){
+      if (subNext == nextSleep || subNext == nextWakeup){
+        // direct conflict with a duty cycle activity at this layer,
+        // push back to 1+ next wakeup
         return nextWakeup + 1;
+      } else if (lastSlotStart < lastSleep 
+          && lastSleep < subNext){
+        // we have slept since the slot started (last wakeup), so
+        // we're currently asleep. push back to 1+next wakeup
+        return nextWakeup + 1;
+      } else if (lastSleep < lastSlotStart 
+          && lastSlotStart < subNext){
+        // we are currently awake. whatever subnext says is cool.
+        return subNext;
       }else{
-        //this is for the case where we didn't sleep this slot. avoid
-        //the conflict here if we can see it coming.
-        if (subNext == nextWakeup){
-          return nextWakeup + 1;
-        } else {
-          return subNext;
-        }
+        printf("Invalid nextFrame condition\r\n");
+        return INVALID_FRAME;
       }
     }
   }
@@ -150,12 +169,17 @@ module CXSlaveSchedulerP{
   task void sleepToNextSlot(){
     printf("stns\r\n");
     if (wakeupPending){
+      uint32_t ns = call SubCXRQ.nextFrame(FALSE);
       error_t error = call SubCXRQ.requestSleep(0,
-        call SubCXRQ.nextFrame(FALSE),
+        ns,
         0);
       printf("req slot sleep: %x @%lu\r\n", 
         error, 
-        call SubCXRQ.nextFrame(FALSE));
+        ns);
+      if (error == SUCCESS){
+        nextSleep = ns;
+      }
+
     } else {
       printf("Slot sleep requested, but no wakeup pending\r\n");
     }
@@ -446,6 +470,7 @@ module CXSlaveSchedulerP{
       signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
     }else{
       //TODO: update state
+      lastSleep = atFrame;
 //      printf("sleep %x @%lu\r\n", error, atFrame);
     }
   }
