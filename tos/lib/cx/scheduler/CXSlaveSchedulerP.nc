@@ -439,6 +439,7 @@ module CXSlaveSchedulerP{
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;
+    //debug: should be assigned
     mySlot = TOS_NODE_ID;
 
     //frames-from-start = Master OFN - master start 

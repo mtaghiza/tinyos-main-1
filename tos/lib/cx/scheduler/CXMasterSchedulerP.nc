@@ -36,7 +36,7 @@ module CXMasterSchedulerP{
     sched -> sn = call Random.rand16() & 0xFF;
     sched -> cycleLength = CX_DEFAULT_CYCLE_LENGTH;
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
-    sched -> activeSlots = 2;
+    sched -> activeSlots = 3;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();

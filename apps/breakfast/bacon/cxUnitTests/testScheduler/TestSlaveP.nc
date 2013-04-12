@@ -35,13 +35,14 @@ module TestSlaveP{
   };
 
   typedef nx_struct test_payload {
+    nx_uint16_t packetType;
     nx_uint8_t buffer[PAYLOAD_LEN];
     nx_uint32_t timestamp;
   } test_payload_t;
 
 
   task void usage(){
-    printf("---- SLAVE Commands ----\r\n");
+    printf("---- SLAVE ID %u Commands ----\r\n", TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
     printf("t : transmit a packet\r\n");
     printf("q : reset\r\n");
@@ -111,15 +112,20 @@ module TestSlaveP{
   event void CXRequestQueue.frameShiftHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){ }
 
+
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
     if (didReceive){
       uint8_t len = call Packet.payloadLength(msg_);
       printf("RX %p [%u]\r\n", msg_, len);
-      rxMsg = signal Receive.receive(msg_, 
-        call Packet.getPayload(msg_, len), 
-        len);
+      if (((test_payload_t*)call Packet.getPayload(msg_, len))->packetType == 0xDCDC){
+        printf("Test Packet RX\r\n");
+      }else{
+        rxMsg = signal Receive.receive(msg_, 
+          call Packet.getPayload(msg_, len), 
+          len);
+      }
       post receiveNext();
     }else{
       if (error == SUCCESS || error == EBUSY){
@@ -162,6 +168,7 @@ module TestSlaveP{
         sizeof(test_payload_t)));
     error_t error;
     uint32_t nextFrame;
+    pl->packetType = 0xDCDC;
     {
       uint8_t i;
       for (i = 0; i < PAYLOAD_LEN; i++){
