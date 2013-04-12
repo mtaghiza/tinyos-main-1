@@ -25,7 +25,7 @@ CFLAGS +=-DSKEW_EWMA_ALPHA_INVERSE=2
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
 CFLAGS+= -DTOSH_DATA_LENGTH=109
-CFLAGS+= -DRF1A_FEC_ENABLED=1
+CFLAGS+= -DRF1A_FEC_ENABLED=0
 CFLAGS+= -DPATABLE0_SETTING=0x8D
 
 #Debug settings

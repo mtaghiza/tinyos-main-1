@@ -3,6 +3,8 @@ configuration CXLinkPacketC{
   provides interface Rf1aPacket;
   provides interface Packet;
 
+  uses interface Rf1aPhysicalMetadata;
+
 } implementation {
   //The link layer does not add anything to the packet, it just reuses
   //elements of the 15.4 header.
@@ -15,4 +17,5 @@ configuration CXLinkPacketC{
 
   Packet = Rf1aIeee154PacketC;
   CXLinkPacket = CXLinkPacketP;
+  Rf1aIeee154PacketC.Rf1aPhysicalMetadata = Rf1aPhysicalMetadata;
 }

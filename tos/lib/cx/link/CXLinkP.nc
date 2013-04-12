@@ -58,6 +58,10 @@ module CXLinkP { provides interface SplitControl;
 
   //frame-resynch
   uint32_t a32kCapture;
+  
+  //indicate to requestHandled whether RX with good CRC or TX.
+  bool shouldSynch;
+
 
   //forward declarations
   task void readyNextRequest();
@@ -96,9 +100,7 @@ module CXLinkP { provides interface SplitControl;
         requestError = aRequestError;
       }
 
-      //TODO: SYNCH make sure packet was good to synch with (from self or
-      //  crc passed)
-      if (microRef != 0){
+      if (microRef != 0 && shouldSynch){
         uint32_t fastRef1 = call FastAlarm.getNow();
         uint32_t slowRef = call FrameTimer.getNow();
         uint32_t fastRef2 = call FastAlarm.getNow();
@@ -119,6 +121,9 @@ module CXLinkP { provides interface SplitControl;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
 //        printf_LINK("%lu \r\n", lastFrameTime);
+      }
+      if (microRef !=0 && !shouldSynch){
+        printf_LINK("Failed CRC don't resynch\r\n");
       }
       asyncHandled = FALSE;
     }
@@ -152,7 +157,9 @@ module CXLinkP { provides interface SplitControl;
           nextRequest -> layerCount - 1,
           handledFrame, 
           reqFrame,
-          didReceive, microRef, t32kRef, nextRequest->next, nextRequest->msg);
+          //TODO: get metadata
+          didReceive && call Rf1aPhysicalMetadata.crcPassed(call Rf1aPacket.metadata(nextRequest->msg)), 
+          microRef, t32kRef, nextRequest->next, nextRequest->msg);
         break;
 
       case RT_MARK:
@@ -233,6 +240,7 @@ module CXLinkP { provides interface SplitControl;
             post requestHandled();
             break;
           case RT_TX:
+            shouldSynch = TRUE;
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
               lastMicroStart = lastFrameTime;
@@ -261,6 +269,7 @@ module CXLinkP { provides interface SplitControl;
             break;
 
           case RT_RX:
+            shouldSynch = FALSE;
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
               lastMicroStart = lastFrameTime;
@@ -629,10 +638,15 @@ module CXLinkP { provides interface SplitControl;
 
   task void signalReceived(){
     didReceive = TRUE;
+    //store the phy metadata (including CRC)
+    call Rf1aPhysicalMetadata.store(call Rf1aPacket.metadata(nextRequest->msg));
     atomic{
       (call Rf1aPacket.metadata(nextRequest->msg))->payload_length =
       aCount;
     }
+    shouldSynch = call Rf1aPacket.crcPassed(nextRequest->msg);
+    printf_LINK("RX crc %x\r\n", 
+      call Rf1aPacket.crcPassed(nextRequest->msg));
     post requestHandled();
   }
 
@@ -723,7 +737,6 @@ module CXLinkP { provides interface SplitControl;
                                              unsigned int count,
                                              int result) {
     atomic{P1OUT &= ~BIT2;}
-    //TODO: BUG store rf1aphysical metadata
     atomic{
       call FastAlarm.stop();
       aRequestError = result;
