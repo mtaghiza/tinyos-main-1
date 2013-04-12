@@ -15,13 +15,12 @@ module TestP{
   uses interface StdControl as SerialControl;
 } implementation {
   bool started = FALSE;
-  bool forwarding = FALSE;
   bool receivePending = FALSE;
   uint32_t reqFrame;
   int32_t reqOffset;
 
-  message_t msg_internal;
-  message_t* msg = &msg_internal;
+  message_t rxMsg_internal;
+  message_t* rxMsg = &rxMsg_internal;
 
   enum{
     PAYLOAD_LEN= 50,
@@ -34,7 +33,7 @@ module TestP{
 
 
   task void usage(){
-    printf("---- Commands ----\r\n");
+    printf("---- MASTER ID %u Commands ----\r\n", TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
     printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
     printf("q : reset\r\n");
@@ -81,9 +80,20 @@ module TestP{
     }
   }
 
+  task void receiveNext(){
+    error_t error = call CXRequestQueue.requestReceive(0,
+      call CXRequestQueue.nextFrame(FALSE), 0,
+      FALSE, 0,
+      0, NULL, rxMsg);
+    if (error != SUCCESS){
+      printf("reqR: %x\r\n", error);
+    }
+  }
+
   event void SplitControl.startDone(error_t error){
     printf("started %x \r\n", error);
     started = TRUE;
+    post receiveNext();
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -94,12 +104,17 @@ module TestP{
   event void CXRequestQueue.frameShiftHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){ }
 
+
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
-    if (!forwarding || error != SUCCESS || didReceive){
+    if (error != SUCCESS || didReceive){
       printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
         error, atFrame, reqFrame_, didReceive, microRef);
+    }
+    if (didReceive){
+      uint8_t len = call Packet.payloadLength(msg_);
+      printf("RX %p [%u]\r\n", msg_, len);
     }
   }
 
