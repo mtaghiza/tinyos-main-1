@@ -60,6 +60,8 @@ module CXNetworkP {
               nmd, msg);      //pointer to stashed md
             if (SUCCESS == error){
               return;
+            }else{
+              printf("FWD %x\r\n", error);
             }
           }
         }

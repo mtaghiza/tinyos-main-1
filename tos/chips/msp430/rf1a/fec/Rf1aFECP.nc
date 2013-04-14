@@ -15,14 +15,26 @@ generic module Rf1aFECP () {
   uses interface FEC;
   uses interface Crc;
 } implementation {
-
+  
+  uint8_t* lastBuffer_d;
   typedef struct amap_trace {
-    uint8_t rawLen;
-    uint8_t rawReady;
-    uint8_t* rawPos;
-    const uint8_t* epLocal;
-    uint8_t encodedSoFar0;
+    //start of task
+    uint8_t rawLen_d;
+    uint8_t rawReady_d;
+    const uint8_t* rawPos_d;
+    const uint8_t* epLocal_e;
+    uint8_t encodedReady0_e;
+
+    //post-encode snapshot
+    uint8_t numEncoded0_e;
+    uint8_t encodedSoFar0_d;
+    //crc application
+    uint8_t numEncoded1_e;
+    //end of task
+    uint8_t encodedReady1_e;
   } amap_trace_t;
+  uint8_t numTraces = 0;
+  amap_trace_t traces[10];
 
   //buffer swapping behavior:
   //  -  make sure that sendDone(buf) matches send(buf)
@@ -67,7 +79,12 @@ generic module Rf1aFECP () {
   //data is encoded)
   uint16_t runningCRC_d;
   bool crcAppended;
-
+  
+  amap_trace_t* nextTrace(){
+    amap_trace_t* ret = &traces[numTraces];
+    numTraces++;
+    return ret;
+  }
   
   //encode as much as possible from the current transmitter, updating
   //encodedReady/rawReady etc as needed.
@@ -77,6 +94,7 @@ generic module Rf1aFECP () {
         encodedSoFar_d);
     uint8_t* epLocal_e;
     uint8_t numEncoded_e;
+    amap_trace_t* trace = nextTrace();
 
     //get pointer to start of ready data
     const uint8_t* rawPos_d = 
@@ -85,8 +103,16 @@ generic module Rf1aFECP () {
     //stash current encodedPos in case we get interrupted during this
     //process
     atomic{
-      epLocal_e = encodedPos_e;
+      //TODO: this should be encodedPos_e + encodedReady: otherwise,
+      //we're pointing to the start of the encoded data, not the end
+      //of it. when encodedReady is 0, same as before
+      epLocal_e = encodedPos_e + encodedReady_e;
+      trace -> encodedReady0_e = encodedReady_e; 
     }
+    trace -> rawLen_d = rawLen_d;
+    trace -> rawReady_d = rawReady_d;
+    trace -> rawPos_d = rawPos_d;
+    trace -> epLocal_e = epLocal_e;
 
     //encode whatever's now ready, update info about how much is
     //encoded.
@@ -96,6 +122,8 @@ generic module Rf1aFECP () {
       rawReady_d
     );
     encodedSoFar_d += rawReady_d;
+    trace -> numEncoded0_e = numEncoded_e;
+    trace -> encodedSoFar0_d = encodedSoFar_d;
 
     //update runningCRC with just-provided data
     //N.B: This should be given data in 16-byte chunks. (The hardware
@@ -107,15 +135,17 @@ generic module Rf1aFECP () {
       nx_uint16_t nxCRC_d;
       nxCRC_d = runningCRC_d;
       numEncoded_e += call FEC.encode((const uint8_t*)(&nxCRC_d), 
-        epLocal_e + call FEC.encodedLen(rawLen_d),
+        epLocal_e + numEncoded_e,
         sizeof(nxCRC_d));
 
+      trace->numEncoded1_e = numEncoded_e;
       crcAppended = TRUE;
     }
     //now that we're done with this chunk, update the amount of
     //encoded data available.
     atomic{
       encodedReady_e += numEncoded_e;
+      trace->encodedReady1_e = encodedReady_e;
     }
   }
 
@@ -138,9 +168,11 @@ generic module Rf1aFECP () {
         runningCRC_d = 0;
         encodedLen_e = call FEC.encodedLen(length_d +
           sizeof(runningCRC_d));
+        numTraces = 0;
       }
       crcAppended = FALSE;
       rawLen_d = length_d;
+      lastBuffer_d = buffer_d;
       atomic{
         //hmm... I only want to wire this in if there's nothing
         //  connected to the real R1aFragment interface.
@@ -160,7 +192,35 @@ generic module Rf1aFECP () {
     }
   }
 
+  task void printTraces(){
+    uint8_t i;
+    for (i = 0; i < numTraces; i++){
+      amap_trace_t* t = &traces[i];
+      printf("AMAP %u\r\n", i);
+      printf(" rawLen_d %u rawReady_d %u rawPos_d %p epLocal_e %p encodedReady0_e %u\r\n",
+        t->rawLen_d, t->rawReady_d, t->rawPos_d, t->epLocal_e,
+        t->encodedReady0_e);
+      printf(" numEncoded0_e %u encodedSoFar0_d %u\r\n",
+        t->numEncoded0_e, t->encodedSoFar0_d);
+      printf(" numEncoded1_e %u\r\n", t->numEncoded1_e);
+      printf(" encodedReady1_e %u\r\n", t->encodedReady1_e);
+      memset(t, 0, sizeof(amap_trace_t));
+    }
+    sendOutstanding = FALSE;
+    {
+      printf("TX %x %x \r\n[",
+        runningCRC_d, 
+        call Crc.crc16(lastBuffer_d, rawLen_d));
+      for (i = 0; i < call FEC.encodedLen(rawLen_d + sizeof(runningCRC_d)); i ++){
+        printf("%x ", txEncoded_e[i]);
+      }
+      printf("]\r\n");
+    }
+  }
+
   async event void SubRf1aPhysical.sendDone(int result){
+//    post printTraces();
+    //TODO: debug put this back in
     sendOutstanding = FALSE;
     signal Rf1aPhysical.sendDone(result);
   }
@@ -209,6 +269,14 @@ generic module Rf1aFECP () {
         }else{
           lastCrcPassed = TRUE;
         }
+//        {
+//          uint8_t i;
+//          printf("RX %x %x\r\n[", decodedCrc_d, computedCrc_d);
+//          for (i=0; i < count_e; i++){
+//            printf("%x ", rxEncoded_e[i]);
+//          }
+//          printf("]\r\n");
+//        }
         rxBuf_d = NULL;
         signal Rf1aPhysical.receiveDone(rxBufTmp_d,
           decodedPayloadLen_d, result);

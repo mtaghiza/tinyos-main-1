@@ -6,6 +6,10 @@ module CC430CRCC{
     return call Crc.seededCrc16(0x0000, buf, len);
   }
   
+  #ifndef DUMMY_CRC
+  #define DUMMY_CRC 0
+  #endif
+  #if DUMMY_CRC == 0 
   //FIXME: this will ignore the last byte if an odd number of bytes is
   //provided.
   async command uint16_t Crc.seededCrc16(uint16_t startCrc, const void* buf, uint8_t len){
@@ -26,4 +30,9 @@ module CC430CRCC{
     }
     return result;
   }
+  #else
+  async command uint16_t Crc.seededCrc16(uint16_t startCrc, const void* buf, uint8_t len){
+    return 0;
+  }
+  #endif
 }

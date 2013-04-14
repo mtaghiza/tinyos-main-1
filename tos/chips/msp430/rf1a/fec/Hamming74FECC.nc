@@ -1,4 +1,6 @@
- #include "hamming74.h"
+
+// #include "hamming74.h"
+ #include "hamming74Debug.h"
 module Hamming74FECC{
   provides interface FEC;
 }implementation {
