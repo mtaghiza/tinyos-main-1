@@ -121,7 +121,6 @@ module CXLinkP { provides interface SplitControl;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
 //        printf_LINK("%lu \r\n", lastFrameTime);
-        printf("RS\r\n");
       }
       if (microRef !=0 && !shouldSynch){
         printf_LINK("Failed CRC don't resynch\r\n");
@@ -154,19 +153,10 @@ module CXLinkP { provides interface SplitControl;
           nextRequest->msg);
         break;
       case RT_RX:
-//        if (didReceive){
-//          uint8_t i;
-//          printf("RX [ ");
-//          for (i = 0; i < (call Rf1aPacket.metadata(nextRequest->msg))->payload_length; i++){
-//            printf("%x ", nextRequest->msg->header[i]);
-//          }
-//          printf("]\r\n");
-//        }
         signal CXRequestQueue.receiveHandled(requestError,
           nextRequest -> layerCount - 1,
           handledFrame, 
           reqFrame,
-          //TODO: get metadata
           didReceive && call Rf1aPhysicalMetadata.crcPassed(call Rf1aPacket.metadata(nextRequest->msg)), 
           microRef, t32kRef, nextRequest->next, nextRequest->msg);
         break;
@@ -576,13 +566,11 @@ module CXLinkP { provides interface SplitControl;
       //convert to slow ticks
       uint32_t slowTicks = fastToSlow(fastTicks);
       tsVal = slowRef - slowTicks;
-      //TODO: DEBUG REMOVE ME
-      tsVal = 0xDDDDDDDD;
+
       //set approximate timestamp 
       *tx_tsLoc = tsVal;
       tx_tsSet = TRUE;
     }
-//    printf("ts %lu\r\n", tsVal);
   }
 
   async event void SynchCapture.captured(uint16_t time){
