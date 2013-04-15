@@ -1,5 +1,6 @@
 
  #include "CXScheduler.h"
+ #include "CXSchedulerDebug.h"
 module CXMasterSchedulerP{
   provides interface SplitControl;
   provides interface CXRequestQueue;
@@ -17,6 +18,9 @@ module CXMasterSchedulerP{
 
   //for TTL
   uses interface CXNetworkPacket;
+
+  uses interface SlotNotify;
+  uses interface ScheduleParams;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -29,6 +33,8 @@ module CXMasterSchedulerP{
 
   uint32_t lastWakeup;
   uint32_t lastSleep;
+
+  uint32_t lastCycleStart;
   
   event void Boot.booted(){
     sched = (cx_schedule_t*)(call Packet.getPayload(schedMsg,
@@ -99,6 +105,7 @@ module CXMasterSchedulerP{
 //        printf("Verify PL [%u]\r\n", 
 //          call Packet.payloadLength(schedMsg));
         call CXNetworkPacket.setTTL(schedMsg, sched->maxDepth);
+        //TODO: set source
         sched->padding0 = 0x10;
         sched->padding1 = 0x11;
         sched->padding2 = 0x12;
@@ -116,13 +123,39 @@ module CXMasterSchedulerP{
         if (error != SUCCESS){
           printf("Sched.reqS %x\r\n", error);
         }
-        call SubCXRQ.requestSleep(0, lastWakeup,
-          (sched->slotLength * sched->numAssigned));
-        call SubCXRQ.requestWakeup(0, lastWakeup, sched->cycleLength);
+        lastCycleStart = sched->cycleStartFrame;
+        call ScheduleParams.setSchedule(sched);
+        call ScheduleParams.setCycleStart(lastCycleStart);
       }else{
         printf("Sched.wh: %x\r\n", error);
       }
     }
+  }
+
+  task void sleepToNextCycle(){
+    error_t error;
+    error = call SubCXRQ.requestSleep(0,
+      lastCycleStart, 
+      sched->slotLength*(sched->activeSlots) + 1);
+    printf_SCHED("stnc sleep lcs %lu %lu-%lu\r\n", 
+      lastCycleStart,
+      lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
+      lastCycleStart + sched->cycleLength);
+    if (error == SUCCESS) {
+      //TODO: apply skew correction
+      error = call SubCXRQ.requestWakeup(0,
+        lastCycleStart,
+        sched->cycleLength);
+      printf_SCHED("req cw: %x \r\n",
+        error);
+    }else{
+      printf("req cycle sleep: %x\r\n",
+       error);
+    }
+  }
+
+  event void SlotNotify.lastSlot(){
+    post sleepToNextCycle();
   }
 
 

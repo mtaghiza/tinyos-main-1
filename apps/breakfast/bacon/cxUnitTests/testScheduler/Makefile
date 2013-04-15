@@ -11,6 +11,8 @@ CFLAGS += -I$(TOSDIR)/lib/cx/packet
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK
 
@@ -31,9 +33,9 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 
 #Debug settings
 #enable link layer printf's
-CFLAGS += -DDEBUG_LINK=0
+CFLAGS += -DDEBUG_LINK=1
 #toggle P1.1 at every frame boundary
-CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=1
+CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=0
 
 #CFLAGS += -DFRAMELEN_32K=2048UL
 #CFLAGS += -DFRAMELEN_6_5M=406250UL

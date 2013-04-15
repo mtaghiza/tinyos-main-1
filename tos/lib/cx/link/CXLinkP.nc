@@ -367,6 +367,8 @@ module CXLinkP { provides interface SplitControl;
       (( ! call Msp430XV2ClockControl.isMicroTimerRunning()) 
          || (lastMicroStart > r->requestedTime))){
       return EINVAL;
+    }else if (r->baseFrame == INVALID_FRAME || r->baseFrame + r->frameOffset == INVALID_FRAME){
+      return EINVAL;
     }
     return SUCCESS;
   }

@@ -2,6 +2,8 @@
  #include <stdio.h>
  #include "CXLink.h"
  #include "CXNetwork.h"
+ //for invalid frame
+ #include "CXScheduler.h"
 
 module TestSlaveP{
   uses interface Boot;
@@ -89,12 +91,13 @@ module TestSlaveP{
   }
 
   task void receiveNext(){
+    uint32_t nf = call CXRequestQueue.nextFrame(FALSE);
     error_t error = call CXRequestQueue.requestReceive(0,
-      call CXRequestQueue.nextFrame(FALSE), 0,
+      nf, 0,
       FALSE, 0,
       0, NULL, rxMsg);
     if (error != SUCCESS){
-      printf("reqR: %x\r\n", error);
+      printf("rn reqR: %x @%lu\r\n", error, nf);
     }
   }
 
@@ -129,13 +132,14 @@ module TestSlaveP{
       post receiveNext();
     }else{
       if (error == SUCCESS || error == EBUSY){
+        uint32_t nf = call CXRequestQueue.nextFrame(FALSE);
         error = call CXRequestQueue.requestReceive(0,
-          call CXRequestQueue.nextFrame(FALSE), 0,
+          nf, 0,
           FALSE, 0,
           0,
           NULL, msg_);
         if (SUCCESS != error){
-          printf("reqR: %x\r\n", error);
+          printf("rh reqR: %x @%lu\r\n", error, nf);
         }
       } else {
         printf("RX error: %x\r\n", error);
@@ -177,12 +181,16 @@ module TestSlaveP{
     }
     call Packet.setPayloadLength(txMsg, sizeof(test_payload_t));
     nextFrame = call CXRequestQueue.nextFrame(TRUE);
-    error = call CXRequestQueue.requestSend(0,
-      nextFrame, 0,
-      FALSE, 0, 
-      &pl->timestamp,
-      NULL, txMsg);
-    printf("TX @%lu: %x\r\n", nextFrame, error);
+    if (nextFrame != INVALID_FRAME){
+      error = call CXRequestQueue.requestSend(0,
+        nextFrame, 0,
+        FALSE, 0, 
+        &pl->timestamp,
+        NULL, txMsg);
+      printf("TX @%lu: %x\r\n", nextFrame, error);
+    }else{
+      printf("TX nf invalid\r\n");
+    }
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
