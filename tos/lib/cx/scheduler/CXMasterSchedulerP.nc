@@ -102,7 +102,7 @@ module CXMasterSchedulerP{
         sched->padding0 = 0x10;
         sched->padding1 = 0x11;
         sched->padding2 = 0x12;
-//        sched->padding3 = 0x13;
+        sched->padding3 = 0x13;
         sched->padding4 = 0x14;
         sched->padding5 = 0x15;
 //        printf("lw %lu schedOF %lu ", lastWakeup, schedOF);

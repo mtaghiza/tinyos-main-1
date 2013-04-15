@@ -24,12 +24,31 @@ generic module Rf1aFECP () {
     const uint8_t* rawPos_d;
     const uint8_t* epLocal_e;
     uint8_t encodedReady0_e;
+    uint8_t parity;
 
-    //post-encode snapshot
+    //post parity-fix
+    bool pf;
+    uint8_t rawReady0_d;
     uint8_t numEncoded0_e;
     uint8_t encodedSoFar0_d;
-    //crc application
+    uint8_t parity0;
+
+    //post parity stash
+    bool ps;
+    uint8_t rawReady1_d;
+    uint8_t parity1;
+
+    //post encode main
     uint8_t numEncoded1_e;
+    uint8_t encodedSoFar1_d;
+
+    //post final parity fix
+    bool fpf;
+    uint8_t numEncoded2_e;
+    uint8_t encodedSoFar2_d;
+
+    //crc application
+    uint8_t numEncoded3_e;
     //end of task
     uint8_t encodedReady1_e;
   } amap_trace_t;
@@ -80,6 +99,15 @@ generic module Rf1aFECP () {
   uint16_t runningCRC_d;
   bool crcAppended;
   
+  //CRC module only operates on 16-bit chunks, so if we have to stop
+  //at a non-word boundary, we need to properly handle this.
+  enum{ 
+    EVEN = 0,
+    ODD = 1,
+  };
+  uint8_t parityFix_d[2];
+  uint8_t parity = EVEN;
+  
   amap_trace_t* nextTrace(){
     amap_trace_t* ret = &traces[numTraces];
     numTraces++;
@@ -93,7 +121,7 @@ generic module Rf1aFECP () {
       = call Rf1aTransmitFragment.transmitReadyCount(rawLen_d -
         encodedSoFar_d);
     uint8_t* epLocal_e;
-    uint8_t numEncoded_e;
+    uint8_t numEncoded_e = 0;
     amap_trace_t* trace = nextTrace();
 
     //get pointer to start of ready data
@@ -103,9 +131,6 @@ generic module Rf1aFECP () {
     //stash current encodedPos in case we get interrupted during this
     //process
     atomic{
-      //TODO: this should be encodedPos_e + encodedReady: otherwise,
-      //we're pointing to the start of the encoded data, not the end
-      //of it. when encodedReady is 0, same as before
       epLocal_e = encodedPos_e + encodedReady_e;
       trace -> encodedReady0_e = encodedReady_e; 
     }
@@ -113,34 +138,101 @@ generic module Rf1aFECP () {
     trace -> rawReady_d = rawReady_d;
     trace -> rawPos_d = rawPos_d;
     trace -> epLocal_e = epLocal_e;
+    trace -> parity = parity;
 
-    //encode whatever's now ready, update info about how much is
-    //encoded.
-    numEncoded_e = call FEC.encode(
-      rawPos_d,
-      epLocal_e,
-      rawReady_d
-    );
-    encodedSoFar_d += rawReady_d;
+    //parity is odd: we have an outstanding un-encoded byte. Encode
+    //that + the first byte that was just provided.
+    if (parity == ODD && rawReady_d > 0){
+      parityFix_d[1] = rawPos_d[0];
+      numEncoded_e += call FEC.encode(
+        parityFix_d,
+        epLocal_e + numEncoded_e,
+        2);
+      encodedSoFar_d += 2;
+      rawPos_d = &rawPos_d[1];
+      //update the CRC with these two bytes
+      runningCRC_d = call Crc.seededCrc16(runningCRC_d, parityFix_d,
+        2);
+      rawReady_d -= 1;
+      parity = EVEN;
+      trace->pf = TRUE;
+    }
+    trace -> rawReady0_d = rawReady_d;
     trace -> numEncoded0_e = numEncoded_e;
     trace -> encodedSoFar0_d = encodedSoFar_d;
+    trace -> parity0 = parity;
 
-    //update runningCRC with just-provided data
-    //N.B: This should be given data in 16-byte chunks. (The hardware
-    //  CRC module works on word data)
-    runningCRC_d = call Crc.seededCrc16(runningCRC_d, rawPos_d,
-      rawReady_d);
-    //append encoded CRC if we're finished encoding but haven't already applied it.
-    if (rawLen_d - encodedSoFar_d == 0 && !crcAppended){
-      nx_uint16_t nxCRC_d;
-      nxCRC_d = runningCRC_d;
-      numEncoded_e += call FEC.encode((const uint8_t*)(&nxCRC_d), 
+    //At this point, either parity is even or there is no data ready,
+    //and the CRC should be consistent with what's encoded so far.
+    if (rawReady_d){
+      if (rawReady_d % 2){
+        //odd number of bytes available: parity will become ODD and we
+        //need to stash the last byte
+        rawReady_d -= 1;
+        parityFix_d[0] = rawPos_d[rawReady_d];
+        parity = ODD;
+        trace -> ps = TRUE;
+      }
+      trace -> rawReady1_d = rawReady_d;
+      trace -> parity1 = parity;
+
+      //encode whatever's now ready, update info about how much is
+      //encoded.
+      numEncoded_e += call FEC.encode(
+        rawPos_d,
         epLocal_e + numEncoded_e,
-        sizeof(nxCRC_d));
-
-      trace->numEncoded1_e = numEncoded_e;
-      crcAppended = TRUE;
+        rawReady_d
+      );
+      encodedSoFar_d += rawReady_d;
+      //update runningCRC with just-provided data
+      runningCRC_d = call Crc.seededCrc16(runningCRC_d, rawPos_d,
+        rawReady_d);
     }
+
+    trace -> numEncoded1_e = numEncoded_e;
+    trace -> encodedSoFar1_d = encodedSoFar_d;
+
+    //At this point, there's a few possibilities
+    // - Parity is EVEN, raw == encoded: append the CRC
+    // - Parity is ODD, raw == encoded - 1: the last data byte is
+    //   sitting at parityFix[0], and needs to be CRC'ed with dummy
+    //   byte, then CRC needs to be appended.
+    // - otherwise: we're not at the end yet.
+    if (!crcAppended){
+      bool needsAppend;
+      if (rawLen_d == encodedSoFar_d && parity == EVEN){
+        needsAppend = TRUE;
+      } else if (rawLen_d == encodedSoFar_d + 1 && parity == ODD){
+        //all the data has been encoded except for the last byte.
+        //put dummy byte into second position, encode, CRC, and append
+        parityFix_d[1] = 0x00;
+        numEncoded_e += call FEC.encode(
+          parityFix_d,
+          epLocal_e + numEncoded_e,
+          2);
+        encodedSoFar_d += 2;
+        runningCRC_d = call Crc.seededCrc16(runningCRC_d, 
+          parityFix_d, 2);
+        needsAppend = TRUE;
+        trace->fpf = TRUE;
+      } else {
+        //not done yet, so carry on.
+        needsAppend = FALSE;
+      }
+      trace -> numEncoded2_e = numEncoded_e;
+      trace -> encodedSoFar2_d = encodedSoFar_d;
+
+      if (needsAppend){
+        nx_uint16_t nxCRC_d;
+        nxCRC_d = runningCRC_d;
+        numEncoded_e += call FEC.encode((const uint8_t*)(&nxCRC_d), 
+          epLocal_e + numEncoded_e,
+          sizeof(nxCRC_d));
+        crcAppended = TRUE;
+      }
+    }
+    trace -> numEncoded3_e = numEncoded_e;
+
     //now that we're done with this chunk, update the amount of
     //encoded data available.
     atomic{
@@ -166,8 +258,9 @@ generic module Rf1aFECP () {
         encodedSoFar_d = 0; 
         encodedReady_e = 0;
         runningCRC_d = 0;
-        encodedLen_e = call FEC.encodedLen(length_d +
-          sizeof(runningCRC_d));
+        //pad length so that it's always even (address CRC computation
+        //issue.
+        encodedLen_e = call FEC.encodedLen(length_d + (length_d%2)+ sizeof(runningCRC_d));
         numTraces = 0;
       }
       crcAppended = FALSE;
@@ -179,6 +272,7 @@ generic module Rf1aFECP () {
         call DefaultBuffer.setNow(buffer_d);
         call DefaultLength.setNow(length_d);
       }
+      parity = EVEN;
       post encodeAMAP();
     
     
@@ -192,26 +286,43 @@ generic module Rf1aFECP () {
     }
   }
 
+  error_t lastResult;
+
   task void printTraces(){
     uint8_t i;
     for (i = 0; i < numTraces; i++){
       amap_trace_t* t = &traces[i];
       printf("AMAP %u\r\n", i);
-      printf(" rawLen_d %u rawReady_d %u rawPos_d %p epLocal_e %p encodedReady0_e %u\r\n",
+      printf(" rawLen_d %u rawReady_d %u rawPos_d %p epLocal_e %p encodedReady0_e %u parity %x\r\n",
         t->rawLen_d, t->rawReady_d, t->rawPos_d, t->epLocal_e,
-        t->encodedReady0_e);
-      printf(" numEncoded0_e %u encodedSoFar0_d %u\r\n",
-        t->numEncoded0_e, t->encodedSoFar0_d);
-      printf(" numEncoded1_e %u\r\n", t->numEncoded1_e);
-      printf(" encodedReady1_e %u\r\n", t->encodedReady1_e);
+        t->encodedReady0_e, t->parity);
+
+      printf(" pf %x rawReady0_d %u numEncoded0_e %u encodedSoFar0_d %u parity0 %x\r\n",
+        t->pf, t->rawReady0_d, t->numEncoded0_e, t->encodedSoFar0_d,
+        t->parity0);
+
+      printf(" ps %x rawReady1_d %u parity1 %x\r\n", t->ps, t->rawReady1_d, t->parity1);
+
+      printf(" numEncoded1_e %u encodedSoFar1_d %u\r\n",
+        t->numEncoded1_e, t->encodedSoFar1_d);
+    
+      printf(" fpf %x numEncoded2_e %u encodedSoFar2_d %u\r\n",
+        t->fpf, t->numEncoded2_e, t->encodedSoFar2_d);
+      
+      printf(" numEncoded3_e %u \r\n",
+        t->numEncoded3_e);
+
+      printf(" encodedReady1_e %u \r\n",
+        t->encodedReady1_e);
       memset(t, 0, sizeof(amap_trace_t));
     }
     sendOutstanding = FALSE;
     {
-      printf("TX %x %x \r\n[",
+      printf("TX %x %x %x \r\n[",
+        lastResult,
         runningCRC_d, 
-        call Crc.crc16(lastBuffer_d, rawLen_d));
-      for (i = 0; i < call FEC.encodedLen(rawLen_d + sizeof(runningCRC_d)); i ++){
+        call Crc.crc16(lastBuffer_d, rawLen_d + (rawLen_d%2)));
+      for (i = 0; i < call FEC.encodedLen(rawLen_d +(rawLen_d%2)+ sizeof(runningCRC_d)); i ++){
         printf("%x ", txEncoded_e[i]);
       }
       printf("]\r\n");
@@ -219,6 +330,7 @@ generic module Rf1aFECP () {
   }
 
   async event void SubRf1aPhysical.sendDone(int result){
+    lastResult = result;
 //    post printTraces();
     //TODO: debug put this back in
     sendOutstanding = FALSE;

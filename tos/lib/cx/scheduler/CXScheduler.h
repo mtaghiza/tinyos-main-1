@@ -52,7 +52,7 @@ typedef nx_struct cx_schedule {
   nx_uint8_t padding0;
   nx_uint8_t padding1;
   nx_uint8_t padding2;
-//  nx_uint8_t padding3;
+  nx_uint8_t padding3;
   nx_uint32_t timestamp; //32K timestamp of origin
   nx_uint8_t padding4;
   nx_uint8_t padding5;
