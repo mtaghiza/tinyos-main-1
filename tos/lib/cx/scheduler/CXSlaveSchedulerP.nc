@@ -166,7 +166,7 @@ module CXSlaveSchedulerP{
     }
     return call SubCXRQ.requestReceive(layerCount + 1,
       baseFrame, frameOffset, 
-      FALSE, 0,
+      useMicro, microRef,
       duration,
       NULL, msg);
   }
