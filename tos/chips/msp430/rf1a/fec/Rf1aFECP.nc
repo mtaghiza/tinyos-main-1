@@ -286,52 +286,7 @@ generic module Rf1aFECP () {
     }
   }
 
-  error_t lastResult;
-
-  task void printTraces(){
-    uint8_t i;
-    for (i = 0; i < numTraces; i++){
-      amap_trace_t* t = &traces[i];
-      printf("AMAP %u\r\n", i);
-      printf(" rawLen_d %u rawReady_d %u rawPos_d %p epLocal_e %p encodedReady0_e %u parity %x\r\n",
-        t->rawLen_d, t->rawReady_d, t->rawPos_d, t->epLocal_e,
-        t->encodedReady0_e, t->parity);
-
-      printf(" pf %x rawReady0_d %u numEncoded0_e %u encodedSoFar0_d %u parity0 %x\r\n",
-        t->pf, t->rawReady0_d, t->numEncoded0_e, t->encodedSoFar0_d,
-        t->parity0);
-
-      printf(" ps %x rawReady1_d %u parity1 %x\r\n", t->ps, t->rawReady1_d, t->parity1);
-
-      printf(" numEncoded1_e %u encodedSoFar1_d %u\r\n",
-        t->numEncoded1_e, t->encodedSoFar1_d);
-    
-      printf(" fpf %x numEncoded2_e %u encodedSoFar2_d %u\r\n",
-        t->fpf, t->numEncoded2_e, t->encodedSoFar2_d);
-      
-      printf(" numEncoded3_e %u \r\n",
-        t->numEncoded3_e);
-
-      printf(" encodedReady1_e %u \r\n",
-        t->encodedReady1_e);
-      memset(t, 0, sizeof(amap_trace_t));
-    }
-    sendOutstanding = FALSE;
-    {
-      printf("TX %x %x %x \r\n[",
-        lastResult,
-        runningCRC_d, 
-        call Crc.crc16(lastBuffer_d, rawLen_d + (rawLen_d%2)));
-      for (i = 0; i < call FEC.encodedLen(rawLen_d +(rawLen_d%2)+ sizeof(runningCRC_d)); i ++){
-        printf("%x ", txEncoded_e[i]);
-      }
-      printf("]\r\n");
-    }
-  }
-
   async event void SubRf1aPhysical.sendDone(int result){
-    lastResult = result;
-//    post printTraces();
     //TODO: debug put this back in
     sendOutstanding = FALSE;
     signal Rf1aPhysical.sendDone(result);
