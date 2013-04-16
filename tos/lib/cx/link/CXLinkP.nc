@@ -227,12 +227,18 @@ module CXLinkP { provides interface SplitControl;
             post requestHandled();
             break;
           case RT_SLEEP:
+            if (LINK_DEBUG_WAKEUP){
+              atomic P1OUT &= ~BIT1;
+            }
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
             //TODO: FUTURE frequency-scaling: turn it down
             post requestHandled();
             break;
           case RT_WAKEUP:
+            if (LINK_DEBUG_WAKEUP){
+              atomic P1OUT |= BIT1;
+            }
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
             //TODO: FUTURE frequency-scaling: turn it up.
             //if radio is off, turn it on (idle)

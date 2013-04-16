@@ -65,7 +65,7 @@ module TestP{
       
       P2DIR |= BIT4;
       P2SEL |= BIT4;
-      if (LINK_DEBUG_FRAME_BOUNDARIES){
+      if (LINK_DEBUG_FRAME_BOUNDARIES || LINK_DEBUG_WAKEUP ){
         P1DIR |= BIT1;
         P1SEL &= ~BIT1;
         P1OUT &= ~BIT1;

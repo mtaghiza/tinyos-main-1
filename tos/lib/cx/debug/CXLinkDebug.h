@@ -5,6 +5,10 @@
 #define LINK_DEBUG_FRAME_BOUNDARIES 0
 #endif
 
+#ifndef LINK_DEBUG_WAKEUP 
+#define LINK_DEBUG_WAKEUP 0
+#endif
+
 #ifndef DEBUG_LINK
 #define DEBUG_LINK 0
 #endif
