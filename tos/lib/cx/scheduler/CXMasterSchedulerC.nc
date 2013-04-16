@@ -7,6 +7,7 @@
  *  When started, this will periodically send out schedule
  *  announcements.
  **/
+ #include "CXScheduler.h"
 configuration CXMasterSchedulerC{
   provides interface CXRequestQueue;
   provides interface SplitControl;
@@ -44,7 +45,12 @@ configuration CXMasterSchedulerC{
   SlotSchedulerP.CXNetworkPacket -> CXNetworkC;
 
   //Skew correction 
+  #if CX_ENABLE_SKEW_CORRECTION
   components SkewCorrectionC;
+  #else
+  #warning "Disabled skew correction."
+  components DummySkewCorrectionC as SkewCorrectionC;
+  #endif
   SlotSchedulerP.SkewCorrection -> SkewCorrectionC;
 
   //Role scheduler internals

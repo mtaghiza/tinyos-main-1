@@ -237,11 +237,7 @@ module CXSlaveSchedulerP{
       post claimSlotTask();
     }
     post reportSched();
-    #if CX_ENABLE_SKEW_CORRECTION == 1
     post updateSkew();
-    #else
-    #warning "CX skew correction disabled"
-    #endif
     return ret;
   }
 

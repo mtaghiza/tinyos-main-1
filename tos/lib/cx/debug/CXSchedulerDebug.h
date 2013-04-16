@@ -7,4 +7,10 @@
 #define printf_SCHED(...)
 #endif
 
+#if DEBUG_SKEW == 1
+#define printf_SKEW( ... ) printf( __VA_ARGS__ )
+#else
+#define printf_SKEW(...)
+#endif
+
 #endif

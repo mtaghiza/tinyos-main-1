@@ -7,6 +7,7 @@
  *  When started, this will listen for schedule announcements and join
  *  the schedule.
  **/
+ #include "CXScheduler.h"
 configuration CXSlaveSchedulerC{
   provides interface CXRequestQueue;
   provides interface SplitControl;
@@ -47,7 +48,12 @@ configuration CXSlaveSchedulerC{
   SlotSchedulerP.CXNetworkPacket -> CXNetworkPacketC;
   
   //skew correction
+  #if CX_ENABLE_SKEW_CORRECTION
   components SkewCorrectionC;
+  #else
+  #warning "Disabled skew correction."
+  components DummySkewCorrectionC as SkewCorrectionC;
+  #endif
   CXSlaveSchedulerP.SkewCorrection -> SkewCorrectionC;
   SlotSchedulerP.SkewCorrection -> SkewCorrectionC;
   
