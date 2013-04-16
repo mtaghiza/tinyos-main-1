@@ -12,7 +12,9 @@ module CXSlaveSchedulerP{
   uses interface ScheduleParams;
   uses interface CXSchedulerPacket;
   uses interface CXNetworkPacket;
+  uses interface CXLinkPacket;
   uses interface SlotNotify;
+  uses interface Packet;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -20,7 +22,6 @@ module CXSlaveSchedulerP{
   cx_schedule_t* sched;
   bool startDonePending = FALSE;
 
-  uint8_t wakeupPending;
   
   enum { 
     S_OFF = 0x00,  
@@ -37,28 +38,37 @@ module CXSlaveSchedulerP{
   
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
+    if (subNext == INVALID_FRAME){
+      return INVALID_FRAME;
+    }
     if (isTX){
       if (state == S_SYNCHED){
+        //we're synched, so we rely on the slot scheduler to figure
+        //out when our next slot is.
         return subNext;
       } else {
-        printf("not synched\r\n");
         //not synched, so we won't permit any TX.
         return INVALID_FRAME;
       }
     }else{
       if (lastCycleStart != INVALID_FRAME && sched != NULL){
+        //we have a schedule, so we can figure out when our sleep/wake
+        //period is.
         uint32_t cycleSleep = lastCycleStart + (sched->slotLength)*(sched->activeSlots)+1;
         uint32_t cycleWake = lastCycleStart;
         while (cycleWake < subNext){
           cycleWake += sched->cycleLength;
         }
-
+        //if subnext is during the sleep period, push it back to
+        //1+wake
         if (subNext >= cycleSleep && subNext <= cycleWake){
           return cycleWake + 1;
         }else{
+        //otherwise, it's good to go
           return subNext;
         }
       }else{
+        //if we don't have a schedule, use result from below.
         return subNext;
       }
     }
@@ -149,6 +159,8 @@ module CXSlaveSchedulerP{
     call CXSchedulerPacket.setScheduleNumber(msg, 
       sched->sn);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    call CXSchedulerPacket.setOriginFrame(msg, 
+      baseFrame + frameOffset - lastCycleStart);
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
       frameOffset, useMicro, microRef, tsLoc, md, msg);
   }
@@ -193,8 +205,7 @@ module CXSlaveSchedulerP{
   
   task void updateSkew(){
     call SkewCorrection.addMeasurement(
-      //TODO: get source of schedule packet
-      0,
+      call CXLinkPacket.getSource(schedMsg),
       sched->timestamp,
       call CXNetworkPacket.getOriginFrameStart(schedMsg),
       call CXNetworkPacket.getOriginFrameNumber(schedMsg));
@@ -256,7 +267,6 @@ module CXSlaveSchedulerP{
   event void SubCXRQ.wakeupHandled(error_t error, 
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame){
-//    printf_SCHED("WH %lu p %u\r\n", atFrame, wakeupPending);
     if (layerCount){
       printf_SCHED("wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
@@ -287,11 +297,8 @@ module CXSlaveSchedulerP{
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->cycleLength);
-      if (error == SUCCESS){
-        wakeupPending++;
-      }
       printf_SCHED("req cw: %x p %u\r\n",
-        error, wakeupPending);
+        error);
     }else{
       printf("req cycle sleep: %x\r\n",
        error);

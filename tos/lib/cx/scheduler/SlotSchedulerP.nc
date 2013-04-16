@@ -2,49 +2,50 @@
  #include "CXScheduler.h"
  #include "CXSchedulerDebug.h"
 module SlotSchedulerP{
-  provides interface SplitControl;
-  uses interface SplitControl as SubSplitControl;
-
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRQ;
 
   uses interface CXSchedulerPacket;
   uses interface CXNetworkPacket;
 
-  provides interface ScheduleParams;
   uses interface SkewCorrection;
   provides interface SlotNotify;
+  provides interface ScheduleParams;
 } implementation {
-  message_t msg_internal;
-  message_t* schedMsg = &msg_internal;
-
-  cx_schedule_t* sched;
   
+  //enums/vars for determining when a slot is idle.
   enum{
     S_UNKNOWN = 0x00,
     S_INACTIVE = 0x01,
     S_ACTIVE = 0x02,
   };
   uint8_t slotState = S_UNKNOWN;
-
+  
+  //variables for tracking the order of sleep/wakeup and for setting
+  //slot wakeups. 
   uint32_t lastSlotStart = INVALID_FRAME;
   uint32_t lastCycleStart = INVALID_FRAME;
-  
   uint32_t lastSleep = INVALID_FRAME;
-  uint32_t nextSleep = INVALID_FRAME;
-  uint32_t nextWakeup = INVALID_FRAME;
-
+  
+  //current schedule settings
+  const cx_schedule_t* sched;
   uint32_t mySlot = INVALID_SLOT;
-
-  uint8_t wakeupPending = 0;
+  //ID of master node: this is used to fetch skew correction values.
   am_addr_t masterId = 0;
-
+  
+  //counter for validating that wakeups match up with sleeps.
+  uint8_t wakeupPending = 0;
+  
+  //forward declarations
   task void wakeupNextSlot();
+  task void sleepToNextSlot();
+  
 
-  command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
-    sched = schedule;
-  }
-
+  /**
+   *  Set cycle/slot start as indicated. If there are no wakeups
+   *  pending and we have the schedule (e.g. this is the first time
+   *  we've been given the schedule), scheduled the first slot wakeup.
+   */
   command void ScheduleParams.setCycleStart(uint32_t cycleStart){
     lastCycleStart = cycleStart;
     while (sched!= NULL && lastSlotStart < lastCycleStart){
@@ -58,15 +59,20 @@ module SlotSchedulerP{
       post wakeupNextSlot();
     }
   }
-
-  command void ScheduleParams.setSlot(uint32_t slot){
-    mySlot = slot;
+  
+  /**
+   *  Set schedule as indicated. schedule first slot wakeup if needed.
+   **/
+  command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
+    sched = schedule;
+    if (!wakeupPending && sched != NULL && lastSlotStart != INVALID_FRAME){
+      post wakeupNextSlot();
+    }
   }
+   
+  //----------- Begin general utility functions -----
 
-  command void ScheduleParams.setMasterId(am_addr_t addr){
-    masterId = addr;
-  }
-
+  //Get the slot number for a given frame.
   uint32_t slotNumber(uint32_t frame){
     if (sched == NULL){
       return INVALID_SLOT;
@@ -81,20 +87,30 @@ module SlotSchedulerP{
       return frame/sched->slotLength;
     }
   }
-
+  
+  //get the first frame of a given slot
   uint32_t slotStart(uint32_t sn){
     return lastCycleStart + (sn * sched->slotLength);
   }
-
+  
+  //find out the distance of a given frame from the beginning of its
+  //slot.
   uint32_t frameOfSlot(uint32_t frame){
     return frame - slotStart(slotNumber(frame));
   }
-
+  
+  //return whether or not the specified frame is owned by this node.
   bool isOwned(uint32_t frame){
     uint32_t sn =  slotNumber(frame);
     return sn != INVALID_SLOT && sn == mySlot;
   }
-
+  
+  //return the first frame of the next occurrence of this node's
+  //assigned slot. Note that it's possible that this returns a frame
+  //from the next cycle, and so it could be reassigned during this
+  //cycle. We assume that such assignments are relatively rare, so we
+  //don't worry too much about a node transmitting some data outside
+  //of its designated time.
   uint32_t myNextSlotStart(uint32_t frame){
     if (mySlot == INVALID_SLOT){
       return INVALID_FRAME;
@@ -108,6 +124,16 @@ module SlotSchedulerP{
     }
   }
 
+  //----- End utility functions
+  
+
+  /**
+   *  In a nutshell: 
+   *  - get the next frame from the layer below. 
+   *  - push TX requests forward to our next slot as needed
+   *  - push non-TX requests forward to the next frame where we are
+   *    not sleeping, as needed.
+   **/
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
     if (subNext == INVALID_FRAME){
@@ -129,70 +155,92 @@ module SlotSchedulerP{
       //If we are awake at subNext: return subNext.
       //  - lastSlotStart < subNext
       //  - lastSleep is INVALID_FRAME or lastSleep < lastSlotStart
-      bool awake = ((lastSleep < lastSlotStart && lastSlotStart < subNext) || (lastSleep == INVALID_FRAME)) && (lastSlotStart != INVALID_FRAME);
+      bool awake = (lastSlotStart != INVALID_FRAME) 
+        && ((lastSleep < lastSlotStart && lastSlotStart < subNext) || (lastSleep == INVALID_FRAME));
+
       if (awake){
         if (sched != NULL && subNext == lastSlotStart + sched->slotLength){
+          //avoid conflict with next slot's wakeup.
           return subNext + 1;
         }else{
           return subNext;
         }
       }else if (sched != NULL && lastSlotStart != INVALID_FRAME){
-        uint32_t nextSlotStart = lastSlotStart ;
+        //asleep, but we have the schedule: right after next slot
+        //wakeup.
+        uint32_t nextSlotStart = lastSlotStart;
         while (nextSlotStart < subNext){
           nextSlotStart += sched->slotLength + 1;
         }
         return nextSlotStart; 
       }else{
-        //If we don't know, return subNext
+        //If we don't know, return subNext: this would be for cases
+        //where we have no schedule, for instance.
         return subNext;
       }
     }
   }
-
-  command error_t CXRequestQueue.requestReceive(uint8_t layerCount, 
-      uint32_t baseFrame, int32_t frameOffset, 
-      bool useMicro, uint32_t microRef,
-      uint32_t duration, 
-      void* md, message_t* msg){
-    if (msg == NULL){
-      printf_SCHED("sched.cxrq.rr null\r\n");
-      return EINVAL;
+  
+  /**
+   *  Use the current schedule information to set a wakeup for the
+   *  beginning of the next slot.  This uses the skew correction data
+   *  and the master's node ID to figure out when exactly to set the
+   *  wakeup.
+   **/
+  task void wakeupNextSlot(){
+    error_t error;
+    //TODO: apply skew correction
+    error = call SubCXRQ.requestWakeup(0,
+      lastCycleStart,
+      sched->slotLength*(slotNumber(lastSlotStart)+1));
+    if (error == SUCCESS){
+      wakeupPending ++; 
     }
-    if(duration == 0){
-      if (sched == NULL){
-        duration = RX_MAX_WAIT;
+    printf_SCHED("req sw: %x p %u\r\n",
+      error, wakeupPending);
+  }
+
+  /**
+   * Update last slot-start and either schedule the next slot-start
+   * wakeup OR signal the role-scheduler that this is the last slot of
+   * the cycle (so that it can sleep/wakeup as needed).
+   **/
+  event void SubCXRQ.wakeupHandled(error_t error, 
+      uint8_t layerCount,
+      uint32_t atFrame, uint32_t reqFrame){
+    if (layerCount){
+      printf_SCHED("wh up\r\n");
+      signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
+    }else {
+      if (wakeupPending){
+        wakeupPending --;
       }else{
-        duration = RX_DEFAULT_WAIT;
+        printf("Unexpected wakeup\r\n");
+      }
+
+      lastSlotStart = atFrame;
+      slotState = S_UNKNOWN;
+      if (sched != NULL){
+        uint32_t sn = slotNumber(atFrame);
+        if (sn == (sched->activeSlots - 1)){
+          signal SlotNotify.lastSlot();
+        } else if (sn < (sched->activeSlots - 1) ){
+          post wakeupNextSlot();
+        } else {
+          //woke up some time during the inactive period, shouldn't
+          //  happen.
+          printf("inactive period wakeup %lu slot %lu\r\n", 
+            atFrame, sn);
+        }
       }
     }
-    return call SubCXRQ.requestReceive(layerCount + 1,
-      baseFrame, frameOffset, 
-      useMicro, microRef,
-      duration,
-      NULL, msg);
   }
+  
 
-  task void sleepToNextSlot(){
-    uint32_t ns = call SubCXRQ.nextFrame(FALSE);
-//    printf_SCHED("stns\r\n");
-    //OK to sleep if either we have the next slot wakeup queued OR
-    //this is the last slot (and we'll get woken up at the start of
-    //the next cycle.
-    if (wakeupPending || slotNumber(ns) == (sched->activeSlots-1)){
-      error_t error = call SubCXRQ.requestSleep(0,
-        ns,
-        0);
-      printf_SCHED("req slot sleep: %x @%lu\r\n", 
-        error, 
-        ns);
-      if (error == SUCCESS){
-        nextSleep = ns;
-      }
-    } else {
-      printf("Slot sleep requested, but no wakeup pending\r\n");
-    }
-  }
-
+  /**
+   *  Pass through receive handled events. If a slot is detected as
+   *  being inactive (no RX within sched->maxDepth frames), sleep.
+   **/
   event void SubCXRQ.receiveHandled(error_t error, 
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
@@ -203,19 +251,12 @@ module SlotSchedulerP{
         && !didReceive 
         && slotState == S_UNKNOWN 
         && frameOfSlot(atFrame) >= sched -> maxDepth){
-      //We didn't receive anything, we had not yet ascertained that
-      //this was an active slot, and according to the schedule, we
-      //should have received something by this point if anything was
-      //being transmitted.
-      //We assume the slot is not in use and sleep until the next slot
-      //start.
       slotState = S_INACTIVE;
       post sleepToNextSlot();
     }else{
       if (didReceive){
         slotState = S_ACTIVE;
       }else{
-        //did not receive
       }
     }
     //regardless of above logic, pass through handled events
@@ -229,20 +270,86 @@ module SlotSchedulerP{
       printf("Unexpected rxHandled\r\n");
     }
   }
+  
+  /**
+   *  Verify that there is either a slot wakeup scheduled OR this is
+   *  the last active slot (implying cycle wakeup from above is
+   *  pending), and then sleep.
+   *  
+   **/
+  task void sleepToNextSlot(){
+    uint32_t ns = call SubCXRQ.nextFrame(FALSE);
+    if (wakeupPending || slotNumber(ns) == (sched->activeSlots-1)){
+      error_t error = call SubCXRQ.requestSleep(0,
+        ns,
+        0);
+      if (error != SUCCESS){
+        printf("req slot sleep: %x @%lu\r\n", error, ns);
+      }
+      printf_SCHED("req slot sleep: %x @%lu\r\n", 
+        error, 
+        ns);
+    } else {
+      printf("Slot sleep requested, but no wakeup pending\r\n");
+    }
+  }
 
+  /**
+   *  Pass through and prevent this slot from being flagged as
+   *  inactive.
+   */
   command error_t CXRequestQueue.requestSend(uint8_t layerCount, 
       uint32_t baseFrame, 
       int32_t frameOffset, 
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
-
-    //don't want to go to sleep here
     slotState = S_ACTIVE;
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
       frameOffset, useMicro, microRef, tsLoc, md, msg);
   }
 
+  //pass-through, record when sleep occurs for use in CXRQ.nextFrame.
+  event void SubCXRQ.sleepHandled(error_t error, uint8_t layerCount, uint32_t atFrame, 
+      uint32_t reqFrame){
+    if (layerCount){
+      signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
+    }else{
+      lastSleep = atFrame;
+    }
+  }
+
+  
+  //--- self-explanatory functions below
+
+  /**
+   *  Assign a specific owned slot.
+   **/
+  command void ScheduleParams.setSlot(uint32_t slot){
+    mySlot = slot;
+  }
+  
+  /**
+   *  Set the schedule master's ID: this is used for skew correction
+   *  lookup.
+   **/
+  command void ScheduleParams.setMasterId(am_addr_t addr){
+    masterId = addr;
+  }
+
+  //---- 100% Pass throughs below
+  command error_t CXRequestQueue.requestReceive(uint8_t layerCount, 
+      uint32_t baseFrame, int32_t frameOffset, 
+      bool useMicro, uint32_t microRef,
+      uint32_t duration, 
+      void* md, message_t* msg){
+    return call SubCXRQ.requestReceive(layerCount + 1,
+      baseFrame, frameOffset, 
+      useMicro, microRef,
+      duration,
+      NULL, msg);
+  }
+  
   event void SubCXRQ.sendHandled(error_t error, 
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
@@ -259,91 +366,24 @@ module SlotSchedulerP{
       printf("Unexpected terminal sendHandled\r\n");
     }
   }
-
-  task void wakeupNextSlot(){
-    error_t error;
-    //TODO: apply skew correction
-    error = call SubCXRQ.requestWakeup(0,
-      lastCycleStart,
-      sched->slotLength*(slotNumber(lastSlotStart)+1));
-    if (error == SUCCESS){
-      wakeupPending ++; 
-      nextWakeup = lastCycleStart +
-        sched->slotLength*(slotNumber(lastSlotStart)+1);
-    }
-    printf_SCHED("req sw: %x p %u\r\n",
-      error, wakeupPending);
-  }
-
+  
   command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
     return call SubCXRQ.requestSleep(layerCount + 1, baseFrame, frameOffset);
   }
 
-  event void SubCXRQ.sleepHandled(error_t error, uint8_t layerCount, uint32_t atFrame, 
-      uint32_t reqFrame){
-//    printf_SCHED("SH %lu\r\n", atFrame);
-    if (layerCount){
-      signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
-    }else{
-      lastSleep = atFrame;
-//      printf_SCHED("sleep %x @%lu\r\n", error, atFrame);
-    }
-  }
-
+  //N.B. skew correction is NOT applied here (will come from above if needed)
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset){
-    //Do not apply skew correction: will come from above.
     return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame, frameOffset);
   }
-
-  event void SubCXRQ.wakeupHandled(error_t error, 
-      uint8_t layerCount,
-      uint32_t atFrame, uint32_t reqFrame){
-//    printf_SCHED("WH %lu p %u\r\n", atFrame, wakeupPending);
-    if (layerCount){
-      printf_SCHED("wh up\r\n");
-      signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
-    }else {
-      if (wakeupPending){
-        wakeupPending --;
-      }else{
-        printf("Unexpected wakeup\r\n");
-      }
-
-//      printf("wakeup %x @%lu\r\n", error, atFrame);
-      lastSlotStart = atFrame;
-      slotState = S_UNKNOWN;
-      if (sched != NULL){
-        uint32_t sn = slotNumber(atFrame);
-        if (sn == (sched->activeSlots - 1)){
-          //notify the layer above
-          //that the last slot is completing. That layer 
-          //will request the cycle sleep/wakeup as needed.
-          //previous impl marked nextSleep/nextWakeup so that
-          //nextFrame didn't allow stuff to happen during the inactive
-          //periods: we don't need (or want) to do this, because now
-          //the layer above will handle the large-scale cycling
-          signal SlotNotify.lastSlot();
-        } else if (sn < (sched->activeSlots - 1) ){
-          //prior to last active slot: next slot
-          post wakeupNextSlot();
-        } else {
-          //woke up some time during the inactive period, shouldn't
-          //  happen.
-          printf("inactive period wakeup %lu slot %lu\r\n", 
-            atFrame, sn);
-        }
-      }
-    }
-  }
-
+  
   command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, 
       uint32_t baseFrame, int32_t frameOffset, int32_t frameShift){
     return call SubCXRQ.requestFrameShift(layerCount + 1, 
       baseFrame, frameOffset, frameShift);
   }
-
+  
   event void SubCXRQ.frameShiftHandled(error_t error, 
       uint8_t layerCount, 
       uint32_t atFrame, uint32_t reqFrame){
@@ -355,20 +395,6 @@ module SlotSchedulerP{
       printf("Unexpected frame shift handled\r\n");
     }
   }
-
-  command error_t SplitControl.start(){
-    return call SubSplitControl.start();
-  }
-
-  command error_t SplitControl.stop(){
-    return call SubSplitControl.stop();
-  }
-  event void SubSplitControl.stopDone(error_t error){
-    signal SplitControl.stopDone(error);
-  }
-
-  event void SubSplitControl.startDone(error_t error){
-    signal SplitControl.startDone(error);
-  }
+  
 }
 

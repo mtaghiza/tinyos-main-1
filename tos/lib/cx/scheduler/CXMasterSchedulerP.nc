@@ -30,11 +30,11 @@ module CXMasterSchedulerP{
   message_t* nextMsg = &nextMsg_internal;
   cx_schedule_t* nextSched;
   bool scheduleUpdatePending = FALSE;
+  bool startDonePending = FALSE;
 
-  uint32_t lastWakeup;
-  uint32_t lastSleep;
+  uint32_t lastSleep = INVALID_FRAME;
 
-  uint32_t lastCycleStart;
+  uint32_t lastCycleStart = INVALID_FRAME;
   
   event void Boot.booted(){
     sched = (cx_schedule_t*)(call Packet.getPayload(schedMsg,
@@ -42,7 +42,7 @@ module CXMasterSchedulerP{
     sched -> sn = call Random.rand16() & 0xFF;
     sched -> cycleLength = CX_DEFAULT_CYCLE_LENGTH;
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
-    sched -> activeSlots = 3;
+    sched -> activeSlots = 4;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();
@@ -63,6 +63,7 @@ module CXMasterSchedulerP{
     uint32_t refFrame = call SubCXRQ.nextFrame(FALSE);
     error_t error = call SubCXRQ.requestWakeup(0, refFrame, 1);
     if (SUCCESS == error){
+      startDonePending = TRUE;
       //cool. we'll request sleep and next wakeup when the wakeup is handled
     }else{
       printf("init.requestWakeup %x\r\n", error);
@@ -77,10 +78,14 @@ module CXMasterSchedulerP{
         layerCount, 
         atFrame, reqFrame);
     }else{
+      if (startDonePending){
+        startDonePending = FALSE;
+        signal SplitControl.startDone(error);
+      }
       if (SUCCESS == error){
         //we consider wake up to be at frame 0 of the cycle.
         uint32_t schedOF = 1;
-        lastWakeup = atFrame;
+        lastCycleStart = atFrame;
         //this is the start of the active period. We are master, so we
         //need to send out the schedule.
   
@@ -98,34 +103,36 @@ module CXMasterSchedulerP{
         call CXSchedulerPacket.setScheduleNumber(schedMsg,
           sched->sn);
         call CXSchedulerPacket.setOriginFrame(schedMsg, 
-          schedOF + lastWakeup);
+          schedOF + lastCycleStart);
 //        printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
         call Packet.setPayloadLength(schedMsg, 
           sizeof(cx_schedule_t));
 //        printf("Verify PL [%u]\r\n", 
 //          call Packet.payloadLength(schedMsg));
         call CXNetworkPacket.setTTL(schedMsg, sched->maxDepth);
-        //TODO: set source
+        call CXLinkPacket.setSource(schedMsg, 
+          call CXLinkPacket.addr());
+
         sched->padding0 = 0x10;
         sched->padding1 = 0x11;
         sched->padding2 = 0x12;
         sched->padding3 = 0x13;
         sched->padding4 = 0x14;
         sched->padding5 = 0x15;
-//        printf("lw %lu schedOF %lu ", lastWakeup, schedOF);
-        sched->cycleStartFrame = lastWakeup + schedOF - 1;
-//        printf("csf %lu\r\n", sched->cycleStartFrame);
+        sched->cycleStartFrame = lastCycleStart;
         error = call SubCXRQ.requestSend(0,
-          lastWakeup, schedOF,
+          lastCycleStart, schedOF,
           FALSE, 0,
           &(sched->timestamp),
           NULL, schedMsg);
         if (error != SUCCESS){
           printf("Sched.reqS %x\r\n", error);
         }
-        lastCycleStart = sched->cycleStartFrame;
+
         call ScheduleParams.setSchedule(sched);
         call ScheduleParams.setCycleStart(lastCycleStart);
+        //TODO: this should be set somewhat dynamically.
+        call ScheduleParams.setSlot(TOS_NODE_ID);
       }else{
         printf("Sched.wh: %x\r\n", error);
       }
@@ -160,7 +167,37 @@ module CXMasterSchedulerP{
 
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
-    return 0;
+    uint32_t subNext = call SubCXRQ.nextFrame(isTX);
+    if (subNext == INVALID_FRAME){
+      return INVALID_FRAME;
+    }
+    if (isTX){
+      //we're always synched as master, so rely on slot scheduler to
+      //figure out valid time.
+      return subNext;
+    } else {
+      if (lastCycleStart != INVALID_FRAME && sched != NULL){
+        //we have a schedule, so we can figure out when our sleep/wake
+        //period is.
+        uint32_t cycleSleep = lastCycleStart + (sched->slotLength)*(sched->activeSlots)+1;
+        uint32_t cycleWake = lastCycleStart;
+        while (cycleWake < subNext){
+          cycleWake += sched->cycleLength;
+        }
+
+        //if subnext is during the sleep period, push it back to
+        //1+wake
+        if (subNext >= cycleSleep && subNext <= cycleWake){
+          return cycleWake + 1;
+        }else{
+        //otherwise, it's good to go
+          return subNext;
+        }
+      }else{
+        //if we don't have a schedule, use result from below.
+        return subNext;
+      }
+    }
   }
 
   command error_t CXRequestQueue.requestReceive(uint8_t layerCount, 
@@ -169,6 +206,9 @@ module CXMasterSchedulerP{
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
+    if (duration == 0){
+      duration = RX_DEFAULT_WAIT;
+    }
     return call SubCXRQ.requestReceive(layerCount + 1, baseFrame, frameOffset,
       useMicro, microRef, 
       duration, 
@@ -181,8 +221,12 @@ module CXMasterSchedulerP{
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    signal SubCXRQ.receiveHandled(error, layerCount - 1, atFrame, reqFrame,
-      didReceive, microRef, t32kRef, md, msg);
+    if (layerCount){
+      signal CXRequestQueue.receiveHandled(error, layerCount - 1, atFrame, reqFrame,
+        didReceive, microRef, t32kRef, md, msg);
+    }else{
+      printf("Unexpected rx handled\r\n");
+    }
   }
   
   // in addition to standard layerCount, we also set up the scheduler
@@ -197,7 +241,9 @@ module CXMasterSchedulerP{
     call CXSchedulerPacket.setScheduleNumber(msg, 
       call CXSchedulerPacket.getScheduleNumber(schedMsg));
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
-      baseFrame + frameOffset - lastWakeup);
+      baseFrame + frameOffset - lastCycleStart);
+    call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    call CXLinkPacket.setSource(msg, TOS_NODE_ID);
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
       useMicro, microRef, 
@@ -218,8 +264,10 @@ module CXMasterSchedulerP{
         md, msg);
     }else{
       if (SUCCESS == error){
+        printf("TX sched\r\n");
         //cool. schedule sent.
       }else{
+        printf("SH %x\r\n", error);
         //TODO: handle schedule troubles
       }
     }
@@ -260,7 +308,7 @@ module CXMasterSchedulerP{
     if ( layerCount){
       signal CXRequestQueue.frameShiftHandled(error, layerCount - 1, atFrame, reqFrame);
     }else{
-      //TODO: update state
+      printf("Unexpected frame shift\r\n");
     }
   }
 
@@ -274,10 +322,12 @@ module CXMasterSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (error == SUCCESS){
+      startDonePending = TRUE;
       sched = (cx_schedule_t*)call Packet.getPayload(schedMsg, sizeof(cx_schedule_t));
       post initTask();
+    }else{
+      signal SplitControl.startDone(error);
     }
-    signal SplitControl.startDone(error);
   }
 
   event void SubSplitControl.stopDone(error_t error){
