@@ -2,6 +2,8 @@
  #include <stdio.h>
  #include "CXLink.h"
  #include "CXNetwork.h"
+ //for invalid frame
+ #include "CXScheduler.h"
 
 module TestP{
   uses interface Boot;
@@ -13,6 +15,10 @@ module TestP{
   uses interface Packet;
 
   uses interface StdControl as SerialControl;
+  
+  //loopback down to scheduler: this role should be handled by an
+  //AMReceiver, generally speaking
+  provides interface Receive;
 } implementation {
   bool started = FALSE;
   bool receivePending = FALSE;
@@ -22,20 +28,27 @@ module TestP{
   message_t rxMsg_internal;
   message_t* rxMsg = &rxMsg_internal;
 
+  message_t txMsg_internal;
+  message_t* txMsg = &txMsg_internal;
+
+
   enum{
     PAYLOAD_LEN= 50,
   };
 
   typedef nx_struct test_payload {
+    nx_uint16_t packetType;
     nx_uint8_t buffer[PAYLOAD_LEN];
     nx_uint32_t timestamp;
   } test_payload_t;
 
 
   task void usage(){
-    printf("---- MASTER ID %u Commands ----\r\n", TOS_NODE_ID);
+    printf("---- %s ID %u Commands ----\r\n", 
+      CX_MASTER == 1?  "MASTER": "SLAVE", 
+      TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
-    printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
+    printf("t : transmit a packet\r\n");
     printf("q : reset\r\n");
   }
 
@@ -64,8 +77,7 @@ module TestP{
       //power on flash chip to open p1.1-4
       P2SEL &=~BIT1;
       P2OUT |=BIT1;
-
-      //enable p1.2,3,4 for gpio
+      //enable p1.1,2,3,4 for gpio
       P1DIR |= BIT2 | BIT3 | BIT4;
       P1SEL &= ~(BIT2 | BIT3 | BIT4);
 
@@ -81,12 +93,13 @@ module TestP{
   }
 
   task void receiveNext(){
+    uint32_t nf = call CXRequestQueue.nextFrame(FALSE);
     error_t error = call CXRequestQueue.requestReceive(0,
-      call CXRequestQueue.nextFrame(FALSE), 0,
+      nf, 0,
       FALSE, 0,
       0, NULL, rxMsg);
     if (error != SUCCESS){
-      printf("reqR: %x\r\n", error);
+      printf("rn reqR: %x @%lu\r\n", error, nf);
     }
   }
 
@@ -108,13 +121,31 @@ module TestP{
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){
-    if (error != SUCCESS || didReceive){
-      printf("rx handled: %x @ %lu req %lu %x %lu\r\n",
-        error, atFrame, reqFrame_, didReceive, microRef);
-    }
     if (didReceive){
       uint8_t len = call Packet.payloadLength(msg_);
       printf("RX %p [%u]\r\n", msg_, len);
+      if (((test_payload_t*)call Packet.getPayload(msg_, len))->packetType == 0xDCDC){
+        printf("Test Packet RX\r\n");
+      }else{
+        rxMsg = signal Receive.receive(msg_, 
+          call Packet.getPayload(msg_, len), 
+          len);
+      }
+      post receiveNext();
+    }else{
+      if (error == SUCCESS || error == EBUSY){
+        uint32_t nf = call CXRequestQueue.nextFrame(FALSE);
+        error = call CXRequestQueue.requestReceive(0,
+          nf, 0,
+          FALSE, 0,
+          0,
+          NULL, msg_);
+        if (SUCCESS != error){
+          printf("rh reqR: %x @%lu\r\n", error, nf);
+        }
+      } else {
+        printf("RX error: %x\r\n", error);
+      }
     }
   }
 
@@ -137,9 +168,31 @@ module TestP{
     }
   }
 
-  task void killSerial(){
-    printf("killing serial\r\n");
-    call SerialControl.stop();
+  task void transmit(){
+    test_payload_t* pl = 
+      (test_payload_t*)(call Packet.getPayload(txMsg,
+        sizeof(test_payload_t)));
+    error_t error;
+    uint32_t nextFrame;
+    pl->packetType = 0xDCDC;
+    {
+      uint8_t i;
+      for (i = 0; i < PAYLOAD_LEN; i++){
+        pl->buffer[i] = i;
+      }
+    }
+    call Packet.setPayloadLength(txMsg, sizeof(test_payload_t));
+    nextFrame = call CXRequestQueue.nextFrame(TRUE);
+    if (nextFrame != INVALID_FRAME){
+      error = call CXRequestQueue.requestSend(0,
+        nextFrame, 0,
+        FALSE, 0, 
+        &pl->timestamp,
+        NULL, txMsg);
+      printf("TX @%lu: %x\r\n", nextFrame, error);
+    }else{
+      printf("TX nf invalid\r\n");
+    }
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -150,11 +203,11 @@ module TestP{
        case 'S':
          post toggleStartStop();
          break;
-       case 'k':
-         post killSerial();
-         break;
        case '?':
          post usage();
+         break;
+       case 't':
+         post transmit();
          break;
        case '\r':
          printf("\n");
@@ -169,4 +222,10 @@ module TestP{
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf, uint16_t len,
     error_t error ){}
+
+  default event message_t* Receive.receive(message_t* msg_, 
+      void* payload, uint8_t len){
+    return msg_;
+  }
 }
+

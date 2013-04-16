@@ -1,4 +1,7 @@
-COMPONENT=TestMasterC
+COMPONENT=TestC
+
+CX_MASTER?=1
+CFLAGS += -DCX_MASTER=$(CX_MASTER)
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/priorityQueue
