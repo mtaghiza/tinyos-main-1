@@ -47,8 +47,9 @@ module CXNetworkP {
         //n.b. this is an estimate of the CAPTURE time (in 32K units),
         //so, the PREP_TIME_32KHZ needs to be accounted for when
         //scheduling frames based on it. 
+        printf_SKEW("ts %lu\r\n", t32kRef);
         call CXNetworkPacket.setOriginFrameStart(msg,
-          t32kRef - (FRAMELEN_32K * call CXNetworkPacket.getRXHopCount(msg)));
+          t32kRef - (FRAMELEN_32K * (call CXNetworkPacket.getRXHopCount(msg) - 1)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
             call CXNetworkPacket.readyNextHop(msg);

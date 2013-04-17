@@ -362,7 +362,23 @@ module CXLinkP { provides interface SplitControl;
           uint32_t t0_s = (nextRequest->baseFrame - nextRequest->typeSpecific.wakeup.refFrame)*FRAMELEN_32K + nextRequest->typeSpecific.wakeup.refTime; 
           uint32_t dt_s = FRAMELEN_32K*nextRequest->frameOffset +
             nextRequest->typeSpecific.wakeup.correction;
-          printf_LINK("WU %lu (%lu)\r\n", t0_s + dt_s, t0+dt);
+          //account for setup time
+          dt_s -= PREP_TIME_32KHZ;
+          printf_LINK("WU\r\n");
+          printf_LINK(" rf %lu rt %lu c %li\r\n", 
+            nextRequest->typeSpecific.wakeup.refFrame,
+            nextRequest->typeSpecific.wakeup.refTime,
+            nextRequest->typeSpecific.wakeup.correction);
+          printf_LINK(" bf %lu fo %lu\r\n",
+            nextRequest->baseFrame,
+            nextRequest->frameOffset);
+          printf_LINK(" lf %lu lft %lu\r\n",
+            lastFrameNum,
+            lastFrameTime);
+          printf_LINK(" sched %lu (%lu)\r\n",
+            t0_s + dt_s,
+            t0 + dt);
+
           if ( (t0_s + dt_s ) < (t0 + dt - FRAMELEN_32K) 
               || (t0_s + dt_s) > (t0 + dt + FRAMELEN_32K)){
             printf("!too-big shift\r\n");
