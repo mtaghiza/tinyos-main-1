@@ -66,4 +66,8 @@ typedef nx_struct cx_schedule {
 #define CX_ENABLE_SKEW_CORRECTION 1
 #endif
 
+#ifndef SCHEDULE_LOSS_THRESHOLD
+#define SCHEDULE_LOSS_THRESHOLD 3
+#endif
+
 #endif

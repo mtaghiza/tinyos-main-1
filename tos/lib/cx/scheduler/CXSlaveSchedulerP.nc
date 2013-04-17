@@ -22,6 +22,9 @@ module CXSlaveSchedulerP{
   cx_schedule_t* sched;
   bool startDonePending = FALSE;
 
+  bool scheduleReceived = FALSE;
+  uint8_t missedCount = 0;
+
   
   enum { 
     S_OFF = 0x00,  
@@ -54,14 +57,23 @@ module CXSlaveSchedulerP{
       if (lastCycleStart != INVALID_FRAME && sched != NULL){
         //we have a schedule, so we can figure out when our sleep/wake
         //period is.
-        uint32_t cycleSleep = lastCycleStart + (sched->slotLength)*(sched->activeSlots)+1;
+//        uint32_t cycleSleep = lastCycleStart + (sched->slotLength)*(sched->activeSlots)+1;
         uint32_t cycleWake = lastCycleStart;
+        uint32_t cycleSleep;
         while (cycleWake < subNext){
           cycleWake += sched->cycleLength;
         }
+        //cycleWake is the NEXT wakeup, cycleSleep is the sleep which
+        //immediately precedes it.
+        cycleSleep = cycleWake 
+          - (sched->cycleLength) 
+          + (sched->slotLength)*(sched->activeSlots)
+          + 1;
+        
         //if subnext is during the sleep period, push it back to
         //1+wake
         if (subNext >= cycleSleep && subNext <= cycleWake){
+          printf("nfs %lu %lu %lu\r\n", cycleSleep, subNext, cycleWake);
           return cycleWake + 1;
         }else{
         //otherwise, it's good to go
@@ -223,6 +235,7 @@ module CXSlaveSchedulerP{
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;
+    scheduleReceived = TRUE;
 
     //frames-from-start = Master OFN - master start 
     //slave OFN - frames-from-start = slave start
@@ -295,7 +308,7 @@ module CXSlaveSchedulerP{
         lastCycleStart,
         sched->cycleLength,
         0, 0);
-      printf_SCHED("req cw: %x p %u\r\n",
+      printf_SCHED("req cw: %x\r\n",
         error);
     }else{
       printf("req cycle sleep: %x\r\n",
@@ -304,7 +317,21 @@ module CXSlaveSchedulerP{
   }
   
   event void SlotNotify.lastSlot(){
-    post sleepToNextCycle();
+    if (!scheduleReceived){
+      missedCount++;
+      printf_SCHED("Missed %u\r\n", missedCount);
+      lastCycleStart += sched->cycleLength;
+      call ScheduleParams.setCycleStart(lastCycleStart);
+    }else{
+      scheduleReceived = FALSE;
+      missedCount = 0;
+    }
+    if (missedCount < SCHEDULE_LOSS_THRESHOLD){
+      post sleepToNextCycle();
+    }else{
+      //this should force the next RX to use MAX_WAIT.
+      state = S_SEARCH;
+    }
   }
 
   command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, 
