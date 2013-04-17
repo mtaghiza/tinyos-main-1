@@ -128,11 +128,11 @@ module CXLinkP { provides interface SplitControl;
       asyncHandled = FALSE;
     }
     switch(nextRequest -> requestType){
-      case RT_FRAMESHIFT:
-        signal CXRequestQueue.frameShiftHandled(requestError,
-          nextRequest -> layerCount - 1,
-          handledFrame, reqFrame);
-        break;
+//      case RT_FRAMESHIFT:
+//        signal CXRequestQueue.frameShiftHandled(requestError,
+//          nextRequest -> layerCount - 1,
+//          handledFrame, reqFrame);
+//        break;
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, 
           nextRequest -> layerCount - 1,
@@ -221,11 +221,11 @@ module CXLinkP { provides interface SplitControl;
 //            call FrameTimer.gett0() + call FrameTimer.getdt());
 //        }
         switch (nextRequest -> requestType){
-          case RT_FRAMESHIFT:
-            lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
-            requestError = SUCCESS;
-            post requestHandled();
-            break;
+//          case RT_FRAMESHIFT:
+//            lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
+//            requestError = SUCCESS;
+//            post requestHandled();
+//            break;
           case RT_SLEEP:
             if (LINK_DEBUG_WAKEUP){
               atomic P1OUT &= ~BIT1;
@@ -349,18 +349,34 @@ module CXLinkP { provides interface SplitControl;
         post requestHandled();
       }else{
         uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
+        uint32_t t0 = lastFrameTime;
         uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
-        //TODO: wakeup? check for t32kRef and correction
-        // provided: 
-        //  t0=t32kref dt=FRAMELEN_32K*frameOffset + correction
-        // not provided:
-        //  as above
-        call FrameTimer.startOneShotAt(lastFrameTime, dt);
+
+        //wakeup may adjust frame boundaries.
+        if (nextRequest->requestType == RT_WAKEUP &&
+            nextRequest->typeSpecific.wakeup.t32kRef != INVALID_TIMESTAMP){
+          // provided: 
+          //  t0=t32kref dt=FRAMELEN_32K*frameOffset + correction
+          uint32_t t0_s = nextRequest->typeSpecific.wakeup.t32kRef;
+          uint32_t dt_s = FRAMELEN_32K*nextRequest->frameOffset +
+            nextRequest->typeSpecific.wakeup.correction;
+          if ( (t0_s + dt_s ) < (t0 + dt - FRAMELEN_32K) 
+              || (t0_s + dt_s) > (t0 + dt + FRAMELEN_32K)){
+            printf("!too-big shift %lu (%lu sched)\r\n",
+              t0_s + dt_s,
+              t0 + dt);
+          }else{
+            t0 = t0_s;
+            dt = dt_s;
+          }
+        }
+
+        call FrameTimer.startOneShotAt(t0, dt);
         if (nextRequest->requestType != RT_MARK){
           printf_LINK("N: %x @%lu (%lu)\r\n", 
             nextRequest->requestType,
             targetFrame,
-            lastFrameTime+dt);
+            t0+dt);
         }
       }
     }
@@ -416,21 +432,21 @@ module CXLinkP { provides interface SplitControl;
     }
   }
 
-  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, int32_t frameShift){
-    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset,
-      RT_FRAMESHIFT, NULL);
-    if (r != NULL){
-      error_t error = validateRequest(r);
-      if (SUCCESS == error){
-        r->typeSpecific.frameShift.frameShift = frameShift;
-        enqueue(r);
-      }
-      return error;
-    } else{ 
-      return ENOMEM;
-    }
-  }
+//  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
+//      int32_t frameOffset, int32_t frameShift){
+//    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset,
+//      RT_FRAMESHIFT, NULL);
+//    if (r != NULL){
+//      error_t error = validateRequest(r);
+//      if (SUCCESS == error){
+//        r->typeSpecific.frameShift.frameShift = frameShift;
+//        enqueue(r);
+//      }
+//      return error;
+//    } else{ 
+//      return ENOMEM;
+//    }
+//  }
 
   command error_t CXRequestQueue.requestReceive(uint8_t layerCount,
       uint32_t baseFrame, int32_t frameOffset, 
