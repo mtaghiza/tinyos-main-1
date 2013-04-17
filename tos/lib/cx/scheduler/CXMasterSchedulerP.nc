@@ -61,7 +61,7 @@ module CXMasterSchedulerP{
 
   task void initTask(){
     uint32_t refFrame = call SubCXRQ.nextFrame(FALSE);
-    error_t error = call SubCXRQ.requestWakeup(0, refFrame, 1);
+    error_t error = call SubCXRQ.requestWakeup(0, refFrame, 1, 0, 0);
     if (SUCCESS == error){
       startDonePending = TRUE;
       //cool. we'll request sleep and next wakeup when the wakeup is handled
@@ -152,7 +152,8 @@ module CXMasterSchedulerP{
       //TODO: apply skew correction
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
-        sched->cycleLength);
+        sched->cycleLength,
+        0, 0);
       printf_SCHED("req cw: %x \r\n",
         error);
     }else{
@@ -292,8 +293,9 @@ module CXMasterSchedulerP{
   }
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset){
-    return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame, frameOffset);
+      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
+    return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame,
+    frameOffset, t32kRef, correction);
   }
 
   command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 

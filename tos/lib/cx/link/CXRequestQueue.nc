@@ -57,7 +57,8 @@ interface CXRequestQueue{
     uint32_t atFrame, uint32_t reqFrame);
 
   command error_t requestWakeup(uint8_t layerCount, 
-    uint32_t baseFrame, int32_t frameOffset);
+    uint32_t baseFrame, int32_t frameOffset,
+    uint32_t t32kRef, int32_t correction);
   event void wakeupHandled(error_t error, 
     uint8_t layerCount, 
     uint32_t atFrame, uint32_t reqFrame);

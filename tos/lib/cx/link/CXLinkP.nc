@@ -350,7 +350,11 @@ module CXLinkP { provides interface SplitControl;
       }else{
         uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
         uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
-  
+        //TODO: wakeup? check for t32kRef and correction
+        // provided: 
+        //  t0=t32kref dt=FRAMELEN_32K*frameOffset + correction
+        // not provided:
+        //  as above
         call FrameTimer.startOneShotAt(lastFrameTime, dt);
         if (nextRequest->requestType != RT_MARK){
           printf_LINK("N: %x @%lu (%lu)\r\n", 
@@ -515,7 +519,7 @@ module CXLinkP { provides interface SplitControl;
   uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){ }
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset){
+      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
     cx_request_t* r = newRequest(layerCount + 1, baseFrame, frameOffset, RT_WAKEUP,
       NULL);
     if (r != NULL){

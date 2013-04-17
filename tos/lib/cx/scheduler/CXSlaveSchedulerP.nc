@@ -255,9 +255,10 @@ module CXSlaveSchedulerP{
   }
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset){
+      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
     //probably won't have any calls to this coming in from above
-    return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame, frameOffset);
+    return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame,
+    frameOffset, t32kRef, correction);
   }
 
   event void SubCXRQ.wakeupHandled(error_t error, 
@@ -292,7 +293,8 @@ module CXSlaveSchedulerP{
       //TODO: apply skew correction
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
-        sched->cycleLength);
+        sched->cycleLength,
+        0, 0);
       printf_SCHED("req cw: %x p %u\r\n",
         error);
     }else{
@@ -339,8 +341,10 @@ module CXSlaveSchedulerP{
 
   event void SubSplitControl.startDone(error_t error){
     if (error == SUCCESS){
+      //TODO: why 2?
       error = call SubCXRQ.requestWakeup(0, 
-        call SubCXRQ.nextFrame(FALSE), 2);
+        call SubCXRQ.nextFrame(FALSE), 2,
+        0, 0);
 
     }
     if (error == SUCCESS){
