@@ -260,18 +260,5 @@ module CXNetworkP {
       uint32_t atFrame, uint32_t reqFrame){
     signal CXRequestQueue.wakeupHandled(error, layerCount-1, atFrame, reqFrame);
   }
-
-  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, int32_t frameShift){
-    return call SubCXRequestQueue.requestFrameShift(layerCount+1,baseFrame, frameOffset,
-      frameShift);
-  }
-
-  event void SubCXRequestQueue.frameShiftHandled(error_t error, 
-      uint8_t layerCount,
-      uint32_t atFrame, 
-      uint32_t reqFrame){
-    signal CXRequestQueue.frameShiftHandled(error, layerCount-1, atFrame, reqFrame);
-  }
   
 }

@@ -114,10 +114,6 @@ module TestP{
     started = FALSE;
   }
 
-  event void CXRequestQueue.frameShiftHandled(error_t error, 
-      uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_){ }
-
-
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame_, bool didReceive, 
       uint32_t microRef, uint32_t t32kRef, void* md, message_t* msg_){

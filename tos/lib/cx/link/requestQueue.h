@@ -35,8 +35,9 @@ typedef struct cx_request{
   message_t* msg;
   union{
     struct{
-      int32_t frameShift;
-    } frameShift;
+      uint32_t t32kRef;
+      int32_t correction;
+    } wakeup;
     struct{
       uint32_t duration;
     } rx;

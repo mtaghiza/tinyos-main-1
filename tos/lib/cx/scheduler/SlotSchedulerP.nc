@@ -383,23 +383,5 @@ module SlotSchedulerP{
     frameOffset, t32kRef, correction);
   }
   
-  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, 
-      uint32_t baseFrame, int32_t frameOffset, int32_t frameShift){
-    return call SubCXRQ.requestFrameShift(layerCount + 1, 
-      baseFrame, frameOffset, frameShift);
-  }
-  
-  event void SubCXRQ.frameShiftHandled(error_t error, 
-      uint8_t layerCount, 
-      uint32_t atFrame, uint32_t reqFrame){
-    if (layerCount){
-      signal CXRequestQueue.frameShiftHandled(error, 
-        layerCount - 1, 
-        atFrame, reqFrame);
-    }else{
-      printf("Unexpected frame shift handled\r\n");
-    }
-  }
-  
 }
 
