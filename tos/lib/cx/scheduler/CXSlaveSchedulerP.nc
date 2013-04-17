@@ -24,7 +24,7 @@ module CXSlaveSchedulerP{
 
   bool scheduleReceived = FALSE;
   uint8_t missedCount = 0;
-
+  am_addr_t masterId;
   
   enum { 
     S_OFF = 0x00,  
@@ -38,7 +38,7 @@ module CXSlaveSchedulerP{
   uint32_t lastCycleStart;
   
   uint32_t mySlot = INVALID_SLOT;
-  
+
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
     if (subNext == INVALID_FRAME){
@@ -216,8 +216,8 @@ module CXSlaveSchedulerP{
     call SkewCorrection.addMeasurement(
       call CXLinkPacket.getSource(schedMsg),
       sched->timestamp,
-      call CXNetworkPacket.getOriginFrameStart(schedMsg),
-      call CXNetworkPacket.getOriginFrameNumber(schedMsg));
+      call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+      call CXNetworkPacket.getOriginFrameStart(schedMsg));
   }
 
   task void claimSlotTask(){
@@ -242,6 +242,8 @@ module CXSlaveSchedulerP{
        - sched->cycleStartFrame);
     call ScheduleParams.setSchedule(sched);
     call ScheduleParams.setCycleStart(lastCycleStart);
+    masterId = call CXLinkPacket.getSource(msg);
+    call ScheduleParams.setMasterId(masterId);
     
     if (mySlot == INVALID_SLOT){
       post claimSlotTask();
@@ -265,10 +267,10 @@ module CXSlaveSchedulerP{
   }
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
+      int32_t frameOffset, uint32_t refFrame, uint32_t refTime, int32_t correction){
     //probably won't have any calls to this coming in from above
     return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame,
-    frameOffset, t32kRef, correction);
+    frameOffset, refFrame, refTime, correction);
   }
 
   event void SubCXRQ.wakeupHandled(error_t error, 
@@ -300,11 +302,13 @@ module CXSlaveSchedulerP{
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
     if (error == SUCCESS) {
-      //TODO: apply skew correction
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->cycleLength,
-        0, 0);
+        call SkewCorrection.referenceFrame(masterId),
+        call SkewCorrection.referenceTime(masterId),
+        call SkewCorrection.getCorrection(masterId,
+          sched->cycleLength));
       printf_SCHED("req cw: %x\r\n",
         error);
     }else{
@@ -350,7 +354,7 @@ module CXSlaveSchedulerP{
       //TODO: why 2?
       error = call SubCXRQ.requestWakeup(0, 
         call SubCXRQ.nextFrame(FALSE), 2,
-        0, 0);
+        INVALID_FRAME, INVALID_TIMESTAMP, 0);
 
     }
     if (error == SUCCESS){

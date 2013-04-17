@@ -48,8 +48,8 @@ module SkewCorrectionC {
   }
 
   command error_t SkewCorrection.addMeasurement(am_addr_t otherId, 
-      uint32_t otherTS, uint32_t myTS, 
-      uint32_t originFrame){
+      uint32_t otherTS, uint32_t originFrame, 
+      uint32_t myTS){
     if (otherId == TOS_NODE_ID || otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
       return SUCCESS;
     }else{
@@ -86,6 +86,24 @@ module SkewCorrectionC {
       lastCapture = myTS;
       lastOriginFrame = originFrame;
       return SUCCESS;
+    }
+  }
+
+  command uint32_t SkewCorrection.referenceFrame(am_addr_t otherId){
+    if (otherId == other && lastOriginFrame != INVALID_FRAME)
+    {
+      return lastOriginFrame;
+    }else{
+      return INVALID_FRAME;
+    }
+  }
+
+  command uint32_t SkewCorrection.referenceTime(am_addr_t otherId){
+    if (otherId == other && lastCapture != INVALID_TIMESTAMP)
+    {
+      return lastCapture;
+    }else{
+      return INVALID_TIMESTAMP;
     }
   }
 

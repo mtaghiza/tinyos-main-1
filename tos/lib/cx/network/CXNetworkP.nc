@@ -250,9 +250,9 @@ module CXNetworkP {
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset,
-    uint32_t t32kRef, int32_t correction){
+    uint32_t refFrame, uint32_t refTime, int32_t correction){
     return call SubCXRequestQueue.requestWakeup(layerCount+1,
-      baseFrame, frameOffset, t32kRef, correction);
+      baseFrame, frameOffset, refFrame, refTime, correction);
   }
 
   event void SubCXRequestQueue.wakeupHandled(error_t error, 

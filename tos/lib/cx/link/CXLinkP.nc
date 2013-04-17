@@ -354,10 +354,12 @@ module CXLinkP { provides interface SplitControl;
 
         //wakeup may adjust frame boundaries.
         if (nextRequest->requestType == RT_WAKEUP &&
-            nextRequest->typeSpecific.wakeup.t32kRef != INVALID_TIMESTAMP){
+            nextRequest->typeSpecific.wakeup.refTime != INVALID_TIMESTAMP){
+          //(baseFrame - refFrame)*FRAMELEN_32K + refTime = shifted
+          //   base frame time
           // provided: 
           //  t0=t32kref dt=FRAMELEN_32K*frameOffset + correction
-          uint32_t t0_s = nextRequest->typeSpecific.wakeup.t32kRef;
+          uint32_t t0_s = (nextRequest->baseFrame - nextRequest->typeSpecific.wakeup.refFrame)*FRAMELEN_32K + nextRequest->typeSpecific.wakeup.refTime; 
           uint32_t dt_s = FRAMELEN_32K*nextRequest->frameOffset +
             nextRequest->typeSpecific.wakeup.correction;
           printf_LINK("WU %lu (%lu)\r\n", t0_s + dt_s, t0+dt);
@@ -534,13 +536,14 @@ module CXLinkP { provides interface SplitControl;
   uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){ }
 
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
+      int32_t frameOffset, uint32_t refFrame, uint32_t refTime, int32_t correction){
     cx_request_t* r = newRequest(layerCount + 1, baseFrame, frameOffset, RT_WAKEUP,
       NULL);
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){
-        r->typeSpecific.wakeup.t32kRef = t32kRef;
+        r->typeSpecific.wakeup.refFrame = refFrame;
+        r->typeSpecific.wakeup.refTime = refTime;
         r->typeSpecific.wakeup.correction = correction;
         enqueue(r);
       } else{

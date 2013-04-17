@@ -35,7 +35,8 @@ typedef struct cx_request{
   message_t* msg;
   union{
     struct{
-      uint32_t t32kRef;
+      uint32_t refFrame;
+      uint32_t refTime;
       int32_t correction;
     } wakeup;
     struct{

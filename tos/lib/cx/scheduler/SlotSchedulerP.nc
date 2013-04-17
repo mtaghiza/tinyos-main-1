@@ -194,7 +194,10 @@ module SlotSchedulerP{
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->slotLength*(slotNumber(lastSlotStart)+1),
-        0, 0);
+        call SkewCorrection.referenceFrame(masterId),
+        call SkewCorrection.referenceTime(masterId),
+        call SkewCorrection.getCorrection(masterId,
+          sched->slotLength*(slotNumber(lastSlotStart)+1)));
       if (error == SUCCESS){
         wakeupPending ++; 
       }
@@ -378,9 +381,9 @@ module SlotSchedulerP{
 
   //N.B. skew correction is NOT applied here (will come from above if needed)
   command error_t CXRequestQueue.requestWakeup(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, uint32_t t32kRef, int32_t correction){
+      int32_t frameOffset, uint32_t refFrame, uint32_t refTime, int32_t correction){
     return call SubCXRQ.requestWakeup(layerCount + 1, baseFrame,
-    frameOffset, t32kRef, correction);
+    frameOffset, refFrame, refTime, correction);
   }
   
 }
