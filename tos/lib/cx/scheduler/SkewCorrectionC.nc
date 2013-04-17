@@ -48,7 +48,7 @@ module SkewCorrectionC {
   }
 
   command error_t SkewCorrection.addMeasurement(am_addr_t otherId, 
-      uint32_t otherTS, uint32_t originFrame, 
+      bool isSynched, uint32_t otherTS, uint32_t originFrame, 
       uint32_t myTS){
     if (otherId == TOS_NODE_ID || otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
       return SUCCESS;
@@ -62,7 +62,7 @@ module SkewCorrectionC {
         lastOriginFrame = 0;
         cumulativeTpf = 0;
       }
-      if (lastTimestamp != 0 && lastCapture != 0 && lastOriginFrame != 0){
+      if (lastTimestamp != 0 && lastCapture != 0 && lastOriginFrame != 0 && isSynched){
         int32_t remoteElapsed = otherTS - lastTimestamp;
         int32_t localElapsed = myTS - lastCapture;
         int32_t framesElapsed = originFrame - lastOriginFrame;

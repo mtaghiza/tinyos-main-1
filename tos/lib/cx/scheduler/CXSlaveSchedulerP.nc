@@ -21,7 +21,10 @@ module CXSlaveSchedulerP{
 
   cx_schedule_t* sched;
   bool startDonePending = FALSE;
-
+  
+  //were we synchronized at the time that the last schedule was
+  //received?
+  bool synchReceived;
   bool scheduleReceived = FALSE;
   uint8_t missedCount = 0;
   am_addr_t masterId;
@@ -211,10 +214,12 @@ module CXSlaveSchedulerP{
 
     printf("\r\n");
   }
+
   
   task void updateSkew(){
     call SkewCorrection.addMeasurement(
       call CXLinkPacket.getSource(schedMsg),
+      synchReceived,
       sched->timestamp,
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));
@@ -229,6 +234,7 @@ module CXSlaveSchedulerP{
   event message_t* ScheduleReceive.receive(message_t* msg, 
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
+    synchReceived = (state != S_SEARCH);
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;

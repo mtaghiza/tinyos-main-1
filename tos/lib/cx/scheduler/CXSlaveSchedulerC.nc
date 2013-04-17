@@ -48,7 +48,7 @@ configuration CXSlaveSchedulerC{
   SlotSchedulerP.CXNetworkPacket -> CXNetworkPacketC;
   
   //skew correction
-  #if CX_ENABLE_SKEW_CORRECTION
+  #if CX_ENABLE_SKEW_CORRECTION == 1
   components SkewCorrectionC;
   #else
   #warning "Disabled skew correction."
