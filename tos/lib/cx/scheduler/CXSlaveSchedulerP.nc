@@ -56,15 +56,13 @@ module CXSlaveSchedulerP{
     }else{
       if (lastCycleStart != INVALID_FRAME && sched != NULL){
         //we have a schedule, so we can figure out when our sleep/wake
-        //period is.
-//        uint32_t cycleSleep = lastCycleStart + (sched->slotLength)*(sched->activeSlots)+1;
+        //period is. cycleWake is the next wakeup, cycleSleep
+        //is the immediately-preceding sleep.
         uint32_t cycleWake = lastCycleStart;
         uint32_t cycleSleep;
         while (cycleWake < subNext){
           cycleWake += sched->cycleLength;
         }
-        //cycleWake is the NEXT wakeup, cycleSleep is the sleep which
-        //immediately precedes it.
         cycleSleep = cycleWake 
           - (sched->cycleLength) 
           + (sched->slotLength)*(sched->activeSlots)
@@ -73,7 +71,6 @@ module CXSlaveSchedulerP{
         //if subnext is during the sleep period, push it back to
         //1+wake
         if (subNext >= cycleSleep && subNext <= cycleWake){
-          printf("nfs %lu %lu %lu\r\n", cycleSleep, subNext, cycleWake);
           return cycleWake + 1;
         }else{
         //otherwise, it's good to go

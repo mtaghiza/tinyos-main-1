@@ -188,16 +188,20 @@ module SlotSchedulerP{
    **/
   task void wakeupNextSlot(){
     error_t error;
-    //TODO: apply skew correction
-    error = call SubCXRQ.requestWakeup(0,
-      lastCycleStart,
-      sched->slotLength*(slotNumber(lastSlotStart)+1),
-      0, 0);
-    if (error == SUCCESS){
-      wakeupPending ++; 
+    //if we're in the last slot, don't schedule the next wakeup.
+    if (slotNumber(lastSlotStart) < sched->activeSlots - 1){
+      //TODO: apply skew correction
+      error = call SubCXRQ.requestWakeup(0,
+        lastCycleStart,
+        sched->slotLength*(slotNumber(lastSlotStart)+1),
+        0, 0);
+      if (error == SUCCESS){
+        wakeupPending ++; 
+      }
+      printf_SCHED("req sw: %lu %x p %u\r\n",
+        lastCycleStart + sched->slotLength*(slotNumber(lastSlotStart)+1),
+        error, wakeupPending);
     }
-    printf_SCHED("req sw: %x p %u\r\n",
-      error, wakeupPending);
   }
 
   /**
