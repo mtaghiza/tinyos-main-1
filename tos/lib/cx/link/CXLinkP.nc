@@ -360,11 +360,10 @@ module CXLinkP { provides interface SplitControl;
           uint32_t t0_s = nextRequest->typeSpecific.wakeup.t32kRef;
           uint32_t dt_s = FRAMELEN_32K*nextRequest->frameOffset +
             nextRequest->typeSpecific.wakeup.correction;
+          printf_LINK("WU %lu (%lu)\r\n", t0_s + dt_s, t0+dt);
           if ( (t0_s + dt_s ) < (t0 + dt - FRAMELEN_32K) 
               || (t0_s + dt_s) > (t0 + dt + FRAMELEN_32K)){
-            printf("!too-big shift %lu (%lu sched)\r\n",
-              t0_s + dt_s,
-              t0 + dt);
+            printf("!too-big shift\r\n");
           }else{
             t0 = t0_s;
             dt = dt_s;
@@ -541,6 +540,8 @@ module CXLinkP { provides interface SplitControl;
     if (r != NULL){
       error_t error = validateRequest(r);
       if (SUCCESS == error){
+        r->typeSpecific.wakeup.t32kRef = t32kRef;
+        r->typeSpecific.wakeup.correction = correction;
         enqueue(r);
       } else{
         call Pool.put(r);
