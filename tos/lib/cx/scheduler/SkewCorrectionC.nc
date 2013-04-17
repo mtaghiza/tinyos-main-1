@@ -1,6 +1,7 @@
 
  #include "fixedPointUtils.h"
  #include "CXSchedulerDebug.h"
+ #include "CXNetwork.h"
 module SkewCorrectionC {
   provides interface SkewCorrection;
 } implementation {
@@ -49,7 +50,7 @@ module SkewCorrectionC {
   command error_t SkewCorrection.addMeasurement(am_addr_t otherId, 
       uint32_t otherTS, uint32_t myTS, 
       uint32_t originFrame){
-    if (otherId == TOS_NODE_ID){
+    if (otherId == TOS_NODE_ID || otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
       return SUCCESS;
     }else{
       if (otherId != other){

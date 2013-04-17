@@ -83,24 +83,34 @@ module CXNetworkP {
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
     if (SUCCESS != error){
-      printf("nSCXRQ.sh: %x\r\n", error);
-      if (layerCount){
-        signal CXRequestQueue.sendHandled(error, 
-          layerCount-1,
-          atFrame, reqFrame, microRef, t32kRef, 
-          nmd->next,
-          msg);
-        call Pool.put(nmd);
-      }else{
-        //TODO: check TTL-- if it's still hot, try to send it again.
-        signal CXRequestQueue.receiveHandled(error,
-          nmd->layerCount - 1,
-          nmd->atFrame, nmd->reqFrame,
-          TRUE, nmd->microRef, nmd->t32kRef,
-          nmd->next, msg);
-        call Pool.put(nmd);
+      printf("n.sh: %x\r\n", error);
+    }
+//      if (layerCount){
+//        signal CXRequestQueue.sendHandled(error, 
+//          layerCount-1,
+//          atFrame, reqFrame, microRef, t32kRef, 
+//          nmd->next,
+//          msg);
+//        call Pool.put(nmd);
+//      }else{
+//        //TODO: check TTL-- if it's still hot, try to send it again.
+//        signal CXRequestQueue.receiveHandled(error,
+//          nmd->layerCount - 1,
+//          nmd->atFrame, nmd->reqFrame,
+//          TRUE, nmd->microRef, nmd->t32kRef,
+//          nmd->next, msg);
+//        call Pool.put(nmd);
+//      }
+//    } 
+
+    if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
+      //if we were planning to timestamp it, but there was an error,
+      //mark the timestamp as invalid: it's too messy to try to fix
+      //this (has to be matched up with hop-count/origin frame, etc)
+      if (error != SUCCESS && nmd->tsLoc != NULL){
+        *(nmd->tsLoc) = INVALID_TIMESTAMP;
+        nmd -> tsLoc = NULL;
       }
-    } else if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
       //OK, so we obviously forwarded it last time, so let's do it
       //again. Use last TX as ref. 
       //now the frame # stuff is somewhat ambiguous: we have
@@ -118,9 +128,23 @@ module CXNetworkP {
         NULL,
         nmd, msg);
       if (error != SUCCESS){
-        //TODO: need to signal relevant *handled event here so that
+        //signal relevant *handled event here so that
         //upper layer isn't left hanging.
         printf("SCXRQ.s: %x\r\n", error);
+        if (layerCount > 0){
+          signal CXRequestQueue.sendHandled(error, 
+            layerCount - 1,
+            atFrame, reqFrame, microRef, t32kRef, 
+            nmd->next, msg);
+        } else {
+          signal CXRequestQueue.receiveHandled(error,
+            nmd -> layerCount - 1,
+            nmd -> atFrame, nmd -> reqFrame,
+            TRUE,  //we are forwarding, so we must have received
+            nmd -> microRef, nmd -> t32kRef,
+            nmd -> next,
+            msg);
+        }
         call Pool.put(nmd);
       }
     } else{
@@ -188,6 +212,7 @@ module CXNetworkP {
       nmd -> layerCount = layerCount;
       nmd -> next = md; 
       nmd -> reqFrame = baseFrame + frameOffset;
+      nmd -> tsLoc = tsLoc;
       //at this point, a new sequence number is assigned. We don't
       //want to call this lower (because then we will mess up SN's for
       //forwarded packets).
@@ -197,7 +222,7 @@ module CXNetworkP {
           nmd->layerCount + 1, 
           baseFrame, frameOffset, 
           useMicro, microRef, 
-          tsLoc, 
+          nmd->tsLoc, 
           nmd, msg);
       }else{
         call Pool.put(nmd);

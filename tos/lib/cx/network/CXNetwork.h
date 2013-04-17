@@ -12,6 +12,7 @@ typedef struct cx_network_metadata {
   uint32_t reqFrame;
   uint32_t microRef;
   uint32_t t32kRef;
+  nx_uint32_t* tsLoc;
   void* next;
 } cx_network_metadata_t;
 
@@ -29,5 +30,7 @@ typedef struct cx_network_metadata {
 #ifndef CX_SELF_RETX
 #define CX_SELF_RETX 0
 #endif
+
+#define INVALID_TIMESTAMP 0xFFFFFFFF
 
 #endif
