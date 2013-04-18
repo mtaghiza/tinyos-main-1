@@ -2,37 +2,25 @@
  #include "fixedPointUtils.h"
  #include "CXSchedulerDebug.h"
  #include "CXNetwork.h"
+ #include "SkewCorrection.h"
 module SkewCorrectionC {
   provides interface SkewCorrection;
 } implementation {
+
   am_addr_t other = AM_BROADCAST_ADDR;
 
   uint32_t lastTimestamp = 0;
   uint32_t lastCapture = 0;
   uint32_t lastOriginFrame = 0;
   int32_t cumulativeTpf = 0;
-  #ifndef TPF_DECIMAL_PLACES 
-  #define TPF_DECIMAL_PLACES 16
-  #endif
-  
-  //alpha is also fixed point.
-  #define FP_1 (1L << TPF_DECIMAL_PLACES)
-
-  #ifndef SKEW_EWMA_ALPHA_INVERSE
-  #define SKEW_EWMA_ALPHA_INVERSE 2
-  #endif
 
   int32_t alpha = FP_1 / SKEW_EWMA_ALPHA_INVERSE;
-
-  #ifndef TPF_DECIMAL_PLACES 
-  #define TPF_DECIMAL_PLACES 16
-  #endif
-
-  #define sfpMult(a, b) fpMult(a, b, TPF_DECIMAL_PLACES)
-  #define stoFP(a) toFP(a, TPF_DECIMAL_PLACES)
-  #define stoInt(a) toInt(a, TPF_DECIMAL_PLACES)
   int32_t lastDelta;
   uint32_t lastFramesElapsed;
+
+  uint32_t selfReferenceFrame = INVALID_TIMESTAMP;
+  uint32_t selfReferenceTime = INVALID_FRAME;
+
   task void printResults(){
     printf_SKEW(" Cumulative TPF: 0x%lx last delta: %li over %lu\r\n", 
       cumulativeTpf, lastDelta, lastFramesElapsed);
@@ -48,10 +36,15 @@ module SkewCorrectionC {
       stoInt(cumulativeTpf*1000));
   }
 
+
   command error_t SkewCorrection.addMeasurement(am_addr_t otherId, 
       bool isSynched, uint32_t otherTS, uint32_t originFrame, 
       uint32_t myTS){
-    if (otherId == TOS_NODE_ID || otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
+    if (otherId == TOS_NODE_ID){
+      selfReferenceTime = otherTS;
+      selfReferenceFrame = originFrame;
+      return SUCCESS;
+    }else if (otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
       return SUCCESS;
     }else{
       if (otherId != other){
@@ -97,7 +90,9 @@ module SkewCorrectionC {
     if (otherId == other && lastOriginFrame != INVALID_FRAME)
     {
       return lastOriginFrame;
-    }else{
+    }else if (otherId == TOS_NODE_ID){
+      return selfReferenceFrame;
+    } else {
       return INVALID_FRAME;
     }
   }
@@ -106,6 +101,8 @@ module SkewCorrectionC {
     if (otherId == other && lastCapture != INVALID_TIMESTAMP)
     {
       return lastCapture;
+    } else if (otherId == TOS_NODE_ID){
+      return selfReferenceTime;
     }else{
       return INVALID_TIMESTAMP;
     }
