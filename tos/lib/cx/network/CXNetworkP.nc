@@ -86,6 +86,10 @@ module CXNetworkP {
     if (SUCCESS != error){
       printf("n.sh: %x\r\n", error);
     }
+    if (SUCCESS == error && call CXNetworkPacket.getHops(msg) == 1){
+      call CXNetworkPacket.setOriginFrameStart(msg,
+        t32kRef);
+    }
 //      if (layerCount){
 //        signal CXRequestQueue.sendHandled(error, 
 //          layerCount-1,
@@ -190,6 +194,8 @@ module CXNetworkP {
         nmd -> next = md; 
         nmd -> layerCount = layerCount;
         nmd -> reqFrame = baseFrame + frameOffset;
+        call CXNetworkPacket.setOriginFrameNumber(msg, 
+          INVALID_FRAME);
         error = call SubCXRequestQueue.requestReceive(nmd->layerCount+1, baseFrame, frameOffset,
           useMicro, microRef, duration, nmd, msg);
         if (error != SUCCESS){
@@ -219,6 +225,8 @@ module CXNetworkP {
       //forwarded packets).
       call CXNetworkPacket.init(msg);
       if (call CXNetworkPacket.readyNextHop(msg)){
+        call CXNetworkPacket.setOriginFrameNumber(msg, 
+          baseFrame + frameOffset);
         return call SubCXRequestQueue.requestSend(
           nmd->layerCount + 1, 
           baseFrame, frameOffset, 
@@ -226,6 +234,8 @@ module CXNetworkP {
           nmd->tsLoc, 
           nmd, msg);
       }else{
+        call CXNetworkPacket.setOriginFrameNumber(msg,
+          INVALID_FRAME);
         call Pool.put(nmd);
         //TTL was provided as 0.
         return EINVAL;

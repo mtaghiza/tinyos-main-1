@@ -52,6 +52,7 @@ configuration CXMasterSchedulerC{
   components DummySkewCorrectionC as SkewCorrectionC;
   #endif
   SlotSchedulerP.SkewCorrection -> SkewCorrectionC;
+  CXMasterSchedulerP.SkewCorrection -> SkewCorrectionC;
 
   //Role scheduler internals
   components MainC;

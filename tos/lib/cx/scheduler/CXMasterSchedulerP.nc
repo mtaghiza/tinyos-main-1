@@ -21,6 +21,8 @@ module CXMasterSchedulerP{
 
   uses interface SlotNotify;
   uses interface ScheduleParams;
+
+  uses interface SkewCorrection;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -62,7 +64,10 @@ module CXMasterSchedulerP{
   task void initTask(){
     uint32_t refFrame = call SubCXRQ.nextFrame(FALSE);
     error_t error = call SubCXRQ.requestWakeup(0, refFrame, 1,
-    INVALID_FRAME, INVALID_TIMESTAMP, 0);
+      call SkewCorrection.referenceFrame(call CXLinkPacket.addr()),
+      call SkewCorrection.referenceTime(call CXLinkPacket.addr()), 
+      0);
+
     if (SUCCESS == error){
       startDonePending = TRUE;
       //cool. we'll request sleep and next wakeup when the wakeup is handled
@@ -154,7 +159,9 @@ module CXMasterSchedulerP{
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->cycleLength,
-        INVALID_FRAME, INVALID_TIMESTAMP, 0);
+        call SkewCorrection.referenceFrame(call CXLinkPacket.addr()),
+        call SkewCorrection.referenceTime(call CXLinkPacket.addr()), 
+        0);
       printf_SCHED("req cw: %x \r\n",
         error);
     }else{
@@ -266,7 +273,16 @@ module CXMasterSchedulerP{
         md, msg);
     }else{
       if (SUCCESS == error){
-        printf("TX sched\r\n");
+        printf("TX sched of %lu ts %lu ofs%lu\r\n",
+          call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+          sched->timestamp,
+          call CXNetworkPacket.getOriginFrameStart(schedMsg));
+        call SkewCorrection.addMeasurement(
+          call CXLinkPacket.addr(),
+          TRUE,
+          call CXNetworkPacket.getOriginFrameStart(schedMsg),
+          call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+          call CXNetworkPacket.getOriginFrameStart(schedMsg));
         //cool. schedule sent.
       }else{
         printf("SH %x\r\n", error);
