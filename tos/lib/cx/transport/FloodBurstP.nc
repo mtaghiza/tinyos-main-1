@@ -54,8 +54,4 @@ module FloodBurstP {
     uint8_t layerCount, 
     uint32_t atFrame, uint32_t reqFrame){
   }
-  event void CXRequestQueue.frameShiftHandled(error_t error,
-    uint8_t layerCount,
-    uint32_t atFrame, uint32_t reqFrame){
-  }
 }

@@ -62,18 +62,11 @@ module CXTransportDispatchP {
   }
 
   command error_t CXRequestQueue.requestWakeup[uint8_t tp](uint8_t layerCount, 
-      uint32_t baseFrame, int32_t frameOffset){
+      uint32_t baseFrame, int32_t frameOffset,
+      uint32_t refFrame, uint32_t refTime, int32_t correction){
     return call SubCXRQ.requestWakeup(layerCount, baseFrame,
-      frameOffset);
+      frameOffset, refFrame, refTime, correction);
   }
-
-  command error_t CXRequestQueue.requestFrameShift[uint8_t tp](uint8_t layerCount,
-      uint32_t baseFrame, int32_t frameOffset, 
-      int32_t frameShift){
-    return call SubCXRQ.requestFrameShift(layerCount, baseFrame,
-      frameOffset, frameShift);
-  }
-
 
   event void SubCXRQ.receiveHandled(error_t error, 
       uint8_t layerCount, 
@@ -102,9 +95,6 @@ module CXTransportDispatchP {
     uint8_t layerCount, 
     uint32_t atFrame, uint32_t reqFrame){}
 
-  event void SubCXRQ.frameShiftHandled(error_t error,
-    uint8_t layerCount,
-    uint32_t atFrame, uint32_t reqFrame){}
 
   //SubCXRQ:
   // - txHandled: dispatch based on transport protocol

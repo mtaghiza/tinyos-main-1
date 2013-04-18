@@ -2,6 +2,7 @@
  #include "CXSchedulerDebug.h"
  #include "fixedPointUtils.h"
  #include "CXLink.h"
+ #include "CXNetwork.h"
 module CXSlaveSchedulerP{
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;

@@ -1,6 +1,7 @@
 
  #include "CXScheduler.h"
  #include "CXSchedulerDebug.h"
+ #include "CXLink.h"
 module CXMasterSchedulerP{
   provides interface SplitControl;
   provides interface CXRequestQueue;

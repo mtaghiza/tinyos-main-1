@@ -1,3 +1,5 @@
+
+ #include "CXLink.h"
 module CXNetworkP {
   uses interface CXLinkPacket;
   uses interface CXNetworkPacket;
