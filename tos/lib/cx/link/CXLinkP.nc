@@ -362,7 +362,7 @@ module CXLinkP { provides interface SplitControl;
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
           uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
             + rft + c - PREP_TIME_32KHZ;
-          printf("WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
+          printf_SKEW("WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
             lastFrameTime, newLft,
             rft, rfn, lastFrameNum);
           lastFrameTime = newLft;

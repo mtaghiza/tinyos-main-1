@@ -274,7 +274,7 @@ module CXMasterSchedulerP{
         md, msg);
     }else{
       if (SUCCESS == error){
-        printf("TX sched of %lu ts %lu ofs%lu\r\n",
+        printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
           call CXNetworkPacket.getOriginFrameNumber(schedMsg),
           sched->timestamp,
           call CXNetworkPacket.getOriginFrameStart(schedMsg));
