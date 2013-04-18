@@ -75,7 +75,6 @@ module HplMsp430Rf1aInterruptP {
      * not made available */
     if (coreInterrupt) {
 
-#if 0
       /* @TODO@ I have observed a case where IFG5 negative edge correctly
        * received an interrupt, but the state was not reflected in
        * RF1AIN. Ignoring the interrupt resulted in lost data.  The
@@ -83,8 +82,10 @@ module HplMsp430Rf1aInterruptP {
 
       /* ERRATA RF1A5: Interrupt may be generated even though FIFO
        * condition does not hold.  Must validate against RF1AIN. */
+      //n.b. RF1AIV contents are such that (IV>>1) -1 = bit position
+      //of matching IFG. is this a common thing?
       uint16_t ifg_bit = 1 << ((coreInterrupt >> 1) - 1);
-//      RF1AIFG &= ~ ifg_bit;
+#if 0
       if ((RF1AIV_RFIFG3 <= coreInterrupt)
           && (coreInterrupt <= RF1AIV_RFIFG10)
           && (! (ifg_bit & RF1AIN))) {
@@ -100,7 +101,7 @@ module HplMsp430Rf1aInterruptP {
           signal Rf1aInterrupts.rxFifoAvailable[client]();
           break;
         case RF1AIV_RFIFG5:
-          signal Rf1aInterrupts.txFifoAvailable[client]();
+          signal Rf1aInterrupts.txFifoAvailable[client](!(ifg_bit&RF1AIN));
           break;
         case RF1AIV_RFIFG7:
           signal Rf1aInterrupts.rxOverflow[client]();
@@ -122,7 +123,8 @@ module HplMsp430Rf1aInterruptP {
   }
 
   default async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] () { }
-  default async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] () { }
+  default async event void Rf1aInterrupts.txFifoAvailable[uint8_t
+  client] (bool errataApplies) { }
   default async event void Rf1aInterrupts.rxOverflow[uint8_t client] () { }
   default async event void Rf1aInterrupts.txUnderflow[uint8_t client] () { }
   default async event void Rf1aInterrupts.syncWordEvent[uint8_t client] () { }

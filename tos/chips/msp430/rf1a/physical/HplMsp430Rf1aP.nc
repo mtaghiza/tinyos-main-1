@@ -1475,8 +1475,16 @@ generic module HplMsp430Rf1aP () @safe() {
     printf("!TXFA %x %u remain %u th %x\r\n", txb, 0x7F&txb, txr, th);
   }
 
-  async event void Rf1aInterrupts.txFifoAvailable[uint8_t client] ()
+  task void reportErrata(){
+    printf("!E\r\n");
+  }
+
+  async event void Rf1aInterrupts.txFifoAvailable[uint8_t client]
+  (bool errataApplies)
   {
+    if (errataApplies){
+      post reportErrata();
+    }
 //    printf("txf\r\n");
     if (TX_S_inactive != tx_state) {
       uint8_t txbytes = call Rf1aIf.readRegister(TXBYTES);

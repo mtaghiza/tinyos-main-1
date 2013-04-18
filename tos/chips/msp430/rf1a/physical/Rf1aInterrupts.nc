@@ -12,8 +12,17 @@ interface Rf1aInterrupts {
   /** TX FIFO below TX FIFO threshold (RFIFG5 negative edge).
    *
    * This is a signal that the transmitter is going to need more data
-   * soon. */
-  async event void txFifoAvailable ();
+   * soon. 
+   * @param errataApplies: TRUE if RF1AIN value is not consistent with
+   * this interrupt being raised. References erratum RF1A5. Peter
+   * Bigot's original comments in HplMsp430Rf1aInterruptP indicate
+   * that fully implementing the workaround to this erratum resulted
+   * in some interrupts being discarded.  That being said, I'm seeing
+   * issues with the fifoAvailable interrupt being raised when the
+   * fifo is completely full, so maybe there's some use to it after
+   * all.
+   */
+  async event void txFifoAvailable (bool errataApplies);
 
   /** RX FIFO overflowed (RFIFG7 positive edge).
    *
