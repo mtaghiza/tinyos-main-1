@@ -136,6 +136,7 @@ module CXMasterSchedulerP{
           printf("Sched.reqS %x\r\n", error);
         }
 
+        call ScheduleParams.setMasterId(TOS_NODE_ID);
         call ScheduleParams.setSchedule(sched);
         call ScheduleParams.setCycleStart(lastCycleStart);
         //TODO: this should be set somewhat dynamically.
