@@ -235,6 +235,9 @@ module CXSlaveSchedulerP{
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
     synchReceived = (state != S_SEARCH);
+    if (!synchReceived){
+      printf_SCHED("Synch gained\r\n");
+    }
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
     state = S_SYNCHED;
@@ -338,6 +341,7 @@ module CXSlaveSchedulerP{
     }else{
       //this should force the next RX to use MAX_WAIT.
       state = S_SEARCH;
+      printf_SCHED("synch lost\r\n");
     }
   }
 

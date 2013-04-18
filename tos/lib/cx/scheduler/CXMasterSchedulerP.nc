@@ -126,6 +126,7 @@ module CXMasterSchedulerP{
           FALSE, 0,
           &(sched->timestamp),
           NULL, schedMsg);
+//        printf("m %p s %p\r\n", schedMsg, &(sched->timestamp));
         if (error != SUCCESS){
           printf("Sched.reqS %x\r\n", error);
         }

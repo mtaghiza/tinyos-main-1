@@ -32,9 +32,10 @@ module SkewCorrectionC {
   #define stoFP(a) toFP(a, TPF_DECIMAL_PLACES)
   #define stoInt(a) toInt(a, TPF_DECIMAL_PLACES)
   int32_t lastDelta;
+  uint32_t lastFramesElapsed;
   task void printResults(){
-    printf_SKEW(" Cumulative TPF: 0x%lx last delta: %li\r\n", 
-      cumulativeTpf, lastDelta);
+    printf_SKEW(" Cumulative TPF: 0x%lx last delta: %li over %lu\r\n", 
+      cumulativeTpf, lastDelta, lastFramesElapsed);
     printf_SKEW("  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
       stoInt(cumulativeTpf*50),
       stoInt(cumulativeTpf*51),
@@ -80,6 +81,7 @@ module SkewCorrectionC {
           + sfpMult(tpf, alpha);
         //TODO: DEBUG remove
         lastDelta = delta;
+        lastFramesElapsed = framesElapsed;
         post printResults();
       }
       lastTimestamp = otherTS;

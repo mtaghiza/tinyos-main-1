@@ -348,52 +348,37 @@ module CXLinkP { provides interface SplitControl;
         }
         post requestHandled();
       }else{
-        uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
-        uint32_t t0 = lastFrameTime;
-        uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
+        //OK, a cleaner way to handle this is to adjust lastFrameTime
+        //to be consistent with the skew correction etc.
+        /**
+        lft = (lfn - rfn)*FRAMELEN_32K + rft + correction - prep
 
-        //wakeup may adjust frame boundaries.
+        **/
+
         if (nextRequest->requestType == RT_WAKEUP &&
             nextRequest->typeSpecific.wakeup.refTime != INVALID_TIMESTAMP){
-          //(baseFrame - refFrame)*FRAMELEN_32K + refTime = shifted
-          //   base frame time
-          // provided: 
-          //  t0=t32kref dt=FRAMELEN_32K*frameOffset + correction
-          uint32_t t0_s = (nextRequest->baseFrame - nextRequest->typeSpecific.wakeup.refFrame)*FRAMELEN_32K + nextRequest->typeSpecific.wakeup.refTime; 
-          uint32_t dt_s = FRAMELEN_32K*nextRequest->frameOffset +
-            nextRequest->typeSpecific.wakeup.correction;
-          //account for setup time
-          dt_s -= PREP_TIME_32KHZ;
-          printf_LINK("WU\r\n");
-          printf_LINK(" rf %lu rt %lu c %li\r\n", 
-            nextRequest->typeSpecific.wakeup.refFrame,
-            nextRequest->typeSpecific.wakeup.refTime,
-            nextRequest->typeSpecific.wakeup.correction);
-          printf_LINK(" bf %lu fo %lu\r\n",
-            nextRequest->baseFrame,
-            nextRequest->frameOffset);
-          printf_LINK(" lf %lu lft %lu\r\n",
-            lastFrameNum,
-            lastFrameTime);
-          printf_LINK(" sched %lu (%lu)\r\n",
-            t0_s + dt_s,
-            t0 + dt);
-
-          if ( (t0_s + dt_s ) < (t0 + dt - FRAMELEN_32K) 
-              || (t0_s + dt_s) > (t0 + dt + FRAMELEN_32K)){
-            printf("!too-big shift\r\n");
-          }else{
-            t0 = t0_s;
-            dt = dt_s;
-          }
+          uint32_t rfn = nextRequest->typeSpecific.wakeup.refFrame;
+          uint32_t rft = nextRequest->typeSpecific.wakeup.refTime;
+          int32_t c = nextRequest->typeSpecific.wakeup.correction;
+          uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
+            + rft + c - PREP_TIME_32KHZ;
+          printf("WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
+            lastFrameTime, newLft,
+            rft, rfn, lastFrameNum);
+          lastFrameTime = newLft;
         }
-
-        call FrameTimer.startOneShotAt(t0, dt);
-        if (nextRequest->requestType != RT_MARK){
-          printf_LINK("N: %x @%lu (%lu)\r\n", 
-            nextRequest->requestType,
-            targetFrame,
-            t0+dt);
+        {
+          uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
+          uint32_t t0 = lastFrameTime;
+          uint32_t dt = (targetFrame - lastFrameNum)*FRAMELEN_32K;
+  
+          call FrameTimer.startOneShotAt(t0, dt);
+          if (nextRequest->requestType != RT_MARK){
+            printf_LINK("N: %x @%lu (%lu)\r\n", 
+              nextRequest->requestType,
+              targetFrame,
+              t0+dt);
+          }
         }
       }
     }
@@ -663,7 +648,7 @@ module CXLinkP { provides interface SplitControl;
     }
 
     if ( t0 + dt < now + MIN_STROBE_CLEARANCE ){
-      printf("%lu + %lu = %lu < %lu + %lu = %lu\r\n",
+      printf("!%lu + %lu = %lu < %lu + %lu = %lu\r\n",
         t0, dt, t0+dt, now, MIN_STROBE_CLEARANCE,
         now+MIN_STROBE_CLEARANCE);
       //not enough time, so fail.
