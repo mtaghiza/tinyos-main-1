@@ -67,8 +67,10 @@ module SkewCorrectionC {
         int32_t remoteElapsed = otherTS - lastTimestamp;
         int32_t localElapsed = myTS - lastCapture;
         int32_t framesElapsed = originFrame - lastOriginFrame;
-        //positive = we are slow = require shift forward
-        int32_t delta = remoteElapsed - localElapsed;
+        //positive = we are fast = require shift back = add to wakeup
+        //time. Otherwise, we need to negate the result before
+        //applying it.
+        int32_t delta = localElapsed - remoteElapsed;
         //this is fixed point, TPF_DECIMAL_PLACES bits after decimal
         int32_t deltaFP = (delta << TPF_DECIMAL_PLACES);
   
