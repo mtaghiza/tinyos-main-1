@@ -56,6 +56,24 @@ module HplMsp430Rf1aInterruptP {
   {
     return (iv >> 1) - 1;
   }
+  
+//  norace bool locked = FALSE;
+//  norace uint16_t ci;
+//  norace uint16_t ri;
+//  norace uint16_t ifg;
+//  norace uint16_t es;
+//  task void reportErrata(){
+//    printf("ci: %x ri %x ifg %x es %x\r\n", ci, ri, ifg, es);
+//    atomic locked = FALSE;
+//  }
+
+  bool validateIfg(uint16_t coreInterrupt){
+    uint16_t ifg_bit = 1 << ((coreInterrupt >>1) - 1);
+    //ifg_bit&RF1AIES: bit is set for FE interrupt, clear for RE
+    //edge XOR signal: set ^ clear: valid FE.  clear^set: valid RE
+    //ifg_bit & valid: restrict to just this interrupt.
+    return ifg_bit & ((ifg_bit & RF1AIES) ^ RF1AIN);
+  }
 
   TOSH_SIGNAL(CC1101_VECTOR) {
     uint16_t coreInterrupt = RF1AIV;
@@ -75,24 +93,6 @@ module HplMsp430Rf1aInterruptP {
      * not made available */
     if (coreInterrupt) {
 
-      /* @TODO@ I have observed a case where IFG5 negative edge correctly
-       * received an interrupt, but the state was not reflected in
-       * RF1AIN. Ignoring the interrupt resulted in lost data.  The
-       * errata may be erroneous. */
-
-      /* ERRATA RF1A5: Interrupt may be generated even though FIFO
-       * condition does not hold.  Must validate against RF1AIN. */
-      //n.b. RF1AIV contents are such that (IV>>1) -1 = bit position
-      //of matching IFG. is this a common thing?
-      uint16_t ifg_bit = 1 << ((coreInterrupt >> 1) - 1);
-#if 0
-      if ((RF1AIV_RFIFG3 <= coreInterrupt)
-          && (coreInterrupt <= RF1AIV_RFIFG10)
-          && (! (ifg_bit & RF1AIN))) {
-        return;
-      }
-#endif
-      
       switch (coreInterrupt) {
         default:
           signal Rf1aInterrupts.coreInterrupt[client](coreInterrupt);
@@ -101,7 +101,18 @@ module HplMsp430Rf1aInterruptP {
           signal Rf1aInterrupts.rxFifoAvailable[client]();
           break;
         case RF1AIV_RFIFG5:
-          signal Rf1aInterrupts.txFifoAvailable[client](!(ifg_bit&RF1AIN));
+          {
+            bool valid = validateIfg(coreInterrupt);
+//            if (!locked && ! valid){
+//              locked = TRUE;
+//              ci = coreInterrupt;
+//              ri = RF1AIN;
+//              ifg = RF1AIFG;
+//              es = RF1AIES;
+////              post reportErrata();
+//            }
+            signal Rf1aInterrupts.txFifoAvailable[client](!valid);
+          }
           break;
         case RF1AIV_RFIFG7:
           signal Rf1aInterrupts.rxOverflow[client]();

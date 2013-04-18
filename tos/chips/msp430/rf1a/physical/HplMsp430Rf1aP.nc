@@ -1483,7 +1483,8 @@ generic module HplMsp430Rf1aP () @safe() {
   (bool errataApplies)
   {
     if (errataApplies){
-      post reportErrata();
+//      post reportErrata();
+      return;
     }
 //    printf("txf\r\n");
     if (TX_S_inactive != tx_state) {
