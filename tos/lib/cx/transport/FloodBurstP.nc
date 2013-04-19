@@ -5,7 +5,9 @@ module FloodBurstP {
   uses interface CXTransportPacket;
   uses interface Packet;
 } implementation {
-  //send: if next tx frame is non-0, schedule TX and return result.
+  message_t msg_internal;
+  message_t* msg = &msg_internal;
+  //send: if next tx frame is valid, schedule TX and return result.
   //otherwise, return ERETRY
 
   command error_t Send.send(message_t* msg, uint8_t len){
@@ -35,6 +37,7 @@ module FloodBurstP {
       void* md, message_t* msg){
     //TODO: received? signal Receive.received with the relevant
     //  details, request next RX
+    //not? just request next
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
@@ -44,6 +47,8 @@ module FloodBurstP {
       void* md, message_t* msg){
     //TODO: signal SendDone
   }
+
+  //TODO: at start: request rx
 
   //unused events below
   event void CXRequestQueue.sleepHandled(error_t error, 
