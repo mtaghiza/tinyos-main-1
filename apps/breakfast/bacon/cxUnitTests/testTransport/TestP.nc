@@ -90,8 +90,10 @@ module TestP{
 
   task void send(){
   }
+
   event void Send.sendDone(message_t* msg_, error_t error){
   }
+
   event message_t* Receive.receive(message_t* msg_, 
       void* payload, uint8_t len){
     return msg;

@@ -1,9 +1,12 @@
+
+ #include "CXTransport.h"
+ #include "CXScheduler.h"
 module CXTransportDispatchP {
   provides interface CXRequestQueue[uint8_t tp];
   uses interface CXRequestQueue as SubCXRQ;
 
   provides interface SplitControl;
-  provides interface SplitControl[uint8_t tp] as SubProtocolSplitControl;
+  provides interface SplitControl as SubProtocolSplitControl[uint8_t tp];
   uses interface SplitControl as SubSplitControl;
 
   uses interface CXTransportPacket;
@@ -46,7 +49,8 @@ module CXTransportDispatchP {
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
-
+    return call SubCXRQ.requestReceive(layerCount, baseFrame, frameOffset,
+      useMicro, microRef, duration, md, msg);
   }
 
   command error_t CXRequestQueue.requestSend[uint8_t tp](
@@ -55,6 +59,7 @@ module CXTransportDispatchP {
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
+    call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
       frameOffset, useMicro, microRef, tsLoc, md, msg);
   }
@@ -71,6 +76,9 @@ module CXTransportDispatchP {
     return call SubCXRQ.requestWakeup(layerCount, baseFrame,
       frameOffset, refFrame, refTime, correction);
   }
+  
+  uint32_t lastRXFrame = INVALID_FRAME;
+  uint8_t nextRX = CX_TP_FLOOD_BURST;
 
   event void SubCXRQ.receiveHandled(error_t error, 
       uint8_t layerCount, 
@@ -78,7 +86,24 @@ module CXTransportDispatchP {
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    //TODO: see logic below
+    uint8_t signalTp; 
+    if (lastRXFrame == atFrame){
+      signalTp = nextRX;
+    } else if (didReceive){
+      signalTp = call CXTransportPacket.getProtocol(msg);
+    } else {
+      printf("! didReceive >1x for same frame\r\n");
+      return;
+    }
+
+    lastRXFrame = atFrame;
+    nextRX = (signalTp + 1)%NUM_TRANSPORT_PROTOCOLS;
+    signal CXRequestQueue.receiveHandled[signalTp](error,
+      layerCount,
+      atFrame, reqFrame, 
+      didReceive,
+      microRef, t32kRef,
+      md, msg);
   }
 
   event void SubCXRQ.sendHandled(error_t error, 
@@ -86,9 +111,11 @@ module CXTransportDispatchP {
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    //TODO: check protocol, signal appropriately
+    signal CXRequestQueue.sendHandled[call CXTransportPacket.getProtocol(msg)](
+      error,
+      layerCount,
+      atFrame, reqFrame, microRef, t32kRef, md, msg);
   }
-  
 
   //no good way to dispatch these at the moment. oh well.
   event void SubCXRQ.sleepHandled(error_t error, 
@@ -99,18 +126,28 @@ module CXTransportDispatchP {
     uint8_t layerCount, 
     uint32_t atFrame, uint32_t reqFrame){}
 
+  command error_t SubProtocolSplitControl.start[uint8_t tp](){ return FAIL;}
+  command error_t SubProtocolSplitControl.stop[uint8_t tp](){ return FAIL;}
 
-  //SubCXRQ:
-  // - txHandled: dispatch based on transport protocol
-  // - rxHandled, SUCCESS
-  //   - didReceive = TRUE:  dispatch based on tp, set next to
-  //     (tp + 1 )% tp_range
-  //   - didReceive = FALSE: set next to (next+1)%tp_range
-  // - rxHandled, EBUSY
-  //   - dispatch to next, set next to (next+1)%tp_range
-
-  default event SubProtocolSplitControl.startDone[uint8_t tp](error_t error){
+  default event void CXRequestQueue.sendHandled[uint8_t tp](error_t error, 
+      uint8_t layerCount,
+      uint32_t atFrame, uint32_t reqFrame, 
+      uint32_t microRef, uint32_t t32kRef,
+      void* md, message_t* msg){
+    printf("!default t.sh: %x\r\n", tp);
   }
-  default event SubProtocolSplitControl.stopDone[uint8_t tp](error_t error){
+
+  default event void CXRequestQueue.receiveHandled[uint8_t tp](error_t error, 
+      uint8_t layerCount, 
+      uint32_t atFrame, uint32_t reqFrame, 
+      bool didReceive, 
+      uint32_t microRef, uint32_t t32kRef,
+      void* md, message_t* msg){
+    printf("!default t.rh: %x\r\n", tp);
+  }
+
+  default event void SubProtocolSplitControl.startDone[uint8_t tp](error_t error){
+  }
+  default event void SubProtocolSplitControl.stopDone[uint8_t tp](error_t error){
   }
 }

@@ -3,6 +3,7 @@ module RRBurstP {
   provides interface Receive;
   uses interface CXRequestQueue;
   uses interface CXTransportPacket;
+  uses interface SplitControl;
   //for setup/ack packets
   uses interface Packet;
 } implementation {
@@ -42,6 +43,9 @@ module RRBurstP {
     //TODO: signal SendDone if this was data, otherwise update state
     //for setup process
   }
+
+  event void SplitControl.startDone(error_t error){ }
+  event void SplitControl.stopDone(error_t error){ }
 
   //unused events below
   event void CXRequestQueue.sleepHandled(error_t error, 
