@@ -7,6 +7,9 @@ configuration TestC {
 
   TestP.Boot -> MainC;
   TestP.UartStream -> PlatformSerialC;
+  
+  components ActiveMessageC;
+  components new AMSenderC();
 
   components CXTransportC;
   TestP.Send -> CXTransportC;

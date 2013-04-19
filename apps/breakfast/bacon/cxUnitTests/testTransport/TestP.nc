@@ -89,6 +89,8 @@ module TestP{
   }
 
   task void send(){
+    call Packet.setPayloadLength(msg, sizeof(test_payload_t));
+    call Send.send(msg, sizeof(test_payload_t));
   }
 
   event void Send.sendDone(message_t* msg_, error_t error){
@@ -96,7 +98,8 @@ module TestP{
 
   event message_t* Receive.receive(message_t* msg_, 
       void* payload, uint8_t len){
-    return msg;
+    printf("RX %p\r\n", msg_);
+    return msg_;
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 

@@ -2,6 +2,7 @@ configuration CXLinkPacketC{
   provides interface CXLinkPacket;
   provides interface Rf1aPacket;
   provides interface Packet;
+  provides interface Ieee154Packet;
 
   uses interface Rf1aPhysicalMetadata;
 
@@ -18,4 +19,5 @@ configuration CXLinkPacketC{
   Packet = Rf1aIeee154PacketC;
   CXLinkPacket = CXLinkPacketP;
   Rf1aIeee154PacketC.Rf1aPhysicalMetadata = Rf1aPhysicalMetadata;
+  Ieee154Packet = Rf1aIeee154PacketC;
 }

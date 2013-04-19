@@ -1,3 +1,5 @@
+
+ #include "CXScheduler.h"
 module CXSchedulerPacketP {
   provides interface Packet;
   provides interface CXSchedulerPacket;

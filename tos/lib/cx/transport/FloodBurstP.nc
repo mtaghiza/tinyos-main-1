@@ -54,9 +54,7 @@ module FloodBurstP {
           FALSE, 0,
           NULL, NULL,
           msg);
-        if (error != SUCCESS){
-          return error;
-        }
+        return error;
       }else{
         return ERETRY;
       }

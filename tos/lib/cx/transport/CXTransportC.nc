@@ -46,4 +46,8 @@ configuration CXTransportC {
   FloodBurstP.Packet -> CXTransportPacketC;
   RRBurstP.Packet -> CXTransportPacketC;
 
+  components ActiveMessageC;
+  CXTransportShimP.Packet -> CXTransportPacketC;
+  CXTransportShimP.AMPacket -> ActiveMessageC;
+
 }

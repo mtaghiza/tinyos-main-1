@@ -1,3 +1,5 @@
+
+ #include "CXNetwork.h"
 module CXNetworkPacketP{
   provides interface CXNetworkPacket;
   provides interface Packet;

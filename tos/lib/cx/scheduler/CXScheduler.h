@@ -70,4 +70,6 @@ typedef nx_struct cx_schedule {
 #define SCHEDULE_LOSS_THRESHOLD 3
 #endif
 
+#define AM_CX_SCHEDULE_MSG 0xC4
+
 #endif

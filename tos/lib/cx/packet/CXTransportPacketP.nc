@@ -48,12 +48,14 @@ module CXTransportPacketP{
   command uint8_t CXTransportPacket.getSubprotocol(message_t* msg){
     return (getHeader(msg) -> tproto) & ~CX_TP_PROTO_MASK;
   }
-  command uint8_t CXTransportPacket.setProtocol(message_t* msg,
+
+  command void CXTransportPacket.setProtocol(message_t* msg,
       uint8_t tproto){
     uint8_t tp = getHeader(msg)->tproto;
     getHeader(msg)->tproto = (tproto & CX_TP_PROTO_MASK) | (tp & ~CX_TP_PROTO_MASK);
   }
-  command uint8_t CXTransportPacket.setSubprotocol(message_t* msg,
+
+  command void CXTransportPacket.setSubprotocol(message_t* msg,
       uint8_t subproto){
     uint8_t tp = getHeader(msg)->tproto;
     getHeader(msg)->tproto = (tp & CX_TP_PROTO_MASK) | (subproto & ~CX_TP_PROTO_MASK);
