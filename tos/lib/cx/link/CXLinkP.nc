@@ -13,6 +13,7 @@ module CXLinkP { provides interface SplitControl;
   uses interface DelayedSend;
   uses interface Rf1aPhysicalMetadata;
   uses interface Rf1aPacket;
+  uses interface Packet;
   provides interface Rf1aTransmitFragment;
 
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
@@ -348,15 +349,15 @@ module CXLinkP { provides interface SplitControl;
         }
         post requestHandled();
       }else{
-        //OK, a cleaner way to handle this is to adjust lastFrameTime
-        //to be consistent with the skew correction etc.
+        //Adjust lastFrameTime to be consistent with the skew
+        //correction etc, if needed.
         /**
         lft = (lfn - rfn)*FRAMELEN_32K + rft + correction - prep
-
         **/
 
-        if (nextRequest->requestType == RT_WAKEUP &&
-            nextRequest->typeSpecific.wakeup.refTime != INVALID_TIMESTAMP){
+        if (nextRequest->requestType == RT_WAKEUP 
+            && nextRequest->typeSpecific.wakeup.refTime != INVALID_TIMESTAMP 
+            && nextRequest->typeSpecific.wakeup.refFrame != INVALID_FRAME){
           uint32_t rfn = nextRequest->typeSpecific.wakeup.refFrame;
           uint32_t rft = nextRequest->typeSpecific.wakeup.refTime;
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
@@ -460,6 +461,7 @@ module CXLinkP { provides interface SplitControl;
       return EINVAL;
     } else{
       cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_RX, md);
+      call Packet.clear(msg);
       if (r != NULL){
         error_t error;
         //TODO: would be nice to use microRef/useMicro for more precise

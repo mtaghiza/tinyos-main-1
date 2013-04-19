@@ -220,12 +220,18 @@ module CXSlaveSchedulerP{
 
   
   task void updateSkew(){
-    call SkewCorrection.addMeasurement(
+    error_t error = call SkewCorrection.addMeasurement(
       call CXLinkPacket.getSource(schedMsg),
       synchReceived,
       sched->timestamp,
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));
+    if (SUCCESS != error){
+      printf_SKEW("~sc.am: %lu %lu %lu\r\n",
+        sched->timestamp,
+      call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+      call CXNetworkPacket.getOriginFrameStart(schedMsg));
+    }
   }
 
   task void claimSlotTask(){

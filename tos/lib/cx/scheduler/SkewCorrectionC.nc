@@ -44,8 +44,10 @@ module SkewCorrectionC {
       selfReferenceTime = otherTS;
       selfReferenceFrame = originFrame;
       return SUCCESS;
-    }else if (otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP){
-      return SUCCESS;
+    }else if (otherTS == INVALID_TIMESTAMP || myTS == INVALID_TIMESTAMP 
+        || originFrame == INVALID_FRAME || otherTS == lastTimestamp 
+        || myTS == lastCapture ){
+      return EINVAL;
     }else{
       if (otherId != other){
         //we only track one master: if we switch masters for whatever

@@ -46,6 +46,7 @@ configuration CXLinkC {
 
   components CXLinkPacketC;
   CXLinkP.Rf1aPacket -> CXLinkPacketC.Rf1aPacket;
+  CXLinkP.Packet -> CXLinkPacketC.Packet;
   Packet = CXLinkPacketC.Packet;
   Rf1aPacket = CXLinkPacketC.Rf1aPacket;
   CXLinkPacket = CXLinkPacketC;
