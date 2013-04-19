@@ -3,6 +3,7 @@ module CXTransportDispatchP {
   uses interface CXRequestQueue as SubCXRQ;
 
   provides interface SplitControl;
+  provides interface SplitControl[uint8_t tp] as SubProtocolSplitControl;
   uses interface SplitControl as SubSplitControl;
 
   uses interface CXTransportPacket;
@@ -20,12 +21,15 @@ module CXTransportDispatchP {
   }
 
   event void SubSplitControl.startDone(error_t error){
-    //TODO: notify layers above that we're on
+    signal SubProtocolSplitControl.startDone[CX_TP_FLOOD_BURST](error);
+    signal SubProtocolSplitControl.startDone[CX_TP_RR_BURST](error);
+    
     signal SplitControl.startDone(error);
   }
 
   event void SubSplitControl.stopDone(error_t error){
-    //TODO: notify layers above that we're off
+    signal SubProtocolSplitControl.stopDone[CX_TP_FLOOD_BURST](error);
+    signal SubProtocolSplitControl.stopDone[CX_TP_RR_BURST](error);
     signal SplitControl.stopDone(error);
   }
 
@@ -104,4 +108,9 @@ module CXTransportDispatchP {
   //   - didReceive = FALSE: set next to (next+1)%tp_range
   // - rxHandled, EBUSY
   //   - dispatch to next, set next to (next+1)%tp_range
+
+  default event SubProtocolSplitControl.startDone[uint8_t tp](error_t error){
+  }
+  default event SubProtocolSplitControl.stopDone[uint8_t tp](error_t error){
+  }
 }

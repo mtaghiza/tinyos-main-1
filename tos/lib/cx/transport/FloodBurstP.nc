@@ -4,11 +4,20 @@ module FloodBurstP {
   uses interface CXRequestQueue;
   uses interface CXTransportPacket;
   uses interface Packet;
+  uses interface SplitControl;
 } implementation {
   message_t msg_internal;
-  message_t* msg = &msg_internal;
-  //send: if next tx frame is valid, schedule TX and return result.
+  message_t* rxMsg = &msg_internal;
+
+  //send: if next tx frame is non-0, schedule TX and return result.
   //otherwise, return ERETRY
+
+  event void SplitControl.startDone(error_t error){
+     
+  }
+
+  event void SplitControl.stopDone(error_t error){
+  }
 
   command error_t Send.send(message_t* msg, uint8_t len){
     //TODO: get next tx frame
