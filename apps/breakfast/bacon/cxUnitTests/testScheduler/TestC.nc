@@ -13,12 +13,11 @@ configuration TestC {
   #define CX_MASTER 0
   #endif
 
-  #if CX_MASTER == 1
-  components CXMasterSchedulerC as SchedulerC;
-  #else
-  components CXSlaveSchedulerC as SchedulerC;
-  SchedulerC.Receive -> TestP.Receive;
+  #if CX_MASTER == 0
+  components CXSlaveSchedulerC;
+  CXSlaveSchedulerC.Receive -> TestP.Receive;
   #endif
+  components CXSchedulerC as SchedulerC;
 
 
   TestP.CXRequestQueue -> SchedulerC;
