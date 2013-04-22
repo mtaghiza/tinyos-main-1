@@ -5,6 +5,7 @@ typedef struct cx_metadata {
   uint32_t originFrameNumber;
   uint32_t originFrameStart;
   uint8_t rxHopCount;
+  uint32_t scheduledFrame;
 } cx_metadata_t;
 
 #endif

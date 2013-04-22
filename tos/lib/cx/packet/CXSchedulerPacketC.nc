@@ -9,4 +9,7 @@ configuration CXSchedulerPacketC{
   Packet = CXSchedulerPacketP;
 
   CXSchedulerPacketP.SubPacket -> CXNetworkPacketC;
+
+  components CXPacketMetadataC;
+  CXSchedulerPacketP.CXPacketMetadata -> CXPacketMetadataC;
 }

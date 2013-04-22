@@ -59,6 +59,10 @@ module CXTransportDispatchP {
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
+    //TODO: OK, so it seems like maybe we need to have some transport
+    //metadata here too to keep track of which subprotocol introduced
+    //request. Otherwise, ScheduledTXP needs to receive as well
+    //(prefer to have ScheduledTXP send things as Flood)
     call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
       frameOffset, useMicro, microRef, tsLoc, md, msg);
@@ -91,13 +95,18 @@ module CXTransportDispatchP {
       signalTp = nextRX;
     } else if (didReceive){
       signalTp = call CXTransportPacket.getProtocol(msg);
+      //scheduled send gets received by flood: otherwise, we have to
+      //have scheduledTXP polling for receives as well.
+      if (signalTp == CX_TP_SCHEDULED){
+        signalTp = CX_TP_FLOOD_BURST;
+      }
     } else {
       printf("! didReceive >1x for same frame\r\n");
       return;
     }
 
     lastRXFrame = atFrame;
-    nextRX = (signalTp + 1)%NUM_TRANSPORT_PROTOCOLS;
+    nextRX = (signalTp + 1)%NUM_RX_TRANSPORT_PROTOCOLS;
     signal CXRequestQueue.receiveHandled[signalTp](error,
       layerCount,
       atFrame, reqFrame, 

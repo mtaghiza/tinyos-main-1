@@ -5,6 +5,7 @@ module CXSchedulerPacketP {
   provides interface CXSchedulerPacket;
 
   uses interface Packet as SubPacket;
+  uses interface CXPacketMetadata;
 } implementation {
   cx_schedule_header_t* getHeader(message_t* msg){
     return call SubPacket.getPayload(msg,
@@ -12,8 +13,9 @@ module CXSchedulerPacketP {
   }
 
   command void Packet.clear(message_t* msg){
-      call SubPacket.clear(msg);
+    call SubPacket.clear(msg);
     getHeader(msg) -> sn = INVALID_SCHEDULE;
+    call CXPacketMetadata.setRequestedFrame(msg, INVALID_FRAME);
   }
 
   command uint8_t Packet.payloadLength(message_t* msg){

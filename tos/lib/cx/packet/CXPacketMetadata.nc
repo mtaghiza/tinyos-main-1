@@ -1,4 +1,4 @@
 interface CXPacketMetadata{
-  command uint8_t getRequestedBy(message_t* msg);
-  command void setRequestedBy(message_t* msg, uint8_t rb);
+  command uint32_t getRequestedFrame(message_t* msg);
+  command void setRequestedFrame(message_t* msg, uint32_t rf);
 }

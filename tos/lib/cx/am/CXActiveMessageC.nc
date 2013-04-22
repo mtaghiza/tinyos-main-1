@@ -57,6 +57,7 @@ implementation {
   components Rf1aAMPacketC as PacketC;
   components CXTransportPacketC;
   components CXLinkPacketC;
+  components CXPacketMetadataC;
 
   Packet = PacketC;
   AMPacket = PacketC;
@@ -79,12 +80,14 @@ implementation {
   AM.Ieee154Packet -> CXLinkPacketC;
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
+  AM.CXPacketMetadata -> CXPacketMetadataC;
 
   components CXTransportC;
   AM.BroadcastSend -> CXTransportC.BroadcastSend;
   AM.BroadcastReceive -> CXTransportC.BroadcastReceive;
   AM.UnicastSend -> CXTransportC.UnicastSend;
   AM.UnicastReceive -> CXTransportC.UnicastReceive;
+  AM.ScheduledSend -> CXTransportC.ScheduledSend;
   SplitControl = CXTransportC.SplitControl;
 }
 

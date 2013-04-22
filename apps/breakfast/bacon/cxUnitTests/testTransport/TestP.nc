@@ -8,6 +8,7 @@ module TestP{
   
   uses interface SplitControl;
   uses interface AMSend;
+  uses interface ScheduledAMSend;
   uses interface Receive;
 
   uses interface Packet;
@@ -94,6 +95,9 @@ module TestP{
   }
 
   event void AMSend.sendDone(message_t* msg_, error_t error){
+  }
+
+  event void ScheduledAMSend.sendDone(message_t* msg_, error_t error){
   }
 
   event message_t* Receive.receive(message_t* msg_, 

@@ -2,6 +2,8 @@ configuration CXTransportC {
   provides interface SplitControl;
   provides interface Packet;
 
+  provides interface Send as ScheduledSend;
+
   provides interface Send as BroadcastSend;
   provides interface Receive as BroadcastReceive;
 
@@ -22,12 +24,15 @@ configuration CXTransportC {
   //hook up sub-protocols
   components FloodBurstP;
   components RRBurstP;
+  components ScheduledTXP;
   BroadcastSend = FloodBurstP;
   BroadcastReceive = FloodBurstP;
   UnicastSend = RRBurstP;
   UnicastReceive = RRBurstP;
+  ScheduledSend = ScheduledTXP;
 
-
+  ScheduledTXP.CXRequestQueue 
+    -> CXTransportDispatchP.CXRequestQueue[CX_TP_SCHEDULED];
   FloodBurstP.CXRequestQueue 
     -> CXTransportDispatchP.CXRequestQueue[CX_TP_FLOOD_BURST];
   RRBurstP.CXRequestQueue 
@@ -40,6 +45,9 @@ configuration CXTransportC {
   components CXTransportPacketC;
   Packet = CXTransportPacketC;
 
+  components CXPacketMetadataC;
+  ScheduledTXP.CXPacketMetadata -> CXPacketMetadataC;
+
   CXTransportDispatchP.CXTransportPacket -> CXTransportPacketC;
   FloodBurstP.CXTransportPacket -> CXTransportPacketC;
   RRBurstP.CXTransportPacket -> CXTransportPacketC;
@@ -47,5 +55,6 @@ configuration CXTransportC {
   RRBurstP.Packet -> CXTransportPacketC;
 
   components ActiveMessageC;
+  ScheduledTXP.AMPacket -> ActiveMessageC;
 
 }

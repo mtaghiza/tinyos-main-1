@@ -48,7 +48,9 @@ module CXActiveMessageP {
     interface Ieee154Packet;
     interface Packet;
     interface AMPacket;
+    interface CXPacketMetadata;
   }
+  uses interface Send as ScheduledSend;
   uses interface Send as BroadcastSend;
   uses interface Send as UnicastSend;
   uses interface Receive as BroadcastReceive;
@@ -85,8 +87,9 @@ implementation {
     call AMPacket.setDestination(msg, addr);
     call AMPacket.setType(msg, id);
     
-    //TODO: check msg metadata for scheduled-send (when available)
-    if (addr == AM_BROADCAST_ADDR){
+    if (call CXPacketMetadata.getRequestedFrame(msg) != INVALID_FRAME){
+      rc = call ScheduledSend.send(msg, layerLen);
+    }else if (addr == AM_BROADCAST_ADDR){
       rc = call BroadcastSend.send(msg, layerLen);
     } else {
       rc = call UnicastSend.send(msg, layerLen);
@@ -114,6 +117,11 @@ implementation {
   }
 
   event void BroadcastSend.sendDone(message_t* msg, error_t error)
+  {
+    sendDone(msg, error);
+  }
+
+  event void ScheduledSend.sendDone(message_t* msg, error_t error)
   {
     sendDone(msg, error);
   }
