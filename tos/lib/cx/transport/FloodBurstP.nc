@@ -54,12 +54,15 @@ module FloodBurstP {
           FALSE, 0,
           NULL, NULL,
           msg);
+        if (error == SUCCESS){
+          sending = TRUE;
+        }
         return error;
       }else{
-        return ERETRY;
+        return FAIL;
       }
     } else { 
-      return EBUSY;
+      return ERETRY;
     }
   }
 

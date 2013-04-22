@@ -48,17 +48,16 @@ module CXActiveMessageP {
     interface Ieee154Packet;
     interface Packet;
     interface AMPacket;
-    interface Send as SubSend;
-    interface Receive as SubReceive;
   }
+  uses interface Send as BroadcastSend;
+  uses interface Send as UnicastSend;
+  uses interface Receive as BroadcastReceive;
+  uses interface Receive as UnicastReceive;
 }
 implementation {
   /** Convenience typedef denoting the structure used as a header in
    * this packet layout. */
   typedef rf1a_nalp_am_t layer_header_t;
-
-  uint16_t pending_length;
-  message_t * ONE_NOK pending_message = NULL;
 
   async command error_t Acks.requestAck( message_t* msg ){
     return FAIL;
@@ -72,33 +71,27 @@ implementation {
     return FALSE;
   }
   
-  task void pendingSendTask()
-  {
-    error_t rc = call SubSend.send(pending_message, pending_length + sizeof(layer_header_t));
-
-    if (rc != SUCCESS){
-      signal AMSend.sendDone[call AMPacket.type(pending_message)](pending_message, rc);
-    }
-  }
 
   command error_t AMSend.send[am_id_t id](am_addr_t addr,
                                           message_t* msg,
                                           uint8_t len)
   {
+    error_t rc;
+    // Account for layer header in payload length
+    uint8_t layerLen = len + sizeof(layer_header_t);
     call Rf1aPacket.configureAsData(msg);
     call AMPacket.setSource(msg, call AMPacket.address());
     call Ieee154Packet.setPan(msg, call Ieee154Packet.localPan());
     call AMPacket.setDestination(msg, addr);
     call AMPacket.setType(msg, id);
-    // Account for layer header in payload length
-
-    // emulate CC2420 behavior 
-    pending_length = len;
-    pending_message = msg;
-
-    post pendingSendTask();
-  
-    return SUCCESS;
+    
+    //TODO: check msg metadata for scheduled-send (when available)
+    if (addr == AM_BROADCAST_ADDR){
+      rc = call BroadcastSend.send(msg, layerLen);
+    } else {
+      rc = call UnicastSend.send(msg, layerLen);
+    }
+    return rc;
   }
 
   command uint8_t AMSend.maxPayloadLength[am_id_t id]()
@@ -113,17 +106,24 @@ implementation {
 
   command error_t AMSend.cancel[am_id_t id](message_t* msg)
   {
-    return call SubSend.cancel(msg);
+    return FAIL;
   }
-
-  event void SubSend.sendDone(message_t* msg, error_t error)
-  {
+  
+  void sendDone(message_t* msg, error_t error){
     signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
-    pending_message = NULL;
   }
 
-  event message_t* SubReceive.receive(message_t* msg, void* payload_, uint8_t len)
+  event void BroadcastSend.sendDone(message_t* msg, error_t error)
   {
+    sendDone(msg, error);
+  }
+
+  event void UnicastSend.sendDone(message_t* msg, error_t error)
+  {
+    sendDone(msg, error);
+  }
+  
+  message_t* receive(message_t* msg, void* payload_, uint8_t len){
     uint8_t* payload = (uint8_t*)payload_ + sizeof(layer_header_t);
     len -= sizeof(layer_header_t);
     #ifdef RF1A_NO_CRC
@@ -138,6 +138,16 @@ implementation {
     }
 
     return signal Snoop.receive[call AMPacket.type(msg)](msg, payload, len);
+  }
+
+  event message_t* BroadcastReceive.receive(message_t* msg, void* payload_, uint8_t len)
+  {
+    return receive(msg, payload_, len);
+  }
+
+  event message_t* UnicastReceive.receive(message_t* msg, void* payload_, uint8_t len)
+  {
+    return receive(msg, payload_, len);
   }
 
   default event message_t* Receive.receive[am_id_t id](message_t* msg, void* payload, uint8_t len) { return msg; }

@@ -1,14 +1,13 @@
 configuration CXTransportC {
-  provides interface Send;
-  provides interface Receive;
   provides interface SplitControl;
   provides interface Packet;
+
+  provides interface Send as BroadcastSend;
+  provides interface Receive as BroadcastReceive;
+
+  provides interface Send as UnicastSend;
+  provides interface Receive as UnicastReceive;
 } implementation {
-  //responsible for distributing TX to relevant sub-protocol, 
-  //  merging RX from sub-protocols
-  components CXTransportShimP;
-  Send = CXTransportShimP;
-  Receive = CXTransportShimP;
   
   //When packets received, push them to relevant subprotocol
   components CXTransportDispatchP;
@@ -23,10 +22,11 @@ configuration CXTransportC {
   //hook up sub-protocols
   components FloodBurstP;
   components RRBurstP;
-  CXTransportShimP.BroadcastSend -> FloodBurstP;
-  CXTransportShimP.BroadcastReceive -> FloodBurstP;
-  CXTransportShimP.UnicastSend -> RRBurstP;
-  CXTransportShimP.UnicastReceive -> RRBurstP;
+  BroadcastSend = FloodBurstP;
+  BroadcastReceive = FloodBurstP;
+  UnicastSend = RRBurstP;
+  UnicastReceive = RRBurstP;
+
 
   FloodBurstP.CXRequestQueue 
     -> CXTransportDispatchP.CXRequestQueue[CX_TP_FLOOD_BURST];
@@ -47,7 +47,5 @@ configuration CXTransportC {
   RRBurstP.Packet -> CXTransportPacketC;
 
   components ActiveMessageC;
-  CXTransportShimP.Packet -> CXTransportPacketC;
-  CXTransportShimP.AMPacket -> ActiveMessageC;
 
 }

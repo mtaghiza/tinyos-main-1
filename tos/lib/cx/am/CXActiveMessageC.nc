@@ -81,8 +81,10 @@ implementation {
   AM.AMPacket -> PacketC;
 
   components CXTransportC;
-  AM.SubSend -> CXTransportC.Send;
-  AM.SubReceive -> CXTransportC.Receive;
+  AM.BroadcastSend -> CXTransportC.BroadcastSend;
+  AM.BroadcastReceive -> CXTransportC.BroadcastReceive;
+  AM.UnicastSend -> CXTransportC.UnicastSend;
+  AM.UnicastReceive -> CXTransportC.UnicastReceive;
   SplitControl = CXTransportC.SplitControl;
 }
 
