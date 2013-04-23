@@ -294,7 +294,7 @@ module CXMasterSchedulerP{
 
   event void ScheduledAMSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
-      printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
+      printf("TX sched of %lu ts %lu ofs%lu\r\n",
         call CXNetworkPacket.getOriginFrameNumber(schedMsg),
         sched->timestamp,
         call CXNetworkPacket.getOriginFrameStart(schedMsg));
