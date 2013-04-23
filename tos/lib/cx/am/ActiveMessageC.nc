@@ -1,5 +1,4 @@
 
-#warning "Using CX ActiveMessageC"
 #ifndef HAS_ACTIVE_MESSAGE
 #define HAS_ACTIVE_MESSAGE
 #endif

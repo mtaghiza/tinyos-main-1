@@ -12,10 +12,6 @@ configuration CXSlaveSchedulerC{
   provides interface CXRequestQueue;
   provides interface SplitControl;
   provides interface Packet; 
-  #ifndef HAS_ACTIVE_MESSAGE
-  //TODO: remove when AMReceive available
-  uses interface Receive;
-  #endif
 } implementation {
   //CX stack components
   components CXSlaveSchedulerP;
@@ -59,11 +55,6 @@ configuration CXSlaveSchedulerC{
   CXSlaveSchedulerP.SkewCorrection -> SkewCorrectionC;
   SlotSchedulerP.SkewCorrection -> SkewCorrectionC;
   
-  #ifdef HAS_ACTIVE_MESSAGE
   components new AMReceiverC(AM_CX_SCHEDULE_MSG);
   CXSlaveSchedulerP.ScheduleReceive -> AMReceiverC;
-  #else
-  //schedule reception: through normal receive path
-  CXSlaveSchedulerP.ScheduleReceive = Receive;
-  #endif
 }
