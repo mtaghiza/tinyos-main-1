@@ -51,10 +51,10 @@ module CXMasterSchedulerP{
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
     sched -> activeSlots = 4;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
-    printf("Set sched %p of %p md to %u\r\n", 
-      sched, 
-      schedMsg,
-      sched -> maxDepth);
+//    printf("Set sched %p of %p md to %u\r\n", 
+//      sched, 
+//      schedMsg,
+//      sched -> maxDepth);
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();
   }
@@ -65,7 +65,8 @@ module CXMasterSchedulerP{
 
   void setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
       uint8_t maxDepth){
-    nextSched = call Packet.getPayload(nextMsg, 
+    call Packet.clear(schedMsg);
+    nextSched = call ScheduledAMSend.getPayload(nextMsg, 
       sizeof(cx_schedule_t));
     nextSched -> sn = sched->sn + 1;
     nextSched -> cycleLength = cycleLength;
@@ -263,10 +264,10 @@ module CXMasterSchedulerP{
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);
-    printf("SetTTL of %p to %u from %p\r\n", 
-      msg,
-      sched->maxDepth,
-      sched);
+//    printf("SetTTL of %p to %u from %p\r\n", 
+//      msg,
+//      sched->maxDepth,
+//      sched);
     call CXLinkPacket.setSource(msg, TOS_NODE_ID);
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
