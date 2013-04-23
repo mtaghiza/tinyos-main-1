@@ -89,7 +89,11 @@ module CXTransportDispatchP {
       void* md, message_t* msg){
     uint8_t signalTp; 
     if (lastRXFrame == atFrame){
-      signalTp = nextRX;
+      if (didReceive){
+        printf("! didReceive > 1x for same frame\r\n");
+      } else {
+        signalTp = nextRX;
+      }
     } else if (didReceive){
       signalTp = call CXTransportPacket.getProtocol(msg);
       //scheduled send gets received by flood: otherwise, we have to
@@ -97,9 +101,6 @@ module CXTransportDispatchP {
       if (signalTp == CX_TP_SCHEDULED){
         signalTp = CX_TP_FLOOD_BURST;
       }
-    } else {
-      printf("! didReceive >1x for same frame\r\n");
-      return;
     }
 
     lastRXFrame = atFrame;
