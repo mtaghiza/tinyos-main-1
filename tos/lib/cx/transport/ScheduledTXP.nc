@@ -12,6 +12,7 @@ module ScheduledTXP {
   command error_t Send.send(message_t* msg, uint8_t len){
     //broadcast only!
     if (call AMPacket.destination(msg) != AM_BROADCAST_ADDR){
+      printf("Dest: %x\r\n", call AMPacket.destination(msg));
       return EINVAL;
     }
 

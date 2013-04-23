@@ -42,7 +42,7 @@ module CXMasterSchedulerP{
 
   uint32_t lastCycleStart = INVALID_FRAME;
   
-  event void Boot.booted(){
+  task void initializeSchedule(){
     call Packet.clear(schedMsg);
     sched = (cx_schedule_t*)(call ScheduledAMSend.getPayload(schedMsg,
       sizeof(cx_schedule_t)));
@@ -51,8 +51,16 @@ module CXMasterSchedulerP{
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
     sched -> activeSlots = 4;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
+    printf("Set sched %p of %p md to %u\r\n", 
+      sched, 
+      schedMsg,
+      sched -> maxDepth);
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();
+  }
+
+  event void Boot.booted(){
+    post initializeSchedule();
   }
 
   void setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
@@ -110,19 +118,11 @@ module CXMasterSchedulerP{
           nextMsg = swpM;
           nextSched = swpS;
         }
-        //make sure that msg is set up correctly
-        call CXSchedulerPacket.setScheduleNumber(schedMsg,
-          sched->sn);
-        call CXSchedulerPacket.setOriginFrame(schedMsg, 
-          schedOF + lastCycleStart);
-//        printf("Setting PL to [%u]\r\n", sizeof(cx_schedule_t));
-        call Packet.setPayloadLength(schedMsg, 
-          sizeof(cx_schedule_t));
-//        printf("Verify PL [%u]\r\n", 
-//          call Packet.payloadLength(schedMsg));
-        call CXNetworkPacket.setTTL(schedMsg, sched->maxDepth);
-        call CXLinkPacket.setSource(schedMsg, 
-          call CXLinkPacket.addr());
+        //msg setup should happen when it goes through requestSend.
+//        call CXSchedulerPacket.setScheduleNumber(schedMsg,
+//          sched->sn);
+//        call CXSchedulerPacket.setOriginFrame(schedMsg, 
+//          schedOF + lastCycleStart);
 
         sched->padding0 = 0x10;
         sched->padding1 = 0x11;
@@ -263,6 +263,10 @@ module CXMasterSchedulerP{
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    printf("SetTTL of %p to %u from %p\r\n", 
+      msg,
+      sched->maxDepth,
+      sched);
     call CXLinkPacket.setSource(msg, TOS_NODE_ID);
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
@@ -286,6 +290,7 @@ module CXMasterSchedulerP{
       printf("!master unexpected SH\r\n");
     }
   }
+
   event void ScheduledAMSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
       printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
@@ -341,7 +346,7 @@ module CXMasterSchedulerP{
   event void SubSplitControl.startDone(error_t error){
     if (error == SUCCESS){
       startDonePending = TRUE;
-      sched = (cx_schedule_t*)call Packet.getPayload(schedMsg, sizeof(cx_schedule_t));
+      sched = (cx_schedule_t*)call ScheduledAMSend.getPayload(schedMsg, sizeof(cx_schedule_t));
       post initTask();
     }else{
       signal SplitControl.startDone(error);
