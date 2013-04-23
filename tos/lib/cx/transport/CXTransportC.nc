@@ -37,10 +37,14 @@ configuration CXTransportC {
     -> CXTransportDispatchP.CXRequestQueue[CX_TP_FLOOD_BURST];
   RRBurstP.CXRequestQueue 
     -> CXTransportDispatchP.CXRequestQueue[CX_TP_RR_BURST];
+
   FloodBurstP.SplitControl 
     -> CXTransportDispatchP.SubProtocolSplitControl[CX_TP_FLOOD_BURST];
   RRBurstP.SplitControl 
     -> CXTransportDispatchP.SubProtocolSplitControl[CX_TP_RR_BURST];
+
+  CXTransportDispatchP.RequestPending[CX_TP_FLOOD_BURST] 
+    -> FloodBurstP.RequestPending;
   
   components CXTransportPacketC;
   Packet = CXTransportPacketC;

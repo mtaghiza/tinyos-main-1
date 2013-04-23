@@ -11,6 +11,8 @@ module CXTransportDispatchP {
 
   uses interface CXTransportPacket;
   uses interface CXPacketMetadata;
+
+  uses interface RequestPending[uint8_t tp];
 } implementation {
   //splitcontrol:
   // - commands and events should be passed through
@@ -88,29 +90,44 @@ module CXTransportDispatchP {
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     uint8_t signalTp; 
-    if (lastRXFrame == atFrame){
-      if (didReceive){
-        printf("! didReceive > 1x for same frame\r\n");
-      } else {
-        signalTp = nextRX;
+    if (didReceive){
+      if (lastRXFrame == atFrame){
+        printf("! RX twice in same frame\r\n");
+        return;
       }
-    } else if (didReceive){
+      lastRXFrame = atFrame;
       signalTp = call CXTransportPacket.getProtocol(msg);
+      printf("rx %x\r\n", signalTp);
       //scheduled send gets received by flood: otherwise, we have to
       //have scheduledTXP polling for receives as well.
       if (signalTp == CX_TP_SCHEDULED){
         signalTp = CX_TP_FLOOD_BURST;
+        printf("s->f %x\r\n", signalTp);
+      }
+    } else {
+      uint8_t i;
+      signalTp = nextRX;
+      for (i = 0; i < NUM_RX_TRANSPORT_PROTOCOLS; i++){
+        if (! call RequestPending.requestPending[signalTp](reqFrame)){
+          signalTp = (1+signalTp)%NUM_RX_TRANSPORT_PROTOCOLS;
+        } else {
+          break;
+        }
       }
     }
 
-    lastRXFrame = atFrame;
+    printf("rxh %x to %x (%x)\r\n", didReceive, signalTp, nextRX);
+    if (call RequestPending.requestPending[signalTp](reqFrame)){
+      signal CXRequestQueue.receiveHandled[signalTp](error,
+        layerCount,
+        atFrame, reqFrame, 
+        didReceive,
+        microRef, t32kRef,
+        md, msg);
+    }else{
+      printf("!no pending rx req\r\n");
+    }
     nextRX = (signalTp + 1)%NUM_RX_TRANSPORT_PROTOCOLS;
-    signal CXRequestQueue.receiveHandled[signalTp](error,
-      layerCount,
-      atFrame, reqFrame, 
-      didReceive,
-      microRef, t32kRef,
-      md, msg);
   }
 
   event void SubCXRQ.sendHandled(error_t error, 
@@ -163,5 +180,9 @@ module CXTransportDispatchP {
   default event void SubProtocolSplitControl.startDone[uint8_t tp](error_t error){
   }
   default event void SubProtocolSplitControl.stopDone[uint8_t tp](error_t error){
+  }
+
+  default command bool RequestPending.requestPending[uint8_t tp](uint32_t frame){
+    return FALSE;
   }
 }

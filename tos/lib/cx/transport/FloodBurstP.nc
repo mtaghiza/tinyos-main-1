@@ -6,6 +6,7 @@ module FloodBurstP {
   uses interface Packet;
   uses interface SplitControl;
   uses interface CXPacketMetadata;
+  provides interface RequestPending;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -15,12 +16,14 @@ module FloodBurstP {
   bool sending = FALSE;
   bool rxPending = FALSE;
   bool on = FALSE;
+  uint32_t rxf = INVALID_FRAME;
 
   task void receiveNext(){
     if ( on && !rxPending){
-      uint32_t nf = call CXRequestQueue.nextFrame(FALSE);
-      error_t error = call CXRequestQueue.requestReceive(0,
-        nf, 0,
+      error_t error;
+      rxf = call CXRequestQueue.nextFrame(FALSE);
+      error = call CXRequestQueue.requestReceive(0,
+        rxf, 0,
         FALSE, 0,
         0, NULL, rxMsg);
       if (error != SUCCESS){
@@ -119,5 +122,9 @@ module FloodBurstP {
   event void CXRequestQueue.wakeupHandled(error_t error, 
     uint8_t layerCount, 
     uint32_t atFrame, uint32_t reqFrame){
+  }
+
+  command bool RequestPending.requestPending(uint32_t frame){
+    return (frame != INVALID_FRAME) && rxf == frame;
   }
 }
