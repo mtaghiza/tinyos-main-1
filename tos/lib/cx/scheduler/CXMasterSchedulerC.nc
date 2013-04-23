@@ -34,12 +34,15 @@ configuration CXMasterSchedulerC{
   //packet stack
   components CXSchedulerPacketC;
   components CXLinkPacketC;
+  components CXPacketMetadataC;
 
   Packet = CXSchedulerPacketC;
   CXMasterSchedulerP.Packet -> CXSchedulerPacketC;
   CXMasterSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
   CXMasterSchedulerP.CXNetworkPacket -> CXNetworkC;
   CXMasterSchedulerP.CXLinkPacket -> CXLinkPacketC;
+
+  CXMasterSchedulerP.CXPacketMetadata -> CXPacketMetadataC;
 
   SlotSchedulerP.CXSchedulerPacket -> CXSchedulerPacketC;
   SlotSchedulerP.CXNetworkPacket -> CXNetworkC;

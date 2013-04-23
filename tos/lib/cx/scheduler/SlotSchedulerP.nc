@@ -306,14 +306,13 @@ module SlotSchedulerP{
    *  inactive.
    */
   command error_t CXRequestQueue.requestSend(uint8_t layerCount, 
-      uint32_t baseFrame, 
-      int32_t frameOffset, 
+      uint32_t baseFrame, int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
-      nx_uint32_t* tsLoc,
       void* md, message_t* msg){
     slotState = S_ACTIVE;
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
-      frameOffset, useMicro, microRef, tsLoc, md, msg);
+      frameOffset, txPriority, useMicro, microRef, md, msg);
   }
 
   //pass-through, record when sleep occurs for use in CXRQ.nextFrame.

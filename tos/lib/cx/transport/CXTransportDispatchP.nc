@@ -10,6 +10,7 @@ module CXTransportDispatchP {
   uses interface SplitControl as SubSplitControl;
 
   uses interface CXTransportPacket;
+  uses interface CXPacketMetadata;
 } implementation {
   //splitcontrol:
   // - commands and events should be passed through
@@ -56,16 +57,12 @@ module CXTransportDispatchP {
   command error_t CXRequestQueue.requestSend[uint8_t tp](
       uint8_t layerCount, 
       uint32_t baseFrame, int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
-      nx_uint32_t* tsLoc,
       void* md, message_t* msg){
-    //TODO: OK, so it seems like maybe we need to have some transport
-    //metadata here too to keep track of which subprotocol introduced
-    //request. Otherwise, ScheduledTXP needs to receive as well
-    //(prefer to have ScheduledTXP send things as Flood)
     call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
-      frameOffset, useMicro, microRef, tsLoc, md, msg);
+      frameOffset, txPriority, useMicro, microRef, md, msg);
   }
 
   command error_t CXRequestQueue.requestSleep[uint8_t tp](uint8_t layerCount,
@@ -120,10 +117,17 @@ module CXTransportDispatchP {
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    signal CXRequestQueue.sendHandled[call CXTransportPacket.getProtocol(msg)](
-      error,
-      layerCount,
-      atFrame, reqFrame, microRef, t32kRef, md, msg);
+    if (call CXPacketMetadata.getRequestedFrame(msg) != INVALID_FRAME){
+      signal CXRequestQueue.sendHandled[CX_TP_SCHEDULED](
+        error,
+        layerCount,
+        atFrame, reqFrame, microRef, t32kRef, md, msg);
+    } else {
+      signal CXRequestQueue.sendHandled[call CXTransportPacket.getProtocol(msg)](
+        error,
+        layerCount,
+        atFrame, reqFrame, microRef, t32kRef, md, msg);
+    }
   }
 
   //no good way to dispatch these at the moment. oh well.

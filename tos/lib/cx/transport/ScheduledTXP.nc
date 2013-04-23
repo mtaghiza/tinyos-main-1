@@ -17,8 +17,8 @@ module ScheduledTXP {
 
     return call CXRequestQueue.requestSend(0,
       call CXPacketMetadata.getRequestedFrame(msg), 0,
+      TXP_SCHEDULED,
       FALSE, 0,
-      NULL, //TODO: need to stash ts location in md, too
       NULL, msg);
   }
 

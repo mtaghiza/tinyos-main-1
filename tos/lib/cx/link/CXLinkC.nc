@@ -52,6 +52,9 @@ configuration CXLinkC {
   CXLinkPacket = CXLinkPacketC;
   CXLinkPacketC.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
 
+  components CXPacketMetadataC;
+  CXLinkP.CXPacketMetadata -> CXPacketMetadataC;
+
   //for debug only
   Rf1aStatus = Rf1aPhysicalC;
 }

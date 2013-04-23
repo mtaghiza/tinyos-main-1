@@ -13,6 +13,7 @@ module CXMasterSchedulerP{
 
   uses interface CXSchedulerPacket;
   uses interface Packet;
+  uses interface CXPacketMetadata;
 
   //for addr
   uses interface CXLinkPacket;
@@ -127,10 +128,13 @@ module CXMasterSchedulerP{
         sched->padding4 = 0x14;
         sched->padding5 = 0x15;
         sched->cycleStartFrame = lastCycleStart;
+        //TODO: replace with call to ScheduledAMSend (remember to
+        //      clear the packet first)
+        call CXPacketMetadata.setTSLoc(schedMsg, &(sched->timestamp));
         error = call SubCXRQ.requestSend(0,
           lastCycleStart, schedOF,
+          TXP_SCHEDULED,
           FALSE, 0,
-          &(sched->timestamp),
           NULL, schedMsg);
 //        printf("m %p s %p\r\n", schedMsg, &(sched->timestamp));
         if (error != SUCCESS){
@@ -243,10 +247,10 @@ module CXMasterSchedulerP{
   // in addition to standard layerCount, we also set up the scheduler
   // header: schedule number = current schedule number, originFrame =
   // requested frame, translated to frames since start of cycle
-  command error_t CXRequestQueue.requestSend(uint8_t layerCount, uint32_t baseFrame, 
-      int32_t frameOffset, 
+  command error_t CXRequestQueue.requestSend(uint8_t layerCount, 
+      uint32_t baseFrame, int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
-      nx_uint32_t* tsLoc,
       void* md, message_t* msg){
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
@@ -257,8 +261,8 @@ module CXMasterSchedulerP{
     call CXLinkPacket.setSource(msg, TOS_NODE_ID);
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
+      txPriority,
       useMicro, microRef, 
-      tsLoc, 
       md, msg);
   }
 

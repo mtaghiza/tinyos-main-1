@@ -47,7 +47,9 @@ configuration CXTransportC {
 
   components CXPacketMetadataC;
   ScheduledTXP.CXPacketMetadata -> CXPacketMetadataC;
+  FloodBurstP.CXPacketMetadata -> CXPacketMetadataC;
 
+  CXTransportDispatchP.CXPacketMetadata -> CXPacketMetadataC;
   CXTransportDispatchP.CXTransportPacket -> CXTransportPacketC;
   FloodBurstP.CXTransportPacket -> CXTransportPacketC;
   RRBurstP.CXTransportPacket -> CXTransportPacketC;

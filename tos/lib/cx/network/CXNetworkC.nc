@@ -10,6 +10,8 @@ configuration CXNetworkC {
   components CXNetworkP;
 
   components CXNetworkPacketC;
+  components CXPacketMetadataC;
+
   //convenience interfaces
   Packet = CXNetworkPacketC;
   CXNetworkPacket = CXNetworkPacketC;
@@ -24,6 +26,8 @@ configuration CXNetworkC {
   CXNetworkP.CXLinkPacket -> CXLinkC;
 
   CXNetworkP.CXNetworkPacket -> CXNetworkPacketC;
+
+  CXNetworkP.CXPacketMetadata -> CXPacketMetadataC;
 
   components new PoolC(cx_network_metadata_t, CX_NETWORK_POOL_SIZE);
   CXNetworkP.Pool -> PoolC;

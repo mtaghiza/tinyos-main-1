@@ -5,6 +5,7 @@ module FloodBurstP {
   uses interface CXTransportPacket;
   uses interface Packet;
   uses interface SplitControl;
+  uses interface CXPacketMetadata;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -51,8 +52,9 @@ module FloodBurstP {
       if (nf != INVALID_FRAME){
         error_t error = call CXRequestQueue.requestSend(0,
           nf, 0,
+          TXP_BROADCAST,
           FALSE, 0,
-          NULL, NULL,
+          NULL, 
           msg);
         if (error == SUCCESS){
           sending = TRUE;

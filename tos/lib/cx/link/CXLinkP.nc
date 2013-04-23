@@ -14,6 +14,7 @@ module CXLinkP { provides interface SplitControl;
   uses interface Rf1aPhysicalMetadata;
   uses interface Rf1aPacket;
   uses interface Packet;
+  uses interface CXPacketMetadata;
   provides interface Rf1aTransmitFragment;
 
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
@@ -262,7 +263,7 @@ module CXLinkP { provides interface SplitControl;
                 aSfdCapture = 0;
                 tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
                 tx_left = tx_len;
-                tx_tsLoc = nextRequest->typeSpecific.tx.tsLoc;
+                tx_tsLoc = call CXPacketMetadata.getTSLoc(nextRequest->msg);
                 tx_tsSet = FALSE;
                 aRequestError = SUCCESS;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
@@ -388,7 +389,13 @@ module CXLinkP { provides interface SplitControl;
   error_t validateRequest(cx_request_t* r){
     //event in the past? I guess we were busy.
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
-      return EBUSY;
+    //TODO: superceded = ERETRY or EBUSY? or should both be treated
+    //the same
+//      if (r->baseFrame + r->frameOffset == handledFrame){
+//        return ERETRY;
+//      }else{ 
+        return EBUSY;
+//      }
 
     //micro timer required but it's either off or has been stopped
     //since the request was made
@@ -492,15 +499,15 @@ module CXLinkP { provides interface SplitControl;
 
   command error_t CXRequestQueue.requestSend(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef,
-      nx_uint32_t* tsLoc,
       void* md, message_t* msg){
     cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_TX, md);
     if (r != NULL){
       error_t error;
       r->typeSpecific.tx.useTsMicro = useMicro;
       r->typeSpecific.tx.tsMicro = microRef;
-      r->typeSpecific.tx.tsLoc = tsLoc;
+      r->typeSpecific.tx.txPriority = txPriority;
       r->msg = msg;
       error = validateRequest(r);
       if (SUCCESS == error){

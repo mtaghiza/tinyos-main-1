@@ -162,8 +162,8 @@ module CXSlaveSchedulerP{
   }
 
   command error_t CXRequestQueue.requestSend(uint8_t layerCount, 
-      uint32_t baseFrame, 
-      int32_t frameOffset, 
+      uint32_t baseFrame, int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       nx_uint32_t* tsLoc,
       void* md, message_t* msg){
@@ -177,7 +177,7 @@ module CXSlaveSchedulerP{
     call CXSchedulerPacket.setOriginFrame(msg, 
       baseFrame + frameOffset - lastCycleStart);
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
-      frameOffset, useMicro, microRef, tsLoc, md, msg);
+      frameOffset, txPriority, useMicro, microRef, tsLoc, md, msg);
   }
 
   event void SubCXRQ.sendHandled(error_t error, 

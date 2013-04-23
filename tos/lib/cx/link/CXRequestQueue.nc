@@ -1,5 +1,6 @@
 
  #include "message.h"
+ #include "requestQueue.h"
 interface CXRequestQueue{
   //for all requestX/XHandled functions,
   //  Layer count is 0 at the original request layer. Each down-call
@@ -40,8 +41,8 @@ interface CXRequestQueue{
   // shut off at the completion of the *handled event.
   command error_t requestSend(uint8_t layerCount, 
     uint32_t baseFrame, int32_t frameOffset, 
+    tx_priority_t txPriority,
     bool useMicro, uint32_t microRef, 
-    nx_uint32_t* tsLoc,
     void* md, message_t* msg);
 
   event void sendHandled(error_t error, 

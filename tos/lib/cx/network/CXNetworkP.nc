@@ -3,6 +3,7 @@
 module CXNetworkP {
   uses interface CXLinkPacket;
   uses interface CXNetworkPacket;
+  uses interface CXPacketMetadata;
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
@@ -55,11 +56,13 @@ module CXNetworkP {
         if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
             call CXNetworkPacket.readyNextHop(msg);
+            //do not timestamp.
+            call CXPacketMetadata.setTSLoc(msg, NULL);
             error = call SubCXRequestQueue.requestSend(
               0, //Forwarding: originates at THIS layer, not above.
               atFrame, CX_NETWORK_FORWARD_DELAY,
+              TXP_FORWARD,
               TRUE, microRef, //use last RX as ref
-              NULL,           //don't apply timestamp
               nmd, msg);      //pointer to stashed md
             if (SUCCESS == error){
               return;
@@ -114,9 +117,9 @@ module CXNetworkP {
       //if we were planning to timestamp it, but there was an error,
       //mark the timestamp as invalid: it's too messy to try to fix
       //this (has to be matched up with hop-count/origin frame, etc)
-      if (error != SUCCESS && nmd->tsLoc != NULL){
-        *(nmd->tsLoc) = INVALID_TIMESTAMP;
-        nmd -> tsLoc = NULL;
+      if (error != SUCCESS && call CXPacketMetadata.getTSLoc(msg) != NULL){
+        *(call CXPacketMetadata.getTSLoc(msg)) = INVALID_TIMESTAMP;
+        call CXPacketMetadata.setTSLoc(msg, NULL);
       }
       //OK, so we obviously forwarded it last time, so let's do it
       //again. Use last TX as ref. 
@@ -128,11 +131,13 @@ module CXNetworkP {
       //layer count stays the same: e.g. if we are forwarding, this
       //  event is signalled with lc=0, and we should re-send with lc=0
       //  as well.  if we are origin, it will have lc > 0
+      //do not timestamp.
+      call CXPacketMetadata.setTSLoc(msg, NULL);
       error = call SubCXRequestQueue.requestSend(
         layerCount,
         atFrame, CX_NETWORK_FORWARD_DELAY,
+        TXP_FORWARD,
         TRUE, microRef,
-        NULL,
         nmd, msg);
       if (error != SUCCESS){
         //signal relevant *handled event here so that
@@ -210,8 +215,8 @@ module CXNetworkP {
 
   command error_t CXRequestQueue.requestSend(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, 
+      tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
-      nx_uint32_t* tsLoc,
       void* md,
       message_t* msg){
     cx_network_metadata_t* nmd = newMd();
@@ -221,7 +226,6 @@ module CXNetworkP {
       nmd -> layerCount = layerCount;
       nmd -> next = md; 
       nmd -> reqFrame = baseFrame + frameOffset;
-      nmd -> tsLoc = tsLoc;
       //at this point, a new sequence number is assigned. We don't
       //want to call this lower (because then we will mess up SN's for
       //forwarded packets).
@@ -232,8 +236,8 @@ module CXNetworkP {
         return call SubCXRequestQueue.requestSend(
           nmd->layerCount + 1, 
           baseFrame, frameOffset, 
+          txPriority,
           useMicro, microRef, 
-          nmd->tsLoc, 
           nmd, msg);
       }else{
         call CXNetworkPacket.setOriginFrameNumber(msg,

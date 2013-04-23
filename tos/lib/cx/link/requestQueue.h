@@ -17,6 +17,13 @@ typedef enum {
   RT_MARK = 5,
 } request_type_t;
 
+typedef enum {
+  TXP_FORWARD = 0,
+  TXP_SCHEDULED = 1,
+  TXP_BROADCAST = 2,
+  TXP_UNICAST = 3,
+} tx_priority_t;
+
 //frame number increments every 2**-15 * 2**10 = 2**-5 seconds
 //32 bit unsigned int: 2**32 * 2**-5 => 2**27 seconds to rollover
 //there's between 2**16 and 2**17 seconds in a day (2**16.4)
@@ -46,6 +53,7 @@ typedef struct cx_request{
       bool useTsMicro;
       uint32_t tsMicro;
       nx_uint32_t* tsLoc;
+      tx_priority_t txPriority;
     } tx;
   } typeSpecific;
 } cx_request_t;
@@ -66,7 +74,13 @@ bool requestLeq(cx_request_t* l, cx_request_t* r){
       }else if (rfn < lfn){
         return FALSE;
       }else{
-        return l->requestType <= r->requestType;
+        if (l->requestType == RT_TX 
+            && (l->requestType == r->requestType)){
+          return l->typeSpecific.tx.txPriority <= r->typeSpecific.tx.txPriority;
+        } else {
+
+          return l->requestType <= r->requestType;
+        }
       }
     }
   }
