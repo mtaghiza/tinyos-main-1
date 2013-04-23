@@ -1,6 +1,6 @@
 
-#include "AM.h"
-#include "ScheduledAM.h"
+ #include "AM.h"
+ #include "ScheduledAM.h"
 generic configuration ScheduledAMSenderC(am_id_t AMId){
   provides {
     interface ScheduledAMSend;

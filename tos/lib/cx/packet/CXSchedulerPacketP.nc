@@ -15,7 +15,6 @@ module CXSchedulerPacketP {
   command void Packet.clear(message_t* msg){
     call SubPacket.clear(msg);
     getHeader(msg) -> sn = INVALID_SCHEDULE;
-    call CXPacketMetadata.setRequestedFrame(msg, INVALID_FRAME);
   }
 
   command uint8_t Packet.payloadLength(message_t* msg){

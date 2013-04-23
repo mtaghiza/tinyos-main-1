@@ -25,6 +25,8 @@ module CXMasterSchedulerP{
   uses interface ScheduleParams;
 
   uses interface SkewCorrection;
+
+  uses interface ScheduledAMSend;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -41,7 +43,8 @@ module CXMasterSchedulerP{
   uint32_t lastCycleStart = INVALID_FRAME;
   
   event void Boot.booted(){
-    sched = (cx_schedule_t*)(call Packet.getPayload(schedMsg,
+    call Packet.clear(schedMsg);
+    sched = (cx_schedule_t*)(call ScheduledAMSend.getPayload(schedMsg,
       sizeof(cx_schedule_t)));
     sched -> sn = call Random.rand16() & 0xFF;
     sched -> cycleLength = CX_DEFAULT_CYCLE_LENGTH;
@@ -128,14 +131,16 @@ module CXMasterSchedulerP{
         sched->padding4 = 0x14;
         sched->padding5 = 0x15;
         sched->cycleStartFrame = lastCycleStart;
-        //TODO: replace with call to ScheduledAMSend (remember to
-        //      clear the packet first)
+
         call CXPacketMetadata.setTSLoc(schedMsg, &(sched->timestamp));
-        error = call SubCXRQ.requestSend(0,
-          lastCycleStart, schedOF,
-          TXP_SCHEDULED,
-          FALSE, 0,
-          NULL, schedMsg);
+        error = call ScheduledAMSend.send(AM_BROADCAST_ADDR,
+          schedMsg, sizeof(cx_schedule_t),
+          lastCycleStart + schedOF); 
+//        SubCXRQ.requestSend(0,
+//          lastCycleStart, schedOF,
+//          TXP_SCHEDULED,
+//          FALSE, 0,
+//          NULL, schedMsg);
 //        printf("m %p s %p\r\n", schedMsg, &(sched->timestamp));
         if (error != SUCCESS){
           printf("Sched.reqS %x\r\n", error);
@@ -278,22 +283,25 @@ module CXMasterSchedulerP{
         microRef, t32kRef, 
         md, msg);
     }else{
-      if (SUCCESS == error){
-        printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
-          call CXNetworkPacket.getOriginFrameNumber(schedMsg),
-          sched->timestamp,
-          call CXNetworkPacket.getOriginFrameStart(schedMsg));
-        call SkewCorrection.addMeasurement(
-          call CXLinkPacket.addr(),
-          TRUE,
-          call CXNetworkPacket.getOriginFrameStart(schedMsg),
-          call CXNetworkPacket.getOriginFrameNumber(schedMsg),
-          call CXNetworkPacket.getOriginFrameStart(schedMsg));
-        //cool. schedule sent.
-      }else{
-        printf("SH %x\r\n", error);
-        //TODO: handle schedule troubles
-      }
+      printf("!master unexpected SH\r\n");
+    }
+  }
+  event void ScheduledAMSend.sendDone(message_t* msg, error_t error){
+    if (SUCCESS == error){
+      printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
+        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+        sched->timestamp,
+        call CXNetworkPacket.getOriginFrameStart(schedMsg));
+      call SkewCorrection.addMeasurement(
+        call CXLinkPacket.addr(),
+        TRUE,
+        call CXNetworkPacket.getOriginFrameStart(schedMsg),
+        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+        call CXNetworkPacket.getOriginFrameStart(schedMsg));
+      //cool. schedule sent.
+    }else{
+      printf("SH %x\r\n", error);
+      //TODO: handle schedule troubles
     }
   }
 

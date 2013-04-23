@@ -12,11 +12,15 @@ configuration CXLinkPacketC{
   components new Rf1aIeee154PacketC();
   Rf1aPacket = Rf1aIeee154PacketC;
 
+  components CXPacketMetadataC;
+
   components CXLinkPacketP;
   CXLinkPacketP.Ieee154Packet -> Rf1aIeee154PacketC;
   CXLinkPacketP.Rf1aPacket -> Rf1aIeee154PacketC;
+  Packet = CXLinkPacketP.Packet;
+  CXLinkPacketP.SubPacket -> Rf1aIeee154PacketC;
+  CXLinkPacketP.CXPacketMetadata -> CXPacketMetadataC;
 
-  Packet = Rf1aIeee154PacketC;
   CXLinkPacket = CXLinkPacketP;
   Rf1aIeee154PacketC.Rf1aPhysicalMetadata = Rf1aPhysicalMetadata;
   Ieee154Packet = Rf1aIeee154PacketC;

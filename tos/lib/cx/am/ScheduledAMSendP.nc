@@ -30,4 +30,19 @@ module ScheduledAMSendP {
   default event void ScheduledAMSend.sendDone[uint8_t clientId](message_t* msg,
       error_t error){}
 
+  default command error_t SubAMSend.send[uint8_t clientId](am_addr_t addr, 
+      message_t* msg, uint8_t len){
+    return FAIL;
+  }
+  default command error_t SubAMSend.cancel[uint8_t clientId](message_t* msg){
+    return FAIL;
+  }
+  default command uint8_t SubAMSend.maxPayloadLength[uint8_t clientId](){
+    return 0;
+  }
+
+  default command void* SubAMSend.getPayload[uint8_t clientId](message_t* msg, uint8_t len){
+    return NULL;
+  }
+
 }

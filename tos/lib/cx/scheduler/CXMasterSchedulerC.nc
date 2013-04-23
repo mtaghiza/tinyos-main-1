@@ -63,4 +63,7 @@ configuration CXMasterSchedulerC{
   CXMasterSchedulerP.Boot -> MainC.Boot;
   CXMasterSchedulerP.Random -> RandomC;
 
+  components new ScheduledAMSenderC(AM_CX_SCHEDULE_MSG) as SenderC;
+  CXMasterSchedulerP.ScheduledAMSend -> SenderC;
+
 }
