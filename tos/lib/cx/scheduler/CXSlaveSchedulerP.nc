@@ -256,8 +256,12 @@ module CXSlaveSchedulerP{
     //slave OFN - frames-from-start = slave start
     lastCycleStart = 
       call CXNetworkPacket.getOriginFrameNumber(msg) -
-      (call CXSchedulerPacket.getOriginFrame(msg) 
-       - sched->cycleStartFrame);
+      call CXSchedulerPacket.getOriginFrame(msg);
+    printf("LO %lu RO %lu RCSF %lu\r\n",
+      call CXNetworkPacket.getOriginFrameNumber(msg),
+      call CXSchedulerPacket.getOriginFrame(msg),
+      sched->cycleStartFrame);
+
     call ScheduleParams.setSchedule(sched);
     call ScheduleParams.setCycleStart(lastCycleStart);
     masterId = call CXLinkPacket.getSource(msg);

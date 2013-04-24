@@ -55,6 +55,9 @@ module SlotSchedulerP{
       lastSlotStart = lastCycleStart;
     }
     if (!wakeupPending && sched != NULL){
+      printf("scs WNS cs %lu lss %lu\r\n", 
+        cycleStart, 
+        lastCycleStart);
       post wakeupNextSlot();
     }
   }
@@ -65,6 +68,7 @@ module SlotSchedulerP{
   command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
     sched = schedule;
     if (!wakeupPending && sched != NULL && lastSlotStart != INVALID_FRAME){
+      printf("ss WNS\r\n");
       post wakeupNextSlot();
     }
   }
@@ -190,7 +194,6 @@ module SlotSchedulerP{
     error_t error;
     //if we're in the last slot, don't schedule the next wakeup.
     if (slotNumber(lastSlotStart) < sched->activeSlots - 1){
-      //TODO: apply skew correction
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->slotLength*(slotNumber(lastSlotStart)+1),
