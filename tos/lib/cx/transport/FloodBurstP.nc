@@ -52,6 +52,11 @@ module FloodBurstP {
   command error_t Send.send(message_t* msg, uint8_t len){
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
+      //TODO: this needs to validate that the network isn't pruned.
+      //  either it should be scheduled for a slot start, or it should
+      //  be scheduled within 1 slot-length of the last send
+      //TODO: need to validate that there are enough frames left in
+      //  this slot to deliver it.
       if (nf != INVALID_FRAME){
         error_t error = call CXRequestQueue.requestSend(0,
           nf, 0,

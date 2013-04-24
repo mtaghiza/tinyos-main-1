@@ -105,7 +105,8 @@ module SlotSchedulerP{
   //return whether or not the specified frame is owned by this node.
   bool isOwned(uint32_t frame){
     uint32_t sn =  slotNumber(frame);
-    return sn != INVALID_SLOT && sn == mySlot;
+    printf("io %lu %lu %lu\r\n", frame, sn, mySlot);
+    return (sn != INVALID_SLOT) && (sn == mySlot);
   }
   
   //return the first frame of the next occurrence of this node's
@@ -143,7 +144,12 @@ module SlotSchedulerP{
       return subNext;
     }
     if (isTX){
-      if (isOwned(slotNumber(subNext) )){
+//      printf("nftx sn %lu s# %lu io %x ms %lu",
+//        subNext,
+//        slotNumber(subNext),
+//        isOwned(subNext),
+//        mySlot);
+      if (isOwned(subNext)){
         if (subNext == myNextSlotStart(subNext)){
           //avoiding conflict with wakeup
           return subNext + 1;

@@ -34,6 +34,8 @@ module TestP{
 
   bool started = FALSE;
 
+  bool continuousTX = FALSE;
+
 
 
   task void usage(){
@@ -42,6 +44,7 @@ module TestP{
       TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
     printf("t : transmit a packet\r\n");
+    printf("T : toggle transmit back-to-back\r\n");
     printf("q : reset\r\n");
   }
 
@@ -96,9 +99,6 @@ module TestP{
     started = FALSE;
   }
 
-  event void AMSend.sendDone(message_t* msg_, error_t error){
-    printf("SendDone %x\r\n", error);
-  }
 
   task void transmit(){
     test_payload_t* pl = call AMSend.getPayload(msg,
@@ -112,6 +112,13 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     error = call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
     printf("Send len %u %x\r\n", sizeof(test_payload_t), error);
+  }
+
+  event void AMSend.sendDone(message_t* msg_, error_t error){
+    printf("SendDone %x\r\n", error);
+    if (continuousTX){
+      post transmit();
+    }
   }
 
   event void ScheduledAMSend.sendDone(message_t* msg_, error_t error){
@@ -142,6 +149,13 @@ module TestP{
     }
   }
 
+  task void toggleTX(){
+    continuousTX = !continuousTX;
+    if (continuousTX){
+      post transmit();
+    }
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -152,6 +166,9 @@ module TestP{
          break;
        case 't':
          post transmit();
+         break;
+       case 'T':
+         post toggleTX();
          break;
        case '?':
          post usage();
