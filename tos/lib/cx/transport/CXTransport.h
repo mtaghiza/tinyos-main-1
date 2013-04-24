@@ -3,6 +3,7 @@
 
 typedef nx_struct cx_transport_header {
   nx_uint8_t tproto;
+  nx_uint16_t distance;
 } cx_transport_header_t;
 
 #define CX_TP_FLOOD_BURST 0x00
@@ -14,5 +15,6 @@ typedef nx_struct cx_transport_header {
 //lower nibble is available for distinguishing data/ack/setup, etc
 #define CX_TP_PROTO_MASK 0xF0
 #define CX_INVALID_TP 0xFF
+#define CX_INVALID_DISTANCE 0xFF
 
 #endif

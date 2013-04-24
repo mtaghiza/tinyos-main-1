@@ -13,6 +13,7 @@ module CXTransportPacketP{
   command void Packet.clear(message_t* msg){
       call SubPacket.clear(msg);
     getHeader(msg) -> tproto = CX_INVALID_TP;
+    getHeader(msg) -> distance = CX_INVALID_DISTANCE;
   }
 
   command uint8_t Packet.payloadLength(message_t* msg){
@@ -42,6 +43,10 @@ module CXTransportPacketP{
     }
   }
 
+  command uint8_t CXTransportPacket.getDistance(message_t* msg){
+    return (getHeader(msg) -> distance);
+  }
+
   command uint8_t CXTransportPacket.getProtocol(message_t* msg){
     return (getHeader(msg) -> tproto) & CX_TP_PROTO_MASK;
   }
@@ -49,6 +54,10 @@ module CXTransportPacketP{
     return (getHeader(msg) -> tproto) & ~CX_TP_PROTO_MASK;
   }
 
+  command void CXTransportPacket.setDistance(message_t* msg,
+      uint8_t distance){
+    getHeader(msg) -> distance = distance;
+  }
   command void CXTransportPacket.setProtocol(message_t* msg,
       uint8_t tproto){
     uint8_t tp = getHeader(msg)->tproto;
