@@ -150,7 +150,7 @@ module CXNetworkP {
         if (layerCount > 0){
           signal CXRequestQueue.sendHandled(error, 
             layerCount - 1,
-            atFrame, reqFrame, microRef, t32kRef, 
+            atFrame, nmd->reqFrame, microRef, t32kRef, 
             nmd->next, msg);
         } else {
           signal CXRequestQueue.receiveHandled(error,
@@ -169,7 +169,7 @@ module CXNetworkP {
       if (layerCount > 0 ){
         signal CXRequestQueue.sendHandled(error, 
           layerCount - 1,
-          atFrame, reqFrame, microRef, t32kRef, 
+          atFrame, nmd->reqFrame, microRef, t32kRef, 
           nmd->next, msg);
         call Pool.put(nmd);
       }else{
