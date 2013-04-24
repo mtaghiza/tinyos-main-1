@@ -13,6 +13,7 @@ CFLAGS += -I$(TOSDIR)/lib/cx/transport
 CFLAGS += -I$(TOSDIR)/lib/cx/link
 CFLAGS += -I$(TOSDIR)/lib/cx/packet
 CFLAGS += -I$(TOSDIR)/lib/cx/am
+CFLAGS += -I$(TOSDIR)/lib/cx/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 

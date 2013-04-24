@@ -27,6 +27,7 @@ module CXMasterSchedulerP{
   uses interface SkewCorrection;
 
   uses interface ScheduledAMSend;
+  uses interface RoutingTable;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -57,6 +58,8 @@ module CXMasterSchedulerP{
 //      sched -> maxDepth);
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();
+
+    call RoutingTable.setDefault(sched->maxDepth);
   }
 
   event void Boot.booted(){
@@ -118,6 +121,7 @@ module CXMasterSchedulerP{
           sched = nextSched;
           nextMsg = swpM;
           nextSched = swpS;
+          call RoutingTable.setDefault(sched->maxDepth);
         }
         //msg setup should happen when it goes through requestSend.
 //        call CXSchedulerPacket.setScheduleNumber(schedMsg,

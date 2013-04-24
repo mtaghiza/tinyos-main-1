@@ -6,7 +6,10 @@ module FloodBurstP {
   uses interface Packet;
   uses interface SplitControl;
   uses interface CXPacketMetadata;
+  uses interface SlotTiming;
+  uses interface AMPacket;
   provides interface RequestPending;
+  uses interface RoutingTable;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -17,6 +20,8 @@ module FloodBurstP {
   bool rxPending = FALSE;
   bool on = FALSE;
   uint32_t rxf = INVALID_FRAME;
+
+  uint32_t lastTX;
 
   task void receiveNext(){
     if ( on && !rxPending){
@@ -52,12 +57,26 @@ module FloodBurstP {
   command error_t Send.send(message_t* msg, uint8_t len){
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
-      //TODO: this needs to validate that the network isn't pruned.
-      //  either it should be scheduled for a slot start, or it should
-      //  be scheduled within 1 slot-length of the last send
-      //TODO: need to validate that there are enough frames left in
+      if (call SlotTiming.framesLeftInSlot(nf) >= 
+          call RoutingTable.getDistance(TOS_NODE_ID, 
+            call AMPacket.destination(msg))){
+        //Cool, there's enough frames left in this slot.
+        uint32_t lss = call SlotTiming.lastSlotStart();
+
+        if (nf == lss || lastTX >= lss){
+          //cool, the network is set up for receiving broadcasts (this
+          //is either the first frame of the slot, or we've previously
+          //sent a broadcast during this slot).
+        } else {
+          nf = call SlotTiming.nextSlotStart(nf); 
+        }
+      } else {
+        nf = call SlotTiming.nextSlotStart(nf);
+      }
+
       //  this slot to deliver it.
       if (nf != INVALID_FRAME){
+        //TODO: should set TTL here? (based on RoutingTable.distance)
         error_t error = call CXRequestQueue.requestSend(0,
           nf, 0,
           TXP_BROADCAST,
@@ -71,6 +90,7 @@ module FloodBurstP {
       }else{
         return FAIL;
       }
+
     } else { 
       return ERETRY;
     }
@@ -100,6 +120,7 @@ module FloodBurstP {
       rxPending = FALSE;
       if (didReceive){
         uint8_t pll = call Packet.payloadLength(msg);
+//        printf("rxh %lu %lu\r\n", reqFrame, atFrame);
         rxMsg = signal Receive.receive(msg, 
           call Packet.getPayload(msg, pll),
           pll);
@@ -116,7 +137,9 @@ module FloodBurstP {
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     sending = FALSE;
+//    printf("txh %lu %lu\r\n", reqFrame, atFrame);
     signal Send.sendDone(msg, error);
+    lastTX = atFrame;
   }
 
   //unused events below

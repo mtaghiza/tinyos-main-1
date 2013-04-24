@@ -10,6 +10,7 @@ module SlotSchedulerP{
   uses interface SkewCorrection;
   provides interface SlotNotify;
   provides interface ScheduleParams;
+  provides interface SlotTiming;
 } implementation {
   
   //enums/vars for determining when a slot is idle.
@@ -105,7 +106,6 @@ module SlotSchedulerP{
   //return whether or not the specified frame is owned by this node.
   bool isOwned(uint32_t frame){
     uint32_t sn =  slotNumber(frame);
-    printf("io %lu %lu %lu\r\n", frame, sn, mySlot);
     return (sn != INVALID_SLOT) && (sn == mySlot);
   }
   
@@ -130,6 +130,22 @@ module SlotSchedulerP{
 
   //----- End utility functions
   
+  command uint32_t SlotTiming.nextSlotStart(uint32_t fn){
+    return myNextSlotStart(fn);
+  }
+
+  command uint32_t SlotTiming.lastSlotStart(){
+    return slotStart(mySlot);
+  }
+
+  command uint32_t SlotTiming.framesLeftInSlot(uint32_t fn){
+    uint32_t ss = slotStart(mySlot);
+    if (fn >= ss && fn < ss + sched->slotLength){
+      return (sched->slotLength) - (fn - ss);
+    }else{
+      return 0;
+    }
+  }
 
   /**
    *  In a nutshell: 

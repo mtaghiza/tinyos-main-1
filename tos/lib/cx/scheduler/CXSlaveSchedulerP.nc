@@ -18,6 +18,7 @@ module CXSlaveSchedulerP{
   uses interface CXLinkPacket;
   uses interface SlotNotify;
   uses interface Packet;
+  uses interface RoutingTable;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -266,6 +267,8 @@ module CXSlaveSchedulerP{
     call ScheduleParams.setCycleStart(lastCycleStart);
     masterId = call CXLinkPacket.getSource(msg);
     call ScheduleParams.setMasterId(masterId);
+
+    call RoutingTable.setDefault(sched->maxDepth);
     
     if (mySlot == INVALID_SLOT){
       post claimSlotTask();

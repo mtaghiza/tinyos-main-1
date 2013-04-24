@@ -29,7 +29,13 @@ configuration CXNetworkC {
 
   CXNetworkP.CXPacketMetadata -> CXPacketMetadataC;
 
+  components ActiveMessageC;
+  CXNetworkP.AMPacket -> ActiveMessageC;
+
   components new PoolC(cx_network_metadata_t, CX_NETWORK_POOL_SIZE);
   CXNetworkP.Pool -> PoolC;
+
+  components CXRoutingTableC;
+  CXNetworkP.RoutingTable -> CXRoutingTableC;
 
 }

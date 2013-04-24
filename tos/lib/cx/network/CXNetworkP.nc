@@ -4,11 +4,13 @@ module CXNetworkP {
   uses interface CXLinkPacket;
   uses interface CXNetworkPacket;
   uses interface CXPacketMetadata;
+  uses interface AMPacket;
 
   provides interface CXRequestQueue;
   uses interface CXRequestQueue as SubCXRequestQueue;
 
   uses interface Pool<cx_network_metadata_t>;
+  uses interface RoutingTable;
 } implementation {
 
   bool shouldForward(message_t* msg){
@@ -43,6 +45,8 @@ module CXNetworkP {
       if (didReceive){
         call CXNetworkPacket.setRXHopCount(msg, 
           call CXNetworkPacket.getHops(msg));
+        call RoutingTable.addMeasurement(call AMPacket.source(msg),
+          TOS_NODE_ID, call CXNetworkPacket.getRXHopCount(msg));
         //RX hop-count is 1 when received in the original transmission
         //frame.
         call CXNetworkPacket.setOriginFrameNumber(msg,

@@ -43,6 +43,8 @@ configuration CXTransportC {
   RRBurstP.SplitControl 
     -> CXTransportDispatchP.SubProtocolSplitControl[CX_TP_RR_BURST];
 
+  FloodBurstP.SlotTiming -> CXSchedulerC;
+
   CXTransportDispatchP.RequestPending[CX_TP_FLOOD_BURST] 
     -> FloodBurstP.RequestPending;
   
@@ -62,5 +64,9 @@ configuration CXTransportC {
 
   components ActiveMessageC;
   ScheduledTXP.AMPacket -> ActiveMessageC;
+
+  components CXRoutingTableC;
+  FloodBurstP.RoutingTable -> CXRoutingTableC;
+  FloodBurstP.AMPacket -> ActiveMessageC;
 
 }

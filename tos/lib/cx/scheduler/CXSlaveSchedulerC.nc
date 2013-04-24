@@ -12,6 +12,7 @@ configuration CXSlaveSchedulerC{
   provides interface CXRequestQueue;
   provides interface SplitControl;
   provides interface Packet; 
+  provides interface SlotTiming;
 } implementation {
   //CX stack components
   components CXSlaveSchedulerP;
@@ -57,4 +58,9 @@ configuration CXSlaveSchedulerC{
   
   components new AMReceiverC(AM_CX_SCHEDULE_MSG);
   CXSlaveSchedulerP.ScheduleReceive -> AMReceiverC;
+
+  SlotTiming = SlotSchedulerP;
+
+  components CXRoutingTableC;
+  CXSlaveSchedulerP.RoutingTable -> CXRoutingTableC;
 }
