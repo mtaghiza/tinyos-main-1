@@ -15,14 +15,8 @@ module TestP{
 
   uses interface StdControl as SerialControl;
 } implementation {
-
-  message_t msg_internal;
-  message_t* msg = &msg_internal;
-
-  bool started = FALSE;
-
   enum{
-    PAYLOAD_LEN= 50,
+    PAYLOAD_LEN= 48,
   };
 
   typedef nx_struct test_payload {
@@ -30,11 +24,24 @@ module TestP{
     nx_uint32_t timestamp;
   } test_payload_t;
 
+  message_t msg_internal;
+  message_t* msg = &msg_internal;
+
+  message_t rx_msg;
+  message_t* rxMsg = &rx_msg;
+  test_payload_t* rx_pl;
+  uint8_t rxPLL;
+
+  bool started = FALSE;
+
+
 
   task void usage(){
-    printf("---- Commands ----\r\n");
+    printf("---- %s ID %x Commands ----\r\n",
+      (CX_MASTER==1)?"MASTER": "SLAVE",
+      TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
-    printf("k : kill serial (requires BSL reset/power cycle to resume)\r\n");
+    printf("t : transmit a packet\r\n");
     printf("q : reset\r\n");
   }
 
@@ -89,21 +96,50 @@ module TestP{
     started = FALSE;
   }
 
-  task void send(){
-    call Packet.setPayloadLength(msg, sizeof(test_payload_t));
-    call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
+  event void AMSend.sendDone(message_t* msg_, error_t error){
+    printf("SendDone %x\r\n", error);
   }
 
-  event void AMSend.sendDone(message_t* msg_, error_t error){
+  task void transmit(){
+    test_payload_t* pl = call AMSend.getPayload(msg,
+      sizeof(test_payload_t));
+    uint8_t i;
+    error_t error;
+    call Packet.clear(msg);
+    for (i=0; i < PAYLOAD_LEN; i++){
+      pl->buffer[i] = i;
+    }
+    pl -> timestamp = 0xBABEFACE;
+    error = call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
+    printf("Send len %u %x\r\n", sizeof(test_payload_t), error);
   }
 
   event void ScheduledAMSend.sendDone(message_t* msg_, error_t error){
   }
 
+  task void reportRX(){
+    uint8_t i;
+    printf("APP RX %u: ", rxPLL);
+    for (i = 0; i < rxPLL; i++){
+      printf("%x ", rx_pl->buffer[i]);
+    }
+    printf("\r\n");
+    rx_pl = NULL;
+  }
+
   event message_t* Receive.receive(message_t* msg_, 
       void* payload, uint8_t len){
-    printf("RX %p\r\n", msg_);
-    return msg_;
+    if (rx_pl != NULL){
+      printf("Still logging\r\n");
+      return msg_;
+    } else {
+      message_t* ret = rxMsg;
+      rxMsg = msg_;
+      rx_pl = (test_payload_t*) payload;
+      rxPLL = len;
+      post reportRX();
+      return ret;
+    }
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -114,8 +150,8 @@ module TestP{
        case 'S':
          post toggleStartStop();
          break;
-       case 's':
-         post send();
+       case 't':
+         post transmit();
          break;
        case '?':
          post usage();
