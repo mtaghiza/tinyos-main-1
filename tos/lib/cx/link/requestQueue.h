@@ -4,8 +4,6 @@
 #include "message.h"
 #include "CXLink.h"
 
-#include <stdio.h>
-
 //sleep takes priority, then wakeup, then TX, and finally RX.
 //frameshift handled before "normal" events.
 typedef enum {
