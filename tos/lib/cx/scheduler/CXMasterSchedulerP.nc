@@ -86,7 +86,7 @@ module CXMasterSchedulerP{
       startDonePending = TRUE;
       //cool. we'll request sleep and next wakeup when the wakeup is handled
     }else{
-      printf("init.requestWakeup %x\r\n", error);
+      printf("!init.requestWakeup %x\r\n", error);
     }
   }
 
@@ -144,7 +144,7 @@ module CXMasterSchedulerP{
 //          NULL, schedMsg);
 //        printf("m %p s %p\r\n", schedMsg, &(sched->timestamp));
         if (error != SUCCESS){
-          printf("Sched.reqS %x\r\n", error);
+          printf("!Sched.reqS %x\r\n", error);
         }
 
         call ScheduleParams.setMasterId(TOS_NODE_ID);
@@ -153,7 +153,7 @@ module CXMasterSchedulerP{
         //TODO: this should be set somewhat dynamically.
         call ScheduleParams.setSlot(TOS_NODE_ID);
       }else{
-        printf("Sched.wh: %x\r\n", error);
+        printf("!Sched.wh: %x\r\n", error);
       }
     }
   }
@@ -177,7 +177,7 @@ module CXMasterSchedulerP{
       printf_SCHED("req cw: %x \r\n",
         error);
     }else{
-      printf("req cycle sleep: %x\r\n",
+      printf("!req cycle sleep: %x\r\n",
        error);
     }
   }
@@ -246,7 +246,7 @@ module CXMasterSchedulerP{
       signal CXRequestQueue.receiveHandled(error, layerCount - 1, atFrame, reqFrame,
         didReceive, microRef, t32kRef, md, msg);
     }else{
-      printf("Unexpected rx handled\r\n");
+      printf("!Unexpected rx handled\r\n");
     }
   }
   
@@ -294,7 +294,7 @@ module CXMasterSchedulerP{
 
   event void ScheduledAMSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
-      printf("TX sched of %lu ts %lu ofs%lu\r\n",
+      printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
         call CXNetworkPacket.getOriginFrameNumber(schedMsg),
         sched->timestamp,
         call CXNetworkPacket.getOriginFrameStart(schedMsg));
@@ -306,7 +306,7 @@ module CXMasterSchedulerP{
         call CXNetworkPacket.getOriginFrameStart(schedMsg));
       //cool. schedule sent.
     }else{
-      printf("SH %x\r\n", error);
+      printf("!CXMS.SD %x\r\n", error);
       //TODO: handle schedule troubles
     }
   }
@@ -324,7 +324,7 @@ module CXMasterSchedulerP{
       if (SUCCESS == error){
         lastSleep = atFrame;
       }else{
-        printf("sched.sh: %x\r\n", error);
+        printf("!sched.sh: %x\r\n", error);
       }
     }
   }

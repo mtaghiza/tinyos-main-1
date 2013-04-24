@@ -55,7 +55,7 @@ module SlotSchedulerP{
       lastSlotStart = lastCycleStart;
     }
     if (!wakeupPending && sched != NULL){
-      printf("scs WNS cs %lu lss %lu\r\n", 
+      printf_SCHED("scs WNS cs %lu lss %lu\r\n", 
         cycleStart, 
         lastCycleStart);
       post wakeupNextSlot();
@@ -68,7 +68,7 @@ module SlotSchedulerP{
   command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
     sched = schedule;
     if (!wakeupPending && sched != NULL && lastSlotStart != INVALID_FRAME){
-      printf("ss WNS\r\n");
+      printf_SCHED("ss WNS\r\n");
       post wakeupNextSlot();
     }
   }
@@ -225,7 +225,7 @@ module SlotSchedulerP{
       if (wakeupPending){
         wakeupPending --;
       }else{
-        printf("Unexpected wakeup\r\n");
+        printf("!Unexpected wakeup\r\n");
       }
 
       lastSlotStart = atFrame;
@@ -239,7 +239,7 @@ module SlotSchedulerP{
         } else {
           //woke up some time during the inactive period, shouldn't
           //  happen.
-          printf("inactive period wakeup %lu slot %lu\r\n", 
+          printf("!inactive period wakeup %lu slot %lu\r\n", 
             atFrame, sn);
         }
       }
@@ -277,7 +277,7 @@ module SlotSchedulerP{
         md, msg);
     }else{
       //there shouldn't be any RX requests originating at this layer.
-      printf("Unexpected rxHandled\r\n");
+      printf("!Unexpected rxHandled\r\n");
     }
   }
   
@@ -294,13 +294,13 @@ module SlotSchedulerP{
         ns,
         0);
       if (error != SUCCESS){
-        printf("req slot sleep: %x @%lu\r\n", error, ns);
+        printf("!req slot sleep: %x @%lu\r\n", error, ns);
       }
       printf_SCHED("req slot sleep: %x @%lu\r\n", 
         error, 
         ns);
     } else {
-      printf("Slot sleep requested, but no wakeup pending\r\n");
+      printf("!Slot sleep requested, but no wakeup pending\r\n");
     }
   }
 
@@ -372,7 +372,7 @@ module SlotSchedulerP{
         md, msg);
     }else{
       //nothing should be originating here
-      printf("Unexpected terminal sendHandled\r\n");
+      printf("!Unexpected terminal sendHandled\r\n");
     }
   }
   

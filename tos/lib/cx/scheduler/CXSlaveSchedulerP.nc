@@ -157,7 +157,7 @@ module CXSlaveSchedulerP{
         md, msg);
     }else{
       //there shouldn't be any RX requests originating at this layer.
-      printf("Unexpected rxHandled\r\n");
+      printf("!Unexpected rxHandled\r\n");
     }
   }
 
@@ -257,7 +257,7 @@ module CXSlaveSchedulerP{
     lastCycleStart = 
       call CXNetworkPacket.getOriginFrameNumber(msg) -
       call CXSchedulerPacket.getOriginFrame(msg);
-    printf("LO %lu RO %lu RCSF %lu\r\n",
+    printf_SCHED("LO %lu RO %lu RCSF %lu\r\n",
       call CXNetworkPacket.getOriginFrameNumber(msg),
       call CXSchedulerPacket.getOriginFrame(msg),
       sched->cycleStartFrame);
@@ -334,7 +334,7 @@ module CXSlaveSchedulerP{
       printf_SCHED("req cw: %x\r\n",
         error);
     }else{
-      printf("req cycle sleep: %x\r\n",
+      printf("!req cycle sleep: %x\r\n",
        error);
     }
   }
