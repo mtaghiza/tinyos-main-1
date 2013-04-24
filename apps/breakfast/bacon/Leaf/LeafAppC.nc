@@ -5,7 +5,9 @@
 configuration LeafAppC{
 } implementation {
   components WatchDogC;
+  #ifndef NO_STACKGUARD
   components StackGuardC;
+  #endif
 
   components MainC;
   components LeafP;
