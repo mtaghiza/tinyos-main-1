@@ -68,10 +68,10 @@ module FloodBurstP {
           //is either the first frame of the slot, or we've previously
           //sent a broadcast during this slot).
         } else {
-          nf = call SlotTiming.nextSlotStart(nf); 
+          nf = call SlotTiming.nextSlotStart(nf) + 1; 
         }
       } else {
-        nf = call SlotTiming.nextSlotStart(nf);
+        nf = call SlotTiming.nextSlotStart(nf) + 1;
       }
 
       //  this slot to deliver it.

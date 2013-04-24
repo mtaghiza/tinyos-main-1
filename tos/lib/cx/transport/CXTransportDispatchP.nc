@@ -116,7 +116,7 @@ module CXTransportDispatchP {
       }
     }
 
-    printf("rxh %x to %x (%x)\r\n", didReceive, signalTp, nextRX);
+//    printf("rxh %x to %x (%x)\r\n", didReceive, signalTp, nextRX);
     if (call RequestPending.requestPending[signalTp](reqFrame)){
       signal CXRequestQueue.receiveHandled[signalTp](error,
         layerCount,
