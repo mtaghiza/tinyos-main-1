@@ -16,7 +16,7 @@ module TestP{
   uses interface StdControl as SerialControl;
 } implementation {
   enum{
-    PAYLOAD_LEN= 48,
+    PAYLOAD_LEN= 49,
   };
 
   typedef nx_struct test_payload {

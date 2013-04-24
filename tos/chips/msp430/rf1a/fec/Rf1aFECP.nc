@@ -258,8 +258,9 @@ generic module Rf1aFECP () {
         encodedSoFar_d = 0; 
         encodedReady_e = 0;
         runningCRC_d = 0;
-        //pad length so that it's always even (address CRC computation
-        //issue.
+        //N.B. tx packet length may be padded so that it's always
+        //even, as the CRC module operates on word data (not byte
+        //data)
         encodedLen_e = call FEC.encodedLen(length_d + (length_d%2)+ sizeof(runningCRC_d));
         numTraces = 0;
       }

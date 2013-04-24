@@ -1,3 +1,14 @@
+Some Collected Caveats
+======================
+(Marked n.b. or N.B. in source)
+
+- When using FEC, the packet may be padded with an additional 0x00
+  byte when transmitted: this is due to the fact that the CRC module
+  operates on 16-bit chunks of data.  Note that the sender will not
+  see this, otherwise setPayloadLength() and getPayloadLength() would
+  return different values depending on whether the ultimate packet
+  length was odd or even. 
+
 AM ID's in common use:
 ======================
 SettingsStorage: 0xC0 - 0xC4 in use, 0xC5-0xCF reserved
