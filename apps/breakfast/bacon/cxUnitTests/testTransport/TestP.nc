@@ -7,7 +7,8 @@ module TestP{
   uses interface UartStream;
   
   uses interface SplitControl;
-  uses interface AMSend;
+  uses interface AMSend as BroadcastAMSend;
+  uses interface AMSend as UnicastAMSend;
   uses interface ScheduledAMSend;
   uses interface Receive;
 
@@ -35,7 +36,8 @@ module TestP{
 
   bool started = FALSE;
 
-  bool continuousTX = FALSE;
+  bool continuousTXBroadcast = FALSE;
+  bool continuousTXUnicast = FALSE;
 
 
 
@@ -44,8 +46,10 @@ module TestP{
       (CX_MASTER==1)?"MASTER": "SLAVE",
       TOS_NODE_ID);
     printf("S : toggle start/stop\r\n");
-    printf("t : transmit a packet\r\n");
-    printf("T : toggle transmit back-to-back\r\n");
+    printf("b : transmit a packet broadcast\r\n");
+    printf("B : toggle broadcast transmit back-to-back\r\n");
+    printf("u : transmit a packet unicast\r\n");
+    printf("U : toggle unicast transmit back-to-back\r\n");
     printf("q : reset\r\n");
   }
 
@@ -101,8 +105,8 @@ module TestP{
   }
 
 
-  task void transmit(){
-    test_payload_t* pl = call AMSend.getPayload(msg,
+  task void broadcast(){
+    test_payload_t* pl = call BroadcastAMSend.getPayload(msg,
       sizeof(test_payload_t));
     uint8_t i;
     error_t error;
@@ -112,14 +116,36 @@ module TestP{
     }
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
-    error = call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
-    printf("APP TX %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
+    error = call BroadcastAMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
+    printf("APP TX B %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
   }
 
-  event void AMSend.sendDone(message_t* msg_, error_t error){
-    printf("SendDone %x\r\n", error);
-    if (continuousTX){
-      post transmit();
+  task void unicast(){
+    test_payload_t* pl = call UnicastAMSend.getPayload(msg,
+      sizeof(test_payload_t));
+    uint8_t i;
+    error_t error;
+    call Packet.clear(msg);
+    for (i=0; i < PAYLOAD_LEN; i++){
+      pl->buffer[i] = i;
+    }
+    pl -> timestamp = 0xBABEFACE;
+    pl -> sn = sn++;
+    error = call UnicastAMSend.send(DESTINATION_ID, msg, sizeof(test_payload_t));
+    printf("APP TX U %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
+  }
+
+  event void BroadcastAMSend.sendDone(message_t* msg_, error_t error){
+    printf("B SendDone %x\r\n", error);
+    if (continuousTXBroadcast){
+      post broadcast();
+    }
+  }
+
+  event void UnicastAMSend.sendDone(message_t* msg_, error_t error){
+    printf("U SendDone %x\r\n", error);
+    if (continuousTXUnicast){
+      post unicast();
     }
   }
 
@@ -151,10 +177,17 @@ module TestP{
     }
   }
 
-  task void toggleTX(){
-    continuousTX = !continuousTX;
-    if (continuousTX){
-      post transmit();
+  task void toggleTXBroadcast(){
+    continuousTXBroadcast = !continuousTXBroadcast;
+    if (continuousTXBroadcast){
+      post broadcast();
+    }
+  }
+
+  task void toggleTXUnicast(){
+    continuousTXUnicast = !continuousTXUnicast;
+    if (continuousTXUnicast){
+      post unicast();
     }
   }
 
@@ -166,11 +199,17 @@ module TestP{
        case 'S':
          post toggleStartStop();
          break;
-       case 't':
-         post transmit();
+       case 'b':
+         post broadcast();
          break;
-       case 'T':
-         post toggleTX();
+       case 'B':
+         post toggleTXBroadcast();
+         break;
+       case 'u':
+         post unicast();
+         break;
+       case 'U':
+         post toggleTXUnicast();
          break;
        case '?':
          post usage();

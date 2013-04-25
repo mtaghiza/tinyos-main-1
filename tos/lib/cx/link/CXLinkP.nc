@@ -392,7 +392,7 @@ module CXLinkP {
         updateLastFrameNum();
         handledFrame = lastFrameNum;
         if (nextRequest->requestType != RT_MARK){
-          printf("rnR: %x %x@ %lu\r\n", requestError,
+          printf_LINK_EVICTIONS("rnR: %x %x@ %lu\r\n", requestError,
             nextRequest->requestType, 
             nextRequest->baseFrame + nextRequest->frameOffset);
         }

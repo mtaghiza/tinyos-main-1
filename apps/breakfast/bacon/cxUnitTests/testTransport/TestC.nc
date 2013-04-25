@@ -12,12 +12,14 @@ configuration TestC {
   
   components ActiveMessageC;
   components new ScheduledAMSenderC(AM_TEST_MSG);
-  components new AMSenderC(AM_TEST_MSG);
+  components new AMSenderC(AM_TEST_MSG) as BroadcastSender;
+  components new AMSenderC(AM_TEST_MSG) as UnicastSender;
   components new AMReceiverC(AM_TEST_MSG);
 
-  TestP.AMSend -> AMSenderC;
+  TestP.BroadcastAMSend -> BroadcastSender;
+  TestP.UnicastAMSend -> UnicastSender;
   TestP.ScheduledAMSend -> ScheduledAMSenderC;
   TestP.Receive -> AMReceiverC;
   TestP.SplitControl -> ActiveMessageC;
-  TestP.Packet -> AMSenderC;
+  TestP.Packet -> BroadcastSender;
 }

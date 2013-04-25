@@ -19,4 +19,14 @@
 #define printf_LINK(...)
 #endif
 
+#ifndef DEBUG_LINK_EVICTIONS
+#define DEBUG_LINK_EVICTIONS 0
+#endif
+
+#if DEBUG_LINK_EVICTIONS == 1
+#define printf_LINK_EVICTIONS( ... ) printf( __VA_ARGS__ )
+#else
+#define printf_LINK_EVICTIONS(...)
+#endif
+
 #endif

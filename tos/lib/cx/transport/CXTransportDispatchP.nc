@@ -13,6 +13,9 @@ module CXTransportDispatchP {
   uses interface CXPacketMetadata;
 
   uses interface RequestPending[uint8_t tp];
+  
+  //ugh. for destination
+  uses interface AMPacket;
 } implementation {
   //splitcontrol:
   // - commands and events should be passed through
@@ -97,12 +100,13 @@ module CXTransportDispatchP {
       }
       lastRXFrame = atFrame;
       signalTp = call CXTransportPacket.getProtocol(msg);
-      printf("rx %x\r\n", signalTp);
-      //scheduled send gets received by flood: otherwise, we have to
-      //have scheduledTXP polling for receives as well.
+
       if (signalTp == CX_TP_SCHEDULED){
-        signalTp = CX_TP_FLOOD_BURST;
-        printf("s->f %x\r\n", signalTp);
+        if (call AMPacket.destination(msg) == AM_BROADCAST_ADDR){
+          signalTp = CX_TP_FLOOD_BURST;
+        } else {
+          signalTp = CX_TP_RR_BURST;
+        }
       }
     } else {
       uint8_t i;

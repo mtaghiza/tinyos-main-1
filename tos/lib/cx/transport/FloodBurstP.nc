@@ -153,6 +153,6 @@ module FloodBurstP {
   }
 
   command bool RequestPending.requestPending(uint32_t frame){
-    return (frame != INVALID_FRAME) && rxf == frame;
+    return (frame != INVALID_FRAME) && rxPending;
   }
 }

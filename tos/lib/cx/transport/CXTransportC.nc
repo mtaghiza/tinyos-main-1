@@ -44,9 +44,12 @@ configuration CXTransportC {
     -> CXTransportDispatchP.SubProtocolSplitControl[CX_TP_RR_BURST];
 
   FloodBurstP.SlotTiming -> CXSchedulerC;
+  RRBurstP.SlotTiming -> CXSchedulerC;
 
   CXTransportDispatchP.RequestPending[CX_TP_FLOOD_BURST] 
     -> FloodBurstP.RequestPending;
+  CXTransportDispatchP.RequestPending[CX_TP_RR_BURST] 
+    -> RRBurstP.RequestPending;
   
   components CXTransportPacketC;
   Packet = CXTransportPacketC;
@@ -68,5 +71,17 @@ configuration CXTransportC {
   components CXRoutingTableC;
   FloodBurstP.RoutingTable -> CXRoutingTableC;
   FloodBurstP.AMPacket -> ActiveMessageC;
+
+  RRBurstP.RoutingTable -> CXRoutingTableC;
+  RRBurstP.AMPacket -> ActiveMessageC;
+
+  components CXNetworkPacketC;
+  RRBurstP.CXNetworkPacket -> CXNetworkPacketC;
+
+  components new ScheduledAMSenderC(AM_CX_RR_ACK_MSG) as AckSenderC;
+  RRBurstP.AckSend -> AckSenderC;
+  RRBurstP.AckPacket -> AckSenderC;
+
+  CXTransportDispatchP.AMPacket -> ActiveMessageC;
 
 }

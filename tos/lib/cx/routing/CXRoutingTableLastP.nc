@@ -23,4 +23,7 @@ module CXRoutingTableLastP {
     defaultDistance = distance;
     return SUCCESS;
   }
+  command uint8_t RoutingTable.getDefault(){
+    return defaultDistance;
+  }
 }
