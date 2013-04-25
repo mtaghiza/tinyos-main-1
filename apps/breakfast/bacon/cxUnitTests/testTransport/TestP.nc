@@ -20,9 +20,9 @@ module TestP{
   };
   uint32_t sn = 0;
   typedef nx_struct test_payload {
-    nx_uint32_t sn;
     nx_uint8_t buffer[PAYLOAD_LEN];
     nx_uint32_t timestamp;
+    nx_uint32_t sn;
   } test_payload_t;
 
   message_t msg_internal;
@@ -113,7 +113,7 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
-    printf("Send len %u %x\r\n", sizeof(test_payload_t), error);
+    printf("APP TX %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
   }
 
   event void AMSend.sendDone(message_t* msg_, error_t error){
@@ -128,7 +128,7 @@ module TestP{
 
   task void reportRX(){
     uint8_t i;
-    printf("APP RX %u: ", rxPLL);
+    printf("APP RX %lu %u: ", rx_pl->sn, rxPLL);
     for (i = 0; i < rxPLL; i++){
       printf("%x ", rx_pl->buffer[i]);
     }
