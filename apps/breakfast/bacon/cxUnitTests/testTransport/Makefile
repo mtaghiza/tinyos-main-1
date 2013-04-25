@@ -40,8 +40,8 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 #Debug settings
 #enable link layer printf's
 CFLAGS += -DDEBUG_LINK=1
-CFLAGS += -DDEBUG_SKEW=1
-CFLAGS += -DDEBUG_SCHED=1
+CFLAGS += -DDEBUG_SKEW=0
+CFLAGS += -DDEBUG_SCHED=0
 #toggle P1.1 at every frame boundary
 CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=0
 #Set P1.1 at wakeup, clear at sleep

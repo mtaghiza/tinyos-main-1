@@ -129,9 +129,9 @@ module TestP{
   task void reportRX(){
     uint8_t i;
     printf("APP RX %lu %u: ", rx_pl->sn, rxPLL);
-    for (i = 0; i < rxPLL; i++){
-      printf("%x ", rx_pl->buffer[i]);
-    }
+//    for (i = 0; i < rxPLL; i++){
+//      printf("%x ", rx_pl->buffer[i]);
+//    }
     printf("\r\n");
     rx_pl = NULL;
   }
