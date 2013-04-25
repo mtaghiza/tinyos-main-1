@@ -18,8 +18,9 @@ module TestP{
   enum{
     PAYLOAD_LEN= 49,
   };
-
+  uint32_t sn = 0;
   typedef nx_struct test_payload {
+    nx_uint32_t sn;
     nx_uint8_t buffer[PAYLOAD_LEN];
     nx_uint32_t timestamp;
   } test_payload_t;
@@ -61,14 +62,14 @@ module TestP{
       
       P2DIR |= BIT4;
       P2SEL |= BIT4;
-      if (LINK_DEBUG_FRAME_BOUNDARIES){
+//      if (LINK_DEBUG_FRAME_BOUNDARIES){
         P1DIR |= BIT1;
         P1SEL &= ~BIT1;
         P1OUT &= ~BIT1;
-      }else{
-        P1SEL |= BIT1;
-        P1DIR |= BIT1;
-      }
+//      }else{
+//        P1SEL |= BIT1;
+//        P1DIR |= BIT1;
+//      }
       
       //power on flash chip to open p1.1-4
       P2SEL &=~BIT1;
@@ -110,6 +111,7 @@ module TestP{
       pl->buffer[i] = i;
     }
     pl -> timestamp = 0xBABEFACE;
+    pl -> sn = sn++;
     error = call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
     printf("Send len %u %x\r\n", sizeof(test_payload_t), error);
   }

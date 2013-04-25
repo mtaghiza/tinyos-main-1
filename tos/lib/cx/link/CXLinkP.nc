@@ -1,7 +1,8 @@
 
  #include "CXLink.h"
  #include "CXLinkDebug.h"
-module CXLinkP { provides interface SplitControl;
+module CXLinkP { 
+  provides interface SplitControl;
   provides interface CXRequestQueue;
 
   uses interface Pool<cx_request_t>;
@@ -125,6 +126,8 @@ module CXLinkP { provides interface SplitControl;
 //        printf_LINK("%lu \r\n", lastFrameTime);
       }
       if (microRef !=0 && !shouldSynch){
+        P1OUT |=  BIT3;
+        P1OUT &= ~BIT3;
         printf_LINK("Failed CRC don't resynch\r\n");
       }
       asyncHandled = FALSE;
