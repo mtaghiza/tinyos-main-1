@@ -264,7 +264,7 @@ module CXMasterSchedulerP{
       void* md, message_t* msg){
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
-      call CXSchedulerPacket.getScheduleNumber(schedMsg));
+      sched->sn);
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);

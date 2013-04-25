@@ -58,7 +58,9 @@ module SkewCorrectionC {
         lastOriginFrame = 0;
         cumulativeTpf = 0;
       }
-      if (lastTimestamp != 0 && lastCapture != 0 && lastOriginFrame != 0 && isSynched){
+      if (lastTimestamp != 0 && lastCapture != 0 
+          && lastOriginFrame != 0 
+          && isSynched && otherTS > lastTimestamp){
         int32_t remoteElapsed = otherTS - lastTimestamp;
         int32_t localElapsed = myTS - lastCapture;
         int32_t framesElapsed = originFrame - lastOriginFrame;
@@ -70,12 +72,23 @@ module SkewCorrectionC {
         int32_t deltaFP = (delta << TPF_DECIMAL_PLACES);
   
         int32_t tpf = deltaFP / framesElapsed;
-  
-        //next EWMA step
-        //n.b. we let TPF = 0 initially to keep things simple. In
-        //general, we should be reasonably close to this. 
-        cumulativeTpf = sfpMult(cumulativeTpf, (FP_1 - alpha)) 
-          + sfpMult(tpf, alpha);
+//        printf("tpf %lx . > 0: %x . > %lx: %x . -> : %x .\r\n",
+//          tpf,
+//          tpf > 0,
+//          MAX_VALID_TPF,
+//          tpf > MAX_VALID_TPF,
+//          (-1L*tpf) > MAX_VALID_TPF);
+        if ( (tpf > 0 && tpf > MAX_VALID_TPF) 
+            || (tpf < 0 && (-1L*tpf) > MAX_VALID_TPF)){
+//        if ( tpf > FP_1 || tpf < -1*FP_1){
+          printf("SKEW EXCEEDED\r\n");
+        } else {
+          //next EWMA step
+          //n.b. we let TPF = 0 initially to keep things simple. In
+          //general, we should be reasonably close to this. 
+          cumulativeTpf = sfpMult(cumulativeTpf, (FP_1 - alpha)) 
+            + sfpMult(tpf, alpha);
+        }
         //TODO: DEBUG remove
         lastDelta = delta;
         lastFramesElapsed = framesElapsed;

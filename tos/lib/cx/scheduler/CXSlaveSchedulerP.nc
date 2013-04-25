@@ -202,7 +202,7 @@ module CXSlaveSchedulerP{
   }
 
   task void reportSched(){
-    printf("RX Sched");
+    printf_SCHED("RX Sched");
     printf_SCHED(": %p %p sn %u cl %lu sl %lu md %u na %u ts %lu",
       schedMsg,
       sched, 
@@ -221,7 +221,7 @@ module CXSlaveSchedulerP{
 //      sched->padding4,
 //      sched->padding5);
 
-    printf("\r\n");
+    printf_SCHED("\r\n");
   }
 
   
@@ -249,7 +249,7 @@ module CXSlaveSchedulerP{
   event message_t* ScheduleReceive.receive(message_t* msg, 
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
-    synchReceived = (state != S_SEARCH);
+    synchReceived = (state == S_SYNCHED);
     if (!synchReceived){
       printf_SCHED("Synch gained\r\n");
     }
@@ -314,6 +314,7 @@ module CXSlaveSchedulerP{
         startDonePending = FALSE;
         signal SplitControl.startDone(SUCCESS);
       } else {
+        state = S_SOFT_SYNCH;
         //at this layer: wakeup is at start of cycle. This command not
         //only informs the SlotScheduler of the cycle start, but also
         //causes it to start slot-cycling.
