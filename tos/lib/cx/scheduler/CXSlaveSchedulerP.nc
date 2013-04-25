@@ -186,6 +186,11 @@ module CXSlaveSchedulerP{
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     if (layerCount){
+      if (error == SUCCESS && state != S_SYNCHED){
+        //we were not synched, so it might have been sent
+        //off-schedule.
+        error = ERETRY;
+      }
       signal CXRequestQueue.sendHandled(error, 
         layerCount - 1,
         atFrame, reqFrame,
