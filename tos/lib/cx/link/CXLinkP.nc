@@ -97,6 +97,7 @@ module CXLinkP {
     uint32_t microRef;
     uint32_t t32kRef = 0;
     uint32_t reqFrame = nextRequest->baseFrame + nextRequest->frameOffset;
+
     atomic{
       if (asyncHandled){
         microRef = aSfdCapture;
@@ -683,6 +684,15 @@ module CXLinkP {
 
   task void signalReceived(){
     didReceive = TRUE;
+    //This is a little hacky: really, we should be recording the
+    //end-of-packet time and figuring out what frame it falls in.
+    //At any rate, most of the time this will be the same as the
+    //handledFrame which we set at FrameTimer.fired, but if we are
+    //doing a long RX (e.g. searching for schedule), we need to do
+    //this so that frame numbering stays consistent.
+    updateLastFrameNum();
+    handledFrame = lastFrameNum;
+
     //store the phy metadata (including CRC)
     call Rf1aPhysicalMetadata.store(call Rf1aPacket.metadata(nextRequest->msg));
     atomic{
