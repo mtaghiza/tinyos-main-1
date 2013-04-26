@@ -125,7 +125,7 @@ module CXTransportDispatchP {
         microRef, t32kRef,
         md, msg);
     }else{
-      printf("!no pending rx req\r\n");
+      printf("!no pending rx req to %x\r\n", signalTp);
     }
     nextRX = (signalTp + 1)%NUM_RX_TRANSPORT_PROTOCOLS;
   }
@@ -183,6 +183,7 @@ module CXTransportDispatchP {
   }
 
   default command bool RequestPending.requestPending[uint8_t tp](uint32_t frame){
+    printf("!default RP to %x\r\n", tp);
     return FALSE;
   }
 }
