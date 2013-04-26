@@ -1,5 +1,6 @@
 
  #include "CXLink.h"
+ #include "CXNetwork.h"
 module CXNetworkP {
   uses interface CXLinkPacket;
   uses interface CXNetworkPacket;
@@ -12,6 +13,9 @@ module CXNetworkP {
   uses interface Pool<cx_network_metadata_t>;
   uses interface RoutingTable;
 } implementation {
+
+  uint32_t synchFrame;
+  uint32_t synchMicroRef;
 
   bool shouldForward(message_t* msg){
     bool ret = TRUE;
@@ -59,14 +63,17 @@ module CXNetworkP {
           t32kRef - (FRAMELEN_32K * (call CXNetworkPacket.getRXHopCount(msg) - 1)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
           if (shouldForward(msg)){
+            synchFrame = atFrame;
+            synchMicroRef = microRef;
             call CXNetworkPacket.readyNextHop(msg);
             //do not timestamp.
             call CXPacketMetadata.setTSLoc(msg, NULL);
             error = call SubCXRequestQueue.requestSend(
               0, //Forwarding: originates at THIS layer, not above.
-              atFrame, CX_NETWORK_FORWARD_DELAY,
+              synchFrame, CX_NETWORK_FORWARD_DELAY + (atFrame -
+              synchFrame),
               TXP_FORWARD,
-              TRUE, microRef, //use last RX as ref
+              TRUE, synchMicroRef, //use last RX as ref
               nmd, msg);      //pointer to stashed md
             if (SUCCESS == error){
               return;
@@ -92,9 +99,17 @@ module CXNetworkP {
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
+    bool useMicroRef = TRUE;
     if (SUCCESS != error){
       printf("n.sh: %x\r\n", error);
     }
+    if (SUCCESS == error){
+      synchFrame = atFrame;
+      synchMicroRef = microRef;
+    }else if (atFrame - synchFrame > MAX_SOFT_SYNCH){
+      useMicroRef =  FALSE;
+    }
+
     if (SUCCESS == error && call CXNetworkPacket.getHops(msg) == 1){
       call CXNetworkPacket.setOriginFrameStart(msg,
         t32kRef);
@@ -137,11 +152,13 @@ module CXNetworkP {
       //  as well.  if we are origin, it will have lc > 0
       //do not timestamp.
       call CXPacketMetadata.setTSLoc(msg, NULL);
+      //only use microref's from successfully-sent packets.
       error = call SubCXRequestQueue.requestSend(
         layerCount,
-        atFrame, CX_NETWORK_FORWARD_DELAY,
+        synchFrame, 
+        CX_NETWORK_FORWARD_DELAY + (atFrame - synchFrame),
         TXP_FORWARD,
-        TRUE, microRef,
+        useMicroRef, synchMicroRef,
         nmd, msg);
       if (error != SUCCESS){
         //signal relevant *handled event here so that

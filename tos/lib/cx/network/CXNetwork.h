@@ -33,4 +33,8 @@ typedef struct cx_network_metadata {
 
 #define INVALID_TIMESTAMP 0xFFFFFFFF
 
+#ifndef MAX_SOFT_SYNCH 
+#define MAX_SOFT_SYNCH 1
+#endif
+
 #endif
