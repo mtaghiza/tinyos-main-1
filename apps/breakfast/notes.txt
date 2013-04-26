@@ -8,6 +8,13 @@ Some Collected Caveats
   see this, otherwise setPayloadLength() and getPayloadLength() would
   return different values depending on whether the ultimate packet
   length was odd or even. 
+- as a potential FEC-related issue, I've observed that a packet length
+  of 69 caused synch issues (original + forwarder were out of step
+  by 2-4 uS at 1st retx), while a length of 68 or 70 were OK (this
+  is length prior to applying FEC). I don't know why this could happen: the
+  packets being sent take the same amount of time, so I don't think
+  there's a problem with the padding process. I verified that with FEC
+  off, a 69-byte payload was fine. 
 
 AM ID's in common use:
 ======================

@@ -31,7 +31,7 @@
 
 //Datasheet: IDLE->RX/FSTXON/TX 88.4 uS 
 #define T_IDLE_RXTX 575UL
-//difference between transmitter SFD and receiver SFD: 60.45 uS
+//difference between transmitter SFD and receiver SFD: 60.45 fast ticks
 #define T_SFD_PROP_TIME 61UL
 //time from strobe command to SFD: 0.00523 S
 #define T_STROBE_SFD 3395UL
