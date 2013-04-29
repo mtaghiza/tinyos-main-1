@@ -36,6 +36,7 @@
  * @author Peter A. Bigot <pab@peoplepowerco.com>
  * @author Doug Carlson <carlson@cs.jhu.edu>
  */
+ #include "CXAMDebug.h"
 module CXActiveMessageP {
   provides {
     interface AMSend[am_id_t id];
@@ -113,7 +114,7 @@ implementation {
   }
   
   void sendDone(message_t* msg, error_t error, uint8_t from){
-    printf("sd %p from %x\r\n", msg, from);
+    printf_AM("sd %p from %x\r\n", msg, from);
     signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 

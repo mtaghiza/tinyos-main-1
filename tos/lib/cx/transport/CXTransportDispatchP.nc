@@ -1,6 +1,7 @@
 
  #include "CXTransport.h"
  #include "CXScheduler.h"
+ #include "CXTransportDebug.h"
 module CXTransportDispatchP {
   provides interface CXRequestQueue[uint8_t tp];
   uses interface CXRequestQueue as SubCXRQ;
@@ -66,7 +67,7 @@ module CXTransportDispatchP {
       tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
-    printf("rs %p from %x\r\n", msg, tp);
+    printf_TRANSPORT("rs %p from %x\r\n", msg, tp);
     call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
       frameOffset, txPriority, useMicro, microRef, md, msg);
@@ -104,12 +105,12 @@ module CXTransportDispatchP {
       signalTp = call CXTransportPacket.getProtocol(msg);
 
       if (signalTp == CX_TP_SCHEDULED){
-        printf("rx tps ");
+        printf_TRANSPORT("rx tps ");
         if (call AMPacket.destination(msg) == AM_BROADCAST_ADDR){
-          printf("bcast\r\n");
+          printf_TRANSPORT("bcast\r\n");
           signalTp = CX_TP_FLOOD_BURST;
         } else {
-          printf("ucast\r\n");
+          printf_TRANSPORT("ucast\r\n");
           signalTp = CX_TP_RR_BURST;
         }
       }
@@ -125,7 +126,7 @@ module CXTransportDispatchP {
       }
     }
     if (didReceive){
-      printf("rxh to %x %x (%x)\r\n", 
+      printf_TRANSPORT("rxh to %x %x (%x)\r\n", 
         call CXTransportPacket.getProtocol(msg), 
         signalTp, nextRX);
     }

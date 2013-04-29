@@ -1,3 +1,5 @@
+
+ #include "CXTransportDebug.h"
 module FloodBurstP {
   provides interface Send;
   provides interface Receive;
@@ -55,7 +57,7 @@ module FloodBurstP {
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
-    printf("FB.send\r\n");
+    printf_TRANSPORT("FB.send\r\n");
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       if (call SlotTiming.framesLeftInSlot(nf) >= 
@@ -139,7 +141,7 @@ module FloodBurstP {
       void* md, message_t* msg){
     sending = FALSE;
 //    printf("txh %lu %lu\r\n", reqFrame, atFrame);
-    printf("fb.sd %p\r\n", msg);
+    printf_TRANSPORT("fb.sd %p %x\r\n", msg, error);
     signal Send.sendDone(msg, error);
     lastTX = atFrame;
   }

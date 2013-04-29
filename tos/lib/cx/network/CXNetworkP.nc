@@ -99,7 +99,8 @@ module CXNetworkP {
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*) md;
     bool useMicroRef = TRUE;
-    if (SUCCESS != error){
+
+    if (SUCCESS != error && ERETRY != error){
       printf("n.sh: %x\r\n", error);
     }
     if (SUCCESS == error){
@@ -131,7 +132,8 @@ module CXNetworkP {
 //      }
 //    } 
 
-    if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg)){
+    if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg) && error !=
+    ERETRY){
       //if we were planning to timestamp it, but there was an error,
       //mark the timestamp as invalid: it's too messy to try to fix
       //this (has to be matched up with hop-count/origin frame, etc)

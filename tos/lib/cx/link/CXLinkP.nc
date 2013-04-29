@@ -440,11 +440,11 @@ module CXLinkP {
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
     //TODO: superceded = ERETRY or EBUSY? or should both be treated
     //the same
-//      if (r->baseFrame + r->frameOffset == handledFrame){
-//        return ERETRY;
-//      }else{ 
+      if (r->baseFrame + r->frameOffset == handledFrame){
+        return ERETRY;
+      }else{ 
         return EBUSY;
-//      }
+      }
 
     //micro timer required but it's either off or has been stopped
     //since the request was made
