@@ -7,7 +7,7 @@ module TestP{
   uses interface UartStream;
   
   uses interface SplitControl;
-  uses interface Send;
+  uses interface AMSend;
   uses interface Receive;
 
   uses interface Packet;
@@ -90,10 +90,10 @@ module TestP{
 
   task void send(){
     call Packet.setPayloadLength(msg, sizeof(test_payload_t));
-    call Send.send(msg, sizeof(test_payload_t));
+    call AMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
   }
 
-  event void Send.sendDone(message_t* msg_, error_t error){
+  event void AMSend.sendDone(message_t* msg_, error_t error){
   }
 
   event message_t* Receive.receive(message_t* msg_, 
