@@ -71,14 +71,56 @@ module CXLinkP {
   error_t validateRequest(cx_request_t* r);
   cx_request_t* newRequest(uint8_t layerCount, uint32_t baseFrame, 
       int32_t frameOffset, request_type_t requestType, void* md);
-  
+ 
+  #ifndef UFN_ADJUST_LEN 
+  #define UFN_ADJUST_LEN 8
+  #endif
+  typedef struct ufn_adjust{
+    uint32_t now;
+    uint32_t lft;
+    uint32_t lfn;
+    uint32_t et;
+    uint32_t ef;
+    uint32_t ft;
+    uint32_t fn;
+  } ufn_adjust_t;
+
+  ufn_adjust_t ufnArr[UFN_ADJUST_LEN];
+  uint8_t ufnIndex = 0;
+
   void updateLastFrameNum(){
     //this should be safe from integer wrap
     uint32_t now = call FrameTimer.getNow();
     uint32_t elapsedTime = now - lastFrameTime;
     uint32_t elapsedFrames = elapsedTime/FRAMELEN_32K;
+    ufnArr[ufnIndex].now = now;
+    ufnArr[ufnIndex].lft = lastFrameTime;
+    ufnArr[ufnIndex].lfn = lastFrameNum;
+    ufnArr[ufnIndex].et = elapsedTime;
+    ufnArr[ufnIndex].ef = elapsedFrames;
+
     lastFrameTime += (elapsedFrames*FRAMELEN_32K);
     lastFrameNum += elapsedFrames;
+
+    ufnArr[ufnIndex].ft = lastFrameTime;
+    ufnArr[ufnIndex].fn = lastFrameNum;
+
+    ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
+  }
+
+  task void logFrameAdjustments(){
+    uint8_t i = ufnIndex + 1;
+    uint8_t k;
+    printf("~ULFN\r\n");
+    for (k = 0; k < UFN_ADJUST_LEN; k++){
+      ufn_adjust_t* a = &ufnArr[(i+k)%UFN_ADJUST_LEN];
+      printf(" %u @ %lu (%lu, %lu) + (%lu, %lu) = (%lu, %lu)\r\n", 
+        k,
+        a->now, 
+        a-> lft, a->lfn,
+        a-> et,  a-> ef,
+        a-> ft,  a-> fn);
+    }
   }
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
@@ -321,7 +363,9 @@ module CXLinkP {
             //should not happen.
         }
       }else if (targetFrame < lastFrameNum){
-        printf_LINK("Missed\r\n");
+        printf_LINK("Missed %lu < %lu\r\n", 
+          targetFrame, lastFrameNum);
+        post logFrameAdjustments();
         //we have missed the intended frame. signal handled
         requestError = FAIL;
         post requestHandled();
@@ -380,10 +424,11 @@ module CXLinkP {
   
           call FrameTimer.startOneShotAt(t0, dt);
           if (nextRequest->requestType != RT_MARK){
-            printf_LINK("N: %x @%lu (%lu)\r\n", 
+            uint32_t now = call FrameTimer.getNow();
+            printf_LINK("N: %x @%lu (%lu %lu %lu)\r\n", 
               nextRequest->requestType,
               targetFrame,
-              t0+dt);
+              t0, dt, now);
           }
         }
       }

@@ -163,7 +163,8 @@ module CXNetworkP {
       if (error != SUCCESS){
         //signal relevant *handled event here so that
         //upper layer isn't left hanging.
-        printf("SCXRQ.s: %x\r\n", error);
+        printf("SCXRQ.s: %x s %lu a %lu\r\n", error,
+          synchFrame, atFrame);
         if (layerCount > 0){
           signal CXRequestQueue.sendHandled(error, 
             layerCount - 1,
