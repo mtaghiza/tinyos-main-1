@@ -8,7 +8,6 @@ typedef nx_struct cx_network_header {
 
 typedef struct cx_network_metadata {
   uint8_t layerCount;
-  uint32_t atFrame;
   uint32_t reqFrame;
   uint32_t microRef;
   uint32_t t32kRef;

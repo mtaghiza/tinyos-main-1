@@ -70,6 +70,7 @@ module RRBurstP {
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
+    printf("rrb.send %p\r\n", msg);
     if (sending){
       return EBUSY;
     }else{
@@ -80,19 +81,31 @@ module RRBurstP {
         call AMPacket.destination(msg));
       bool needsSetup = TRUE;
       error_t error;
-  
+      
+      //not synched yet, try later.
+      if (nf == INVALID_FRAME || nss == INVALID_FRAME){
+        //TODO: we need a better return code here.
+        return FAIL;
+      }
+      printf("##");
       if (lastTX >= call SlotTiming.lastSlotStart()){
+        printf("0");
         if ( distance < call SlotTiming.framesLeftInSlot(nf)){
+          printf("1");
           needsSetup = FALSE;
         }
       }
+      printf("\r\n");
   
       if (needsSetup){
         txf = nss;
+        printf("SP_S: %lu -> %lu\r\n",
+          nf, txf);
         call CXTransportPacket.setSubprotocol(msg, CX_SP_SETUP);
         call CXNetworkPacket.setTTL(msg, 
           call RoutingTable.getDefault());
       }else{
+        printf("SP_D\r\n");
         call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
         txf = nf;
         call CXNetworkPacket.setTTL(msg, distance);
@@ -106,7 +119,7 @@ module RRBurstP {
       //   - enqueue at nss
       //   - TTL = max
       error = call CXRequestQueue.requestSend(0,
-        nf, 0,
+        txf, 0,
         TXP_UNICAST,
         FALSE, 0,
         NULL,
@@ -143,8 +156,10 @@ module RRBurstP {
 
       if (didReceive){
         uint8_t pll = call Packet.payloadLength(msg);
+        printf("RRB.rh ");
         switch (call CXTransportPacket.getSubprotocol(msg)){
           case CX_SP_SETUP:
+            printf("s");
             if (call AMPacket.isForMe(msg)){
               flowSrc = call AMPacket.source(msg);
               ackStart = atFrame + 1;
@@ -158,7 +173,12 @@ module RRBurstP {
             break;
 
           case CX_SP_ACK:
+            printf("a");
             if (waitingForAck){
+              printf("w %p %p\r\n", msg, setupMsg);
+              sending = FALSE;
+              waitingForAck = FALSE;
+              printf("#sdA\r\n");
               signal Send.sendDone(setupMsg, SUCCESS);
             } else {
               cx_ack_t* ack = call Packet.getPayload(msg, sizeof(cx_ack_t));
@@ -167,6 +187,7 @@ module RRBurstP {
               uint8_t d_si;
               uint8_t d_sd;
               uint8_t d_id;
+              printf("W");
               //ack source is flow DEST, ack dest is flow SRC
               //distance in payload is flow SRC to flow DEST
               call RoutingTable.addMeasurement(s, d, ack->distance);
@@ -174,16 +195,19 @@ module RRBurstP {
               d_sd = call RoutingTable.getDistance(s, d);
               d_id = call RoutingTable.getDistance(TOS_NODE_ID, d);
               if (d_si + d_id > d_sd){
+                printf("s");
                 //sleepy times
                 call CXRequestQueue.requestSleep(0,
                   call CXRequestQueue.nextFrame(FALSE), 0);
               }else{
+                printf("S");
                 //OK, stay up to help.
               }
             }
             break;
 
           case CX_SP_DATA:
+            printf("d");
             rxMsg = signal Receive.receive(msg, 
               call Packet.getPayload(msg, pll), 
               pll);
@@ -193,10 +217,14 @@ module RRBurstP {
             printf("!Unrecognized SP %x\r\n",  
               call CXTransportPacket.getSubprotocol(msg));
             break;
-        } 
+        }
+        printf("\r\n");
       } else {
         //!didReceive
         if (waitingForAck && atFrame > ackDeadline){
+          sending = FALSE;
+          waitingForAck = FALSE;
+          printf("#sdNA\r\n");
           signal Send.sendDone(setupMsg, ENOACK);
         }
       }
@@ -211,6 +239,9 @@ module RRBurstP {
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
+    printf("rrb.sh %p %x\r\n", msg,
+      call CXTransportPacket.getSubprotocol(msg));
+    lastTX = atFrame;
     if (SUCCESS == error){
       switch (call CXTransportPacket.getSubprotocol(msg)){
         case CX_SP_SETUP:
@@ -219,8 +250,12 @@ module RRBurstP {
           ackDeadline = (atFrame + 1+
             call RoutingTable.getDistance(call AMPacket.destination(msg), TOS_NODE_ID));
           setupMsg = msg;
+          printf("@%lu wait to %lu\r\n", atFrame,
+            ackDeadline);
           break;
         case CX_SP_DATA:
+          sending = FALSE;
+          printf("#sdD\r\n");
           signal Send.sendDone(msg, error);
           break;
         default: 
@@ -260,6 +295,6 @@ module RRBurstP {
   }
 
   command bool RequestPending.requestPending(uint32_t frame){
-    return (frame != INVALID_FRAME) && rxf == frame;
+    return (frame != INVALID_FRAME) && rxPending;
   }
 }

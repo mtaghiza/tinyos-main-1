@@ -55,6 +55,7 @@ module CXTransportDispatchP {
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
+//    printf("rr %p from %x\r\n", msg, tp);
     return call SubCXRQ.requestReceive(layerCount, baseFrame, frameOffset,
       useMicro, microRef, duration, md, msg);
   }
@@ -65,6 +66,7 @@ module CXTransportDispatchP {
       tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
+    printf("rs %p from %x\r\n", msg, tp);
     call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
       frameOffset, txPriority, useMicro, microRef, md, msg);
@@ -102,9 +104,12 @@ module CXTransportDispatchP {
       signalTp = call CXTransportPacket.getProtocol(msg);
 
       if (signalTp == CX_TP_SCHEDULED){
+        printf("rx tps ");
         if (call AMPacket.destination(msg) == AM_BROADCAST_ADDR){
+          printf("bcast\r\n");
           signalTp = CX_TP_FLOOD_BURST;
         } else {
+          printf("ucast\r\n");
           signalTp = CX_TP_RR_BURST;
         }
       }
@@ -119,8 +124,11 @@ module CXTransportDispatchP {
         }
       }
     }
-
-//    printf("rxh %x to %x (%x)\r\n", didReceive, signalTp, nextRX);
+    if (didReceive){
+      printf("rxh to %x %x (%x)\r\n", 
+        call CXTransportPacket.getProtocol(msg), 
+        signalTp, nextRX);
+    }
     if (call RequestPending.requestPending[signalTp](reqFrame)){
       signal CXRequestQueue.receiveHandled[signalTp](error,
         layerCount,

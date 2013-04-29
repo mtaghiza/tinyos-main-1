@@ -117,7 +117,7 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call BroadcastAMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
-    printf("APP TX B %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
+    printf("APP TX B to %x %lu %u %x\r\n", AM_BROADCAST_ADDR, pl->sn, sizeof(test_payload_t), error);
   }
 
   task void unicast(){
@@ -132,7 +132,11 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call UnicastAMSend.send(DESTINATION_ID, msg, sizeof(test_payload_t));
-    printf("APP TX U %lu %u %x\r\n", pl->sn, sizeof(test_payload_t), error);
+    printf("APP TX U to %x %lu %u %x\r\n", 
+      DESTINATION_ID, 
+      pl->sn, 
+      sizeof(test_payload_t), 
+      error);
   }
 
   event void BroadcastAMSend.sendDone(message_t* msg_, error_t error){

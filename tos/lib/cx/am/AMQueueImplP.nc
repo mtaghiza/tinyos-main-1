@@ -133,6 +133,9 @@ implementation {
           }
         }
       }
+      if (!found){
+        printf("! couldn't find %p in sending\r\n", msg);
+      }
       retrySends();
     }
 

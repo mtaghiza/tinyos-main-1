@@ -17,13 +17,13 @@ typedef nx_struct cx_ack {
 #define CX_TP_SCHEDULED 0x02
 
 #define CX_SP_DATA  0x00
-#define CX_SP_SETUP 0x01
-#define CX_SP_ACK   0x02
+#define CX_SP_SETUP 0x10
+#define CX_SP_ACK   0x20
 
 #define NUM_RX_TRANSPORT_PROTOCOLS 2
 
-//lower nibble is available for distinguishing data/ack/setup, etc
-#define CX_TP_PROTO_MASK 0xF0
+//upper nibble is available for distinguishing data/ack/setup, etc
+#define CX_TP_PROTO_MASK 0x0F
 #define CX_INVALID_TP 0xFF
 #define CX_INVALID_DISTANCE 0xFF
 

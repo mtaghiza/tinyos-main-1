@@ -131,7 +131,12 @@ module SlotSchedulerP{
   //----- End utility functions
   
   command uint32_t SlotTiming.nextSlotStart(uint32_t fn){
-    return myNextSlotStart(fn);
+    uint32_t nss = myNextSlotStart(fn);
+    
+    if (nss != INVALID_FRAME){
+      nss += 1;
+    } 
+    return nss;
   }
 
   command uint32_t SlotTiming.lastSlotStart(){
@@ -335,7 +340,6 @@ module SlotSchedulerP{
       tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
-    slotState = S_ACTIVE;
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
       frameOffset, txPriority, useMicro, microRef, md, msg);
   }
@@ -386,6 +390,7 @@ module SlotSchedulerP{
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
+    slotState = S_ACTIVE;
     if (layerCount){
       signal CXRequestQueue.sendHandled(error, 
         layerCount - 1,

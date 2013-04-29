@@ -55,6 +55,7 @@ module FloodBurstP {
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
+    printf("FB.send\r\n");
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       if (call SlotTiming.framesLeftInSlot(nf) >= 
@@ -68,10 +69,10 @@ module FloodBurstP {
           //is either the first frame of the slot, or we've previously
           //sent a broadcast during this slot).
         } else {
-          nf = call SlotTiming.nextSlotStart(nf) + 1; 
+          nf = call SlotTiming.nextSlotStart(nf); 
         }
       } else {
-        nf = call SlotTiming.nextSlotStart(nf) + 1;
+        nf = call SlotTiming.nextSlotStart(nf);
       }
 
       //  this slot to deliver it.
@@ -138,6 +139,7 @@ module FloodBurstP {
       void* md, message_t* msg){
     sending = FALSE;
 //    printf("txh %lu %lu\r\n", reqFrame, atFrame);
+    printf("fb.sd %p\r\n", msg);
     signal Send.sendDone(msg, error);
     lastTX = atFrame;
   }

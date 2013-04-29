@@ -6,12 +6,12 @@ module CXTransportPacketP{
   provides interface CXTransportPacket;
 } implementation {
   cx_transport_header_t* getHeader(message_t* msg){
-    return call SubPacket.getPayload(msg,
-      sizeof(cx_transport_header_t));
+    return (cx_transport_header_t*)(call SubPacket.getPayload(msg,
+      sizeof(cx_transport_header_t)));
   }
 
   command void Packet.clear(message_t* msg){
-      call SubPacket.clear(msg);
+    call SubPacket.clear(msg);
     getHeader(msg) -> tproto = CX_INVALID_TP;
     getHeader(msg) -> distance = CX_INVALID_DISTANCE;
   }
@@ -58,16 +58,23 @@ module CXTransportPacketP{
       uint8_t distance){
     getHeader(msg) -> distance = distance;
   }
+
   command void CXTransportPacket.setProtocol(message_t* msg,
       uint8_t tproto){
-    uint8_t tp = getHeader(msg)->tproto;
-    getHeader(msg)->tproto = (tproto & CX_TP_PROTO_MASK) | (tp & ~CX_TP_PROTO_MASK);
+    cx_transport_header_t* hdr = getHeader(msg);
+//    printf("%x => %x | %x", 
+//      hdr->tproto,
+//      (hdr->tproto & ~CX_TP_PROTO_MASK),
+//      (tproto & CX_TP_PROTO_MASK));
+    hdr->tproto = (hdr->tproto & ~CX_TP_PROTO_MASK) | (tproto & CX_TP_PROTO_MASK);
+//    printf(" = %x\r\n",
+//      hdr->tproto);
   }
 
   command void CXTransportPacket.setSubprotocol(message_t* msg,
       uint8_t subproto){
-    uint8_t tp = getHeader(msg)->tproto;
-    getHeader(msg)->tproto = (tp & CX_TP_PROTO_MASK) | (subproto & ~CX_TP_PROTO_MASK);
+    cx_transport_header_t* hdr = getHeader(msg);
+    hdr -> tproto = (hdr->tproto & CX_TP_PROTO_MASK) | (subproto & ~CX_TP_PROTO_MASK);
   }
 
 }

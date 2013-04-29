@@ -40,7 +40,6 @@ module CXNetworkP {
       void* md, message_t* msg){
     cx_network_metadata_t* nmd = (cx_network_metadata_t*)md;
     nmd -> layerCount = layerCount;
-    nmd -> atFrame = atFrame;
     nmd -> reqFrame = reqFrame;
     nmd -> microRef = microRef;
     nmd -> t32kRef = t32kRef;
@@ -87,7 +86,7 @@ module CXNetworkP {
     //not forwarding, so we're done with it. signal up.
     signal CXRequestQueue.receiveHandled(error, 
       nmd->layerCount - 1,
-      nmd->atFrame, nmd->reqFrame, 
+      atFrame, nmd->reqFrame, 
       didReceive, nmd->microRef, nmd->t32kRef, 
       nmd->next, msg);
     call Pool.put(nmd);
@@ -173,7 +172,7 @@ module CXNetworkP {
         } else {
           signal CXRequestQueue.receiveHandled(error,
             nmd -> layerCount - 1,
-            nmd -> atFrame, nmd -> reqFrame,
+            atFrame, nmd -> reqFrame,
             TRUE,  //we are forwarding, so we must have received
             nmd -> microRef, nmd -> t32kRef,
             nmd -> next,
@@ -194,7 +193,7 @@ module CXNetworkP {
         //restore stashed reception info and signal up as receive
         signal CXRequestQueue.receiveHandled(error,
           nmd -> layerCount - 1,
-          nmd -> atFrame, nmd -> reqFrame,
+          atFrame, nmd -> reqFrame,
           TRUE,  //we are forwarding, so we must have received
           nmd -> microRef, nmd -> t32kRef,
           nmd -> next,
