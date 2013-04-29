@@ -29,6 +29,9 @@ module TestP{
   message_t msg_internal;
   message_t* msg = &msg_internal;
 
+  message_t msg_internal2;
+  message_t* msg2 = &msg_internal2;
+
   message_t rx_msg;
   message_t* rxMsg = &rx_msg;
   test_payload_t* rx_pl;
@@ -121,17 +124,17 @@ module TestP{
   }
 
   task void unicast(){
-    test_payload_t* pl = call UnicastAMSend.getPayload(msg,
+    test_payload_t* pl = call UnicastAMSend.getPayload(msg2,
       sizeof(test_payload_t));
     uint8_t i;
     error_t error;
-    call Packet.clear(msg);
+    call Packet.clear(msg2);
     for (i=0; i < PAYLOAD_LEN; i++){
       pl->buffer[i] = i;
     }
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
-    error = call UnicastAMSend.send(DESTINATION_ID, msg, sizeof(test_payload_t));
+    error = call UnicastAMSend.send(DESTINATION_ID, msg2, sizeof(test_payload_t));
     printf("APP TX U to %x %lu %u %x\r\n", 
       DESTINATION_ID, 
       pl->sn, 
