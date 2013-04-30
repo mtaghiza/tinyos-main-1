@@ -288,6 +288,10 @@ module CXLinkP {
               atomic P1OUT |= BIT1;
             }
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
+            if (requestError == SUCCESS){
+              //TODO: where should channel # come from?
+              requestError = call Rf1aPhysical.setChannel(0);
+            }
             //TODO: FUTURE frequency-scaling: turn it up.
             //if radio is off, turn it on (idle)
             post requestHandled();
