@@ -29,4 +29,14 @@
 #define printf_LINK_EVICTIONS(...)
 #endif
 
+#ifndef DEBUG_LINK_QUEUE
+#define DEBUG_LINK_QUEUE 0
+#endif
+
+#if DEBUG_LINK_QUEUE == 1
+#define printf_LINK_QUEUE( ... ) printf( __VA_ARGS__ )
+#else
+#define printf_LINK_QUEUE(...)
+#endif
+
 #endif

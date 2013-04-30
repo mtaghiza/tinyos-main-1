@@ -1,3 +1,5 @@
+
+ #include "CXLinkDebug.h"
 module CXLinkPacketP {
   provides interface CXLinkPacket;
   provides interface Packet;
@@ -26,6 +28,7 @@ module CXLinkPacketP {
   }
 
   command void Packet.clear(message_t* msg){
+    printf_LINK_QUEUE("clr p %p\r\n", msg);
     call SubPacket.clear(msg);
     call CXPacketMetadata.setRequestedFrame(msg, INVALID_FRAME);
   }

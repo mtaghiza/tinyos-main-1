@@ -391,6 +391,11 @@ module CXLinkP {
       //if request is not valid, we need to signal its handling
       //  and pull the next one from the queue.
       error_t err = validateRequest(nextRequest);
+      if (nextRequest->requestType == RT_RX){
+        printf_LINK_QUEUE("pop RX %p\r\n", nextRequest->msg);
+      } else if (nextRequest ->requestType == RT_TX){
+        printf_LINK_QUEUE("pop TX %p\r\n", nextRequest->msg);
+      }
       if (SUCCESS != err){
         requestError = err;
         updateLastFrameNum();
@@ -535,6 +540,7 @@ module CXLinkP {
         error = validateRequest(r);
         if (SUCCESS == error){
           enqueue(r);
+          printf_LINK_QUEUE("push RX %p\r\n", msg);
         }else{
           call Pool.put(r);
         }
@@ -565,6 +571,7 @@ module CXLinkP {
       error = validateRequest(r);
       if (SUCCESS == error){
         enqueue(r);
+        printf_LINK_QUEUE("push TX %p\r\n", msg);
       }else{
         call Pool.put(r);
       }
