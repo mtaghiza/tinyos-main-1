@@ -114,7 +114,7 @@ implementation {
   }
   
   void sendDone(message_t* msg, error_t error, uint8_t from){
-    printf_AM("sd %p from %x\r\n", msg, from);
+    cdbg(AM, "sd %p from %x\r\n", msg, from);
     signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
   }
 

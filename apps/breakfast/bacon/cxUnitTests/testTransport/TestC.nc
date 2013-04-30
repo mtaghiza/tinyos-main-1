@@ -22,4 +22,5 @@ configuration TestC {
   TestP.Receive -> AMReceiverC;
   TestP.SplitControl -> ActiveMessageC;
   TestP.Packet -> BroadcastSender;
+  TestP.AMPacket -> ActiveMessageC;
 }

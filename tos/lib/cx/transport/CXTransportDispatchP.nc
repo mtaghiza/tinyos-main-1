@@ -56,7 +56,6 @@ module CXTransportDispatchP {
       bool useMicro, uint32_t microRef,
       uint32_t duration, 
       void* md, message_t* msg){
-//    printf("rr %p from %x\r\n", msg, tp);
     return call SubCXRQ.requestReceive(layerCount, baseFrame, frameOffset,
       useMicro, microRef, duration, md, msg);
   }
@@ -67,7 +66,7 @@ module CXTransportDispatchP {
       tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
-    printf_TRANSPORT("rs %p from %x\r\n", msg, tp);
+    cdbg(TRANSPORT, "rs %p from %x\r\n", msg, tp);
     call CXTransportPacket.setProtocol(msg, tp);
     return call SubCXRQ.requestSend(layerCount, baseFrame,
       frameOffset, txPriority, useMicro, microRef, md, msg);
@@ -98,19 +97,19 @@ module CXTransportDispatchP {
     uint8_t signalTp; 
     if (didReceive){
       if (lastRXFrame == atFrame){
-        printf("! RX twice in same frame\r\n");
+        cerror(TRANSPORT, "RX twice in same frame\r\n");
         return;
       }
       lastRXFrame = atFrame;
       signalTp = call CXTransportPacket.getProtocol(msg);
 
       if (signalTp == CX_TP_SCHEDULED){
-        printf_TRANSPORT("rx tps ");
+        cdbg(TRANSPORT, "rx tps ");
         if (call AMPacket.destination(msg) == AM_BROADCAST_ADDR){
-          printf_TRANSPORT("bcast\r\n");
+          cdbg(TRANSPORT, "bcast\r\n");
           signalTp = CX_TP_FLOOD_BURST;
         } else {
-          printf_TRANSPORT("ucast\r\n");
+          cdbg(TRANSPORT, "ucast\r\n");
           signalTp = CX_TP_RR_BURST;
         }
       }
@@ -126,7 +125,7 @@ module CXTransportDispatchP {
       }
     }
     if (didReceive){
-      printf_TRANSPORT("rxh to %x %x (%x)\r\n", 
+      cdbg(TRANSPORT, "rxh to %x %x (%x)\r\n", 
         call CXTransportPacket.getProtocol(msg), 
         signalTp, nextRX);
     }
@@ -138,7 +137,7 @@ module CXTransportDispatchP {
         microRef, t32kRef,
         md, msg);
     }else{
-      printf("!no pending rx req to %x\r\n", signalTp);
+      cerror(TRANSPORT, "no pending rx req to %x\r\n", signalTp);
     }
     nextRX = (signalTp + 1)%NUM_RX_TRANSPORT_PROTOCOLS;
   }
@@ -178,7 +177,7 @@ module CXTransportDispatchP {
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    printf("!default t.sh: %x\r\n", tp);
+    cerror(TRANSPORT, "!default t.sh: %x\r\n", tp);
   }
 
   default event void CXRequestQueue.receiveHandled[uint8_t tp](error_t error, 
@@ -187,7 +186,7 @@ module CXTransportDispatchP {
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    printf("!default t.rh: %x\r\n", tp);
+    cerror(TRANSPORT, "default t.rh: %x\r\n", tp);
   }
 
   default event void SubProtocolSplitControl.startDone[uint8_t tp](error_t error){
@@ -196,7 +195,7 @@ module CXTransportDispatchP {
   }
 
   default command bool RequestPending.requestPending[uint8_t tp](uint32_t frame){
-    printf("!default RP to %x\r\n", tp);
+    cerror(TRANSPORT, "default RP to %x\r\n", tp);
     return FALSE;
   }
 }

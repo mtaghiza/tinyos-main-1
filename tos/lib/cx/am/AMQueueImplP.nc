@@ -115,7 +115,7 @@ implementation {
       for (i=0; i < numClients; i++){
         if (queue[i].msg == msg){
           if (found){
-            printf("~warning duplicate msg %p\r\n", msg);
+            cwarn(AM, "duplicate msg %p\r\n", msg);
           } 
           found = TRUE;
           //start from the next client when we begin the retries.
@@ -134,7 +134,7 @@ implementation {
         }
       }
       if (!found){
-        printf("! couldn't find %p in sending\r\n", msg);
+        cerror(AM, "couldn't find %p in sending\r\n", msg);
       }
       retrySends();
     }

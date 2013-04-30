@@ -52,10 +52,6 @@ module CXMasterSchedulerP{
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
     sched -> activeSlots = 4;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
-//    printf("Set sched %p of %p md to %u\r\n", 
-//      sched, 
-//      schedMsg,
-//      sched -> maxDepth);
     sched -> numAssigned = 1;
     sched -> slotAssignments[0] = call CXLinkPacket.addr();
 
@@ -89,7 +85,7 @@ module CXMasterSchedulerP{
       startDonePending = TRUE;
       //cool. we'll request sleep and next wakeup when the wakeup is handled
     }else{
-      printf("!init.requestWakeup %x\r\n", error);
+      cerror(SCHED, "init.requestWakeup %x\r\n", error);
     }
   }
 
@@ -141,14 +137,8 @@ module CXMasterSchedulerP{
         error = call ScheduledAMSend.send(AM_BROADCAST_ADDR,
           schedMsg, sizeof(cx_schedule_t),
           lastCycleStart + schedOF); 
-//        SubCXRQ.requestSend(0,
-//          lastCycleStart, schedOF,
-//          TXP_SCHEDULED,
-//          FALSE, 0,
-//          NULL, schedMsg);
-//        printf("m %p s %p\r\n", schedMsg, &(sched->timestamp));
         if (error != SUCCESS){
-          printf("!Sched.reqS %x\r\n", error);
+          cerror(SCHED, "Sched.reqS %x\r\n", error);
         }
 
         call ScheduleParams.setMasterId(TOS_NODE_ID);
@@ -157,7 +147,7 @@ module CXMasterSchedulerP{
         //TODO: this should be set somewhat dynamically.
         call ScheduleParams.setSlot(TOS_NODE_ID);
       }else{
-        printf("!Sched.wh: %x\r\n", error);
+        cerror(SCHED, "Sched.wh: %x\r\n", error);
       }
     }
   }
@@ -167,7 +157,7 @@ module CXMasterSchedulerP{
     error = call SubCXRQ.requestSleep(0,
       lastCycleStart, 
       sched->slotLength*(sched->activeSlots) + 1);
-    printf_SCHED("stnc sleep lcs %lu %lu-%lu\r\n", 
+    cinfo(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
       lastCycleStart,
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
@@ -178,10 +168,10 @@ module CXMasterSchedulerP{
         call SkewCorrection.referenceFrame(call CXLinkPacket.addr()),
         call SkewCorrection.referenceTime(call CXLinkPacket.addr()), 
         0);
-      printf_SCHED("req cw: %x \r\n",
+      cinfo(SCHED, "req cw: %x \r\n",
         error);
     }else{
-      printf("!req cycle sleep: %x\r\n",
+      cerror(SCHED, "req cycle sleep: %x\r\n",
        error);
     }
   }
@@ -250,7 +240,7 @@ module CXMasterSchedulerP{
       signal CXRequestQueue.receiveHandled(error, layerCount - 1, atFrame, reqFrame,
         didReceive, microRef, t32kRef, md, msg);
     }else{
-      printf("!Unexpected rx handled\r\n");
+      cerror(SCHED, "!Unexpected rx handled\r\n");
     }
   }
   
@@ -268,10 +258,6 @@ module CXMasterSchedulerP{
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);
-//    printf("SetTTL of %p to %u from %p\r\n", 
-//      msg,
-//      sched->maxDepth,
-//      sched);
     call CXLinkPacket.setSource(msg, TOS_NODE_ID);
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
@@ -292,13 +278,13 @@ module CXMasterSchedulerP{
         microRef, t32kRef, 
         md, msg);
     }else{
-      printf("!master unexpected SH\r\n");
+      cerror(SCHED, "master unexpected SH\r\n");
     }
   }
 
   event void ScheduledAMSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
-      printf_SCHED("TX sched of %lu ts %lu ofs%lu\r\n",
+      cinfo(SCHED, "TX sched of %lu ts %lu ofs%lu\r\n",
         call CXNetworkPacket.getOriginFrameNumber(schedMsg),
         sched->timestamp,
         call CXNetworkPacket.getOriginFrameStart(schedMsg));
@@ -310,7 +296,7 @@ module CXMasterSchedulerP{
         call CXNetworkPacket.getOriginFrameStart(schedMsg));
       //cool. schedule sent.
     }else{
-      printf("!CXMS.SD %x\r\n", error);
+      cerror(SCHED, "!CXMS.SD %x\r\n", error);
       //TODO: handle schedule troubles
     }
   }
@@ -328,7 +314,7 @@ module CXMasterSchedulerP{
       if (SUCCESS == error){
         lastSleep = atFrame;
       }else{
-        printf("!sched.sh: %x\r\n", error);
+        cerror(SCHED, "!sched.sh: %x\r\n", error);
       }
     }
   }

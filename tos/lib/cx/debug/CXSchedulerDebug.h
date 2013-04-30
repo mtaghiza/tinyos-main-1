@@ -1,16 +1,14 @@
 #ifndef CX_SCHEDULER_DEBUG_H
 #define CX_SCHEDULER_DEBUG_H
 
-#if DEBUG_SCHED == 1
-#define printf_SCHED( ... ) printf( __VA_ARGS__ )
-#else
-#define printf_SCHED(...)
+#include "CXDebug.h"
+
+#ifndef DL_SCHED
+#define DL_SCHED DL_INFO
 #endif
 
-#if DEBUG_SKEW == 1
-#define printf_SKEW( ... ) printf( __VA_ARGS__ )
-#else
-#define printf_SKEW(...)
+#ifndef DL_SKEW
+#define DL_SKEW DL_INFO
 #endif
 
 #endif

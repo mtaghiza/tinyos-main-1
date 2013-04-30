@@ -1,6 +1,8 @@
 
  #include "CXLink.h"
  #include "CXNetwork.h"
+ #include "CXNetworkDebug.h"
+ #include "CXSchedulerDebug.h"
 module CXNetworkP {
   uses interface CXLinkPacket;
   uses interface CXNetworkPacket;
@@ -57,7 +59,7 @@ module CXNetworkP {
         //n.b. this is an estimate of the CAPTURE time (in 32K units),
         //so, the PREP_TIME_32KHZ needs to be accounted for when
         //scheduling frames based on it. 
-        printf_SKEW("ts %lu\r\n", t32kRef);
+        cdbg(SKEW, "ts %lu\r\n", t32kRef);
         call CXNetworkPacket.setOriginFrameStart(msg,
           t32kRef - (FRAMELEN_32K * (call CXNetworkPacket.getRXHopCount(msg) - 1)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
@@ -77,7 +79,7 @@ module CXNetworkP {
             if (SUCCESS == error){
               return;
             }else{
-              printf("FWD %x\r\n", error);
+              cerror(NETWORK, "FWD %x\r\n", error);
             }
           }
         }
@@ -101,7 +103,7 @@ module CXNetworkP {
     bool useMicroRef = TRUE;
 
     if (SUCCESS != error && ERETRY != error){
-      printf("n.sh: %x\r\n", error);
+      cerror(NETWORK, "n.sh: %x\r\n", error);
     }
     if (SUCCESS == error){
       synchFrame = atFrame;
@@ -114,23 +116,6 @@ module CXNetworkP {
       call CXNetworkPacket.setOriginFrameStart(msg,
         t32kRef);
     }
-//      if (layerCount){
-//        signal CXRequestQueue.sendHandled(error, 
-//          layerCount-1,
-//          atFrame, reqFrame, microRef, t32kRef, 
-//          nmd->next,
-//          msg);
-//        call Pool.put(nmd);
-//      }else{
-//        //TODO: check TTL-- if it's still hot, try to send it again.
-//        signal CXRequestQueue.receiveHandled(error,
-//          nmd->layerCount - 1,
-//          nmd->atFrame, nmd->reqFrame,
-//          TRUE, nmd->microRef, nmd->t32kRef,
-//          nmd->next, msg);
-//        call Pool.put(nmd);
-//      }
-//    } 
 
     if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg) && error !=
     ERETRY){
@@ -164,7 +149,7 @@ module CXNetworkP {
       if (error != SUCCESS){
         //signal relevant *handled event here so that
         //upper layer isn't left hanging.
-        printf("SCXRQ.s: %x s %lu a %lu\r\n", error,
+        cwarn(NETWORK, "SCXRQ.s: %x s %lu a %lu\r\n", error,
           synchFrame, atFrame);
         if (layerCount > 0){
           signal CXRequestQueue.sendHandled(error, 
@@ -212,12 +197,12 @@ module CXNetworkP {
       void* md,
       message_t* msg){
     if (msg == NULL){
-      printf("net.cxrq.rr null\r\n");
+      cerror(NETWORK, "net.cxrq.rr null\r\n");
       return EINVAL;
     } else{
       cx_network_metadata_t* nmd = newMd();
       if (nmd == NULL){
-        printf("net.NOMEM\r\n");
+        cerror(NETWORK, "net.NOMEM\r\n");
         return ENOMEM;
       }else{
         error_t error;

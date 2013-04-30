@@ -34,7 +34,7 @@ module FloodBurstP {
         FALSE, 0,
         0, NULL, rxMsg);
       if (error != SUCCESS){
-        printf("!fb.rn: %x\r\n", error);
+        cerror(TRANSPORT, "fb.rn: %x\r\n", error);
       }else{
         rxPending = TRUE;
       }
@@ -46,7 +46,7 @@ module FloodBurstP {
       on = TRUE;
       post receiveNext();
     } else {
-      printf("!fb.sc.startDone: %x\r\n", error);
+      cerror(TRANSPORT, "!fb.sc.startDone: %x\r\n", error);
     }
   }
 
@@ -57,7 +57,7 @@ module FloodBurstP {
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
-    printf_TRANSPORT("FB.send\r\n");
+    cdbg(TRANSPORT, "FB.send\r\n");
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       if (call SlotTiming.framesLeftInSlot(nf) >= 
@@ -123,14 +123,13 @@ module FloodBurstP {
       rxPending = FALSE;
       if (didReceive){
         uint8_t pll = call Packet.payloadLength(msg);
-//        printf("rxh %lu %lu\r\n", reqFrame, atFrame);
         rxMsg = signal Receive.receive(msg, 
           call Packet.getPayload(msg, pll),
           pll);
       }
       post receiveNext();
     } else {
-      printf("!fb.rh, not rxPending\r\n");
+      cerror(TRANSPORT, "fb.rh, not rxPending\r\n");
     }
   }
 
@@ -140,8 +139,7 @@ module FloodBurstP {
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
     sending = FALSE;
-//    printf("txh %lu %lu\r\n", reqFrame, atFrame);
-    printf_TRANSPORT("fb.sd %p %x\r\n", msg, error);
+    cdbg(TRANSPORT, "fb.sd %p %x\r\n", msg, error);
     signal Send.sendDone(msg, error);
     lastTX = atFrame;
   }

@@ -22,9 +22,9 @@ module SkewCorrectionC {
   uint32_t selfReferenceTime = INVALID_FRAME;
 
   task void printResults(){
-    printf_SKEW(" Cumulative TPF: 0x%lx last delta: %li over %lu\r\n", 
+    cdbg(SKEW, " Cumulative TPF: 0x%lx last delta: %li over %lu\r\n", 
       cumulativeTpf, lastDelta, lastFramesElapsed);
-    printf_SKEW("  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
+    cdbg(SKEW, "  @50 %li @51 %li @100 %li @200 %li @300 %li @320 %li @400 %li @500 %li @1000 %li\r\n",
       stoInt(cumulativeTpf*50),
       stoInt(cumulativeTpf*51),
       stoInt(cumulativeTpf*100),
@@ -72,16 +72,9 @@ module SkewCorrectionC {
         int32_t deltaFP = (delta << TPF_DECIMAL_PLACES);
   
         int32_t tpf = deltaFP / framesElapsed;
-//        printf("tpf %lx . > 0: %x . > %lx: %x . -> : %x .\r\n",
-//          tpf,
-//          tpf > 0,
-//          MAX_VALID_TPF,
-//          tpf > MAX_VALID_TPF,
-//          (-1L*tpf) > MAX_VALID_TPF);
         if ( (tpf > 0 && tpf > MAX_VALID_TPF) 
             || (tpf < 0 && (-1L*tpf) > MAX_VALID_TPF)){
-//        if ( tpf > FP_1 || tpf < -1*FP_1){
-          printf("SKEW EXCEEDED\r\n");
+          cwarn(SKEW, "SKEW EXCEEDED\r\n");
         } else {
           //next EWMA step
           //n.b. we let TPF = 0 initially to keep things simple. In

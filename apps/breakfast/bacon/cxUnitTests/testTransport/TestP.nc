@@ -1,7 +1,7 @@
 
  #include <stdio.h>
  #include "CXTransport.h"
-
+ #include "test.h"
 module TestP{
   uses interface Boot;
   uses interface UartStream;
@@ -13,6 +13,7 @@ module TestP{
   uses interface Receive;
 
   uses interface Packet;
+  uses interface AMPacket;
 
   uses interface StdControl as SerialControl;
 } implementation {
@@ -43,21 +44,21 @@ module TestP{
   bool continuousTXUnicast = FALSE;
 
 
-
   task void usage(){
-    printf("---- %s ID %x Commands ----\r\n",
-      (CX_MASTER==1)?"MASTER": "SLAVE",
-      TOS_NODE_ID);
-    printf("S : toggle start/stop\r\n");
-    printf("b : transmit a packet broadcast\r\n");
-    printf("B : toggle broadcast transmit back-to-back\r\n");
-    printf("u : transmit a packet unicast\r\n");
-    printf("U : toggle unicast transmit back-to-back\r\n");
-    printf("q : reset\r\n");
+    cinfo(test,"---- %s ID %x Commands ----\r\n",
+          (CX_MASTER==1)?"MASTER": "SLAVE",
+          TOS_NODE_ID);
+    cinfo(test,"S : toggle start/stop\r\n");
+    cinfo(test,"b : transmit a packet broadcast\r\n");
+    cinfo(test,"B : toggle broadcast transmit back-to-back\r\n");
+    cinfo(test,"u : transmit a packet unicast\r\n");
+    cinfo(test,"U : toggle unicast transmit back-to-back\r\n");
+    cinfo(test,"q : reset\r\n");
+
   }
 
   event void Boot.booted(){
-    printf("Booted.\r\n");
+    cinfo(test,"Booted.\r\n");
     post usage();
     atomic{
       PMAPPWD = PMAPKEY;
@@ -91,19 +92,21 @@ module TestP{
 
   task void toggleStartStop(){
     if (started){
-      printf(" Stop %x \r\n", call SplitControl.stop());
+      error_t error = call SplitControl.stop(); 
+      cinfo(test," Stop %x \r\n", error);
     }else{
-      printf(" Start %x \r\n", call SplitControl.start());
+      error_t error = call SplitControl.start(); 
+      cinfo(test," Start %x \r\n", error);
     }
   }
 
   event void SplitControl.startDone(error_t error){
-    printf("started %x \r\n", error);
+    cinfo(test,"Started %x \r\n", error);
     started = TRUE;
   }
 
   event void SplitControl.stopDone(error_t error){
-    printf("stopped %x\r\n", error);
+    cinfo(test,"Stopped %x\r\n", error);
     started = FALSE;
   }
 
@@ -120,7 +123,9 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call BroadcastAMSend.send(AM_BROADCAST_ADDR, msg, sizeof(test_payload_t));
-    printf("APP TX B to %x %lu %u %x\r\n", AM_BROADCAST_ADDR, pl->sn, sizeof(test_payload_t), error);
+    cinfo(test,"APP TX %lu to %x %u %x\r\n", 
+      pl->sn, AM_BROADCAST_ADDR, 
+      sizeof(test_payload_t), error);
   }
 
   task void unicast(){
@@ -135,22 +140,33 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call UnicastAMSend.send(DESTINATION_ID, msg2, sizeof(test_payload_t));
-    printf("APP TX U to %x %lu %u %x\r\n", 
-      DESTINATION_ID, 
+    cinfo(test,"APP TX %lu to %x %u %x\r\n", 
       pl->sn, 
+      DESTINATION_ID, 
       sizeof(test_payload_t), 
       error);
   }
 
   event void BroadcastAMSend.sendDone(message_t* msg_, error_t error){
-    printf("B SendDone %x\r\n", error);
+    test_payload_t* pl = call BroadcastAMSend.getPayload(msg_,
+      sizeof(test_payload_t));
+    cinfo(test,"APP TXD %lu to %x %x\r\n", 
+      pl->sn, 
+      call AMPacket.destination(msg_),
+      error);
     if (continuousTXBroadcast){
       post broadcast();
     }
   }
 
   event void UnicastAMSend.sendDone(message_t* msg_, error_t error){
-    printf("U SendDone %x\r\n", error);
+    test_payload_t* pl = call BroadcastAMSend.getPayload(msg_,
+      sizeof(test_payload_t));
+    cinfo(test,"APP TXD %lu to %x %x\r\n", 
+      pl->sn, 
+      call AMPacket.destination(msg_),
+      error);
+
     if (continuousTXUnicast){
       post unicast();
     }
@@ -160,19 +176,14 @@ module TestP{
   }
 
   task void reportRX(){
-    uint8_t i;
-    printf("APP RX %lu %u: ", rx_pl->sn, rxPLL);
-//    for (i = 0; i < rxPLL; i++){
-//      printf("%x ", rx_pl->buffer[i]);
-//    }
-    printf("\r\n");
+    cinfo(test,"APP RX %lu %u\r\n", rx_pl->sn, rxPLL);
     rx_pl = NULL;
   }
 
   event message_t* Receive.receive(message_t* msg_, 
       void* payload, uint8_t len){
     if (rx_pl != NULL){
-      printf("Still logging\r\n");
+      cwarn(test,"Still logging\r\n");
       return msg_;
     } else {
       message_t* ret = rxMsg;
@@ -222,12 +233,12 @@ module TestP{
          post usage();
          break;
        case '\r':
-         printf("\n");
+         cinfo(test,"\n");
          break;
        default:
          break;
      }
-     printf("%c", byte);
+     cinfo(test,"%c", byte);
   }
 
   async event void UartStream.receiveDone( uint8_t* buf, uint16_t len,

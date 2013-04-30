@@ -96,7 +96,7 @@ module CXSlaveSchedulerP{
       uint32_t duration, 
       void* md, message_t* msg){
     if (msg == NULL){
-      printf_SCHED("sched.cxrq.rr null\r\n");
+      cwarn(SCHED, "sched.cxrq.rr null\r\n");
       return EINVAL;
     }
     if(duration == 0){
@@ -158,7 +158,7 @@ module CXSlaveSchedulerP{
         md, msg);
     }else{
       //there shouldn't be any RX requests originating at this layer.
-      printf("!Unexpected rxHandled\r\n");
+      cerror(SCHED, "Unexpected rxHandled\r\n");
     }
   }
 
@@ -196,14 +196,12 @@ module CXSlaveSchedulerP{
         atFrame, reqFrame,
         microRef, t32kRef, 
         md, msg);
-    }else{
-      //TODO: from this layer: was a CLAIM packet.
     }
   }
 
   task void reportSched(){
-    printf_SCHED("RX Sched");
-    printf_SCHED(": %p %p sn %u cl %lu sl %lu md %u na %u ts %lu",
+    cinfo(SCHED, "RX Sched");
+    cinfo(SCHED, ": %p %p sn %u cl %lu sl %lu md %u na %u ts %lu",
       schedMsg,
       sched, 
       sched->sn,
@@ -213,15 +211,7 @@ module CXSlaveSchedulerP{
       sched->numAssigned,
       sched->timestamp);
 
-//    printf_SCHED(" p %x %x %x %x %x %x", 
-//      sched->padding0,
-//      sched->padding1,
-//      sched->padding2,
-//      sched->padding3,
-//      sched->padding4,
-//      sched->padding5);
-
-    printf_SCHED("\r\n");
+    cinfo(SCHED, "\r\n");
   }
 
   
@@ -233,7 +223,7 @@ module CXSlaveSchedulerP{
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));
     if (SUCCESS != error){
-      printf_SKEW("~sc.am: %lu %lu %lu\r\n",
+      cwarn(SKEW, "sc.am: %lu %lu %lu\r\n",
         sched->timestamp,
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));
@@ -251,7 +241,7 @@ module CXSlaveSchedulerP{
     message_t* ret = schedMsg;
     synchReceived = (state == S_SYNCHED);
     if (!synchReceived){
-      printf_SCHED("Synch gained\r\n");
+      cinfo(SCHED, "Synch gained\r\n");
     }
     sched = (cx_schedule_t*)payload;
     schedMsg = msg;
@@ -263,7 +253,7 @@ module CXSlaveSchedulerP{
     lastCycleStart = 
       call CXNetworkPacket.getOriginFrameNumber(msg) -
       call CXSchedulerPacket.getOriginFrame(msg);
-    printf_SCHED("LO %lu RO %lu RCSF %lu\r\n",
+    cinfo(SCHED, "LO %lu RO %lu RCSF %lu\r\n",
       call CXNetworkPacket.getOriginFrameNumber(msg),
       call CXSchedulerPacket.getOriginFrame(msg),
       sched->cycleStartFrame);
@@ -307,7 +297,7 @@ module CXSlaveSchedulerP{
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame){
     if (layerCount){
-      printf_SCHED("wh up\r\n");
+      cdbg(SCHED, "wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
       if (startDonePending){
@@ -328,7 +318,7 @@ module CXSlaveSchedulerP{
     error = call SubCXRQ.requestSleep(0,
       lastCycleStart, 
       sched->slotLength*(sched->activeSlots) + 1);
-    printf_SCHED("stnc sleep lcs %lu %lu-%lu\r\n", 
+    cinfo(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
       lastCycleStart,
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
@@ -340,10 +330,10 @@ module CXSlaveSchedulerP{
         call SkewCorrection.referenceTime(masterId),
         call SkewCorrection.getCorrection(masterId,
           sched->cycleLength));
-      printf_SCHED("req cw: %x\r\n",
+      cinfo(SCHED, "req cw: %x\r\n",
         error);
     }else{
-      printf("!req cycle sleep: %x\r\n",
+      cerror(SCHED, "req cycle sleep: %x\r\n",
        error);
     }
   }
@@ -351,7 +341,7 @@ module CXSlaveSchedulerP{
   event void SlotNotify.lastSlot(){
     if (!scheduleReceived){
       missedCount++;
-      printf_SCHED("Missed %u\r\n", missedCount);
+      cinfo(SCHED, "Missed %u\r\n", missedCount);
       lastCycleStart += sched->cycleLength;
       call ScheduleParams.setCycleStart(lastCycleStart);
     }else{
@@ -363,7 +353,7 @@ module CXSlaveSchedulerP{
     }else{
       //this should force the next RX to use MAX_WAIT.
       state = S_SEARCH;
-      printf_SCHED("synch lost\r\n");
+      cinfo(SCHED, "synch lost\r\n");
     }
   }
 

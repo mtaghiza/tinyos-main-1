@@ -1,5 +1,6 @@
 #ifndef CX_LINK_DEBUG_H
 #define CX_LINK_DEBUG_H
+#include "CXDebug.h"
 
 #ifndef LINK_DEBUG_FRAME_BOUNDARIES 
 #define LINK_DEBUG_FRAME_BOUNDARIES 0
@@ -9,34 +10,13 @@
 #define LINK_DEBUG_WAKEUP 0
 #endif
 
-#ifndef DEBUG_LINK
-#define DEBUG_LINK 0
+#ifndef DL_LINK
+#define DL_LINK DL_INFO
 #endif
 
-#if DEBUG_LINK == 1
-#define printf_LINK( ... ) printf( __VA_ARGS__ )
-#else
-#define printf_LINK(...)
+#ifndef DL_LINKQUEUE
+#define DL_LINKQUEUE DL_INFO
 #endif
 
-#ifndef DEBUG_LINK_EVICTIONS
-#define DEBUG_LINK_EVICTIONS 0
-#endif
-
-#if DEBUG_LINK_EVICTIONS == 1
-#define printf_LINK_EVICTIONS( ... ) printf( __VA_ARGS__ )
-#else
-#define printf_LINK_EVICTIONS(...)
-#endif
-
-#ifndef DEBUG_LINK_QUEUE
-#define DEBUG_LINK_QUEUE 0
-#endif
-
-#if DEBUG_LINK_QUEUE == 1
-#define printf_LINK_QUEUE( ... ) printf( __VA_ARGS__ )
-#else
-#define printf_LINK_QUEUE(...)
-#endif
 
 #endif

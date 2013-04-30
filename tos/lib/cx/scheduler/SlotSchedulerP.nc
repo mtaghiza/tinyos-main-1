@@ -56,7 +56,7 @@ module SlotSchedulerP{
       lastSlotStart = lastCycleStart;
     }
     if (!wakeupPending && sched != NULL){
-      printf_SCHED("scs WNS cs %lu lss %lu\r\n", 
+      cinfo(SCHED, "scs WNS cs %lu lss %lu\r\n", 
         cycleStart, 
         lastCycleStart);
       post wakeupNextSlot();
@@ -69,7 +69,7 @@ module SlotSchedulerP{
   command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
     sched = schedule;
     if (!wakeupPending && sched != NULL && lastSlotStart != INVALID_FRAME){
-      printf_SCHED("ss WNS\r\n");
+      cinfo(SCHED, "ss WNS\r\n");
       post wakeupNextSlot();
     }
   }
@@ -165,11 +165,6 @@ module SlotSchedulerP{
       return subNext;
     }
     if (isTX){
-//      printf("nftx sn %lu s# %lu io %x ms %lu",
-//        subNext,
-//        slotNumber(subNext),
-//        isOwned(subNext),
-//        mySlot);
       if (isOwned(subNext)){
         if (subNext == myNextSlotStart(subNext)){
           //avoiding conflict with wakeup
@@ -231,7 +226,7 @@ module SlotSchedulerP{
       if (error == SUCCESS){
         wakeupPending ++; 
       }
-      printf_SCHED("req sw: %lu %x p %u\r\n",
+      cinfo(SCHED, "req sw: %lu %x p %u\r\n",
         lastCycleStart + sched->slotLength*(slotNumber(lastSlotStart)+1),
         error, wakeupPending);
     }
@@ -246,13 +241,13 @@ module SlotSchedulerP{
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame){
     if (layerCount){
-      printf_SCHED("wh up\r\n");
+      cdbg(SCHED, "wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
       if (wakeupPending){
         wakeupPending --;
       }else{
-        printf("!Unexpected wakeup\r\n");
+        cerror(SCHED, "Unexpected wakeup\r\n");
       }
 
       lastSlotStart = atFrame;
@@ -266,7 +261,7 @@ module SlotSchedulerP{
         } else {
           //woke up some time during the inactive period, shouldn't
           //  happen.
-          printf("!inactive period wakeup %lu slot %lu\r\n", 
+          cerror(SCHED, "inactive period wakeup %lu slot %lu\r\n", 
             atFrame, sn);
         }
       }
@@ -304,7 +299,7 @@ module SlotSchedulerP{
         md, msg);
     }else{
       //there shouldn't be any RX requests originating at this layer.
-      printf("!Unexpected rxHandled\r\n");
+      cerror(SCHED, "Unexpected rxHandled\r\n");
     }
   }
   
@@ -320,14 +315,11 @@ module SlotSchedulerP{
       error_t error = call SubCXRQ.requestSleep(0,
         ns,
         0);
-      if (error != SUCCESS){
-        printf("!req slot sleep: %x @%lu\r\n", error, ns);
-      }
-      printf_SCHED("req slot sleep: %x @%lu\r\n", 
+      cinfo(SCHED, "req slot sleep: %x @%lu\r\n", 
         error, 
         ns);
     } else {
-      printf("!Slot sleep requested, but no wakeup pending\r\n");
+      cerror(SCHED, "Slot sleep requested, but no wakeup pending\r\n");
     }
   }
 
@@ -399,7 +391,7 @@ module SlotSchedulerP{
         md, msg);
     }else{
       //nothing should be originating here
-      printf("!Unexpected terminal sendHandled\r\n");
+      cerror(SCHED, "Unexpected terminal sendHandled\r\n");
     }
   }
   

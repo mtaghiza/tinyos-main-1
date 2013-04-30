@@ -1,6 +1,7 @@
 
  #include "CXLink.h"
  #include "CXLinkDebug.h"
+ #include "CXSchedulerDebug.h"
 module CXLinkP { 
   provides interface SplitControl;
   provides interface CXRequestQueue;
@@ -111,10 +112,10 @@ module CXLinkP {
   task void logFrameAdjustments(){
     uint8_t i = ufnIndex + 1;
     uint8_t k;
-    printf("~ULFN\r\n");
+    cwarn(LINK, "ULFN\r\n");
     for (k = 0; k < UFN_ADJUST_LEN; k++){
       ufn_adjust_t* a = &ufnArr[(i+k)%UFN_ADJUST_LEN];
-      printf(" %u @ %lu (%lu, %lu) + (%lu, %lu) = (%lu, %lu)\r\n", 
+      cwarnclr(LINK, " %u @ %lu (%lu, %lu) + (%lu, %lu) = (%lu, %lu)\r\n", 
         k,
         a->now, 
         a-> lft, a->lfn,
@@ -157,30 +158,18 @@ module CXLinkP {
         fastTicks = ((fastRef1+fastRef2)/2) - microRef;
         //elapsed slow-ticks since strobe
         slowTicks = fastToSlow(fastTicks);
-//        printf_LINK("lms %lu cap %lu ref %lu fr1 %lu fr2 %lu sr %lu ft %lu st %lu ",
-//          lastMicroStart,
-//          aSfdCapture, microRef,
-//          fastRef1, fastRef2, slowRef,
-//          fastTicks, slowTicks);
-//        printf_LINK("%lu -> ", lastFrameTime);
         t32kRef = slowRef - slowTicks;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
-//        printf_LINK("%lu \r\n", lastFrameTime);
       }
       if (microRef !=0 && !shouldSynch){
         P1OUT |=  BIT3;
         P1OUT &= ~BIT3;
-        printf_LINK("Failed CRC don't resynch\r\n");
+        cinfo(LINK, "Failed CRC don't resynch\r\n");
       }
       asyncHandled = FALSE;
     }
     switch(nextRequest -> requestType){
-//      case RT_FRAMESHIFT:
-//        signal CXRequestQueue.frameShiftHandled(requestError,
-//          nextRequest -> layerCount - 1,
-//          handledFrame, reqFrame);
-//        break;
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, 
           nextRequest -> layerCount - 1,
@@ -262,18 +251,7 @@ module CXLinkP {
           //TODO: DEBUG remove 
           atomic P1OUT ^= BIT1;
         }
-//        if (nextRequest -> requestType != RT_MARK){
-//          printf_LINK("handle %x @ %lu / %lu\r\n", 
-//            nextRequest->requestType,         
-//            lastFrameNum, 
-//            call FrameTimer.gett0() + call FrameTimer.getdt());
-//        }
         switch (nextRequest -> requestType){
-//          case RT_FRAMESHIFT:
-//            lastFrameTime += nextRequest->typeSpecific.frameShift.frameShift;
-//            requestError = SUCCESS;
-//            post requestHandled();
-//            break;
           case RT_SLEEP:
             if (LINK_DEBUG_WAKEUP){
               atomic P1OUT &= ~BIT1;
@@ -367,14 +345,14 @@ module CXLinkP {
             //should not happen.
         }
       }else if (targetFrame < lastFrameNum){
-        printf_LINK("Missed %lu < %lu\r\n", 
+        cwarn(LINK, "Missed %lu < %lu\r\n", 
           targetFrame, lastFrameNum);
         post logFrameAdjustments();
         //we have missed the intended frame. signal handled
         requestError = FAIL;
         post requestHandled();
       }else if (targetFrame > lastFrameNum){
-        printf_LINK("Early\r\n");
+        cwarn(LINK, "Early\r\n");
         //shouldn't happen. re-doing readyNextRequest should work it
         //out. 
         call Queue.enqueue(nextRequest);
@@ -382,7 +360,7 @@ module CXLinkP {
         post readyNextRequest();
       }
     }else{
-      printf_LINK("nextRequest NULL\r\n");
+      cerror(LINK, "nextRequest NULL\r\n");
     }
   }
 
@@ -392,16 +370,16 @@ module CXLinkP {
       //  and pull the next one from the queue.
       error_t err = validateRequest(nextRequest);
       if (nextRequest->requestType == RT_RX){
-        printf_LINK_QUEUE("pop RX %p\r\n", nextRequest->msg);
+        cdbg(LINKQUEUE, "pop RX %p\r\n", nextRequest->msg);
       } else if (nextRequest ->requestType == RT_TX){
-        printf_LINK_QUEUE("pop TX %p\r\n", nextRequest->msg);
+        cdbg(LINKQUEUE, "pop TX %p\r\n", nextRequest->msg);
       }
       if (SUCCESS != err){
         requestError = err;
         updateLastFrameNum();
         handledFrame = lastFrameNum;
         if (nextRequest->requestType != RT_MARK){
-          printf_LINK_EVICTIONS("rnR: %x %x@ %lu\r\n", requestError,
+          cdbg(LINKQUEUE, "rnR: %x %x@ %lu\r\n", requestError,
             nextRequest->requestType, 
             nextRequest->baseFrame + nextRequest->frameOffset);
         }
@@ -421,7 +399,7 @@ module CXLinkP {
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
           uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
             + rft + c - PREP_TIME_32KHZ;
-          printf_SKEW("WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
+          cdbg(SKEW, "WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
             lastFrameTime, newLft,
             rft, rfn, lastFrameNum);
           lastFrameTime = newLft;
@@ -434,7 +412,7 @@ module CXLinkP {
           call FrameTimer.startOneShotAt(t0, dt);
           if (nextRequest->requestType != RT_MARK){
             uint32_t now = call FrameTimer.getNow();
-            printf_LINK("N: %x @%lu (%lu %lu %lu)\r\n", 
+            cinfo(LINKQUEUE, "N: %x @%lu (%lu %lu %lu)\r\n", 
               nextRequest->requestType,
               targetFrame,
               t0, dt, now);
@@ -447,8 +425,6 @@ module CXLinkP {
   error_t validateRequest(cx_request_t* r){
     //event in the past? I guess we were busy.
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
-    //TODO: superceded = ERETRY or EBUSY? or should both be treated
-    //the same
       if (r->baseFrame + r->frameOffset == handledFrame){
         return ERETRY;
       }else{ 
@@ -479,7 +455,7 @@ module CXLinkP {
       r->next = md;
       r->msg = NULL;
     }else{
-      printf("!RP empty!\r\n");
+      cerror(LINK, "RP empty!\r\n");
     }
     return r;
   }
@@ -500,29 +476,13 @@ module CXLinkP {
     }
   }
 
-//  command error_t CXRequestQueue.requestFrameShift(uint8_t layerCount, uint32_t baseFrame, 
-//      int32_t frameOffset, int32_t frameShift){
-//    cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset,
-//      RT_FRAMESHIFT, NULL);
-//    if (r != NULL){
-//      error_t error = validateRequest(r);
-//      if (SUCCESS == error){
-//        r->typeSpecific.frameShift.frameShift = frameShift;
-//        enqueue(r);
-//      }
-//      return error;
-//    } else{ 
-//      return ENOMEM;
-//    }
-//  }
-
   command error_t CXRequestQueue.requestReceive(uint8_t layerCount,
       uint32_t baseFrame, int32_t frameOffset, 
       bool useMicro, uint32_t microRef,
       uint32_t duration,
       void* md, message_t* msg){
     if (msg == NULL){
-      printf("link.cxrq.rr null\r\n");
+      cerror(LINK, "link.cxrq.rr null\r\n");
       return EINVAL;
     } else{
       cx_request_t* r = newRequest(layerCount+1, baseFrame, frameOffset, RT_RX, md);
@@ -540,13 +500,13 @@ module CXLinkP {
         error = validateRequest(r);
         if (SUCCESS == error){
           enqueue(r);
-          printf_LINK_QUEUE("push RX %p\r\n", msg);
+          cdbg(LINKQUEUE, "push RX %p\r\n", msg);
         }else{
           call Pool.put(r);
         }
         return error;
       } else{
-        printf("Link.NOMEM\r\n");
+        cerror(LINK, "l.rr.nomem\r\n");
         return ENOMEM;
       }
     }
@@ -571,12 +531,13 @@ module CXLinkP {
       error = validateRequest(r);
       if (SUCCESS == error){
         enqueue(r);
-        printf_LINK_QUEUE("push TX %p\r\n", msg);
+        cdbg(LINKQUEUE, "push TX %p\r\n", msg);
       }else{
         call Pool.put(r);
       }
       return error;
-    } else{ 
+    } else{
+      cerror(LINK, "l.rs.nomem\r\n");
       return ENOMEM;
     }
   }
@@ -598,6 +559,7 @@ module CXLinkP {
       }
       return error;
     } else{ 
+      cerror(LINK, "l.rsl.nomem\r\n");
       return ENOMEM;
     }
   }
@@ -621,12 +583,13 @@ module CXLinkP {
       }
       return error;
     } else{ 
+      cerror(LINK, "l.rw.nomem\r\n");
       return ENOMEM;
     }
   }
 
   default event void CXRequestQueue.wakeupHandled(error_t error,
-  uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){}
+    uint8_t layerCount, uint32_t atFrame, uint32_t reqFrame){}
 
   command error_t SplitControl.start(){
     if (call Resource.isOwner()){
@@ -717,7 +680,7 @@ module CXLinkP {
     }
 
     if ( t0 + dt < now + MIN_STROBE_CLEARANCE ){
-      printf("!%lu + %lu = %lu < %lu + %lu = %lu\r\n",
+      cerror(LINK, "%lu + %lu = %lu < %lu + %lu = %lu\r\n",
         t0, dt, t0+dt, now, MIN_STROBE_CLEARANCE,
         now+MIN_STROBE_CLEARANCE);
       //not enough time, so fail.
@@ -756,7 +719,7 @@ module CXLinkP {
       aCount;
     }
     shouldSynch = call Rf1aPacket.crcPassed(nextRequest->msg);
-    printf_LINK("RX crc %x\r\n", 
+    cdbg(LINK, "RX crc %x\r\n", 
       call Rf1aPacket.crcPassed(nextRequest->msg));
     post requestHandled();
   }
@@ -764,7 +727,7 @@ module CXLinkP {
   norace uint32_t txAlarm;
 
   task void reportTx(){
-    printf_LINK("tx@ %lu\r\n", txAlarm);
+    cdbg(LINK, "tx@ %lu\r\n", txAlarm);
   }
 
   async event void FastAlarm.fired(){

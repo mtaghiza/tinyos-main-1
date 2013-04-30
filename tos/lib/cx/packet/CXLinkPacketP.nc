@@ -28,7 +28,7 @@ module CXLinkPacketP {
   }
 
   command void Packet.clear(message_t* msg){
-    printf_LINK_QUEUE("clr p %p\r\n", msg);
+    cdbg(LINKQUEUE, "clr p %p\r\n", msg);
     call SubPacket.clear(msg);
     call CXPacketMetadata.setRequestedFrame(msg, INVALID_FRAME);
   }
