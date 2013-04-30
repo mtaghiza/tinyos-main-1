@@ -39,7 +39,10 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 
 #Debug settings
 #enable link layer printf's
+CFLAGS += -DDEBUG_LINK_QUEUE=0
 CFLAGS += -DDEBUG_LINK=0
+CFLAGS += -DDEBUG_TRANSPORT=0
+CFLAGS += -DDEBUG_AM=0
 CFLAGS += -DDEBUG_SKEW=0
 CFLAGS += -DDEBUG_SCHED=0
 #toggle P1.1 at every frame boundary
