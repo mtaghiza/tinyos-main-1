@@ -18,6 +18,8 @@ CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
 CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util/globalID
+CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
 
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK
