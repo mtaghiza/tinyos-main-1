@@ -64,12 +64,17 @@ configuration CXMasterSchedulerC{
   CXMasterSchedulerP.Boot -> MainC.Boot;
   CXMasterSchedulerP.Random -> RandomC;
 
-  components new ScheduledAMSenderC(AM_CX_SCHEDULE_MSG) as SenderC;
-  CXMasterSchedulerP.ScheduledAMSend -> SenderC;
+  components new ScheduledAMSenderC(AM_CX_SCHEDULE_MSG) as ScheduleSenderC;
+  CXMasterSchedulerP.ScheduleSend -> ScheduleSenderC;
 
   SlotTiming = SlotSchedulerP;
 
   components CXRoutingTableC;
   CXMasterSchedulerP.RoutingTable -> CXRoutingTableC;
 
+  components new AMSenderC(AM_CX_ASSIGNMENT_MSG) as AssignmentSenderC;
+  CXMasterSchedulerP.AssignmentSend -> AssignmentSenderC;
+
+  components new AMReceiverC(AM_CX_REQUEST_MSG);
+  CXMasterSchedulerP.RequestReceive -> AMReceiverC;
 }

@@ -52,8 +52,6 @@ module CXMasterSchedulerStaticP{
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
     sched -> activeSlots = 4;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
-    sched -> numAssigned = 1;
-    sched -> slotAssignments[0] = call CXLinkPacket.addr();
 
     call RoutingTable.setDefault(sched->maxDepth);
   }
@@ -125,12 +123,6 @@ module CXMasterSchedulerStaticP{
 //        call CXSchedulerPacket.setOriginFrame(schedMsg, 
 //          schedOF + lastCycleStart);
 
-        sched->padding0 = 0x10;
-        sched->padding1 = 0x11;
-        sched->padding2 = 0x12;
-        sched->padding3 = 0x13;
-        sched->padding4 = 0x14;
-        sched->padding5 = 0x15;
         sched->cycleStartFrame = lastCycleStart;
 
         call CXPacketMetadata.setTSLoc(schedMsg, &(sched->timestamp));

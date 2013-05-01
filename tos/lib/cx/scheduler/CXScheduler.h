@@ -2,6 +2,7 @@
 #define CX_SCHEDULER_H
 
 #include "AM.h"
+#include "GlobalID.h"
 
 #ifndef CX_STATIC_SCHEDULE
 #define CX_STATIC_SCHEDULE 0
@@ -42,10 +43,15 @@
 #define INVALID_SLOT  0xFFFFFFFF
 #define INVALID_FRAME 0xFFFFFFFF
 
+
 typedef nx_struct cx_schedule_header {
   nx_uint8_t sn;
   nx_uint32_t originFrame;
 }cx_schedule_header_t; 
+
+#ifndef MAX_VACANT
+#define MAX_VACANT 15
+#endif
 
 typedef nx_struct cx_schedule {
   nx_uint8_t sn;
@@ -54,17 +60,30 @@ typedef nx_struct cx_schedule {
   nx_uint32_t slotLength;
   nx_uint32_t activeSlots;
   nx_uint8_t maxDepth;
-  nx_uint8_t numAssigned;
-  nx_am_addr_t slotAssignments[CX_MAX_SLOTS];
-  //have to place it at the end for timestamping to be happy
-  nx_uint8_t padding0;
-  nx_uint8_t padding1;
-  nx_uint8_t padding2;
-  nx_uint8_t padding3;
   nx_uint32_t timestamp; //32K timestamp of origin
-  nx_uint8_t padding4;
-  nx_uint8_t padding5;
+  nx_uint8_t numVacant;
+  nx_uint32_t vacantSlots[MAX_VACANT];
 } cx_schedule_t;
+
+//request just indicates how many slots this node wants to get.
+typedef nx_struct cx_schedule_request {
+  nx_uint8_t slotsRequested;
+} cx_schedule_request_t;
+
+typedef nx_struct cx_schedule_assignment {
+  nx_am_addr_t owner;
+  nx_uint32_t slotNumber;
+} cx_schedule_assignment_t;
+
+#ifndef MAX_ASSIGNMENTS
+//15*6 = 91 bytes: should fit, even with headers etc.
+#define MAX_ASSIGNMENTS 15
+#endif
+
+typedef nx_struct cx_assignment_msg {
+  nx_uint8_t numAssigned;
+  cx_schedule_assignment_t assignments[MAX_ASSIGNMENTS];
+} cx_assignment_msg_t;
 
 #ifndef CX_ENABLE_SKEW_CORRECTION 
 #define CX_ENABLE_SKEW_CORRECTION 1
@@ -75,5 +94,10 @@ typedef nx_struct cx_schedule {
 #endif
 
 #define AM_CX_SCHEDULE_MSG 0xC4
+#define AM_CX_ASSIGNMENT_MSG 0xC5
+#define AM_CX_REQUEST_MSG 0xC6
+
+#define NO_OWNER AM_BROADCAST_ADDR
+#define SCHEDULE 0xFFFE
 
 #endif

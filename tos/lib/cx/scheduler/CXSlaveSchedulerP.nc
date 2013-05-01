@@ -19,6 +19,8 @@ module CXSlaveSchedulerP{
   uses interface SlotNotify;
   uses interface Packet;
   uses interface RoutingTable;
+
+  uses interface AMSend as RequestSend;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -201,14 +203,13 @@ module CXSlaveSchedulerP{
 
   task void reportSched(){
     cinfo(SCHED, "RX Sched");
-    cinfo(SCHED, ": %p %p sn %u cl %lu sl %lu md %u na %u ts %lu",
+    cinfo(SCHED, ": %p %p sn %u cl %lu sl %lu md %u ts %lu",
       schedMsg,
       sched, 
       sched->sn,
       sched->cycleLength, 
       sched->slotLength, 
       sched->maxDepth,
-      sched->numAssigned,
       sched->timestamp);
 
     cinfo(SCHED, "\r\n");
@@ -383,5 +384,8 @@ module CXSlaveSchedulerP{
       startDonePending = TRUE;
       state = S_SEARCH;
     }
+  }
+
+  event void RequestSend.sendDone(message_t* msg, error_t error){
   }
 }

@@ -63,4 +63,7 @@ configuration CXSlaveSchedulerC{
 
   components CXRoutingTableC;
   CXSlaveSchedulerP.RoutingTable -> CXRoutingTableC;
+
+  components new AMSenderC(AM_CX_REQUEST_MSG);
+  CXSlaveSchedulerP.RequestSend -> AMSenderC;
 }
