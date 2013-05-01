@@ -3,7 +3,8 @@
 configuration TestC {
 } implementation {
   components MainC, TestP;
-
+  
+  components StackGuardMilliC;
   components PlatformSerialC;
   components SerialPrintfC;
 

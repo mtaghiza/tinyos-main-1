@@ -18,6 +18,7 @@ CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
 CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util/stackGuard
 CFLAGS += -I$(TOSROOT)/apps/breakfast/util/globalID
 CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
 
