@@ -3,6 +3,10 @@
 
 #include "AM.h"
 
+#ifndef CX_STATIC_SCHEDULE
+#define CX_STATIC_SCHEDULE 0
+#endif
+
 #ifndef CX_MAX_SLOTS
 #define CX_MAX_SLOTS 10
 #endif

@@ -6,10 +6,20 @@ configuration CXSchedulerC{
   provides interface Packet; 
   provides interface SlotTiming;
 } implementation {
-  #if CX_MASTER == 1
-  components CXMasterSchedulerC as CXScheduler;
+  #if CX_STATIC_SCHEDULE == 1
+    #warning "Using static scheduler: TEST ONLY"
+    #if CX_MASTER == 1
+    components CXMasterSchedulerStaticC as CXScheduler;
+    #else
+    components CXSlaveSchedulerStaticC as CXScheduler;
+    #endif
   #else
-  components CXSlaveSchedulerC as CXScheduler;
+    #if CX_MASTER == 1
+    components CXMasterSchedulerC as CXScheduler;
+    #else
+    components CXSlaveSchedulerC as CXScheduler;
+    #endif
+
   #endif
   
   CXRequestQueue = CXScheduler;
