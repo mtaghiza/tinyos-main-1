@@ -6,6 +6,10 @@
 #define LINK_DEBUG_FRAME_BOUNDARIES 0
 #endif
 
+#ifndef MARK_ALL_FRAMES 
+#define MARK_ALL_FRAMES 0
+#endif
+
 #ifndef LINK_DEBUG_WAKEUP 
 #define LINK_DEBUG_WAKEUP 0
 #endif

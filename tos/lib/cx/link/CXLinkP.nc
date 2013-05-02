@@ -163,8 +163,6 @@ module CXLinkP {
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
       }
       if (microRef !=0 && !shouldSynch){
-        P1OUT |=  BIT3;
-        P1OUT &= ~BIT3;
         cinfo(LINK, "Failed CRC don't resynch\r\n");
       }
       asyncHandled = FALSE;
@@ -221,7 +219,7 @@ module CXLinkP {
       nextRequest = NULL;
     }
     
-    if (LINK_DEBUG_FRAME_BOUNDARIES){
+    if (LINK_DEBUG_FRAME_BOUNDARIES && MARK_ALL_FRAMES){
       //nothing scheduled or next scheduled event is some frame other
       //than the upcoming one.
       if (nextRequest == NULL ||
@@ -254,7 +252,7 @@ module CXLinkP {
         switch (nextRequest -> requestType){
           case RT_SLEEP:
             if (LINK_DEBUG_WAKEUP){
-              atomic P1OUT &= ~BIT1;
+              atomic P1OUT &= ~BIT3;
             }
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
@@ -263,7 +261,7 @@ module CXLinkP {
             break;
           case RT_WAKEUP:
             if (LINK_DEBUG_WAKEUP){
-              atomic P1OUT |= BIT1;
+              atomic P1OUT |= BIT3;
             }
             requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
             if (requestError == SUCCESS){
