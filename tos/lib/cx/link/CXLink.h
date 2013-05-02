@@ -8,15 +8,21 @@
 #define REQUEST_QUEUE_LEN 10
 #endif
 
+
+#ifndef CX_SCALE_TIME
+#define CX_SCALE_TIME 1
+#endif
+
 #ifndef FRAMELEN_32K
 //32k = 2**15
-#define FRAMELEN_32K 1024
+#define FRAMELEN_32K (1024UL * CX_SCALE_TIME)
 #endif
 
 #ifndef FRAMELEN_6_5M
 //6.5M = 2**5 * 5**16 * 13
-#define FRAMELEN_6_5M 203125UL
+#define FRAMELEN_6_5M (203125UL * CX_SCALE_TIME)
 #endif
+
 //divide both by 2**5, this is what you get.
 //1024 32k ticks = 0.03125 s
 //n.b. it seems like mspgcc is smart enough to see /1024 and translate
