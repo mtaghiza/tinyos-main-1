@@ -444,18 +444,24 @@ module CXSlaveSchedulerP{
 
   event message_t* AssignmentReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
-    cinfo(SCHED, "RX Ass\r\n");
+    cdbg(SCHED, "RX Ass\r\n");
     //TODO: move to task?
     if (requestCyclePending){
       cx_assignment_msg_t* pl = (cx_assignment_msg_t*)payload;
       uint8_t i;
+      cdbg(SCHED, "%u ass'd\r\n", pl->numAssigned);
       for (i = 0; i < pl->numAssigned; i++){
+        cdbg(SCHED, "a %lu to %x\r\n",
+          pl->assignments[i].slotNumber,
+          pl->assignments[i].owner);
         if (pl->assignments[i].owner == TOS_NODE_ID){
           mySlot = pl->assignments[i].slotNumber;
-          cinfo(SCHED, "a to %lu\r\n", mySlot);
+          cinfo(SCHED, "A me to %lu\r\n", mySlot);
           call ScheduleParams.setSlot(mySlot);
         }
       }
+    }else{
+      cdbg(SCHED, "Ignore ass\r\n");
     }
     return msg;
   }

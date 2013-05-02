@@ -335,7 +335,7 @@ module CXMasterSchedulerP{
   task void sendAssignments(){
     if (outstandingRequests && !sendAssignmentsPending){
       error_t error;
-      cx_assignment_msg_t* pl = (cx_assignment_msg_t*)call Packet.getPayload(assignMsg, sizeof(cx_assignment_msg_t));
+      cx_assignment_msg_t* pl = (cx_assignment_msg_t*)call AssignmentSend.getPayload(assignMsg, sizeof(cx_assignment_msg_t));
       call Packet.clear(assignMsg);
       pl -> numAssigned = 0;
       while (outstandingRequests && pl->numAssigned < MAX_ASSIGNMENTS
@@ -346,10 +346,13 @@ module CXMasterSchedulerP{
           pl->assignments[pl->numAssigned].slotNumber =
             assignmentIndex;
           assignments[pl->numAssigned].status = SA_ASSIGNED;
+          cinfo(SCHED, "assign %lu to %x ",
+            pl->assignments[pl->numAssigned].slotNumber, 
+            pl->assignments[pl->numAssigned].owner);
           pl->numAssigned++;
           outstandingRequests --;
-          cinfo(SCHED, "assign %u to %x (%u)\r\n",
-            assignmentIndex, assignments[assignmentIndex].owner,
+          cinfo(SCHED, "(%u / %u)\r\n", 
+            pl->numAssigned, 
             outstandingRequests);
         }
         //put the owner id into the packet
