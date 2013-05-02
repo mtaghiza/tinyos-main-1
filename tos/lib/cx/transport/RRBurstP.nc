@@ -96,6 +96,9 @@ module RRBurstP {
       }
   
       if (needsSetup){
+        //TODO: use GetLastBroadcast to figure out whether we need to
+        //push this to the next slot or can use this slot. n.b. that
+        //this needs to account for the ACK time as well.
         txf = nss;
         cinfo(TRANSPORT, "SP_S: %lu -> %lu\r\n",
           nf, txf);

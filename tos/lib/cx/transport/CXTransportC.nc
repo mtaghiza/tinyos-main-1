@@ -85,4 +85,7 @@ configuration CXTransportC {
 
   CXTransportDispatchP.AMPacket -> ActiveMessageC;
 
+  FloodBurstP.GetLastBroadcast 
+    -> CXTransportDispatchP.GetLastBroadcast;
+
 }

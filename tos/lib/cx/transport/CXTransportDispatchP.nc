@@ -17,7 +17,14 @@ module CXTransportDispatchP {
   
   //ugh. for destination
   uses interface AMPacket;
+
+  provides interface Get<uint32_t> as GetLastBroadcast;
 } implementation {
+  
+  //used for coordination between FB, RRB, and ScheduledSend to
+  //determine when the network is awake.
+  uint32_t lastBC;
+
   //splitcontrol:
   // - commands and events should be passed through
   // - at SubSplitControl.startDone, notify CXRequestQueue clients
@@ -147,6 +154,11 @@ module CXTransportDispatchP {
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
+    if (SUCCESS == error 
+        && call AMPacket.destination(msg) == AM_BROADCAST_ADDR){
+      lastBC = atFrame;
+    }
+
     if (call CXPacketMetadata.getRequestedFrame(msg) != INVALID_FRAME){
       signal CXRequestQueue.sendHandled[CX_TP_SCHEDULED](
         error,
@@ -197,5 +209,9 @@ module CXTransportDispatchP {
   default command bool RequestPending.requestPending[uint8_t tp](uint32_t frame){
     cerror(TRANSPORT, "default RP to %x\r\n", tp);
     return FALSE;
+  }
+
+  command uint32_t GetLastBroadcast.get(){
+    return lastBC;
   }
 }

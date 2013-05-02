@@ -12,6 +12,8 @@ module FloodBurstP {
   uses interface AMPacket;
   provides interface RequestPending;
   uses interface RoutingTable;
+
+  uses interface Get<uint32_t> as GetLastBroadcast;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -23,7 +25,6 @@ module FloodBurstP {
   bool on = FALSE;
   uint32_t rxf = INVALID_FRAME;
 
-  uint32_t lastTX;
 
   task void receiveNext(){
     if ( on && !rxPending){
@@ -66,14 +67,17 @@ module FloodBurstP {
         //Cool, there's enough frames left in this slot.
         uint32_t lss = call SlotTiming.lastSlotStart();
 
-        if (nf == lss || lastTX >= lss){
+        if (nf == lss || call GetLastBroadcast.get() >= lss){
+          cdbg(TRANSPORT, "FB #\r\n");
           //cool, the network is set up for receiving broadcasts (this
           //is either the first frame of the slot, or we've previously
           //sent a broadcast during this slot).
         } else {
+          cdbg(TRANSPORT, "FB->\r\n");
           nf = call SlotTiming.nextSlotStart(nf); 
         }
       } else {
+        cdbg(TRANSPORT, "FB->\r\n");
         nf = call SlotTiming.nextSlotStart(nf);
       }
 
@@ -141,7 +145,6 @@ module FloodBurstP {
     sending = FALSE;
     cdbg(TRANSPORT, "fb.sd %p %x\r\n", msg, error);
     signal Send.sendDone(msg, error);
-    lastTX = atFrame;
   }
 
   //unused events below
