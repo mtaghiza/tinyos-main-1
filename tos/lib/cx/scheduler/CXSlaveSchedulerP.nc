@@ -11,6 +11,7 @@ module CXSlaveSchedulerP{
   uses interface CXRequestQueue as SubCXRQ;
 
   uses interface Receive as ScheduleReceive;
+  uses interface Receive as AssignmentReceive;
   uses interface SkewCorrection;
   uses interface ScheduleParams;
   uses interface CXSchedulerPacket;
@@ -20,10 +21,14 @@ module CXSlaveSchedulerP{
   uses interface Packet;
   uses interface RoutingTable;
 
-  uses interface AMSend as RequestSend;
+  uses interface ScheduledAMSend as RequestSend;
+  uses interface Random;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
+
+  message_t requestMsg_internal;
+  message_t* requestMsg = &requestMsg_internal;
 
   cx_schedule_t* sched;
   bool startDonePending = FALSE;
@@ -34,6 +39,8 @@ module CXSlaveSchedulerP{
   bool scheduleReceived = FALSE;
   uint8_t missedCount = 0;
   am_addr_t masterId;
+
+  uint8_t requestCyclePending = 0 ;
   
   enum { 
     S_OFF = 0x00,  
@@ -170,7 +177,9 @@ module CXSlaveSchedulerP{
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
     if (sched == NULL || state != S_SYNCHED){
-      return ERETRY;
+      //ERETRY: reserved to mean "this transport protocol is already
+      //busy and will eventually return a sendDone"
+      return EOFF;
     }
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
@@ -232,9 +241,45 @@ module CXSlaveSchedulerP{
   }
 
   task void claimSlotTask(){
-    //TODO: actually go through the claim process
-    mySlot = TOS_NODE_ID;
-    call ScheduleParams.setSlot(mySlot);
+    uint8_t ssi = (call Random.rand16() )% sched->numVacant; 
+    uint32_t slotNum = sched->vacantSlots[ssi];
+    cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
+      sizeof(cx_schedule_request_t));
+    error_t error;
+    call Packet.clear(requestMsg);
+    //TODO: FUTURE allow nodes to request more than one slot.
+    req->slotsRequested = 1;
+    //So this will actually get handled as an RRBurst, but should be
+    //marked as DATA and will therefore just get signalled right up to
+    //master.
+    error = call RequestSend.send(masterId, requestMsg,
+      sizeof(cx_schedule_request_t),
+      lastCycleStart + slotNum*sched->slotLength + 1);
+    if (error == SUCCESS){
+      //This gets decremented at the end of each cycle. So, sequence
+      //is:
+      // - boot: set rcp to 0
+      // - c 0 starts
+      // - master schedule: slave synchs
+      // - slave is unassigned and rcp is 0.
+      //   - slave schedules slot claim, set rcp 2
+      // - slave sends slot claim
+      // - c 0 ends: rcp = 1
+      // 
+      // - c 1 starts: master announce
+      // - slave is unassigned but rcp != 0 
+      //   - does not schedule slot claim
+      // - master sends assignments
+      //   - slave sees itself and starts normal operation
+      //   - OR slave does not see itself and remains unscheduled.
+      // - c 1 ends: rcp =0
+      // 
+      // - c 2 starts: master announce
+      // - slave is unassigned and rcp ==0, so behavior of c0 repeats.
+      requestCyclePending = 2;
+    }
+
+    cdbg(SCHED, "csr %lu %x\r\n", slotNum, error);
   }
 
   event message_t* ScheduleReceive.receive(message_t* msg, 
@@ -265,8 +310,11 @@ module CXSlaveSchedulerP{
     call ScheduleParams.setMasterId(masterId);
 
     call RoutingTable.setDefault(sched->maxDepth);
-    
-    if (mySlot == INVALID_SLOT){
+
+    if (requestCyclePending){
+      requestCyclePending --;
+    }
+    if (mySlot == INVALID_SLOT && !requestCyclePending){
       post claimSlotTask();
     }
     post reportSched();
@@ -387,5 +435,26 @@ module CXSlaveSchedulerP{
   }
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
+    cdbg(SCHED, "req.sd %x\r\n", error);
+    if (error != SUCCESS){
+      requestCyclePending = 0;
+    }
+  }
+  
+
+  event message_t* AssignmentReceive.receive(message_t* msg, 
+      void* payload, uint8_t len){
+    //TODO: move to task?
+    if (requestCyclePending){
+      cx_assignment_msg_t* pl = (cx_assignment_msg_t*)payload;
+      uint8_t i;
+      for (i = 0; i < pl->numAssigned; i++){
+        if (pl->assignments[i].owner == TOS_NODE_ID){
+          mySlot = pl->assignments[i].slotNumber;
+          call ScheduleParams.setSlot(mySlot);
+        }
+      }
+    }
+    return msg;
   }
 }

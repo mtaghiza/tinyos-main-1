@@ -67,6 +67,7 @@ configuration CXTransportC {
 
   components ActiveMessageC;
   ScheduledTXP.AMPacket -> ActiveMessageC;
+  ScheduledTXP.CXTransportPacket -> CXTransportPacketC;
 
   components CXRoutingTableC;
   FloodBurstP.RoutingTable -> CXRoutingTableC;

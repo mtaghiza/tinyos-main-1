@@ -56,14 +56,22 @@ configuration CXSlaveSchedulerC{
   CXSlaveSchedulerP.SkewCorrection -> SkewCorrectionC;
   SlotSchedulerP.SkewCorrection -> SkewCorrectionC;
   
-  components new AMReceiverC(AM_CX_SCHEDULE_MSG);
-  CXSlaveSchedulerP.ScheduleReceive -> AMReceiverC;
+  components new AMReceiverC(AM_CX_SCHEDULE_MSG) 
+    as ScheduleReceive;
+  CXSlaveSchedulerP.ScheduleReceive -> ScheduleReceive;
+
+  components new AMReceiverC(AM_CX_ASSIGNMENT_MSG) 
+    as AssignmentReceive;
+  CXSlaveSchedulerP.AssignmentReceive -> AssignmentReceive;
 
   SlotTiming = SlotSchedulerP;
 
   components CXRoutingTableC;
   CXSlaveSchedulerP.RoutingTable -> CXRoutingTableC;
 
-  components new AMSenderC(AM_CX_REQUEST_MSG);
-  CXSlaveSchedulerP.RequestSend -> AMSenderC;
+  components new ScheduledAMSenderC(AM_CX_REQUEST_MSG);
+  CXSlaveSchedulerP.RequestSend -> ScheduledAMSenderC;
+
+  components RandomC;
+  CXSlaveSchedulerP.Random -> RandomC;
 }

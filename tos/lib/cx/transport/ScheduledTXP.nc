@@ -10,7 +10,7 @@ module ScheduledTXP {
 } implementation {
 
   command error_t Send.send(message_t* msg, uint8_t len){
-
+    call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
     return call CXRequestQueue.requestSend(0,
       call CXPacketMetadata.getRequestedFrame(msg), 0,
       TXP_SCHEDULED,
