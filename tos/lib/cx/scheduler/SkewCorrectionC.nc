@@ -79,8 +79,10 @@ module SkewCorrectionC {
           //next EWMA step
           //n.b. we let TPF = 0 initially to keep things simple. In
           //general, we should be reasonably close to this. 
+          cdbg(SKEW, "CTPF %lx ->", cumulativeTpf);
           cumulativeTpf = sfpMult(cumulativeTpf, (FP_1 - alpha)) 
             + sfpMult(tpf, alpha);
+          cdbg(SKEW, "%lx\r\n", cumulativeTpf);
         }
         //TODO: DEBUG remove
         lastDelta = delta;
