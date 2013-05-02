@@ -347,8 +347,10 @@ module CXMasterSchedulerP{
             assignmentIndex;
           assignments[pl->numAssigned].status = SA_ASSIGNED;
           pl->numAssigned++;
-          cinfo(SCHED, "assign %u to %x\r\n",
-            assignmentIndex, assignments[assignmentIndex].owner);
+          outstandingRequests --;
+          cinfo(SCHED, "assign %u to %x (%u)\r\n",
+            assignmentIndex, assignments[assignmentIndex].owner,
+            outstandingRequests);
         }
         //put the owner id into the packet
         assignmentIndex++;
@@ -447,12 +449,16 @@ module CXMasterSchedulerP{
     uint8_t reqLeft;
     //TODO: this should probably be done in a task.
     cx_schedule_request_t* req = (cx_schedule_request_t*)payload;
+    cdbg(SCHED, "ReqR %u %u\r\n", 
+      call CXLinkPacket.getSource(msg),
+      req->slotsRequested);
     reqLeft = req->slotsRequested;
     for (i=0; i < CX_MAX_SLOTS && reqLeft; i++){
       if (assignments[i].status == SA_OPEN){
         scheduleModified = TRUE;
         assignments[i].status = SA_REQUESTED;
         assignments[i].owner = call CXLinkPacket.getSource(msg);
+        cinfo(SCHED, "a %u to %u\r\n", i, assignments[i].owner);
         reqLeft --;
         outstandingRequests ++;
       }

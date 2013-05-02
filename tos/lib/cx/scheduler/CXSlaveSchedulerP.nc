@@ -279,7 +279,7 @@ module CXSlaveSchedulerP{
       requestCyclePending = 2;
     }
 
-    cdbg(SCHED, "csr %lu %x\r\n", slotNum, error);
+    cinfo(SCHED, "csr %lu %x\r\n", slotNum, error);
   }
 
   event message_t* ScheduleReceive.receive(message_t* msg, 
@@ -435,7 +435,7 @@ module CXSlaveSchedulerP{
   }
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
-    cdbg(SCHED, "req.sd %x\r\n", error);
+    cdbg(SCHED, "rs.sd %x\r\n", error);
     if (error != SUCCESS){
       requestCyclePending = 0;
     }
@@ -444,6 +444,7 @@ module CXSlaveSchedulerP{
 
   event message_t* AssignmentReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
+    cinfo(SCHED, "RX Ass\r\n");
     //TODO: move to task?
     if (requestCyclePending){
       cx_assignment_msg_t* pl = (cx_assignment_msg_t*)payload;
@@ -451,6 +452,7 @@ module CXSlaveSchedulerP{
       for (i = 0; i < pl->numAssigned; i++){
         if (pl->assignments[i].owner == TOS_NODE_ID){
           mySlot = pl->assignments[i].slotNumber;
+          cinfo(SCHED, "a to %lu\r\n", mySlot);
           call ScheduleParams.setSlot(mySlot);
         }
       }
