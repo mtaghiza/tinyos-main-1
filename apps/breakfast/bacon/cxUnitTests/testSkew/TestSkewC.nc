@@ -1,6 +1,4 @@
  #include <stdio.h>
- #include "CXScheduler.h"
- #include "message.h"
 configuration TestSkewC{
 } implementation {
   components MainC;
@@ -13,4 +11,7 @@ configuration TestSkewC{
   TestP.UartStream -> PlatformSerialC;
   
   TestP.SerialControl -> PlatformSerialC;
+  
+  components SkewCorrectionC;
+  TestP.SkewCorrection -> SkewCorrectionC;
 }
