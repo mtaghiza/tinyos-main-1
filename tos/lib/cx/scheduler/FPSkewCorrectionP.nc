@@ -125,7 +125,7 @@ module FPSkewCorrectionP {
   }
 
   command int32_t SkewCorrection.getCorrection(am_addr_t otherId, 
-      uint32_t framesElapsed){
+      int32_t framesElapsed){
     if (otherId == other){
       return stoInt(cumulativeTpf*framesElapsed);
     } else {
