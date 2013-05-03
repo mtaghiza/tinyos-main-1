@@ -263,7 +263,7 @@ module CXLinkP {
             if (LINK_DEBUG_WAKEUP){
               atomic P1OUT |= BIT3;
             }
-            requestError = call Rf1aPhysical.resumeIdleMode(FALSE);
+            requestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
             if (requestError == SUCCESS){
               //TODO: where should channel # come from?
               requestError = call Rf1aPhysical.setChannel(0);
@@ -293,7 +293,11 @@ module CXLinkP {
                 tx_tsSet = FALSE;
                 aRequestError = SUCCESS;
                 requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
-
+                //if requestError is not success at this point, radio
+                //is in FSTXON. put it back to idle.
+                if (SUCCESS != requestError){
+                  call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+                }
               }
             }
             if (SUCCESS != requestError){

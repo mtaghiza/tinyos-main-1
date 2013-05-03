@@ -43,7 +43,7 @@
 #define T_STROBE_SFD 3395UL
 
 //scale up the nominal minimum prep time
-#define SETUP_SLACK_RATIO 7UL
+#define SETUP_SLACK_RATIO 8UL
 
 //Working backwards:
 // receiver
