@@ -69,7 +69,7 @@ module CXMasterSchedulerP{
 
   void fillSchedule(cx_schedule_t* s){
     uint32_t i;
-    uint32_t lastActive;
+    uint32_t lastActive = 0;
     s->numVacant = 0;
     //Fill in the vacantSlots section
     for (i = 0; i < CX_MAX_SLOTS && s->numVacant < MAX_VACANT; i++){
@@ -88,6 +88,9 @@ module CXMasterSchedulerP{
       }
     }
     s->activeSlots = lastActive;
+    if (s->activeSlots == 0){
+      cerror(SCHED, "No active slots?\r\n");
+    }
   }
   
 
@@ -119,13 +122,14 @@ module CXMasterSchedulerP{
 
   void setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
       uint8_t maxDepth){
-    call Packet.clear(schedMsg);
+    call Packet.clear(nextMsg);
     nextSched = call ScheduleSend.getPayload(nextMsg, 
       sizeof(cx_schedule_t));
     nextSched -> sn = sched->sn + 1;
     nextSched -> cycleLength = cycleLength;
     nextSched -> slotLength = slotLength;
     nextSched -> maxDepth = maxDepth;
+    fillSchedule(nextSched);
     scheduleUpdatePending = TRUE;
   }
 
@@ -168,10 +172,13 @@ module CXMasterSchedulerP{
         if (scheduleUpdatePending){
           message_t* swpM = schedMsg;
           cx_schedule_t* swpS = sched;
+          cdbg(SCHED, "swap out %p for", schedMsg);
           schedMsg = nextMsg;
           sched = nextSched;
           nextMsg = swpM;
           nextSched = swpS;
+          cdbg(SCHED, "%p\r\n", schedMsg);
+          scheduleUpdatePending = FALSE;
           call RoutingTable.setDefault(sched->maxDepth);
         }
         //msg setup should happen when it goes through requestSend.
@@ -222,8 +229,11 @@ module CXMasterSchedulerP{
 
   event void SlotNotify.lastSlot(){
     if (scheduleModified){
-      //TODO: compute new schedule 
+      cdbg(SCHED, "modified %p next %p\r\n",
+        schedMsg, nextMsg);
       scheduleModified = FALSE;
+      setNextSchedule(sched->cycleLength, sched->slotLength,
+        sched->maxDepth);
     } 
     post sleepToNextCycle();
   }
