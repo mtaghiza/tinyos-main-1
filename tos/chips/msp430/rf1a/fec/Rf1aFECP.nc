@@ -243,6 +243,9 @@ generic module Rf1aFECP () {
 
   command error_t Rf1aPhysical.send (uint8_t* buffer_d,
       unsigned int length_d, rf1a_offmode_t offMode){
+    if (length_d > 127){
+      return ESIZE;
+    }
     atomic{
       if (sendOutstanding){
         return EBUSY;
