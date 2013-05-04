@@ -27,7 +27,7 @@ module CXMasterSchedulerP{
   uses interface SkewCorrection;
 
   uses interface ScheduledAMSend as ScheduleSend;
-  uses interface AMSend as AssignmentSend;
+  uses interface ScheduledAMSend as AssignmentSend;
   uses interface RoutingTable;
   uses interface Receive as RequestReceive;
 } implementation {
@@ -41,6 +41,9 @@ module CXMasterSchedulerP{
   message_t assignMsg_internal;
   message_t* assignMsg = &assignMsg_internal;
 
+  message_t reqMsg_internal;
+  message_t* reqMsg = &reqMsg_internal;
+
 
   cx_schedule_t* nextSched;
   bool scheduleUpdatePending = FALSE;
@@ -50,8 +53,6 @@ module CXMasterSchedulerP{
   uint32_t lastSleep = INVALID_FRAME;
 
   uint32_t lastCycleStart = INVALID_FRAME;
-  uint8_t outstandingRequests = 0;
-  bool sendAssignmentsPending = FALSE;
   
   enum {
     SA_OPEN = 0,
@@ -96,7 +97,6 @@ module CXMasterSchedulerP{
 
   task void initializeSchedule(){
     uint8_t i;
-    outstandingRequests = 0;
     for (i = 1; i < CX_MAX_SLOTS; i++){
       assignments[i].status = SA_OPEN;
       assignments[i].used = FALSE;
@@ -340,44 +340,6 @@ module CXMasterSchedulerP{
     }
   }
  
-  uint8_t assignmentIndex ;
-
-  task void sendAssignments(){
-    if (outstandingRequests && !sendAssignmentsPending){
-      error_t error;
-      cx_assignment_msg_t* pl = (cx_assignment_msg_t*)call AssignmentSend.getPayload(assignMsg, sizeof(cx_assignment_msg_t));
-      call Packet.clear(assignMsg);
-      pl -> numAssigned = 0;
-      while (outstandingRequests && pl->numAssigned < MAX_ASSIGNMENTS
-      && assignmentIndex < CX_MAX_SLOTS){
-        if (assignments[assignmentIndex].status == SA_REQUESTED){
-          pl->assignments[pl->numAssigned].owner =
-            assignments[assignmentIndex].owner;
-          pl->assignments[pl->numAssigned].slotNumber =
-            assignmentIndex;
-          assignments[pl->numAssigned].status = SA_ASSIGNED;
-          cinfo(SCHED, "assign %lu to %x ",
-            pl->assignments[pl->numAssigned].slotNumber, 
-            pl->assignments[pl->numAssigned].owner);
-          pl->numAssigned++;
-          outstandingRequests --;
-          cinfo(SCHED, "(%u / %u)\r\n", 
-            pl->numAssigned, 
-            outstandingRequests);
-        }
-        //put the owner id into the packet
-        assignmentIndex++;
-      }
-      error = call AssignmentSend.send(AM_BROADCAST_ADDR, assignMsg,
-        sizeof(cx_assignment_msg_t));
-      cdbg(SCHED, "assign.send %x\r\n", error);
-      if (error == SUCCESS){
-        sendAssignmentsPending = TRUE;
-      } else{
-        cerror(SCHED, "assign.send %x\r\n", error);
-      }
-    }
-  }
 
   event void ScheduleSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
@@ -396,17 +358,10 @@ module CXMasterSchedulerP{
       cerror(SCHED, "!CXMS.SD %x\r\n", error);
       //TODO: handle schedule troubles
     }
-    if (!sendAssignmentsPending){
-      assignmentIndex = 1;
-      post sendAssignments();
-    }
   }
-
-
 
   event void AssignmentSend.sendDone(message_t* msg, error_t error){
     cdbg(SCHED, "assign.sd %x\r\n", error);
-    sendAssignmentsPending = FALSE;
   }
 
   command error_t CXRequestQueue.requestSleep(uint8_t layerCount, uint32_t baseFrame, 
@@ -456,26 +411,50 @@ module CXMasterSchedulerP{
     signal SplitControl.stopDone(error);
   }
 
-  event message_t* RequestReceive.receive(message_t* msg, 
-      void* payload, uint8_t len){
+  task void assignTask(){
     uint8_t i;
     uint8_t reqLeft;
-    //TODO: this should probably be done in a task.
-    cx_schedule_request_t* req = (cx_schedule_request_t*)payload;
+    error_t error;
+    cx_assignment_msg_t* pl = (cx_assignment_msg_t*)call AssignmentSend.getPayload(assignMsg, sizeof(cx_assignment_msg_t));
+    //TODO: this is not the right interface to call getPayload on
+    cx_schedule_request_t* req = (cx_schedule_request_t*)(call AssignmentSend.getPayload(reqMsg, sizeof(cx_schedule_request_t)));
+
     cdbg(SCHED, "ReqR %u %u\r\n", 
-      call CXLinkPacket.getSource(msg),
+      call CXLinkPacket.getSource(reqMsg),
       req->slotsRequested);
+
+    call Packet.clear(assignMsg);
     reqLeft = req->slotsRequested;
+    pl -> numAssigned = 0;
     for (i=0; i < CX_MAX_SLOTS && reqLeft; i++){
       if (assignments[i].status == SA_OPEN){
         scheduleModified = TRUE;
-        assignments[i].status = SA_REQUESTED;
-        assignments[i].owner = call CXLinkPacket.getSource(msg);
+        assignments[i].status = SA_ASSIGNED;
+        assignments[i].owner = call CXLinkPacket.getSource(reqMsg);
+        pl->assignments[pl->numAssigned].owner = assignments[i].owner;
+        pl->assignments[pl->numAssigned].slotNumber = i;
+        pl->numAssigned++;
         cinfo(SCHED, "a %u to %u\r\n", i, assignments[i].owner);
         reqLeft --;
-        outstandingRequests ++;
       }
     }
-    return msg;
+    error = call AssignmentSend.send(AM_BROADCAST_ADDR, 
+      assignMsg, sizeof(cx_assignment_msg_t),
+      call CXNetworkPacket.getOriginFrameNumber(reqMsg) + sched->maxDepth + 1);
+
+    cdbg(SCHED, "assign.send %x\r\n", error);
+
+  }
+
+  event message_t* RequestReceive.receive(message_t* msg, 
+      void* payload, uint8_t len){
+    message_t* swp = reqMsg;
+    reqMsg = msg;
+    post assignTask();
+    return swp;
+
+  }
+
+  event void SlotNotify.slotStarted(){
   }
 }

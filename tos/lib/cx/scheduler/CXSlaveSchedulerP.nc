@@ -40,7 +40,7 @@ module CXSlaveSchedulerP{
   uint8_t missedCount = 0;
   am_addr_t masterId;
 
-  uint8_t requestCyclePending = 0 ;
+
   
   enum { 
     S_OFF = 0x00,  
@@ -54,6 +54,18 @@ module CXSlaveSchedulerP{
   uint32_t lastCycleStart;
   
   uint32_t mySlot = INVALID_SLOT;
+ 
+
+  enum {
+    RS_UNASSIGNED = 0,
+    RS_REQUEST_QUEUED = 1,
+    RS_ASSIGN_WAIT = 2,
+    RS_ASSIGNED = 3,
+  };
+
+  uint8_t requestState = RS_UNASSIGNED;
+
+  uint32_t requestedIndex = 0;
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
@@ -241,45 +253,32 @@ module CXSlaveSchedulerP{
   }
 
   task void claimSlotTask(){
-    uint8_t ssi = (call Random.rand16() )% sched->numVacant; 
-    uint32_t slotNum = sched->vacantSlots[ssi];
-    cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
-      sizeof(cx_schedule_request_t));
-    error_t error;
-    call Packet.clear(requestMsg);
-    //TODO: FUTURE allow nodes to request more than one slot.
-    req->slotsRequested = 1;
-    //So this will actually get handled as an RRBurst, but should be
-    //marked as DATA and will therefore just get signalled right up to
-    //master.
-    error = call RequestSend.send(masterId, requestMsg,
-      sizeof(cx_schedule_request_t),
-      lastCycleStart + slotNum*sched->slotLength + 1);
-    if (error == SUCCESS){
-      //This gets decremented at the end of each cycle. So, sequence
-      //is:
-      // - boot: set rcp to 0
-      // - c 0 starts
-      // - master schedule: slave synchs
-      // - slave is unassigned and rcp is 0.
-      //   - slave schedules slot claim, set rcp 2
-      // - slave sends slot claim
-      // - c 0 ends: rcp = 1
-      // 
-      // - c 1 starts: master announce
-      // - slave is unassigned but rcp != 0 
-      //   - does not schedule slot claim
-      // - master sends assignments
-      //   - slave sees itself and starts normal operation
-      //   - OR slave does not see itself and remains unscheduled.
-      // - c 1 ends: rcp =0
-      // 
-      // - c 2 starts: master announce
-      // - slave is unassigned and rcp ==0, so behavior of c0 repeats.
-      requestCyclePending = 2;
+    if (requestedIndex < sched->numVacant){
+      uint8_t ssi = (call Random.rand16() )% (sched->numVacant - requestedIndex); 
+      uint32_t slotNum = sched->vacantSlots[ssi + requestedIndex];
+      cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
+        sizeof(cx_schedule_request_t));
+      error_t error;
+      call Packet.clear(requestMsg);
+      //TODO: FUTURE allow nodes to request more than one slot.
+      req->slotsRequested = 1;
+      //So this will actually get handled as an RRBurst, but should be
+      //marked as DATA and will therefore just get signalled right up to
+      //master.
+      error = call RequestSend.send(masterId, requestMsg,
+        sizeof(cx_schedule_request_t),
+        lastCycleStart + slotNum*sched->slotLength + 1);
+      if (error == SUCCESS){
+        requestState = RS_REQUEST_QUEUED;
+        requestedIndex = ssi;
+      }else {
+        requestState = RS_UNASSIGNED;
+      }
+  
+      cinfo(SCHED, "csr %lu %x\r\n", slotNum, error);
+    }else{
+      cinfo(SCHED, "not assigned to last vacant, skip\r\n");
     }
-
-    cinfo(SCHED, "csr %lu %x\r\n", slotNum, error);
   }
 
   event message_t* ScheduleReceive.receive(message_t* msg, 
@@ -311,13 +310,12 @@ module CXSlaveSchedulerP{
 
     call RoutingTable.setDefault(sched->maxDepth);
 
-    if (requestCyclePending){
-      requestCyclePending --;
-    }
-    if (mySlot == INVALID_SLOT && !requestCyclePending){
+    post reportSched();
+    if (requestState == RS_UNASSIGNED){
+      //reset pointer in vacancy list
+      requestedIndex = 0;
       post claimSlotTask();
     }
-    post reportSched();
     post updateSkew();
     return ret;
   }
@@ -436,17 +434,27 @@ module CXSlaveSchedulerP{
 
   event void RequestSend.sendDone(message_t* msg, error_t error){
     cdbg(SCHED, "rs.sd %x\r\n", error);
-    if (error != SUCCESS){
-      requestCyclePending = 0;
+    if (error == SUCCESS){
+      requestState = RS_ASSIGN_WAIT;
+    }else {
+      requestState = RS_UNASSIGNED;
     }
   }
   
+  event void SlotNotify.slotStarted(){
+    cdbg(SCHED, "SN.SS %x \r\n", requestState);
+    if (requestState == RS_ASSIGN_WAIT){
+      requestState = RS_UNASSIGNED;
+      cinfo(SCHED, "Requested, not assigned\r\n");
+      post claimSlotTask();
+    }
+  }
 
   event message_t* AssignmentReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
     cdbg(SCHED, "RX Ass\r\n");
     //TODO: move to task?
-    if (requestCyclePending){
+    if (requestState == RS_ASSIGN_WAIT && ! TEST_RESELECT){
       cx_assignment_msg_t* pl = (cx_assignment_msg_t*)payload;
       uint8_t i;
       cdbg(SCHED, "%u ass'd\r\n", pl->numAssigned);
@@ -458,6 +466,7 @@ module CXSlaveSchedulerP{
           mySlot = pl->assignments[i].slotNumber;
           cinfo(SCHED, "A me to %lu\r\n", mySlot);
           call ScheduleParams.setSlot(mySlot);
+          requestState = RS_ASSIGNED;
         }
       }
     }else{

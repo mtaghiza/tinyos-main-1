@@ -72,7 +72,7 @@ configuration CXMasterSchedulerC{
   components CXRoutingTableC;
   CXMasterSchedulerP.RoutingTable -> CXRoutingTableC;
 
-  components new AMSenderC(AM_CX_ASSIGNMENT_MSG) as AssignmentSenderC;
+  components new ScheduledAMSenderC(AM_CX_ASSIGNMENT_MSG) as AssignmentSenderC;
   CXMasterSchedulerP.AssignmentSend -> AssignmentSenderC;
 
   components new AMReceiverC(AM_CX_REQUEST_MSG);
