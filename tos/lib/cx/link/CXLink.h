@@ -66,4 +66,8 @@
 #define RX_DEFAULT_WAIT 7800UL
 #define RX_MAX_WAIT (0x7FFFFFFF)
 
+#ifndef ENABLE_CRC_CHECK
+#define ENABLE_CRC_CHECK 1
+#endif
+
 #endif

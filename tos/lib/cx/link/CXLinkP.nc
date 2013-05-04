@@ -188,11 +188,15 @@ module CXLinkP {
           nextRequest->msg);
         break;
       case RT_RX:
+        if (requestError != SUCCESS && requestError != ERETRY){
+          cwarn(LINK, "RXE %x\r\n", requestError);
+        }
         signal CXRequestQueue.receiveHandled(requestError,
           nextRequest -> layerCount - 1,
           handledFrame, 
           reqFrame,
-          didReceive && call Rf1aPhysicalMetadata.crcPassed(call Rf1aPacket.metadata(nextRequest->msg)), 
+          didReceive && (call Rf1aPhysicalMetadata.crcPassed(call
+          Rf1aPacket.metadata(nextRequest->msg)) || !ENABLE_CRC_CHECK ), 
           microRef, t32kRef, nextRequest->next, nextRequest->msg);
         break;
 
