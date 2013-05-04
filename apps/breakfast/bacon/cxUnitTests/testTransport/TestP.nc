@@ -17,15 +17,7 @@ module TestP{
 
   uses interface StdControl as SerialControl;
 } implementation {
-  enum{
-    PAYLOAD_LEN= 49,
-  };
   uint32_t sn = 0;
-  typedef nx_struct test_payload {
-    nx_uint8_t buffer[PAYLOAD_LEN];
-    nx_uint32_t timestamp;
-    nx_uint32_t sn;
-  } test_payload_t;
 
   message_t msg_internal;
   message_t* msg = &msg_internal;
@@ -146,6 +138,17 @@ module TestP{
       sizeof(test_payload_t), 
       error);
   }
+  
+  uint8_t packetBCIndex;
+
+  task void printBCPacket(){
+    if (packetBCIndex < sizeof(message_header_t) + TOSH_DATA_LENGTH){
+      cdbg(test, "+ %u %x\r\n", 
+        packetBCIndex, msg->header[packetBCIndex]);
+      packetBCIndex++;
+      post printBCPacket();
+    }
+  }
 
   event void BroadcastAMSend.sendDone(message_t* msg_, error_t error){
     test_payload_t* pl = call BroadcastAMSend.getPayload(msg_,
@@ -156,6 +159,9 @@ module TestP{
       error);
     if (continuousTXBroadcast){
       post broadcast();
+    }else{
+      packetBCIndex = 0;
+      post printBCPacket();
     }
   }
 
@@ -175,9 +181,24 @@ module TestP{
   event void ScheduledAMSend.sendDone(message_t* msg_, error_t error){
   }
 
+  uint8_t packetRXIndex;
+  
+  task void printRXPacket(){
+    if (packetRXIndex < sizeof(message_header_t) + TOSH_DATA_LENGTH){
+      cdbg(test, "+ %u %x\r\n", 
+        packetRXIndex, rxMsg->header[packetRXIndex]);
+      packetRXIndex++;
+      post printRXPacket();
+    }else{
+      rx_pl = NULL;
+    }
+  }
+
   task void reportRX(){
     cinfo(test,"APP RX %lu %u\r\n", rx_pl->sn, rxPLL);
-    rx_pl = NULL;
+    cdbg(test, "++++\r\n");
+    packetRXIndex=0;
+    post printRXPacket();
   }
 
   event message_t* Receive.receive(message_t* msg_, 
