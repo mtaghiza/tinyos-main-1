@@ -88,10 +88,8 @@ module CXMasterSchedulerP{
         lastActive = i;
       }
     }
-    s->activeSlots = lastActive;
-    if (s->activeSlots == 0){
-      cerror(SCHED, "No active slots?\r\n");
-    }
+    //e.g. if the lastActive slot is 0, there is 1 active slot.
+    s->activeSlots = lastActive+1;
   }
   
 
@@ -156,6 +154,7 @@ module CXMasterSchedulerP{
         layerCount, 
         atFrame, reqFrame);
     }else{
+      signal SlotNotify.slotStarted();
       if (startDonePending){
         startDonePending = FALSE;
         signal SplitControl.startDone(error);
@@ -450,7 +449,13 @@ module CXMasterSchedulerP{
       void* payload, uint8_t len){
     message_t* swp = reqMsg;
     reqMsg = msg;
+    #if TEST_RESELECT == 0
     post assignTask();
+    #else
+    cdbg(SCHED, "Ignore req\r\n");
+    #warning TEST_RESELECT in effect: master will not assign slaves
+    //Do nothing.
+    #endif
     return swp;
 
   }

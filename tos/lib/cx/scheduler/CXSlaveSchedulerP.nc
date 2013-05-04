@@ -65,7 +65,7 @@ module CXSlaveSchedulerP{
 
   uint8_t requestState = RS_UNASSIGNED;
 
-  uint32_t requestedIndex = 0;
+  uint8_t requestedIndex = 0;
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
@@ -254,11 +254,22 @@ module CXSlaveSchedulerP{
 
   task void claimSlotTask(){
     if (requestedIndex < sched->numVacant){
-      uint8_t ssi = (call Random.rand16() )% (sched->numVacant - requestedIndex); 
-      uint32_t slotNum = sched->vacantSlots[ssi + requestedIndex];
+      uint8_t ssi; 
+      uint32_t slotNum; 
       cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
         sizeof(cx_schedule_request_t));
       error_t error;
+      uint8_t rand_i =call Random.rand16();
+      cdbg(SCHED, "CST ri %u nv %u rand %u", 
+        requestedIndex,
+        sched->numVacant,
+        rand_i);
+      ssi = (rand_i)% (sched->numVacant - requestedIndex); 
+      slotNum = sched->vacantSlots[ssi + requestedIndex];
+      cdbg(SCHED, " -> %u -> %u: %lu\r\n", 
+        ssi, 
+        ssi+requestedIndex,
+        slotNum);
       call Packet.clear(requestMsg);
       //TODO: FUTURE allow nodes to request more than one slot.
       req->slotsRequested = 1;
@@ -267,10 +278,13 @@ module CXSlaveSchedulerP{
       //master.
       error = call RequestSend.send(masterId, requestMsg,
         sizeof(cx_schedule_request_t),
-        lastCycleStart + slotNum*sched->slotLength + 1);
+        lastCycleStart + (slotNum*sched->slotLength) + 1);
       if (error == SUCCESS){
         requestState = RS_REQUEST_QUEUED;
-        requestedIndex = ssi;
+        //have to add 2 here so that:
+        // - we can't re-select the same slot.
+        // - we can't select a slot that has just started.
+        requestedIndex += (ssi + 2);
       }else {
         requestState = RS_UNASSIGNED;
       }
@@ -347,6 +361,7 @@ module CXSlaveSchedulerP{
       cdbg(SCHED, "wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
+      signal SlotNotify.slotStarted();
       if (startDonePending){
         startDonePending = FALSE;
         signal SplitControl.startDone(SUCCESS);
@@ -454,7 +469,7 @@ module CXSlaveSchedulerP{
       void* payload, uint8_t len){
     cdbg(SCHED, "RX Ass\r\n");
     //TODO: move to task?
-    if (requestState == RS_ASSIGN_WAIT && ! TEST_RESELECT){
+    if (requestState == RS_ASSIGN_WAIT){
       cx_assignment_msg_t* pl = (cx_assignment_msg_t*)payload;
       uint8_t i;
       cdbg(SCHED, "%u ass'd\r\n", pl->numAssigned);
