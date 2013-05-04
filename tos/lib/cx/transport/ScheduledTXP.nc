@@ -10,12 +10,19 @@ module ScheduledTXP {
 } implementation {
 
   command error_t Send.send(message_t* msg, uint8_t len){
+    error_t error;
     call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
-    return call CXRequestQueue.requestSend(0,
+    error = call CXRequestQueue.requestSend(0,
       call CXPacketMetadata.getRequestedFrame(msg), 0,
       TXP_SCHEDULED,
       FALSE, 0,
       NULL, msg);
+    if (error != SUCCESS){
+      cwarn(TRANSPORT, "STXP.rs: %lu %x\r\n", 
+        call CXPacketMetadata.getRequestedFrame(msg),
+        error);
+    }
+    return error;
   }
 
   command error_t Send.cancel(message_t* msg){
