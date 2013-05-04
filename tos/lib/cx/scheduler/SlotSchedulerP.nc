@@ -29,7 +29,7 @@ module SlotSchedulerP{
   
   //current schedule settings
   const cx_schedule_t* sched;
-  uint32_t mySlot = INVALID_SLOT;
+  uint16_t mySlot = INVALID_SLOT;
   //ID of master node: this is used to fetch skew correction values.
   am_addr_t masterId = 0;
   
@@ -77,7 +77,7 @@ module SlotSchedulerP{
   //----------- Begin general utility functions -----
 
   //Get the slot number for a given frame.
-  uint32_t slotNumber(uint32_t frame){
+  uint16_t slotNumber(uint32_t frame){
     if (sched == NULL){
       return INVALID_SLOT;
     }
@@ -105,7 +105,7 @@ module SlotSchedulerP{
   
   //return whether or not the specified frame is owned by this node.
   bool isOwned(uint32_t frame){
-    uint32_t sn =  slotNumber(frame);
+    uint16_t sn =  slotNumber(frame);
     return (sn != INVALID_SLOT) && (sn == mySlot);
   }
   
@@ -254,7 +254,7 @@ module SlotSchedulerP{
       slotState = S_UNKNOWN;
       signal SlotNotify.slotStarted();
       if (sched != NULL){
-        uint32_t sn = slotNumber(atFrame);
+        uint16_t sn = slotNumber(atFrame);
         if (sn == (sched->activeSlots - 1)){
           signal SlotNotify.lastSlot();
         } else if (sn < (sched->activeSlots - 1) ){
@@ -262,7 +262,7 @@ module SlotSchedulerP{
         } else {
           //woke up some time during the inactive period, shouldn't
           //  happen.
-          cerror(SCHED, "inactive period wakeup %lu slot %lu\r\n", 
+          cerror(SCHED, "inactive period wakeup %lu slot %u\r\n", 
             atFrame, sn);
         }
       }
@@ -353,7 +353,7 @@ module SlotSchedulerP{
   /**
    *  Assign a specific owned slot.
    **/
-  command void ScheduleParams.setSlot(uint32_t slot){
+  command void ScheduleParams.setSlot(uint16_t slot){
     mySlot = slot;
   }
   

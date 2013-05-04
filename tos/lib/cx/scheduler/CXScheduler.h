@@ -40,7 +40,7 @@
 #endif
 
 #define INVALID_SCHEDULE 0xFF
-#define INVALID_SLOT  0xFFFFFFFF
+#define INVALID_SLOT  0xFFFF
 #define INVALID_FRAME 0xFFFFFFFF
 
 
@@ -57,12 +57,12 @@ typedef nx_struct cx_schedule {
   nx_uint8_t sn;
   nx_uint32_t cycleStartFrame;
   nx_uint32_t cycleLength;
-  nx_uint32_t slotLength;
-  nx_uint32_t activeSlots;
+  nx_uint16_t slotLength;
+  nx_uint16_t activeSlots;
   nx_uint8_t maxDepth;
   nx_uint32_t timestamp; //32K timestamp of origin
   nx_uint8_t numVacant;
-  nx_uint32_t vacantSlots[MAX_VACANT];
+  nx_uint16_t vacantSlots[MAX_VACANT];
 } cx_schedule_t;
 
 //request just indicates how many slots this node wants to get.
@@ -72,7 +72,7 @@ typedef nx_struct cx_schedule_request {
 
 typedef nx_struct cx_schedule_assignment {
   nx_am_addr_t owner;
-  nx_uint32_t slotNumber;
+  nx_uint16_t slotNumber;
 } cx_schedule_assignment_t;
 
 #ifndef MAX_ASSIGNMENTS

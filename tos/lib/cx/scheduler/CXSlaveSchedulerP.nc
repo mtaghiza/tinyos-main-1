@@ -53,7 +53,7 @@ module CXSlaveSchedulerP{
   uint8_t state = S_OFF;
   uint32_t lastCycleStart;
   
-  uint32_t mySlot = INVALID_SLOT;
+  uint16_t mySlot = INVALID_SLOT;
  
 
   enum {
@@ -224,7 +224,7 @@ module CXSlaveSchedulerP{
 
   task void reportSched(){
     cinfo(SCHED, "RX Sched");
-    cinfo(SCHED, ": %p %p sn %u cl %lu sl %lu md %u ts %lu",
+    cinfo(SCHED, ": %p %p sn %u cl %lu sl %u md %u ts %lu",
       schedMsg,
       sched, 
       sched->sn,
@@ -255,7 +255,7 @@ module CXSlaveSchedulerP{
   task void claimSlotTask(){
     if (requestedIndex < sched->numVacant){
       uint8_t ssi; 
-      uint32_t slotNum; 
+      uint16_t slotNum; 
       cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
         sizeof(cx_schedule_request_t));
       error_t error;
@@ -266,7 +266,7 @@ module CXSlaveSchedulerP{
         rand_i);
       ssi = (rand_i)% (sched->numVacant - requestedIndex); 
       slotNum = sched->vacantSlots[ssi + requestedIndex];
-      cdbg(SCHED, " -> %u -> %u: %lu\r\n", 
+      cdbg(SCHED, " -> %u -> %u: %u\r\n", 
         ssi, 
         ssi+requestedIndex,
         slotNum);
@@ -289,7 +289,7 @@ module CXSlaveSchedulerP{
         requestState = RS_UNASSIGNED;
       }
   
-      cinfo(SCHED, "csr %lu %x\r\n", slotNum, error);
+      cinfo(SCHED, "csr %u %x\r\n", slotNum, error);
     }else{
       cinfo(SCHED, "not assigned to last vacant, skip\r\n");
     }
@@ -474,12 +474,12 @@ module CXSlaveSchedulerP{
       uint8_t i;
       cdbg(SCHED, "%u ass'd\r\n", pl->numAssigned);
       for (i = 0; i < pl->numAssigned; i++){
-        cdbg(SCHED, "a %lu to %x\r\n",
+        cdbg(SCHED, "a %u to %x\r\n",
           pl->assignments[i].slotNumber,
           pl->assignments[i].owner);
         if (pl->assignments[i].owner == TOS_NODE_ID){
           mySlot = pl->assignments[i].slotNumber;
-          cinfo(SCHED, "A me to %lu\r\n", mySlot);
+          cinfo(SCHED, "A me to %u\r\n", mySlot);
           call ScheduleParams.setSlot(mySlot);
           requestState = RS_ASSIGNED;
         }
