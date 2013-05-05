@@ -53,6 +53,10 @@ typedef nx_struct cx_schedule_header {
 #define MAX_VACANT 15
 #endif
 
+#ifndef MAX_FREED
+#define MAX_FREED 5
+#endif
+
 typedef nx_struct cx_schedule {
   nx_uint8_t sn;
   nx_uint32_t cycleStartFrame;
@@ -63,6 +67,7 @@ typedef nx_struct cx_schedule {
   nx_uint32_t timestamp; //32K timestamp of origin
   nx_uint8_t numVacant;
   nx_uint16_t vacantSlots[MAX_VACANT];
+  nx_uint16_t freedSlots[MAX_FREED];
 } cx_schedule_t;
 
 //request just indicates how many slots this node wants to get.
@@ -99,5 +104,13 @@ typedef nx_struct cx_assignment_msg {
 
 #define NO_OWNER AM_BROADCAST_ADDR
 #define SCHEDULE 0xFFFE
+
+#ifndef EVICTION_THRESHOLD 
+#define EVICTION_THRESHOLD 5
+#endif
+
+#ifndef FREE_TIMEOUT
+#define FREE_TIMEOUT 5
+#endif
 
 #endif

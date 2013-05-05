@@ -53,16 +53,20 @@ module CXMasterSchedulerP{
   uint32_t lastSleep = INVALID_FRAME;
 
   uint32_t lastCycleStart = INVALID_FRAME;
+
+  uint16_t curSlot;//for tracking cycles-since-heard
+  bool lastSlotActive = FALSE;
   
   enum {
     SA_OPEN = 0,
     SA_REQUESTED = 1,
     SA_ASSIGNED = 2,
+    SA_FREED = 3,
   };
 
   typedef struct slot_assignment {
     am_addr_t owner;
-    bool used;
+    uint8_t csh;  //cycles-since-heard
     uint8_t status;
   }slot_assignment_t;
 
@@ -71,19 +75,36 @@ module CXMasterSchedulerP{
   void fillSchedule(cx_schedule_t* s){
     uint32_t i;
     uint32_t lastActive = 0;
+    uint8_t vi=0;
+    uint8_t fi=0;
     s->numVacant = 0;
+
     //Fill in the vacantSlots section
-    for (i = 0; i < CX_MAX_SLOTS && s->numVacant < MAX_VACANT; i++){
-      if (assignments[i].status == SA_OPEN){
-        s->vacantSlots[s->numVacant] = i;
-        s->numVacant++;
+    for (i = 0; i < CX_MAX_SLOTS ; i++){
+      if (assignments[i].status == SA_OPEN 
+          && s->numVacant < MAX_VACANT){
+        s->vacantSlots[vi] = i;
+        vi++;
         lastActive = i;
+        s->numVacant ++;
+      }else if (assignments[i].status == SA_FREED 
+          && fi < MAX_FREED){
+        s->freedSlots[fi] = i;
+        fi ++;
       }
     }
+
+    for (; vi < MAX_VACANT; vi ++){
+      s->vacantSlots[vi] = INVALID_SLOT;
+    }
+    for (; fi < MAX_FREED; fi ++){
+      s->vacantSlots[fi] = INVALID_SLOT;
+    }
+
     //continue from the last vacant slot to the end, and bump up the
     //# of active slots to cover the entire announced + assigned
     //space.
-    for (; i < CX_MAX_SLOTS; i++){
+    for (i=lastActive; i < CX_MAX_SLOTS; i++){
       if(assignments[i].status == SA_ASSIGNED){
         lastActive = i;
       }
@@ -97,7 +118,7 @@ module CXMasterSchedulerP{
     uint8_t i;
     for (i = 1; i < CX_MAX_SLOTS; i++){
       assignments[i].status = SA_OPEN;
-      assignments[i].used = FALSE;
+      assignments[i].csh = 0;
     }
     assignments[0].owner = TOS_NODE_ID;
     assignments[0].status = SA_ASSIGNED;
@@ -154,7 +175,7 @@ module CXMasterSchedulerP{
         layerCount, 
         atFrame, reqFrame);
     }else{
-      signal SlotNotify.slotStarted();
+      signal SlotNotify.slotStarted(0);
       if (startDonePending){
         startDonePending = FALSE;
         signal SplitControl.startDone(error);
@@ -293,6 +314,9 @@ module CXMasterSchedulerP{
       bool didReceive, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
+    if (didReceive){
+      lastSlotActive = TRUE;
+    }
     if (layerCount){
       signal CXRequestQueue.receiveHandled(error, layerCount - 1, atFrame, reqFrame,
         didReceive, microRef, t32kRef, md, msg);
@@ -430,6 +454,7 @@ module CXMasterSchedulerP{
         scheduleModified = TRUE;
         assignments[i].status = SA_ASSIGNED;
         assignments[i].owner = call CXLinkPacket.getSource(reqMsg);
+        assignments[i].csh = 0;
         pl->assignments[pl->numAssigned].owner = assignments[i].owner;
         pl->assignments[pl->numAssigned].slotNumber = i;
         pl->numAssigned++;
@@ -460,6 +485,45 @@ module CXMasterSchedulerP{
 
   }
 
-  event void SlotNotify.slotStarted(){
+  event void SlotNotify.slotStarted(uint16_t sn){
+    //check status of last slot
+    if (curSlot < CX_MAX_SLOTS){
+      if (assignments[curSlot].status == SA_ASSIGNED){
+        if (lastSlotActive){
+          //active: reset cycles-since-heard
+          assignments[curSlot].csh = 0;
+        }else {
+          //idle: increment cycles-since-heard. start the freeing
+          //process if it's been idle too long
+          assignments[curSlot].csh ++;
+          if (assignments[curSlot].csh > EVICTION_THRESHOLD){
+            //mark freed and start counting up: we put in some padding
+            //between the time when we free the slot and the time when
+            //we start letting nodes claim it to help offset the
+            //likelihood that a second node claims the same slot as
+            //the original owner (that jut happened to miss a few
+            //cycles).
+            assignments[curSlot].status = SA_FREED;
+            assignments[curSlot].csh = 0;
+            scheduleModified = TRUE;
+          }
+        }
+      }else if (assignments[curSlot].status == SA_FREED){
+        if (lastSlotActive){
+          cinfo(SCHED, "%u free but active\r\n", sn);
+        } else {
+          assignments[curSlot].csh ++;
+          //if we marked this freed FREE_TIMEOUT cycles ago, we now
+          //update it to be OPEN and can include it in the vacancy
+          //announcements.
+          if (assignments[curSlot].csh > FREE_TIMEOUT){
+            assignments[curSlot].status = SA_OPEN;
+            scheduleModified = TRUE;
+          }
+        }
+      }
+    }
+    lastSlotActive = FALSE;
+    curSlot = sn;
   }
 }

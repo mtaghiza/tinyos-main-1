@@ -253,7 +253,7 @@ module CXSlaveSchedulerP{
   }
 
   task void claimSlotTask(){
-    if (requestedIndex < sched->numVacant){
+    if (requestedIndex < MAX_VACANT){
       uint8_t ssi; 
       uint16_t slotNum; 
       cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
@@ -298,11 +298,32 @@ module CXSlaveSchedulerP{
   event message_t* ScheduleReceive.receive(message_t* msg, 
       void* payload, uint8_t len ){
     message_t* ret = schedMsg;
+    cx_schedule_t* newSched = (cx_schedule_t*)payload;
     synchReceived = (state == S_SYNCHED);
     if (!synchReceived){
       cinfo(SCHED, "Synch gained\r\n");
     }
-    sched = (cx_schedule_t*)payload;
+
+    //check to see if your slot has been freed.
+    if (sched->sn != newSched->sn){
+      uint8_t i;
+      if (requestState == RS_ASSIGNED && mySlot != INVALID_SLOT){
+        for (i=0; i < MAX_FREED; i++){
+          if (mySlot == newSched->freedSlots[i]){
+            requestState = RS_UNASSIGNED;
+            mySlot = INVALID_SLOT;
+          }
+        }
+        for (i=0; i < newSched->numVacant; i++){
+          if (mySlot == newSched->vacantSlots[i]){
+            requestState = RS_UNASSIGNED;
+            mySlot = INVALID_SLOT;
+          }
+        }
+      }
+        
+    }
+    sched = newSched;
     schedMsg = msg;
     state = S_SYNCHED;
     scheduleReceived = TRUE;
@@ -361,7 +382,7 @@ module CXSlaveSchedulerP{
       cdbg(SCHED, "wh up\r\n");
       signal CXRequestQueue.wakeupHandled(error, layerCount - 1, atFrame, reqFrame);
     }else {
-      signal SlotNotify.slotStarted();
+      signal SlotNotify.slotStarted(0);
       if (startDonePending){
         startDonePending = FALSE;
         signal SplitControl.startDone(SUCCESS);
@@ -456,7 +477,7 @@ module CXSlaveSchedulerP{
     }
   }
   
-  event void SlotNotify.slotStarted(){
+  event void SlotNotify.slotStarted(uint16_t sn){
     cdbg(SCHED, "SN.SS %x \r\n", requestState);
     if (requestState == RS_ASSIGN_WAIT){
       requestState = RS_UNASSIGNED;

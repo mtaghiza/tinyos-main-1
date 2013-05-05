@@ -252,9 +252,9 @@ module SlotSchedulerP{
 
       lastSlotStart = atFrame;
       slotState = S_UNKNOWN;
-      signal SlotNotify.slotStarted();
       if (sched != NULL){
         uint16_t sn = slotNumber(atFrame);
+        signal SlotNotify.slotStarted(sn);
         if (sn == (sched->activeSlots - 1)){
           signal SlotNotify.lastSlot();
         } else if (sn < (sched->activeSlots - 1) ){
