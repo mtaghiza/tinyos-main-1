@@ -44,7 +44,7 @@ module CXSlaveSchedulerStaticP{
   uint8_t state = S_OFF;
   uint32_t lastCycleStart;
   
-  uint32_t mySlot = INVALID_SLOT;
+  uint16_t mySlot = INVALID_SLOT;
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
     uint32_t subNext = call SubCXRQ.nextFrame(isTX);
@@ -201,14 +201,13 @@ module CXSlaveSchedulerStaticP{
 
   task void reportSched(){
     cinfo(SCHED, "RX Sched");
-    cinfo(SCHED, ": %p %p sn %u cl %lu sl %lu md %u na %u ts %lu",
+    cinfo(SCHED, ": %p %p sn %u cl %lu sl %u md %u ts %lu",
       schedMsg,
       sched, 
       sched->sn,
       sched->cycleLength, 
       sched->slotLength, 
       sched->maxDepth,
-      sched->numAssigned,
       sched->timestamp);
 
     cinfo(SCHED, "\r\n");
@@ -231,7 +230,6 @@ module CXSlaveSchedulerStaticP{
   }
 
   task void claimSlotTask(){
-    //TODO: actually go through the claim process
     mySlot = TOS_NODE_ID;
     call ScheduleParams.setSlot(mySlot);
   }
@@ -355,6 +353,9 @@ module CXSlaveSchedulerStaticP{
       state = S_SEARCH;
       cinfo(SCHED, "synch lost\r\n");
     }
+  }
+
+  event void SlotNotify.slotStarted(uint16_t sn){
   }
 
   command error_t SplitControl.start(){

@@ -171,6 +171,8 @@ module CXMasterSchedulerStaticP{
   event void SlotNotify.lastSlot(){
     post sleepToNextCycle();
   }
+  event void SlotNotify.slotStarted(uint16_t sn){
+  }
 
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
