@@ -73,12 +73,13 @@ module CXMasterSchedulerP{
   slot_assignment_t assignments[CX_MAX_SLOTS];
 
   void fillSchedule(cx_schedule_t* s){
-    uint32_t i;
+    uint16_t i;
     uint32_t lastActive = 0;
     uint8_t vi=0;
     uint8_t fi=0;
     s->numVacant = 0;
 
+    cdbg(SCHED, "FS:");
     //Fill in the vacantSlots section
     for (i = 0; i < CX_MAX_SLOTS ; i++){
       if (assignments[i].status == SA_OPEN 
@@ -87,18 +88,21 @@ module CXMasterSchedulerP{
         vi++;
         lastActive = i;
         s->numVacant ++;
+        cdbg(SCHED, "v %u ", i);
       }else if (assignments[i].status == SA_FREED 
           && fi < MAX_FREED){
         s->freedSlots[fi] = i;
         fi ++;
+        cdbg(SCHED, "f %u ", i);
       }
     }
+    cdbg(SCHED, "\r\n");
 
     for (; vi < MAX_VACANT; vi ++){
       s->vacantSlots[vi] = INVALID_SLOT;
     }
     for (; fi < MAX_FREED; fi ++){
-      s->vacantSlots[fi] = INVALID_SLOT;
+      s->freedSlots[fi] = INVALID_SLOT;
     }
 
     //continue from the last vacant slot to the end, and bump up the
@@ -352,6 +356,7 @@ module CXMasterSchedulerP{
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
+    lastSlotActive = TRUE;
     if (layerCount){
       signal CXRequestQueue.sendHandled(error, 
         layerCount - 1, 
@@ -496,6 +501,9 @@ module CXMasterSchedulerP{
           //idle: increment cycles-since-heard. start the freeing
           //process if it's been idle too long
           assignments[curSlot].csh ++;
+          cdbg(SCHED, "%u A csh: %u\r\n", 
+            curSlot, 
+            assignments[curSlot].csh);
           if (assignments[curSlot].csh > EVICTION_THRESHOLD){
             //mark freed and start counting up: we put in some padding
             //between the time when we free the slot and the time when
@@ -516,6 +524,9 @@ module CXMasterSchedulerP{
           //if we marked this freed FREE_TIMEOUT cycles ago, we now
           //update it to be OPEN and can include it in the vacancy
           //announcements.
+          cdbg(SCHED, "%u F csh: %u\r\n", 
+            curSlot, 
+            assignments[curSlot].csh);
           if (assignments[curSlot].csh > FREE_TIMEOUT){
             assignments[curSlot].status = SA_OPEN;
             scheduleModified = TRUE;

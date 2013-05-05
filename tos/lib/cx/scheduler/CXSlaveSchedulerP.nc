@@ -276,20 +276,24 @@ module CXSlaveSchedulerP{
       //So this will actually get handled as an RRBurst, but should be
       //marked as DATA and will therefore just get signalled right up to
       //master.
-      error = call RequestSend.send(masterId, requestMsg,
-        sizeof(cx_schedule_request_t),
-        lastCycleStart + (slotNum*sched->slotLength) + 1);
-      if (error == SUCCESS){
-        requestState = RS_REQUEST_QUEUED;
-        //have to add 2 here so that:
-        // - we can't re-select the same slot.
-        // - we can't select a slot that has just started.
-        requestedIndex += (ssi + 2);
-      }else {
+      if (slotNum != INVALID_SLOT){
+        error = call RequestSend.send(masterId, requestMsg,
+          sizeof(cx_schedule_request_t),
+          lastCycleStart + (slotNum*sched->slotLength) + 1);
+        if (error == SUCCESS){
+          requestState = RS_REQUEST_QUEUED;
+          //have to add 2 here so that:
+          // - we can't re-select the same slot.
+          // - we can't select a slot that has just started.
+          requestedIndex += (ssi + 2);
+        }else {
+          requestState = RS_UNASSIGNED;
+        }
+        cinfo(SCHED, "csr %u %x\r\n", slotNum, error);
+      }else{
+        cdbg(SCHED, "slot inval, don't request\r\n");
         requestState = RS_UNASSIGNED;
       }
-  
-      cinfo(SCHED, "csr %u %x\r\n", slotNum, error);
     }else{
       cinfo(SCHED, "not assigned to last vacant, skip\r\n");
     }
