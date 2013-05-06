@@ -11,4 +11,7 @@ configuration SkewCorrectionC {
   #endif
 
   SkewCorrection = SkewCorrectionP;
+
+  components CXAMAddressC;
+  SkewCorrectionP.ActiveMessageAddress -> CXAMAddressC;
 }

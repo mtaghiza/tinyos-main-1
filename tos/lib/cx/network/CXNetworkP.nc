@@ -14,6 +14,8 @@ module CXNetworkP {
 
   uses interface Pool<cx_network_metadata_t>;
   uses interface RoutingTable;
+
+  uses interface ActiveMessageAddress;
 } implementation {
 
   uint32_t synchFrame;
@@ -51,7 +53,7 @@ module CXNetworkP {
         call CXNetworkPacket.setRXHopCount(msg, 
           call CXNetworkPacket.getHops(msg));
         call RoutingTable.addMeasurement(call AMPacket.source(msg),
-          TOS_NODE_ID, call CXNetworkPacket.getRXHopCount(msg));
+          call ActiveMessageAddress.amAddress(), call CXNetworkPacket.getRXHopCount(msg));
         //RX hop-count is 1 when received in the original transmission
         //frame.
         call CXNetworkPacket.setOriginFrameNumber(msg,
@@ -286,4 +288,5 @@ module CXNetworkP {
     signal CXRequestQueue.wakeupHandled(error, layerCount-1, atFrame, reqFrame);
   }
   
+  async event void ActiveMessageAddress.changed(){}
 }

@@ -71,5 +71,7 @@ configuration CXMasterSchedulerStaticC{
 
   components CXRoutingTableC;
   CXMasterSchedulerP.RoutingTable -> CXRoutingTableC;
-
+  
+  components CXAMAddressC;
+  CXMasterSchedulerP.ActiveMessageAddress -> CXAMAddressC;
 }

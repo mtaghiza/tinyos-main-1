@@ -20,6 +20,7 @@ configuration CXTransportC {
   //requests
   CXTransportDispatchP.SubSplitControl -> CXSchedulerC;
   SplitControl = CXTransportDispatchP;
+
   
   //hook up sub-protocols
   components FloodBurstP;
@@ -87,5 +88,9 @@ configuration CXTransportC {
 
   FloodBurstP.GetLastBroadcast 
     -> CXTransportDispatchP.GetLastBroadcast;
+
+  components CXAMAddressC;
+  FloodBurstP.ActiveMessageAddress -> CXAMAddressC;
+  RRBurstP.ActiveMessageAddress -> CXAMAddressC;
 
 }

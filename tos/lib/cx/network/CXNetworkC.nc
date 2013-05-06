@@ -37,5 +37,7 @@ configuration CXNetworkC {
 
   components CXRoutingTableC;
   CXNetworkP.RoutingTable -> CXRoutingTableC;
-
+  
+  components CXAMAddressC;
+  CXNetworkP.ActiveMessageAddress -> CXAMAddressC;
 }

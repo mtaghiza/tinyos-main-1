@@ -19,6 +19,7 @@ module CXSlaveSchedulerStaticP{
   uses interface SlotNotify;
   uses interface Packet;
   uses interface RoutingTable;
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -230,7 +231,7 @@ module CXSlaveSchedulerStaticP{
   }
 
   task void claimSlotTask(){
-    mySlot = TOS_NODE_ID;
+    mySlot = call ActiveMessageAddress.amAddress();
     call ScheduleParams.setSlot(mySlot);
   }
 
@@ -385,4 +386,6 @@ module CXSlaveSchedulerStaticP{
       state = S_SEARCH;
     }
   }
+
+  async event void ActiveMessageAddress.changed(){ }
 }

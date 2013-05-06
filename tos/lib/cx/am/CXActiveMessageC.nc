@@ -67,9 +67,9 @@ implementation {
   PacketC.Ieee154Packet ->CXLinkPacketC;
 
   /* Get support for identifying the node's address.  Implementation
-   * derives from underlying 802.15.4 address. */
-  components Ieee154AMAddressC;
-  PacketC.ActiveMessageAddress -> Ieee154AMAddressC;
+   * derives from underlying 802.15.4 address (eventually). */
+  components CXAMAddressC;
+  PacketC.ActiveMessageAddress -> CXAMAddressC;
 
   components CXActiveMessageP as AM;
   AMSend = AM;

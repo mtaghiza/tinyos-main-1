@@ -77,4 +77,7 @@ configuration CXMasterSchedulerC{
 
   components new AMReceiverC(AM_CX_REQUEST_MSG);
   CXMasterSchedulerP.RequestReceive -> AMReceiverC;
+  
+  components CXAMAddressC;
+  CXMasterSchedulerP.ActiveMessageAddress -> CXAMAddressC;
 }

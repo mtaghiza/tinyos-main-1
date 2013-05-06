@@ -30,6 +30,8 @@ module CXMasterSchedulerP{
   uses interface ScheduledAMSend as AssignmentSend;
   uses interface RoutingTable;
   uses interface Receive as RequestReceive;
+
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -124,7 +126,7 @@ module CXMasterSchedulerP{
       assignments[i].status = SA_OPEN;
       assignments[i].csh = 0;
     }
-    assignments[0].owner = TOS_NODE_ID;
+    assignments[0].owner = call ActiveMessageAddress.amAddress();
     assignments[0].status = SA_ASSIGNED;
 
     call Packet.clear(schedMsg);
@@ -216,11 +218,11 @@ module CXMasterSchedulerP{
           cerror(SCHED, "Sched.reqS %x\r\n", error);
         }
 
-        call ScheduleParams.setMasterId(TOS_NODE_ID);
+        call ScheduleParams.setMasterId(call ActiveMessageAddress.amAddress());
         call ScheduleParams.setSchedule(sched);
         call ScheduleParams.setCycleStart(lastCycleStart);
         //TODO: this should be set somewhat dynamically.
-        call ScheduleParams.setSlot(TOS_NODE_ID);
+        call ScheduleParams.setSlot(call ActiveMessageAddress.amAddress());
       }else{
         cerror(SCHED, "Sched.wh: %x\r\n", error);
       }
@@ -343,7 +345,7 @@ module CXMasterSchedulerP{
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
     call CXNetworkPacket.setTTL(msg, sched->maxDepth);
-    call CXLinkPacket.setSource(msg, TOS_NODE_ID);
+    call CXLinkPacket.setSource(msg, call ActiveMessageAddress.amAddress());
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 
       txPriority,
@@ -537,4 +539,6 @@ module CXMasterSchedulerP{
     lastSlotActive = FALSE;
     curSlot = sn;
   }
+
+  async event void ActiveMessageAddress.changed(){ }
 }

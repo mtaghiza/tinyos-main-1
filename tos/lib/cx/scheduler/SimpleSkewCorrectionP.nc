@@ -6,6 +6,7 @@
  #include "SkewCorrection.h"
 module SimpleSkewCorrectionP {
   provides interface SkewCorrection;
+  uses interface ActiveMessageAddress;
 } implementation {
 
   am_addr_t other = AM_BROADCAST_ADDR;
@@ -44,7 +45,7 @@ module SimpleSkewCorrectionP {
   command error_t SkewCorrection.addMeasurement(am_addr_t otherId, 
       bool isSynched, uint32_t otherTS, uint32_t originFrame, 
       uint32_t myTS){
-    if (otherId == TOS_NODE_ID){
+    if (otherId == call ActiveMessageAddress.amAddress()){
       selfReferenceTime = otherTS;
       selfReferenceFrame = originFrame;
       return SUCCESS;
@@ -115,7 +116,7 @@ module SimpleSkewCorrectionP {
     if (otherId == other && lastOriginFrame != INVALID_FRAME)
     {
       return lastOriginFrame;
-    }else if (otherId == TOS_NODE_ID){
+    }else if (otherId == call ActiveMessageAddress.amAddress()){
       return selfReferenceFrame;
     } else {
       return INVALID_FRAME;
@@ -126,7 +127,7 @@ module SimpleSkewCorrectionP {
     if (otherId == other && lastCapture != INVALID_TIMESTAMP)
     {
       return lastCapture;
-    } else if (otherId == TOS_NODE_ID){
+    } else if (otherId == call ActiveMessageAddress.amAddress()){
       return selfReferenceTime;
     }else{
       return INVALID_TIMESTAMP;
@@ -141,5 +142,7 @@ module SimpleSkewCorrectionP {
       return 0;
     }
   }
+
+  async event void ActiveMessageAddress.changed(){ }
   
 }

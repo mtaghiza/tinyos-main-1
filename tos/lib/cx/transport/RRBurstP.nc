@@ -17,6 +17,7 @@ module RRBurstP {
 
   uses interface ScheduledAMSend as AckSend;
   uses interface Packet as AckPacket;
+  uses interface ActiveMessageAddress;
 } implementation {
   uint32_t lastTX;
   
@@ -61,7 +62,7 @@ module RRBurstP {
     call CXTransportPacket.setSubprotocol(ackMsg, 
       CX_SP_ACK);
     ack->distance = call RoutingTable.getDistance(flowSrc,
-      TOS_NODE_ID);
+      call ActiveMessageAddress.amAddress());
     error = call AckSend.send(flowSrc, ackMsg, sizeof(cx_ack_t),
       ackStart);
     cinfo(TRANSPORT, "ack.send %lu %x\r\n", ackStart, error);
@@ -79,7 +80,7 @@ module RRBurstP {
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       uint32_t nss = call SlotTiming.nextSlotStart(nf);
       uint32_t txf;
-      uint8_t distance = call RoutingTable.getDistance(TOS_NODE_ID, 
+      uint8_t distance = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), 
         call AMPacket.destination(msg));
       bool needsSetup = TRUE;
       error_t error;
@@ -192,9 +193,9 @@ module RRBurstP {
               //ack source is flow DEST, ack dest is flow SRC
               //distance in payload is flow SRC to flow DEST
               call RoutingTable.addMeasurement(s, d, ack->distance);
-              d_si = call RoutingTable.getDistance(d, TOS_NODE_ID);
+              d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
               d_sd = call RoutingTable.getDistance(s, d);
-              d_id = call RoutingTable.getDistance(TOS_NODE_ID, d);
+              d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
               if (d_si + d_id > d_sd){
                 cdbg(TRANSPORT, "s");
                 //sleepy times
@@ -249,7 +250,7 @@ module RRBurstP {
           waitingForAck = TRUE;
           //TODO: could add slack here.
           ackDeadline = (atFrame + 1+
-            call RoutingTable.getDistance(call AMPacket.destination(msg), TOS_NODE_ID));
+            call RoutingTable.getDistance(call AMPacket.destination(msg), call ActiveMessageAddress.amAddress()));
           setupMsg = msg;
           cinfo(TRANSPORT, "@%lu wait to %lu\r\n", atFrame,
             ackDeadline);
@@ -302,4 +303,5 @@ module RRBurstP {
   command bool RequestPending.requestPending(uint32_t frame){
     return (frame != INVALID_FRAME) && rxPending;
   }
+  async event void ActiveMessageAddress.changed(){}
 }

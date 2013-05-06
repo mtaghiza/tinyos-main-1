@@ -63,4 +63,7 @@ configuration CXSlaveSchedulerStaticC{
 
   components CXRoutingTableC;
   CXSlaveSchedulerP.RoutingTable -> CXRoutingTableC;
+
+  components CXAMAddressC;
+  CXSlaveSchedulerP.ActiveMessageAddress -> CXAMAddressC;
 }

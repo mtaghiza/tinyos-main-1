@@ -74,4 +74,7 @@ configuration CXSlaveSchedulerC{
 
   components RandomC;
   CXSlaveSchedulerP.Random -> RandomC;
+
+  components CXAMAddressC;
+  CXSlaveSchedulerP.ActiveMessageAddress -> CXAMAddressC;
 }

@@ -23,6 +23,7 @@ module CXSlaveSchedulerP{
 
   uses interface ScheduledAMSend as RequestSend;
   uses interface Random;
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -502,7 +503,7 @@ module CXSlaveSchedulerP{
         cdbg(SCHED, "a %u to %x\r\n",
           pl->assignments[i].slotNumber,
           pl->assignments[i].owner);
-        if (pl->assignments[i].owner == TOS_NODE_ID){
+        if (pl->assignments[i].owner == call ActiveMessageAddress.amAddress()){
           mySlot = pl->assignments[i].slotNumber;
           cinfo(SCHED, "A me to %u\r\n", mySlot);
           call ScheduleParams.setSlot(mySlot);
@@ -514,4 +515,6 @@ module CXSlaveSchedulerP{
     }
     return msg;
   }
+
+  async event void ActiveMessageAddress.changed(){ }
 }

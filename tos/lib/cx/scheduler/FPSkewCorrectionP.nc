@@ -42,7 +42,7 @@ module FPSkewCorrectionP {
       bool isSynched, uint32_t otherTS, uint32_t originFrame, 
       uint32_t myTS){
     printf("add\r\n");
-    if (otherId == TOS_NODE_ID){
+    if (otherId == call ActiveMessageAddress.amAddress()){
       printf("self\r\n");
       selfReferenceTime = otherTS;
       selfReferenceFrame = originFrame;
@@ -106,7 +106,7 @@ module FPSkewCorrectionP {
     if (otherId == other && lastOriginFrame != INVALID_FRAME)
     {
       return lastOriginFrame;
-    }else if (otherId == TOS_NODE_ID){
+    }else if (otherId == call ActiveMessageAddress.amAddress()){
       return selfReferenceFrame;
     } else {
       return INVALID_FRAME;
@@ -117,7 +117,7 @@ module FPSkewCorrectionP {
     if (otherId == other && lastCapture != INVALID_TIMESTAMP)
     {
       return lastCapture;
-    } else if (otherId == TOS_NODE_ID){
+    } else if (otherId == call ActiveMessageAddress.amAddress()){
       return selfReferenceTime;
     }else{
       return INVALID_TIMESTAMP;

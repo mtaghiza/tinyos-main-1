@@ -14,6 +14,8 @@ module FloodBurstP {
   uses interface RoutingTable;
 
   uses interface Get<uint32_t> as GetLastBroadcast;
+
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -62,7 +64,7 @@ module FloodBurstP {
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       if (call SlotTiming.framesLeftInSlot(nf) >= 
-          call RoutingTable.getDistance(TOS_NODE_ID, 
+          call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), 
             call AMPacket.destination(msg))){
         //Cool, there's enough frames left in this slot.
         uint32_t lss = call SlotTiming.lastSlotStart();
@@ -160,4 +162,6 @@ module FloodBurstP {
   command bool RequestPending.requestPending(uint32_t frame){
     return (frame != INVALID_FRAME) && rxPending;
   }
+
+  async event void ActiveMessageAddress.changed(){}
 }
