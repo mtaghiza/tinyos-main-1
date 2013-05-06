@@ -1,5 +1,5 @@
 #include "GlobalID.h"
-#include "TLVStorage.h"
+#include "PlatformTLVStorage.h"
 
 module GlobalIDP{
   provides interface GlobalID;
@@ -11,7 +11,7 @@ module GlobalIDP{
       return ESIZE;
     } else {
       global_id_entry_t* gid;
-      uint8_t ba[TLV_LEN];
+      uint8_t ba[PLATFORM_TLV_LEN];
       error_t err;
       err = call TLVStorage.loadTLVStorage(ba);
       if (err != SUCCESS){
@@ -35,7 +35,7 @@ module GlobalIDP{
     global_id_entry_t gid;
     tlv_entry_t* previous;
     uint8_t offset;
-    uint8_t ba[TLV_LEN];
+    uint8_t ba[PLATFORM_TLV_LEN];
     error_t err;
     if (len > GLOBAL_ID_LEN){
       return ESIZE;
