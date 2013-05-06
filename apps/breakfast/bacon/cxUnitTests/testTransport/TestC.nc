@@ -24,4 +24,7 @@ configuration TestC {
   TestP.SplitControl -> ActiveMessageC;
   TestP.Packet -> BroadcastSender;
   TestP.AMPacket -> ActiveMessageC;
+
+  components CXAMAddressC;
+  TestP.ActiveMessageAddress -> CXAMAddressC;
 }

@@ -16,6 +16,8 @@ module TestP{
   uses interface AMPacket;
 
   uses interface StdControl as SerialControl;
+
+  uses interface ActiveMessageAddress;
 } implementation {
   uint32_t sn = 0;
 
@@ -39,7 +41,7 @@ module TestP{
   task void usage(){
     cinfo(test,"---- %s ID %x Commands ----\r\n",
           (CX_MASTER==1)?"MASTER": "SLAVE",
-          TOS_NODE_ID);
+          call ActiveMessageAddress.amAddress());
     cinfo(test,"S : toggle start/stop\r\n");
     cinfo(test,"b : transmit a packet broadcast\r\n");
     cinfo(test,"B : toggle broadcast transmit back-to-back\r\n");
@@ -266,5 +268,6 @@ module TestP{
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf, uint16_t len,
     error_t error ){}
+  async event void ActiveMessageAddress.changed(){}
 }
 
