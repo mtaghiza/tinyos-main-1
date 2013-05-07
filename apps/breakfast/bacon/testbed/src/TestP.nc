@@ -89,7 +89,11 @@ module TestP{
 
   event void Timer.fired(){
     outstanding ++;
-    if (outstanding > SEND_THRESHOLD && filling){
+    cinfo(test, "TXQ %u at %lu\r\n", 
+      outstanding, 
+      call Timer.getNow());
+    if (outstanding >= SEND_THRESHOLD && filling){
+      cinfo(test, "TX FLUSH\r\n");
       filling = FALSE;
       post transmit();
     }
@@ -100,7 +104,9 @@ module TestP{
   event void SplitControl.startDone(error_t error){
     cinfo(test,"Started %x \r\n", error);
     started = TRUE;
-    call Timer.startOneShot(TEST_STARTUP_DELAY);
+    if (TEST_TRANSMIT){
+      call Timer.startOneShot(TEST_STARTUP_DELAY);
+    }
   }
 
   event void SplitControl.stopDone(error_t error){
@@ -129,12 +135,15 @@ module TestP{
   event void AMSend.sendDone(message_t* msg_, error_t error){
     test_payload_t* pl = call AMSend.getPayload(msg_,
       sizeof(test_payload_t));
-    cinfo(test,"APP TXD %lu to %x %x\r\n", 
+    cinfo(test,"APP TXD %lu to %x %x Q %u\r\n", 
       pl->sn, 
       call AMPacket.destination(msg_),
-      error);
+      error,
+      outstanding);
     if (outstanding){
       outstanding --;
+    }
+    if (outstanding){
       post transmit();
     }else{
       filling = TRUE;

@@ -16,6 +16,8 @@ SEND_THRESHOLD ?= 1
 CFLAGS += -DSEND_THRESHOLD=$(SEND_THRESHOLD) 
 PAYLOAD_LEN ?= 50
 CFLAGS += -DPAYLOAD_LEN=$(PAYLOAD_LEN) 
+TEST_TRANSMIT ?= 0
+CFLAGS += -DTEST_TRANSMIT=$(TEST_TRANSMIT)
 
 
 ##Common Scheduler settings
@@ -24,23 +26,23 @@ CFLAGS += -DCX_MASTER=$(CX_MASTER)
 CX_STATIC_SCHEDULE ?= 1
 CFLAGS += -DCX_STATIC_SCHEDULE=$(CX_STATIC_SCHEDULE)
 #Cycle len in frames
-CX_DEFAULT_CYCLE_LENGTH ?= 100
+CX_DEFAULT_CYCLE_LENGTH ?= 500
 CFLAGS +=-DCX_DEFAULT_CYCLE_LENGTH=$(CX_DEFAULT_CYCLE_LENGTH)
 #slot len in frames
-CX_DEFAULT_SLOT_LENGTH ?= 30
+CX_DEFAULT_SLOT_LENGTH ?= 20
 CFLAGS +=-DCX_DEFAULT_SLOT_LENGTH=$(CX_DEFAULT_SLOT_LENGTH)
 #MAX_SLOTS is the *total* number of active slots ever permitted.
-MAX_SLOTS ?= 5
+MAX_SLOTS ?= 20
 CFLAGS += -DMAX_SLOTS=$(MAX_SLOTS)
 #CX_DEFAULT_MAX_DEPTH is the initially-advertised maxDepth in the
 # network.
-CX_DEFAULT_MAX_DEPTH ?= 8
+CX_DEFAULT_MAX_DEPTH ?= 6
 CFLAGS +=-DCX_DEFAULT_MAX_DEPTH=$(CX_DEFAULT_MAX_DEPTH)
 
 ##Dynamic scheduler settings (when CX_STATIC_SCHEDULE=0)
 #EVICTION_THRESHOLD: how many cycles must elapse without hearing from
-# a node before it is removed from the schedule.
-EVICTION_THRESHOLD ?= 3
+# a node before it is removed from the schedule. 0 = never evict.
+EVICTION_THRESHOLD ?= 0
 CFLAGS += -DEVICTION_THRESHOLD=$(EVICTION_THRESHOLD)
 #FREE_TIMEOUT: how many cycles after a node has been evicted before a
 # slot is advertised as vacant.
@@ -54,6 +56,8 @@ CFLAGS += -DMAX_VACANT=$(MAX_VACANT)
 # message. Must be >0, >1 only matters if multiple slots can be
 # assigned to a single node.
 CFLAGS += -DMAX_ASSIGNMENTS=5
+#MAX_FREED: max # of freed slots announced in a single schedule.
+CFLAGS += -DMAX_FREED=5
 
 #radio settings
 #NB: length field is 8 bits: so if we are using FEC, we need to make
@@ -66,12 +70,12 @@ CFLAGS += -DCX_SELF_RETX=1
 
 #Debug levels
 CFLAGS += -DDL_LINK=DL_INFO
-CFLAGS += -DDL_LINKQUEUE=DL_INFO
+CFLAGS += -DDL_LINKQUEUE=DL_WARN
 CFLAGS += -DDL_NETWORK=DL_WARN
-CFLAGS += -DDL_SCHED=DL_DEBUG
-CFLAGS += -DDL_SKEW=DL_DEBUG
-CFLAGS += -DDL_TRANSPORT=DL_WARN
-CFLAGS += -DDL_AM=DL_WARN
+CFLAGS += -DDL_SCHED=DL_INFO
+CFLAGS += -DDL_SKEW=DL_INFO
+CFLAGS += -DDL_TRANSPORT=DL_INFO
+CFLAGS += -DDL_AM=DL_INFO
 CFLAGS += -DDL_test=DL_INFO
 
 #timer/clock config
@@ -116,7 +120,7 @@ CFLAGS += -DTEST_RESELECT=0
 #0 = do not timestamp packets
 CFLAGS +=-DENABLE_TIMESTAMPING=1
 #0 = use TOS_NODE_ID as amAddr (1=check TLV for global ID, use 2 LSB)
-CFLAGS += -DAM_ID_FROM_FLASH=1
+CFLAGS += -DAM_ID_FROM_FLASH=0
 
 ##include paths
 CFLAGS += -I$(TOSDIR)/lib/serialprintf

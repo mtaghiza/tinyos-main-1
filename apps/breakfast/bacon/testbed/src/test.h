@@ -41,5 +41,8 @@ typedef nx_struct test_payload {
 #define TEST_RANDOMIZE (10UL*1024UL)
 #endif
 
+#ifndef TEST_TRANSMIT
+#define TEST_TRANSMIT 0
+#endif
 
 #endif
