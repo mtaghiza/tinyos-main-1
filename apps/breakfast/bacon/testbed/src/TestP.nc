@@ -36,7 +36,7 @@ module TestP{
 
 
   task void usage(){
-    cinfo(test,"BOOTED %s ID %x \r\n",
+    cinfo(test,"BOOTED %s ID %u \r\n",
           (CX_MASTER==1)?"MASTER": "SLAVE",
           call ActiveMessageAddress.amAddress());
   }
