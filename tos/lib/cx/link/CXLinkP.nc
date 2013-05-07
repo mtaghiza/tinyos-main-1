@@ -140,6 +140,7 @@ module CXLinkP {
     uint32_t microRef;
     uint32_t t32kRef = 0;
     uint32_t reqFrame = nextRequest->baseFrame + nextRequest->frameOffset;
+    bool crcf = FALSE;
 
     atomic{
       if (asyncHandled){
@@ -163,9 +164,13 @@ module CXLinkP {
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
       }
       if (microRef !=0 && !shouldSynch){
-        cinfo(LINK, "Failed CRC don't resynch\r\n");
+        crcf = TRUE;
       }
       asyncHandled = FALSE;
+    }
+    if (crcf){
+      cinfo(LINK, "CRCF %lu\r\n",
+        reqFrame);
     }
     switch(nextRequest -> requestType){
       case RT_SLEEP:

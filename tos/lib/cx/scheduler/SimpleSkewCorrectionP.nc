@@ -78,7 +78,11 @@ module SimpleSkewCorrectionP {
   
         int32_t tpf_s = delta_s / framesElapsed;
         if ( tpf_s > MAX_SKEW || tpf_s < (-1* MAX_SKEW)){
-          cwarn(SKEW, "SKEW EXCEEDED\r\n");
+          cwarn(SKEW, "SE %li : (%lu - %lu) - (%lu - %lu) / %lu\r\n",
+            tpf_s,
+            myTS, lastCapture,
+            otherTS, lastTimestamp, 
+            framesElapsed);
         } else {
           //next EWMA step: alpha is fixed at = 0.5
           //the choice of rounding method affects the convergence
