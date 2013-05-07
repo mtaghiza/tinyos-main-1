@@ -35,6 +35,41 @@ module CXNetworkP {
     memset(ret, 0, sizeof(cx_network_metadata_t));
     return ret;
   }
+
+  void printRX(message_t* msg){
+    //src, sn, local origin, hopCount at RX
+    cinfo(NETWORK, "NRX %u %u %lu %u\r\n",
+      call CXLinkPacket.getSource(msg),
+      call CXNetworkPacket.getSn(msg),
+      call CXNetworkPacket.getOriginFrameNumber(msg),
+      call CXNetworkPacket.getRXHopCount(msg));
+  }
+  
+  uint32_t txOFN;
+  uint8_t txHC;
+  bool ptxPending = FALSE;
+  
+  task void printTXTask(){
+    //local OFN, hopcount
+    cinfo(NETWORK, "NFW %lu %u\r\n", txOFN, txHC);
+    ptxPending = FALSE;
+  }
+
+  void printTX(message_t* msg, uint32_t atFrame){
+    if (!ptxPending){
+      txOFN = call CXNetworkPacket.getOriginFrameNumber(msg);
+      txHC = call CXNetworkPacket.getHops(msg);
+      ptxPending = TRUE;
+      post printTXTask();
+    }
+  }
+
+  void printOTX(message_t* msg){
+    //sn, local OFN
+    cinfo(NETWORK, "NTX %u %lu\r\n",
+      call CXNetworkPacket.getSn(msg),
+      call CXNetworkPacket.getOriginFrameNumber(msg));
+  }
   
   event void SubCXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount,
@@ -88,6 +123,9 @@ module CXNetworkP {
       }
     }
     //not forwarding, so we're done with it. signal up.
+    if (didReceive){
+      printRX(msg);
+    }
     signal CXRequestQueue.receiveHandled(error, 
       nmd->layerCount - 1,
       atFrame, nmd->reqFrame, 
@@ -110,6 +148,7 @@ module CXNetworkP {
     if (SUCCESS == error){
       synchFrame = atFrame;
       synchMicroRef = microRef;
+      printTX(msg, atFrame);
     }else if (atFrame - synchFrame > MAX_SOFT_SYNCH){
       useMicroRef =  FALSE;
     }
@@ -159,6 +198,7 @@ module CXNetworkP {
             atFrame, nmd->reqFrame, microRef, t32kRef, 
             nmd->next, msg);
         } else {
+          printRX(msg);
           signal CXRequestQueue.receiveHandled(error,
             nmd -> layerCount - 1,
             atFrame, nmd -> reqFrame,
@@ -173,6 +213,7 @@ module CXNetworkP {
 
       //we are origin, so signal up as sendHandled.
       if (layerCount > 0 ){
+        printOTX(msg);
         signal CXRequestQueue.sendHandled(error, 
           layerCount - 1,
           atFrame, nmd->reqFrame, microRef, t32kRef, 
@@ -180,6 +221,7 @@ module CXNetworkP {
         call Pool.put(nmd);
       }else{
         //restore stashed reception info and signal up as receive
+        printRX(msg);
         signal CXRequestQueue.receiveHandled(error,
           nmd -> layerCount - 1,
           atFrame, nmd -> reqFrame,

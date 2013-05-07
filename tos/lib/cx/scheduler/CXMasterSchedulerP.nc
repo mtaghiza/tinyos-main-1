@@ -234,7 +234,7 @@ module CXMasterSchedulerP{
     error = call SubCXRQ.requestSleep(0,
       lastCycleStart, 
       sched->slotLength*(sched->activeSlots) + 1);
-    cinfo(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
+    cdbg(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
       lastCycleStart,
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
@@ -245,7 +245,7 @@ module CXMasterSchedulerP{
         call SkewCorrection.referenceFrame(call CXLinkPacket.addr()),
         call SkewCorrection.referenceTime(call CXLinkPacket.addr()), 
         0);
-      cinfo(SCHED, "req cw: %x \r\n",
+      cdbg(SCHED, "req cw: %x \r\n",
         error);
     }else{
       cerror(SCHED, "req cycle sleep: %x\r\n",
@@ -373,10 +373,16 @@ module CXMasterSchedulerP{
 
   event void ScheduleSend.sendDone(message_t* msg, error_t error){
     if (SUCCESS == error){
-      cinfo(SCHED, "TX sched of %lu ts %lu ofs%lu\r\n",
-        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
-        sched->timestamp,
-        call CXNetworkPacket.getOriginFrameStart(schedMsg));
+//      cinfo(SCHED, "SCHED TX csf %lu of %lu ts %lu ofs %lu\r\n",
+//        sched->cycleStartFrame,
+//        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
+//        sched->timestamp,
+//        call CXNetworkPacket.getOriginFrameStart(schedMsg));
+      cinfo(SCHED, "SCHED TX %u %u %lu %lu\r\n",
+        sched->sn,
+        call CXNetworkPacket.getSn(msg),
+        sched->cycleStartFrame,
+        sched->cycleStartFrame);
       call SkewCorrection.addMeasurement(
         call CXLinkPacket.addr(),
         TRUE,
@@ -465,7 +471,7 @@ module CXMasterSchedulerP{
         pl->assignments[pl->numAssigned].owner = assignments[i].owner;
         pl->assignments[pl->numAssigned].slotNumber = i;
         pl->numAssigned++;
-        cinfo(SCHED, "a %u to %u\r\n", i, assignments[i].owner);
+        cinfo(SCHED, "a %u to %u\r\n", assignments[i].owner, i);
         reqLeft --;
       }
     }

@@ -4,6 +4,7 @@
 typedef nx_struct cx_network_header {
   nx_uint8_t ttl;
   nx_uint8_t hops;
+  nx_uint16_t sn;
 } cx_network_header_t;
 
 typedef struct cx_network_metadata {

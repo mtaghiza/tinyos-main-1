@@ -6,6 +6,8 @@ module CXNetworkPacketP{
   uses interface Packet as SubPacket;
   uses interface CXLinkPacket;
 } implementation {
+
+  uint16_t cxSn = 0;
   
   cx_metadata_t* metadata(message_t* msg){
     //am I losing my mind? why is it so ugly to get a pointer to this
@@ -18,6 +20,7 @@ module CXNetworkPacketP{
     return (cx_network_header_t*)(call SubPacket.getPayload(msg,
       sizeof(cx_network_header_t)));
   }
+
 
   command uint8_t CXNetworkPacket.getRXHopCount(message_t* msg){
     cx_metadata_t* cx = metadata(msg);
@@ -58,6 +61,7 @@ module CXNetworkPacketP{
     cx_network_header_t* hdr = getHeader(msg);
     hdr -> hops = 0;
     call CXLinkPacket.init(msg);
+    hdr->sn = cxSn++;
     return SUCCESS;
   }
 
@@ -114,5 +118,8 @@ module CXNetworkPacketP{
     }
   }
 
+  command uint16_t CXNetworkPacket.getSn(message_t* msg){
+    return getHeader(msg)->sn;   
+  }
   
 }

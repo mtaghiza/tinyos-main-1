@@ -224,17 +224,20 @@ module CXSlaveSchedulerP{
   }
 
   task void reportSched(){
-    cinfo(SCHED, "RX Sched");
-    cinfo(SCHED, ": %p %p sn %u cl %lu sl %u md %u ts %lu",
-      schedMsg,
-      sched, 
+    cinfo(SCHED, "SCHED RX %u %u %lu %lu\r\n",
       sched->sn,
-      sched->cycleLength, 
-      sched->slotLength, 
-      sched->maxDepth,
-      sched->timestamp);
-
-    cinfo(SCHED, "\r\n");
+      call CXNetworkPacket.getSn(schedMsg),
+      sched->cycleStartFrame,
+      lastCycleStart);
+//    cinfo(SCHED, ": %p %p sn %u cl %lu sl %u md %u ts %lu",
+//      schedMsg,
+//      sched, 
+//      sched->sn,
+//      sched->cycleLength, 
+//      sched->slotLength, 
+//      sched->maxDepth,
+//      sched->timestamp);
+//    cinfo(SCHED, "\r\n");
   }
 
   
@@ -338,7 +341,7 @@ module CXSlaveSchedulerP{
     lastCycleStart = 
       call CXNetworkPacket.getOriginFrameNumber(msg) -
       call CXSchedulerPacket.getOriginFrame(msg);
-    cinfo(SCHED, "LO %lu RO %lu RCSF %lu\r\n",
+    cdbg(SCHED, "LO %lu RO %lu RCSF %lu\r\n",
       call CXNetworkPacket.getOriginFrameNumber(msg),
       call CXSchedulerPacket.getOriginFrame(msg),
       sched->cycleStartFrame);
@@ -406,7 +409,7 @@ module CXSlaveSchedulerP{
     error = call SubCXRQ.requestSleep(0,
       lastCycleStart, 
       sched->slotLength*(sched->activeSlots) + 1);
-    cinfo(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
+    cdbg(SCHED, "stnc sleep lcs %lu %lu-%lu\r\n", 
       lastCycleStart,
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
@@ -418,7 +421,7 @@ module CXSlaveSchedulerP{
         call SkewCorrection.referenceTime(masterId),
         call SkewCorrection.getCorrection(masterId,
           sched->cycleLength));
-      cinfo(SCHED, "req cw: %x\r\n",
+      cdbg(SCHED, "req cw: %x\r\n",
         error);
     }else{
       cerror(SCHED, "req cycle sleep: %x\r\n",

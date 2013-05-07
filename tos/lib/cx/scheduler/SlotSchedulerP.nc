@@ -56,7 +56,7 @@ module SlotSchedulerP{
       lastSlotStart = lastCycleStart;
     }
     if (!wakeupPending && sched != NULL){
-      cinfo(SCHED, "scs WNS cs %lu lss %lu\r\n", 
+      cdbg(SCHED, "scs WNS cs %lu lss %lu\r\n", 
         cycleStart, 
         lastCycleStart);
       post wakeupNextSlot();
@@ -69,7 +69,7 @@ module SlotSchedulerP{
   command void ScheduleParams.setSchedule(cx_schedule_t* schedule){
     sched = schedule;
     if (!wakeupPending && sched != NULL && lastSlotStart != INVALID_FRAME){
-      cinfo(SCHED, "ss WNS\r\n");
+      cdbg(SCHED, "ss WNS\r\n");
       post wakeupNextSlot();
     }
   }
@@ -226,7 +226,7 @@ module SlotSchedulerP{
       if (error == SUCCESS){
         wakeupPending ++; 
       }
-      cinfo(SCHED, "req sw: %lu %x p %u\r\n",
+      cdbg(SCHED, "req sw: %lu %x p %u\r\n",
         lastCycleStart + sched->slotLength*(slotNumber(lastSlotStart)+1),
         error, wakeupPending);
     }
@@ -316,7 +316,7 @@ module SlotSchedulerP{
       error_t error = call SubCXRQ.requestSleep(0,
         ns,
         0);
-      cinfo(SCHED, "req slot sleep: %x @%lu\r\n", 
+      cdbg(SCHED, "req slot sleep: %x @%lu\r\n", 
         error, 
         ns);
     } else {

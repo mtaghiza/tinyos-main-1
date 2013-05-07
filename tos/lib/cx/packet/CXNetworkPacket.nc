@@ -21,4 +21,7 @@ interface CXNetworkPacket {
   command uint32_t getOriginFrameStart(message_t* msg);
   command void setOriginFrameStart(message_t* msg,
       uint32_t originFrameStart);
+  
+  command uint16_t getSn(message_t* msg);
+
 }
