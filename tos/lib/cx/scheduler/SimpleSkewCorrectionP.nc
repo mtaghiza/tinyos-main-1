@@ -30,15 +30,13 @@ module SimpleSkewCorrectionP {
   uint32_t selfReferenceTime = INVALID_FRAME;
 
   task void printResults(){
-    cdbg(SKEW, " Cumulative TPF_s: %li last delta: %li over %lu\r\n", 
+    cdbg(SKEW, "SK TPF_s: %li ld: %li over %lu\r\n", 
       cumulativeTpf_s, lastDelta, lastFramesElapsed);
-    cdbg(SKEW, " @20 %li @50 %li @100 %li @1000 %li\r\n",
-      call SkewCorrection.getCorrection(other, 20L),
-      call SkewCorrection.getCorrection(other, 50L),
-      call SkewCorrection.getCorrection(other, 100L),
-      call SkewCorrection.getCorrection(other, 1000L));
-
-    call SkewCorrection.getCorrection(other, 256L);
+//    cdbg(SKEW, " @20 %li @50 %li @100 %li @1000 %li\r\n",
+//      call SkewCorrection.getCorrection(other, 20L),
+//      call SkewCorrection.getCorrection(other, 50L),
+//      call SkewCorrection.getCorrection(other, 100L),
+//      call SkewCorrection.getCorrection(other, 1000L));
   }
 
 

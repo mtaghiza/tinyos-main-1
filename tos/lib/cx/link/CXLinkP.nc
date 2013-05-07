@@ -410,7 +410,7 @@ module CXLinkP {
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
           uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
             + rft + c - PREP_TIME_32KHZ;
-          cdbg(SKEW, "WU lft %lu -> %lu (rt %lu rf %lu lf %lu)\r\n",
+          cinfo(SKEW_APPLY, "WU %lu -> %lu ( %lu %lu %lu )\r\n",
             lastFrameTime, newLft,
             rft, rfn, lastFrameNum);
           lastFrameTime = newLft;

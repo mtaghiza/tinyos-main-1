@@ -113,4 +113,8 @@ typedef nx_struct cx_assignment_msg {
 #define FREE_TIMEOUT 5
 #endif
 
+#ifndef CX_ACTIVE_SLOTS_STATIC
+#define CX_ACTIVE_SLOTS_STATIC 60
+#endif
+
 #endif

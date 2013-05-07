@@ -11,6 +11,9 @@
 #define DL_SKEW DL_INFO
 #endif
 
+#ifndef DL_SKEW_APPLY
+#define DL_SKEW_APPLY DL_WARN
+#endif
 
 #ifndef TEST_RESELECT
 #define TEST_RESELECT 0

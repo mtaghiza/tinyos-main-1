@@ -70,6 +70,14 @@ module CXNetworkP {
       call CXNetworkPacket.getSn(msg),
       call CXNetworkPacket.getOriginFrameNumber(msg));
   }
+
+  am_addr_t lastSrc = AM_BROADCAST_ADDR;
+  uint16_t lastSn = 0;
+
+  bool isDuplicate(message_t* msg){
+    return (lastSrc == call AMPacket.source(msg) 
+      && lastSn == call CXNetworkPacket.getSn(msg));
+  }
   
   event void SubCXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount,
@@ -82,6 +90,8 @@ module CXNetworkP {
     nmd -> reqFrame = reqFrame;
     nmd -> microRef = microRef;
     nmd -> t32kRef = t32kRef;
+    lastSrc = call AMPacket.source(msg);
+    lastSn = call CXNetworkPacket.getSn(msg);
 
     if (SUCCESS == error) {
       if (didReceive){
@@ -96,7 +106,6 @@ module CXNetworkP {
         //n.b. this is an estimate of the CAPTURE time (in 32K units),
         //so, the PREP_TIME_32KHZ needs to be accounted for when
         //scheduling frames based on it. 
-        cdbg(SKEW, "ts %lu\r\n", t32kRef);
         call CXNetworkPacket.setOriginFrameStart(msg,
           t32kRef - (FRAMELEN_32K * (call CXNetworkPacket.getRXHopCount(msg) - 1)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
@@ -129,7 +138,7 @@ module CXNetworkP {
     signal CXRequestQueue.receiveHandled(error, 
       nmd->layerCount - 1,
       atFrame, nmd->reqFrame, 
-      didReceive, nmd->microRef, nmd->t32kRef, 
+      didReceive && !isDuplicate(msg), nmd->microRef, nmd->t32kRef, 
       nmd->next, msg);
     call Pool.put(nmd);
   }
@@ -202,7 +211,7 @@ module CXNetworkP {
           signal CXRequestQueue.receiveHandled(error,
             nmd -> layerCount - 1,
             atFrame, nmd -> reqFrame,
-            TRUE,  //we are forwarding, so we must have received
+            TRUE && !isDuplicate(msg),  //we are forwarding, so we must have received
             nmd -> microRef, nmd -> t32kRef,
             nmd -> next,
             msg);
@@ -225,7 +234,7 @@ module CXNetworkP {
         signal CXRequestQueue.receiveHandled(error,
           nmd -> layerCount - 1,
           atFrame, nmd -> reqFrame,
-          TRUE,  //we are forwarding, so we must have received
+          TRUE && !isDuplicate(msg),  //we are forwarding, so we must have received
           nmd -> microRef, nmd -> t32kRef,
           nmd -> next,
           msg);

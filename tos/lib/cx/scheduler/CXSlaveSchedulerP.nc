@@ -249,7 +249,8 @@ module CXSlaveSchedulerP{
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));
     if (SUCCESS != error){
-      cwarn(SKEW, "sc.am: %lu %lu %lu\r\n",
+      cwarn(SKEW, "sc.am: %x %lu %lu %lu\r\n",
+        error,
         sched->timestamp,
       call CXNetworkPacket.getOriginFrameNumber(schedMsg),
       call CXNetworkPacket.getOriginFrameStart(schedMsg));

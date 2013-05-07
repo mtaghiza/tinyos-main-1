@@ -52,7 +52,7 @@ module CXMasterSchedulerStaticP{
     sched -> sn = call Random.rand16() & 0xFF;
     sched -> cycleLength = CX_DEFAULT_CYCLE_LENGTH;
     sched -> slotLength = CX_DEFAULT_SLOT_LENGTH;
-    sched -> activeSlots = 4;
+    sched -> activeSlots = CX_ACTIVE_SLOTS_STATIC;
     sched -> maxDepth = CX_DEFAULT_MAX_DEPTH;
 
     call RoutingTable.setDefault(sched->maxDepth);
