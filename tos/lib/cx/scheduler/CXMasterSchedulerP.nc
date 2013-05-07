@@ -506,7 +506,7 @@ module CXMasterSchedulerP{
           cdbg(SCHED, "%u A csh: %u\r\n", 
             curSlot, 
             assignments[curSlot].csh);
-          if (assignments[curSlot].csh > EVICTION_THRESHOLD){
+          if (EVICTION_THRESHOLD != 0 && assignments[curSlot].csh > EVICTION_THRESHOLD){
             //mark freed and start counting up: we put in some padding
             //between the time when we free the slot and the time when
             //we start letting nodes claim it to help offset the
