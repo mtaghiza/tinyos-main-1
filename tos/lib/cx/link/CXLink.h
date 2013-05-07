@@ -42,8 +42,10 @@
 //time from strobe command to SFD: 0.00523 S
 #define T_STROBE_SFD 3395UL
 
+#ifndef SETUP_SLACK_RATIO
 //scale up the nominal minimum prep time
 #define SETUP_SLACK_RATIO 8UL
+#endif
 
 //Working backwards:
 // receiver
@@ -63,8 +65,13 @@
 
 
 //7800 = 1.2 ms
+#ifndef RX_DEFAULT_WAIT
 #define RX_DEFAULT_WAIT 7800UL
+#endif 
+
+#ifndef RX_MAX_WAIT
 #define RX_MAX_WAIT (0x7FFFFFFF)
+#endif
 
 #ifndef ENABLE_CRC_CHECK
 #define ENABLE_CRC_CHECK 1
