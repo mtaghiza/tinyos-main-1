@@ -83,4 +83,5 @@ configuration CXMasterSchedulerC{
 
   components StateDumpC;
   CXMasterSchedulerP.StateDump -> StateDumpC;
+  SlotSchedulerP.StateDump -> StateDumpC;
 }
