@@ -441,6 +441,10 @@ module CXLinkP {
       if (r->baseFrame + r->frameOffset == handledFrame){
         return ERETRY;
       }else{ 
+        cinfo(LINK, "LB %lu + %lu %lu %lu %lu\r\n",
+          r->baseFrame, r->frameOffset, 
+          lastFrameNum, handledFrame, 
+          call CXRequestQueue.nextFrame(FALSE));
         return EBUSY;
       }
 

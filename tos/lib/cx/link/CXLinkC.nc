@@ -57,4 +57,7 @@ configuration CXLinkC {
 
   //for debug only
   Rf1aStatus = Rf1aPhysicalC;
+
+  components StateDumpC;
+  CXLinkP.StateDump->StateDumpC;
 }
