@@ -7,7 +7,6 @@
 //sleep takes priority, then wakeup, then TX, and finally RX.
 //frameshift handled before "normal" events.
 typedef enum {
-  RT_FRAMESHIFT = 0,
   RT_SLEEP = 1,
   RT_WAKEUP = 2,
   RT_TX = 3,
