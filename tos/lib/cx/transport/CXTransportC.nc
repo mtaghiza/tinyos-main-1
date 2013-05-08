@@ -21,7 +21,6 @@ configuration CXTransportC {
   CXTransportDispatchP.SubSplitControl -> CXSchedulerC;
   SplitControl = CXTransportDispatchP;
 
-  
   //hook up sub-protocols
   components FloodBurstP;
   components RRBurstP;
@@ -93,4 +92,8 @@ configuration CXTransportC {
   FloodBurstP.ActiveMessageAddress -> CXAMAddressC;
   RRBurstP.ActiveMessageAddress -> CXAMAddressC;
 
+  components new TimerMilliC() as FBTimer;
+  components new TimerMilliC() as RRBTimer;
+  FloodBurstP.RetryTimer -> FBTimer;
+  RRBurstP.RetryTimer -> RRBTimer;
 }

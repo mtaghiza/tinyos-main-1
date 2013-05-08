@@ -225,10 +225,19 @@ module SlotSchedulerP{
           sched->slotLength*(slotNumber(lastSlotStart)+1)));
       if (error == SUCCESS){
         wakeupPending ++; 
+      }else{
+        cerror(SCHED, "ss.req sw %lu %u %lu %lu %li %x\r\n",
+          lastCycleStart,
+          sched->slotLength*(slotNumber(lastSlotStart)+1),
+          call SkewCorrection.referenceFrame(masterId),
+          call SkewCorrection.referenceTime(masterId),
+          call SkewCorrection.getCorrection(masterId,
+            sched->slotLength*(slotNumber(lastSlotStart)+1)),
+          error);
       }
-      cdbg(SCHED, "req sw: %lu %x p %u\r\n",
-        lastCycleStart + sched->slotLength*(slotNumber(lastSlotStart)+1),
-        error, wakeupPending);
+      cdbg(SCHED, "rsw %lu + %u %x\r\n",
+        lastCycleStart , sched->slotLength*(slotNumber(lastSlotStart)+1),
+        error);
     }
   }
 
@@ -249,15 +258,20 @@ module SlotSchedulerP{
       }else{
         cerror(SCHED, "Unexpected wakeup\r\n");
       }
-
+      if (error != SUCCESS){
+        cerror(SCHED, "ss.wh %lu %lu %x\r\n", 
+          atFrame, reqFrame, error);
+      }
       lastSlotStart = atFrame;
       slotState = S_UNKNOWN;
       if (sched != NULL){
         uint16_t sn = slotNumber(atFrame);
         signal SlotNotify.slotStarted(sn);
         if (sn == (sched->activeSlots - 1)){
+          cdbg(SCHED, "sw l %lu\r\n", atFrame);
           signal SlotNotify.lastSlot();
         } else if (sn < (sched->activeSlots - 1) ){
+          cdbg(SCHED, "sw n %lu\r\n", atFrame);
           post wakeupNextSlot();
         } else {
           //woke up some time during the inactive period, shouldn't

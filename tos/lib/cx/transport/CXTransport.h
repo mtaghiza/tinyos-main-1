@@ -27,4 +27,17 @@ typedef nx_struct cx_ack {
 #define CX_INVALID_TP 0xFF
 #define CX_INVALID_DISTANCE 0xFF
 
+//default frame len is 2^10 * 2^-15 = 2^-5 S
+//set retry to 1/4 frame len: 2^-7 = 2^-10 * X
+//                            2^-7 * 2^10  = 2^3 = 8
+#ifndef TRANSPORT_RETRY_TIMEOUT
+#define TRANSPORT_RETRY_TIMEOUT 8UL
+#endif
+
+//retry up to 4x per frame. if we still can't schedule after 2
+//frames, throw in the towel.
+#ifndef TRANSPORT_RETRY_THRESHOLD
+#define TRANSPORT_RETRY_THRESHOLD 8
+#endif
+
 #endif

@@ -18,6 +18,8 @@ module RRBurstP {
   uses interface ScheduledAMSend as AckSend;
   uses interface Packet as AckPacket;
   uses interface ActiveMessageAddress;
+
+  uses interface Timer<TMilli> as RetryTimer;
 } implementation {
   uint32_t lastTX;
   
@@ -39,6 +41,8 @@ module RRBurstP {
   am_addr_t flowSrc;
   uint32_t ackStart;
 
+  uint8_t retryCount;
+
   task void receiveNext(){
     if ( on && !rxPending){
       error_t error; rxf = call CXRequestQueue.nextFrame(FALSE);
@@ -47,11 +51,22 @@ module RRBurstP {
         FALSE, 0,
         0, NULL, rxMsg);
       if (error != SUCCESS){
-        cerror(TRANSPORT, "rrb.rn: %x\r\n", error);
+        if (retryCount < TRANSPORT_RETRY_THRESHOLD){
+          cwarn(TRANSPORT, "rrb.rn: %lu %x\r\n", rxf, error);
+          call RetryTimer.startOneShot(TRANSPORT_RETRY_TIMEOUT);
+        }else{
+          cerror(TRANSPORT, "rrb.rn: %lu %x\r\n", rxf, error);
+        }
       }else{
+        retryCount = 0;
         rxPending = TRUE;
       }
     }
+  }
+
+  event void RetryTimer.fired(){
+    retryCount ++;
+    post receiveNext();
   }
 
   task void sendAck(){

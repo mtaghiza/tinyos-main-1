@@ -16,6 +16,7 @@ module FloodBurstP {
   uses interface Get<uint32_t> as GetLastBroadcast;
 
   uses interface ActiveMessageAddress;
+  uses interface Timer<TMilli> as RetryTimer;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -27,6 +28,7 @@ module FloodBurstP {
   bool on = FALSE;
   uint32_t rxf = INVALID_FRAME;
 
+  uint8_t retryCount;
 
   task void receiveNext(){
     if ( on && !rxPending){
@@ -37,11 +39,24 @@ module FloodBurstP {
         FALSE, 0,
         0, NULL, rxMsg);
       if (error != SUCCESS){
-        cerror(TRANSPORT, "fb.rn: %x\r\n", error);
+        if (retryCount < TRANSPORT_RETRY_THRESHOLD){
+          cwarn(TRANSPORT, "fb.rn: %lu %x\r\n", 
+            rxf, error);
+          call RetryTimer.startOneShot(TRANSPORT_RETRY_TIMEOUT);
+        }else{
+          cerror(TRANSPORT, "fb.rn: %lu %x\r\n", 
+            rxf, error);
+        }
       }else{
+        retryCount = 0;
         rxPending = TRUE;
       }
     }
+  }
+
+  event void RetryTimer.fired(){
+    retryCount ++;
+    post receiveNext();
   }
 
   event void SplitControl.startDone(error_t error){
