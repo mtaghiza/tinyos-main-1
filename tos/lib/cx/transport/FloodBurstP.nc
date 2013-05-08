@@ -17,6 +17,7 @@ module FloodBurstP {
 
   uses interface ActiveMessageAddress;
   uses interface Timer<TMilli> as RetryTimer;
+  uses interface StateDump;
 } implementation {
   message_t msg_internal;
   //We only own this buffer when there is no rx pending. We have no
@@ -46,6 +47,7 @@ module FloodBurstP {
         }else{
           cerror(TRANSPORT, "fb.rn: %lu %x\r\n", 
             rxf, error);
+          call StateDump.requestDump();
         }
       }else{
         retryCount = 0;
@@ -65,6 +67,7 @@ module FloodBurstP {
       post receiveNext();
     } else {
       cerror(TRANSPORT, "!fb.sc.startDone: %x\r\n", error);
+      call StateDump.requestDump();
     }
   }
 
@@ -151,6 +154,7 @@ module FloodBurstP {
       post receiveNext();
     } else {
       cerror(TRANSPORT, "fb.rh, not rxPending\r\n");
+      call StateDump.requestDump();
     }
   }
 
@@ -179,4 +183,6 @@ module FloodBurstP {
   }
 
   async event void ActiveMessageAddress.changed(){}
+
+  event void StateDump.dumpRequested(){}
 }

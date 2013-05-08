@@ -20,6 +20,7 @@ module RRBurstP {
   uses interface ActiveMessageAddress;
 
   uses interface Timer<TMilli> as RetryTimer;
+  uses interface StateDump;
 } implementation {
   uint32_t lastTX;
   
@@ -56,6 +57,7 @@ module RRBurstP {
           call RetryTimer.startOneShot(TRANSPORT_RETRY_TIMEOUT);
         }else{
           cerror(TRANSPORT, "rrb.rn: %lu %x\r\n", rxf, error);
+          call StateDump.requestDump();
         }
       }else{
         retryCount = 0;
@@ -248,6 +250,7 @@ module RRBurstP {
       post receiveNext();
     } else {
       cerror(TRANSPORT, "!rrb.rh, not rxPending\r\n");
+      call StateDump.requestDump();
     }
   }
 
@@ -319,4 +322,6 @@ module RRBurstP {
     return (frame != INVALID_FRAME) && rxPending;
   }
   async event void ActiveMessageAddress.changed(){}
+
+  event void StateDump.dumpRequested(){ }
 }

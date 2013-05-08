@@ -30,6 +30,7 @@ module CXMasterSchedulerStaticP{
   uses interface RoutingTable;
 
   uses interface ActiveMessageAddress;
+  uses interface StateDump;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -350,4 +351,5 @@ module CXMasterSchedulerStaticP{
   }
 
   async event void ActiveMessageAddress.changed(){}
+  event void StateDump.dumpRequested(){}
 }

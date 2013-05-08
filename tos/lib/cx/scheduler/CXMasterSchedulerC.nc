@@ -80,4 +80,7 @@ configuration CXMasterSchedulerC{
   
   components CXAMAddressC;
   CXMasterSchedulerP.ActiveMessageAddress -> CXAMAddressC;
+
+  components StateDumpC;
+  CXMasterSchedulerP.StateDump -> StateDumpC;
 }

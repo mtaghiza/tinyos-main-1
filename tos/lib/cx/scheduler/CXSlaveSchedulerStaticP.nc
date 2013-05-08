@@ -20,6 +20,7 @@ module CXSlaveSchedulerStaticP{
   uses interface Packet;
   uses interface RoutingTable;
   uses interface ActiveMessageAddress;
+  uses interface StateDump;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -394,4 +395,5 @@ module CXSlaveSchedulerStaticP{
   }
 
   async event void ActiveMessageAddress.changed(){ }
+  event void StateDump.dumpRequested(){}
 }

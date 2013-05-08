@@ -77,4 +77,8 @@ configuration CXSlaveSchedulerC{
 
   components CXAMAddressC;
   CXSlaveSchedulerP.ActiveMessageAddress -> CXAMAddressC;
+
+  components StateDumpC;
+  CXSlaveSchedulerP.StateDump -> StateDumpC;
+  SlotSchedulerP.StateDump -> StateDumpC;
 }

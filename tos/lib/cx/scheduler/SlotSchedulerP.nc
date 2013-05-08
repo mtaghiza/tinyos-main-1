@@ -11,6 +11,7 @@ module SlotSchedulerP{
   provides interface SlotNotify;
   provides interface ScheduleParams;
   provides interface SlotTiming;
+  uses interface StateDump;
 } implementation {
   
   //enums/vars for determining when a slot is idle.
@@ -234,6 +235,7 @@ module SlotSchedulerP{
           call SkewCorrection.getCorrection(masterId,
             sched->slotLength*(slotNumber(lastSlotStart)+1)),
           error);
+        call StateDump.requestDump();
       }
       cdbg(SCHED, "rsw %lu + %u %x\r\n",
         lastCycleStart , sched->slotLength*(slotNumber(lastSlotStart)+1),
@@ -256,11 +258,14 @@ module SlotSchedulerP{
       if (wakeupPending){
         wakeupPending --;
       }else{
-        cerror(SCHED, "Unexpected wakeup\r\n");
+        cerror(SCHED, "Unexpected wakeup %lu\r\n", atFrame);
+        call StateDump.requestDump();
       }
       if (error != SUCCESS){
         cerror(SCHED, "ss.wh %lu %lu %x\r\n", 
           atFrame, reqFrame, error);
+        call StateDump.requestDump();
+        return;
       }
       lastSlotStart = atFrame;
       slotState = S_UNKNOWN;
@@ -278,6 +283,7 @@ module SlotSchedulerP{
           //  happen.
           cerror(SCHED, "inactive period wakeup %lu slot %u\r\n", 
             atFrame, sn);
+          call StateDump.requestDump();
         }
       }
     }
@@ -335,6 +341,7 @@ module SlotSchedulerP{
         ns);
     } else {
       cerror(SCHED, "Slot sleep requested, but no wakeup pending\r\n");
+      call StateDump.requestDump();
     }
   }
 
@@ -422,5 +429,10 @@ module SlotSchedulerP{
     frameOffset, refFrame, refTime, correction);
   }
   
+  event void StateDump.dumpRequested(){
+    //TODO: should log cycle start, etc
+    cinfo(SCHED, "SSD %lu %lu\r\n", 
+      lastCycleStart, lastSlotStart);
+  }
 }
 

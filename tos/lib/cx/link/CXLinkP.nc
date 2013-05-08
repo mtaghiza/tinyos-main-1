@@ -27,6 +27,8 @@ module CXLinkP {
 
   uses interface Boot;
 
+  uses interface StateDump;
+
 } implementation {
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
@@ -840,6 +842,10 @@ module CXLinkP {
 
   event void Boot.booted(){
     call Msp430XV2ClockControl.stopMicroTimer();
+  }
+
+  event void StateDump.dumpRequested(){
+    post logFrameAdjustments();
   }
 
 }

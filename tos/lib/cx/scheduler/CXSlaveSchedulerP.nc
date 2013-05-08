@@ -24,6 +24,7 @@ module CXSlaveSchedulerP{
   uses interface ScheduledAMSend as RequestSend;
   uses interface Random;
   uses interface ActiveMessageAddress;
+  uses interface StateDump;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -521,4 +522,6 @@ module CXSlaveSchedulerP{
   }
 
   async event void ActiveMessageAddress.changed(){ }
+
+  event void StateDump.dumpRequested(){}
 }

@@ -32,6 +32,7 @@ module CXMasterSchedulerP{
   uses interface Receive as RequestReceive;
 
   uses interface ActiveMessageAddress;
+  uses interface StateDump;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -547,4 +548,6 @@ module CXMasterSchedulerP{
   }
 
   async event void ActiveMessageAddress.changed(){ }
+
+  event void StateDump.dumpRequested(){}
 }

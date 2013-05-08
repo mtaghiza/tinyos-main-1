@@ -96,4 +96,8 @@ configuration CXTransportC {
   components new TimerMilliC() as RRBTimer;
   FloodBurstP.RetryTimer -> FBTimer;
   RRBurstP.RetryTimer -> RRBTimer;
+
+  components StateDumpC;
+  FloodBurstP.StateDump -> StateDumpC;
+  RRBurstP.StateDump -> StateDumpC;
 }
