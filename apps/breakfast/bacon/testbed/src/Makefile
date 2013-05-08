@@ -59,6 +59,11 @@ CFLAGS += -DMAX_ASSIGNMENTS=5
 #MAX_FREED: max # of freed slots announced in a single schedule.
 CFLAGS += -DMAX_FREED=5
 
+#Static scheduler settings
+#CX_ACTIVE_SLOTS_STATIC: fix the # of active slots.
+CX_ACTIVE_SLOTS_STATIC ?= 60
+CFLAGS += -DCX_ACTIVE_SLOTS_STATIC=$(CX_ACTIVE_SLOTS_STATIC)
+
 #radio settings
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
@@ -73,7 +78,8 @@ CFLAGS += -DDL_LINK=DL_INFO
 CFLAGS += -DDL_LINKQUEUE=DL_WARN
 CFLAGS += -DDL_NETWORK=DL_INFO
 CFLAGS += -DDL_SCHED=DL_INFO
-CFLAGS += -DDL_SKEW=DL_INFO
+CFLAGS += -DDL_SKEW=DL_DEBUG
+CFLAGS += -DDL_SKEW_APPLY=DL_WARN
 CFLAGS += -DDL_TRANSPORT=DL_INFO
 CFLAGS += -DDL_AM=DL_INFO
 CFLAGS += -DDL_test=DL_INFO

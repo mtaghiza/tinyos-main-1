@@ -127,7 +127,7 @@ module TestP{
     pl -> timestamp = 0xBABEFACE;
     pl -> sn = sn++;
     error = call AMSend.send(TEST_DESTINATION, msg, sizeof(test_payload_t));
-    cinfo(test,"APP TX %lu to %x %u %x\r\n", 
+    cinfo(test,"APP TX %lu to %u %u %x\r\n", 
       pl->sn, call AMPacket.destination(msg), 
       sizeof(test_payload_t), error);
   }
@@ -164,8 +164,8 @@ module TestP{
   }
 
   task void reportRX(){
-    //TODO: should include hop count. probably use header SN
-    cinfo(test,"APP RX %lu %u\r\n", rx_pl->sn, rxPLL);
+    cinfo(test,"APP RX %u %lu\r\n", 
+      call AMPacket.source(rxMsg), rx_pl->sn);
     cdbg(test, "++++\r\n");
     packetRXIndex=0;
     post printRXPacket();
