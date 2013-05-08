@@ -34,6 +34,7 @@ module CXLinkP {
   uint32_t lastFrameTime = 0;
   uint32_t fastAlarmAtFrameTimerFired;
 
+
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
   uint8_t alarmUsers = 0;
@@ -62,12 +63,12 @@ module CXLinkP {
   bool asyncHandled = FALSE;
   unsigned int aCount;
 
-  //frame-resynch
-  uint32_t a32kCapture;
   
   //indicate to requestHandled whether RX with good CRC or TX.
   bool shouldSynch;
 
+  //debug
+  request_type_t lastType;
 
   //forward declarations
   task void readyNextRequest();
@@ -174,6 +175,7 @@ module CXLinkP {
       cinfo(LINK, "CRCF %lu\r\n",
         reqFrame);
     }
+    lastType = nextRequest->requestType;
     switch(nextRequest -> requestType){
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, 
@@ -195,18 +197,22 @@ module CXLinkP {
           nextRequest->msg);
         break;
       case RT_RX:
-        if (requestError != SUCCESS && requestError != ERETRY){
-          cwarn(LINK, "RXE %x\r\n", requestError);
+        {
+          if (didReceive && t32kRef !=0){
+            handledFrame = lastFrameNum + (t32kRef - lastFrameTime)/FRAMELEN_32K;
+          }
+          if (requestError != SUCCESS && requestError != ERETRY){
+            cwarn(LINK, "RXE %x\r\n", requestError);
+          }
+          signal CXRequestQueue.receiveHandled(requestError,
+            nextRequest -> layerCount - 1,
+            handledFrame, 
+            reqFrame,
+            didReceive && (call Rf1aPhysicalMetadata.crcPassed(call
+            Rf1aPacket.metadata(nextRequest->msg)) || !ENABLE_CRC_CHECK ), 
+            microRef, t32kRef, nextRequest->next, nextRequest->msg);
+          break;
         }
-        signal CXRequestQueue.receiveHandled(requestError,
-          nextRequest -> layerCount - 1,
-          handledFrame, 
-          reqFrame,
-          didReceive && (call Rf1aPhysicalMetadata.crcPassed(call
-          Rf1aPacket.metadata(nextRequest->msg)) || !ENABLE_CRC_CHECK ), 
-          microRef, t32kRef, nextRequest->next, nextRequest->msg);
-        break;
-
       case RT_MARK:
         break;
 
@@ -439,12 +445,18 @@ module CXLinkP {
     //event in the past? I guess we were busy.
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
       if (r->baseFrame + r->frameOffset == handledFrame){
-        return ERETRY;
-      }else{ 
-        cinfo(LINK, "LB %lu + %lu %lu %lu %lu\r\n",
+        cdbg(LINK, "LR %lu + %lu %lu %lu %lu (%x)\r\n",
           r->baseFrame, r->frameOffset, 
           lastFrameNum, handledFrame, 
-          call CXRequestQueue.nextFrame(FALSE));
+          call CXRequestQueue.nextFrame(FALSE),
+          lastType);
+        return ERETRY;
+      }else{ 
+        cdbg(LINK, "LB %lu + %lu %lu %lu %lu (%x)\r\n",
+          r->baseFrame, r->frameOffset, 
+          lastFrameNum, handledFrame, 
+          call CXRequestQueue.nextFrame(FALSE),
+          lastType);
         return EBUSY;
       }
 
@@ -720,14 +732,6 @@ module CXLinkP {
 
   task void signalReceived(){
     didReceive = TRUE;
-    //This is a little hacky: really, we should be recording the
-    //end-of-packet time and figuring out what frame it falls in.
-    //At any rate, most of the time this will be the same as the
-    //handledFrame which we set at FrameTimer.fired, but if we are
-    //doing a long RX (e.g. searching for schedule), we need to do
-    //this so that frame numbering stays consistent.
-    updateLastFrameNum();
-    handledFrame = lastFrameNum;
 
     //store the phy metadata (including CRC)
     call Rf1aPhysicalMetadata.store(call Rf1aPacket.metadata(nextRequest->msg));
