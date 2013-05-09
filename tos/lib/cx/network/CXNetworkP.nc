@@ -70,9 +70,11 @@ module CXNetworkP {
       call CXNetworkPacket.getSn(msg),
       call CXNetworkPacket.getOriginFrameNumber(msg));
   }
-
+  
+  //looks like maybe the first schedule is getting dumped as a
+  //duplicate?
   am_addr_t lastSrc = AM_BROADCAST_ADDR;
-  uint16_t lastSn = 0;
+  uint16_t lastSn = 0xFFFF;
 
   bool isDuplicate(message_t* msg){
     return (lastSrc == call AMPacket.source(msg) 
