@@ -466,6 +466,10 @@ module CXLinkP {
           cinfo(SKEW_APPLY, "WU %lu -> %lu %lu %lu %lu\r\n",
             lastFrameTime, newLft,
             rft, rfn, lastFrameNum);
+          if ((lastFrameTime > newLft && (lastFrameTime - newLft) > FRAMELEN_32K ) 
+              || (lastFrameTime < newLft && (newLft - lastFrameTime) > FRAMELEN_32K )){
+            cwarn(SKEW_APPLY, "LWU\r\n");
+          }
           lastFrameTime = newLft;
         }else{
           cwarn(SKEW_APPLY, "BWU %lu %lu %lu %lu\r\n",
