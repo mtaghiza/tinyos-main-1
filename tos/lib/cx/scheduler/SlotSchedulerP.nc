@@ -265,9 +265,8 @@ module SlotSchedulerP{
         cerror(SCHED, "ss.wh %lu %lu %x\r\n", 
           atFrame, reqFrame, error);
         call StateDump.requestDump();
-        return;
       }
-      lastSlotStart = atFrame;
+      lastSlotStart = reqFrame;
       slotState = S_UNKNOWN;
       if (sched != NULL){
         uint16_t sn = slotNumber(atFrame);
@@ -430,7 +429,6 @@ module SlotSchedulerP{
   }
   
   event void StateDump.dumpRequested(){
-    //TODO: should log cycle start, etc
     cinfo(SCHED, "SSD %lu %lu\r\n", 
       lastCycleStart, lastSlotStart);
   }
