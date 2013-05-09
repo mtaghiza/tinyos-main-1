@@ -91,6 +91,19 @@ module CXLinkP {
 
   ufn_adjust_t ufnArr[UFN_ADJUST_LEN];
   uint8_t ufnIndex = 0;
+  
+  #ifndef QUEUE_HISTORY_LEN
+  #define QUEUE_HISTORY_LEN 16
+  #endif
+  typedef struct queue_history{
+    request_type_t requestType;
+    error_t validation;
+    uint32_t reqFrame;
+    error_t handleErr;
+  } queue_history_t;
+
+  queue_history_t queueHistory[QUEUE_HISTORY_LEN];
+  uint8_t qhi = QUEUE_HISTORY_LEN-1;
 
   void updateLastFrameNum(){
     //this should be safe from integer wrap
@@ -108,8 +121,10 @@ module CXLinkP {
 
     ufnArr[ufnIndex].ft = lastFrameTime;
     ufnArr[ufnIndex].fn = lastFrameNum;
-
-    ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
+    //overwrite entries which don't change the frame number.
+    if (elapsedFrames){
+      ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
+    }
   }
 
   task void logFrameAdjustments(){
@@ -124,6 +139,20 @@ module CXLinkP {
         a-> lft, a->lfn,
         a-> et,  a-> ef,
         a-> ft,  a-> fn);
+    }
+  }
+
+  task void logQueueHistory(){
+    uint8_t i = qhi +1;
+    uint8_t k;
+    cwarn(LINK, "QH\r\n");
+    for (k = 0; k < QUEUE_HISTORY_LEN; k++){
+      queue_history_t* qh = &queueHistory[(i+k)%QUEUE_HISTORY_LEN];
+      cwarnclr(LINK, " %x @ %lu : %x %x\r\n",
+        qh->requestType,
+        qh->reqFrame,
+        qh->validation,
+        qh->handleErr);
     }
   }
 
@@ -176,6 +205,7 @@ module CXLinkP {
         reqFrame);
     }
     lastType = nextRequest->requestType;
+    queueHistory[qhi].handleErr = requestError;
     switch(nextRequest -> requestType){
       case RT_SLEEP:
         signal CXRequestQueue.sleepHandled(requestError, 
@@ -199,6 +229,12 @@ module CXLinkP {
       case RT_RX:
         {
           if (didReceive && t32kRef !=0){
+            //N.B. I'm vaguely concerned about rounding problems here.
+            //I see some originFrame calculations in the traces that
+            //come up 1 short (before this fix, when we were just
+            //using lastFrameNum at the time that receiveHandled was
+            //run). It's unclear to me how this could ever happen in
+            //either case, but there you have it.
             handledFrame = lastFrameNum + (t32kRef - lastFrameTime)/FRAMELEN_32K;
           }
           if (requestError != SUCCESS && requestError != ERETRY){
@@ -366,9 +402,8 @@ module CXLinkP {
       }else if (targetFrame < lastFrameNum){
         cwarn(LINK, "Missed %lu < %lu\r\n", 
           targetFrame, lastFrameNum);
-        post logFrameAdjustments();
         //we have missed the intended frame. signal handled
-        requestError = FAIL;
+        requestError = EBUSY;
         post requestHandled();
       }else if (targetFrame > lastFrameNum){
         cwarn(LINK, "Early\r\n");
@@ -382,6 +417,8 @@ module CXLinkP {
       cerror(LINK, "nextRequest NULL\r\n");
     }
   }
+  
+  
 
   task void readyNextRequest(){
     if (nextRequest != NULL){
@@ -393,6 +430,12 @@ module CXLinkP {
       } else if (nextRequest ->requestType == RT_TX){
         cdbg(LINKQUEUE, "pop TX %p\r\n", nextRequest->msg);
       }
+      qhi = (qhi+1)%QUEUE_HISTORY_LEN;
+      queueHistory[qhi].requestType = nextRequest->requestType;
+      queueHistory[qhi].validation = err;
+      queueHistory[qhi].reqFrame = (nextRequest->baseFrame + nextRequest->frameOffset);
+      queueHistory[qhi].handleErr = ELAST;
+
       if (SUCCESS != err){
         requestError = err;
         updateLastFrameNum();
@@ -854,6 +897,7 @@ module CXLinkP {
 
   event void StateDump.dumpRequested(){
     post logFrameAdjustments();
+    post logQueueHistory();
   }
 
 }
