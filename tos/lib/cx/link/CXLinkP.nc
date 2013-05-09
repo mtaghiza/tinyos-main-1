@@ -188,7 +188,8 @@ module CXLinkP {
         uint32_t slowTicks;
         microRef -= (aNextRequestType == RT_TX)? TX_STROBE_CORRECTION : RX_STROBE_CORRECTION;
         //elapsed fast-ticks since strobe
-        fastTicks = ((fastRef1+fastRef2)/2) - microRef;
+        //this should be wrap-safe.
+        fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - microRef;
         //elapsed slow-ticks since strobe
         slowTicks = fastToSlow(fastTicks);
         t32kRef = slowRef - slowTicks;
@@ -455,16 +456,23 @@ module CXLinkP {
 
         if (nextRequest->requestType == RT_WAKEUP 
             && nextRequest->typeSpecific.wakeup.refTime != INVALID_TIMESTAMP 
-            && nextRequest->typeSpecific.wakeup.refFrame != INVALID_FRAME){
+            && nextRequest->typeSpecific.wakeup.refFrame != INVALID_FRAME 
+            && nextRequest->typeSpecific.wakeup.refFrame < lastFrameNum){
           uint32_t rfn = nextRequest->typeSpecific.wakeup.refFrame;
           uint32_t rft = nextRequest->typeSpecific.wakeup.refTime;
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
           uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
             + rft + c - PREP_TIME_32KHZ;
-          cinfo(SKEW_APPLY, "WU %lu -> %lu ( %lu %lu %lu )\r\n",
+          cinfo(SKEW_APPLY, "WU %lu -> %lu %lu %lu %lu\r\n",
             lastFrameTime, newLft,
             rft, rfn, lastFrameNum);
           lastFrameTime = newLft;
+        }else{
+          cwarn(SKEW_APPLY, "BWU %lu %lu %lu %lu\r\n",
+            lastFrameNum, 
+            lastFrameTime,
+            nextRequest->typeSpecific.wakeup.refFrame,
+            nextRequest->typeSpecific.wakeup.refTime);
         }
         {
           uint32_t targetFrame = nextRequest -> baseFrame + nextRequest->frameOffset;
