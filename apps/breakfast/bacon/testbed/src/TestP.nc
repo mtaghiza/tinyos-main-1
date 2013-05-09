@@ -87,9 +87,14 @@ module TestP{
     }
   }
 
+  void setNextTimer(){
+    call Timer.startOneShot(TEST_IPI - (TEST_RANDOMIZE/2) 
+      + ((call Random.rand16()) % TEST_RANDOMIZE));
+  }
+
   event void Timer.fired(){
     outstanding ++;
-    cinfo(test, "TXQ %u at %lu\r\n", 
+    cdbg(test, "TXQ %u at %lu\r\n", 
       outstanding, 
       call Timer.getNow());
     if (outstanding >= SEND_THRESHOLD && filling){
@@ -97,8 +102,7 @@ module TestP{
       filling = FALSE;
       post transmit();
     }
-    call Timer.startOneShot(TEST_IPI - (TEST_RANDOMIZE/2) 
-      + ((call Random.rand16()) % TEST_RANDOMIZE));
+    setNextTimer();
   }
 
   event void SplitControl.startDone(error_t error){
@@ -130,12 +134,16 @@ module TestP{
     cinfo(test,"APP TX %lu to %u %u %x\r\n", 
       pl->sn, call AMPacket.destination(msg), 
       sizeof(test_payload_t), error);
+    if (error != SUCCESS){
+      filling = TRUE;
+      setNextTimer();
+    }
   }
 
   event void AMSend.sendDone(message_t* msg_, error_t error){
     test_payload_t* pl = call AMSend.getPayload(msg_,
       sizeof(test_payload_t));
-    cinfo(test,"APP TXD %lu to %x %x Q %u\r\n", 
+    cinfo(test,"APP TXD %lu to %x %u Q %u\r\n", 
       pl->sn, 
       call AMPacket.destination(msg_),
       error,
@@ -147,6 +155,7 @@ module TestP{
       post transmit();
     }else{
       filling = TRUE;
+      setNextTimer();
     }
   }
 
