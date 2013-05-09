@@ -166,15 +166,15 @@ module SlotSchedulerP{
       return subNext;
     }
     if (isTX){
+      uint32_t mns = myNextSlotStart(subNext);
       if (isOwned(subNext)){
-        if (subNext == myNextSlotStart(subNext)){
+        if (subNext == mns){
           //avoiding conflict with wakeup
           return subNext + 1;
         }else{
           return subNext;
         }
       }else{
-        uint32_t mns = myNextSlotStart(subNext);
         return mns == INVALID_FRAME? mns : mns + 1;
       }
     }else{
