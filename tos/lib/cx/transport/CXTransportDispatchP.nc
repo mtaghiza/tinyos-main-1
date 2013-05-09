@@ -120,7 +120,14 @@ module CXTransportDispatchP {
           signalTp = CX_TP_RR_BURST;
         }
       }
-    } else {
+
+      if (! call RequestPending.requestPending[signalTp](reqFrame)){
+        cwarn(TRANSPORT, "no pending rx to %x, drop\r\n", signalTp);
+        didReceive = FALSE;
+      }
+    } 
+
+    if (!didReceive){
       uint8_t i;
       signalTp = nextRX;
       for (i = 0; i < NUM_RX_TRANSPORT_PROTOCOLS; i++){
@@ -131,11 +138,13 @@ module CXTransportDispatchP {
         }
       }
     }
+
     if (didReceive){
       cdbg(TRANSPORT, "rxh to %x %x (%x)\r\n", 
         call CXTransportPacket.getProtocol(msg), 
         signalTp, nextRX);
     }
+
     if (call RequestPending.requestPending[signalTp](reqFrame)){
       signal CXRequestQueue.receiveHandled[signalTp](error,
         layerCount,
@@ -144,7 +153,7 @@ module CXTransportDispatchP {
         microRef, t32kRef,
         md, msg);
     }else{
-      cerror(TRANSPORT, "no pending rx req to %x\r\n", signalTp);
+      cerror(TRANSPORT, "No pending rx to $x\r\n");
     }
     nextRX = (signalTp + 1)%NUM_RX_TRANSPORT_PROTOCOLS;
   }
