@@ -73,7 +73,9 @@ generic module Rf1aFECP () {
   
   //TODO: throw an error if the encoded length of body + header > 255 bytes.
   uint8_t txEncoded_e[2*sizeof(message_t)];
-  uint8_t rxEncoded_e[2*sizeof(message_t)];
+  //This should be large enough to accommodate the largest possible
+  // message that the radio will try to decode.
+  uint8_t rxEncoded_e[256];
   
   uint8_t* rxBuf_d;
   
@@ -335,7 +337,7 @@ generic module Rf1aFECP () {
         //component and intercept storeMetadata call. This is
         //more-or-less how it's handled in the phy layer (md is
         //generated but not associated with a message_t until later)
-        if (decodedCrc_d != computedCrc_d){
+        if (result != SUCCESS || decodedCrc_d != computedCrc_d){
           lastCrcPassed = FALSE;
         }else{
           lastCrcPassed = TRUE;
