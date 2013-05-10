@@ -104,7 +104,8 @@ module CXLinkP {
 
   queue_history_t queueHistory[QUEUE_HISTORY_LEN];
   uint8_t qhi = QUEUE_HISTORY_LEN-1;
-
+  
+  uint32_t ln = 0;
   void updateLastFrameNum(){
     //this should be safe from integer wrap
     uint32_t now = call FrameTimer.getNow();
@@ -125,6 +126,12 @@ module CXLinkP {
     if (elapsedFrames){
       ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
     }
+    if (now < ln){
+      cerror(LINK, "ULFN %lu < %lu\r\n",
+        now, ln);
+      call StateDump.requestDump();
+    }
+    ln = now;
   }
 
   task void logFrameAdjustments(){
@@ -195,6 +202,14 @@ module CXLinkP {
         t32kRef = slowRef - slowTicks;
         //push frame time back to allow for rx/tx preparation
         lastFrameTime = slowRef-slowTicks - PREP_TIME_32KHZ;
+        if (lastFrameTime > slowRef){
+          cerror(LINK, "RESYNCH %lu > %lu : %lu %lu %lu %lu %lu %lu\r\n",
+            lastFrameTime, slowRef,
+            fastRef1, fastRef2, microRef,
+            fastTicks, slowTicks,
+            t32kRef);
+          call StateDump.requestDump();
+        }
       }
       if (microRef !=0 && !shouldSynch){
         crcf = TRUE;
