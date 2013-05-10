@@ -471,7 +471,7 @@ module CXLinkP {
             cwarn(SKEW_APPLY, "LWU\r\n");
           }
           lastFrameTime = newLft;
-        }else{
+        }else if (nextRequest->requestType == RT_WAKEUP){
           cwarn(SKEW_APPLY, "BWU %lu %lu %lu %lu\r\n",
             lastFrameNum, 
             lastFrameTime,
