@@ -67,7 +67,6 @@ implementation
 
     if( isClockSourceAsync ) {
       atomic {
-        //TODO: check long atomic
         uint16_t t0;
         uint16_t t1;
         uint16_t t2;
