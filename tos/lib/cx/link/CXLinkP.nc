@@ -87,6 +87,7 @@ module CXLinkP {
     uint32_t ef;
     uint32_t ft;
     uint32_t fn;
+    uint8_t from;
   } ufn_adjust_t;
 
   ufn_adjust_t ufnArr[UFN_ADJUST_LEN];
@@ -106,9 +107,11 @@ module CXLinkP {
   uint8_t qhi = QUEUE_HISTORY_LEN-1;
   
   uint32_t ln = 0;
-  void updateLastFrameNum(){
+  uint32_t lastFastTime = 0;
+  void updateLastFrameNum(uint8_t from){
     //this should be safe from integer wrap
     uint32_t now = call FrameTimer.getNow();
+    uint32_t fastTime = call FastAlarm.getNow();
     uint32_t elapsedTime = now - lastFrameTime;
     uint32_t elapsedFrames = elapsedTime/FRAMELEN_32K;
     ufnArr[ufnIndex].now = now;
@@ -122,16 +125,20 @@ module CXLinkP {
 
     ufnArr[ufnIndex].ft = lastFrameTime;
     ufnArr[ufnIndex].fn = lastFrameNum;
+    ufnArr[ufnIndex].from = from;
     //overwrite entries which don't change the frame number.
     if (elapsedFrames){
       ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
     }
     if (now < ln){
-      cerror(LINK, "ULFN %lu < %lu\r\n",
-        now, ln);
+      cerror(LINK, "ULFN %x %lu < %lu : %lu -> %lu\r\n",
+        from,
+        now, ln,
+        lastFastTime, fastTime);
       call StateDump.requestDump();
     }
     ln = now;
+    lastFastTime = fastTime;
   }
 
   task void logFrameAdjustments(){
@@ -140,8 +147,8 @@ module CXLinkP {
     cwarn(LINK, "ULFN\r\n");
     for (k = 0; k < UFN_ADJUST_LEN; k++){
       ufn_adjust_t* a = &ufnArr[(i+k)%UFN_ADJUST_LEN];
-      cwarnclr(LINK, " %u @ %lu (%lu, %lu) + (%lu, %lu) = (%lu, %lu)\r\n", 
-        k,
+      cwarnclr(LINK, " %u %u @ %lu (%lu, %lu) + (%lu, %lu) = (%lu, %lu)\r\n", 
+        k, a->from,
         a->now, 
         a-> lft, a->lfn,
         a-> et,  a-> ef,
@@ -164,7 +171,7 @@ module CXLinkP {
   }
 
   command uint32_t CXRequestQueue.nextFrame(bool isTX){
-    updateLastFrameNum();
+    updateLastFrameNum(0);
     return lastFrameNum + 1;
   }
 
@@ -277,7 +284,11 @@ module CXLinkP {
       alarmUsers --;
     }
     if (alarmUsers == 0){
+      #if ENABLE_XT2_DC == 1
       call Msp430XV2ClockControl.stopMicroTimer();
+      #else
+      #warning XT2 duty-cycling off!
+      #endif
     }
 
     call Pool.put(nextRequest);
@@ -309,7 +320,7 @@ module CXLinkP {
   }
 
   event void FrameTimer.fired(){
-    updateLastFrameNum();
+    updateLastFrameNum(1);
     if (nextRequest != NULL){
       uint32_t targetFrame = nextRequest->baseFrame + nextRequest -> frameOffset; 
       handledFrame = lastFrameNum;
@@ -454,7 +465,7 @@ module CXLinkP {
 
       if (SUCCESS != err){
         requestError = err;
-        updateLastFrameNum();
+        updateLastFrameNum(2);
         handledFrame = lastFrameNum;
         if (nextRequest->requestType != RT_MARK){
           cdbg(LINKQUEUE, "rnR: %x %x@ %lu\r\n", requestError,
