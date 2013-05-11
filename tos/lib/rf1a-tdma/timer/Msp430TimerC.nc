@@ -273,7 +273,7 @@ implementation
   #ifdef TA1_ASYNC
   #warning Treating TA1 as async.
   components new Msp430TimerP( TA1IV_, TA1R_, TA1CTL_, TAIFG, TACLR, TAIE,
-                               TASSEL0, TASSEL1, FALSE ) as Msp430Timer1_A;
+                               TASSEL0, TASSEL1, TRUE ) as Msp430Timer1_A;
   #else
   components new Msp430TimerP( TA1IV_, TA1R_, TA1CTL_, TAIFG, TACLR, TAIE,
                                TASSEL0, TASSEL1, FALSE ) as Msp430Timer1_A;
