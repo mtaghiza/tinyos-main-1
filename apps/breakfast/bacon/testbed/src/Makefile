@@ -128,6 +128,9 @@ CFLAGS +=-DENABLE_TIMESTAMPING=1
 #0 = use TOS_NODE_ID as amAddr (1=check TLV for global ID, use 2 LSB)
 CFLAGS += -DAM_ID_FROM_FLASH=0
 
+#Force TA1 to be treated as an async source.
+CFLAGS +=-DTA1_ASYNC
+
 ##include paths
 CFLAGS += -I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/priorityQueue
