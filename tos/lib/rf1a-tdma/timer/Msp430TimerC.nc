@@ -270,6 +270,7 @@ implementation
 #endif /* __MSP430_HAS_T0B7__ */
 
 #if defined(__MSP430_HAS_T1A2__) || defined(__MSP430_HAS_T1A3__) || defined(__MSP430_HAS_T1A5__)
+  //N.B: 32K timer is ASYNC to MCLK
   components new Msp430TimerP( TA1IV_, TA1R_, TA1CTL_, TAIFG, TACLR, TAIE,
                                TASSEL0, TASSEL1, TRUE ) as Msp430Timer1_A;
 
