@@ -75,26 +75,25 @@ implementation
     uint16_t num;
 
     for (num=0; num<NUM_TIMERS; num++)
-    {
-      Timer_t* timer = &m_timers[num];
-
-      if (timer->isrunning)
       {
-        uint32_t elapsed = now - timer->t0;
+	Timer_t* timer = &m_timers[num];
 
-        if (elapsed >= timer->dt && (now > timer->t0))
-        {
-          if (timer->isoneshot){
-            timer->isrunning = FALSE;
-          }else {
-            // Update timer for next event
-            timer->t0 += timer->dt;
-          }
-          signal Timer.fired[num]();
-          break;
-        }
+	if (timer->isrunning)
+	  {
+	    uint32_t elapsed = now - timer->t0;
+
+	    if (elapsed >= timer->dt)
+	      {
+		if (timer->isoneshot)
+		  timer->isrunning = FALSE;
+		else // Update timer for next event
+		  timer->t0 += timer->dt;
+
+		signal Timer.fired[num]();
+    break;
+	      }
+	  }
       }
-    }
     post updateFromTimer();
   }
   
@@ -108,6 +107,7 @@ implementation
     int32_t min_remaining = (1UL << 31) - 1; /* max int32_t */
     bool min_remaining_isset = FALSE;
     uint16_t num;
+
     call TimerFrom.stop();
 
     for (num=0; num<NUM_TIMERS; num++)
