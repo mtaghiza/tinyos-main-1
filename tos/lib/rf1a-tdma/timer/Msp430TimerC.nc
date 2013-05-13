@@ -270,14 +270,8 @@ implementation
 #endif /* __MSP430_HAS_T0B7__ */
 
 #if defined(__MSP430_HAS_T1A2__) || defined(__MSP430_HAS_T1A3__) || defined(__MSP430_HAS_T1A5__)
-  #ifdef TA1_ASYNC
-  #warning Treating TA1 as async.
   components new Msp430TimerP( TA1IV_, TA1R_, TA1CTL_, TAIFG, TACLR, TAIE,
                                TASSEL0, TASSEL1, TRUE ) as Msp430Timer1_A;
-  #else
-  components new Msp430TimerP( TA1IV_, TA1R_, TA1CTL_, TAIFG, TACLR, TAIE,
-                               TASSEL0, TASSEL1, FALSE ) as Msp430Timer1_A;
-  #endif
 
   Timer1_A = Msp430Timer1_A.Timer;
   Msp430Timer1_A.VectorTimerX0 -> Common.VectorTimer1_A0;
