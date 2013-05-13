@@ -2,7 +2,7 @@
  #include <stdio.h>
  #include "CXTransport.h"
  #include "test.h"
-module TestP{
+module ScheduledTestP{
   uses interface Boot;
   uses interface UartStream;
   
@@ -19,6 +19,8 @@ module TestP{
 
   uses interface Timer<TMilli>;
   uses interface Random;
+
+  uses interface SkewCorrection;
 } implementation {
   uint32_t sn = 0;
   uint32_t outstanding = 0;
@@ -87,22 +89,9 @@ module TestP{
     }
   }
 
-  void setNextTimer(){
-    call Timer.startOneShot(TEST_IPI - (TEST_RANDOMIZE/2) 
-      + ((call Random.rand16()) % TEST_RANDOMIZE));
-  }
 
   event void Timer.fired(){
-    outstanding ++;
-    cdbg(test, "TXQ %lu at %lu\r\n", 
-      outstanding, 
-      call Timer.getNow());
-    if (outstanding >= SEND_THRESHOLD && filling){
-      cinfo(test, "TX FLUSH\r\n");
-      filling = FALSE;
-      post transmit();
-    }
-    setNextTimer();
+    post transmit();
   }
 
   event void SplitControl.startDone(error_t error){
@@ -134,29 +123,35 @@ module TestP{
     cinfo(test,"APP TX %lu to %u %u %x\r\n", 
       pl->sn, call AMPacket.destination(msg), 
       sizeof(test_payload_t), error);
-    if (error != SUCCESS){
-      filling = TRUE;
-      setNextTimer();
-    }
   }
 
   event void AMSend.sendDone(message_t* msg_, error_t error){
     test_payload_t* pl = call AMSend.getPayload(msg_,
       sizeof(test_payload_t));
+    uint32_t fn = (TEST_FRAME_BASE + sn%TEST_FRAME_RANGE);
+    uint32_t offset = TOS_NODE_ID%32UL;
     cinfo(test,"APP TXD %lu to %u %x Q %lu\r\n", 
       pl->sn, 
       call AMPacket.destination(msg_),
       error,
       outstanding);
-    if (outstanding){
-      outstanding --;
-    }
-    if (outstanding){
-      post transmit();
-    }else{
-      filling = TRUE;
-      setNextTimer();
-    }
+    //Goal here is to have nodes attempt to TX at various points in
+    //  the global cycle. 
+    //- each frame is 32 bms long, so TOS_NODE_ID gives the node an
+    //  offset within the frame to try the send.
+    //- TEST_FRAME_BASE + sn%TEST_FRAME_RANGE gives the frame number
+    //  which we send in. (*32 to get it in ms).
+    // - So, if TEST_FRAME_BASE is 500 and TEST_FRAME_RANGE is 100,
+    //   node 3 would call Send at 500.3, 501.3, ... 599.3, 500.3
+    call Timer.startOneShotAt(
+      (call SkewCorrection.referenceTime(0))/32UL,
+      32UL*fn+ offset);
+    cinfo(test, "STX @%lu %lu + %lu.%lu (%lu)\r\n", 
+      call Timer.getNow(),
+      (call SkewCorrection.referenceTime(0))/32UL,
+      fn,
+      offset, 
+      (32UL*fn) + offset);
   }
 
   uint8_t packetRXIndex;

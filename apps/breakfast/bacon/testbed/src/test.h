@@ -45,4 +45,16 @@ typedef nx_struct test_payload {
 #define TEST_TRANSMIT 0
 #endif
 
+#ifndef SCHEDULED_TEST
+#define SCHEDULED_TEST 0
+#endif
+
+#ifndef TEST_FRAME_BASE 
+#define TEST_FRAME_BASE 0
+#endif
+
+#ifndef TEST_FRAME_RANGE
+#define TEST_FRAME_RANGE 100
+#endif
+
 #endif
