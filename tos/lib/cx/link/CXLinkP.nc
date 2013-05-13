@@ -38,9 +38,6 @@ module CXLinkP {
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
   uint8_t alarmUsers = 0;
-  //keep track of the last time the fast timer was started (so we can
-  //detect cases where timing state is lost)
-  uint32_t lastMicroStart = 0xFFFFFFFF;
   
   //value to be signaled up at request completion
   error_t requestError;
@@ -356,7 +353,6 @@ module CXLinkP {
             shouldSynch = TRUE;
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
-              lastMicroStart = lastFrameTime;
             }
             fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
             requestError = call Rf1aPhysical.startTransmission(FALSE,
@@ -389,7 +385,6 @@ module CXLinkP {
             shouldSynch = FALSE;
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
-              lastMicroStart = lastFrameTime;
             }
             didReceive = FALSE;
             //TODO FUTURE: the longer we can put off entering RX mode,
@@ -544,8 +539,8 @@ module CXLinkP {
     //micro timer required but it's either off or has been stopped
     //since the request was made
     }else if(r->requestType == RT_TX && r->typeSpecific.tx.useTsMicro && 
-      (( ! call Msp430XV2ClockControl.isMicroTimerRunning()) 
-         || (lastMicroStart > r->requestedTime))){
+      ( ! call Msp430XV2ClockControl.isMicroTimerRunning())){
+      cerror(LINK, "micro required\r\n");
       return EINVAL;
     }else if (r->baseFrame == INVALID_FRAME || r->baseFrame + r->frameOffset == INVALID_FRAME){
       return EINVAL;
