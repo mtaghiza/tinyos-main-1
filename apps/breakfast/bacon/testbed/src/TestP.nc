@@ -21,7 +21,7 @@ module TestP{
   uses interface Random;
 } implementation {
   uint32_t sn = 0;
-  uint8_t outstanding = 0;
+  uint32_t outstanding = 0;
   bool filling = TRUE;
 
   message_t msg_internal;
@@ -94,7 +94,7 @@ module TestP{
 
   event void Timer.fired(){
     outstanding ++;
-    cdbg(test, "TXQ %u at %lu\r\n", 
+    cdbg(test, "TXQ %lu at %lu\r\n", 
       outstanding, 
       call Timer.getNow());
     if (outstanding >= SEND_THRESHOLD && filling){
@@ -143,7 +143,7 @@ module TestP{
   event void AMSend.sendDone(message_t* msg_, error_t error){
     test_payload_t* pl = call AMSend.getPayload(msg_,
       sizeof(test_payload_t));
-    cinfo(test,"APP TXD %lu to %x %u Q %u\r\n", 
+    cinfo(test,"APP TXD %lu to %u %x Q %lu\r\n", 
       pl->sn, 
       call AMPacket.destination(msg_),
       error,
@@ -201,6 +201,11 @@ module TestP{
        case 'q':
          WDTCTL = 0;
          break;
+       #if TEST_TRANSMIT == 0
+       case 't':
+         post transmit();
+         break;
+       #endif
        default:
          break;
      }

@@ -1,5 +1,6 @@
 COMPONENT=TestC
 
+
 ##test settings: packet generation rate, flush size, packet
 # length
 ##delay for ms before starting to send
@@ -75,7 +76,7 @@ CFLAGS += -DCX_SELF_RETX=1
 
 #Debug levels
 CFLAGS += -DDL_LINK=DL_INFO
-CFLAGS += -DDL_LINKQUEUE=DL_WARN
+CFLAGS += -DDL_LINKQUEUE=DL_INFO
 CFLAGS += -DDL_NETWORK=DL_INFO
 CFLAGS += -DDL_SCHED=DL_INFO
 CFLAGS += -DDL_SKEW=DL_DEBUG
@@ -127,9 +128,11 @@ CFLAGS += -DTEST_RESELECT=0
 CFLAGS +=-DENABLE_TIMESTAMPING=1
 #0 = use TOS_NODE_ID as amAddr (1=check TLV for global ID, use 2 LSB)
 CFLAGS += -DAM_ID_FROM_FLASH=0
-
-#Force TA1 to be treated as an async source.
-CFLAGS +=-DTA1_ASYNC
+#initialize the upper word of the 32-bit counters to this value (for
+# testing rollover behavior)
+#CFLAGS +=-DTC_INIT_UPPER=0xff00
+#Disable XT2 duty-cycling (e.g. for validating 32K timer)
+#CFLAGS +=-DENABLE_XT2_DC=0
 
 ##include paths
 CFLAGS += -I$(TOSDIR)/lib/serialprintf
