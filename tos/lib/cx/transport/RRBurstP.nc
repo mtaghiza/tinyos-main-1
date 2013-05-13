@@ -92,7 +92,7 @@ module RRBurstP {
   command error_t Send.send(message_t* msg, uint8_t len){
     cdbg(TRANSPORT, "rrb.send %p\r\n", msg);
     if (sending){
-      return EBUSY;
+      return EALREADY;
     }else{
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
       uint32_t nss = call SlotTiming.nextSlotStart(nf);

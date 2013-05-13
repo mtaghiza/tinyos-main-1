@@ -30,6 +30,7 @@ module CXLinkP {
   uses interface StateDump;
 
 } implementation {
+
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
   uint32_t fastAlarmAtFrameTimerFired;
@@ -103,12 +104,9 @@ module CXLinkP {
   queue_history_t queueHistory[QUEUE_HISTORY_LEN];
   uint8_t qhi = QUEUE_HISTORY_LEN-1;
   
-//  uint32_t ln = 0;
-//  uint32_t lastFastTime = 0;
   void updateLastFrameNum(uint8_t from){
     //this should be safe from integer wrap
     uint32_t now = call FrameTimer.getNow();
-    uint32_t fastTime = call FastAlarm.getNow();
     uint32_t elapsedTime = now - lastFrameTime;
     uint32_t elapsedFrames = elapsedTime/FRAMELEN_32K;
     ufnArr[ufnIndex].now = now;
@@ -127,15 +125,6 @@ module CXLinkP {
     if (elapsedFrames){
       ufnIndex = (ufnIndex+1)%UFN_ADJUST_LEN;
     }
-//    if (now < ln){
-//      cerror(LINK, "ULFN %x %lu < %lu : %lu -> %lu\r\n",
-//        from,
-//        now, ln,
-//        lastFastTime, fastTime);
-//      call StateDump.requestDump();
-//    }
-//    ln = now;
-//    lastFastTime = fastTime;
   }
 
   task void logFrameAdjustments(){
@@ -507,10 +496,12 @@ module CXLinkP {
           call FrameTimer.startOneShotAt(t0, dt);
           if (nextRequest->requestType != RT_MARK){
             uint32_t now = call FrameTimer.getNow();
-            cinfo(LINKQUEUE, "N: %x @%lu (%lu %lu %lu)\r\n", 
+            cinfo(LINKQUEUE, "N: %x @%lu", 
               nextRequest->requestType,
-              targetFrame,
+              targetFrame);
+            cdbg(LINKQUEUE, " (%lu %lu %lu)", 
               t0, dt, now);
+            cinfo(LINKQUEUE, "\r\n");
           }
         }
       }
@@ -520,10 +511,12 @@ module CXLinkP {
   error_t validateRequest(cx_request_t* r){
     //event in the past? I guess we were busy.
     if (r->baseFrame + r->frameOffset < call CXRequestQueue.nextFrame(FALSE)){
-      if (r->baseFrame + r->frameOffset == handledFrame){
+      //ERETRY: specifically means that a TX or RX was preempted.
+      if ((r->requestType == RT_TX || r->requestType == RT_RX) 
+            && r->baseFrame + r->frameOffset == handledFrame){
         cdbg(LINK, "LR %lu + %lu %lu %lu %lu (%x)\r\n",
           r->baseFrame, r->frameOffset, 
-          lastFrameNum, handledFrame, 
+          lastFrameNum, handledFrame,
           call CXRequestQueue.nextFrame(FALSE),
           lastType);
         return ERETRY;

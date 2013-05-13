@@ -162,6 +162,8 @@ module CXNetworkP {
       printTX(msg, atFrame);
     }else if (atFrame - synchFrame > MAX_SOFT_SYNCH){
       useMicroRef =  FALSE;
+      //TODO: if we are the source, synchFrame can be set to atFrame,
+      //but useMicroRef should stay FALSE.
     }
 
     if (SUCCESS == error && call CXNetworkPacket.getHops(msg) == 1){

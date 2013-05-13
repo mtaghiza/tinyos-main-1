@@ -88,14 +88,14 @@ implementation {
         call Packet.setPayloadLength(msg, len);
         
         //try to send regardless of queue state: underlying protocol
-        //will either return ERETRY (if it's occupied) or SUCCESS (if
+        //will either return EALREADY (if it's occupied) or SUCCESS (if
         //it can schedule the transmission)
         dbg("AMQueue", "%s: request to send from %hhu (%p): queue empty\n", __FUNCTION__, clientId, msg);
         
         err = doSend(msg);
         queue[clientId].sending = (err == SUCCESS);
 
-        if (err != SUCCESS && err != ERETRY) {
+        if (err != SUCCESS && err != EALREADY) {
             dbg("AMQueue", "%s: underlying send failed.\n", __FUNCTION__);
             queue[clientId].msg = NULL;
             queue[clientId].sending = FALSE;
@@ -103,7 +103,7 @@ implementation {
 
         //Treat retry as success (will have another go when
         //sendDone comes around)
-        return (err == ERETRY)? SUCCESS : err;
+        return (err == EALREADY)? SUCCESS : err;
     }
 
     //pointer to the client with the last completed SubSend
@@ -159,7 +159,7 @@ implementation {
         if (queue[i].msg != NULL && !queue[i].sending ){
           error_t error = doSend(queue[i].msg);
           queue[i].sending = (error == SUCCESS);
-          if (error != ERETRY && error != SUCCESS){
+          if (error != EALREADY && error != SUCCESS){
             //if it fails, let the client know and clean it up.
             sendDone(i, queue[i].msg, error);
           }

@@ -119,7 +119,7 @@ module FloodBurstP {
       }
 
     } else { 
-      return ERETRY;
+      return EALREADY;
     }
   }
 
