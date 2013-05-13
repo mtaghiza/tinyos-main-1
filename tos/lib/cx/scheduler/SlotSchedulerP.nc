@@ -95,7 +95,15 @@ module SlotSchedulerP{
   
   //get the first frame of a given slot
   uint32_t slotStart(uint32_t sn){
-    return lastCycleStart + (sn * sched->slotLength);
+    uint32_t ret = lastCycleStart + (sn * sched->slotLength);
+
+//    //This is to handle the case where we have not yet updated
+//    //lastCycleStart but the new cycle will begin momentarily.
+//    if (call SubCXRQ.nextFrame(FALSE) > (lastCycleStart + sched->cycleLength)){
+//        return ret + sched->cycleLength;
+//    }else{
+      return ret;
+//    }
   }
   
   //find out the distance of a given frame from the beginning of its
