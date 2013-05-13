@@ -77,4 +77,8 @@
 #define ENABLE_CRC_CHECK 1
 #endif
 
+#ifndef ENABLE_XT2_DC
+#define ENABLE_XT2_DC 1
+#endif
+
 #endif
