@@ -64,7 +64,10 @@ generic module TransformCounterC(
 }
 implementation
 {
-  upper_count_type m_upper;
+  #ifndef TC_INIT_UPPER
+  #define TC_INIT_UPPER 0
+  #endif
+  upper_count_type m_upper = TC_INIT_UPPER;
 
   enum
   {
