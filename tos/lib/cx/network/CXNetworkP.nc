@@ -16,6 +16,11 @@ module CXNetworkP {
   uses interface RoutingTable;
 
   uses interface ActiveMessageAddress;
+  //For better testbed logging 
+  uses interface CXTransportPacket;
+  uses interface Rf1aPacket;
+  uses interface LocalTime<T32khz>;
+
 } implementation {
 
   uint32_t synchFrame;
@@ -36,13 +41,16 @@ module CXNetworkP {
     return ret;
   }
 
-  void printRX(message_t* msg){
+  void printRX(message_t* msg, uint32_t t32kRef){
     //src, sn, local origin, hopCount at RX
-    cinfo(NETWORK, "NRX %u %u %lu %u\r\n",
+    cinfo(NETWORK, "NRX %u %u %lu %u %lu %lu %u %i %u\r\n",
       call CXLinkPacket.getSource(msg),
       call CXNetworkPacket.getSn(msg),
       call CXNetworkPacket.getOriginFrameNumber(msg),
-      call CXNetworkPacket.getRXHopCount(msg));
+      call CXNetworkPacket.getRXHopCount(msg),
+      t32kRef, call LocalTime.get(),
+      call AMPacket.destination(msg),
+      call Rf1aPacket.rssi(msg), call Rf1aPacket.lqi(msg));
   }
   
   uint32_t txOFN;
@@ -66,9 +74,15 @@ module CXNetworkP {
 
   void printOTX(message_t* msg){
     //sn, local OFN
-    cinfo(NETWORK, "NTX %u %lu\r\n",
+    cinfo(NETWORK, "NTX %u %lu %lu %lu %u %u %u %u\r\n",
       call CXNetworkPacket.getSn(msg),
-      call CXNetworkPacket.getOriginFrameNumber(msg));
+      call CXNetworkPacket.getOriginFrameNumber(msg),
+      call CXNetworkPacket.getOriginFrameStart(msg),
+      call LocalTime.get(),
+      call AMPacket.destination(msg),
+      call CXTransportPacket.getProtocol(msg),
+      call CXTransportPacket.getSubprotocol(msg),
+      call AMPacket.type(msg));
   }
   
   //looks like maybe the first schedule is getting dumped as a
@@ -135,7 +149,7 @@ module CXNetworkP {
     }
     //not forwarding, so we're done with it. signal up.
     if (didReceive){
-      printRX(msg);
+      printRX(msg, nmd->t32kRef);
     }
     signal CXRequestQueue.receiveHandled(error, 
       nmd->layerCount - 1,
@@ -211,7 +225,7 @@ module CXNetworkP {
             atFrame, nmd->reqFrame, microRef, t32kRef, 
             nmd->next, msg);
         } else {
-          printRX(msg);
+          printRX(msg, nmd -> t32kRef);
           signal CXRequestQueue.receiveHandled(error,
             nmd -> layerCount - 1,
             atFrame, nmd -> reqFrame,
@@ -234,7 +248,7 @@ module CXNetworkP {
         call Pool.put(nmd);
       }else{
         //restore stashed reception info and signal up as receive
-        printRX(msg);
+        printRX(msg, nmd -> t32kRef);
         signal CXRequestQueue.receiveHandled(error,
           nmd -> layerCount - 1,
           atFrame, nmd -> reqFrame,

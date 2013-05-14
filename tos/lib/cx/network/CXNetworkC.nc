@@ -40,4 +40,12 @@ configuration CXNetworkC {
   
   components CXAMAddressC;
   CXNetworkP.ActiveMessageAddress -> CXAMAddressC;
+ 
+  //For debug
+  components CXTransportPacketC;
+  components LocalTime32khzC;
+  components CXLinkPacketC;
+  CXNetworkP.CXTransportPacket -> CXTransportPacketC;
+  CXNetworkP.LocalTime -> LocalTime32khzC;
+  CXNetworkP.Rf1aPacket -> CXLinkPacketC;
 }
