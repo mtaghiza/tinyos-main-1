@@ -214,7 +214,7 @@ module CXSlaveSchedulerP{
       if (error == SUCCESS && state != S_SYNCHED){
         //we were not synched, so it might have been sent
         //off-schedule.
-        error = ERETRY;
+        error = EOFF;
       }
       signal CXRequestQueue.sendHandled(error, 
         layerCount - 1,
