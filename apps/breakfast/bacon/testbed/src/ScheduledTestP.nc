@@ -123,6 +123,10 @@ module ScheduledTestP{
     cinfo(test,"APP TX %lu to %u %u %x\r\n", 
       pl->sn, call AMPacket.destination(msg), 
       sizeof(test_payload_t), error);
+    if (error != SUCCESS){
+      call Timer.startOneShot(TEST_IPI/2 + 
+        call Random.rand16()%TEST_IPI);
+    }
   }
 
   event void AMSend.sendDone(message_t* msg_, error_t error){
