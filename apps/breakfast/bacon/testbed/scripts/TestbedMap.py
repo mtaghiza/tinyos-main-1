@@ -153,11 +153,12 @@ class TestbedMap(object):
         if not outFile:
             plt.show()
         else:
+            format = outFile.split('.')[-1]
             F = plt.gcf()
             plt.ylim(0, 1000)
             plt.xlim(0, 1000)
             F.set_size_inches([8, 8])
-            plt.savefig(outFile, format='pdf')
+            plt.savefig(outFile, format=format)
             pass
 
     def postDraw(self):
@@ -655,9 +656,13 @@ class ConditionalPrr(TestbedMap):
         self.transmitters = c.execute(q)
 
 class Trace(TestbedMap):
-    def __init__(self, dbFile, src, sn, count, **kwargs):
+    def __init__(self, dbFile, cn, fn, src, sn, step, **kwargs):
         super(Trace, self).__init__(**kwargs)
-        self.loadStates(dbFile, src, sn, count)
+        if not cn or not fn:
+            (cn, fn) = self.findTX(dbFile, src, sn)
+            #for consistency with hop-count, step is 1-indexed.
+            fn += (step - 1)
+        self.loadStates(dbFile, cn, fn)
         
         key = {}
         key[70] = {'pos': (0, 100)}
@@ -665,60 +670,46 @@ class Trace(TestbedMap):
         key[72] = {'pos': (0, 300)}
         key[73] = {'pos': (0, 400)}
         key[74] = {'pos': (0, 500)}
-        self.states[70] = 0
-        self.states[71] = 1
-        self.states[72] = 2
-        self.states[73] = 3
-        self.states[74] = 4
+        self.states[70] = 0 #(idle)
+        self.states[71] = 1 #TX
+        self.states[72] = 2 #FWD
+        self.states[73] = 3 #RX
+        self.states[74] = 4 #CRCF
         
         labels = {}
         for n in self.states:
-            labels[n] = [".", "T", "R", "P", "!"][self.states[n]]
+            labels[n] = ["-", "T", "F", "R", "X"][self.states[n]]
         self.setLabels(labels)
         self.G.add_nodes_from([(k, key[k]) for k in key])
         self.setAttr('state', self.states, 0)
         self.setColAttr('state')
         
 
-    def loadStates(self, dbFile, src, sn, count):
+    def loadStates(self, dbFile, cn, fn):
+        self.states={}
         c = sqlite3.connect(dbFile)
-        q = '''SELECT cn, fn FROM link_tx where src=? and sn=? and hc=1'''
-        r = c.execute(q, (src, sn)).fetchone()
-        (cn, firstFN) = r
+        q = '''SELECT src, 1 as state FROM TX_ALL WHERE cycleNum=? and fnCycle=?'''
+        transmitters = dict(c.execute(q, (cn, fn)))
+        self.states.update(transmitters)
+        q = '''SELECT node, 2 as state FROM FW_ALL WHERE cycleNum=?
+        and fnCycle=?'''
+        forwarders = dict(c.execute(q, (cn, fn)))
+        self.states.update(forwarders)
+        q = '''SELECT dest, 3 as state FROM RX_ALL WHERE cycleNum=?
+        and fnCycle=?'''
+        receivers = dict(c.execute(q, (cn, fn)))
+        self.states.update(receivers)
+        q = '''SELECT node, 4 as state FROM CRCF_ALL WHERE cycleNum=?
+        and fnCycle=?'''
+        crcFailures = dict(c.execute(q, (cn, fn)))
+        self.states.update(crcFailures)
 
-        q = '''SELECT sender, 1 as label FROM link_tx WHERE cn=? and fn=? and sn=?'''
-        self.sending = dict(c.execute(q,(cn, firstFN+count, sn)))
+    def findTX(self, dbFile, src, sn):
+        c = sqlite3.connect(dbFile)
+        q = '''SELECT cycleNum as cn, fnCycle as fn FROM TX_ALL WHERE src=? AND
+        sn=?'''
+        return c.execute(q, (src, sn)).fetchone()
         
-        #end of this transmission
-        if not self.sending:
-            q = '''SELECT node FROM fwd where cn=? and src=? and f=1'''
-            for (node,) in c.execute(q,(cn,src)):
-                self.addOutlined(node, 5)
-            self.states = {}
-            return
-
-        q = '''SELECT receiver, 2 as label FROM link_rx WHERE cn=? and fn=?'''
-        self.receiving = dict(c.execute(q,(cn, firstFN+count)))
-        
-        q = '''SELECT distinct sender, 3 as label
-          FROM link_tx 
-          WHERE cn=? and src=? and sn=? 
-            and fn < ?'''
-        self.sent = dict(c.execute(q, (cn, src, sn, firstFN+count)))
-
-        q = '''SELECT distinct sender, 4 as label
-          FROM link_tx
-          WHERE cn=? and src=? and sn!=? and fn=?'''
-        self.conflict = dict(c.execute(q, (cn, src, sn,
-          firstFN+count)))
-        self.states = dict(self.sending.items() 
-          + self.receiving.items() 
-          + self.sent.items()
-          + self.conflict.items())
-        q = '''SELECT node FROM fwd where cn=? and src=? and f=1'''
-        for (node,) in c.execute(q,(cn,src)):
-            self.addOutlined(node, 5)
-
         
 if __name__ == '__main__':
     fn = sys.argv[1]
@@ -893,19 +884,25 @@ if __name__ == '__main__':
                     prrLabels = int(v)
         tbm = ConditionalPrr(fn, refNode, prrLabels)
     elif t == '--trace':
-        src = 0
-        sn = 1
-        count = 0
+        cn = 0
+        frameNum = 0
+        src = -1
+        sn = -1
+        step = 1
         if (len(sys.argv) > 4):
             for (o, v) in zip(sys.argv[3:], sys.argv[4:]):
+                if o == '--cn':
+                    cn = int(v)
+                if o == '--fn':
+                    frameNum = int(v)
                 if o == '--src':
                     src = int(v)
                 if o == '--sn':
                     sn = int(v)
-                if o == '--count':
-                    count = int(v)
+                if o == '--step':
+                    step = int(v)
 
-        tbm = Trace(fn, src, sn, count)
+        tbm = Trace(fn, cn, frameNum, src, sn, step)
     else:
         print >> sys.stderr, "Unrecognized type",t
 
