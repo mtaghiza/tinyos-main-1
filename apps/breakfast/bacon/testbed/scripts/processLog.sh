@@ -21,6 +21,7 @@ rxlTf=$tfb.rxl
 txlTf=$tfb.txl
 cflTf=$tfb.cf
 fwlTf=$tfb.fwl
+skewTf=$tfb.skew
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -63,6 +64,10 @@ echo "extracting FW_LOCAL events"
 # ts            node     ofnLocal hc
 pv $logTf | grep 'NFW' | cut -d ' ' -f 3 --complement > $fwlTf
 
+echo "extracting SKEW measurements"
+# 1368558961.22 24   SK TPF_s: -8       ld: -12288 over  800
+# ts            node           tpf*4096     delta(*4096) frames-since-last
+pv $logTf | grep 'SK TPF_s' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -188,6 +193,7 @@ JOIN (
   SELECT RX_ALL.ofnLocal as ofnLocal, RX_ALL.src as src, RX_ALL.dest as node, RX_ALL.sn as sn FROM RX_ALL
   UNION SELECT TX_ALL.ofnLocal, TX_ALL.src, TX_ALL.src, TX_ALL.sn FROM TX_ALL) orig
 ON orig.ofnLocal == fw_local.ofnLocal AND orig.node == fw_local.node
+WHERE FW_LOCAL.depth > 1
 ;
 
 
@@ -266,6 +272,18 @@ GROUP BY TX_ALL.src,
   TX_ALL.stp
 ORDER BY prr;
 
+DROP TABLE IF EXISTS SKEW;
+CREATE TABLE SKEW (
+  ts REAL,
+  node INTEGER,
+  tpf INTEGER,
+  lastDelta INTEGER,
+  lastPeriod INTEGER
+);
+
+SELECT "importing SKEW measurements";
+.import $skewTf SKEW
+
 -- Placeholders
 SELECT "PRR_CLEAN placeholder (copy PRR)";
 DROP TABLE IF EXISTS PRR_CLEAN;
@@ -292,4 +310,5 @@ then
   rm $txlTf
   rm $cflTf
   rm $fwlTf
+  rm $skewTf
 fi
