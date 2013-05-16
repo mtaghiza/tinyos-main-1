@@ -8,8 +8,8 @@ then
 fi
 
 
-./$sd/install.sh maps/map.nonroot $od/slave.options $od/all.options $od/static.options $od/broadcast_fast.options
+source ./$sd/install.sh maps/map.nonroot $od/slave.options $od/all.options $od/static.options $od/broadcast_fast.options
 echo "Hit enter when slaves are confirmed booted"
 read line
 
-./$sd/install.sh maps/map.root $od/root.options $od/all.options $od/static.options $od/rx.options
+source ./$sd/install.sh maps/map.root $od/root.options $od/all.options $od/static.options $od/rx.options

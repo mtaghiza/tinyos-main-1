@@ -1,5 +1,7 @@
 COMPONENT=TestC
 
+TEST_DESC?=\"NO_INFO\"
+CFLAGS += -DTEST_DESC=$(TEST_DESC)
 
 ##test settings: packet generation rate, flush size, packet
 # length

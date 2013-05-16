@@ -41,6 +41,7 @@ module RandomTestP{
     cinfo(test,"BOOTED %s ID %u \r\n",
           (CX_MASTER==1)?"MASTER": "SLAVE",
           call ActiveMessageAddress.amAddress());
+    cinfo(test, "START %s\r\n", TEST_DESC);
   }
   
   task void toggleStartStop();
