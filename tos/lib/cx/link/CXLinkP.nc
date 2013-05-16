@@ -394,7 +394,7 @@ module CXLinkP {
                 aNextRequestType = nextRequest->requestType;
                 aRequestError = SUCCESS;
                 aSfdCapture = 0;
-                call FastAlarm.start(nextRequest->typeSpecific.rx.duration);
+                call FastAlarm.start(nextRequest->typeSpecific.rx.duration + PREP_TIME_FAST);
                 call SynchCapture.captureRisingEdge();
               }
             }else{
@@ -473,9 +473,9 @@ module CXLinkP {
           int32_t c = nextRequest->typeSpecific.wakeup.correction;
           uint32_t newLft = (lastFrameNum-rfn)*FRAMELEN_32K
             + rft + c - PREP_TIME_32KHZ;
-          cinfo(SKEW_APPLY, "WU %lu -> %lu %lu %lu %lu\r\n",
+          cinfo(SKEW_APPLY, "WU %lu -> %lu %lu %lu %lu %lu\r\n",
             lastFrameTime, newLft,
-            rft, rfn, lastFrameNum);
+            rft, rfn, lastFrameNum, nextRequest->baseFrame + nextRequest->frameOffset);
           if ((lastFrameTime > newLft && (lastFrameTime - newLft) > FRAMELEN_32K ) 
               || (lastFrameTime < newLft && (newLft - lastFrameTime) > FRAMELEN_32K )){
             cwarn(SKEW_APPLY, "LWU\r\n");
