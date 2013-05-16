@@ -709,7 +709,19 @@ class Trace(TestbedMap):
         q = '''SELECT cycleNum as cn, fnCycle as fn FROM TX_ALL WHERE src=? AND
         sn=?'''
         return c.execute(q, (src, sn)).fetchone()
-        
+
+class Skew(TestbedMap):
+    def __init__(self, dbFile, **kwargs):
+        super(Skew, self).__init__(**kwargs)
+        self.loadSkews(dbFile)
+        self.setAttr('skew', self.skews, 0)
+        self.setColAttr('skew')
+
+    def loadSkews(self, dbFile):
+        c = sqlite3.connect(dbFile)
+        q = '''SELECT node, tpf
+          FROM agg_skew'''
+        self.skews = dict(c.execute(q))
         
 if __name__ == '__main__':
     fn = sys.argv[1]
@@ -903,6 +915,8 @@ if __name__ == '__main__':
                     step = int(v)
 
         tbm = Trace(fn, cn, frameNum, src, sn, step)
+    elif t == '--skew':
+        tbm = Skew(fn)
     else:
         print >> sys.stderr, "Unrecognized type",t
 

@@ -13,7 +13,7 @@ shift 4
 
 if [ $# -gt 0 ]
 then
-  steps = $1
+  steps=$1
 fi
 
 sd=$(dirname $0)
