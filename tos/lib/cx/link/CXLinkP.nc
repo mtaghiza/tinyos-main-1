@@ -32,10 +32,8 @@ module CXLinkP {
 
 } implementation {
  
-
+  bool reCap = FALSE;
   uint32_t aPacketEnd;
-  bool reCap;
-
   //Radio duty cycle tracking vars
   enum{
     R_OFF = 0,
@@ -46,6 +44,14 @@ module CXLinkP {
     R_RX = 5,
     R_NUMSTATES = 6
   };
+
+  #if DL_RADIOSTATS > DL_INFO
+  void radioStateChange(uint8_t newState, uint32_t changeTime){ }
+  command error_t RadioStats.logRadio(uint32_t bn){
+    return SUCCESS;
+  }
+  #else 
+
   uint32_t lastRadioStateChange;
   uint8_t  curRadioState = R_OFF;
   const char labels[R_NUMSTATES] = {'o', 's', 'i', 'f', 't', 'r'};
@@ -59,21 +65,42 @@ module CXLinkP {
       lastRadioStateChange = changeTime;
     }
   }
+  
+
+  bool loggingStats = FALSE;
+  uint32_t rs_bn;
+  uint32_t rst[R_NUMSTATES];
+  uint8_t rst_i;
+  
+  task void logNext(){
+    if (rst_i < R_NUMSTATES){
+      cinfo(RADIOSTATS, "RS %lu %c %lu\r\n",
+        rs_bn, labels[rst_i], rst[rst_i]);
+      rst_i ++;
+      post logNext();
+    }else{
+      loggingStats = FALSE;
+    }
+  }
 
   //bn: some identifier that is meaningful to the component requesting
   //this. e.g. frame #, slot #
   command error_t RadioStats.logRadio(uint32_t bn){
-    uint32_t rst[R_NUMSTATES];
-    uint8_t i;
-    atomic{
-      memcpy(rst, radioStateTimes, sizeof(rst));
+    if (loggingStats){
+      return EBUSY;
+    }else {
+      loggingStats = TRUE;
+      rs_bn = bn;
+      rst_i = 0;
+      atomic{
+        memcpy(rst, radioStateTimes, sizeof(rst));
+      }
+      post logNext();
+      return SUCCESS;
     }
-    for (i = 0; i < R_NUMSTATES; i++){
-      cinfo(RADIOSTATS, "RS %lu %c %lu\r\n",
-        bn, labels[i], rst[i]);
-    }
-    return SUCCESS;
   }
+
+  #endif
 
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
@@ -787,7 +814,9 @@ module CXLinkP {
     }
   }
 
-
+  #if DL_RADIOSTATS > DL_INFO
+  task void recordPacketEnd(){}
+  #else
   task void recordPacketEnd(){
     uint32_t endFast;
     uint32_t end32k;
@@ -799,6 +828,7 @@ module CXLinkP {
     end32k = lastFrameTime + fastToSlow(endFast - fastAlarmAtFrameTimerFired);
     radioStateChange(R_IDLE, end32k);
   }
+  #endif
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
