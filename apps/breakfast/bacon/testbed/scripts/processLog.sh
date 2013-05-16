@@ -69,6 +69,7 @@ echo "extracting SKEW measurements"
 # ts            node           tpf*4096     delta(*4096) frames-since-last
 pv $logTf | grep 'SK TPF_s' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
 
+
 sqlite3 $db << EOF
 .headers OFF
 .separator ' '
@@ -92,6 +93,22 @@ SELECT "Ordering SCHED";
 DROP TABLE IF EXISTS SCHED;
 CREATE TABLE SCHED AS 
   SELECT * FROM SCHED_TMP ORDER BY node, ts;
+
+SELECT "Indexing SCHED";
+DROP INDEX IF EXISTS sched_index;
+CREATE INDEX sched_index ON SCHED (node, csLocal);
+
+SELECT "Creating SCHED_RANGE table";
+DROP TABLE IF EXISTS SCHED_RANGE;
+CREATE TABLE SCHED_RANGE AS
+  SELECT l.node, l.schedNum, l.sn as cycleNum, l.csRemote, l.csLocal, 
+    r.csLocal as csNext
+  FROM SCHED l
+    JOIN SCHED r ON l.rowid + 1 == r.rowid AND l.node == r.node;
+
+SELECT "Indexing SCHED_RANGE table";
+DROP INDEX IF EXISTS sched_range;
+CREATE INDEX sched_range_index ON sched_range (node, csLocal, csNext);
 
 DROP TABLE IF EXISTS RX_LOCAL;
 CREATE TABLE RX_LOCAL (
@@ -119,13 +136,13 @@ SELECT RX_LOCAL.*,
   cycleNum,
   1 as received
 FROM RX_LOCAL
-JOIN (
-  SELECT l.node, l.schedNum, l.sn as cycleNum, l.csRemote, l.csLocal, 
-    r.csLocal as csNext
-  FROM SCHED l
-    JOIN SCHED r ON l.rowid + 1 == r.rowid AND l.node == r.node) as s
-ON RX_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext 
-  AND RX_LOCAL.dest == s.node ;
+JOIN sched_range as s 
+ON RX_LOCAL.dest == s.node 
+  AND RX_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext ;
+
+SELECT "Indexing RX_ALL";
+DROP INDEX IF EXISTS rx_all_index;
+CREATE INDEX rx_all_index ON rx_all (dest, ofnLocal);
 
 
 DROP TABLE IF EXISTS TX_LOCAL;
@@ -155,13 +172,13 @@ SELECT TX_LOCAL.*,
   ofnLocal-csLocal + csRemote as fnGlobal,
   cycleNum
 FROM TX_LOCAL
-JOIN (
-  SELECT l.node, l.schedNum, l.sn as cycleNum, l.csRemote, l.csLocal, 
-    r.csLocal as csNext
-  FROM SCHED l
-    JOIN SCHED r ON l.rowid + 1 == r.rowid AND l.node == r.node) as s
-ON TX_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext 
-  AND TX_LOCAL.src == s.node;
+JOIN SCHED_RANGE as s
+ON TX_LOCAL.src == s.node 
+  AND TX_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext ;
+
+SELECT "Indexing TX_ALL";
+DROP INDEX IF EXISTS tx_all_index;
+CREATE INDEX tx_all_index ON tx_all (src, ofnLocal);
 
 DROP TABLE IF EXISTS FW_LOCAL;
 CREATE TABLE FW_LOCAL (
@@ -182,17 +199,13 @@ SELECT FW_LOCAL.*,
   fw_local.ofnLocal-csLocal + csRemote + depth-1 as fnGlobal,
   cycleNum
 FROM FW_LOCAL
-JOIN (
-  SELECT l.node, l.schedNum, l.sn as cycleNum, l.csRemote, l.csLocal, 
-    r.csLocal as csNext
-  FROM SCHED l
-    JOIN SCHED r ON l.rowid + 1 == r.rowid AND l.node == r.node) as s
-ON FW_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext 
-  AND FW_LOCAL.node == s.node 
+JOIN SCHED_RANGE as s
+ON FW_LOCAL.node == s.node 
+  AND FW_LOCAL.ofnLocal BETWEEN s.csLocal and s.csNext 
 JOIN ( 
   SELECT RX_ALL.ofnLocal as ofnLocal, RX_ALL.src as src, RX_ALL.dest as node, RX_ALL.sn as sn FROM RX_ALL
   UNION SELECT TX_ALL.ofnLocal, TX_ALL.src, TX_ALL.src, TX_ALL.sn FROM TX_ALL) orig
-ON orig.ofnLocal == fw_local.ofnLocal AND orig.node == fw_local.node
+ON orig.node == fw_local.node AND orig.ofnLocal == fw_local.ofnLocal
 WHERE FW_LOCAL.depth > 1
 ;
 
@@ -283,6 +296,13 @@ CREATE TABLE SKEW (
 
 SELECT "importing SKEW measurements";
 .import $skewTf SKEW
+
+SELECT "Aggregating SKEW measurements";
+DROP TABLE IF EXISTS AGG_SKEW;
+CREATE TABLE AGG_SKEW AS
+SELECT node, avg(tpf) as tpf
+FROM SKEW
+GROUP BY node;
 
 -- Placeholders
 SELECT "PRR_CLEAN placeholder (copy PRR)";
