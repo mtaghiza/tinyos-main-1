@@ -23,6 +23,7 @@ cflTf=$tfb.cf
 fwlTf=$tfb.fwl
 skewTf=$tfb.skew
 settingsTf=$tfb.settings
+rsTf=$tfb.rs
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -72,6 +73,15 @@ pv $logTf | grep ' SK TPF_s: ' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
 
 echo "extracting settings"
 pv $logTf | grep ' START ' | cut -d ' ' -f 3 --complement | awk '{ts=$1; node=$2; for (i=3; i<= NF; i++){ print ts, node, $i}}' | tr '=' ' ' > $settingsTf
+
+pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
+  if ($2 in curSlot){
+    cs=curSlot[$2]
+  }else{
+    cs=0
+  }
+  print $1, $2, $4, $5, ($6)*(2**32) + $7, cs
+}' > $rsTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -314,14 +324,122 @@ CREATE TABLE TEST_SETTINGS (
   k TEXT,
   v TEXT);
 
+
 SELECT "importing settings";
 .import $settingsTf TEST_SETTINGS
 
--- Placeholders
-SELECT "PRR_CLEAN placeholder (copy PRR)";
+SELECT "Setting PRR boundaries";
+DROP TABLE IF EXISTS PRR_BOUNDS;
+CREATE TABLE PRR_BOUNDS AS 
+SELECT node, min(ts) as startTS, max(ts) as endTS
+FROM SCHED 
+GROUP BY node;
+
+select "computing cleaned prr";
 DROP TABLE IF EXISTS PRR_CLEAN;
 CREATE TABLE PRR_CLEAN AS 
-SELECT * FROM PRR;
+SELECT
+  TX_ALL.src as src,
+  RX_AND_MISSING.dest as dest,
+  TX_ALL.tp as tp,
+  TX_ALL.np as np,
+  TX_ALL.pr as pr,
+  avg(RX_AND_MISSING.received) as prr,
+  count(RX_AND_MISSING.received) as cnt
+FROM TX_ALL
+LEFT JOIN (
+  SELECT src, dest, sn, received FROM RX_ALL 
+  UNION 
+  SELECT src, dest, sn, 0 as received FROM MISSING_RX) RX_AND_MISSING ON
+  TX_ALL.src == RX_AND_MISSING.src AND
+  TX_ALL.sn == RX_AND_MISSING.sn 
+JOIN PRR_BOUNDS ON PRR_BOUNDS.node = RX_AND_MISSING.dest
+WHERE TX_ALL.ts >= PRR_BOUNDS.startTS
+  AND TX_ALL.ts <= PRR_BOUNDS.endTS
+GROUP BY TX_ALL.src,
+  RX_AND_MISSING.dest,
+  TX_ALL.tp,
+  TX_ALL.np,
+  TX_ALL.pr
+ORDER BY prr;
+
+SELECT "importing radio stats";
+DROP TABLE IF EXISTS RADIO_STATS_RAW;
+CREATE TABLE RADIO_STATS_RAW (
+  ts REAL,
+  node INTEGER,
+  sn INTEGER,
+  state TEXT,
+  total INTEGER,
+  slot INTEGER
+);
+
+.import $rsTf RADIO_STATS_RAW
+
+DROP TABLE IF EXISTS ACTIVE_STATES;
+CREATE TABLE ACTIVE_STATES (
+  state TEXT);
+INSERT INTO ACTIVE_STATES (state) values ('f');
+INSERT INTO ACTIVE_STATES (state) values ('r');
+INSERT INTO ACTIVE_STATES (state) values ('t');
+
+select "Computing slot radio deltas";
+DROP TABLE IF EXISTS SLOT_STATE_DELTAS;
+CREATE TABLE SLOT_STATE_DELTAS AS
+SELECT l.ts, l.node, l.sn, r.slot, l.state, r.total - l.total as dt
+FROM radio_stats_raw l
+JOIN radio_stats_raw r on l.node=r.node and l.state = r.state and
+l.sn+1 = r.sn
+JOIN prr_bounds on l.node=prr_bounds.node
+WHERE l.ts > prr_bounds.startTS  and r.ts <= prr_bounds.endTs ;
+
+select "Computing slot radio totals";
+DROP TABLE IF EXISTS SLOT_STATE_TOTALS;
+CREATE TABLE SLOT_STATE_TOTALS AS
+SELECT node, slot, state, sum(dt) as total
+FROM SLOT_STATE_DELTAS
+GROUP BY node, slot, state;
+
+SELECT "Computing node totals";
+DROP TABLE IF EXISTS NODE_TOTALS;
+CREATE TABLE NODE_TOTALS AS
+SELECT node, state, sum(total) as total
+FROM SLOT_STATE_TOTALS
+GROUP BY node, state;
+
+SELECT "Computing overall duty cycle";
+DROP TABLE IF EXISTS DUTY_CYCLE;
+CREATE TABLE DUTY_CYCLE AS 
+SELECT active.node, (1.0*active.total)/allStates.total as dc
+FROM (
+  SELECT node, sum(total) as total FROM node_totals where state in
+  (select state from active_states) group by node) active
+JOIN (
+  SELECT node, sum(total) as total FROM node_totals group by node)
+  allStates on active.node=allStates.node;
+
+SELECT "Computing dc contribution per slot";
+DROP TABLE IF EXISTS SLOT_CONTRIBUTIONS;
+
+CREATE TABLE SLOT_CONTRIBUTIONS AS 
+SELECT activeSlot.node, activeSlot.slot,
+  (1.0*activeSlot.total)/activeNode.total as fractionActive
+FROM 
+(
+  SELECT node, slot, sum(total) as total
+  FROM SLOT_STATE_TOTALS
+  WHERE state in (select state from active_states)
+  GROUP BY node, slot 
+) as activeSlot
+JOIN (
+  SELECT node, sum(total) as total
+  FROM node_totals
+  WHERE state in (select state from active_states)
+  GROUP BY node
+) as activeNode 
+on activeSlot.node=activeNode.node;
+
+
 
 SELECT "ERROR_EVENTS placecholder (empty)";
 DROP TABLE IF EXISTS ERROR_EVENTS;
@@ -331,6 +449,7 @@ CREATE TABLE ERROR_EVENTS (
   fromState TEXT,
   toState TEXT
 );
+
 EOF
 
 
@@ -345,4 +464,5 @@ then
   rm $fwlTf
   rm $skewTf
   rm $settingsTf
+  rm $rsTf
 fi
