@@ -472,7 +472,9 @@ module CXMasterSchedulerP{
         pl->assignments[pl->numAssigned].owner = assignments[i].owner;
         pl->assignments[pl->numAssigned].slotNumber = i;
         pl->numAssigned++;
-        cinfo(SCHED, "a %u to %u\r\n", assignments[i].owner, i);
+        cinfo(SCHED, "MA %u %u to %u\r\n", 
+          call CXNetworkPacket.getSn(schedMsg),
+          assignments[i].owner, i);
         reqLeft --;
       }
     }

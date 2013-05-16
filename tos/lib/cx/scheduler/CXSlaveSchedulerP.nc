@@ -295,13 +295,16 @@ module CXSlaveSchedulerP{
         }else {
           requestState = RS_UNASSIGNED;
         }
-        cinfo(SCHED, "csr %u %x\r\n", slotNum, error);
+        cinfo(SCHED, "SR %u %u %x\r\n", 
+          call CXNetworkPacket.getSn(schedMsg), 
+          slotNum, error);
       }else{
         cdbg(SCHED, "slot inval, don't request\r\n");
         requestState = RS_UNASSIGNED;
       }
     }else{
-      cinfo(SCHED, "not assigned to last vacant, skip\r\n");
+      //Tried All Vacant
+      cinfo(SCHED, "TAV\r\n");
     }
   }
 
@@ -491,7 +494,9 @@ module CXSlaveSchedulerP{
     cdbg(SCHED, "SN.SS %x \r\n", requestState);
     if (requestState == RS_ASSIGN_WAIT){
       requestState = RS_UNASSIGNED;
-      cinfo(SCHED, "Requested, not assigned\r\n");
+      cinfo(SCHED, "RNOA %u %u\r\n", 
+        call CXNetworkPacket.getSn(schedMsg), 
+        sn);
       post claimSlotTask();
     }
   }
@@ -510,7 +515,10 @@ module CXSlaveSchedulerP{
           pl->assignments[i].owner);
         if (pl->assignments[i].owner == call ActiveMessageAddress.amAddress()){
           mySlot = pl->assignments[i].slotNumber;
-          cinfo(SCHED, "A me to %u\r\n", mySlot);
+          cinfo(SCHED, "SA %u %u to %u\r\n", 
+            call CXNetworkPacket.getSn(schedMsg),
+            call ActiveMessageAddress.amAddress(), 
+            mySlot);
           call ScheduleParams.setSlot(mySlot);
           requestState = RS_ASSIGNED;
         }
