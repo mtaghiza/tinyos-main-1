@@ -22,6 +22,7 @@ txlTf=$tfb.txl
 cflTf=$tfb.cf
 fwlTf=$tfb.fwl
 skewTf=$tfb.skew
+settingsTf=$tfb.settings
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -40,35 +41,37 @@ echo "extracting SCHED events"
 # 1368558936.21 0    SCHED TX 241    1  802      802
 # ts            node          sched# sn csRemote csLocal
 # 1             2             3      4  5        6
-pv $logTf | grep 'SCHED' | cut -d ' ' -f 3,4 --complement > $schedTf
+pv $logTf | grep ' SCHED ' | cut -d ' ' -f 3,4 --complement > $schedTf
 
 echo "extracting RX_LOCAL events"
 # 1368558911.19 43   NRX 0   0  894      2  916881 923320    65535 -79  1
 # tsReport      node     src sn ofnLocal hc rx32k  report32k dest  rssi lqi
 # 1             2        3   4  5        6  7      8         9     10   11
-pv $logTf | grep 'NRX' | cut -d ' ' -f 3 --complement > $rxlTf
+pv $logTf | grep ' NRX ' | cut -d ' ' -f 3 --complement > $rxlTf
 
 echo "extracting TX_LOCAL events"
 # 1368558936.21 0   NTX 1  803      822299 829762    65535 2  0   196
 # tsReport      src     sn ofnLocal tx32k  report32k dest  tp stp AMID
 # 1             2       3  4        5      6         7     8  9   10
-pv $logTf | grep 'NTX' | cut -d ' ' -f 3 --complement > $txlTf
+pv $logTf | grep ' NTX ' | cut -d ' ' -f 3 --complement > $txlTf
 
 echo "extracting CRCF_LOCAL events"
 # 1368558910.98 4    CRCF 981
 # ts            node      fnLocal
-pv $logTf | grep 'CRCF' | cut -d ' ' -f 3 --complement > $cflTf
+pv $logTf | grep ' CRCF ' | cut -d ' ' -f 3 --complement > $cflTf
 
 echo "extracting FW_LOCAL events"
 # 1368558936.01 25   NFW 12       2
 # ts            node     ofnLocal hc
-pv $logTf | grep 'NFW' | cut -d ' ' -f 3 --complement > $fwlTf
+pv $logTf | grep ' NFW ' | cut -d ' ' -f 3 --complement > $fwlTf
 
 echo "extracting SKEW measurements"
 # 1368558961.22 24   SK TPF_s: -8       ld: -12288 over  800
 # ts            node           tpf*4096     delta(*4096) frames-since-last
-pv $logTf | grep 'SK TPF_s' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
+pv $logTf | grep ' SK TPF_s: ' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
 
+echo "extracting settings"
+pv $logTf | grep ' START ' | cut -d ' ' -f 3 --complement | awk '{ts=$1; node=$2; for (i=3; i<= NF; i++){ print ts, node, $i}}' | tr '=' ' ' > $settingsTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -304,6 +307,16 @@ SELECT node, avg(tpf) as tpf
 FROM SKEW
 GROUP BY node;
 
+DROP TABLE IF EXISTS TEST_SETTINGS;
+CREATE TABLE TEST_SETTINGS (
+  ts REAL,
+  node INTEGER,
+  k TEXT,
+  v TEXT);
+
+SELECT "importing settings";
+.import $settingsTf TEST_SETTINGS
+
 -- Placeholders
 SELECT "PRR_CLEAN placeholder (copy PRR)";
 DROP TABLE IF EXISTS PRR_CLEAN;
@@ -331,4 +344,5 @@ then
   rm $cflTf
   rm $fwlTf
   rm $skewTf
+  rm $settingsTf
 fi

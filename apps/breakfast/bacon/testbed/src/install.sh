@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ $# -lt 1 -o "$(basename $0)" == "$(basename ${BASH_SOURCE})" ]
+if [ $# -lt 2 -o "$(basename $0)" == "$(basename ${BASH_SOURCE})" ]
 then
 cat 1>&2 <<EOF
- Usage: source $0 <calling script> <map> [option files]
+ Usage: source $0 <map> <label> [option files]
  Note: this *must* be source'd from another bash file, not ./'d or run
    directly.
    This is required for recording meta-information.
@@ -12,7 +12,8 @@ EOF
 fi
 echo "passed"
 MAP=$1
-shift 1
+label=$2
+shift 2
 
 options=$(paste -d ' ' $@)
 #For Make to be happy with this, we need to have a string with both
@@ -30,7 +31,7 @@ installScript=$(basename $0)
 # \ 
 #The \\\" corresponds to the string literal:
 # \"
-settings=\\\"$(echo "$options HASH=$sha SCRIPT=$installScript" | sed 's/ /\\ /g')\\\"
+settings=\\\"$(echo "$options HASH=$sha SCRIPT=$installScript LABEL=$label" | sed 's/ /\\ /g')\\\"
 
 #Unclear to me why $settings has to be quoted, but I also don't care.
 # stupid strings.
