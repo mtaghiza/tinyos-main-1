@@ -342,8 +342,7 @@ SELECT
   TX_ALL.src as src,
   RX_AND_MISSING.dest as dest,
   TX_ALL.tp as tp,
-  TX_ALL.np as np,
-  TX_ALL.pr as pr,
+  TX_ALL.stp as stp,
   avg(RX_AND_MISSING.received) as prr,
   count(RX_AND_MISSING.received) as cnt
 FROM TX_ALL
@@ -354,13 +353,12 @@ LEFT JOIN (
   TX_ALL.src == RX_AND_MISSING.src AND
   TX_ALL.sn == RX_AND_MISSING.sn 
 JOIN PRR_BOUNDS ON PRR_BOUNDS.node = RX_AND_MISSING.dest
-WHERE TX_ALL.ts >= PRR_BOUNDS.startTS
-  AND TX_ALL.ts <= PRR_BOUNDS.endTS
+WHERE TX_ALL.reportTs >= PRR_BOUNDS.startTS
+  AND TX_ALL.reportTs <= PRR_BOUNDS.endTS
 GROUP BY TX_ALL.src,
   RX_AND_MISSING.dest,
   TX_ALL.tp,
-  TX_ALL.np,
-  TX_ALL.pr
+  TX_ALL.stp
 ORDER BY prr;
 
 SELECT "importing radio stats";
