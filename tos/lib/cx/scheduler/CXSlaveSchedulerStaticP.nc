@@ -368,7 +368,7 @@ module CXSlaveSchedulerStaticP{
   uint32_t bn = 0;
   event void SlotNotify.slotStarted(uint16_t sn){
     bn++;
-    cinfo(RADIOSTATS, "LB %lu %u\r\n", bn, sn);
+    cinfo(RADIOSTATS, "LB %lu %u\r\n", bn, sn-1);
     call RadioStats.logRadio(bn);
   }
 
