@@ -70,4 +70,8 @@ configuration CXSlaveSchedulerStaticC{
   components StateDumpC;
   CXSlaveSchedulerP.StateDump -> StateDumpC;
   SlotSchedulerP.StateDump -> StateDumpC;
+
+  //for radio stats
+  components CXLinkC;
+  CXSlaveSchedulerP.RadioStats -> CXLinkC;
 }

@@ -1,4 +1,3 @@
-
  #include "CXLink.h"
  #include "CXLinkDebug.h"
  #include "CXSchedulerDebug.h"
@@ -29,12 +28,56 @@ module CXLinkP {
 
   uses interface StateDump;
 
+  provides interface RadioStats;
+
 } implementation {
+ 
+
+  uint32_t aPacketEnd;
+  bool reCap;
+
+  //Radio duty cycle tracking vars
+  enum{
+    R_OFF = 0,
+    R_SLEEP = 1,
+    R_IDLE = 2, 
+    R_FSTXON = 3,
+    R_TX = 4,
+    R_RX = 5,
+    R_NUMSTATES = 6
+  };
+  uint32_t lastRadioStateChange;
+  uint8_t  curRadioState = R_OFF;
+  const char labels[R_NUMSTATES] = {'o', 's', 'i', 'f', 't', 'r'};
+  uint32_t radioStateTimes[R_NUMSTATES];
+
+  void radioStateChange(uint8_t newState, uint32_t changeTime){
+    if (newState != curRadioState){
+      uint32_t elapsed = changeTime-lastRadioStateChange;
+      radioStateTimes[curRadioState] += elapsed;
+      curRadioState = newState;
+      lastRadioStateChange = changeTime;
+    }
+  }
+
+  //bn: some identifier that is meaningful to the component requesting
+  //this. e.g. frame #, slot #
+  command error_t RadioStats.logRadio(uint32_t bn){
+    uint32_t rst[R_NUMSTATES];
+    uint8_t i;
+    atomic{
+      memcpy(rst, radioStateTimes, sizeof(rst));
+    }
+    for (i = 0; i < R_NUMSTATES; i++){
+      cinfo(RADIOSTATS, "RS %lu %c %lu\r\n",
+        bn, labels[i], rst[i]);
+    }
+    return SUCCESS;
+  }
 
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
   uint32_t fastAlarmAtFrameTimerFired;
-
 
   //keep count of how many outstanding requests rely on the
   //alarm so that we can duty cycle it when it's not in use.
@@ -322,6 +365,7 @@ module CXLinkP {
             }
             //if radio is active, shut it off.
             requestError = call Rf1aPhysical.sleep();
+            radioStateChange(R_SLEEP, call FrameTimer.getNow());
             //TODO: FUTURE frequency-scaling: turn it down
             post requestHandled();
             break;
@@ -329,6 +373,7 @@ module CXLinkP {
             if (LINK_DEBUG_WAKEUP){
               atomic P1OUT |= BIT3;
             }
+            radioStateChange(R_IDLE, call FrameTimer.getNow());
             requestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
             if (requestError == SUCCESS){
               //TODO: where should channel # come from?
@@ -344,6 +389,7 @@ module CXLinkP {
               call Msp430XV2ClockControl.startMicroTimer();
             }
             fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
+            radioStateChange(R_FSTXON, call FrameTimer.getNow());
             requestError = call Rf1aPhysical.startTransmission(FALSE,
               TRUE);
             if (SUCCESS == requestError){
@@ -362,6 +408,8 @@ module CXLinkP {
                 //is in FSTXON. put it back to idle.
                 if (SUCCESS != requestError){
                   call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+                  radioStateChange(R_IDLE, 
+                    call FrameTimer.getNow());
                 }
               }
             }
@@ -375,6 +423,7 @@ module CXLinkP {
             if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
               call Msp430XV2ClockControl.startMicroTimer();
             }
+            fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
             didReceive = FALSE;
             //TODO FUTURE: the longer we can put off entering RX mode,
             //the more energy we can save. with slack ratio=6, it
@@ -384,6 +433,7 @@ module CXLinkP {
             //one fastalarm for just after tx start is expected and
             //check for channel activity. If there is nothing, stop
             //immediately rather than waiting for SFD timeout.
+            radioStateChange(R_RX, call FrameTimer.getNow());
             requestError = call Rf1aPhysical.setReceiveBuffer(
               (uint8_t*)nextRequest->msg,
               TOSH_DATA_LENGTH + sizeof(message_header_t),
@@ -395,6 +445,7 @@ module CXLinkP {
                 aRequestError = SUCCESS;
                 aSfdCapture = 0;
                 call FastAlarm.start(nextRequest->typeSpecific.rx.duration + PREP_TIME_FAST);
+                reCap = TRUE;
                 call SynchCapture.captureRisingEdge();
               }
             }else{
@@ -736,29 +787,50 @@ module CXLinkP {
     }
   }
 
+
+  task void recordPacketEnd(){
+    uint32_t endFast;
+    uint32_t end32k;
+
+    atomic {
+      endFast = aPacketEnd;
+    }
+
+    end32k = lastFrameTime + fastToSlow(endFast - fastAlarmAtFrameTimerFired);
+    radioStateChange(R_IDLE, end32k);
+  }
+
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
+    uint32_t expanded = (ft & 0xffff0000) | time;
 
     //overflow detected: assumes that 16-bit capture time has
     //  overflowed at most once before this event runs
     if (time > (ft & 0x0000ffff)){
       ft  -= 0x00010000;
     }
-    //expand to 32 bits
-    aSfdCapture = (ft & 0xffff0000) | time;
-    if (aNextRequestType == RT_TX){
-      if(ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
-        post setTimestamp();
+    if (reCap){
+      //expand to 32 bits
+      aSfdCapture = expanded;
+      //state.
+      if (aNextRequestType == RT_TX){
+        if(ENABLE_TIMESTAMPING && tx_tsLoc != NULL){
+          post setTimestamp();
+        }
+      }else if (aNextRequestType == RT_RX){
+        //TODO: CHECKME do we have to extend the timeout, or can we just
+        //cancel it?
+        // should we set a falling edge capture? 
+        call FastAlarm.stop();
       }
-    }else if (aNextRequestType == RT_RX){
-      //TODO: CHECKME do we have to extend the timeout, or can we just
-      //cancel it?
-      // should we set a falling edge capture? 
-      call FastAlarm.stop();
+      asyncHandled = TRUE;
+      reCap = FALSE;
+    } else {
+      aPacketEnd = expanded;
+      post recordPacketEnd();
+      call SynchCapture.disable();
     }
-    call SynchCapture.disable();
 
-    asyncHandled = TRUE;
   }
 
 
@@ -785,11 +857,13 @@ module CXLinkP {
       requestError = FAIL;
       //cancel the transmission.
       call Rf1aPhysical.resumeIdleMode(FALSE);
+      radioStateChange(R_IDLE, call FrameTimer.getNow());
       post requestHandled();
     }else{
 //      setAt = call FastAlarm.getNow();
 //      post reportMicro();
       call FastAlarm.startAt(t0, dt);
+      reCap = TRUE;
       call SynchCapture.captureRisingEdge();
     }
   }

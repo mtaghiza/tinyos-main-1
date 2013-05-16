@@ -9,6 +9,7 @@ configuration CXLinkC {
   provides interface Rf1aPacket;
   //for debug only
   provides interface Rf1aStatus;
+  provides interface RadioStats;
 } implementation {
   components CXLinkP;
 
@@ -60,4 +61,6 @@ configuration CXLinkC {
 
   components StateDumpC;
   CXLinkP.StateDump->StateDumpC;
+
+  RadioStats = CXLinkP;
 }

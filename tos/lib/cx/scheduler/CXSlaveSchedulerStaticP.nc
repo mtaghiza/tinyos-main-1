@@ -3,6 +3,7 @@
  #include "fixedPointUtils.h"
  #include "CXLink.h"
  #include "CXNetwork.h"
+ #include "CXLinkDebug.h"
 module CXSlaveSchedulerStaticP{
   provides interface SplitControl;
   uses interface SplitControl as SubSplitControl;
@@ -21,6 +22,7 @@ module CXSlaveSchedulerStaticP{
   uses interface RoutingTable;
   uses interface ActiveMessageAddress;
   uses interface StateDump;
+  uses interface RadioStats;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -362,8 +364,12 @@ module CXSlaveSchedulerStaticP{
       cinfo(SCHED, "synch lost\r\n");
     }
   }
-
+  
+  uint32_t bn = 0;
   event void SlotNotify.slotStarted(uint16_t sn){
+    bn++;
+    cinfo(RADIOSTATS, "LB %lu %u\r\n", bn, sn);
+    call RadioStats.logRadio(bn);
   }
 
   command error_t SplitControl.start(){

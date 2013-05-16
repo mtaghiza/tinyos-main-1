@@ -22,5 +22,8 @@
 #define DL_LINKQUEUE DL_INFO
 #endif
 
+#ifndef DL_RADIOSTATS
+#define DL_RADIOSTATS DL_INFO
+#endif
 
 #endif
