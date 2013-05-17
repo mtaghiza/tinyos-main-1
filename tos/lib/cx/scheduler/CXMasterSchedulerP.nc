@@ -259,13 +259,6 @@ module CXMasterSchedulerP{
   }
 
   event void SlotNotify.lastSlot(){
-    if (scheduleModified){
-      cdbg(SCHED, "modified %p next %p\r\n",
-        schedMsg, nextMsg);
-      scheduleModified = FALSE;
-      setNextSchedule(sched->cycleLength, sched->slotLength,
-        sched->maxDepth);
-    } 
     post sleepToNextCycle();
   }
 
@@ -420,6 +413,13 @@ module CXMasterSchedulerP{
       }else{
         cerror(SCHED, "!sched.sh: %x\r\n", error);
       }
+      if (scheduleModified){
+        cdbg(SCHED, "modified %p next %p\r\n",
+          schedMsg, nextMsg);
+        scheduleModified = FALSE;
+        setNextSchedule(sched->cycleLength, sched->slotLength,
+          sched->maxDepth);
+      } 
     }
   }
 
