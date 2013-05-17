@@ -77,7 +77,7 @@ module CXMasterSchedulerP{
 
   void fillSchedule(cx_schedule_t* s){
     uint16_t i;
-    uint32_t lastActive = 0;
+    uint16_t lastActive = 0;
     uint8_t vi=0;
     uint8_t fi=0;
     s->numVacant = 0;
@@ -107,6 +107,8 @@ module CXMasterSchedulerP{
     for (; fi < MAX_FREED; fi ++){
       s->freedSlots[fi] = INVALID_SLOT;
     }
+    //TODO: if there are more freed than MAX_FREED, how do we
+    //  disseminate this information?
 
     //continue from the last vacant slot to the end, and bump up the
     //# of active slots to cover the entire announced + assigned
@@ -118,6 +120,8 @@ module CXMasterSchedulerP{
     }
     //e.g. if the lastActive slot is 0, there is 1 active slot.
     s->activeSlots = lastActive+1;
+    cinfo(SCHED, "LA %u SU %u\r\n",
+      lastActive, s->activeSlots);
   }
   
 
