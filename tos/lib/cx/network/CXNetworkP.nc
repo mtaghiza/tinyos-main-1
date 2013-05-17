@@ -185,8 +185,8 @@ module CXNetworkP {
         t32kRef);
     }
 
-    if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg) && error !=
-    ERETRY){
+    if (CX_SELF_RETX && call CXNetworkPacket.getTTL(msg) 
+        && error != ERETRY){
       //if we were planning to timestamp it, but there was an error,
       //mark the timestamp as invalid: it's too messy to try to fix
       //this (has to be matched up with hop-count/origin frame, etc)
@@ -310,14 +310,19 @@ module CXNetworkP {
       //forwarded packets).
       call CXNetworkPacket.init(msg);
       if (call CXNetworkPacket.readyNextHop(msg)){
+        error_t err;
         call CXNetworkPacket.setOriginFrameNumber(msg, 
           baseFrame + frameOffset);
-        return call SubCXRequestQueue.requestSend(
+        err =  call SubCXRequestQueue.requestSend(
           nmd->layerCount + 1, 
           baseFrame, frameOffset, 
           txPriority,
           useMicro, microRef, 
           nmd, msg);
+        if (err != SUCCESS){
+          call Pool.put(nmd);
+        }
+        return err;
       }else{
         call CXNetworkPacket.setOriginFrameNumber(msg,
           INVALID_FRAME);
