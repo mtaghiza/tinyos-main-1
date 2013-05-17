@@ -479,8 +479,9 @@ module CXLinkP {
           if ((lastFrameTime > newLft && (lastFrameTime - newLft) > FRAMELEN_32K ) 
               || (lastFrameTime < newLft && (newLft - lastFrameTime) > FRAMELEN_32K )){
             cwarn(SKEW_APPLY, "LWU\r\n");
+          }else{
+            lastFrameTime = newLft;
           }
-          lastFrameTime = newLft;
         }else if (nextRequest->requestType == RT_WAKEUP){
           cwarn(SKEW_APPLY, "BWU %lu %lu %lu %lu\r\n",
             lastFrameNum, 
