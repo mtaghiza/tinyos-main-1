@@ -325,12 +325,14 @@ module CXSlaveSchedulerP{
           if (mySlot == newSched->freedSlots[i]){
             requestState = RS_UNASSIGNED;
             mySlot = INVALID_SLOT;
+            cinfo(SCHED, "FREED %u\r\n");
           }
         }
         for (i=0; i < newSched->numVacant; i++){
           if (mySlot == newSched->vacantSlots[i]){
             requestState = RS_UNASSIGNED;
             mySlot = INVALID_SLOT;
+            cinfo(SCHED, "VACANT %u\r\n");
           }
         }
       }

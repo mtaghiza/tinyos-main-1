@@ -120,7 +120,7 @@ module CXMasterSchedulerP{
     }
     //e.g. if the lastActive slot is 0, there is 1 active slot.
     s->activeSlots = lastActive+1;
-    cinfo(SCHED, "LA %u SU %u\r\n",
+    cinfo(SCHED, "LA %u AS %u\r\n",
       lastActive, s->activeSlots);
   }
   
