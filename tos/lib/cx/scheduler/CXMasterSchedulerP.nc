@@ -91,7 +91,7 @@ module CXMasterSchedulerP{
         vi++;
         lastActive = i;
         s->numVacant ++;
-        cdbg(SCHED, "v %u ", i);
+        cinfo(SCHED, "v %u ", i);
       }else if (assignments[i].status == SA_FREED 
           && fi < MAX_FREED){
         s->freedSlots[fi] = i;
