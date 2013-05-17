@@ -42,8 +42,8 @@ CFLAGS +=-DCX_DEFAULT_CYCLE_LENGTH=$(CX_DEFAULT_CYCLE_LENGTH)
 CX_DEFAULT_SLOT_LENGTH ?= 20
 CFLAGS +=-DCX_DEFAULT_SLOT_LENGTH=$(CX_DEFAULT_SLOT_LENGTH)
 #MAX_SLOTS is the *total* number of active slots ever permitted.
-MAX_SLOTS ?= 20
-CFLAGS += -DMAX_SLOTS=$(MAX_SLOTS)
+CX_MAX_SLOTS ?= 20
+CFLAGS += -DCX_MAX_SLOTS=$(CX_MAX_SLOTS)
 #CX_DEFAULT_MAX_DEPTH is the initially-advertised maxDepth in the
 # network.
 CX_DEFAULT_MAX_DEPTH ?= 8
@@ -62,12 +62,16 @@ CFLAGS += -DFREE_TIMEOUT=$(FREE_TIMEOUT)
 # be claimed) which the root announces per cycle.
 MAX_VACANT ?= 5
 CFLAGS += -DMAX_VACANT=$(MAX_VACANT)
+
 #MAX_ASSIGNMENTS: max # of assignments issued in a single assignment
 # message. Must be >0, >1 only matters if multiple slots can be
 # assigned to a single node.
-CFLAGS += -DMAX_ASSIGNMENTS=5
+MAX_ASSIGNMENTS?=5
+CFLAGS += -DMAX_ASSIGNMENTS=$(MAX_ASSIGNMENTS)
+
 #MAX_FREED: max # of freed slots announced in a single schedule.
-CFLAGS += -DMAX_FREED=5
+MAX_FREED?=5
+CFLAGS += -DMAX_FREED=$(MAX_FREED)
 
 #Static scheduler settings
 #CX_ACTIVE_SLOTS_STATIC: fix the # of active slots.
