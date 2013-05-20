@@ -88,6 +88,8 @@ implementation {
     storage_cookie_t cookie;
     void* buf;
     uint8_t len;
+    uint8_t m_len;
+    bool m_records_lost;
     stm25p_log_req_t req;
   } stm25p_log_state_t;
 
@@ -100,9 +102,7 @@ implementation {
   stm25p_log_state_t m_req;
   stm25p_log_info_t m_log_info[ NUM_LOGS ];
   stm25p_addr_t m_addr;
-  bool m_records_lost;
   uint8_t m_header;
-  uint8_t m_len;
 
   typedef enum {
     S_SEARCH_BLOCKS = 0,
@@ -133,7 +133,8 @@ implementation {
     m_req.req = S_READ;
     m_req.buf = buf;
     m_req.len = len;
-    m_len = len;
+    m_req.m_len = len;
+    
     return newRequest( id );
   }
 
@@ -190,7 +191,7 @@ implementation {
       return ESIZE;
     }
     
-    m_records_lost = FALSE;
+    m_req.m_records_lost = FALSE;
     m_req.req = S_APPEND;
     m_req.buf = buf;
     m_req.len = len;
@@ -321,6 +322,8 @@ implementation {
     uint8_t len;
     error_t error;
 
+    uint8_t m_len = m_log_state[ client ].m_len;
+
     // if on block boundary
     //at block boundary: advance read_addr to first record start
     if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
@@ -388,6 +391,9 @@ implementation {
  
     stm25p_log_info_t* log_info = &m_log_info[ id ];
     stm25p_addr_t *write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+
+    uint8_t m_len = m_log_state[ id ].m_len;
+
 
     // searching for the first and last log blocks
     switch( m_rw_state ) {
@@ -518,6 +524,9 @@ implementation {
           log_info->remaining -= len;
           //m_len is the number of bytes requested but not yet read
           m_len -= len;
+
+          m_log_state[ id ].m_len = m_len;
+          
           if (SINGLE_RECORD_READ){
             //single-record read: stop here.
             signalDone(id, error);
@@ -539,7 +548,7 @@ implementation {
     //written and the data being written, the data will be lost but
     //the log structure will remain intact.
     if ( !(uint16_t)*write_addr ) {
-      m_records_lost = TRUE;
+      m_log_state[ client ].m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, *write_addr ), 1 );
     } else {
       //start of new block? write write_addr
@@ -606,6 +615,9 @@ implementation {
     stm25p_log_req_t req = m_log_state[ id ].req;
     void* buf = m_log_state[ id ].buf;
     storage_len_t len = m_log_state[ id ].len;
+
+    uint8_t m_len = m_log_state[ id ].m_len;
+    bool m_records_lost = m_log_state[ id ].m_records_lost;
 
     call ClientResource.release[ id ]();
     m_log_state[ id ].req = S_IDLE;
