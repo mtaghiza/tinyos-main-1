@@ -4,6 +4,7 @@ STORAGEDIR = $(TOSDIR)/platforms/bacon/chips/stm25p
 
 MIGCLASSES = $(MIGDIR)/LogRecordDataMsg.py
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
+MIGCLASSES += $(MIGDIR)/CxRecordRequestMsg.py 
 
 #for serial AM printf
 CFLAGS += -DNEW_PRINTF_SEMANTICS
@@ -25,8 +26,12 @@ $(MIGDIR):
 $(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
 
-$(MIGDIR)/%.py: $(MIGDIR) $(STORAGEDIR)/RecordStorage.h
+$(MIGDIR)/CxRecordRequestMsg.py: $(MIGDIR) $(TOSROOT)/apps/breakfast/bacon/testAutoPush/RecordRequest.h
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/testAutoPush/RecordRequest.h $@ $(CFLAGS)
+
+$(MIGDIR)/LogRecordDataMsg.py: $(MIGDIR) $(STORAGEDIR)/RecordStorage.h
 	genMig.sh $(PLATFORM) $(STORAGEDIR)/RecordStorage.h $@ $(CFLAGS)
+
 
 migClasses: $(MIGCLASSES)
 

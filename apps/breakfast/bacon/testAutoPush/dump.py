@@ -10,7 +10,10 @@ from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 
-from RecordIterator import RecordIterator
+import threading
+import random
+from RecordParser import RecordParser
+from Database import Database
 
 
 class PrintfLogger(object):
@@ -27,13 +30,27 @@ class PrintfLogger(object):
 
 class GenericLogger(object):
     def __init__(self):
+        self.db = Database()
         pass
 
     def receive(self, src, msg):
-        print msg
-        for record in RecordIterator(msg):
-            print "#",record
+        #print "GenericLogger.receive()", threading.current_thread().name
+        
+        #address = msg.getAddr()
+        #address = random.randint(0,4)
+        address = 0
+        
+        #loss = random.randint(0,1)
+        loss = 0
+        
+        rp = RecordParser(msg)        
+        records = rp.getList()
+        
+        if loss == 0:
+            for rec in records:
+                self.db.insertRecord(address, rec)
 
+            
 
 class Dispatcher:
     def __init__(self, motestring):
@@ -45,6 +62,9 @@ class Dispatcher:
         self.mif.addListener(GenericLogger(), LogRecordDataMsg.LogRecordDataMsg)
         #ugh: not guaranteed that the serial connection is fully
         # opened by this point
+
+        print "Dispatcher()", threading.current_thread().name
+
         time.sleep(1)
 
     def stop(self):
@@ -72,8 +92,33 @@ if __name__ == '__main__':
     print packetSource
     d = Dispatcher(packetSource)
 
+    db = Database()
+
+
     try:
         while True:
+            time.sleep(2)
+
+            request_list = db.findMissing()
+            
+            MAX_PACKET_PAYLOAD = 100
+            
+            #for request in request_list:
+            if request_list:
+                request = request_list[0];
+
+                msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                msg.set_node_id(request['node_id'])
+                msg.set_cookie(request['nextCookie'])
+                
+                if request['missing'] < MAX_PACKET_PAYLOAD:
+                    msg.set_length(request['missing'])
+                else:
+                    msg.set_length(MAX_PACKET_PAYLOAD)
+                
+                d.send(msg)                
+                #print msg
+            
             pass
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:

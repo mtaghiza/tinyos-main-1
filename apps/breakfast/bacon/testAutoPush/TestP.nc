@@ -6,8 +6,8 @@ module TestP{
   provides interface Get<am_addr_t>;
 } implementation {
   
-  uint8_t testRec[8] = { 8, 7, 6, 5, 4, 3, 2, 1};
-  uint8_t curLen = 8;
+  uint8_t testRec[15] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  uint8_t curLen = sizeof(testRec);
   uint16_t appendLimit = 0;
   
   command am_addr_t Get.get(){
@@ -25,8 +25,13 @@ module TestP{
   } 
 
   event void Timer.fired(){
+    uint8_t i;
+    
     if (-- appendLimit ){
-      call Timer.startOneShot(128);
+      for (i = 0; i < curLen; i++)
+        testRec[i] = curLen;
+
+      call Timer.startOneShot(1024);
       call LogWrite.append(testRec, curLen);
     }else{
       printf("Done\r\n");
@@ -36,8 +41,8 @@ module TestP{
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
       bool recordsLost, error_t error){ 
-    curLen = (curLen == 1)? 8 : curLen-1;
-    printf("Append done.\n");
+    curLen = (curLen == 5)? sizeof(testRec) : curLen-1;
+//    printf("Append done.\n");
   }
 
   event void LogWrite.eraseDone(error_t error){}
