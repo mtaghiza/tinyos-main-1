@@ -42,6 +42,16 @@
 #define DL_GLOBAL DL_DEBUG
 #endif
 
+#ifndef ENABLE_PRINTF
+#define ENABLE_PRINTF 0
+#endif
+
+#if ENABLE_PRINTF == 0
+#define printf(...)
+#else
+#include <stdio.h>
+#endif
+
 #define cdbg_cond(level, channel, fmt, ...) if ( DL_ ## channel <= level && DL_GLOBAL <= level){printf(fmt, ##__VA_ARGS__);}
 #define cdbg(channel, fmt, ...) cdbg_cond(DL_DEBUG, channel, fmt, ##__VA_ARGS__)
 #define cinfo(channel, fmt, ...) cdbg_cond(DL_INFO, channel, fmt, ##__VA_ARGS__)

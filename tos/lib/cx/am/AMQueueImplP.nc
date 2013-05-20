@@ -41,6 +41,7 @@
  */ 
 
 #include "AM.h"
+#include "CXDebug.h"
 
 generic module AMQueueImplP(int numClients) @safe() {
     provides interface Send[uint8_t client];

@@ -81,4 +81,7 @@
 #define ENABLE_XT2_DC 1
 #endif
 
+#ifndef ENABLE_TIMESTAMPING
+#define ENABLE_TIMESTAMPING 1
+#endif
 #endif
