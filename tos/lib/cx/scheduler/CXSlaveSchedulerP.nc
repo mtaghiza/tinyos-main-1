@@ -326,6 +326,7 @@ module CXSlaveSchedulerP{
             cinfo(SCHED, "FREED %u\r\n", mySlot);
             requestState = RS_UNASSIGNED;
             mySlot = INVALID_SLOT;
+            break;
           }
         }
         for (i=0; i < newSched->numVacant; i++){
@@ -333,6 +334,7 @@ module CXSlaveSchedulerP{
             cinfo(SCHED, "VACANT %u\r\n", mySlot);
             requestState = RS_UNASSIGNED;
             mySlot = INVALID_SLOT;
+            break;
           }
         }
       }

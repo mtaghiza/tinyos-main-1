@@ -96,12 +96,11 @@ module CXMasterSchedulerP{
         vi++;
         lastActive = i;
         s->numVacant ++;
-        cinfo(SCHED, "v %u ", i);
+//        cinfo(SCHED, "v %u ", i);
       }else if (assignments[i].status == SA_FREED 
           && fi < MAX_FREED){
         s->freedSlots[fi] = i;
         fi ++;
-        cdbg(SCHED, "f %u ", i);
         assignments[i].csh ++;
         if (assignments[i].csh > FREE_TIMEOUT){
           assignments[i].status = SA_OPEN;
@@ -111,7 +110,6 @@ module CXMasterSchedulerP{
       }
     }
 
-    cdbg(SCHED, "\r\n");
 
     for (; vi < MAX_VACANT; vi ++){
       s->vacantSlots[vi] = INVALID_SLOT;
@@ -119,6 +117,25 @@ module CXMasterSchedulerP{
     for (; fi < MAX_FREED; fi ++){
       s->freedSlots[fi] = INVALID_SLOT;
     }
+
+    cinfo(SCHED, "SV");
+    for (i =0; 
+        i < MAX_VACANT && s->vacantSlots[i] != INVALID_SLOT; 
+        i++){
+      cinfo(SCHED, " %u", s->vacantSlots[i]);
+    }
+    cinfo(SCHED, "\r\n");
+
+    cinfo(SCHED, "SF");
+    for (i =0; 
+        i < MAX_FREED && s->freedSlots[i] != INVALID_SLOT; 
+        i++){
+      cinfo(SCHED, " %u", s->freedSlots[i]);
+      if (assignments[s->freedSlots[i]].status == SA_OPEN){
+        cinfo(SCHED, "*");
+      }
+    }
+    cinfo(SCHED, "\r\n");
 
     //continue from the last vacant slot to the end, and bump up the
     //# of active slots to cover the entire announced + assigned
