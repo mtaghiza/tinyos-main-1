@@ -74,12 +74,17 @@ module CXMasterSchedulerP{
   }slot_assignment_t;
 
   slot_assignment_t assignments[CX_MAX_SLOTS];
-
-  void fillSchedule(cx_schedule_t* s){
+   
+  //return true if the act of filling the schedule out triggers the
+  //need for a new announcement. At present, this only happens if a
+  //freed slot is announced enough times that it should go back to
+  //OPEN. 
+  bool fillSchedule(cx_schedule_t* s){
     uint16_t i;
     uint16_t lastActive = 0;
     uint8_t vi=0;
     uint8_t fi=0;
+    bool ret = FALSE;
     s->numVacant = 0;
 
     cdbg(SCHED, "FS:");
@@ -97,8 +102,15 @@ module CXMasterSchedulerP{
         s->freedSlots[fi] = i;
         fi ++;
         cdbg(SCHED, "f %u ", i);
+        assignments[i].csh ++;
+        if (assignments[i].csh > FREE_TIMEOUT){
+          assignments[i].status = SA_OPEN;
+          assignments[i].csh = 0;
+          ret = TRUE;
+        }
       }
     }
+
     cdbg(SCHED, "\r\n");
 
     for (; vi < MAX_VACANT; vi ++){
@@ -107,8 +119,6 @@ module CXMasterSchedulerP{
     for (; fi < MAX_FREED; fi ++){
       s->freedSlots[fi] = INVALID_SLOT;
     }
-    //TODO: if there are more freed than MAX_FREED, how do we
-    //  disseminate this information?
 
     //continue from the last vacant slot to the end, and bump up the
     //# of active slots to cover the entire announced + assigned
@@ -122,6 +132,7 @@ module CXMasterSchedulerP{
     s->activeSlots = lastActive+1;
     cinfo(SCHED, "LA %u AS %u\r\n",
       lastActive, s->activeSlots);
+    return ret;
   }
   
 
@@ -149,18 +160,27 @@ module CXMasterSchedulerP{
   event void Boot.booted(){
     post initializeSchedule();
   }
-
-  void setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
+  
+  //Returns true if in filling the schedule out, we triggered another
+  //modification that needs to be handled. For example, we finished
+  //announcing a freed slot.
+  bool setNextSchedule(uint32_t cycleLength, uint32_t slotLength,
       uint8_t maxDepth){
+    bool ret;
     call Packet.clear(nextMsg);
     nextSched = call ScheduleSend.getPayload(nextMsg, 
       sizeof(cx_schedule_t));
-    nextSched -> sn = sched->sn + 1;
+    if (cycleLength != sched->cycleLength || slotLength != sched->slotLength || maxDepth != sched->maxDepth){
+      nextSched -> sn = sched->sn + 1;
+    } else {
+      nextSched -> sn = sched->sn;
+    }
     nextSched -> cycleLength = cycleLength;
     nextSched -> slotLength = slotLength;
     nextSched -> maxDepth = maxDepth;
-    fillSchedule(nextSched);
+    ret = fillSchedule(nextSched);
     scheduleUpdatePending = TRUE;
+    return ret;
   }
 
   task void initTask(){
@@ -416,8 +436,7 @@ module CXMasterSchedulerP{
       if (scheduleModified){
         cdbg(SCHED, "modified %p next %p\r\n",
           schedMsg, nextMsg);
-        scheduleModified = FALSE;
-        setNextSchedule(sched->cycleLength, sched->slotLength,
+        scheduleModified = setNextSchedule(sched->cycleLength, sched->slotLength,
           sched->maxDepth);
       } 
     }
@@ -528,22 +547,6 @@ module CXMasterSchedulerP{
             //cycles).
             assignments[curSlot].status = SA_FREED;
             assignments[curSlot].csh = 0;
-            scheduleModified = TRUE;
-          }
-        }
-      }else if (assignments[curSlot].status == SA_FREED){
-        if (lastSlotActive){
-          cinfo(SCHED, "%u free but active\r\n", sn);
-        } else {
-          assignments[curSlot].csh ++;
-          //if we marked this freed FREE_TIMEOUT cycles ago, we now
-          //update it to be OPEN and can include it in the vacancy
-          //announcements.
-          cdbg(SCHED, "%u F csh: %u\r\n", 
-            curSlot, 
-            assignments[curSlot].csh);
-          if (assignments[curSlot].csh > FREE_TIMEOUT){
-            assignments[curSlot].status = SA_OPEN;
             scheduleModified = TRUE;
           }
         }

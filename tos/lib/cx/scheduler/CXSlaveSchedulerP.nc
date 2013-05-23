@@ -318,7 +318,7 @@ module CXSlaveSchedulerP{
     }
 
     //check to see if your slot has been freed.
-    if (sched->sn != newSched->sn){
+    {
       uint8_t i;
       if (requestState == RS_ASSIGNED && mySlot != INVALID_SLOT){
         for (i=0; i < MAX_FREED; i++){
