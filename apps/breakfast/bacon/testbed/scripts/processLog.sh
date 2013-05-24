@@ -24,6 +24,7 @@ fwlTf=$tfb.fwl
 skewTf=$tfb.skew
 settingsTf=$tfb.settings
 rsTf=$tfb.rs
+rrbTf=$tfb.rrb
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -82,6 +83,9 @@ pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 ==
   }
   print $1, $2, $4, $5, ($6)*(2**32) + $7, cs
 }' > $rsTf
+
+echo "Extracting forwarding decisions"
+pv $logTf | grep ' RRB ' | cut -d ' ' -f 3 --complement > $rrbTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -448,6 +452,21 @@ CREATE TABLE ERROR_EVENTS (
   toState TEXT
 );
 
+SELECT "Importing routing decisions";
+DROP TABLE IF EXISTS ROUTES;
+CREATE TABLE ROUTES (
+  ts REAL,
+  fwd INTEGER,
+  src INTEGER,
+  dest INTEGER,
+  sn INTEGER,
+  sm INTEGER,
+  md INTEGER,
+  sd INTEGER,
+  bw INTEGER,
+  f INTEGER);
+.import $rrbTf ROUTES
+
 EOF
 
 
@@ -463,4 +482,5 @@ then
   rm $skewTf
   rm $settingsTf
   rm $rsTf
+  rm $rrbTf
 fi
