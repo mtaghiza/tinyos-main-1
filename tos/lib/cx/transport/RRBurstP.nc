@@ -44,6 +44,7 @@ module RRBurstP {
   uint32_t ackStart;
 
   uint8_t retryCount;
+  uint8_t lastBw = 0;
 
   task void receiveNext(){
     if ( on && !rxPending){
@@ -135,7 +136,7 @@ module RRBurstP {
         cinfo(TRANSPORT, "SP_D\r\n");
         call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
         txf = nf;
-        call CXNetworkPacket.setTTL(msg, distance);
+        call CXNetworkPacket.setTTL(msg, distance + lastBw);
       }
       call CXTransportPacket.setDistance(msg, distance);
       // - lastTX >= lss? check for whether there's time to finish the
@@ -259,6 +260,7 @@ module RRBurstP {
       d_sd = call RoutingTable.getDistance(s, d);
       d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
       shouldForward = (d_si + d_id <= (d_sd + ack->bw));
+      lastBw = ack->bw;
       cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
         s, d, 
         call CXNetworkPacket.getSn(msg),
