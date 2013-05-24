@@ -80,6 +80,8 @@ module RRBurstP {
       CX_SP_ACK);
     ack->distance = call RoutingTable.getDistance(flowSrc,
       call ActiveMessageAddress.amAddress());
+    //TODO: should come from schedule, or something.
+    ack->bw = RRB_BW;
     error = call AckSend.send(flowSrc, ackMsg, sizeof(cx_ack_t),
       ackStart);
     cinfo(TRANSPORT, "ack.send %lu %x\r\n", ackStart, error);
@@ -206,6 +208,7 @@ module RRBurstP {
               uint8_t d_si;
               uint8_t d_sd;
               uint8_t d_id;
+              bool shouldForward;
               cdbg(TRANSPORT, "W");
               //ack source is flow DEST, ack dest is flow SRC
               //distance in payload is flow SRC to flow DEST
@@ -213,7 +216,17 @@ module RRBurstP {
               d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
               d_sd = call RoutingTable.getDistance(s, d);
               d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
-              if (d_si + d_id > d_sd){
+              shouldForward = (d_si + d_id > d_sd + ack->bw);
+              cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
+                s, d, 
+                call CXNetworkPacket.getSn(msg),
+                d_si,
+                d_id,
+                d_sd, 
+                ack->bw,
+                shouldForward);
+
+              if (shouldForward){
                 cdbg(TRANSPORT, "s");
                 //sleepy times
                 call CXRequestQueue.requestSleep(0,

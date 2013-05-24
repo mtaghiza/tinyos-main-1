@@ -8,6 +8,7 @@ typedef nx_struct cx_transport_header {
 
 typedef nx_struct cx_ack {
   nx_uint8_t distance;
+  nx_uint8_t bw;
 } cx_ack_t;
 
 #define AM_CX_RR_ACK_MSG 0xC5
@@ -38,6 +39,10 @@ typedef nx_struct cx_ack {
 //frames, throw in the towel.
 #ifndef TRANSPORT_RETRY_THRESHOLD
 #define TRANSPORT_RETRY_THRESHOLD 8
+#endif
+
+#ifndef RRB_BW
+#define RRB_BW 1
 #endif
 
 #endif
