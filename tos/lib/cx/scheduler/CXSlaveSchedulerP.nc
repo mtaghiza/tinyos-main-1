@@ -190,7 +190,7 @@ module CXSlaveSchedulerP{
       tx_priority_t txPriority,
       bool useMicro, uint32_t microRef, 
       void* md, message_t* msg){
-    if (sched == NULL || state != S_SYNCHED || mySlot == INVALID_SLOT){
+    if (sched == NULL || state != S_SYNCHED){
       //ERETRY: reserved to mean "this transport protocol is already
       //busy and will eventually return a sendDone"
       return EOFF;
