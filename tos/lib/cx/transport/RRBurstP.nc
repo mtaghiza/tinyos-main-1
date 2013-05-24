@@ -253,7 +253,7 @@ module RRBurstP {
       d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
       d_sd = call RoutingTable.getDistance(s, d);
       d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
-      shouldForward = (d_si + d_id > d_sd + ack->bw);
+      shouldForward = (d_si + d_id <= d_sd + ack->bw);
       cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
         s, d, 
         call CXNetworkPacket.getSn(msg),
@@ -289,8 +289,8 @@ module RRBurstP {
         case CX_SP_SETUP:
           waitingForAck = TRUE;
           //TODO: could add slack here.
-          ackDeadline = (atFrame + 1+
-            call RoutingTable.getDistance(call AMPacket.destination(msg), call ActiveMessageAddress.amAddress()));
+          //use default since ACK will be flooded.
+          ackDeadline = (atFrame + 1+ call RoutingTable.getDefault());
           setupMsg = msg;
           cinfo(TRANSPORT, "@%lu wait to %lu\r\n", atFrame,
             ackDeadline);
