@@ -75,7 +75,7 @@ module CXSlaveSchedulerP{
       return INVALID_FRAME;
     }
     if (isTX){
-      if (state == S_SYNCHED){
+      if (state == S_SYNCHED && mySlot != INVALID_SLOT){
         //we're synched, so we rely on the slot scheduler to figure
         //out when our next slot is.
         return subNext;

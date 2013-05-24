@@ -81,7 +81,7 @@ module FloodBurstP {
     cdbg(TRANSPORT, "FB.send\r\n");
     if (! sending){
       uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
-      if (call SlotTiming.framesLeftInSlot(nf) >= 
+      if (nf != INVALID_FRAME && call SlotTiming.framesLeftInSlot(nf) >= 
           call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), 
             call AMPacket.destination(msg))){
         //Cool, there's enough frames left in this slot.
