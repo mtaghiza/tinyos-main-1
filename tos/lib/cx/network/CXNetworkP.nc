@@ -26,14 +26,6 @@ module CXNetworkP {
   uint32_t synchFrame;
   uint32_t synchMicroRef;
 
-  bool shouldForward(message_t* msg){
-    bool ret = TRUE;
-    if ( ! CX_SELF_RETX){
-      ret = (call CXLinkPacket.getSource(msg) != call CXLinkPacket.addr());
-    }
-    //anything else we should be checking here?
-    return ret;
-  }
 
   cx_network_metadata_t* newMd(){
     cx_network_metadata_t* ret = call Pool.get();
@@ -106,8 +98,6 @@ module CXNetworkP {
     nmd -> reqFrame = reqFrame;
     nmd -> microRef = microRef;
     nmd -> t32kRef = t32kRef;
-    lastSrc = call AMPacket.source(msg);
-    lastSn = call CXNetworkPacket.getSn(msg);
 
     if (SUCCESS == error) {
       if (didReceive){
@@ -125,24 +115,22 @@ module CXNetworkP {
         call CXNetworkPacket.setOriginFrameStart(msg,
           t32kRef - (FRAMELEN_32K * (call CXNetworkPacket.getRXHopCount(msg) - 1)));
         if (call CXNetworkPacket.getTTL(msg) > 0){
-          if (shouldForward(msg)){
-            synchFrame = atFrame;
-            synchMicroRef = microRef;
-            call CXNetworkPacket.readyNextHop(msg);
-            //do not timestamp.
-            call CXPacketMetadata.setTSLoc(msg, NULL);
-            error = call SubCXRequestQueue.requestSend(
-              0, //Forwarding: originates at THIS layer, not above.
-              synchFrame, CX_NETWORK_FORWARD_DELAY + (atFrame -
-              synchFrame),
-              TXP_FORWARD,
-              TRUE, synchMicroRef, //use last RX as ref
-              nmd, msg);      //pointer to stashed md
-            if (SUCCESS == error){
-              return;
-            }else{
-              cerror(NETWORK, "FWD %x\r\n", error);
-            }
+          synchFrame = atFrame;
+          synchMicroRef = microRef;
+          call CXNetworkPacket.readyNextHop(msg);
+          //do not timestamp.
+          call CXPacketMetadata.setTSLoc(msg, NULL);
+          error = call SubCXRequestQueue.requestSend(
+            0, //Forwarding: originates at THIS layer, not above.
+            synchFrame, CX_NETWORK_FORWARD_DELAY + (atFrame -
+            synchFrame),
+            TXP_FORWARD,
+            TRUE, synchMicroRef, //use last RX as ref
+            nmd, msg);      //pointer to stashed md
+          if (SUCCESS == error){
+            return;
+          }else{
+            cerror(NETWORK, "FWD %x\r\n", error);
           }
         }
       }
@@ -156,6 +144,8 @@ module CXNetworkP {
       atFrame, nmd->reqFrame, 
       didReceive && !isDuplicate(msg), nmd->microRef, nmd->t32kRef, 
       nmd->next, msg);
+    lastSrc = call AMPacket.source(msg);
+    lastSn = call CXNetworkPacket.getSn(msg);
     call Pool.put(nmd);
   }
 
@@ -233,6 +223,8 @@ module CXNetworkP {
             nmd -> microRef, nmd -> t32kRef,
             nmd -> next,
             msg);
+          lastSrc = call AMPacket.source(msg);
+          lastSn = call CXNetworkPacket.getSn(msg);
         }
         call Pool.put(nmd);
       }
@@ -256,6 +248,8 @@ module CXNetworkP {
           nmd -> microRef, nmd -> t32kRef,
           nmd -> next,
           msg);
+        lastSrc = call AMPacket.source(msg);
+        lastSn = call CXNetworkPacket.getSn(msg);
         call Pool.put(nmd); 
       }
     }
