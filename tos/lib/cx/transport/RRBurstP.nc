@@ -250,7 +250,7 @@ module RRBurstP {
       //ack source is flow DEST, ack dest is flow SRC
       //distance in payload is flow SRC to flow DEST
       call RoutingTable.addMeasurement(s, d, ack->distance);
-      d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
+      d_si = call RoutingTable.getDistance(s, call ActiveMessageAddress.amAddress());
       d_sd = call RoutingTable.getDistance(s, d);
       d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
       shouldForward = (d_si + d_id <= d_sd + ack->bw);
