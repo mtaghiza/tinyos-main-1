@@ -21,6 +21,7 @@ module RRBurstP {
 
   uses interface Timer<TMilli> as RetryTimer;
   uses interface StateDump;
+  uses interface Receive as AckReceive;
 } implementation {
   uint32_t lastTX;
   
@@ -193,50 +194,6 @@ module RRBurstP {
               call Packet.getPayload(msg, pll), pll);
             break;
 
-          case CX_SP_ACK:
-            cdbg(TRANSPORT, "a");
-            if (waitingForAck){
-              cdbg(TRANSPORT, "w %p %p\r\n", msg, setupMsg);
-              sending = FALSE;
-              waitingForAck = FALSE;
-              cdbg(TRANSPORT, "#sdA\r\n");
-              signal Send.sendDone(setupMsg, SUCCESS);
-            } else {
-              cx_ack_t* ack = call Packet.getPayload(msg, sizeof(cx_ack_t));
-              am_addr_t s = call AMPacket.destination(msg);
-              am_addr_t d = call AMPacket.source(msg);
-              uint8_t d_si;
-              uint8_t d_sd;
-              uint8_t d_id;
-              bool shouldForward;
-              cdbg(TRANSPORT, "W");
-              //ack source is flow DEST, ack dest is flow SRC
-              //distance in payload is flow SRC to flow DEST
-              call RoutingTable.addMeasurement(s, d, ack->distance);
-              d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
-              d_sd = call RoutingTable.getDistance(s, d);
-              d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
-              shouldForward = (d_si + d_id > d_sd + ack->bw);
-              cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
-                s, d, 
-                call CXNetworkPacket.getSn(msg),
-                d_si,
-                d_id,
-                d_sd, 
-                ack->bw,
-                shouldForward);
-
-              if (shouldForward){
-                cdbg(TRANSPORT, "s");
-                //sleepy times
-                call CXRequestQueue.requestSleep(0,
-                  call CXRequestQueue.nextFrame(FALSE), 0);
-              }else{
-                cdbg(TRANSPORT, "S");
-                //OK, stay up to help.
-              }
-            }
-            break;
 
           case CX_SP_DATA:
             cdbg(TRANSPORT, "d");
@@ -245,6 +202,11 @@ module RRBurstP {
               pll);
             break;
 
+          case CX_SP_ACK:
+            //N.B. OK, this is actually handled by the AM Receiver
+            //since the ack is sent via ScheduledSend TP, not RRB.
+
+            //fall-through
           default:
             cerror(TRANSPORT, "Unrecognized SP %x\r\n",  
               call CXTransportPacket.getSubprotocol(msg));
@@ -265,6 +227,53 @@ module RRBurstP {
       cerror(TRANSPORT, "!rrb.rh, not rxPending\r\n");
       call StateDump.requestDump();
     }
+  }
+
+  event message_t* AckReceive.receive(message_t* msg, 
+      void* payload, uint8_t len){
+    cdbg(TRANSPORT, "a");
+    if (waitingForAck){
+      cdbg(TRANSPORT, "w %p %p\r\n", msg, setupMsg);
+      sending = FALSE;
+      waitingForAck = FALSE;
+      cdbg(TRANSPORT, "#sdA\r\n");
+      signal Send.sendDone(setupMsg, SUCCESS);
+    } else {
+      cx_ack_t* ack = (cx_ack_t*)payload;
+      am_addr_t s = call AMPacket.destination(msg);
+      am_addr_t d = call AMPacket.source(msg);
+      uint8_t d_si;
+      uint8_t d_sd;
+      uint8_t d_id;
+      bool shouldForward;
+      cdbg(TRANSPORT, "W");
+      //ack source is flow DEST, ack dest is flow SRC
+      //distance in payload is flow SRC to flow DEST
+      call RoutingTable.addMeasurement(s, d, ack->distance);
+      d_si = call RoutingTable.getDistance(d, call ActiveMessageAddress.amAddress());
+      d_sd = call RoutingTable.getDistance(s, d);
+      d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
+      shouldForward = (d_si + d_id > d_sd + ack->bw);
+      cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
+        s, d, 
+        call CXNetworkPacket.getSn(msg),
+        d_si,
+        d_id,
+        d_sd, 
+        ack->bw,
+        shouldForward);
+
+      if (shouldForward){
+        cdbg(TRANSPORT, "s");
+        //sleepy times
+        call CXRequestQueue.requestSleep(0,
+          call CXRequestQueue.nextFrame(FALSE), 0);
+      }else{
+        cdbg(TRANSPORT, "S");
+        //OK, stay up to help.
+      }
+    }
+    return msg;
   }
 
   event void CXRequestQueue.sendHandled(error_t error, 
