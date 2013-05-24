@@ -326,6 +326,7 @@ module CXSlaveSchedulerP{
             cinfo(SCHED, "FREED %u\r\n", mySlot);
             requestState = RS_UNASSIGNED;
             mySlot = INVALID_SLOT;
+            call ScheduleParams.setSlot(mySlot);
             break;
           }
         }
