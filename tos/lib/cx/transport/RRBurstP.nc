@@ -253,7 +253,7 @@ module RRBurstP {
       d_si = call RoutingTable.getDistance(s, call ActiveMessageAddress.amAddress());
       d_sd = call RoutingTable.getDistance(s, d);
       d_id = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), d);
-      shouldForward = (d_si + d_id <= d_sd + ack->bw);
+      shouldForward = (d_si + d_id <= (d_sd + ack->bw));
       cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
         s, d, 
         call CXNetworkPacket.getSn(msg),
@@ -263,7 +263,7 @@ module RRBurstP {
         ack->bw,
         shouldForward);
 
-      if (shouldForward){
+      if (!shouldForward){
         cdbg(TRANSPORT, "s");
         //sleepy times
         call CXRequestQueue.requestSleep(0,
