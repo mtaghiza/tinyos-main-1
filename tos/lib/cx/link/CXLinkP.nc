@@ -31,6 +31,8 @@ module CXLinkP {
 
 } implementation {
 
+  bool active = FALSE;
+
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
   uint32_t fastAlarmAtFrameTimerFired;
@@ -217,11 +219,17 @@ module CXLinkP {
     queueHistory[qhi].handleErr = requestError;
     switch(nextRequest -> requestType){
       case RT_SLEEP:
+        if (requestError == SUCCESS){
+          active = FALSE;
+        }
         signal CXRequestQueue.sleepHandled(requestError, 
           nextRequest -> layerCount - 1,
           handledFrame, reqFrame);
         break;
       case RT_WAKEUP:
+        if (requestError == SUCCESS){
+          active = TRUE;
+        }
         signal CXRequestQueue.wakeupHandled(requestError,
           nextRequest -> layerCount - 1,
           handledFrame, reqFrame); 
@@ -339,65 +347,79 @@ module CXLinkP {
             post requestHandled();
             break;
           case RT_TX:
-            shouldSynch = TRUE;
-            if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-              call Msp430XV2ClockControl.startMicroTimer();
-            }
-            fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
-            requestError = call Rf1aPhysical.startTransmission(FALSE,
-              TRUE);
-            if (SUCCESS == requestError){
-              atomic{
-                aNextRequestType = nextRequest->requestType;
-                tx_msg = nextRequest->msg;
-                tx_pos = (uint8_t*)nextRequest -> msg;
-                aSfdCapture = 0;
-                tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
-                tx_left = tx_len;
-                tx_tsLoc = call CXPacketMetadata.getTSLoc(nextRequest->msg);
-                tx_tsSet = FALSE;
-                aRequestError = SUCCESS;
-                requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
-                //if requestError is not success at this point, radio
-                //is in FSTXON. put it back to idle.
-                if (SUCCESS != requestError){
-                  call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            if (active){
+              shouldSynch = TRUE;
+              if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+                call Msp430XV2ClockControl.startMicroTimer();
+              }
+              fastAlarmAtFrameTimerFired = call FastAlarm.getNow();
+              requestError = call Rf1aPhysical.startTransmission(FALSE,
+                TRUE);
+              if (SUCCESS == requestError){
+                atomic{
+                  aNextRequestType = nextRequest->requestType;
+                  tx_msg = nextRequest->msg;
+                  tx_pos = (uint8_t*)nextRequest -> msg;
+                  aSfdCapture = 0;
+                  tx_len = (call Rf1aPacket.metadata(nextRequest->msg))->payload_length;
+                  tx_left = tx_len;
+                  tx_tsLoc = call CXPacketMetadata.getTSLoc(nextRequest->msg);
+                  tx_tsSet = FALSE;
+                  aRequestError = SUCCESS;
+                  requestError = call Rf1aPhysical.send(tx_pos, tx_len, RF1A_OM_IDLE);
+                  //if requestError is not success at this point, radio
+                  //is in FSTXON. put it back to idle.
+                  if (SUCCESS != requestError){
+                    call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+                  }
                 }
               }
-            }
-            if (SUCCESS != requestError){
+              if (SUCCESS != requestError){
+                post requestHandled();
+              }
+            } else {
+              //radio is in sleep? fail the tx.
+              requestError = EOFF;
               post requestHandled();
             }
             break;
 
           case RT_RX:
-            shouldSynch = FALSE;
-            if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-              call Msp430XV2ClockControl.startMicroTimer();
-            }
-            didReceive = FALSE;
-            //TODO FUTURE: the longer we can put off entering RX mode,
-            //the more energy we can save. with slack ratio=6, it
-            //looks like we typically spend 0.38 ms in RX before the
-            //transmission begins.
-            //another way to be hardcore about this would be to set
-            //one fastalarm for just after tx start is expected and
-            //check for channel activity. If there is nothing, stop
-            //immediately rather than waiting for SFD timeout.
-            requestError = call Rf1aPhysical.setReceiveBuffer(
-              (uint8_t*)nextRequest->msg,
-              TOSH_DATA_LENGTH + sizeof(message_header_t),
-              TRUE);
-            if (SUCCESS == requestError ){
-              atomic{P1OUT |= BIT2;}
-              atomic{
-                aNextRequestType = nextRequest->requestType;
-                aRequestError = SUCCESS;
-                aSfdCapture = 0;
-                call FastAlarm.start(nextRequest->typeSpecific.rx.duration + PREP_TIME_FAST);
-                call SynchCapture.captureRisingEdge();
+
+            if (active){
+              shouldSynch = FALSE;
+              if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+                call Msp430XV2ClockControl.startMicroTimer();
               }
-            }else{
+              didReceive = FALSE;
+              //TODO FUTURE: the longer we can put off entering RX mode,
+              //the more energy we can save. with slack ratio=6, it
+              //looks like we typically spend 0.38 ms in RX before the
+              //transmission begins.
+              //another way to be hardcore about this would be to set
+              //one fastalarm for just after tx start is expected and
+              //check for channel activity. If there is nothing, stop
+              //immediately rather than waiting for SFD timeout.
+              requestError = call Rf1aPhysical.setReceiveBuffer(
+                (uint8_t*)nextRequest->msg,
+                TOSH_DATA_LENGTH + sizeof(message_header_t),
+                TRUE);
+              if (SUCCESS == requestError ){
+                atomic{P1OUT |= BIT2;}
+                atomic{
+                  aNextRequestType = nextRequest->requestType;
+                  aRequestError = SUCCESS;
+                  aSfdCapture = 0;
+                  call FastAlarm.start(nextRequest->typeSpecific.rx.duration + PREP_TIME_FAST);
+                  call SynchCapture.captureRisingEdge();
+                }
+              }else{
+                post requestHandled();
+              }
+            } else {
+              //rx request while sleeping: success/no reception
+              didReceive = FALSE;
+              requestError = SUCCESS;
               post requestHandled();
             }
             break;
