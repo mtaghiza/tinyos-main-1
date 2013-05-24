@@ -175,7 +175,9 @@ module CXSlaveSchedulerStaticP{
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
       sched->sn);
-    call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    if (call CXNetworkPacket.getTTL(msg) == 0 ){
+      call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    }
     call CXSchedulerPacket.setOriginFrame(msg, 
       baseFrame + frameOffset - lastCycleStart);
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,

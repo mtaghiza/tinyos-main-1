@@ -254,7 +254,9 @@ module CXMasterSchedulerStaticP{
       sched->sn);
     call CXSchedulerPacket.setOriginFrame(schedMsg, 
       baseFrame + frameOffset - lastCycleStart);
-    call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    if (call CXNetworkPacket.getTTL(msg) == 0){
+      call CXNetworkPacket.setTTL(msg, sched->maxDepth);
+    }
     call CXLinkPacket.setSource(msg, call ActiveMessageAddress.amAddress());
     return call SubCXRQ.requestSend(layerCount + 1, 
       baseFrame, frameOffset, 

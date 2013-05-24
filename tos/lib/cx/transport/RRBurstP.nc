@@ -105,6 +105,11 @@ module RRBurstP {
       bool needsSetup = TRUE;
       error_t error;
       
+      cinfo(TRANSPORT, "NS %lu %lu %u %lu\r\n", 
+        lastTX, 
+        call SlotTiming.lastSlotStart(),
+        distance,
+        call SlotTiming.framesLeftInSlot(nf));
       //not synched yet, try later.
       if (nf == INVALID_FRAME || nss == INVALID_FRAME){
         //TODO: we need a better return code here.
