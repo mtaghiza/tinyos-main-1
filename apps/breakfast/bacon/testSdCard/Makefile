@@ -12,5 +12,7 @@ CFLAGS+=-DUSE_FS=$(USE_FS)
 SYNC_SD?=0
 CFLAGS+=-DSYNC_SD=$(SYNC_SD)
 
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/sdCard
+
 include $(MAKERULES)
 
