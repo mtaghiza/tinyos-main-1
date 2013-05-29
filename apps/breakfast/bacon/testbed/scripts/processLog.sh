@@ -81,7 +81,7 @@ pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 ==
   }else{
     cs=0
   }
-  print $1, $2, $4, $5, ($6)*(2**32) + $7, cs
+  print $1, $2, $4, $5, ($6)*(2^32) + $7, cs
 }' > $rsTf
 
 echo "Extracting forwarding decisions"
