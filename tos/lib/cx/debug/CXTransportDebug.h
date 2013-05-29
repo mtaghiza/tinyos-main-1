@@ -6,4 +6,8 @@
 #define DL_TRANSPORT DL_INFO
 #endif
 
+#ifndef RRB_PADDING
+#define RRB_PADDING 0
+#endif
+
 #endif

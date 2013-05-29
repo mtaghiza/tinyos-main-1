@@ -89,11 +89,11 @@ module RRBurstP {
       CX_SP_ACK);
     error = call AckSend.send(flowSrc, ackMsg, sizeof(cx_ack_t),
       ackStart);
-    cinfo(TRANSPORT, "ack.send %lu %x\r\n", ackStart, error);
+    cinfo(TRANSPORT, "AS %lu %x\r\n", ackStart, error);
   }
   
   event void AckSend.sendDone(message_t* msg, error_t error){
-    cinfo(TRANSPORT, "ack.sd %x\r\n", error);
+    cinfo(TRANSPORT, "ASD %x\r\n", error);
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
@@ -101,7 +101,7 @@ module RRBurstP {
     if (sending){
       return EALREADY;
     }else{
-      uint32_t nf = call CXRequestQueue.nextFrame(TRUE);
+      uint32_t nf = call CXRequestQueue.nextFrame(TRUE) + RRB_PADDING;
       uint32_t nss = call SlotTiming.nextSlotStart(nf);
       uint32_t txf;
       uint8_t distance = call RoutingTable.getDistance(call ActiveMessageAddress.amAddress(), 
@@ -130,13 +130,13 @@ module RRBurstP {
         //push this to the next slot or can use this slot. n.b. that
         //this needs to account for the ACK time as well.
         txf = nss;
-        cinfo(TRANSPORT, "SP_S: %lu -> %lu\r\n",
+        cdbg(TRANSPORT, "SP_S: %lu -> %lu\r\n",
           nf, txf);
         call CXTransportPacket.setSubprotocol(msg, CX_SP_SETUP);
         call CXNetworkPacket.setTTL(msg, 
           call RoutingTable.getDefault());
       }else{
-        cinfo(TRANSPORT, "SP_D\r\n");
+        cdbg(TRANSPORT, "SP_D\r\n");
         call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
         txf = nf;
         call CXNetworkPacket.setTTL(msg, distance + lastBw);
@@ -311,7 +311,7 @@ module RRBurstP {
           //use default since ACK will be flooded.
           ackDeadline = (atFrame + 1+ call RoutingTable.getDefault());
           setupMsg = msg;
-          cinfo(TRANSPORT, "@%lu wait to %lu\r\n", atFrame,
+          cdbg(TRANSPORT, "@%lu wait to %lu\r\n", atFrame,
             ackDeadline);
           break;
         case CX_SP_DATA:

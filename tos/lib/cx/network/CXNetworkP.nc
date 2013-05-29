@@ -144,6 +144,7 @@ module CXNetworkP {
       atFrame, nmd->reqFrame, 
       didReceive && !isDuplicate(msg), nmd->microRef, nmd->t32kRef, 
       nmd->next, msg);
+    synchFrame = 0;
     lastSrc = call AMPacket.source(msg);
     lastSn = call CXNetworkPacket.getSn(msg);
     call Pool.put(nmd);
@@ -214,6 +215,7 @@ module CXNetworkP {
             layerCount - 1,
             atFrame, nmd->reqFrame, microRef, t32kRef, 
             nmd->next, msg);
+          synchFrame = 0;
         } else {
           printRX(msg, nmd -> t32kRef);
           signal CXRequestQueue.receiveHandled(error,
@@ -223,6 +225,7 @@ module CXNetworkP {
             nmd -> microRef, nmd -> t32kRef,
             nmd -> next,
             msg);
+          synchFrame = 0;
           lastSrc = call AMPacket.source(msg);
           lastSn = call CXNetworkPacket.getSn(msg);
         }
@@ -237,6 +240,7 @@ module CXNetworkP {
           layerCount - 1,
           atFrame, nmd->reqFrame, microRef, t32kRef, 
           nmd->next, msg);
+        synchFrame = 0;
         call Pool.put(nmd);
       }else{
         //restore stashed reception info and signal up as receive
@@ -248,6 +252,7 @@ module CXNetworkP {
           nmd -> microRef, nmd -> t32kRef,
           nmd -> next,
           msg);
+        synchFrame = 0;
         lastSrc = call AMPacket.source(msg);
         lastSn = call CXNetworkPacket.getSn(msg);
         call Pool.put(nmd); 
