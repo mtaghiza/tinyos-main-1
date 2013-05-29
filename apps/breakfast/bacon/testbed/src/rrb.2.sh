@@ -9,6 +9,6 @@ then
   ./$sd/blink.sh 
 fi
 
-source ./$sd/install.sh maps/map.root $label $od/root.options $od/rrb.options $od/static.options $od/rx.options
+source ./$sd/install.sh maps/map.root $label $od/root.options $od/rrb.options $od/static.options $od/rx.options $od/bw_2.options
 
 source ./$sd/install.sh maps/map.nonroot $label $od/slave.options $od/rrb.options $od/static.options $od/unicast_fast.options $od/bw_2.options
