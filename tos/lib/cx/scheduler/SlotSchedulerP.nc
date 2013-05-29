@@ -310,7 +310,7 @@ module SlotSchedulerP{
     if (sched != NULL 
         && !didReceive 
         && slotState == S_UNKNOWN 
-        && frameOfSlot(atFrame) >= sched -> maxDepth){
+        && frameOfSlot(atFrame) > sched -> maxDepth){
       slotState = S_INACTIVE;
       post sleepToNextSlot();
     }else{

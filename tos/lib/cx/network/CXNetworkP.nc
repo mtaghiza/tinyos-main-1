@@ -65,8 +65,14 @@ module CXNetworkP {
   }
 
   void printOTX(message_t* msg){
-    //sn, local OFN
-    cinfo(NETWORK, "NTX %u %lu %lu %lu %u %u %u %u\r\n",
+    if ( call CXNetworkPacket.getOriginFrameStart(msg)){
+      cinfo(NETWORK, "NTX ");
+    } else {
+      //dropped transmission
+      cinfo(NETWORK, "NDT ");
+    }
+
+    cinfo(NETWORK, "%u %lu %lu %lu %u %u %u %u\r\n",
       call CXNetworkPacket.getSn(msg),
       call CXNetworkPacket.getOriginFrameNumber(msg),
       call CXNetworkPacket.getOriginFrameStart(msg),
