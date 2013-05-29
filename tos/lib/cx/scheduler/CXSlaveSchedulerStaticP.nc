@@ -135,12 +135,21 @@ module CXSlaveSchedulerStaticP{
       if (state == S_SOFT_SYNCH 
           && sched != NULL 
           && sched->sn == call CXSchedulerPacket.getScheduleNumber(msg)){
-        state = S_SYNCHED;
         //bring forward lastCycleStart if needed
         while (atFrame > (lastCycleStart + sched->cycleLength)){
           lastCycleStart += sched->cycleLength;
         }
         call ScheduleParams.setCycleStart(lastCycleStart);
+        {
+          uint32_t cycleLocalOrigin = call CXNetworkPacket.getOriginFrameNumber(msg) - lastCycleStart;
+          if (cycleLocalOrigin != call CXSchedulerPacket.getOriginFrame(msg)){
+            cinfo(SCHED, "FM %lu != %lu - %lu\r\n",
+              call CXSchedulerPacket.getOriginFrame(msg),
+              call CXNetworkPacket.getOriginFrameNumber(msg),
+              lastCycleStart);
+          }
+        }
+        state = S_SYNCHED;
       }
     }else{
       //did not receive
