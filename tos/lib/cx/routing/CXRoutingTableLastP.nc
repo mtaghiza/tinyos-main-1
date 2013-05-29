@@ -1,3 +1,4 @@
+#include "CXRoutingDebug.h"
 module CXRoutingTableLastP {
   provides interface RoutingTable;
 } implementation {
@@ -26,6 +27,7 @@ module CXRoutingTableLastP {
           return rt[i].distance;
         }
       }
+      cdbg(ROUTING, "DD %u %u\r\n", from, to);
       return defaultDistance;
     }
   }
@@ -33,15 +35,25 @@ module CXRoutingTableLastP {
   command error_t RoutingTable.addMeasurement(am_addr_t from, 
       am_addr_t to, uint8_t distance){
     uint8_t i;
+    cdbg(ROUTING, "DAM %u %u %u:",
+      from, to, distance);
     for(i=0; i < RT_LEN; i++){
+      cdbg(ROUTING, " (%u %u)", rt[i].src, rt[i].dest);
       if ((from == rt[i].src && to == rt[i].dest) 
           || (from == rt[i].dest && to == rt[i].src)){
+        cdbg(ROUTING, "*\r\n");
         rt[i].src = from;
         rt[i].dest = to;
         rt[i].distance = distance;
         return SUCCESS;
       }
     }
+    cdbg(ROUTING, "\r\n");
+    cdbg(ROUTING, "DE %u (%u %u)\r\n",
+      evictionIndex,
+      rt[evictionIndex].src,
+      rt[evictionIndex].dest);
+
     rt[evictionIndex].src = from;
     rt[evictionIndex].dest = to;
     rt[evictionIndex].distance = distance;
