@@ -27,15 +27,13 @@ module SDCardP {
     interface GeneralIO as Power;
     interface HplMsp430GeneralIO as CardDetect;
 
-    interface Leds;
-    interface StdOut;
   }
 }
 
 implementation {
 	enum {
-      SD_NOINIT,
-      SD_IDLE,
+      SD_NOINIT = 0,
+      SD_IDLE = 1,
       SD_READ,
       SD_WRITE,
       SD_ERASE
@@ -51,7 +49,7 @@ implementation {
   uint8_t mmcWriteBlock(const uint32_t address, const uint16_t count, uint8_t *pBuffer);
   uint32_t mmcReadCardSize(void);
 
-  norace uint8_t sdState=SD_NOINIT;
+  norace uint8_t sdState = SD_NOINIT;
 
   norace uint32_t m_addr;
   norace uint8_t* m_txBuf;
@@ -74,16 +72,18 @@ implementation {
       // call Power.set();
       // call Power.makeOutput();
 
-      call Select.makeOutput();
-      
+      call Select.makeOutput();      
       call CardDetect.makeInput();
-      call CardDetect.setResistor(MSP430_PORT_RESISTOR_PULLUP);
-    
-      if(call CardDetect.get())
-        error = call SpiResource.request();
-      
-      call CardDetect.setResistor(MSP430_PORT_RESISTOR_OFF);
-    }
+    }    
+
+    call CardDetect.setResistor(MSP430_PORT_RESISTOR_PULLUP);
+
+    if(call CardDetect.get())
+      error = call SpiResource.request();
+    else
+      error = FAIL;
+
+    call CardDetect.setResistor(MSP430_PORT_RESISTOR_OFF);
 
     return error;
   }
@@ -97,34 +97,25 @@ implementation {
       // call Power.set();
       // call Power.makeOutput();
 
-      call Select.makeOutput();
-      
+      call Select.makeOutput();      
       call CardDetect.makeInput();
-      call CardDetect.setResistor(MSP430_PORT_RESISTOR_PULLUP);
-    
-      if(call CardDetect.get())
-        error = call SpiResource.immediateRequest();
-      
-      call CardDetect.setResistor(MSP430_PORT_RESISTOR_OFF);
     }
+
+    call CardDetect.setResistor(MSP430_PORT_RESISTOR_PULLUP);
+
+    if(call CardDetect.get())
+      error = call SpiResource.immediateRequest();
+    else
+      error = FAIL;
+      
+    call CardDetect.setResistor(MSP430_PORT_RESISTOR_OFF);
 
     return error;
   }
 
   async command error_t Resource.release() 
-  {
-    error_t error = FAIL;
-    
-    if (sdState == SD_IDLE)
-    {
-      // power down SD card 
-
-      sdState = SD_NOINIT;
-      error = call SpiResource.release();
-    }
-    
-    // release SPI bus    
-    return error;
+  {   
+    return call SpiResource.release();
   }
 
   async command bool Resource.isOwner() 
@@ -135,9 +126,16 @@ implementation {
 
   event void SpiResource.granted()
   { 
-    mmcInit();
-    
-    signal Resource.granted();
+    if (sdState == SD_NOINIT)
+    {
+      // power up SD card 
+      
+      sdState = SD_IDLE;
+
+      mmcInit();
+    }
+
+    signal Resource.granted();    
   }
 
   /***************************************************************************/
@@ -205,81 +203,98 @@ implementation {
 
   command error_t SDCard.read(uint32_t addr, uint8_t *buf, uint16_t count) 
   {
-    uint8_t ret;
-    
-    m_addr = addr;
-    ret = mmcReadBlock(addr, count, buf);
-    sdState = SD_READ;
+    uint8_t ret = FAIL;
+    uint16_t length = (count <= 512) ? count : 512;
 
+    if (sdState == SD_IDLE)
+    {    
+      sdState = SD_READ;
+
+      m_addr = addr;
+      ret = mmcReadBlock(addr, length, buf);
+    }
+    
     return ret;    
   }
 
   command error_t SDCard.write(uint32_t addr, uint8_t *buf, uint16_t count) 
   {
-    uint8_t ret;
-    
-    m_addr = addr;
-    ret = mmcWriteBlock(addr, count, buf);
-    sdState = SD_WRITE;
+    uint8_t ret = FAIL;
+    uint16_t length = (count <= 512) ? count : 512;
 
+    if (sdState == SD_IDLE)
+    {    
+      sdState = SD_WRITE;
+
+      m_addr = addr;
+      ret = mmcWriteBlock(addr, length, buf);
+    }
+    
     return ret;    
   }
 
   command uint32_t SDCard.readCardSize()
   {
-    return mmcReadCardSize();
+    uint32_t ret = 0;
+  
+    if (sdState == SD_IDLE)
+      ret = mmcReadCardSize();
+      
+    return ret;
   }
 
   command uint8_t SDCard.checkBusy()
   {
-    uint8_t ret;
+    uint8_t ret = 0;
     
-    ret = mmcCheckBusy();
+    if (sdState == SD_IDLE)
+      ret = mmcCheckBusy();
     
     return ret;
   }
 
-  command error_t SDCard.clearSectors(uint32_t offset, uint16_t nbSectors){
-        error_t error = FAIL;
-        atomic {
-          if (sdState != SD_IDLE) return FAIL;
-      sdState = SD_WRITE;
-    }
-        call Select.clr();
-        // Envoie de la demande d'infos
-        mmcSendCmd(32/*0x60*/,offset,0xff);
-        if (mmcGetXXResponse(0x00) != 0x00){ // Reponse
-            goto end;    
-        }
-        call Select.set();
-        call SpiByte.write(0xff);
-        call Select.clr();
-        mmcSendCmd(33,offset+512*(nbSectors-1),0xff);
-        if (mmcGetXXResponse(0x00) != 0x00){ // Reponse
-            goto end;    
-        }
-        call Select.set();
-        call SpiByte.write(0xff);
-        call Select.clr();
-        mmcSendCmd(38,0,0xff);
-        if (mmcGetXXResponse(0x00) != 0x00) {
-            goto end;
-        }
-        call Select.set();
-        call SpiByte.write(0xff);
-        error =SUCCESS;
-    
-    end:
-      atomic sdState = SD_IDLE;
-        return error;
-    } 
-
-
-  /* incoming serial data */
-  async event void StdOut.get(uint8_t data) 
+  command error_t SDCard.clearSectors(uint32_t offset, uint16_t nbSectors)
   {
-    ;
-  }
+    error_t error = FAIL;
+
+    if (sdState == SD_IDLE) 
+    {
+      mmcGoIdle();
+
+      call Select.clr();
+      // Envoie de la demande d'infos
+      mmcSendCmd(32/*0x60*/,offset,0xff);
+      if (mmcGetXXResponse(0x00) != 0x00){ // Reponse
+          goto end;    
+      }
+            
+      call Select.set();
+      call SpiByte.write(0xff);
+      call Select.clr();
+      mmcSendCmd(33,offset+512*(nbSectors-1),0xff);
+      if (mmcGetXXResponse(0x00) != 0x00){ // Reponse
+          goto end;    
+      }
+
+      call Select.set();
+      call SpiByte.write(0xff);
+      call Select.clr();
+      
+      mmcSendCmd(38,0,0xff);
+      if (mmcGetXXResponse(0x00) != 0x00) {
+          goto end;
+      }
+
+      call Select.set();
+      call SpiByte.write(0xff);
+
+    end:
+      error = SUCCESS;
+    }
+    
+    return error;
+  } 
+
 
   /***************************************************************************/
   /***************************************************************************/
@@ -411,7 +426,6 @@ implementation {
     uint8_t i = 0;
 
     uint8_t response;
-    uint8_t rvalue;
 
     while (i <= 64)
     {
@@ -420,24 +434,17 @@ implementation {
 
       switch(response)
       {
-        case 0x05: rvalue=MMC_SUCCESS;break;
-        case 0x0b: return(MMC_CRC_ERROR);
-        case 0x0d: return(MMC_WRITE_ERROR);
+        case 0x00: return MMC_SUCCESS;
+        case 0x05: return MMC_SUCCESS;
+        case 0x0b: return MMC_CRC_ERROR;
+        case 0x0d: return MMC_WRITE_ERROR;        
         default:
-          rvalue = MMC_OTHER_ERROR;
-          break;
       }
-      if(rvalue==MMC_SUCCESS)break;
+
       i++;
     }
-    i=0;
-    do
-    {
-      response = call SpiByte.write(DUMMY_CHAR);
-      i++;
-    } while(response==0);
 
-    return response;
+    return MMC_OTHER_ERROR;
   }
 
 

@@ -23,9 +23,6 @@ implementation {
   SDCardP.Resource = Resource;
   SDCardP.SDCard = SDCard;
 	
-	components LedsC;
-	SDCardP.Leds -> LedsC;
-
   components new Msp430UsciSpiB0C() as SpiC; 
   SDCardP.SpiResource -> SpiC;
   SDCardP.SpiByte -> SpiC;
@@ -41,9 +38,5 @@ implementation {
   components new Msp430GpioC() as Power;
   Power -> HplMsp430GeneralIOC.Port21;
   SDCardP.Power -> Power;
-
-  
-    
-  components StdOutC;
-  SDCardP.StdOut -> StdOutC;
+      
 }

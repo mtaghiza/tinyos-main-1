@@ -27,8 +27,6 @@ module SDCardSyncP {
     interface GeneralIO as Power;
     interface HplMsp430GeneralIO as CardDetect;
 
-    interface Leds;
-    interface StdOut;
   }
 }
 
@@ -220,11 +218,6 @@ implementation {
     } 
 
 
-  /* incoming serial data */
-  async event void StdOut.get(uint8_t data) 
-  {
-    ;
-  }
 
   /***************************************************************************/
   /***************************************************************************/
