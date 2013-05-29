@@ -11,7 +11,9 @@ module ScheduledTXP {
 
   command error_t Send.send(message_t* msg, uint8_t len){
     error_t error;
-    call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
+    if (call CXTransportPacket.getSubprotocol(msg) == CX_INVALID_SP){
+      call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
+    }
     error = call CXRequestQueue.requestSend(0,
       call CXPacketMetadata.getRequestedFrame(msg), 0,
       TXP_SCHEDULED,

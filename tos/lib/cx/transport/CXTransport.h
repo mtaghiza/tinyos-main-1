@@ -9,6 +9,7 @@ typedef nx_struct cx_transport_header {
 typedef nx_struct cx_ack {
   nx_uint8_t distance;
   nx_uint8_t bw;
+  nx_uint16_t sn;
 } cx_ack_t;
 
 #define AM_CX_RR_ACK_MSG 0xC5
@@ -26,6 +27,7 @@ typedef nx_struct cx_ack {
 //upper nibble is available for distinguishing data/ack/setup, etc
 #define CX_TP_PROTO_MASK 0x0F
 #define CX_INVALID_TP 0xFF
+#define CX_INVALID_SP 0xF0
 #define CX_INVALID_DISTANCE 0xFF
 
 //default frame len is 2^10 * 2^-15 = 2^-5 S

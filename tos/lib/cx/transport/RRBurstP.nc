@@ -41,6 +41,7 @@ module RRBurstP {
   uint32_t ackDeadline;
 
   am_addr_t flowSrc;
+  uint16_t flowSn;
   uint32_t ackStart;
 
   uint8_t retryCount;
@@ -78,12 +79,13 @@ module RRBurstP {
     cx_ack_t* ack = call AckSend.getPayload(ackMsg, 
       sizeof(cx_ack_t));
     call AckPacket.clear(ackMsg);
-    call CXTransportPacket.setSubprotocol(ackMsg, 
-      CX_SP_ACK);
     ack->distance = call RoutingTable.getDistance(flowSrc,
       call ActiveMessageAddress.amAddress());
     //TODO: should come from schedule, or something.
     ack->bw = RRB_BW;
+    ack->sn = flowSn;
+    call CXTransportPacket.setSubprotocol(ackMsg, 
+      CX_SP_ACK);
     error = call AckSend.send(flowSrc, ackMsg, sizeof(cx_ack_t),
       ackStart);
     cinfo(TRANSPORT, "ack.send %lu %x\r\n", ackStart, error);
@@ -190,6 +192,7 @@ module RRBurstP {
             cdbg(TRANSPORT, "s");
             if (call AMPacket.isForMe(msg)){
               flowSrc = call AMPacket.source(msg);
+              flowSn = call CXNetworkPacket.getSn(msg);
               ackStart = atFrame + 1;
               post sendAck();
             } else {
@@ -263,7 +266,7 @@ module RRBurstP {
       lastBw = ack->bw;
       cinfo(TRANSPORT, "RRB %u %u %u %u %u %u %u %u\r\n",
         s, d, 
-        call CXNetworkPacket.getSn(msg),
+        ack->sn,
         d_si,
         d_id,
         d_sd, 

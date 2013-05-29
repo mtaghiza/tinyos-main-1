@@ -104,7 +104,9 @@ module FloodBurstP {
       //  this slot to deliver it.
       if (nf != INVALID_FRAME){
         //TODO: should set TTL here? (based on RoutingTable.distance)
-        error_t error = call CXRequestQueue.requestSend(0,
+        error_t error;
+        call CXTransportPacket.setSubprotocol(msg, CX_SP_DATA);
+        error = call CXRequestQueue.requestSend(0,
           nf, 0,
           TXP_BROADCAST,
           FALSE, 0,
