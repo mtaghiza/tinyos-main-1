@@ -22,10 +22,11 @@ configuration CXMasterSchedulerStaticC{
   //CX Stack wiring
   SplitControl = CXMasterSchedulerP;
   CXRequestQueue = CXMasterSchedulerP;
-
+  
   CXMasterSchedulerP.SubCXRQ -> SlotSchedulerP;
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
 
+  SlotSchedulerP.ActivityNotify -> CXNetworkC.ActivityNotify;
   SlotSchedulerP.SubCXRQ -> CXNetworkC;
   
   //communication between role-specific and role-agnostic code

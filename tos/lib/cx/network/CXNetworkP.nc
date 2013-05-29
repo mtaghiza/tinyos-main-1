@@ -20,12 +20,21 @@ module CXNetworkP {
   uses interface CXTransportPacket;
   uses interface Rf1aPacket;
   uses interface LocalTime<T32khz>;
+  
+  provides interface Notify<uint32_t> as ActivityNotify;
 
 } implementation {
 
   uint32_t synchFrame;
   uint32_t synchMicroRef;
 
+  command error_t ActivityNotify.enable(){
+    return SUCCESS;
+  }
+
+  command error_t ActivityNotify.disable(){
+    return FAIL;
+  }
 
   cx_network_metadata_t* newMd(){
     cx_network_metadata_t* ret = call Pool.get();
@@ -107,6 +116,7 @@ module CXNetworkP {
 
     if (SUCCESS == error) {
       if (didReceive){
+        signal ActivityNotify.notify(atFrame);
         call CXNetworkPacket.setRXHopCount(msg, 
           call CXNetworkPacket.getHops(msg));
         call RoutingTable.addMeasurement(call AMPacket.source(msg),
@@ -168,6 +178,7 @@ module CXNetworkP {
       cerror(NETWORK, "n.sh: %x\r\n", error);
     }
     if (SUCCESS == error){
+      signal ActivityNotify.notify(atFrame);
       synchFrame = atFrame;
       synchMicroRef = microRef;
       printTX(msg, atFrame);

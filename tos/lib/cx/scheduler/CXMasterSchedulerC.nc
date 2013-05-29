@@ -27,6 +27,7 @@ configuration CXMasterSchedulerC{
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
 
   SlotSchedulerP.SubCXRQ -> CXNetworkC;
+  SlotSchedulerP.ActivityNotify -> CXNetworkC.ActivityNotify;
   
   //communication between role-specific and role-agnostic code
   CXMasterSchedulerP.SlotNotify -> SlotSchedulerP.SlotNotify;

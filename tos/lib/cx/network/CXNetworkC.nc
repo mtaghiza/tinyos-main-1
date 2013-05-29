@@ -5,6 +5,7 @@ configuration CXNetworkC {
   provides interface CXRequestQueue;
   provides interface Packet;
   provides interface CXNetworkPacket;
+  provides interface Notify<uint32_t> as ActivityNotify;
 
 } implementation {
   components CXNetworkP;
@@ -19,6 +20,7 @@ configuration CXNetworkC {
   components CXLinkC;
   
   SplitControl = CXLinkC;
+  ActivityNotify = CXNetworkP.ActivityNotify;
 
   CXRequestQueue = CXNetworkP;
   CXNetworkP.SubCXRequestQueue -> CXLinkC;
@@ -48,4 +50,5 @@ configuration CXNetworkC {
   CXNetworkP.CXTransportPacket -> CXTransportPacketC;
   CXNetworkP.LocalTime -> LocalTime32khzC;
   CXNetworkP.Rf1aPacket -> CXLinkPacketC;
+
 }

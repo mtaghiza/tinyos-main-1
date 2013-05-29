@@ -12,6 +12,7 @@ module SlotSchedulerP{
   provides interface ScheduleParams;
   provides interface SlotTiming;
   uses interface StateDump;
+  uses interface Notify<uint32_t> as ActivityNotify;
 } implementation {
   
   //enums/vars for determining when a slot is idle.
@@ -296,6 +297,9 @@ module SlotSchedulerP{
     }
   }
   
+  event void ActivityNotify.notify(uint32_t atFrame){
+    slotState = S_ACTIVE;
+  }
 
   /**
    *  Pass through receive handled events. If a slot is detected as
@@ -313,11 +317,6 @@ module SlotSchedulerP{
         && frameOfSlot(atFrame) > sched -> maxDepth){
       slotState = S_INACTIVE;
       post sleepToNextSlot();
-    }else{
-      if (didReceive){
-        slotState = S_ACTIVE;
-      }else{
-      }
     }
     //regardless of above logic, pass through handled events
     if (layerCount){
@@ -411,7 +410,6 @@ module SlotSchedulerP{
       uint32_t atFrame, uint32_t reqFrame, 
       uint32_t microRef, uint32_t t32kRef,
       void* md, message_t* msg){
-    slotState = S_ACTIVE;
     if (layerCount){
       signal CXRequestQueue.sendHandled(error, 
         layerCount - 1,
