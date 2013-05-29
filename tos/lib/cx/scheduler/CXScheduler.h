@@ -95,7 +95,7 @@ typedef nx_struct cx_assignment_msg {
 #endif
 
 #ifndef SCHEDULE_LOSS_THRESHOLD
-#define SCHEDULE_LOSS_THRESHOLD 2
+#define SCHEDULE_LOSS_THRESHOLD 3
 #endif
 
 #define AM_CX_SCHEDULE_MSG 0xC4

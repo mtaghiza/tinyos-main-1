@@ -141,6 +141,15 @@ module CXSlaveSchedulerP{
       duration,
       NULL, msg);
   }
+  
+  void startSearch(){
+    state = S_SEARCH;
+    mySlot = INVALID_SLOT;
+    requestState = RS_UNASSIGNED;
+    sched = NULL;
+    call ScheduleParams.setSlot(mySlot);
+    call ScheduleParams.setSchedule(sched);
+  }
 
   event void SubCXRQ.receiveHandled(error_t error, 
       uint8_t layerCount,
@@ -153,6 +162,7 @@ module CXSlaveSchedulerP{
       if (state == S_SEARCH){
         state = S_SOFT_SYNCH;
       }
+
       if (state == S_SOFT_SYNCH 
           && sched != NULL 
           && sched->sn == call CXSchedulerPacket.getScheduleNumber(msg)){
@@ -162,15 +172,20 @@ module CXSlaveSchedulerP{
         }
         call ScheduleParams.setCycleStart(lastCycleStart);
         {
+          //validate that we have the correct frame numbering.
           uint32_t cycleLocalOrigin = call CXNetworkPacket.getOriginFrameNumber(msg) - lastCycleStart;
           if (cycleLocalOrigin != call CXSchedulerPacket.getOriginFrame(msg)){
-            cinfo(SCHED, "FM %lu != %lu - %lu\r\n",
+            cinfo(SCHED, "FM %lu <> %lu - %lu\r\n",
               call CXSchedulerPacket.getOriginFrame(msg),
               call CXNetworkPacket.getOriginFrameNumber(msg),
               lastCycleStart);
+            //immediately bail and restart search if your numbering is
+            //off.
+            startSearch();
+          }else{
+            state = S_SYNCHED;
           }
         }
-        state = S_SYNCHED;
       }
     }else{
       //did not receive
@@ -464,8 +479,8 @@ module CXSlaveSchedulerP{
       post sleepToNextCycle();
     }else{
       //this should force the next RX to use MAX_WAIT.
-      state = S_SEARCH;
       cinfo(SCHED, "synch lost\r\n");
+      startSearch();
     }
   }
 
