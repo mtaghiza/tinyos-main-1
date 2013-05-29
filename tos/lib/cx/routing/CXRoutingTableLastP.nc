@@ -1,6 +1,8 @@
-#include "CXRoutingDebug.h"
+
+ #include "CXRoutingDebug.h"
 module CXRoutingTableLastP {
   provides interface RoutingTable;
+  uses interface Boot;
 } implementation {
   uint8_t defaultDistance;
   uint8_t evictionIndex = 0;
@@ -15,6 +17,15 @@ module CXRoutingTableLastP {
   //3 entries is minimum: end-to-end plus segment lengths
   #define RT_LEN 3
   rt_entry_t rt[RT_LEN];
+
+  event void Boot.booted(){
+    uint8_t i;
+    for (i = 0; i < RT_LEN; i++){
+      rt[i].src = AM_BROADCAST_ADDR;
+      rt[i].dest = AM_BROADCAST_ADDR;
+      rt[i].age = 0xFF;
+    }
+  }
   
   command uint8_t RoutingTable.getDistance(am_addr_t from, 
       am_addr_t to){
@@ -39,16 +50,23 @@ module CXRoutingTableLastP {
     uint8_t oldest=0;
     uint8_t maxAge=0;
 
-    cdbg(ROUTING, "DAM %u %u %u:",
-      from, to, distance);
-
+    cdbg(ROUTING, "DUA");
     //age up each entry
     for (i=0; i < RT_LEN; i++){
-      rt[i].age ++;
-      if (rt[i].age > maxAge){
+      if (rt[i].age + 1 != 0){
+        rt[i].age ++;
+      }
+      cdbg(ROUTING, " (%u %u) %u",
+        rt[i].src, rt[i].dest, rt[i].age);
+      if (rt[i].age > maxAge || rt[i].src==AM_BROADCAST_ADDR || rt[i].dest == AM_BROADCAST_ADDR){
+        maxAge = rt[i].age;
         oldest = i;
+        cdbg(ROUTING, "*");
       }
     }
+
+    cdbg(ROUTING, "DAM %u %u %u:",
+      from, to, distance);
     //find matching entry and update/zero age
     for(i=0; i < RT_LEN; i++){
       cdbg(ROUTING, " (%u %u)", rt[i].src, rt[i].dest);
@@ -62,11 +80,13 @@ module CXRoutingTableLastP {
         return SUCCESS;
       }
     }
+
     cdbg(ROUTING, "\r\n");
     cdbg(ROUTING, "DE %u (%u %u)\r\n",
       oldest,
       rt[oldest].src,
       rt[oldest].dest);
+
     //replace the oldest entry
     rt[oldest].src = from;
     rt[oldest].dest = to;

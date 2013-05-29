@@ -5,4 +5,6 @@ configuration CXRoutingTableC {
   components CXRoutingTableLastP as RoutingTableP;
   
   RoutingTable = RoutingTableP;
+  components MainC;
+  RoutingTableP.Boot -> MainC;
 }
