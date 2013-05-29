@@ -33,6 +33,7 @@ module RRBurstP {
   bool sending;
 
   bool waitingForAck;
+  bool handlingAck;
   message_t* setupMsg;
 
   message_t ackMsg_internal;
@@ -48,7 +49,7 @@ module RRBurstP {
   uint8_t lastBw = 0;
 
   task void receiveNext(){
-    if ( on && !rxPending){
+    if ( on && !rxPending && !handlingAck){
       error_t error; rxf = call CXRequestQueue.nextFrame(FALSE);
       error = call CXRequestQueue.requestReceive(0,
         rxf, 0,
@@ -174,6 +175,13 @@ module RRBurstP {
     return call Packet.getPayload(msg, len);
   }
 
+  task void handleAck(){
+    message_t* msg = rxMsg;
+    void* payload = call AckPacket.getPayload(msg, sizeof(cx_ack_t));
+    rxMsg = signal AckReceive.receive(msg, payload, sizeof(cx_ack_t));
+    handlingAck = FALSE;
+  }
+
   event void CXRequestQueue.receiveHandled(error_t error, 
       uint8_t layerCount, 
       uint32_t atFrame, uint32_t reqFrame, 
@@ -212,10 +220,9 @@ module RRBurstP {
             break;
 
           case CX_SP_ACK:
-            //N.B. OK, this is actually handled by the AM Receiver
-            //since the ack is sent via ScheduledSend TP, not RRB.
-
-            //fall-through
+            handlingAck = TRUE;
+            post handleAck();
+            break;
           default:
             cerror(TRANSPORT, "Unrecognized SP %x\r\n",  
               call CXTransportPacket.getSubprotocol(msg));
@@ -237,6 +244,7 @@ module RRBurstP {
       call StateDump.requestDump();
     }
   }
+
 
   event message_t* AckReceive.receive(message_t* msg, 
       void* payload, uint8_t len){
@@ -283,6 +291,7 @@ module RRBurstP {
         //OK, stay up to help.
       }
     }
+    handlingAck = FALSE;
     return msg;
   }
 

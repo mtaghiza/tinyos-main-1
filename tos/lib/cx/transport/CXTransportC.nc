@@ -83,8 +83,8 @@ configuration CXTransportC {
   RRBurstP.AckSend -> AckSenderC;
   RRBurstP.AckPacket -> AckSenderC;
 
-  components new AMSnoopingReceiverC(AM_CX_RR_ACK_MSG);
-  RRBurstP.AckReceive -> AMSnoopingReceiverC;
+//  components new AMSnoopingReceiverC(AM_CX_RR_ACK_MSG);
+//  RRBurstP.AckReceive -> AMSnoopingReceiverC;
 
   CXTransportDispatchP.AMPacket -> ActiveMessageC;
 
