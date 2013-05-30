@@ -7,32 +7,114 @@ module Rf1aPhysicalLogP {
   uses interface LocalTime<T32khz>;
 } implementation {
 
-  command error_t RadioStateLog.dump(){
-    return EBUSY;
+  enum{
+    R_OFF = 0,
+    R_SLEEP = 1,
+    R_IDLE = 2, 
+    R_FSTXON = 3,
+    R_TX = 4,
+    R_RX = 5,
+    R_NUMSTATES = 6
+  };
+
+  const char labels[R_NUMSTATES] = {'o', 's', 'i', 'f', 't', 'r'};
+  uint8_t  curRadioState = R_OFF;
+  uint32_t lastRadioStateChange;
+  uint32_t radioStateTimes[R_NUMSTATES];
+  uint32_t logBatch;
+  
+  void radioStateChange(uint8_t newState){
+    atomic{
+      uint32_t changeTime = call LocalTime.get();
+      if (newState != curRadioState){
+        uint32_t elapsed = changeTime-lastRadioStateChange;
+        radioStateTimes[curRadioState] += elapsed;
+        curRadioState = newState;
+        lastRadioStateChange = changeTime;
+      }
+    }
+  }
+
+  uint32_t rst[R_NUMSTATES];
+  
+  bool logging = FALSE;
+  uint8_t dc_i;
+
+  task void logNextStat(){
+    if (dc_i < R_NUMSTATES){
+      cinfo(RADIOSTATS, "RS %lu %c %lu\r\n", 
+        logBatch, labels[dc_i], rst[dc_i]);
+      dc_i ++;
+      post logNextStat();
+    }else{
+      logging = FALSE;
+    }
+  }
+
+  command error_t RadioStateLog.dump(uint32_t lb){
+    if (!logging){
+      atomic{
+        uint8_t k;
+        for (k = 0; k < R_NUMSTATES; k++){
+          rst[k] = radioStateTimes[k];
+        }
+      }
+      logBatch = lb;
+      dc_i = 0;
+      logging = TRUE;
+      post logNextStat();
+      return SUCCESS;
+    }else {
+      return EBUSY;
+    }
   }
   
   command error_t Rf1aPhysical.send (uint8_t* buffer, 
       unsigned int length, rf1a_offmode_t offMode){
+    //no state change: controlled by startTransmission.
     return call SubRf1aPhysical.send(buffer, length, offMode);
   }
 
   async event void SubRf1aPhysical.sendDone (int result){
+    radioStateChange(R_IDLE);
     signal Rf1aPhysical.sendDone(result);
   }
 
   async command error_t Rf1aPhysical.startTransmission (bool check_cca, bool targetFSTXON){
-    return call SubRf1aPhysical.startTransmission(check_cca, targetFSTXON);
-
+    error_t ret = call SubRf1aPhysical.startTransmission(check_cca, targetFSTXON);
+    if (ret == SUCCESS){
+      if (targetFSTXON){
+        radioStateChange(R_FSTXON);
+      }else{
+        radioStateChange(R_TX);
+      }
+    }
+    return ret;
   }
+
   async command error_t Rf1aPhysical.startReception (){
+    //unused
     return call SubRf1aPhysical.startReception();
   }
+
   async command error_t Rf1aPhysical.resumeIdleMode (bool rx ){
-    return call SubRf1aPhysical.resumeIdleMode(rx);
+    error_t ret = call SubRf1aPhysical.resumeIdleMode(rx);
+    if (ret == SUCCESS){
+      if (rx){
+        radioStateChange(R_RX);
+      }else{
+        radioStateChange(R_IDLE);
+      }
+    }
+    return ret;
   }
 
   async command error_t Rf1aPhysical.sleep (){
-    return call SubRf1aPhysical.sleep();
+    error_t ret = call SubRf1aPhysical.sleep();
+    if (ret == SUCCESS){
+      radioStateChange(R_SLEEP);
+    }
+    return ret;
   }
 
   async event void SubRf1aPhysical.receiveStarted (unsigned int length){
@@ -41,13 +123,18 @@ module Rf1aPhysicalLogP {
   async event void SubRf1aPhysical.receiveDone (uint8_t* buffer,
                                 unsigned int count,
                                 int result){
+    radioStateChange(R_IDLE);
     signal Rf1aPhysical.receiveDone(buffer, count, result);
   }
   async command error_t Rf1aPhysical.setReceiveBuffer (uint8_t* buffer,
                                           unsigned int length,
                                           bool single_use){
-    return call SubRf1aPhysical.setReceiveBuffer(buffer, length,
+    error_t ret = call SubRf1aPhysical.setReceiveBuffer(buffer, length,
       single_use);
+    if (ret == SUCCESS){
+      radioStateChange(R_RX);
+    }
+    return ret;
   }
 
   async event void SubRf1aPhysical.receiveBufferFilled (uint8_t* buffer,
@@ -66,7 +153,12 @@ module Rf1aPhysicalLogP {
   }
 
   async command error_t DelayedSend.startSend(){
-    return call SubDelayedSend.startSend();
+    
+    error_t ret = call SubDelayedSend.startSend();
+    if (ret == SUCCESS){
+      radioStateChange(R_TX);
+    }
+    return ret;
   }
 
   async command void Rf1aPhysical.readConfiguration (rf1a_config_t* config){
