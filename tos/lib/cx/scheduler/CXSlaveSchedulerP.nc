@@ -285,7 +285,7 @@ module CXSlaveSchedulerP{
   }
 
   task void claimSlotTask(){
-    if (requestedIndex < MAX_VACANT){
+    if (requestedIndex < sched->numVacant){
       uint8_t ssi; 
       uint16_t slotNum; 
       cx_schedule_request_t* req = call RequestSend.getPayload(requestMsg,
@@ -347,23 +347,33 @@ module CXSlaveSchedulerP{
     {
       uint8_t i;
       if (requestState == RS_ASSIGNED && mySlot != INVALID_SLOT){
-        for (i=0; i < MAX_FREED; i++){
-          if (mySlot == newSched->freedSlots[i]){
-            cinfo(SCHED, "FREED %u\r\n", mySlot);
-            requestState = RS_UNASSIGNED;
-            mySlot = INVALID_SLOT;
-            call ScheduleParams.setSlot(mySlot);
-            break;
+        //implicitly freed: slot is outside of active range.
+        if ( mySlot > (newSched->activeSlots -1)){
+          cinfo(SCHED, "IFREED %u %u\r\n", 
+            mySlot, newSched->activeSlots);
+          requestState = RS_UNASSIGNED;
+          mySlot = INVALID_SLOT;
+        } else {
+          //explicitly freed
+          for (i=0; i < MAX_FREED; i++){
+            if (mySlot == newSched->freedSlots[i]){
+              cinfo(SCHED, "FREED %u\r\n", mySlot);
+              requestState = RS_UNASSIGNED;
+              mySlot = INVALID_SLOT;
+              break;
+            }
+          }
+          //owned slot is being advertised as vacant.
+          for (i=0; i < newSched->numVacant; i++){
+            if (mySlot == newSched->vacantSlots[i]){
+              cinfo(SCHED, "VACANT %u\r\n", mySlot);
+              requestState = RS_UNASSIGNED;
+              mySlot = INVALID_SLOT;
+              break;
+            }
           }
         }
-        for (i=0; i < newSched->numVacant; i++){
-          if (mySlot == newSched->vacantSlots[i]){
-            cinfo(SCHED, "VACANT %u\r\n", mySlot);
-            requestState = RS_UNASSIGNED;
-            mySlot = INVALID_SLOT;
-            break;
-          }
-        }
+        call ScheduleParams.setSlot(mySlot);
       }
         
     }

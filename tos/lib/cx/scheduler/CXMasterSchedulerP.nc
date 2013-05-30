@@ -506,6 +506,18 @@ module CXMasterSchedulerP{
     reqLeft = req->slotsRequested;
     pl -> numAssigned = 0;
     for (i=0; i < CX_MAX_SLOTS && reqLeft; i++){
+      //immediately free any slots which are already assigned to the node
+      //requesting assignment. This can happen, for instance, if a
+      //slave detects that it has been evicted because its slot is
+      //outside of the active range, but the master has not yet
+      //explicitly notified them (via advertising their slot as
+      //freed). This can happen if the number of freed slots announced
+      //each round is small relative to the number of nodes which are
+      //not sending enough data to keep their slot active.
+      if (assignments[i].owner == call CXLinkPacket.getSource(reqMsg)){
+        assignments[i].status = SA_OPEN;
+        assignments[i].csh = 0;
+      }
       if (assignments[i].status == SA_OPEN){
         scheduleModified = TRUE;
         assignments[i].status = SA_ASSIGNED;
