@@ -13,6 +13,8 @@ module SlotSchedulerP{
   provides interface SlotTiming;
   uses interface StateDump;
   uses interface Notify<uint32_t> as ActivityNotify;
+
+  uses interface RadioStateLog;
 } implementation {
   
   //enums/vars for determining when a slot is idle.
@@ -37,6 +39,8 @@ module SlotSchedulerP{
   
   //counter for validating that wakeups match up with sleeps.
   uint8_t wakeupPending = 0;
+
+  uint32_t logBatch;
   
   //forward declarations
   task void wakeupNextSlot();
@@ -280,6 +284,10 @@ module SlotSchedulerP{
       if (sched != NULL){
         uint16_t sn = slotNumber(atFrame);
         signal SlotNotify.slotStarted(sn);
+        cinfo(RADIOSTATS, "LB %lu %u\r\n",
+          logBatch, sn);
+        call RadioStateLog.dump(logBatch);
+        logBatch++;
         if (sn == (sched->activeSlots - 1)){
           cdbg(SCHED, "sw l %lu\r\n", atFrame);
           signal SlotNotify.lastSlot();

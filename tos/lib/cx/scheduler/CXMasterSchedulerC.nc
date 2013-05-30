@@ -18,6 +18,9 @@ configuration CXMasterSchedulerC{
   components CXMasterSchedulerP;
   components SlotSchedulerP;
   components CXNetworkC;
+  
+  //for radio logging
+  components CXLinkC;
 
   //CX Stack wiring
   SplitControl = CXMasterSchedulerP;
@@ -26,6 +29,7 @@ configuration CXMasterSchedulerC{
   CXMasterSchedulerP.SubCXRQ -> SlotSchedulerP;
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
 
+  SlotSchedulerP.RadioStateLog -> CXLinkC;
   SlotSchedulerP.SubCXRQ -> CXNetworkC;
   SlotSchedulerP.ActivityNotify -> CXNetworkC.ActivityNotify;
   
