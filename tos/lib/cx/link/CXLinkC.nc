@@ -24,16 +24,8 @@ configuration CXLinkC {
 
   #if CX_RADIOSTATS == 1
   #warning "Serial radio logging enabled"
-  components new Rf1aPhysicalC() as SubPhysical;
   components new Rf1aPhysicalLogC() as Rf1aPhysicalC;
-
-  Rf1aPhysicalC.SubRf1aPhysical -> SubPhysical;
-  Rf1aPhysicalC.SubDelayedSend -> SubPhysical;
-  Rf1aPhysicalC.SubRf1aPhysicalMetadata -> SubPhysical;
-  Rf1aPhysicalC.SubResource -> SubPhysical;
-
   RadioStateLog = Rf1aPhysicalC;
-
   #else
   components new Rf1aPhysicalC() as Rf1aPhysicalC;
   components DummyRadioStateLogC;

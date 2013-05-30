@@ -69,9 +69,13 @@ module Rf1aPhysicalLogP {
     return call DelayedSend.startSend();
   }
 
-  async command void Rf1aPhysical.readConfiguration (rf1a_config_t*
-  config){}
-  async command void Rf1aPhysical.reconfigure(){}
+  async command void Rf1aPhysical.readConfiguration (rf1a_config_t* config){
+    call SubRf1aPhysical.readConfiguration(config);
+  }
+
+  async command void Rf1aPhysical.reconfigure(){
+    return call SubRf1aPhysical.reconfigure();
+  }
 
   async command int Rf1aPhysical.enableCca(){
     return call SubRf1aPhysical.enableCca();
