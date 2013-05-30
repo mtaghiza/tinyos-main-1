@@ -284,8 +284,14 @@ module SlotSchedulerP{
       if (sched != NULL){
         uint16_t sn = slotNumber(atFrame);
         signal SlotNotify.slotStarted(sn);
-        cinfo(RADIOSTATS, "LB %lu %u\r\n",
-          logBatch, sn);
+
+        if (sn == 0){
+          cinfo(RADIOSTATS, "LB %lu -1\r\n",
+            logBatch);
+        } else {
+          cinfo(RADIOSTATS, "LB %lu %u\r\n",
+            logBatch, sn-1);
+        }
         call RadioStateLog.dump(logBatch);
         logBatch++;
         if (sn == (sched->activeSlots - 1)){
