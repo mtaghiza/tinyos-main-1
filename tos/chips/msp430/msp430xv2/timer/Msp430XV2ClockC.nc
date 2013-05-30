@@ -60,6 +60,6 @@ implementation
 
   /* Work around UCS7 */
   Msp430XV2ClockControlP.McuSleepEvents -> McuSleepC;
-  components new Alarm32khz16C();
-  Msp430XV2ClockControlP.UCS7Alarm -> Alarm32khz16C;
+  components new TimerMilliC();
+  Msp430XV2ClockControlP.UCS7Timer -> TimerMilliC;
 }
