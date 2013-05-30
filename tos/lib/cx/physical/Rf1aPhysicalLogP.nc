@@ -23,9 +23,8 @@ module Rf1aPhysicalLogP {
   uint32_t radioStateTimes[R_NUMSTATES];
   uint32_t logBatch;
   
-  void radioStateChange(uint8_t newState){
+  void radioStateChange(uint8_t newState, uint32_t changeTime){
     atomic{
-      uint32_t changeTime = call LocalTime.get();
       if (newState != curRadioState){
         uint32_t elapsed = changeTime-lastRadioStateChange;
         radioStateTimes[curRadioState] += elapsed;
@@ -76,17 +75,18 @@ module Rf1aPhysicalLogP {
   }
 
   async event void SubRf1aPhysical.sendDone (int result){
-    radioStateChange(R_IDLE);
+    radioStateChange(R_IDLE, call LocalTime.get());
     signal Rf1aPhysical.sendDone(result);
   }
 
   async command error_t Rf1aPhysical.startTransmission (bool check_cca, bool targetFSTXON){
+    uint32_t ct = call LocalTime.get();
     error_t ret = call SubRf1aPhysical.startTransmission(check_cca, targetFSTXON);
     if (ret == SUCCESS){
       if (targetFSTXON){
-        radioStateChange(R_FSTXON);
+        radioStateChange(R_FSTXON, ct);
       }else{
-        radioStateChange(R_TX);
+        radioStateChange(R_TX, ct);
       }
     }
     return ret;
@@ -98,21 +98,23 @@ module Rf1aPhysicalLogP {
   }
 
   async command error_t Rf1aPhysical.resumeIdleMode (bool rx ){
+    uint32_t ct = call LocalTime.get();
     error_t ret = call SubRf1aPhysical.resumeIdleMode(rx);
     if (ret == SUCCESS){
       if (rx){
-        radioStateChange(R_RX);
+        radioStateChange(R_RX, ct);
       }else{
-        radioStateChange(R_IDLE);
+        radioStateChange(R_IDLE, ct);
       }
     }
     return ret;
   }
 
   async command error_t Rf1aPhysical.sleep (){
+    uint32_t ct = call LocalTime.get();
     error_t ret = call SubRf1aPhysical.sleep();
     if (ret == SUCCESS){
-      radioStateChange(R_SLEEP);
+      radioStateChange(R_SLEEP, ct);
     }
     return ret;
   }
@@ -123,16 +125,17 @@ module Rf1aPhysicalLogP {
   async event void SubRf1aPhysical.receiveDone (uint8_t* buffer,
                                 unsigned int count,
                                 int result){
-    radioStateChange(R_IDLE);
+    radioStateChange(R_IDLE, call LocalTime.get());
     signal Rf1aPhysical.receiveDone(buffer, count, result);
   }
   async command error_t Rf1aPhysical.setReceiveBuffer (uint8_t* buffer,
                                           unsigned int length,
                                           bool single_use){
+    uint32_t ct = call LocalTime.get();
     error_t ret = call SubRf1aPhysical.setReceiveBuffer(buffer, length,
       single_use);
     if (ret == SUCCESS){
-      radioStateChange(R_RX);
+      radioStateChange(R_RX, ct);
     }
     return ret;
   }
@@ -153,10 +156,12 @@ module Rf1aPhysicalLogP {
   }
 
   async command error_t DelayedSend.startSend(){
-    
     error_t ret = call SubDelayedSend.startSend();
     if (ret == SUCCESS){
-      radioStateChange(R_TX);
+      //if we fetch this before the call, we break synchronization
+      //(this .get is to an async clock source and may take a while to
+      //resolve)
+      radioStateChange(R_TX, call LocalTime.get());
     }
     return ret;
   }
