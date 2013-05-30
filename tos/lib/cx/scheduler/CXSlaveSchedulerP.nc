@@ -226,7 +226,7 @@ module CXSlaveSchedulerP{
       call CXNetworkPacket.setTTL(msg, sched->maxDepth);
     }
     call CXSchedulerPacket.setOriginFrame(msg, 
-      baseFrame + frameOffset - lastCycleStart);
+      (baseFrame + frameOffset - lastCycleStart)%sched->cycleLength);
     return call SubCXRQ.requestSend(layerCount + 1, baseFrame,
       frameOffset, txPriority, useMicro, microRef, md, msg);
   }

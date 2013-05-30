@@ -377,8 +377,8 @@ module CXMasterSchedulerP{
 
     call CXSchedulerPacket.setScheduleNumber(msg, 
       sched->sn);
-    call CXSchedulerPacket.setOriginFrame(schedMsg, 
-      baseFrame + frameOffset - lastCycleStart);
+    call CXSchedulerPacket.setOriginFrame(msg, 
+      (baseFrame + frameOffset - lastCycleStart)%sched->cycleLength);
     if (call CXNetworkPacket.getTTL(msg) == 0){
       call CXNetworkPacket.setTTL(msg, sched->maxDepth);
     }
