@@ -1,8 +1,8 @@
 module Rf1aPhysicalLogP {
   uses interface Rf1aPhysical as SubRf1aPhysical;
+  provides interface DelayedSend;
   uses interface DelayedSend as SubDelayedSend;
   provides interface Rf1aPhysical;
-  provides interface DelayedSend;
   provides interface RadioStateLog;
   uses interface LocalTime<T32khz>;
 } implementation {
@@ -66,7 +66,7 @@ module Rf1aPhysicalLogP {
   }
 
   async command error_t DelayedSend.startSend(){
-    return call DelayedSend.startSend();
+    return call SubDelayedSend.startSend();
   }
 
   async command void Rf1aPhysical.readConfiguration (rf1a_config_t* config){
