@@ -415,8 +415,9 @@ module CXMasterSchedulerP{
 //        call CXNetworkPacket.getOriginFrameNumber(schedMsg),
 //        sched->timestamp,
 //        call CXNetworkPacket.getOriginFrameStart(schedMsg));
-      cinfo(SCHED, "SCHED TX %u %u %lu %lu\r\n",
+      cinfo(SCHED, "SCHED TX %u %u %u %lu %lu\r\n",
         sched->sn,
+        call ActiveMessageAddress.amAddress(); 
         call CXNetworkPacket.getSn(msg),
         sched->cycleStartFrame,
         sched->cycleStartFrame);
