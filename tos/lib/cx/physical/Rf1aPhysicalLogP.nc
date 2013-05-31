@@ -134,8 +134,10 @@ module Rf1aPhysicalLogP {
     uint32_t ct = call LocalTime.get();
     error_t ret = call SubRf1aPhysical.setReceiveBuffer(buffer, length,
       single_use);
-    if (ret == SUCCESS){
+    if (ret == SUCCESS && buffer != NULL){
       radioStateChange(R_RX, ct);
+    }else {
+      radioStateChange(R_IDLE, ct);
     }
     return ret;
   }
