@@ -165,8 +165,10 @@ module CXNetworkP {
       didReceive && !isDuplicate(msg), nmd->microRef, nmd->t32kRef, 
       nmd->next, msg);
     synchFrame = 0;
-    lastSrc = call AMPacket.source(msg);
-    lastSn = call CXNetworkPacket.getSn(msg);
+    if (didReceive){
+      lastSrc = call AMPacket.source(msg);
+      lastSn = call CXNetworkPacket.getSn(msg);
+    }
     call Pool.put(nmd);
   }
 
