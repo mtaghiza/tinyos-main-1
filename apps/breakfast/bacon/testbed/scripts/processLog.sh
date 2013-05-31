@@ -25,6 +25,8 @@ skewTf=$tfb.skew
 settingsTf=$tfb.settings
 rsTf=$tfb.rs
 rrbTf=$tfb.rrb
+atxTf=$tfb.atx
+arxTf=$tfb.arx
 
 if [ $(file $logFile | grep -c 'CRLF') -eq 1 ]
 then
@@ -51,7 +53,7 @@ echo "extracting RX_LOCAL events"
 # 1             2        3   4  5        6  7      8         9     10   11
 pv $logTf | grep ' NRX ' | cut -d ' ' -f 3 --complement > $rxlTf
 
-echo "extracting TX_LOCAL events"
+echo "extracting network TX_LOCAL events"
 # 1368558936.21 0   NTX 1  803      822299 829762    65535 2  0   196
 # tsReport      src     sn ofnLocal tx32k  report32k dest  tp stp AMID
 # 1             2       3  4        5      6         7     8  9   10
@@ -87,6 +89,19 @@ pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 ==
 
 echo "Extracting forwarding decisions"
 pv $logTf | grep ' RRB ' | cut -d ' ' -f 3 --complement > $rrbTf
+
+echo "Extracting APP level TX"
+#ts            src         sn    dest err   queue occupancy
+#1             2           3     4    5     6
+#1370010253.87 1   APP TXD 0  to 0    0   Q 2
+pv $logTf | grep ' APP TXD ' | cut -d ' ' -f 3,4,6,9 --complement > $atxTf
+
+echo "Extracting APP level RX"
+#1370010253.62 0    APP RX 1   0
+#1             2           3   4
+#ts            dest        src sn
+
+pv $logTf | grep ' APP RX ' | cut -d ' ' -f 3,4 --complement > $arxTf
 
 sqlite3 $db << EOF
 .headers OFF
@@ -367,6 +382,72 @@ GROUP BY TX_ALL.src,
   TX_ALL.stp
 ORDER BY prr;
 
+SELECT "Importing APP level TX";
+DROP TABLE IF EXISTS APP_TX;
+CREATE TABLE APP_TX (
+  ts REAL, 
+  src INTEGER,
+  sn INTEGER,
+  dest INTEGER,
+  error INTEGER,
+  queue INTEGER);
+.import $atxTf APP_TX
+
+SELECT "Importing APP level RX";
+DROP TABLE IF EXISTS APP_RX;
+CREATE TABLE APP_RX (
+  ts REAL, 
+  dest INTEGER,
+  src INTEGER,
+  sn INTEGER);
+.import $arxTf APP_RX
+
+SELECT "adding schedule rx to APP RX";
+INSERT INTO APP_RX 
+SELECT ts, node, src, sn FROM SCHED
+WHERE src != node;
+
+SELECT "adding schedule tx to APP TX";
+INSERT INTO APP_TX
+SELECT ts, src, sn, 65535, 0, -1 FROM SCHED
+WHERE src == node;
+
+select "Finding missing APP receptions";
+DROP TABLE IF EXISTS MISSING_APP_RX;
+CREATE TABLE MISSING_APP_RX AS
+SELECT APP_TX.src, 
+  nodes.dest, 
+  APP_TX.sn
+FROM APP_TX
+  JOIN (SELECT DISTINCT APP_RX.dest FROM APP_RX) nodes 
+  ON APP_TX.dest == nodes.dest 
+     OR (APP_TX.dest == 65535 AND APP_TX.src != nodes.dest)
+EXCEPT SELECT APP_RX.src, APP_RX.dest, APP_RX.sn FROM APP_RX;
+
+select "Finding APP PRR";
+DROP TABLE IF EXISTS APP_PRR;
+CREATE TABLE APP_PRR AS
+SELECT
+  APP_TX.src as src,
+  RX_AND_MISSING.dest as dest,
+  avg(RX_AND_MISSING.received) as prr,
+  count(RX_AND_MISSING.received) as cnt
+FROM APP_TX
+LEFT JOIN (
+  SELECT src, dest, sn, 1 as received FROM APP_RX 
+  UNION 
+  SELECT src, dest, sn, 0 as received FROM MISSING_APP_RX) RX_AND_MISSING ON
+  APP_TX.src == RX_AND_MISSING.src AND
+  APP_TX.sn == RX_AND_MISSING.sn 
+JOIN PRR_BOUNDS 
+  ON RX_AND_MISSING.dest == PRR_BOUNDS.node
+WHERE APP_TX.error == 0
+  AND APP_TX.ts between PRR_BOUNDS.startTS and PRR_BOUNDS.endTS
+GROUP BY APP_TX.src,
+  RX_AND_MISSING.dest
+ORDER BY prr;
+
+
 SELECT "importing radio stats";
 DROP TABLE IF EXISTS RADIO_STATS_RAW;
 CREATE TABLE RADIO_STATS_RAW (
@@ -469,6 +550,14 @@ CREATE TABLE ROUTES (
   f INTEGER);
 .import $rrbTf ROUTES
 
+SELECT "computing forwarder counts";
+DROP TABLE IF EXISTS FWD_COUNT;
+CREATE TABLE FWD_COUNT AS
+SELECT 
+  min(ts) as ts, src, dest, sn, sum(f) as cnt
+FROM ROUTES
+GROUP BY src, dest, sn;
+
 EOF
 
 
@@ -485,4 +574,6 @@ then
   rm $settingsTf
   rm $rsTf
   rm $rrbTf
+  rm $atxTf
+  rm $arxTf
 fi
