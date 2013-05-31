@@ -121,6 +121,14 @@ module CXSlaveSchedulerStaticP{
       NULL, msg);
   }
 
+  void startSearch(){
+    state = S_SEARCH;
+    mySlot = INVALID_SLOT;
+    sched = NULL;
+    call ScheduleParams.setSlot(mySlot);
+    call ScheduleParams.setSchedule(sched);
+  }
+
   event void SubCXRQ.receiveHandled(error_t error, 
       uint8_t layerCount,
       uint32_t atFrame, uint32_t reqFrame, 
@@ -143,13 +151,15 @@ module CXSlaveSchedulerStaticP{
         {
           uint32_t cycleLocalOrigin = call CXNetworkPacket.getOriginFrameNumber(msg) - lastCycleStart;
           if (cycleLocalOrigin != call CXSchedulerPacket.getOriginFrame(msg)){
-            cinfo(SCHED, "FM %lu != %lu - %lu\r\n",
+            cinfo(SCHED, "FM %lu <> %lu - %lu\r\n",
               call CXSchedulerPacket.getOriginFrame(msg),
               call CXNetworkPacket.getOriginFrameNumber(msg),
               lastCycleStart);
+            startSearch();
+          } else {
+            state = S_SYNCHED;
           }
         }
-        state = S_SYNCHED;
       }
     }else{
       //did not receive
@@ -213,8 +223,9 @@ module CXSlaveSchedulerStaticP{
   }
 
   task void reportSched(){
-    cinfo(SCHED, "SCHED RX %u %u %lu %lu\r\n",
+    cinfo(SCHED, "SCHED RX %u %u %u %lu %lu\r\n",
       sched->sn,
+      call CXLinkPacket.getSource(schedMsg),
       call CXNetworkPacket.getSn(schedMsg),
       sched->cycleStartFrame,
       lastCycleStart);
@@ -369,7 +380,7 @@ module CXSlaveSchedulerStaticP{
       post sleepToNextCycle();
     }else{
       //this should force the next RX to use MAX_WAIT.
-      state = S_SEARCH;
+      startSearch();
       cinfo(SCHED, "synch lost\r\n");
     }
   }

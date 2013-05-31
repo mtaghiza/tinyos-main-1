@@ -133,7 +133,6 @@ module CXNetworkP {
         if (call CXNetworkPacket.getTTL(msg) > 0){
           synchFrame = atFrame;
           synchMicroRef = microRef;
-          call CXNetworkPacket.readyNextHop(msg);
           //do not timestamp.
           call CXPacketMetadata.setTSLoc(msg, NULL);
           error = call SubCXRequestQueue.requestSend(
@@ -144,13 +143,18 @@ module CXNetworkP {
             TRUE, synchMicroRef, //use last RX as ref
             nmd, msg);      //pointer to stashed md
           if (SUCCESS == error){
+            //prepare it after it's enqueued: otherwise, signalling it
+            //up below produces a frame # mismatch.
+            call CXNetworkPacket.readyNextHop(msg);
             return;
           }else{
             cerror(NETWORK, "FWD %x\r\n", error);
+            //fall through
           }
         }
       }
     }
+
     //not forwarding, so we're done with it. signal up.
     if (didReceive){
       printRX(msg, nmd->t32kRef);

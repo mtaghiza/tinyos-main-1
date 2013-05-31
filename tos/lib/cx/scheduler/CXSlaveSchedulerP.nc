@@ -251,8 +251,9 @@ module CXSlaveSchedulerP{
   }
 
   task void reportSched(){
-    cinfo(SCHED, "SCHED RX %u %u %lu %lu\r\n",
+    cinfo(SCHED, "SCHED RX %u %u %u %lu %lu\r\n",
       sched->sn,
+      call CXLinkPacket.getSource(schedMsg),
       call CXNetworkPacket.getSn(schedMsg),
       sched->cycleStartFrame,
       lastCycleStart);

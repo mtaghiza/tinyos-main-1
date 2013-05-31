@@ -41,8 +41,8 @@ fi
 echo "extracting SCHED events"
 # 1368558936.2  25   SCHED RX 241    1  802      11
 # 1368558936.21 0    SCHED TX 241    1  802      802
-# ts            node          sched# sn csRemote csLocal
-# 1             2             3      4  5        6
+# ts            node          sched# root sn csRemote csLocal
+# 1             2             3      4    5  6        7
 pv $logTf | grep ' SCHED ' | cut -d ' ' -f 3,4 --complement > $schedTf
 
 echo "extracting RX_LOCAL events"
@@ -99,6 +99,7 @@ CREATE TEMPORARY TABLE SCHED_TMP (
   ts REAL,
   node INTEGER,
   schedNum INTEGER,
+  src INTEGER,
   sn INTEGER,
   csRemote INTEGER,
   csLocal INTEGER);
