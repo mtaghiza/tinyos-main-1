@@ -75,6 +75,7 @@ pv $logTf | grep ' SK TPF_s: ' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
 echo "extracting settings"
 pv $logTf | grep ' START ' | cut -d ' ' -f 3 --complement | awk '{ts=$1; node=$2; for (i=3; i<= NF; i++){ print ts, node, $i}}' | tr '=' ' ' > $settingsTf
 
+echo "extracting radio stats"
 pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
   if ($2 in curSlot){
     cs=curSlot[$2]
