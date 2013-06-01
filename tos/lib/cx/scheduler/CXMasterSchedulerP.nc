@@ -33,6 +33,8 @@ module CXMasterSchedulerP{
 
   uses interface ActiveMessageAddress;
   uses interface StateDump;
+
+  uses interface RadioStateLog;
 } implementation {
   message_t schedMsg_internal;
   message_t* schedMsg = &schedMsg_internal;
@@ -231,6 +233,16 @@ module CXMasterSchedulerP{
       if (SUCCESS == error){
         //we consider wake up to be at frame 0 of the cycle.
         uint32_t schedOF = 1;
+        uint32_t lb = call RadioStateLog.dump();
+
+        //log radio stats for the preceding idle period.
+        if (lb){
+          cinfo(RADIOSTATS, "LB %lu -1\r\n", lb);
+          //indicate how long the idle period was.
+          cinfo(RADIOSTATS, "LBI %lu %lu %lu\r\n", 
+            lb, lastSleep, atFrame);
+        }
+
         lastCycleStart = atFrame;
         //this is the start of the active period. We are master, so we
         //need to send out the schedule.
@@ -417,7 +429,7 @@ module CXMasterSchedulerP{
 //        call CXNetworkPacket.getOriginFrameStart(schedMsg));
       cinfo(SCHED, "SCHED TX %u %u %u %lu %lu\r\n",
         sched->sn,
-        call ActiveMessageAddress.amAddress(); 
+        call ActiveMessageAddress.amAddress(), 
         call CXNetworkPacket.getSn(msg),
         sched->cycleStartFrame,
         sched->cycleStartFrame);
@@ -449,7 +461,12 @@ module CXMasterSchedulerP{
       signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
     }else{
       if (SUCCESS == error){
+        uint32_t lb = call RadioStateLog.dump();
         lastSleep = atFrame;
+        if (lb && sched != NULL){
+          cinfo(RADIOSTATS, "LB %lu %u\r\n",
+            lb, sched->activeSlots);
+        }
       }else{
         cerror(SCHED, "!sched.sh: %x\r\n", error);
       }

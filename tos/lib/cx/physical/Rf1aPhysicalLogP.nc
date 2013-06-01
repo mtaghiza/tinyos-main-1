@@ -7,6 +7,8 @@ module Rf1aPhysicalLogP {
   uses interface LocalTime<T32khz>;
 } implementation {
 
+  uint32_t logBatch;
+
   enum{
     R_OFF = 0,
     R_SLEEP = 1,
@@ -21,7 +23,6 @@ module Rf1aPhysicalLogP {
   uint8_t  curRadioState = R_OFF;
   uint32_t lastRadioStateChange;
   uint32_t radioStateTimes[R_NUMSTATES];
-  uint32_t logBatch;
   
   void radioStateChange(uint8_t newState, uint32_t changeTime){
     atomic{
@@ -50,7 +51,7 @@ module Rf1aPhysicalLogP {
     }
   }
 
-  command error_t RadioStateLog.dump(uint32_t lb){
+  command uint32_t RadioStateLog.dump(){
     if (!logging){
       atomic{
         uint8_t k;
@@ -58,13 +59,12 @@ module Rf1aPhysicalLogP {
           rst[k] = radioStateTimes[k];
         }
       }
-      logBatch = lb;
       dc_i = 0;
       logging = TRUE;
       post logNextStat();
-      return SUCCESS;
+      return ++logBatch;
     }else {
-      return EBUSY;
+      return 0;
     }
   }
   

@@ -282,18 +282,15 @@ module SlotSchedulerP{
       lastSlotStart = reqFrame;
       slotState = S_UNKNOWN;
       if (sched != NULL){
+        uint32_t lb;
         uint16_t sn = slotNumber(atFrame);
         signal SlotNotify.slotStarted(sn);
 
-        if (sn == 0){
-          cinfo(RADIOSTATS, "LB %lu -1\r\n",
-            logBatch);
-        } else {
+        lb = call RadioStateLog.dump();
+        if (lb){
           cinfo(RADIOSTATS, "LB %lu %u\r\n",
-            logBatch, sn-1);
+            lb, sn-1);
         }
-        call RadioStateLog.dump(logBatch);
-        logBatch++;
         if (sn == (sched->activeSlots - 1)){
           cdbg(SCHED, "sw l %lu\r\n", atFrame);
           signal SlotNotify.lastSlot();

@@ -27,6 +27,7 @@ configuration CXMasterSchedulerStaticC{
   
   CXMasterSchedulerP.SubCXRQ -> SlotSchedulerP;
   CXMasterSchedulerP.SubSplitControl -> CXNetworkC;
+  CXMasterSchedulerP.RadioStateLog -> CXLinkC;
 
   SlotSchedulerP.RadioStateLog -> CXLinkC;
   SlotSchedulerP.ActivityNotify -> CXNetworkC.ActivityNotify;

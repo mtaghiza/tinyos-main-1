@@ -25,6 +25,7 @@ module CXSlaveSchedulerP{
   uses interface Random;
   uses interface ActiveMessageAddress;
   uses interface StateDump;
+  uses interface RadioStateLog;
 } implementation {
   message_t msg_internal;
   message_t* schedMsg = &msg_internal;
@@ -415,11 +416,20 @@ module CXSlaveSchedulerP{
     return call SubCXRQ.requestSleep(layerCount + 1, baseFrame, frameOffset);
   }
 
+  uint32_t lastSleepHandled;
+
   event void SubCXRQ.sleepHandled(error_t error, uint8_t layerCount, uint32_t atFrame, 
       uint32_t reqFrame){
     if (layerCount){
       signal CXRequestQueue.sleepHandled(error, layerCount - 1, atFrame, reqFrame);
     }else{
+      //sleep from this layer @ end of last active slot
+      uint32_t lb = call RadioStateLog.dump();
+      lastSleepHandled = atFrame;
+      if (lb && sched != NULL){
+        cinfo(RADIOSTATS, "LB %lu %u\r\n",
+          lb, sched->activeSlots);
+      }
     }
   }
 
@@ -442,7 +452,17 @@ module CXSlaveSchedulerP{
         startDonePending = FALSE;
         signal SplitControl.startDone(SUCCESS);
       } else {
+        uint32_t lb = call RadioStateLog.dump();
         state = S_SOFT_SYNCH;
+
+        //log radio stats for the preceding idle period.
+        if (lb){
+          cinfo(RADIOSTATS, "LB %lu -1\r\n", lb);
+          //indicate how long the idle period was.
+          cinfo(RADIOSTATS, "LBI %lu %lu %lu\r\n", 
+            lb, lastSleepHandled, atFrame);
+        }
+
         //at this layer: wakeup is at start of cycle. This command not
         //only informs the SlotScheduler of the cycle start, but also
         //causes it to start slot-cycling.

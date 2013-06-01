@@ -27,6 +27,7 @@ configuration CXSlaveSchedulerC{
 
   CXSlaveSchedulerP.SubCXRQ -> SlotSchedulerP;
   CXSlaveSchedulerP.SubSplitControl -> CXNetworkC;
+  CXSlaveSchedulerP.RadioStateLog -> CXLinkC;
 
   SlotSchedulerP.RadioStateLog -> CXLinkC;
   SlotSchedulerP.ActivityNotify -> CXNetworkC.ActivityNotify;

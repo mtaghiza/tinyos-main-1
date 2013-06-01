@@ -1,7 +1,7 @@
 module DummyRadioStateLogC{
   provides interface RadioStateLog;
 } implementation {
-  command error_t RadioStateLog.dump(uint32_t logBatch){
-    return SUCCESS;
+  command uint32_t RadioStateLog.dump(){
+    return 0;
   }
 }
