@@ -9,5 +9,5 @@ then
   ./$sd/blink.sh 
 fi
 
-source ./$sd/install.sh maps/map.root $label $od/root.options $od/all.options $od/dynamic.options $od/noevict.options $od/broadcast_fast.options
-source ./$sd/install.sh maps/map.nonroot $label $od/slave.options $od/all.options $od/dynamic.options $od/noevict.options $od/broadcast_fast.options
+source ./$sd/install.sh maps/map.root $label $od/root.options $od/all.options $od/dynamic.options $od/noevict.options $od/broadcast_fast.options $od/radiostats.options
+source ./$sd/install.sh maps/map.nonroot $label $od/slave.options $od/all.options $od/dynamic.options $od/noevict.options $od/broadcast_fast.options $od/radiostats.options
