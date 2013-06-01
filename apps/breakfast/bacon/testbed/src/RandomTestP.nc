@@ -38,7 +38,7 @@ module RandomTestP{
 
 
   task void usage(){
-    cinfo(test,"BOOTED %s ID %u \r\n",
+    cinfo(test,"\r\n\r\nBOOTED %s ID %u \r\n",
           (CX_MASTER==1)?"MASTER": "SLAVE",
           call ActiveMessageAddress.amAddress());
     cinfo(test, "START %s\r\n", TEST_DESC);
