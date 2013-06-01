@@ -13,6 +13,7 @@
 
 configuration SDCardC {
 	provides {
+        interface Init;
     		interface Resource;
         interface SDCard;
   	}
@@ -20,6 +21,7 @@ configuration SDCardC {
 
 implementation {
 	components SDCardP;
+  Init = SDCardP;
   SDCardP.Resource = Resource;
   SDCardP.SDCard = SDCard;
 	
@@ -38,5 +40,8 @@ implementation {
   components new Msp430GpioC() as Power;
   Power -> HplMsp430GeneralIOC.Port21;
   SDCardP.Power -> Power;
+
+  components new AlarmMilli16C();
+  SDCardP.PowerTimeout -> AlarmMilli16C;
       
 }

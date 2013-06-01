@@ -5,6 +5,22 @@
  */
 
 interface SDCard {
+
+  /**
+   * Put chip into deep power down mode.
+   *
+   * @return SUCCESS if the request completed successfully, FAIL
+   * otherwise.
+   */
+  async command error_t powerDown();
+
+  /**
+   * Release chip from power down mode.
+   *
+   * @return SUCCESS if the request completed successfully, FAIL
+   * otherwise.
+   */
+  async command error_t powerUp();
    
 	/**
    	* Commande pour l'écriture d'une chaine
@@ -16,7 +32,7 @@ interface SDCard {
    	* @return SUCCESS Si l'écriture a fonctionnée
    			FAIL sinon
    	*/
-  	command error_t write(uint32_t addr, uint8_t*buf, uint16_t count);
+  	async command error_t write(uint32_t addr, uint8_t*buf, uint16_t count);
     event void writeDone(uint32_t addr, uint8_t*buf, uint16_t count, error_t error);
 
   	/**
@@ -29,7 +45,7 @@ interface SDCard {
    	* @return SUCCESS Si la lecture est bonne
   	 		FAIL dans le cas contraire
    	*/
-  	command error_t read(uint32_t addr, uint8_t*buf, uint16_t count);
+  	async command error_t read(uint32_t addr, uint8_t*buf, uint16_t count);
     event void readDone(uint32_t addr, uint8_t*buf, uint16_t count, error_t error);
 
   	/**
@@ -62,10 +78,10 @@ interface SDCard {
 	* @return SUCCESS Si la suppression a réussie
 			FAIL Autrement
   	*/
-	command error_t clearSectors(uint32_t offset, uint16_t nbSectors);
+	command error_t async clearSectors(uint32_t offset, uint16_t nbSectors);
 
 
-  command uint8_t checkBusy(void);
+//  command uint8_t checkBusy(void);
 
   // Read the Card Size from the CSD Register
   command uint32_t readCardSize(void);
