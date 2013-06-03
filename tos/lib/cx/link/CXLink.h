@@ -73,6 +73,15 @@
 #define RX_MAX_WAIT (0x7FFFFFFF)
 #endif
 
+//if we had carrier sense when the rx timeout fires, extend by this
+//amount.
+//In the worst case, it will be the preamble + sfd
+//For a 4-byte preamble and 4-byte synch word sequence, this is 64
+//bits at 125K = 0.512 ms = 3328 6.5M ticks
+#ifndef RX_EXTEND
+#define RX_EXTEND 3328UL 
+#endif
+
 #ifndef ENABLE_CRC_CHECK
 #define ENABLE_CRC_CHECK 1
 #endif
@@ -84,4 +93,6 @@
 #ifndef ENABLE_TIMESTAMPING
 #define ENABLE_TIMESTAMPING 1
 #endif
+
+
 #endif

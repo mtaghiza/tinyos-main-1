@@ -33,6 +33,7 @@ module CXLinkP {
 
   bool active = FALSE;
   bool aDidSense = FALSE;
+  bool aExtended = FALSE;
 
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
@@ -422,6 +423,7 @@ module CXLinkP {
                   aNextRequestType = nextRequest->requestType;
                   aRequestError = SUCCESS;
                   aSfdCapture = 0;
+                  aExtended = FALSE;
                   call FastAlarm.start(nextRequest->typeSpecific.rx.duration + PREP_TIME_FAST);
                   call SynchCapture.captureRisingEdge();
                 }
@@ -874,19 +876,29 @@ module CXLinkP {
       }
     }else if (aNextRequestType == RT_RX){
       //RX (frame wait)
-      //  if we're not mid-reception, resume idle mode.
-      //  signal handled with nothing received
-      atomic{
-        P1OUT^=BIT4;
-        P1OUT ^= BIT4;
-        P1OUT &= ~BIT2;
+      // ignore the timeout if we have already captured the start of
+      // the packet, but didn't kill the timeout fast enough.
+      if (! aSfdCapture){
+        //extend the timeout if we have detected channel activity.
+        if (aDidSense && ! aExtended){
+          aExtended = TRUE;
+          call FastAlarm.start(RX_EXTEND);
+        } else {
+          //timed out, no conditions met to extend or ignore this:
+          //  signal handled with nothing received
+          atomic{
+            P1OUT^=BIT4;
+            P1OUT ^= BIT4;
+            P1OUT &= ~BIT2;
+          }
+          aRequestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+          if (aRequestError == SUCCESS){
+            //TODO: FIXME this was required in older version, still needed?
+            aRequestError = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE);
+          }
+          post signalNoneReceived();
+        }
       }
-      aRequestError = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-      if (aRequestError == SUCCESS){
-        //TODO: FIXME this was required in older version, still needed?
-        aRequestError = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE);
-      }
-      post signalNoneReceived();
     }
     asyncHandled = TRUE;
   }
