@@ -537,6 +537,10 @@ module CXLinkP {
             cdbg(LINKQUEUE, " (%lu %lu %lu)", 
               t0, dt, now);
             cinfo(LINKQUEUE, "\r\n");
+            if (nextRequest->requestType == RT_RX){
+              cinfo(LINKQUEUE, "LR %lu\r\n",
+                nextRequest->typeSpecific.rx.duration);
+            }
           }
         }
       }
