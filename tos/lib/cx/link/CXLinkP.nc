@@ -32,6 +32,7 @@ module CXLinkP {
 } implementation {
 
   bool active = FALSE;
+  bool aDidSense = FALSE;
 
   uint32_t lastFrameNum = 0;
   uint32_t lastFrameTime = 0;
@@ -168,6 +169,10 @@ module CXLinkP {
     return (FRAMELEN_32K*fastTicks)/FRAMELEN_6_5M;
   }
 
+  task void senseNoRX(){
+    cinfo(LINK, "SNRX\r\n");
+  }
+
   task void requestHandled(){
     //if the request finished in the async context, need to copy
     //results back to the task context
@@ -256,6 +261,12 @@ module CXLinkP {
           }
           if (requestError != SUCCESS && requestError != ERETRY){
             cwarn(LINK, "RXE %x\r\n", requestError);
+          }
+          atomic{
+            if (!didReceive && aDidSense){
+              post senseNoRX();
+            }
+            aDidSense = FALSE;
           }
           signal CXRequestQueue.receiveHandled(requestError,
             nextRequest -> layerCount - 1,
@@ -407,6 +418,7 @@ module CXLinkP {
               if (SUCCESS == requestError ){
                 atomic{P1OUT |= BIT2;}
                 atomic{
+                  aDidSense = FALSE;
                   aNextRequestType = nextRequest->requestType;
                   aRequestError = SUCCESS;
                   aSfdCapture = 0;
@@ -938,7 +950,9 @@ module CXLinkP {
   async event void Rf1aPhysical.clearChannel () { }
   async event void Rf1aPhysical.released () { }
   async event void Rf1aPhysical.frameStarted () { }
-  async event void Rf1aPhysical.carrierSense () { }
+  async event void Rf1aPhysical.carrierSense () { 
+    aDidSense = TRUE;
+  }
 
   event void Boot.booted(){
     call Msp430XV2ClockControl.stopMicroTimer();
