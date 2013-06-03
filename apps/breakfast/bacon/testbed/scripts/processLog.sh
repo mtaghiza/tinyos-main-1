@@ -45,40 +45,46 @@ echo "extracting SCHED events"
 # 1368558936.21 0    SCHED TX 241    1  802      802
 # ts            node          sched# root sn csRemote csLocal
 # 1             2             3      4    5  6        7
-pv $logTf | grep ' SCHED ' | cut -d ' ' -f 3,4 --complement > $schedTf
+pv $logTf | grep ' SCHED ' | cut -d ' ' -f 3,4 --complement | awk '(NF == 7){print $0}' > $schedTf
 
 echo "extracting RX_LOCAL events"
 # 1368558911.19 43   NRX 0   0  894      2  916881 923320    65535 -79  1
 # tsReport      node     src sn ofnLocal hc rx32k  report32k dest  rssi lqi
 # 1             2        3   4  5        6  7      8         9     10   11
-pv $logTf | grep ' NRX ' | cut -d ' ' -f 3 --complement > $rxlTf
+pv $logTf | grep ' NRX ' | cut -d ' ' -f 3 --complement | awk '(NF == 11){print $0}' > $rxlTf
 
 echo "extracting network TX_LOCAL events"
 # 1368558936.21 0   NTX 1  803      822299 829762    65535 2  0   196
 # tsReport      src     sn ofnLocal tx32k  report32k dest  tp stp AMID
 # 1             2       3  4        5      6         7     8  9   10
-pv $logTf | grep ' NTX ' | cut -d ' ' -f 3 --complement > $txlTf
+pv $logTf | grep ' NTX ' | cut -d ' ' -f 3 --complement | awk '(NF==10){print $0}'> $txlTf
 
 echo "extracting CRCF_LOCAL events"
 # 1368558910.98 4    CRCF 981
 # ts            node      fnLocal
-pv $logTf | grep ' CRCF ' | cut -d ' ' -f 3 --complement > $cflTf
+# 1             2         3
+pv $logTf | grep ' CRCF ' | cut -d ' ' -f 3 --complement | awk '(NF==3){print $0}' > $cflTf
 
 echo "extracting FW_LOCAL events"
 # 1368558936.01 25   NFW 12       2
 # ts            node     ofnLocal hc
-pv $logTf | grep ' NFW ' | cut -d ' ' -f 3 --complement > $fwlTf
+# 1             2        3        4
+pv $logTf | grep ' NFW ' | cut -d ' ' -f 3 --complement | awk '(NF==4){print $0}' > $fwlTf
 
 echo "extracting SKEW measurements"
 # 1368558961.22 24   SK TPF_s: -8       ld: -12288 over  800
 # ts            node           tpf*4096     delta(*4096) frames-since-last
-pv $logTf | grep ' SK TPF_s: ' | cut -d ' ' -f 3,4,6,8 --complement > $skewTf
+# 1             2              3            4            5
+pv $logTf | grep ' SK TPF_s: ' | cut -d ' ' -f 3,4,6,8 --complement  | awk '(NF == 5){print $0}' > $skewTf
 
 echo "extracting settings"
 pv $logTf | grep ' START ' | cut -d ' ' -f 3 --complement | awk '{ts=$1; node=$2; for (i=3; i<= NF; i++){ print ts, node, $i}}' | tr '=' ' ' > $settingsTf
 
 echo "extracting radio stats"
-pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 == "RS"){ 
+pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB" && NF == 5){
+  curSlot[$2] = $5
+}
+($3 == "RS" && NF == 6){ 
   if ($2 in curSlot){
     cs=curSlot[$2]
   }else{
@@ -88,20 +94,23 @@ pv $logTf | grep -e ' LB ' -e ' RS ' | awk '($3 == "LB"){curSlot[$2] = $5}($3 ==
 }' > $rsTf
 
 echo "Extracting forwarding decisions"
-pv $logTf | grep ' RRB ' | cut -d ' ' -f 3 --complement > $rrbTf
+# 1370134164.75 38 RRB 32 0    640 3  2  2  0  0
+# ts            fwd   src dest sn  sm md sd bw f
+# 1             2     3   4    5   6  7  8  9  10 
+pv $logTf | grep ' RRB ' | cut -d ' ' -f 3 --complement | awk '(NF == 10){print $0}' > $rrbTf
 
 echo "Extracting APP level TX"
+#1370010253.87 1   APP TXD 0  to 0    0   Q 2
 #ts            src         sn    dest err   queue occupancy
 #1             2           3     4    5     6
-#1370010253.87 1   APP TXD 0  to 0    0   Q 2
-pv $logTf | grep ' APP TXD ' | cut -d ' ' -f 3,4,6,9 --complement > $atxTf
+pv $logTf | grep ' APP TXD ' | cut -d ' ' -f 3,4,6,9 --complement  | awk '(NF == 6){print $0}' > $atxTf
 
 echo "Extracting APP level RX"
 #1370010253.62 0    APP RX 1   0
-#1             2           3   4
 #ts            dest        src sn
+#1             2           3   4
 
-pv $logTf | grep ' APP RX ' | cut -d ' ' -f 3,4 --complement > $arxTf
+pv $logTf | grep ' APP RX ' | cut -d ' ' -f 3,4 --complement | awk '(NF == 4){print $0}' > $arxTf
 
 sqlite3 $db << EOF
 .headers OFF

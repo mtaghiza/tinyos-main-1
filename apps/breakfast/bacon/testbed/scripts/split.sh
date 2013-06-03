@@ -49,9 +49,11 @@ do
   startLine=$(grep -n " $rootId START " $tf | head -1 | awk -F ':' '{print $1}')
   endLine=$(grep -n " $rootId START " $tf | head -2 | tail -1 | awk -F ':' '{print $1}')
 
-  if [ "$endLine" == "" ]
+  echo "start: $startLine end: $endLine"
+  if [ "$endLine" == "" -o "$startLine" == "$endLine" ]
   then
     endLine=$(wc -l < $tf)
+    echo "no end line, use file length: $endLine"
   fi
 done
 
