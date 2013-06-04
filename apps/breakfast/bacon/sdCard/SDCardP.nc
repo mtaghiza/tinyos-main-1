@@ -26,7 +26,7 @@ module SDCardP {
   uses interface HplMsp430GeneralIO as CardDetect;
 
   uses interface GeneralIO as Power;
-  uses interface Alarm<TMilli, uint16_t> as PowerTimeout;
+  uses interface Timer<TMilli> as PowerTimeout;
   uses interface Timer<TMilli> as ResetTimer;
   uses interface Timer<TMilli> as BusyTimer;
 }
@@ -94,6 +94,9 @@ implementation {
   
   norace uint32_t m_sectorStart;
   norace uint32_t m_sectorEnd;
+
+  bool powerTimeoutRunning = FALSE;
+
   task void eraseSectorsTask();
   task void spiSendDoneTask();
 
@@ -133,10 +136,14 @@ implementation {
     return SUCCESS;
   }
 
-  async event void PowerTimeout.fired()
+  event void PowerTimeout.fired()
   {
-    sdState = SD_NOINIT;
-    call Power.clr();
+    atomic{
+      if (powerTimeoutRunning){
+        sdState = SD_NOINIT;
+        call Power.clr();
+      }
+    }
 
     printf("%s\n\r", __FUNCTION__);
     printfflush();
@@ -158,6 +165,17 @@ implementation {
 
     return error;
   }
+  
+  task void stopPowerTimeoutTask(){
+    call PowerTimeout.stop();
+  }
+
+  void stopPowerTimeout(){
+    atomic{
+      powerTimeoutRunning = FALSE;
+      post stopPowerTimeoutTask();
+    }
+  }
 
   async command error_t Resource.immediateRequest() 
   {
@@ -169,8 +187,9 @@ implementation {
 //    {
       error = call SpiResource.immediateRequest();
 
-      if (error == SUCCESS)
-        call PowerTimeout.stop();
+      if (error == SUCCESS){
+        stopPowerTimeout();
+      }
 //    }
 //    else
 //      error = FAIL;
@@ -303,10 +322,18 @@ implementation {
   /***************************************************************************/
   /* SDCard                                                                    */
   /***************************************************************************/
+  task void startPowerTimeoutTask(){
+    call PowerTimeout.startOneShot(10);
+  }
+
+  void startPowerTimeout(){
+    powerTimeoutRunning = TRUE;
+    post startPowerTimeoutTask();
+  }
 
   async command error_t SDCard.powerDown() 
   {
-    call PowerTimeout.start(10);
+    startPowerTimeout();
 
     printf("%s\n\r", __FUNCTION__);
     printfflush();
@@ -316,7 +343,7 @@ implementation {
 
   async command error_t SDCard.powerUp() 
   {
-    call PowerTimeout.stop();
+    stopPowerTimeout();
     call Power.set();
 
     printf("%s\n\r", __FUNCTION__);

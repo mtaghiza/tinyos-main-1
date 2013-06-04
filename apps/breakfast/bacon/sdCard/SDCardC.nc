@@ -41,8 +41,8 @@ implementation {
   Power -> HplMsp430GeneralIOC.Port21;
   SDCardP.Power -> Power;
 
-  components new AlarmMilli16C();
-  SDCardP.PowerTimeout -> AlarmMilli16C;
+  components new TimerMilliC() as PowerTimeoutTimer;
+  SDCardP.PowerTimeout -> PowerTimeoutTimer;
   
   components new TimerMilliC() as ResetTimer;
   SDCardP.ResetTimer -> ResetTimer;
