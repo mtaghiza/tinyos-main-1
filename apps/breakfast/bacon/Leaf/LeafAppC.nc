@@ -17,16 +17,18 @@ configuration LeafAppC{
 
   components new PoolC(message_t, 4);
 
-  components new AutoPushC(VOLUME_RECORD, TRUE);
+  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
   components new AMSenderC(AM_LOG_RECORD_DATA_MSG);
-  AutoPushC.Pool -> PoolC;
-  AutoPushC.AMSend -> AMSenderC;
+  components new AMReceiverC(AM_LOG_RECORD_DATA_MSG);
+  RecordPushRequestC.Pool -> PoolC;
+  RecordPushRequestC.AMSend -> AMSenderC;
+  RecordPushRequestC.Receive -> AMReceiverC;
 
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
 
   //TODO: should be from scheduler
-  AutoPushC.Get -> LeafP.Get;
+  RecordPushRequestC.Get -> LeafP.Get;
   
   components new ToastSamplerC(VOLUME_RECORD, TRUE);
 
