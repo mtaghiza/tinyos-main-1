@@ -27,6 +27,8 @@ module SDCardP {
 
   uses interface GeneralIO as Power;
   uses interface Alarm<TMilli, uint16_t> as PowerTimeout;
+  uses interface Timer<TMilli> as ResetTimer;
+  uses interface Timer<TMilli> as BusyTimer;
 }
 
 implementation {
@@ -43,6 +45,9 @@ implementation {
 #define R1_ADDRESS_ERROR    0x20
 #define R1_PARAMETER_ERROR  0x40
 #define MMC_BUSY 0x00
+
+#define TIMER_RESET_RETRY_MS  (100)
+#define TIMER_BUSY_RETRY_MS   (25)
 
 	enum {
       SD_NOINIT = 0,
@@ -61,7 +66,7 @@ implementation {
   uint8_t writeBlock(const uint32_t address, uint8_t *pBuffer);
   uint8_t eraseSectors(uint32_t sectorStart, uint32_t sectorEnd);
 
-//  uint32_t readCardSize(void);
+  uint32_t readCardSize(void);
   uint8_t mmcSetBlockLength(const uint16_t blocklength);
 //  uint8_t readRegister(const uint8_t cmd_register, const uint16_t length, uint8_t *pBuffer);
 
@@ -89,7 +94,7 @@ implementation {
   
   norace uint32_t m_sectorStart;
   norace uint32_t m_sectorEnd;
-  task void clearSectorsTask();
+  task void eraseSectorsTask();
   task void spiSendDoneTask();
 
   task void writeToCacheTask();
@@ -199,9 +204,9 @@ implementation {
       call SDCard.powerUp();
       
       reset(); 
-    }
-
-    signal Resource.granted();    
+    } 
+    else
+      signal Resource.granted();    
   }
 
   /***************************************************************************/
@@ -234,6 +239,7 @@ implementation {
 
                     // give the MMC the required clocks to finish up 
                     call SpiByte.write(DUMMY_CHAR);
+                    call SpiByte.write(DUMMY_CHAR);
 
                     printf("SDCardP__SDCard__readDone: %lX, %d\n\r", m_readAddr, m_len);
                     printfflush();
@@ -264,42 +270,28 @@ implementation {
 
       case SD_WRITE_FLUSH_CACHE_BEFORE_READ:
 
-                    // write status response      
+                    // write's status response      
                     call SpiByte.write(DUMMY_CHAR);
 
                     // wait until the SD card is finished writing
                     mmcCheckBusy();
 
-                    call Select.set();
-
-                    // give the MMC the required clocks to finish up 
-                    call SpiByte.write(DUMMY_CHAR);
-
                     printf("SDCardP__SDCard__cacheFlushedRead: %lX, %d\n\r", m_cache.address, m_len);
                     printfflush();
-      
-                    sdState = SD_WRITE_UPDATE_CACHE;
-                    post readFromSDCardTask();         
+
                     break;
                     
       case SD_WRITE_FLUSH_CACHE:
 
-                    // write status response      
+                    // write's status response      
                     call SpiByte.write(DUMMY_CHAR);
 
                     // wait until the SD card is finished writing
                     mmcCheckBusy();
 
-                    call Select.set();
-
-                    // give the MMC the required clocks to finish up 
-                    call SpiByte.write(DUMMY_CHAR);
-
-                    printf("SDCardP__SDCard__cacheFlushed: %lX, %d\n\r", m_writeAddr, m_len);
+                    printf("SDCardP__SDCard__cacheFlushed: %lX, %d\n\r", m_cache.address, m_len);
                     printfflush();
 
-                    sdState = SD_IDLE;
-                    m_cache.dirty = FALSE;                    
                     break;
       
       default:
@@ -465,13 +457,13 @@ implementation {
 
   command uint32_t SDCard.readCardSize()
   { 
-//    if (sdState == SD_IDLE)
-//      return readCardSize();
+    if (sdState == SD_IDLE)
+      return readCardSize();
       
     return 0;
   }
 
-  async command error_t SDCard.clearSectors(uint32_t offset, uint16_t nbSectors)
+  async command error_t SDCard.eraseSectors(uint32_t offset, uint16_t nbSectors)
   {
     if (sdState == SD_IDLE)
     {    
@@ -488,7 +480,7 @@ implementation {
       printfflush();
       
       sdState = SD_ERASE;
-      post clearSectorsTask();
+      post eraseSectorsTask();
       
       return SUCCESS;
     }
@@ -496,12 +488,24 @@ implementation {
     return FAIL;
   }
   
-  task void clearSectorsTask()
+  task void eraseSectorsTask()
   {
     eraseSectors(m_sectorStart, m_sectorEnd);
   }
   
 
+  async command error_t SDCard.flush()
+  {
+    if (sdState == SD_IDLE)
+    {    
+      sdState = SD_WRITE_FLUSH_CACHE;
+      post writeToSDCardTask();
+
+      return SUCCESS;
+    }
+    
+    return FAIL;
+  }
 
   /***************************************************************************/
   /***************************************************************************/
@@ -527,7 +531,7 @@ implementation {
       call SpiByte.write(frame[i]);
 
     // read response, wait at most 8 bytes (req. by standard)
-    i = 8;
+    i = 64; //8;
     do 
     {
       Rx = call SpiByte.write(DUMMY_CHAR);
@@ -545,22 +549,65 @@ implementation {
 
 
 
+    uint16_t m_now;
+    uint16_t m_start;
 
   // Check if MMC card is still busy
   void mmcCheckBusy(void)
   {
     uint8_t response;
-    uint16_t now;
-    uint16_t start = call PowerTimeout.getNow();
+    
+    m_start = call PowerTimeout.getNow();
 
+    response = call SpiByte.write(DUMMY_CHAR);
+    
+    if (response == MMC_BUSY)
+      call BusyTimer.startOneShot(TIMER_BUSY_RETRY_MS);
+  }
+
+  event void BusyTimer.fired()
+  {
+    uint8_t response;
+    
     // a write should take at most 250 ms according to the standard
-    do
-    {
-      response = call SpiByte.write(DUMMY_CHAR);
-      now = call PowerTimeout.getNow();
-    }
-    while ( (response == MMC_BUSY) && ((now - start) < 250) );
+    m_now = call PowerTimeout.getNow();
 
+    response = call SpiByte.write(DUMMY_CHAR);
+
+    if ((response != MMC_BUSY) || ((m_now - m_start) > 250) )
+    {
+      call Select.set();
+
+      // send 8 cycles to let the SD card finish (req. by standard)
+      call SpiByte.write(0xff);
+
+
+      switch(sdState)
+      {
+
+        case SD_WRITE_FLUSH_CACHE_BEFORE_READ:
+
+                  sdState = SD_WRITE_UPDATE_CACHE;
+                  post readFromSDCardTask();         
+                  break;
+
+        case SD_WRITE_FLUSH_CACHE:
+
+                  sdState = SD_IDLE;
+                  m_cache.dirty = FALSE;
+                  signal SDCard.flushDone();
+                  break;
+      
+        case SD_ERASE:
+                  sdState = SD_IDLE;
+                  signal SDCard.eraseSectorsDone();
+                  break;
+        default:
+                break;
+      }   
+    }
+    else
+      call BusyTimer.startOneShot(TIMER_BUSY_RETRY_MS);      
   }
 
 
@@ -598,45 +645,47 @@ implementation {
     // select SD card
     call Select.clr();
 
-    //Send CMD0 to reset and put MMC in SPI mode
+    //Send CMD0 to reset MMC 
     R1 = mmcSendCmd(MMC_GO_IDLE_STATE, 0, 0x95);
 
     if(R1 != R1_IN_IDLE_STATE)
       return MMC_INIT_ERROR;
 
-    do
-    {
-      // send CMD1 until IDLE flag is cleared
-      R1 = mmcSendCmd(MMC_SEND_OP_COND, 0, 0xff);
-    }
-    while(R1 == R1_IN_IDLE_STATE);
+    // send CMD0 to enter SPI mode
+    R1 = mmcSendCmd(MMC_SEND_OP_COND, 0, 0xff);
 
-    call Select.set();
-
-    // send 8 cycles to let the SD card finish (req. by standard)
-    call SpiByte.write(DUMMY_CHAR);
-
+    // card init can take 300-400 ms
+    call ResetTimer.startOneShot(TIMER_RESET_RETRY_MS);
+    
     return MMC_SUCCESS;
+  }    
+
+  event void ResetTimer.fired()
+  {   
+    // send CMD1 and check if IDLE flag is cleared
+    if (mmcSendCmd(MMC_SEND_OP_COND, 0, 0xff) != R1_IN_IDLE_STATE)
+    {
+      call Select.set();
+
+      // send 8 cycles to let the SD card finish (req. by standard)
+      call SpiByte.write(DUMMY_CHAR);
+    
+      signal Resource.granted();    
+    }
+    else
+      call ResetTimer.startOneShot(TIMER_RESET_RETRY_MS);    
   }
 
 
   uint8_t eraseSectors(uint32_t sectorStart, uint32_t sectorEnd)
   {
-    uint8_t R1;
-    
     call Select.clr();
 
     mmcSendCmd(MMC_TAG_SECTOR_START, sectorStart, 0xff);
     mmcSendCmd(MMC_TAG_SECTOR_END, sectorEnd, 0xff);
-    mmcSendCmd(MMC_EREASE, 0, 0xff);
+    mmcSendCmd(MMC_ERASE, 0, 0xff);
 
     mmcCheckBusy();
-
-    call Select.set();
-
-    // send 8 cycles to let the SD card finish (req. by standard)
-    call SpiByte.write(0xff);
-    sdState = SD_IDLE;
 
     return MMC_SUCCESS;
   } 
@@ -770,6 +819,104 @@ implementation {
     return ret;
   } 
 
+  // Read the Card Size from the CSD Register
+  uint32_t readCardSize(void)
+  {
+    uint8_t R1;
+    uint32_t cardSize = 0;
+
+    call Select.clr();
+    
+    // send read CSD command 
+    R1 = mmcSendCmd(MMC_READ_CSD, 0, 0xFF);
+
+    // Check if the MMC acknowledged the read CSD command
+    // it will do this by sending an affirmative response
+    // in the R1 format (0x00 is no errors)
+    if (R1 == MMC_R1_RESPONSE)
+    {
+      uint16_t now;
+      uint16_t start = call PowerTimeout.getNow();
+
+      // now look for the data token to signify the start of the data
+      // This takes at most 100 ms (req. by standard)
+      do
+      {
+        R1 = call SpiByte.write(DUMMY_CHAR);
+        now = call PowerTimeout.getNow();
+      }
+      while ( (R1 != MMC_START_DATA_BLOCK_TOKEN) && ((now - start) < 100) );
+
+      // got data block token
+      if (R1 == MMC_START_DATA_BLOCK_TOKEN)
+      {
+        uint16_t i,j;
+        uint8_t MMC_READ_BL_LEN;
+        uint16_t MMC_C_SIZE;
+        uint16_t MMC_C_SIZE_MULT;
+        uint8_t MMC_SECTOR_SIZE;
+        
+        // the CSD register is 16 bytes wide. not all values are used.
+        
+        // ignore 5 first bytes of the CSD
+        for (i = 0; i < 5; i++)
+          call SpiByte.write(DUMMY_CHAR);
+
+        // READ_BL_LEN [84:80]
+        R1 = call SpiByte.write(DUMMY_CHAR); //  80 -  87
+        MMC_READ_BL_LEN = R1 & 0x0F;
+
+        // C_SIZE [73:62]
+        R1 = call SpiByte.write(DUMMY_CHAR); //  72 -  79
+        MMC_C_SIZE = (R1 & 0x03) << 10;
+        R1 = call SpiByte.write(DUMMY_CHAR); //  64 -  71
+        MMC_C_SIZE += R1 << 2;
+        R1 = call SpiByte.write(DUMMY_CHAR); //  56 -  63
+        MMC_C_SIZE += R1 >> 6;
+
+        // C_SIZE_MULT [49:47]
+        R1 = call SpiByte.write(DUMMY_CHAR); //  48 -  55
+        MMC_C_SIZE_MULT = (R1 & 0x03) << 1;
+        R1 = call SpiByte.write(DUMMY_CHAR); //  40 -  47
+        MMC_C_SIZE_MULT += R1 >> 7;
+
+        // SECTOR_SIZE [45:39] 
+        MMC_SECTOR_SIZE = (R1 & 0x3F) << 1;
+        R1 = call SpiByte.write(DUMMY_CHAR); //  32 -  39
+        MMC_SECTOR_SIZE += R1 >> 7;
+
+        // ignore last 4 bytes
+        for (i = 0; i < 4; i++)
+          call SpiByte.write(DUMMY_CHAR);
+
+
+        // calculate card size
+        cardSize = (MMC_C_SIZE + 1);
+        // power function with base 2 is better with a loop
+        // i = (pow(2,MMC_C_SIZE_MULT+2)+0.5);
+        for (i = 2, j = MMC_C_SIZE_MULT + 2; j > 1; j--)
+          i <<= 1;
+
+        cardSize *= i;
+
+        // power function with base 2 is better with a loop
+        //i = (pow(2,mmc_READ_BL_LEN)+0.5);
+        for (i = 2, j = MMC_READ_BL_LEN; j > 1; j--)
+          i <<= 1;
+
+        cardSize *= i;
+      }
+
+      call Select.set();
+      call SpiByte.write(DUMMY_CHAR);
+    }
+
+    return cardSize;
+  }
+  
+  default event void SDCard.flushDone() {};
+
+
 /*
   // mmc Get Responce
   uint8_t mmcGetResponse(void)
@@ -862,14 +1009,19 @@ implementation {
       mmc_READ_BL_LEN = b & 0x0F;
       b = call SpiByte.write(DUMMY_CHAR);
 
+printf("%02X", b);
+
       // bits 73:62  C_Size
       // xxCC CCCC CCCC CC
       mmc_C_SIZE = (b & 0x03) << 10;
       b = call SpiByte.write(DUMMY_CHAR);
+printf("%02X", b);
       mmc_C_SIZE += b << 2;
       b = call SpiByte.write(DUMMY_CHAR);
+printf("%02X", b);
       mmc_C_SIZE += b >> 6;
 
+printfflush();
       // bits 55:53
       b = call SpiByte.write(DUMMY_CHAR);
       // bits 49:47
@@ -909,12 +1061,6 @@ implementation {
     return MMC_CardSize;
   }
   
-
-
-
-
-
-
   // Reading the contents of the CSD and CID registers in SPI mode is a simple
   // read-block transaction.
   uint8_t readRegister(const uint8_t cmd_register, const uint16_t length, uint8_t *pBuffer)

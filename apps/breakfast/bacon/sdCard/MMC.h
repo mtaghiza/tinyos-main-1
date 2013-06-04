@@ -67,10 +67,10 @@
 #define MMC_TAG_SECTOR_START       0x60     //CMD32
 #define MMC_TAG_SECTOR_END         0x61     //CMD33
 #define MMC_UNTAG_SECTOR           0x62     //CMD34
-#define MMC_TAG_EREASE_GROUP_START 0x63     //CMD35
-#define MMC_TAG_EREASE_GROUP_END   0x64     //CMD36
-#define MMC_UNTAG_EREASE_GROUP     0x65     //CMD37
-#define MMC_EREASE                 0x66     //CMD38
+#define MMC_TAG_ERASE_GROUP_START  0x63     //CMD35
+#define MMC_TAG_ERASE_GROUP_END    0x64     //CMD36
+#define MMC_UNTAG_ERASE_GROUP      0x65     //CMD37
+#define MMC_ERASE	               0x66     //CMD38
 #define MMC_READ_OCR               0x67     //CMD39
 #define MMC_CRC_ON_OFF             0x68     //CMD40
 

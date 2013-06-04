@@ -78,8 +78,11 @@ interface SDCard {
 	* @return SUCCESS Si la suppression a réussie
 			FAIL Autrement
   	*/
-	command error_t async clearSectors(uint32_t offset, uint16_t nbSectors);
-
+	command error_t async eraseSectors(uint32_t offset, uint16_t nbSectors);
+  event void eraseSectorsDone();
+  
+  command error_t async flush();
+  event void flushDone();
 
 //  command uint8_t checkBusy(void);
 

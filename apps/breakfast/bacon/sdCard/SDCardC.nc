@@ -43,5 +43,10 @@ implementation {
 
   components new AlarmMilli16C();
   SDCardP.PowerTimeout -> AlarmMilli16C;
-      
+  
+  components new TimerMilliC() as ResetTimer;
+  SDCardP.ResetTimer -> ResetTimer;
+
+  components new TimerMilliC() as BusyTimer;
+  SDCardP.BusyTimer -> BusyTimer;
 }
