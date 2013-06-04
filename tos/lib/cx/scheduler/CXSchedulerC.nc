@@ -14,12 +14,15 @@ configuration CXSchedulerC{
     components CXSlaveSchedulerStaticC as CXScheduler;
     #endif
   #else
-    #if CX_MASTER == 1
-    components CXMasterSchedulerC as CXScheduler;
-    #else
-    components CXSlaveSchedulerC as CXScheduler;
+    #if CX_ROUTER == 1
+      components CXRouterSchedulerC as CXScheduler;
+    #else 
+      #if CX_MASTER == 1
+      components CXMasterSchedulerC as CXScheduler;
+      #else
+      components CXSlaveSchedulerC as CXScheduler;
+      #endif
     #endif
-
   #endif
   
   CXRequestQueue = CXScheduler;
