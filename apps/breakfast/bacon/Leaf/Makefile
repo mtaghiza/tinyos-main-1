@@ -49,6 +49,7 @@ CFLAGS += -I$(TOSDIR)/lib/cx/scheduler
 CFLAGS += -I$(TOSDIR)/lib/cx/network
 CFLAGS += -I$(TOSDIR)/lib/cx/transport
 CFLAGS += -I$(TOSDIR)/lib/cx/link
+CFLAGS += -I$(TOSDIR)/lib/cx/physical
 CFLAGS += -I$(TOSDIR)/lib/cx/packet
 CFLAGS += -I$(TOSDIR)/lib/cx/am
 CFLAGS += -I$(TOSDIR)/lib/cx/routing
