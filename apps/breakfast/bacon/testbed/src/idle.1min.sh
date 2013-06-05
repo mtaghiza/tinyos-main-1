@@ -10,5 +10,4 @@ fi
 
 source ./$sd/install.sh maps/map.root $label $od/root.options $od/static.options $od/rx.options $od/1minsched.options $od/radiostats.options $od/network.options
 
-source ./$sd/install.sh maps/map.nonroot $label $od/slave.options $od/static.options $od/rx.options $od/1minsched.options $od/radiostats.options $od/network.options $od/broadcast_1min.options 
-
+source ./$sd/install.sh maps/map.nonroot $label $od/slave.options $od/static.options $od/rx.options $od/1minsched.options $od/radiostats.options $od/network.options
