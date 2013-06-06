@@ -481,13 +481,15 @@ module CXSlaveSchedulerP{
       lastCycleStart + (sched->activeSlots)*sched->slotLength +1,
       lastCycleStart + sched->cycleLength);
     if (error == SUCCESS) {
+      //apply skew correction, but wake up early by half the listen
+      //period.
       error = call SubCXRQ.requestWakeup(0,
         lastCycleStart,
         sched->cycleLength,
         call SkewCorrection.referenceFrame(masterId),
         call SkewCorrection.referenceTime(masterId),
         call SkewCorrection.getCorrection(masterId,
-          sched->cycleLength));
+          sched->cycleLength) - RX_DEFAULT_WAIT); 
       cdbg(SCHED, "req cw: %x\r\n",
         error);
     }else{
