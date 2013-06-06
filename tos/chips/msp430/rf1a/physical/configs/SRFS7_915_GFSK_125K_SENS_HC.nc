@@ -10,8 +10,8 @@ module SRFS7_915_GFSK_125K_SENS_HC{
   const rf1a_config_t cfg = {
     iocfg2:  0x29,   
     
-    iocfg1:  0x06,   
-    iocfg0:  0x06,   
+    iocfg1:  0x0E,//carrier sense
+    iocfg0:  0x06,//SFD send/receive
     fifothr: 0x07,   
     
     sync1:   0xd3,
