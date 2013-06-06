@@ -69,7 +69,7 @@
 #define RX_DEFAULT_WAIT 7800UL
 #endif 
 
-#define SNRX_SCOOT (RX_DEFAULT_WAIT / 8)
+#define SNRX_SCOOT (RX_DEFAULT_WAIT / 4)
 
 #ifndef RX_MAX_WAIT
 #define RX_MAX_WAIT (0x7FFFFFFF)
