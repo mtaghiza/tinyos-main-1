@@ -82,6 +82,11 @@ CX_ACTIVE_SLOTS_STATIC ?= 60
 CFLAGS += -DCX_ACTIVE_SLOTS_STATIC=$(CX_ACTIVE_SLOTS_STATIC)
 
 #radio settings
+SNRX_SCOOT?=0
+CFLAGS += -DSNRX_SCOOT=$(SNRX_SCOOT)
+EARLY_WAKEUP?=0
+CFLAGS += -DEARLY_WAKEUP=$(EARLY_WAKEUP)
+
 #NB: length field is 8 bits: so if we are using FEC, we need to make
 # sure that the total packet length is less than this.
 CFLAGS += -DRF1A_FEC_ENABLED=1
@@ -141,7 +146,7 @@ CFLAGS += -DLINK_DEBUG_FRAME_BOUNDARIES=1
 #buggy: forces a MARK event at every frame
 CFLAGS += -DMARK_ALL_FRAMES=0
 #Set P1.3 at wakeup, clear at sleep
-CFLAGS += -DLINK_DEBUG_WAKEUP=1
+CFLAGS += -DLINK_DEBUG_WAKEUP=0
 
 ##Test settings: for disabling specific features (probably won't be
 ## used)

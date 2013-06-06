@@ -69,7 +69,13 @@
 #define RX_DEFAULT_WAIT 7800UL
 #endif 
 
+#ifndef SNRX_SCOOT
 #define SNRX_SCOOT (RX_DEFAULT_WAIT / 4)
+#endif
+
+#ifndef EARLY_WAKEUP
+#define EARLY_WAKEUP (RX_DEFAULT_WAIT / 2)
+#endif
 
 #ifndef RX_MAX_WAIT
 #define RX_MAX_WAIT (0x7FFFFFFF)
