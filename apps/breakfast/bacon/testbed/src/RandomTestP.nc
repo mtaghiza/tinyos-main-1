@@ -76,6 +76,16 @@ module RandomTestP{
       //enable p1.2,3,4 for gpio
       P1DIR |= BIT2 | BIT3 | BIT4;
       P1SEL &= ~(BIT2 | BIT3 | BIT4);
+      
+      //P1.3 for GDO output if not gpio
+      if (!LINK_DEBUG_WAKEUP){
+        PMAPPWD = PMAPKEY;
+        PMAPCTL = PMAPRECFG;
+        P1MAP3 = PM_RFGDO1;
+        PMAPPWD = 0x00;
+        P1SEL |= BIT3;
+        P1DIR |= BIT3;
+      }
 
     }
   }
