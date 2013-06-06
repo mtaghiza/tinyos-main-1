@@ -265,6 +265,7 @@ module CXLinkP {
           }
           atomic{
             if (!didReceive && aDidSense){
+              lastFrameTime -= SNRX_SCOOT;
               post senseNoRX();
             }
             aDidSense = FALSE;
