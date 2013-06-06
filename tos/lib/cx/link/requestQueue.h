@@ -55,6 +55,7 @@ typedef struct cx_request{
   } typeSpecific;
 } cx_request_t;
 
+
 bool requestLeq(cx_request_t* l, cx_request_t* r){
   { 
     //NULL's are always considered to have lowest priority.
@@ -63,6 +64,8 @@ bool requestLeq(cx_request_t* l, cx_request_t* r){
     }else if (r == NULL){
       return TRUE;
     } else {
+      //NB: wraparound is not handled here, but it occurs after 1500
+      //days so is probably not a practical concern.
       int32_t lfn = l->baseFrame + l->frameOffset;
       int32_t rfn = r->baseFrame + r->frameOffset;
   
