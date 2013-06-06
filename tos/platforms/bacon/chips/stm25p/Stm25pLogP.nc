@@ -547,7 +547,11 @@ implementation {
     //so if this is interrupted between the record-header being
     //written and the data being written, the data will be lost but
     //the log structure will remain intact.
+
+    
     if ( !(uint16_t)*write_addr ) {
+      // This is a hack. It assumes sectors are 0x10000 large      
+      // and erases AHEAD on 0xFFFF-0x10000 boundaries
       m_log_state[ client ].m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, *write_addr ), 1 );
     } else {
