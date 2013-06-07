@@ -3,6 +3,7 @@
 module PlatformBatteryVoltageP {
   provides interface AdcConfigure<const msp430adc12_channel_config_t *>;
   provides interface SplitControl;
+  provides interface StdControl;
   provides interface Init;
   uses interface GeneralIO as EnablePin;
 }
@@ -48,11 +49,31 @@ implementation {
     }
   }
 
+  command error_t StdControl.start(){
+    if (on){
+      return EALREADY;
+    }else {
+      on = TRUE;
+      call EnablePin.set();
+      return SUCCESS;
+    }
+  }
+
   command error_t SplitControl.stop(){
     if (on){
       on = FALSE;
       call EnablePin.clr();
       post stopDoneTask();
+      return SUCCESS;
+    } else {
+      return EALREADY;
+    }
+  }
+
+  command error_t StdControl.stop(){
+    if (on){
+      on = FALSE;
+      call EnablePin.clr();
       return SUCCESS;
     } else {
       return EALREADY;

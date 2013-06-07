@@ -4,6 +4,7 @@ configuration BatteryVoltageC{
   provides interface ReadStream<uint16_t>;
   provides interface ReadNow<uint16_t>;
   provides interface SplitControl;
+  provides interface StdControl;
 } implementation {
   //TODO: DC-- to be completely correct, this should pass the read
   //  interfaces through, and return errors as appropriate if the
@@ -21,6 +22,7 @@ configuration BatteryVoltageC{
   ReadNow = AdcReadNowClientC;
 
   SplitControl = PlatformBatteryVoltageC.SplitControl;
+  StdControl = PlatformBatteryVoltageC.StdControl;
 
   AdcReadClientC.AdcConfigure -> PlatformBatteryVoltageC.AdcConfigure;
   AdcReadStreamClientC.AdcConfigure -> PlatformBatteryVoltageC.AdcConfigure;

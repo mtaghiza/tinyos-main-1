@@ -1,5 +1,6 @@
 module Apds9007P{
   provides interface SplitControl;
+  provides interface StdControl;
   uses interface GeneralIO as PowerPin;
 } implementation {
   //TODO: DC-- to be completely correct, this should pass the read
@@ -27,11 +28,31 @@ module Apds9007P{
     }
   }
 
+  command error_t StdControl.start(){
+    if (! on){
+      call PowerPin.set();
+      on = TRUE;
+      return SUCCESS;
+    } else {
+      return EALREADY;
+    }
+  }
+
   command error_t SplitControl.stop(){
     if (on){
       call PowerPin.clr();
       on = FALSE;
       post stopDoneTask();
+      return SUCCESS;
+    } else {
+      return EALREADY;
+    }
+  }
+
+  command error_t StdControl.stop(){
+    if (on){
+      call PowerPin.clr();
+      on = FALSE;
       return SUCCESS;
     } else {
       return EALREADY;

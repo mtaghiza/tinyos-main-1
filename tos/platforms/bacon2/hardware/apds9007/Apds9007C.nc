@@ -4,6 +4,7 @@ configuration Apds9007C{
   provides interface ReadStream<uint16_t>;
   provides interface ReadNow<uint16_t>;
   provides interface SplitControl;
+  provides interface StdControl;
 } implementation {
   //TODO: DC-- to be completely correct, this should pass the read
   //  interfaces through, and return errors as appropriate if the
@@ -21,6 +22,7 @@ configuration Apds9007C{
   ReadNow = AdcReadNowClientC;
 
   SplitControl = Apds9007P;
+  StdControl = Apds9007P;
 
   AdcReadClientC.AdcConfigure -> PlatformApds9007C.AdcConfigure;
   AdcReadStreamClientC.AdcConfigure -> PlatformApds9007C.AdcConfigure;

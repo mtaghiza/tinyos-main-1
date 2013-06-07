@@ -1,6 +1,7 @@
 configuration PlatformBatteryVoltageC{
   provides interface AdcConfigure<const msp430adc12_channel_config_t *>;
   provides interface SplitControl;
+  provides interface StdControl;
   provides interface Init;
 } implementation {
   components PlatformBatteryVoltageP;
@@ -12,5 +13,6 @@ configuration PlatformBatteryVoltageC{
 
   AdcConfigure = PlatformBatteryVoltageP;
   SplitControl = PlatformBatteryVoltageP;
+  StdControl = PlatformBatteryVoltageP;
   Init = PlatformBatteryVoltageP;
 } 
