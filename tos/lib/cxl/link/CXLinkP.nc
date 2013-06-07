@@ -71,8 +71,10 @@ module CXLinkP {
       } else {
         if (state == S_TX){
           signal Send.sendDone();
+          //TODO: turn off xt2
         } else {
           rxMsg = signal Receive.receive(rxMsg);
+          signal CXLink.rxDone();
         }
       }
     }else if (state == S_FWDTONE){
@@ -121,8 +123,8 @@ module CXLinkP {
   task void handleReception(){
     uint8_t len;
     atomic{
-      //TODO: record metadata about reception: hop count, anything
-      //  else?
+      //TODO: record metadata about reception: hop count, 32k
+      //  timestamp
       len = rxLen;
     }
     if (state == S_RX){
@@ -134,7 +136,9 @@ module CXLinkP {
       }else{
         state = S_IDLE;
         //TODO: idle (sleep?) the radio
+        //TODO: turn off XT2.
         rxMsg = signal Receive.receive(rxMsg, len);
+        signal CXLink.rxDone();
       }
     }else if (state == S_RXTONE){
       state = S_IDLE;
@@ -154,6 +158,7 @@ module CXLinkP {
     if (state == S_RX){
       //TODO: pushback alarm if CS was high
       call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+      signal CXLink.rxDone();
     } else if (state == S_FWD){
       call DelayedSend.startSend();
     } else if (state == S_RXTONE){
