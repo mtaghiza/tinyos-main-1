@@ -53,6 +53,6 @@ typedef struct long_sample_record_t{
 #define DEFAULT_SAMPLE_INTERVAL (30UL*1024UL)
 #endif
 
-#define SS_KEY_SAMPLE_INTERVAL 0x12
+#define SS_KEY_TOAST_SAMPLE_INTERVAL 0x12
 
 #endif

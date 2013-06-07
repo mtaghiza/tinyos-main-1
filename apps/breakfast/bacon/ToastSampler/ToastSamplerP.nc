@@ -56,7 +56,7 @@ module ToastSamplerP{
 
 
   event void Boot.booted(){
-    call SettingsStorage.get(SS_KEY_SAMPLE_INTERVAL,
+    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
