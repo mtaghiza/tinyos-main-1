@@ -33,10 +33,7 @@ module CXActivitySchedulerP {
   uses interface Timer<T32Khz> as FrameTimer;
 
 } implementation {
-  
-  
   #define sched (call Get.get())
-  
 
   //Main cycle flow is handled above this layer.
   //- The layer above (master/slave) tells this layer what slot it is on
@@ -63,6 +60,7 @@ module CXActivitySchedulerP {
     slotNumber = (slotNumber+1)%(sched->numSlots);
     frameNumber = 0;
     call SlotTimer.startOneShot(sched->slotLength);
+    signal ActivitySchedule.slotStarted(slotNumber);
 
     if (txMsg && slotNumber(txMsg) == slotNumber){
       call CXLink.txTone();

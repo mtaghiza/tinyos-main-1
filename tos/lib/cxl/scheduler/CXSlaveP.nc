@@ -99,6 +99,7 @@ module CXSlaveP {
       return EOFF;
     }else{
       //TODO: set MD slot number to the next slot we own.
+      //TODO: set TTL if not already set.
     }
   }
 
@@ -111,7 +112,7 @@ module CXSlaveP {
     }
   }
 
-  event void ActivityScheduler.slotStarted(){
+  event void ActivityScheduler.slotStarted(uint16_t slotNumber){
     if (waitingForAssignment && needsAssignment){
       waitingForAssignment = FALSE;
       post requestSlot();
