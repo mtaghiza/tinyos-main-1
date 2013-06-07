@@ -1,3 +1,3 @@
 #!/bin/bash
 export PYTHONPATH=${PYTHONPATH}:../testAutoPush/.
-python dump.py $@
+python $(dirname $0)/dump.py $@
