@@ -5,7 +5,7 @@ module CXActivitySchedulerP {
   // - mechanism to anchor the cycle in time
   // - mechanism to force an immediate sleep.
   uses interface Get<cx_schedule_t*>;
-  provides interface ActivityScheduler;
+  provides interface CXActivityScheduler;
   
   //Layer below: CXLink provides tone rx/tx, sleep, and rx-with-timeout
   uses interface CXLink;
@@ -39,7 +39,7 @@ module CXActivitySchedulerP {
   //- The layer above (master/slave) tells this layer what slot it is on
   //  and what time that slot began.
   //- This layer starts its slot timer as instructed.
-  command error_t ActivityScheduler.setSlotStart(
+  command error_t CXActivityScheduler.setSlotStart(
       uint16_t atSlotNumber, uint32_t t0, uint32_t dt){
     if (call SlotTimer.running()){
       call SlotTimer.stop();
@@ -52,20 +52,21 @@ module CXActivitySchedulerP {
   //Slot cycle flow
   //- A new slot starts, and the state (slot number/frame number) are
   //  updated.
-  //- If the schedule (from above) indicates this is an inactive slot,
-  //  we sleep immediately.
-  //- If we have a pending TX for this slot, we send the wakeup tone.
-  //- Otherwise, we listen for a wakeup tone.
+  //- we signal slotStarted up and get instructions from the layer
+  //  above
+  //- We start the tone operation (rx or tx) on the indicated channel,
+  //  or sleep if this slot is not in use.
   event void SlotTimer.fired(){
+    cx_slot_rules_t rules;
     slotNumber = (slotNumber+1)%(sched->numSlots);
     frameNumber = 0;
-    call SlotTimer.startOneShot(sched->slotLength);
-    signal ActivitySchedule.slotStarted(slotNumber);
-
+    call SlotTimer.startOneShot(sched->slotLength * FRAMELEN_SLOW);
+    signal CXActivityScheduler.slotStarted(slotNumber, &rules);
+    
     if (txMsg && slotNumber(txMsg) == slotNumber){
-      call CXLink.txTone();
-    }else if (slotNumber <= sched->activeSlots){
-      call CXLink.rxTone();
+      call CXLink.txTone(rules.channel);
+    }else if (rules.active){
+      call CXLink.rxTone(rules.channel, rules.toneTimeout);
     }else{
       call CXLink.sleep();
     }
@@ -148,11 +149,11 @@ module CXActivitySchedulerP {
     if (txMsg == NULL){
       txMsg = msg;
     } else {
-      if (slotsFromNow(msg) < slotsFromNow(txMsg)){
+      if (slotsFromNow(msg) <= slotsFromNow(txMsg)){
         signal Send.sendDone(txMsg, ERETRY);
         txMsg = msg;
       } else{
-        return EBUSY;
+        return ERETRY;
       }
     }
     return SUCCESS;
@@ -183,16 +184,16 @@ module CXActivitySchedulerP {
   }
 
   //Force the radio to sleep
-  command error_t ActivityScheduler.sleep(){
+  command error_t CXActivityScheduler.sleep(){
     //TODO: clean up any other state you might have going on
     call FrameTimer.stop();
     return call CXLink.sleep();
   }
 
-  command error_t ActivityScheduler.stop(){
+  command error_t CXActivityScheduler.stop(){
     //stop things all together.
     call SlotTimer.stop();
-    return call ActivityScheduler.sleep();
+    return call CXActivityScheduler.sleep();
   }
   
 
