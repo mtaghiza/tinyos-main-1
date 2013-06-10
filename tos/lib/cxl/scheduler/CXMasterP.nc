@@ -77,7 +77,7 @@ module CXMasterP {
   event void ActivitySchedule.slotStarted(uint16_t slotNumber, 
       cx_slot_rules_t* rules){
     if ((slotNumber-sched->beaconOffset) % sched->beaconInterval == 0){
-      setSlotNumber(sched, slotNumber);
+      setSlotNumber(schedMsg, slotNumber);
       call SubSend.send(sched, sizeof(cx_schedule_t));
       rules -> active = TRUE;
       rules -> txTone = CX_BEACON_CHANNEL;
