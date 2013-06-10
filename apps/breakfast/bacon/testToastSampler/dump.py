@@ -76,9 +76,9 @@ class Dispatcher:
         self.tos_source = self.mif.addSource(motestring)
         #format printf's correctly
         self.mif.addListener(PrintfLogger(), PrintfMsg.PrintfMsg)
-        rl = RecordLogger()
-        rl.addListener(0x12, SensorSampleLogger())
-        self.mif.addListener(rl, LogRecordDataMsg.LogRecordDataMsg)
+        self.rl = RecordLogger()
+        self.rl.addListener(0x12, SensorSampleLogger())
+        self.mif.addListener(self.rl, LogRecordDataMsg.LogRecordDataMsg)
         #ugh: not guaranteed that the serial connection is fully
         # opened by this point
         time.sleep(1)
