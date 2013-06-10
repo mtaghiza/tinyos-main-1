@@ -1,4 +1,4 @@
-module CXSlaveP {
+module CXLeafP {
 
   provides interface Get<cx_schedule_t*>;
   uses interface CXActivityScheduler;
