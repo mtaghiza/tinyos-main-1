@@ -1,6 +1,6 @@
 
  #include "BaconSampler.h"
-module BaconSamplerP {
+module BaconSamplerHighP {
   uses interface Boot;
   uses interface LogWrite;
   uses interface Timer<TMilli>;
@@ -12,7 +12,6 @@ module BaconSamplerP {
   uses interface Read<uint16_t> as LightRead;
 
   uses interface SettingsStorage;
-  uses interface Leds;
 } implementation {
   uint32_t sampleInterval = 1024;
   bacon_sample_t sampleRec = {
@@ -37,7 +36,6 @@ module BaconSamplerP {
   task void append();
 
   event void Timer.fired(){
-    call Leds.led0Toggle();
     sampleRec.baseTime = call Timer.getNow();
     sampleRec.battery = 0x0000;
     sampleRec.light = 0x0000;
