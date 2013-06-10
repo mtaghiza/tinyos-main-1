@@ -58,6 +58,8 @@ module CXActivitySchedulerP {
   //  or sleep if this slot is not in use.
   event void SlotTimer.fired(){
     cx_slot_rules_t rules;
+    //TODO: might as well punt txMsg up if it was set up for the last
+    //slot but couldn't be delivered due to time.
     slotNumber = (slotNumber+1)%(sched->numSlots);
     frameNumber = 0;
     call SlotTimer.startOneShot(sched->slotLength * FRAMELEN_SLOW);
