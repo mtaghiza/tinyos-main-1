@@ -11,7 +11,8 @@ class BaconSampleLogger(object):
         bt = toUnsigned(recordData[2:6])
         battery = toUnsigned(recordData[6:8])
         light = toUnsigned(recordData[8:10])
-        print "# BACONSAMPLE", rc, bt, bt/1024.0, battery, light
+        thermistor = toUnsigned(recordData[10:12])
+        print "# BACONSAMPLE", rc, bt, bt/1024.0, battery, light, thermistor
 
 if __name__ == '__main__':
     packetSource = 'serial@/dev/ttyUSB0:115200'

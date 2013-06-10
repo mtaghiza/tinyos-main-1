@@ -9,6 +9,7 @@ typedef struct bacon_sample_t {
   uint32_t baseTime;
   uint16_t battery;
   uint16_t light;
+  uint16_t thermistor;
 } __attribute__((packed)) bacon_sample_t;
 
 #define RECORD_TYPE_BACON_SAMPLE 0x14
