@@ -57,4 +57,18 @@ const uint8_t tonePacket[255] = {
  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 
 };
+
+typedef nx_struct cx_link_header {
+  nx_uint8_t ttl;
+  nx_uint8_t hopCount;
+  nx_am_addr_t source;
+  nx_am_addr_t destination;
+} cx_link_header_t;
+
+typedef struct cx_link_metadata {
+  uint32_t rxHopCount;
+  uint32_t rxTime;
+  bool retx;
+} cx_link_metadata_t;
+
 #endif

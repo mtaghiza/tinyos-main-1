@@ -16,6 +16,11 @@ module CXLinkP {
   provides interface CXLink;
 
   uses interface Pool<message_t>;
+
+  uses interface Packet as PacketBody;
+  uses interface Packet as PacketHeader;
+
+  uses interface Rf1aPhysicalMetadata;
 } implementation {
   message_t* rxMsg;
   uint8_t rxLen;
@@ -29,9 +34,6 @@ module CXLinkP {
     S_TX = 2,
     S_FWD = 3,
 
-    S_TXTONE = 4,
-    S_RXTONE = 5,
-    S_FWDTONE = 6,
     S_IDLE = 7,
   };
 
@@ -48,46 +50,58 @@ module CXLinkP {
     return call Rf1aPhysical.sleep();
   }
 
-  //------------ Tone control
   /**
-   * Tone transmission flow:
-   * - state -> TXTONE, no time ref
-   * - switch to tone channel
-   * - configure radio to non-whiten/non-encode, offmode=IDLE
-   * - send immediately
+   *  Put the radio into RX mode (->FSTXON), and start wait timeout.
+   *  Set up SFD capture/etc.
    */
-  //tone control vars
-  uint8_t toneIndex;
- 
-  //tone control forward declarations
+  command error_t CXLink.rx(uint32_t timeout){
+    //switch to data channel if not already on it
+    //TODO: off mode should be FSTXON
+    error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
+      TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE);
+
+    if (SUCCESS == error){
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        call Msp430XV2ClockControl.startMicroTimer();
+      }
+      atomic{
+        call FastAlarm.start(timeout);
+        call SynchCapture.captureRisingEdge();
+        state = S_RX;
+      }
+    }
+    return error;
+  }
+
   task void handleSendDone();
   bool readyForward(message_t* msg);
   error_t subsend(message_t* msg, uint8_t len);
 
   command error_t CXLink.txTone(uint8_t channel){
-    state = S_TXTONE;
-    aSfdCapture = 0;
+    return FAIL;
   }
 
   event void DelayedSend.sendReady(){
     if (aSfdCapture){
-      call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
+      atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
     }else{
       call DelayedSend.startSend();
     }
   }
 
   async event void Rf1aPhysical.sendDone (int result) { 
-    sfdAdjust = TX_SFD_ADJUST;
+    atomic sfdAdjust = TX_SFD_ADJUST;
     post handleSendDone();
   }
 
   task void handleSendDone(){
-    if (state == S_TX || state == S_FWD){
+    uint8_t localState;
+    atomic localState = state;
+    if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
         subsend(fwdMsg, fwdLen);
       } else {
-        if (state == S_TX){
+        if (localState == S_TX){
           signal Send.sendDone(fwdMsg, SUCCESS);
           //TODO: turn off xt2
         } else {
@@ -96,59 +110,24 @@ module CXLinkP {
           signal CXLink.rxDone();
         }
       }
-    }else if (state == S_FWDTONE){
-      signal CXLink.toneReceived(TRUE);
-    } else if (state == S_TXTONE){
-      signal CXLink.toneSent();
     }
   }
 
-  /**
-   * Tone reception flow
-   * - state -> RXTONE
-   * - switch channel
-   * - start timeout alarm
-   * - configure radio as above, plus...
-   *   - set rx buffer to validation buffer
-   *   - set buffer length to length of validation field
-   *   - set fifo threshold to low value
-   *   - enable synch capture 
-   * - timeout? signal toneReceived(FALSE) and clean up.
-   * - receiveStarted: convert length to position in tone reference
-   *   packet.
-   * - receiveBufferFilled: kill reception and validate the received
-   *   value against its companion in the reference packet
-   * - received tone is valid? use rx time of tone to set time where
-   *   it should be retransmitted.
-   */
-  //Tone RX forward declarations
-  uint8_t convertLengthToIndex(uint8_t length);
-  task void toneFwd();
-
-  //Tone RX vars
-  uint8_t validationVal;
-
   command error_t CXLink.rxTone(uint32_t timeout, uint8_t channel){
-    state = S_RXTONE;
-    //set timeout
-    //switch to tone channel
-    //start receiving: don't whiten, don't decode, low RXFIFO threshold, buffer length =
-    //V_LEN, RX_OFF_MODE = FSTXON
-    // set receive buffer to &validationVal;
     return FAIL;
+  }
+  
+  task void signalRXDone(){
+    signal CXLink.rxDone();
   }
 
   async event void FastAlarm.fired(){
-    if (state == S_FWD || state == S_FWDTONE){
+    if (state == S_FWD){
       call DelayedSend.startSend();
     } else if (state == S_RX){
       //TODO: pushback alarm if CS was high
       call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-      signal CXLink.rxDone();
-    } else if (state == S_RXTONE){
-      //TODO: pushback alarm if CS was high
-      call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-      signal CXLink.toneReceived(FALSE);
+      post signalRXDone();
     } else {
       //TODO: handle unexpected state
     }
@@ -166,56 +145,11 @@ module CXLinkP {
   }
 
   async event void Rf1aPhysical.receiveStarted(unsigned int length) { 
-    if (state == S_RXTONE){
-      //length should tell us where we are in the packet.
-      toneIndex = convertLengthToIndex(length);
-    }
-  }
-
-  uint8_t convertLengthToIndex(uint8_t length){
-    //Packet looks like
-    // (P S L) V | P S L V | ... | CRC
-
-    //P_LEN: preamble length
-    //S_LEN: synch length
-    //L_LEN: length byte length
-    //V_LEN: validation length
-    //T_BLOCKS: number of blocks 
-    
-
-    //L = (#blocks after this) * (block len) + VALIDATION_LEN
-    //blocks_after = (L-VALIDATION_LEN)/block_len
-    //&L: (T_BLOCKS*block_len) - ((blocks_after)*B_LEN) - (V + L)
-    
-    // 10 blocks, P_LEN = 4, S_LEN = 4, L_LEN = 1, V_LEN = 1
-    // B_LEN = 1+1+4+4 = 10
-    // total: 100 - (P + S + L)  = 91
-    //receive len 91:
-    // (91 - 1) /10 = 9 blocks after
-    // &L: 100 - 90 - 2  = 8
-    // &V: 8 + V_LEN
-    //          *
-    // PPPPSSSSLV
   }
 
   async event void Rf1aPhysical.receiveBufferFilled(uint8_t* buffer, unsigned int count) { 
-    if (state == S_RXTONE){
-      //TODO: kill reception
-      post toneFwd();
-    }
   }
 
-  task void toneFwd(){
-    if (validationVal == tonePacket[toneIndex]){
-      state = S_FWDTONE;
-      //TODO: start sending packet: 
-      // - compute the real start index: probably toneIndex + 2*B_LEN
-      // - set FastAlarm accordingly.
-    }else{
-      call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-      signal CXLink.toneReceived(FALSE);
-    }
-  }
 
   //--------- RX/TX/FWD flow
   /**
@@ -262,28 +196,6 @@ module CXLinkP {
   }
 
 
-  /**
-   *  Put the radio into RX mode (->FSTXON), and start wait timeout.
-   *  Set up SFD capture/etc.
-   */
-  command error_t CXLink.rx(uint32_t timeout){
-    //switch to data channel if not already on it
-    //TODO: off mode should be FSTXON
-    error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
-      TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE);
-
-    if (SUCCESS == error){
-      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-        call Msp430XV2ClockControl.startMicroTimer();
-      }
-      atomic{
-        call FastAlarm.start(timeout);
-        call SynchCapture.captureRisingEdge();
-        state = S_RX;
-      }
-    }
-    return error;
-  }
 
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
@@ -299,28 +211,31 @@ module CXLinkP {
    */
   task void handleReception(){
     uint8_t len;
+    uint8_t localState;
     atomic{
       //TODO: record metadata about reception: hop count, 32k
       //  timestamp
       len = rxLen;
+      localState = state;
     }
-    if (state == S_RX){
+    if (localState == S_RX){
       if (readyForward(rxMsg)){
-        state = S_FWD;
-        fwdMsg = rxMsg;
-        fwdLen = len;
+        atomic{
+          state = S_FWD;
+          fwdMsg = rxMsg;
+          fwdLen = len;
+        }
         subsend(fwdMsg, fwdLen);
       }else{
-        state = S_IDLE;
+        atomic state = S_IDLE;
         //TODO: idle (sleep?) the radio
         //TODO: turn off XT2.
         //TODO: fill in params
         rxMsg = signal Receive.receive(rxMsg, NULL, len);
         signal CXLink.rxDone();
       }
-    }else if (state == S_RXTONE){
-      state = S_IDLE;
-      signal CXLink.toneReceived(TRUE);
+    }else{ 
+      //TODO: unexpected state
     }
   }
 
@@ -356,5 +271,22 @@ module CXLinkP {
       return call Resource.release();
     }
   }
+
+  command void* Send.getPayload(message_t* msg, uint8_t len){
+    return NULL;
+  }
+  command uint8_t Send.maxPayloadLength(){
+    return call PacketBody.maxPayloadLength();
+  }
+
+  command error_t Send.cancel(message_t* msg){
+    return FAIL;
+  }
+
+  async event void Rf1aPhysical.frameStarted () { }
+  async event void Rf1aPhysical.clearChannel () { }
+  async event void Rf1aPhysical.carrierSense () { }
+  async event void Rf1aPhysical.released () { }
+
   
 }
