@@ -50,36 +50,10 @@ module CXLinkP {
     return call Rf1aPhysical.sleep();
   }
 
-  /**
-   *  Put the radio into RX mode (->FSTXON), and start wait timeout.
-   *  Set up SFD capture/etc.
-   */
-  command error_t CXLink.rx(uint32_t timeout){
-    //switch to data channel if not already on it
-    //TODO: off mode should be FSTXON
-    error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
-      TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE);
-
-    if (SUCCESS == error){
-      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-        call Msp430XV2ClockControl.startMicroTimer();
-      }
-      atomic{
-        call FastAlarm.start(timeout);
-        call SynchCapture.captureRisingEdge();
-        state = S_RX;
-      }
-    }
-    return error;
-  }
 
   task void handleSendDone();
   bool readyForward(message_t* msg);
   error_t subsend(message_t* msg, uint8_t len);
-
-  command error_t CXLink.txTone(uint8_t channel){
-    return FAIL;
-  }
 
   event void DelayedSend.sendReady(){
     if (aSfdCapture){
@@ -113,9 +87,6 @@ module CXLinkP {
     }
   }
 
-  command error_t CXLink.rxTone(uint32_t timeout, uint8_t channel){
-    return FAIL;
-  }
   
   task void signalRXDone(){
     signal CXLink.rxDone();
@@ -162,6 +133,29 @@ module CXLinkP {
    * - When TTL reaches 0, signal the relevant receive/sendDone event.
    */
   task void handleReception();
+  
+  /**
+   *  Put the radio into RX mode (->FSTXON), and start wait timeout.
+   *  Set up SFD capture/etc.
+   */
+  command error_t CXLink.rx(uint32_t timeout){
+    //switch to data channel if not already on it
+    error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
+      TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE,
+      RF1A_OM_FSTXON );
+
+    if (SUCCESS == error){
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        call Msp430XV2ClockControl.startMicroTimer();
+      }
+      atomic{
+        call FastAlarm.start(timeout);
+        call SynchCapture.captureRisingEdge();
+        state = S_RX;
+      }
+    }
+    return error;
+  }
 
   /**
    * Set up the radio to transmit the provided packet immediately.
@@ -240,6 +234,13 @@ module CXLinkP {
   }
 
 
+  command error_t CXLink.txTone(uint8_t channel){
+    return FAIL;
+  }
+  command error_t CXLink.rxTone(uint32_t timeout, uint8_t channel){
+    return FAIL;
+  }
+
   //------------
   // "Easy stuff"
   command error_t SplitControl.start(){
@@ -273,8 +274,9 @@ module CXLinkP {
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
-    return NULL;
+    return call PacketBody.getPayload(msg, len);
   }
+
   command uint8_t Send.maxPayloadLength(){
     return call PacketBody.maxPayloadLength();
   }
