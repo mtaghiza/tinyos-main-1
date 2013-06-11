@@ -15,6 +15,10 @@
 #define FRAMELEN_FAST (203125UL * CX_SCALE_TIME)
 #endif
 
+//worst case: 8 byte-times (preamble, sfd)
+//(64/125000.0)*6.5e6=3328, round up a bit.
+#define CX_CS_TIMEOUT_EXTEND 3500UL
+
 //time from strobe command to SFD: 0.00523 S
 #define TX_SFD_ADJUST 3395UL
 
@@ -63,6 +67,7 @@ typedef nx_struct cx_link_header {
   nx_uint8_t hopCount;
   nx_am_addr_t source;
   nx_am_addr_t destination;
+  nx_uint8_t sn;
 } cx_link_header_t;
 
 typedef struct cx_link_metadata {
@@ -70,5 +75,6 @@ typedef struct cx_link_metadata {
   uint32_t rxTime;
   bool retx;
 } cx_link_metadata_t;
+
 
 #endif

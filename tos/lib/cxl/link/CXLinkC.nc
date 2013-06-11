@@ -26,8 +26,14 @@ configuration CXLinkC {
 
   components new AlarmMicro32C() as FastAlarm;
   CXLinkP.FastAlarm -> FastAlarm;
+  components LocalTime32khzC;
+  CXLinkP.LocalTime -> LocalTime32khzC; 
 
   components Msp430XV2ClockC;
   CXLinkP.Msp430XV2ClockControl -> Msp430XV2ClockC;
+  
+  components CXLinkPacketC;
+  CXLinkP.PacketHeader -> CXLinkPacketC.PacketHeader;
+  CXLinkP.PacketBody -> CXLinkPacketC.PacketBody;
 }
 
