@@ -31,6 +31,7 @@ configuration LeafAppC{
   RecordPushRequestC.Get -> LeafP.Get;
   
   components new ToastSamplerC(VOLUME_RECORD, TRUE);
+  components new BaconSamplerC(VOLUME_RECORD, TRUE);
 
   components ActiveMessageC;
   LeafP.SplitControl -> ActiveMessageC;
