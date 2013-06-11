@@ -2,6 +2,7 @@ COMPONENT=TestAppC
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/cxl/link
+CFLAGS += -I$(TOSDIR)/lib/cxl/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
