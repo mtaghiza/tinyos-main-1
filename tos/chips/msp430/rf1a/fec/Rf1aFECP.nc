@@ -299,14 +299,15 @@ generic module Rf1aFECP () {
   }
 
   async command error_t Rf1aPhysical.setReceiveBuffer(
-      uint8_t* buffer_d, unsigned int length_d, bool single_use){
+      uint8_t* buffer_d, unsigned int length_d, bool single_use,
+      rf1a_offmode_t offMode){
     if (sizeof(rxEncoded_e) < call FEC.encodedLen(length_d)){
       return ESIZE;
     }
     atomic{
       rxBuf_d = buffer_d;
       return call SubRf1aPhysical.setReceiveBuffer(rxEncoded_e,
-        call FEC.encodedLen(length_d), single_use);
+        call FEC.encodedLen(length_d), single_use, offMode);
     }
   }
 

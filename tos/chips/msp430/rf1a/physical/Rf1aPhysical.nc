@@ -256,7 +256,8 @@ interface Rf1aPhysical {
    * a message currently being received into an existing buffer.  */
   async command error_t setReceiveBuffer (uint8_t* buffer,
                                           unsigned int length,
-                                          bool single_use);
+                                          bool single_use,
+                                          rf1a_offmode_t offMode);
 
   /** Indication that the current receive buffer has been filled.
    *

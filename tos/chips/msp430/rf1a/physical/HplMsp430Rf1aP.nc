@@ -1353,9 +1353,8 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
       
-  
   async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
-    unsigned int length, bool single_use)
+    unsigned int length, bool single_use, rf1a_offmode_t offMode)
   {
     error_t rv = validateClient(client);
     if (rv!= SUCCESS){
@@ -1382,7 +1381,8 @@ generic module HplMsp430Rf1aP () @safe() {
 
       if (0 == rx_pos) {
         // Return to IDLE after RX and TX.
-        call Rf1aIf.writeRegister(MCSM1, 0xf0 & call Rf1aIf.readRegister(MCSM1));
+        call Rf1aIf.writeRegister(MCSM1, 
+          (0xf0 & call Rf1aIf.readRegister(MCSM1)) | (offMode << 2));
 
         /* Setting a null buffer acts to cancel any in-progress
          * reception. */
@@ -1397,19 +1397,6 @@ generic module HplMsp430Rf1aP () @safe() {
           }
         }
       } else if (RX_S_inactive == rx_state) {
-        uint8_t off_mode;
-        //RX->idle, setRB: RX
-        //TX: only entered through send command, which specifies
-        //    off-mode.
-        //So only mess with the RXOFF_MODE bits, based 
-        if (rx_single_use) {
-          // Return to IDLE after RX
-          off_mode = (RF1A_OM_IDLE << 2);
-        } else {
-          // Return to RX after RX
-          off_mode = (RF1A_OM_RX << 2);
-        }
-        call Rf1aIf.writeRegister(MCSM1, off_mode | (0xf3 & call Rf1aIf.readRegister(MCSM1)));
         startReception_();
       }
     }
