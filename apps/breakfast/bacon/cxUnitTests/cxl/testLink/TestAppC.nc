@@ -1,17 +1,18 @@
 configuration TestAppC {
 } implementation {
+  components PlatformSerialC;
+  components SerialPrintfC;
   components CXLinkC;
   components TestP;
 
   TestP.SplitControl -> CXLinkC;
   TestP.Receive -> CXLinkC;
   TestP.Send -> CXLinkC;
+  TestP.CXLink -> CXLinkC;
 
   components MainC;
   TestP.Boot -> MainC;
 
-  components PlatformSerialC;
-  components SerialPrintfC;
   TestP.UartStream -> PlatformSerialC;
   TestP.SerialControl -> PlatformSerialC;
 

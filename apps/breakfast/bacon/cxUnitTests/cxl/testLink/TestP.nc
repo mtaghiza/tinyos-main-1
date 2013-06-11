@@ -50,6 +50,25 @@ module TestP{
     }
   }
 
+  task void receivePacket(){ }
+  task void sendPacket(){ }
+  task void receiveTone(){ }
+  task void sendTone(){ }
+  task void sleep(){}
+
+  event void SplitControl.startDone(error_t error){ }
+  event void SplitControl.stopDone(error_t error){ }
+
+  event void Send.sendDone(message_t* msg, error_t error){}
+
+  event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
+    return msg;
+  }
+
+  event void CXLink.rxDone(){}
+  event void CXLink.toneReceived(bool received){}
+  event void CXLink.toneSent(){}
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -81,4 +100,9 @@ module TestP{
      }
      printf("%c", byte);
   }
+
+  async event void UartStream.receiveDone( uint8_t* buf, uint16_t len,
+    error_t error ){}
+  async event void UartStream.sendDone( uint8_t* buf, uint16_t len,
+    error_t error ){}
 }
