@@ -36,7 +36,7 @@ module CXLinkPacketC{
   }
 
   command void* Packet.getPayload(message_t* msg, uint8_t len){
-    if (len < call Packet.maxPayloadLength()){
+    if (len <= call Packet.maxPayloadLength()){
       return msg->data;
     }else {
       return NULL;
