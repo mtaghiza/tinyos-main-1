@@ -55,9 +55,11 @@ module CXLinkP {
    *  Immediately sleep the radio. 
    */
   command error_t CXLink.sleep(){
-    //TODO: verify that we're not active (either in the process of
-    //forwarding or during an active reception event)
-    return call Rf1aPhysical.sleep();
+    if (state == S_TX || state == S_FWD){
+      return EBUSY;
+    }else{
+      return call Rf1aPhysical.sleep();
+    }
   }
 
 
@@ -336,6 +338,7 @@ module CXLinkP {
   event void Resource.granted(){
     rxMsg = call Pool.get();
     if (rxMsg){
+      call Msp430XV2ClockControl.stopMicroTimer();
       signal SplitControl.startDone(call Rf1aPhysical.sleep());
     }else {
       signal SplitControl.startDone(ENOMEM);
