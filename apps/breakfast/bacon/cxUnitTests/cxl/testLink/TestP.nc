@@ -13,6 +13,7 @@ module TestP{
 } implementation {
 
   message_t* txMsg;
+  bool started = FALSE;
 
   task void usage(){
     printf("USAGE\r\n");
@@ -23,6 +24,7 @@ module TestP{
     printf(" t: transmit packet\r\n");
     printf(" T: transmit packet, no retx\r\n");
     printf(" s: sleep\r\n");
+    printf(" S: toggle start/stop\r\n");
   }
 
   event void Boot.booted(){
@@ -72,8 +74,15 @@ module TestP{
   task void sendPacketNoRetx(){ }
   task void sleep(){}
 
-  event void SplitControl.startDone(error_t error){ }
-  event void SplitControl.stopDone(error_t error){ }
+  
+  event void SplitControl.startDone(error_t error){ 
+    printf("start done: %x pool: %u\r\n", error, call Pool.size());
+    started = (error == SUCCESS);
+  }
+  event void SplitControl.stopDone(error_t error){ 
+    printf("stop done: %x pool: %u\r\n", error, call Pool.size());
+    started = FALSE;
+  }
 
   event void Send.sendDone(message_t* msg, error_t error){}
 
@@ -84,6 +93,14 @@ module TestP{
   event void CXLink.rxDone(){}
   event void CXLink.toneReceived(bool received){}
   event void CXLink.toneSent(){}
+
+  task void toggleStartStop(){
+    if (started){
+      call SplitControl.stop();
+    }else {
+      call SplitControl.start();
+    }
+  }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -104,6 +121,9 @@ module TestP{
          break;
        case 's':
          post sleep();
+         break;
+       case 'S':
+         post toggleStartStop();
          break;
        case '?':
          post usage();
