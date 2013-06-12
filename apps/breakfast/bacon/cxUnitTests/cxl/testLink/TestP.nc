@@ -86,7 +86,9 @@ module TestP{
       txMsg = call Pool.get();
       call Packet.clear(txMsg);
       header = call CXLinkPacket.getLinkHeader(txMsg);
-      pl = call Packet.getPayload(txMsg, sizeof(test_payload_t));
+//      pl = call Packet.getPayload(txMsg, sizeof(test_payload_t));
+      pl = call Packet.getPayload(txMsg, 
+        call Packet.maxPayloadLength());
       printf("msg %p header %p pl %p md %p sn %u\r\n",
         txMsg,
         header,
@@ -97,7 +99,8 @@ module TestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       
-      err = call Send.send(txMsg, sizeof(test_payload_t));
+//      err = call Send.send(txMsg, sizeof(test_payload_t));
+      err = call Send.send(txMsg, call Packet.maxPayloadLength());
       printf("Send: %x\r\n", err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
