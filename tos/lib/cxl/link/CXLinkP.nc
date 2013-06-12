@@ -66,10 +66,8 @@ module CXLinkP {
 
   event void DelayedSend.sendReady(){
     if (aSfdCapture){
-      printf("ds.sr w\r\n");
       atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
     }else{
-      printf("ds.sr s\r\n");
       atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
       call DelayedSend.startSend();
     }
@@ -84,7 +82,6 @@ module CXLinkP {
     uint8_t localState;
     atomic localState = state;
     //TODO: if time32k is not set, set it based on last sfd capture.
-    printf("hsd: %x\r\n", localState);
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
         subsend(fwdMsg);
@@ -118,8 +115,7 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
-    printf("fa.f\r\n");
-    if (state == S_FWD){
+    if (state == S_FWD || state == S_TX){
       call DelayedSend.startSend();
     } else if (state == S_RX){
       if (aCSDetected){
@@ -136,7 +132,6 @@ module CXLinkP {
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
-    printf("cap\r\n");
     call FastAlarm.stop();
     if (time > (ft & 0x0000ffff)){
       ft  -= 0x00010000;
