@@ -26,5 +26,6 @@ configuration TestAppC {
 
   components new TimerMilliC();
   TestP.Timer -> TimerMilliC;
+  TestP.Rf1aStatus -> CXLinkC;
 
 }

@@ -13,6 +13,7 @@ module TestP{
   uses interface Timer<TMilli>;
 
   uses interface Leds;
+  uses interface Rf1aStatus;
 } implementation {
 
   message_t* txMsg;
@@ -28,7 +29,12 @@ module TestP{
 
   typedef nx_struct test_payload{
     nx_uint8_t body[PAYLOAD_LEN];
+    nx_uint32_t timestamp;
   } test_payload_t;
+
+  task void getStatus(){
+    printf("* Radio Status: %x\r\n", call Rf1aStatus.get());
+  }
 
   task void usage(){
     printf("USAGE\r\n");
@@ -36,11 +42,13 @@ module TestP{
     printf(" q: reset\r\n");
     printf(" r: receive packet\r\n");
     printf(" R: receive packet, no fwd\r\n");
+    printf(" c: (check) receive with 1 second timeout\r\n");
     printf(" t: transmit packet\r\n");
     printf(" T: transmit packet, no retx\r\n");
     printf(" s: sleep\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
+    post getStatus();
   }
 
   task void killSerial(){
@@ -87,6 +95,10 @@ module TestP{
     printf("RXn: %x\r\n",
       call CXLink.rx(0xFFFFFFFF, FALSE));
   }
+  task void receivePacketShort(){
+    printf("RXs: %x\r\n",
+      call CXLink.rx(6500000UL, TRUE));
+  }
 
   void doSendPacket(bool retx){
     if (txMsg){
@@ -107,10 +119,11 @@ module TestP{
         pl,
         call CXLinkPacket.getLinkMetadata(txMsg),
         header->sn);
-      header->ttl = 5;
+      header->ttl = 1;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
+      call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
       err = call Send.send(txMsg, call Packet.maxPayloadLength());
       printf("Send: %x %x\r\n", retx, err);
@@ -129,7 +142,9 @@ module TestP{
     doSendPacket(TRUE);
   }
 
-  task void sleep(){}
+  task void sleep(){
+    printf("Sleep: %x\r\n", call CXLink.sleep());
+  }
 
   
   event void SplitControl.startDone(error_t error){ 
@@ -143,8 +158,9 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %u %x\r\n", 
+    printf("SD %u %lu %x\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
+      ((test_payload_t*)(call Packet.getPayload(msg, sizeof(test_payload_t))))-> timestamp,
       error);
     if (msg == txMsg){
       call Pool.put(txMsg);
@@ -155,8 +171,13 @@ module TestP{
   }
 
   task void handleRX(){
-    printf("RX %p %u\r\n",
-      rxMsg, (call CXLinkPacket.getLinkHeader(rxMsg))->sn);
+    test_payload_t* pl = call Packet.getPayload(rxMsg,
+      sizeof(test_payload_t));
+    printf("RX %p %u %p %lu\r\n",
+      rxMsg, 
+      (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
+      pl,
+      pl -> timestamp);
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -178,7 +199,9 @@ module TestP{
     }
   }
 
-  event void CXLink.rxDone(){}
+  event void CXLink.rxDone(){
+    printf("RXD\r\n");
+  }
   event void CXLink.toneReceived(bool received){}
   event void CXLink.toneSent(){}
 
@@ -195,6 +218,7 @@ module TestP{
     call SerialControl.start();
   }
 
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -205,6 +229,9 @@ module TestP{
          break;
        case 'R':
          post receivePacketNoRetx();
+         break;
+       case 'c':
+         post receivePacketShort();
          break;
        case 't':
          post sendPacket();
