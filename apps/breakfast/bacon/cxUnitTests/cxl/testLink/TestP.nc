@@ -6,18 +6,22 @@ module TestP{
   uses interface SplitControl;
   uses interface CXLink;
   uses interface Send;
+  uses interface Packet;
+  uses interface CXLinkPacket;
   uses interface Receive;
   uses interface Pool<message_t>;
 } implementation {
+
+  message_t* txMsg;
 
   task void usage(){
     printf("USAGE\r\n");
     printf("-----\r\n");
     printf(" q: reset\r\n");
-    printf(" p: receive packet\r\n");
-    printf(" P: send packet\r\n");
-    printf(" t: receive tone\r\n");
-    printf(" T: send tone\r\n");
+    printf(" r: receive packet\r\n");
+    printf(" R: receive packet, no fwd\r\n");
+    printf(" t: transmit packet\r\n");
+    printf(" T: transmit packet, no retx\r\n");
     printf(" s: sleep\r\n");
   }
 
@@ -51,9 +55,21 @@ module TestP{
   }
 
   task void receivePacket(){ }
-  task void sendPacket(){ }
-  task void receiveTone(){ }
-  task void sendTone(){ }
+  task void receivePacketNoRetx(){ }
+  task void sendPacket(){ 
+    if (txMsg){
+      printf("still sending\r\n");
+    }else{
+      txMsg = call Pool.get();
+      call Packet.clear(txMsg);
+      printf("msg %p header %p pl %p md %p\r\n",
+        txMsg,
+        call CXLinkPacket.getLinkHeader(txMsg),
+        call Packet.getPayload(txMsg, 0),
+        call CXLinkPacket.getLinkMetadata(txMsg));
+    }
+  }
+  task void sendPacketNoRetx(){ }
   task void sleep(){}
 
   event void SplitControl.startDone(error_t error){ }
@@ -74,17 +90,17 @@ module TestP{
        case 'q':
          WDTCTL = 0;
          break;
-       case 'p':
+       case 'r':
          post receivePacket();
          break;
-       case 'P':
-         post sendPacket();
+       case 'R':
+         post receivePacketNoRetx();
          break;
        case 't':
-         post receiveTone();
+         post sendPacket();
          break;
        case 'T':
-         post sendTone();
+         post sendPacketNoRetx();
          break;
        case 's':
          post sleep();

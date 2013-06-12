@@ -15,6 +15,8 @@ configuration TestAppC {
 
   TestP.UartStream -> PlatformSerialC;
   TestP.SerialControl -> PlatformSerialC;
+  TestP.Packet -> CXLinkC;
+  TestP.CXLinkPacket -> CXLinkC;
 
   components new PoolC(message_t, 3);
   CXLinkC.Pool -> PoolC;
