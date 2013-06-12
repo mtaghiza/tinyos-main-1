@@ -58,6 +58,7 @@ module CXLinkP {
     if (state == S_TX || state == S_FWD){
       return EBUSY;
     }else{
+      call Msp430XV2ClockControl.stopMicroTimer();
       return call Rf1aPhysical.sleep();
     }
   }
