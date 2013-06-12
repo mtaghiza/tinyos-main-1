@@ -75,8 +75,12 @@ module TestP{
       call CXLink.rx(0xFFFFFFFF, TRUE));
   }
 
-  task void receivePacketNoRetx(){ }
-  task void sendPacket(){ 
+  task void receivePacketNoRetx(){ 
+    printf("RXn: %x\r\n",
+      call CXLink.rx(0xFFFFFFFF, FALSE));
+  }
+
+  void doSendPacket(bool retx){
     if (txMsg){
       printf("still sending\r\n");
     }else{
@@ -98,10 +102,10 @@ module TestP{
       header->ttl = 5;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
-      
+      call CXLinkPacket.setAllowRetx(txMsg, retx);   
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
       err = call Send.send(txMsg, call Packet.maxPayloadLength());
-      printf("Send: %x\r\n", err);
+      printf("Send: %x %x\r\n", retx, err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
         txMsg = NULL;
@@ -109,7 +113,14 @@ module TestP{
     }
   }
 
-  task void sendPacketNoRetx(){ }
+  task void sendPacketNoRetx(){ 
+    doSendPacket(FALSE);
+  }
+
+  task void sendPacket(){ 
+    doSendPacket(TRUE);
+  }
+
   task void sleep(){}
 
   
