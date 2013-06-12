@@ -301,7 +301,7 @@ module CXLinkP {
   event void Resource.granted(){
     rxMsg = call Pool.get();
     if (rxMsg){
-      signal SplitControl.startDone(SUCCESS);
+      signal SplitControl.startDone(call Rf1aPhysical.sleep());
     }else {
       signal SplitControl.startDone(ENOMEM);
     }
@@ -315,6 +315,7 @@ module CXLinkP {
     if (! call Resource.isOwner()){
       return EALREADY;
     }else{
+      call Rf1aPhysical.sleep();
       post signalStopDone();
       call Pool.put(rxMsg);
       return call Resource.release();
