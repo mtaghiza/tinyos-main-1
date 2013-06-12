@@ -10,6 +10,7 @@ module TestP{
   uses interface CXLinkPacket;
   uses interface Receive;
   uses interface Pool<message_t>;
+  uses interface Timer<TMilli>;
 
   uses interface Leds;
 } implementation {
@@ -23,6 +24,7 @@ module TestP{
   #ifndef PAYLOAD_LEN 
   #define PAYLOAD_LEN 10
   #endif
+  #define SERIAL_PAUSE_TIME 10240UL
 
   typedef nx_struct test_payload{
     nx_uint8_t body[PAYLOAD_LEN];
@@ -37,7 +39,13 @@ module TestP{
     printf(" t: transmit packet\r\n");
     printf(" T: transmit packet, no retx\r\n");
     printf(" s: sleep\r\n");
+    printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
+  }
+
+  task void killSerial(){
+    call SerialControl.stop();
+    call Timer.startOneShot(SERIAL_PAUSE_TIME);
   }
 
   event void Boot.booted(){
@@ -48,7 +56,7 @@ module TestP{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
 //      //SMCLK to 1.1
-//      P1MAP1 = PM_SMCLK;
+      P1MAP1 = PM_SMCLK;
       //GDO to 2.4 (synch)
       P2MAP4 = PM_RFGDO0;
       PMAPPWD = 0x00;
@@ -56,7 +64,7 @@ module TestP{
       P1DIR |= BIT1;
       P1SEL &= ~BIT1;
       P1OUT &= ~BIT1;
-//      P1SEL |= BIT1;
+      P1SEL |= BIT1;
       P2DIR |= BIT4;
       P2SEL |= BIT4;
       
@@ -182,6 +190,11 @@ module TestP{
     }
   }
 
+
+  event void Timer.fired(){
+    call SerialControl.start();
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
        case 'q':
@@ -207,6 +220,9 @@ module TestP{
          break;
        case '?':
          post usage();
+         break;
+       case 'k':
+         post killSerial();
          break;
        case '\r':
          printf("\n");

@@ -24,4 +24,7 @@ configuration TestAppC {
   CXLinkC.Pool -> PoolC;
   TestP.Pool -> PoolC;
 
+  components new TimerMilliC();
+  TestP.Timer -> TimerMilliC;
+
 }
