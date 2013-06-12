@@ -10,10 +10,15 @@ module TestP{
   uses interface CXLinkPacket;
   uses interface Receive;
   uses interface Pool<message_t>;
+
+  uses interface Leds;
 } implementation {
 
   message_t* txMsg;
+  message_t* rxMsg;
+
   bool started = FALSE;
+  task void toggleStartStop();
   
   #ifndef PAYLOAD_LEN 
   #define PAYLOAD_LEN 10
@@ -62,9 +67,14 @@ module TestP{
       P1DIR |= BIT2 | BIT3 | BIT4;
       P1SEL &= ~(BIT2 | BIT3 | BIT4);
     }
+    post toggleStartStop();
   }
 
-  task void receivePacket(){ }
+  task void receivePacket(){ 
+    printf("RX: %x\r\n",
+      call CXLink.rx(0xFFFFFFFF, TRUE));
+  }
+
   task void receivePacketNoRetx(){ }
   task void sendPacket(){ 
     if (txMsg){
@@ -83,7 +93,7 @@ module TestP{
         pl,
         call CXLinkPacket.getLinkMetadata(txMsg),
         header->sn);
-      header->ttl = 2;
+      header->ttl = 5;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       
@@ -110,6 +120,7 @@ module TestP{
   }
 
   event void Send.sendDone(message_t* msg, error_t error){
+    call Leds.led0Toggle();
     printf("SD %u %x\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       error);
@@ -121,8 +132,28 @@ module TestP{
     }
   }
 
+  task void handleRX(){
+    printf("RX %p %u\r\n",
+      rxMsg, (call CXLinkPacket.getLinkHeader(rxMsg))->sn);
+    call Pool.put(rxMsg);
+    rxMsg = NULL;
+  }
+
   event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
-    return msg;
+    if (rxMsg == NULL){
+      message_t* ret = call Pool.get();
+      if (ret){
+        rxMsg = msg;
+        post handleRX();
+        return ret;
+      }else{
+        printf("pool empty\r\n");
+        return msg;
+      }
+    }else{
+      printf("Busy RX\r\n");
+      return msg;
+    }
   }
 
   event void CXLink.rxDone(){}

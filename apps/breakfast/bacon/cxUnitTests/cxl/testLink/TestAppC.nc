@@ -4,11 +4,13 @@ configuration TestAppC {
   components SerialPrintfC;
   components CXLinkC;
   components TestP;
+  components LedsC;
 
   TestP.SplitControl -> CXLinkC;
   TestP.Receive -> CXLinkC;
   TestP.Send -> CXLinkC;
   TestP.CXLink -> CXLinkC;
+  TestP.Leds -> LedsC;
 
   components MainC;
   TestP.Boot -> MainC;
@@ -21,4 +23,5 @@ configuration TestAppC {
   components new PoolC(message_t, 3);
   CXLinkC.Pool -> PoolC;
   TestP.Pool -> PoolC;
+
 }
