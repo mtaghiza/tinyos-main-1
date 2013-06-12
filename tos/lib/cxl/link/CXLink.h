@@ -25,7 +25,7 @@
 #define TX_SFD_ADJUST 3395UL
 
 //difference between transmitter SFD and receiver SFD: 60.45 fast ticks
-#define T_SFD_PROP_TIME 61UL
+#define T_SFD_PROP_TIME (61UL - 23UL)
 
 #define RX_SFD_ADJUST (TX_SFD_ADJUST + T_SFD_PROP_TIME)
 

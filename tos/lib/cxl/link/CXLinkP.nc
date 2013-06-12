@@ -39,6 +39,7 @@ module CXLinkP {
 
   uint8_t state = S_SLEEP;
   uint32_t aSfdCapture;
+  bool aSynched;
   bool aCSDetected;
   int32_t sfdAdjust;
 
@@ -65,11 +66,24 @@ module CXLinkP {
   error_t subsend(message_t* msg);
 
   event void DelayedSend.sendReady(){
-    if (aSfdCapture){
-      atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
-    }else{
-      atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
-      call DelayedSend.startSend();
+    atomic {
+      if (aSfdCapture){
+        if(!aSynched){
+          //first synch point: computed based on sfd capture (either RX
+          //or TX)
+          call FastAlarm.startAt(aSfdCapture,  
+            FRAMELEN_FAST - sfdAdjust);
+          aSynched = TRUE;
+        }else{
+          //every subsequent transmission: should be based on the
+          //  previous one.
+          call FastAlarm.startAt(call FastAlarm.getAlarm(),
+            FRAMELEN_FAST);
+        }
+      }else{
+        //first transmission: ok to trigger alarm immediately
+        call FastAlarm.start(0);
+      }
     }
   }
 
@@ -86,6 +100,7 @@ module CXLinkP {
       if (readyForward(fwdMsg)){
         subsend(fwdMsg);
       } else {
+        call FastAlarm.stop();
         if (localState == S_TX){
           atomic {
             state = S_IDLE;
@@ -106,6 +121,8 @@ module CXLinkP {
           signal CXLink.rxDone();
         }
       }
+    }else{
+      //unexpected state
     }
   }
 
@@ -115,7 +132,9 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
-    if (state == S_FWD || state == S_TX){
+    //n.b: using bitwise or rather than logical to prevent
+    //  short-circuit evaluation
+    if ((state == S_TX) | (state == S_FWD)){
       call DelayedSend.startSend();
     } else if (state == S_RX){
       if (aCSDetected){
@@ -181,6 +200,7 @@ module CXLinkP {
         call SynchCapture.captureRisingEdge();
         aSfdCapture = 0;
         aCSDetected = FALSE;
+        aSynched = FALSE;
         state = S_RX;
       }
     }
@@ -194,6 +214,7 @@ module CXLinkP {
     error_t error;
     atomic{
       aSfdCapture = 0;
+      aSynched = FALSE;
       fwdMsg = msg;
     }
     call CXLinkPacket.setLen(msg, len);
@@ -278,6 +299,7 @@ module CXLinkP {
         }
         subsend(fwdMsg);
       }else{
+        call FastAlarm.stop();
         atomic {
           state = S_IDLE;
           call Msp430XV2ClockControl.stopMicroTimer();
