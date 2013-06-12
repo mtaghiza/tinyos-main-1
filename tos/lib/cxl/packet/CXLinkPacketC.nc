@@ -30,7 +30,9 @@ module CXLinkPacketC{
 
   command void Packet.clear(message_t* msg){
     memset(msg, 0, sizeof(message_t));
+    //set up defaults: increment sn, allow retx from this buffer.
     ((cx_link_header_t*)(msg->header))->sn = sn++;
+    md(msg)->cx.retx = TRUE;
   }
 
   command void* Packet.getPayload(message_t* msg, uint8_t len){

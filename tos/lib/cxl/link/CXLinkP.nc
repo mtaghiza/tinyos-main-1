@@ -66,8 +66,11 @@ module CXLinkP {
 
   event void DelayedSend.sendReady(){
     if (aSfdCapture){
+      printf("ds.sr w\r\n");
       atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
     }else{
+      printf("ds.sr s\r\n");
+      atomic call FastAlarm.startAt(aSfdCapture, FRAMELEN_FAST + sfdAdjust);
       call DelayedSend.startSend();
     }
   }
@@ -80,6 +83,8 @@ module CXLinkP {
   task void handleSendDone(){
     uint8_t localState;
     atomic localState = state;
+    //TODO: if time32k is not set, set it based on last sfd capture.
+    printf("hsd: %x\r\n", localState);
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
         subsend(fwdMsg);
@@ -113,6 +118,7 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
+    printf("fa.f\r\n");
     if (state == S_FWD){
       call DelayedSend.startSend();
     } else if (state == S_RX){
@@ -130,6 +136,7 @@ module CXLinkP {
 
   async event void SynchCapture.captured(uint16_t time){
     uint32_t ft = call FastAlarm.getNow();
+    printf("cap\r\n");
     call FastAlarm.stop();
     if (time > (ft & 0x0000ffff)){
       ft  -= 0x00010000;
@@ -189,25 +196,36 @@ module CXLinkP {
    * Set up the radio to transmit the provided packet immediately.
    */
   command error_t Send.send(message_t* msg, uint8_t len){
-    aSfdCapture = 0;
-    fwdMsg = msg;
+    error_t error;
+    atomic{
+      aSfdCapture = 0;
+      fwdMsg = msg;
+    }
     call CXLinkPacket.setLen(msg, len);
-    return subsend(msg);
+    error= subsend(msg);
+    if (error == SUCCESS){
+      atomic state = S_TX;
+    }
+    return error;
   }
   
   error_t subsend(message_t* msg){
-    error_t error;
-    if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-      call Msp430XV2ClockControl.startMicroTimer();
+    if(call Resource.isOwner()){
+      error_t error;
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        call Msp430XV2ClockControl.startMicroTimer();
+      }
+      error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
+      if (error == SUCCESS) {
+        rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
+        call SynchCapture.captureRisingEdge();
+        error = call Rf1aPhysical.send((uint8_t*)msg, 
+          call CXLinkPacket.len(msg), om);
+      }
+      return error;
+    } else {
+      return EOFF;
     }
-    error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
-    if (error == SUCCESS) {
-      rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
-      call SynchCapture.captureRisingEdge();
-      error = call Rf1aPhysical.send((uint8_t*)msg, 
-        call CXLinkPacket.len(msg), om);
-    }
-    return error;
   }
 
   /**
@@ -219,7 +237,7 @@ module CXLinkP {
       header(msg)->hopCount++;
       header(msg)->ttl--;
     }
-    return (header(msg)->ttl > 0) && (metadata(rxMsg)->retx);
+    return (header(msg)->ttl > 0) && (metadata(msg)->retx);
   }
 
 
@@ -252,7 +270,7 @@ module CXLinkP {
       
       call CXLinkPacket.setLen(rxMsg, rxLen);
       metadata(rxMsg)->rxHopCount = header(rxMsg)->hopCount;
-      metadata(rxMsg)->rxTime = slowRef 
+      metadata(rxMsg)->time32k = slowRef 
         - slowTicks 
         - (FRAMELEN_SLOW*(metadata(rxMsg)->rxHopCount-1));
       localState = state;
