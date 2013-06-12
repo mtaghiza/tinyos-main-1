@@ -1,0 +1,2 @@
+* The python hooks for the metadata configuration messages are under
+  apps/breakfast/bacon/Metadata/mig. 
