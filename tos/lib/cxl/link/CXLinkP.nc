@@ -18,15 +18,14 @@ module CXLinkP {
 
   uses interface Pool<message_t>;
 
-  uses interface Packet as PacketBody;
-  uses interface Packet as PacketHeader;
+  uses interface Packet;
+  uses interface CXLinkPacket;
 
   uses interface Rf1aPhysicalMetadata;
 } implementation {
   message_t* rxMsg;
   uint8_t rxLen;
   message_t* fwdMsg;
-  uint8_t fwdLen;
 
   enum {
     S_SLEEP = 0,
@@ -44,8 +43,11 @@ module CXLinkP {
   int32_t sfdAdjust;
 
   cx_link_header_t* header(message_t* msg){
-    return (cx_link_header_t*)(call PacketHeader.getPayload(msg,
-      sizeof(cx_link_header_t)));
+    return (call CXLinkPacket.getLinkHeader(msg));
+  }
+
+  cx_link_metadata_t* metadata(message_t* msg){
+    return (call CXLinkPacket.getLinkMetadata(msg));
   }
   
   /**
@@ -60,7 +62,7 @@ module CXLinkP {
 
   task void handleSendDone();
   bool readyForward(message_t* msg);
-  error_t subsend(message_t* msg, uint8_t len);
+  error_t subsend(message_t* msg);
 
   event void DelayedSend.sendReady(){
     if (aSfdCapture){
@@ -80,7 +82,7 @@ module CXLinkP {
     atomic localState = state;
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
-        subsend(fwdMsg, fwdLen);
+        subsend(fwdMsg);
       } else {
         if (localState == S_TX){
           atomic {
@@ -90,16 +92,15 @@ module CXLinkP {
           }
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
-          uint8_t rxLenLocal;
           atomic {
             state = S_IDLE;
-            rxLenLocal = rxLen;
+            call CXLinkPacket.setLen(rxMsg, rxLen);
             call Msp430XV2ClockControl.stopMicroTimer();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
           }
           rxMsg = signal Receive.receive(rxMsg, 
-            call PacketBody.getPayload(rxMsg, rxLenLocal - sizeof(cx_link_header_t)), 
-            rxLenLocal - sizeof(cx_link_header_t));
+            call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
+            call Packet.payloadLength(rxMsg));
           signal CXLink.rxDone();
         }
       }
@@ -161,11 +162,13 @@ module CXLinkP {
    *  Put the radio into RX mode (->FSTXON), and start wait timeout.
    *  Set up SFD capture/etc.
    */
-  command error_t CXLink.rx(uint32_t timeout){
+  command error_t CXLink.rx(uint32_t timeout, bool allowForward){
     //switch to data channel if not already on it
     error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
       TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE,
       RF1A_OM_FSTXON );
+    call Packet.clear(rxMsg);
+    metadata(rxMsg)->retx = allowForward;
 
     if (SUCCESS == error){
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
@@ -188,11 +191,11 @@ module CXLinkP {
   command error_t Send.send(message_t* msg, uint8_t len){
     aSfdCapture = 0;
     fwdMsg = msg;
-    fwdLen = len;
-    return subsend(msg, len);
+    call CXLinkPacket.setLen(msg, len);
+    return subsend(msg);
   }
   
-  error_t subsend(message_t* msg, uint8_t len){
+  error_t subsend(message_t* msg){
     error_t error;
     if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
       call Msp430XV2ClockControl.startMicroTimer();
@@ -201,7 +204,8 @@ module CXLinkP {
     if (error == SUCCESS) {
       rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
       call SynchCapture.captureRisingEdge();
-      error = call Rf1aPhysical.send((uint8_t*)msg, len, om);
+      error = call Rf1aPhysical.send((uint8_t*)msg, 
+        call CXLinkPacket.len(msg), om);
     }
     return error;
   }
@@ -215,8 +219,7 @@ module CXLinkP {
       header(msg)->hopCount++;
       header(msg)->ttl--;
     }
-    //TODO: check metadata for retx flag and & this with result
-    return header(msg)->ttl > 0 ;
+    return (header(msg)->ttl > 0) && (metadata(rxMsg)->retx);
   }
 
 
@@ -239,7 +242,6 @@ module CXLinkP {
    * metadata/timing information, prepare for forwarding if needed.
    */
   task void handleReception(){
-    uint8_t len;
     uint8_t localState;
     atomic{
       uint32_t fastRef1 = call FastAlarm.getNow();
@@ -248,21 +250,20 @@ module CXLinkP {
       uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - aSfdCapture - sfdAdjust;
       uint32_t slowTicks = fastToSlow(fastTicks);
       
-      //TODO: record metadata about reception: hop count, 32k
-      //  timestamp
-      //set 32k timestamp to 
-      //slowRef-slowTicks-(FRAMELEN_SLOW*rxHopCount - 1)
-      len = rxLen;
+      call CXLinkPacket.setLen(rxMsg, rxLen);
+      metadata(rxMsg)->rxHopCount = header(rxMsg)->hopCount;
+      metadata(rxMsg)->rxTime = slowRef 
+        - slowTicks 
+        - (FRAMELEN_SLOW*(metadata(rxMsg)->rxHopCount-1));
       localState = state;
     }
     if (localState == S_RX){
-      if (readyForward(rxMsg)){
+      if (readyForward(rxMsg) ){
         atomic{
           state = S_FWD;
           fwdMsg = rxMsg;
-          fwdLen = len;
         }
-        subsend(fwdMsg, fwdLen);
+        subsend(fwdMsg);
       }else{
         atomic {
           state = S_IDLE;
@@ -270,8 +271,8 @@ module CXLinkP {
           call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
         }
         rxMsg = signal Receive.receive(rxMsg, 
-          call PacketBody.getPayload(rxMsg, len-sizeof(cx_link_header_t)),
-        len-sizeof(cx_link_header_t));
+          call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
+          call Packet.payloadLength(rxMsg));
         signal CXLink.rxDone();
       }
     }else{ 
@@ -315,16 +316,17 @@ module CXLinkP {
       return EALREADY;
     }else{
       post signalStopDone();
+      call Pool.put(rxMsg);
       return call Resource.release();
     }
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
-    return call PacketBody.getPayload(msg, len);
+    return call Packet.getPayload(msg, len);
   }
 
   command uint8_t Send.maxPayloadLength(){
-    return call PacketBody.maxPayloadLength();
+    return call Packet.maxPayloadLength();
   }
 
   command error_t Send.cancel(message_t* msg){

@@ -27,11 +27,13 @@ interface CXLink {
    * Put the radio into RX mode and wait [timeout] for a packet to
    * arrive. If a packet is received, it is forwarded at FRAMELEN_FAST
    * intervals from its original reception (decrementing TTL each
-   * time) until its TTL reaches 0.
+   * time) until its TTL reaches 0. 
+   * If allowRetx is false, this will immediately signal a received
+   * packet up the stack and will not forward it.
    * 
    * Returns SUCCESS if an rxDone will eventually be signalled.
    */
-  command error_t rx(uint32_t timeout);
+  command error_t rx(uint32_t timeout, bool allowRetx);
   /**
    * Indicate that an rx has completed (either due to timeout or due
    * to a reception/forwarding). This will not signal up until the

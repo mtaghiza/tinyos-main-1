@@ -3,6 +3,9 @@ configuration CXLinkC {
   provides interface Receive;
   provides interface Send;
   provides interface CXLink;
+  provides interface CXLinkPacket;
+  provides interface Packet;
+
   uses interface Pool<message_t>;
 } implementation {
   components CXLinkP;
@@ -33,7 +36,9 @@ configuration CXLinkC {
   CXLinkP.Msp430XV2ClockControl -> Msp430XV2ClockC;
   
   components CXLinkPacketC;
-  CXLinkP.PacketHeader -> CXLinkPacketC.PacketHeader;
-  CXLinkP.PacketBody -> CXLinkPacketC.PacketBody;
+  CXLinkP.Packet -> CXLinkPacketC.Packet;
+  CXLinkP.CXLinkPacket -> CXLinkPacketC.CXLinkPacket;
+  Packet = CXLinkPacketC.Packet;
+  CXLinkPacket = CXLinkPacketC.CXLinkPacket;
 }
 
