@@ -14,6 +14,14 @@ module TestP{
 
   message_t* txMsg;
   bool started = FALSE;
+  
+  #ifndef PAYLOAD_LEN 
+  #define PAYLOAD_LEN 10
+  #endif
+
+  typedef nx_struct test_payload{
+    nx_uint8_t body[PAYLOAD_LEN];
+  } test_payload_t;
 
   task void usage(){
     printf("USAGE\r\n");
@@ -62,15 +70,32 @@ module TestP{
     if (txMsg){
       printf("still sending\r\n");
     }else{
+      cx_link_header_t* header;
+      test_payload_t* pl;
+      error_t err;
       txMsg = call Pool.get();
       call Packet.clear(txMsg);
-      printf("msg %p header %p pl %p md %p\r\n",
+      header = call CXLinkPacket.getLinkHeader(txMsg);
+      pl = call Packet.getPayload(txMsg, sizeof(test_payload_t));
+      printf("msg %p header %p pl %p md %p sn %u\r\n",
         txMsg,
-        call CXLinkPacket.getLinkHeader(txMsg),
-        call Packet.getPayload(txMsg, 0),
-        call CXLinkPacket.getLinkMetadata(txMsg));
+        header,
+        pl,
+        call CXLinkPacket.getLinkMetadata(txMsg),
+        header->sn);
+      header->ttl = 2;
+      header->destination = AM_BROADCAST_ADDR;
+      header->source = TOS_NODE_ID;
+      
+      err = call Send.send(txMsg, sizeof(test_payload_t));
+      printf("Send: %x\r\n", err);
+      if (err != SUCCESS){
+        call Pool.put(txMsg);
+        txMsg = NULL;
+      }
     }
   }
+
   task void sendPacketNoRetx(){ }
   task void sleep(){}
 
@@ -84,7 +109,17 @@ module TestP{
     started = FALSE;
   }
 
-  event void Send.sendDone(message_t* msg, error_t error){}
+  event void Send.sendDone(message_t* msg, error_t error){
+    printf("SD %u %x\r\n", 
+      (call CXLinkPacket.getLinkHeader(msg))->sn,
+      error);
+    if (msg == txMsg){
+      call Pool.put(txMsg);
+      txMsg = NULL;
+    } else{
+      printf("mystery packet: %p\r\n", msg);
+    }
+  }
 
   event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
     return msg;
