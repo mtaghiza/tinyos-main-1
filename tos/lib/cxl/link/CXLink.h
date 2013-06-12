@@ -21,7 +21,7 @@
 //(64/125000.0)*6.5e6=3328, round up a bit.
 #define CX_CS_TIMEOUT_EXTEND 3500UL
 
-//time from strobe command to SFD: 0.00523 S
+//time from strobe command to SFD: 0.000523 S
 #define TX_SFD_ADJUST 3395UL
 
 //difference between transmitter SFD and receiver SFD: 60.45 fast ticks
@@ -77,6 +77,7 @@ typedef struct cx_link_metadata {
   uint32_t rxHopCount;
   uint32_t time32k;
   bool retx;
+  nx_uint32_t* tsLoc;
 } cx_link_metadata_t;
 
 #endif

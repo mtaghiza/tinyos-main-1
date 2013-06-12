@@ -11,6 +11,11 @@ module CXLinkPacketC{
   command void CXLinkPacket.setAllowRetx(message_t* msg, bool allowRetx){
     md(msg)->cx.retx = allowRetx;
   }
+
+  command void CXLinkPacket.setTSLoc(message_t* msg, 
+      nx_uint32_t* tsLoc){
+    md(msg)->cx.tsLoc = tsLoc;
+  }
   
   command void CXLinkPacket.setLen(message_t* msg, uint8_t len){
     md(msg)->rf1a.payload_length = len - sizeof(message_header_t);

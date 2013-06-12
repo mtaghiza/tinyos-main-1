@@ -7,6 +7,7 @@ configuration CXLinkC {
   provides interface Packet;
 
   uses interface Pool<message_t>;
+  provides interface Rf1aStatus;
 } implementation {
   components CXLinkP;
   SplitControl = CXLinkP.SplitControl;
@@ -24,6 +25,8 @@ configuration CXLinkC {
   components SRFS7_915_GFSK_125K_SENS_HC as RadioConfigC;
   Rf1aPhysicalC.Rf1aConfigure -> RadioConfigC;
 
+  Rf1aStatus = Rf1aPhysicalC;
+
   components GDO1CaptureC;
   CXLinkP.SynchCapture -> GDO1CaptureC;
 
@@ -40,5 +43,6 @@ configuration CXLinkC {
   CXLinkP.CXLinkPacket -> CXLinkPacketC.CXLinkPacket;
   Packet = CXLinkPacketC.Packet;
   CXLinkPacket = CXLinkPacketC.CXLinkPacket;
+
 }
 

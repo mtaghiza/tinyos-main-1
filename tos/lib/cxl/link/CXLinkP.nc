@@ -55,10 +55,13 @@ module CXLinkP {
    *  Immediately sleep the radio. 
    */
   command error_t CXLink.sleep(){
-    if (state == S_TX || state == S_FWD){
+    uint8_t localState;
+    atomic localState = state;
+    if (localState == S_TX || localState == S_FWD){
       return EBUSY;
     }else{
       call Msp430XV2ClockControl.stopMicroTimer();
+      atomic state = S_SLEEP;
       return call Rf1aPhysical.sleep();
     }
   }
@@ -84,6 +87,18 @@ module CXLinkP {
             FRAMELEN_FAST);
         }
       }else{
+//        //N.B.: at this point, packet is already loaded into
+//        // buffer, so we can't modify it. Need to either use
+//        // fragmentation (+ROM) or suck it up and timestamp it above
+//        // this layer, accepting something on the line of 10s of ms
+//        // accuracy.
+//        //cheap/easy timestamping. This introduces a bias, as the
+//        //actual SFD comes roughly 0.5 ms after the strobe command is
+//        //issued. By adding those ticks back in here, we get it a bit
+//        //closer.
+//        if (metadata(fwdMsg)->tsLoc != NULL){
+//          *(metadata(fwdMsg)->tsLoc) = (call LocalTime.get() + TS_CORRECTION );
+//        }
         //first transmission: ok to trigger alarm immediately
         call FastAlarm.start(0);
       }
@@ -145,6 +160,7 @@ module CXLinkP {
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+        state = S_IDLE;
         post signalRXDone();
       }
     } else {
@@ -187,27 +203,33 @@ module CXLinkP {
    *  Set up SFD capture/etc.
    */
   command error_t CXLink.rx(uint32_t timeout, bool allowForward){
-    //switch to data channel if not already on it
-    error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
-      TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE,
-      RF1A_OM_FSTXON );
-    call Packet.clear(rxMsg);
-    metadata(rxMsg)->retx = allowForward;
-
-    if (SUCCESS == error){
-      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-        call Msp430XV2ClockControl.startMicroTimer();
+    uint8_t localState;
+    atomic localState = state;
+    if (localState == S_IDLE || localState == S_SLEEP){
+      //switch to data channel if not already on it
+      error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
+        TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE,
+        RF1A_OM_FSTXON );
+      call Packet.clear(rxMsg);
+      metadata(rxMsg)->retx = allowForward;
+  
+      if (SUCCESS == error){
+        if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+          call Msp430XV2ClockControl.startMicroTimer();
+        }
+        atomic{
+          call FastAlarm.start(timeout);
+          call SynchCapture.captureRisingEdge();
+          aSfdCapture = 0;
+          aCSDetected = FALSE;
+          aSynched = FALSE;
+          state = S_RX;
+        }
       }
-      atomic{
-        call FastAlarm.start(timeout);
-        call SynchCapture.captureRisingEdge();
-        aSfdCapture = 0;
-        aCSDetected = FALSE;
-        aSynched = FALSE;
-        state = S_RX;
-      }
+      return error;
+    }else{
+      return EBUSY;
     }
-    return error;
   }
 
   /**
