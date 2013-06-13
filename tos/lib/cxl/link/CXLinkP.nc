@@ -236,18 +236,26 @@ module CXLinkP {
    * Set up the radio to transmit the provided packet immediately.
    */
   command error_t Send.send(message_t* msg, uint8_t len){
-    error_t error;
-    atomic{
-      aSfdCapture = 0;
-      aSynched = FALSE;
-      fwdMsg = msg;
+    uint8_t localState;
+    atomic localState = state;
+    if (localState == S_TX || localState == S_FWD){
+      return localState == S_TX? EBUSY: ERETRY;
+    } else {
+      error_t error;
+      call CXLinkPacket.setLen(msg, len);
+      //TODO: set source here.
+      error= subsend(msg);
+  
+      if (error == SUCCESS){
+        atomic{
+          aSfdCapture = 0;
+          aSynched = FALSE;
+          fwdMsg = msg;
+          state = S_TX;
+        }
+      }
+      return error;
     }
-    call CXLinkPacket.setLen(msg, len);
-    error= subsend(msg);
-    if (error == SUCCESS){
-      atomic state = S_TX;
-    }
-    return error;
   }
   
   error_t subsend(message_t* msg){
