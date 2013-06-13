@@ -158,6 +158,7 @@ module TestP{
   task void wakeup(){
     printf("wakeup: %x\r\n", call LppControl.wakeup());
   }
+
   bool longProbe = TRUE;
   task void setProbeInterval(){
     uint32_t pi;
