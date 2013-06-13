@@ -19,7 +19,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     sync0:   0x91,
     pktlen:  0xff,    
     pktctrl1:0x04,   
-    pktctrl0:0x05,   
+    pktctrl0:0x45,   
     addr:    0x00,   
     channr:  0,   
     fsctrl1: 0x0C,   
