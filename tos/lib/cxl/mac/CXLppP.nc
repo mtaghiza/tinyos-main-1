@@ -1,4 +1,5 @@
-#include "CXMac.h"
+
+ #include "CXMac.h"
 module CXLppP {
   provides interface LppControl;
 
@@ -32,7 +33,7 @@ module CXLppP {
   bool keepAlive = FALSE;
 
   uint8_t state = S_OFF;
-  uint32_t probeInterval;
+  uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
 
   command error_t LppControl.wakeup(){
@@ -43,7 +44,9 @@ module CXLppP {
   }
 
   uint32_t randomize(uint32_t mean){
-    return (mean/2) + (call Random.rand32())%mean ;
+    uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
+    printf("R %lu -> %lu\r\n", mean, ret);
+    return ret;
   }
 
   command error_t LppControl.setProbeInterval(uint32_t t){
