@@ -35,7 +35,7 @@ class DatabaseInsert(object):
             # the table has a PK uniqueness constraint on (node_id, cookie)
             # duplicate data is ignored
             row = [node_id, time.time(), cookie, nextCookie, length]
-            self.connection.execute('INSERT OR IGNORE INTO flash_table (node_id, base_time, cookie, nextCookie, length) VALUES (?,?,?,?,?)', row)        
+            self.connection.execute('INSERT OR IGNORE INTO cookie_table (node_id, base_time, cookie, nextCookie, length) VALUES (?,?,?,?,?)', row)        
             self.connection.commit();
             
         #print "DatabaseInsert.insertFlash()", threading.current_thread().name

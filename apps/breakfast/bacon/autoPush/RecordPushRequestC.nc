@@ -12,7 +12,7 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
   components SettingsStorageC;
 
   components MainC;  
-  RecordPushRequestP.Boot -> MainC;
+  MainC.SoftwareInit -> RecordPushRequestP;
 
   
   //For finding end of log and setting thresholds

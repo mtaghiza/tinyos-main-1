@@ -33,6 +33,7 @@ module SDCardP {
 
 implementation {
 
+#define MINIMUM_READ_LENGTH (4)
 #define BLOCK_SIZE (512UL)
 #define BLOCK_MASK (BLOCK_SIZE - 1)
 #define INVALID_ADDRESS (0xFFFFFFFF)
@@ -52,6 +53,7 @@ implementation {
 	enum {
       SD_NOINIT = 0,
       SD_IDLE = 1,
+      SD_POWER_DOWN,
       SD_ERASE,
       SD_WRITE_UPDATE_CACHE,
       SD_WRITE_FLUSH_CACHE_BEFORE_READ,
@@ -91,6 +93,11 @@ implementation {
   norace uint8_t* m_rxBuf;
   norace uint16_t m_len;
   norace error_t m_error;
+
+  norace uint32_t m_bypassAddr;
+  norace uint16_t m_bypassLen;
+  norace uint8_t m_bypassCache[4];
+  norace uint8_t *m_bypassPtr;
   
   norace uint32_t m_sectorStart;
   norace uint32_t m_sectorEnd;
@@ -130,23 +137,8 @@ implementation {
 
     m_cache.address = INVALID_ADDRESS;
     m_cache.dirty = FALSE;
-    
-    printf("cache: %p\n\r", m_cache.block);    
-    
+        
     return SUCCESS;
-  }
-
-  event void PowerTimeout.fired()
-  {
-    atomic{
-      if (powerTimeoutRunning){
-        sdState = SD_NOINIT;
-        call Power.clr();
-      }
-    }
-
-    printf("%s\n\r", __FUNCTION__);
-    printfflush();
   }
 
   
@@ -199,11 +191,8 @@ implementation {
     return error;
   }
 
-  async command error_t Resource.release() {   
-  
-    printf("%s\n\r", __FUNCTION__);
-    printfflush();
-    
+  async command error_t Resource.release() 
+  {        
     return call SpiResource.release();
   }
 
@@ -214,9 +203,6 @@ implementation {
 
   event void SpiResource.granted()
   { 
-    printf("%s\n\r", __FUNCTION__);
-    printfflush();
-
     if (sdState == SD_NOINIT)
     {
       sdState = SD_IDLE;
@@ -258,13 +244,31 @@ implementation {
 
                     // give the MMC the required clocks to finish up 
                     call SpiByte.write(DUMMY_CHAR);
-                    call SpiByte.write(DUMMY_CHAR);
-
-                    printf("SDCardP__SDCard__readDone: %lX, %d\n\r", m_readAddr, m_len);
-                    printfflush();
 
                     sdState = SD_IDLE;
-                    signal SDCard.readDone(m_readAddr, m_rxBuf, m_len, m_error);
+
+                    // the read length has been padded
+                    if (m_bypassLen < MINIMUM_READ_LENGTH)
+                    {
+                      uint8_t in, out;
+
+                      // check if read address has been boundary adjusted
+                      if (m_bypassAddr != INVALID_ADDRESS)
+                        out = m_bypassAddr - m_readAddr;
+                      else
+                        out = 0;
+
+                      // copy data local from cache to client buffer
+                      for ( in = 0 ; (in < m_bypassLen) && (out < MINIMUM_READ_LENGTH) ; in++, out++ )
+                      {
+                        m_bypassPtr[in] = m_rxBuf[out];
+                      }
+
+                      signal SDCard.readDone(m_bypassAddr, m_bypassPtr, m_bypassLen, m_error);
+                    }
+                    else
+                      signal SDCard.readDone(m_readAddr, m_rxBuf, m_len, m_error);
+
                     break;
 
       case SD_WRITE_UPDATE_CACHE:
@@ -273,9 +277,6 @@ implementation {
 
                     // give the MMC the required clocks to finish up 
                     call SpiByte.write(DUMMY_CHAR);
-
-                    printf("SDCardP__SDCard__updateCache: %lX, %d\n\r", m_readAddr, m_len);
-                    printfflush();
 
                     // update cache address, m_readAddr is the block address
                     m_cache.address = m_readAddr;
@@ -295,9 +296,6 @@ implementation {
                     // wait until the SD card is finished writing
                     mmcCheckBusy();
 
-                    printf("SDCardP__SDCard__cacheFlushedRead: %lX, %d\n\r", m_cache.address, m_len);
-                    printfflush();
-
                     break;
                     
       case SD_WRITE_FLUSH_CACHE:
@@ -307,9 +305,6 @@ implementation {
 
                     // wait until the SD card is finished writing
                     mmcCheckBusy();
-
-                    printf("SDCardP__SDCard__cacheFlushed: %lX, %d\n\r", m_cache.address, m_len);
-                    printfflush();
 
                     break;
       
@@ -331,13 +326,24 @@ implementation {
     post startPowerTimeoutTask();
   }
 
+  async event void PowerTimeout.fired()
+  {
+    if (sdState == SD_POWER_DOWN)
+    {
+      sdState = SD_NOINIT;
+      call Power.clr();
+    }
+  }
+
+
   async command error_t SDCard.powerDown() 
   {
-    startPowerTimeout();
-
-    printf("%s\n\r", __FUNCTION__);
-    printfflush();
-
+    if (sdState == SD_IDLE)
+    {
+      call PowerTimeout.start(10);
+      sdState = SD_POWER_DOWN;
+    }
+    
     return SUCCESS;
   }
 
@@ -345,9 +351,6 @@ implementation {
   {
     stopPowerTimeout();
     call Power.set();
-
-    printf("%s\n\r", __FUNCTION__);
-    printfflush();
 
     return SUCCESS;
   }
@@ -367,27 +370,21 @@ implementation {
 
   task void readFromSDCardTask()
   {
-    printf("%s: %lX, %d, %p\n\r", __FUNCTION__, m_readAddr, m_readLen, m_readBuf);
-    printfflush();
-
     readBlock(m_readAddr, m_readLen, m_readBuf);
   }
 
   async command error_t SDCard.read(uint32_t addr, uint8_t *buf, uint16_t count) 
   {
-    uint16_t inBlock = addr & BLOCK_MASK;
-    uint16_t length = ( (inBlock + count) > BLOCK_SIZE) ? (BLOCK_SIZE - inBlock) : count;
 
     if (sdState == SD_IDLE)
     {    
+      uint16_t inBlock = addr & BLOCK_MASK;
+      uint16_t length = ( (inBlock + count) > BLOCK_SIZE) ? (BLOCK_SIZE - inBlock) : count;
       uint32_t blockAddress = addr & ~BLOCK_MASK;
 
       m_readAddr = addr;
       m_readLen = length;
       m_readBuf = buf;
-
-      printf("%s: %lX, %d\n\r", __FUNCTION__, addr, length);
-      printfflush();
 
       if (m_cache.address == blockAddress)
       {
@@ -396,6 +393,27 @@ implementation {
       }
       else
       {
+        m_bypassAddr = INVALID_ADDRESS;
+        m_bypassLen = m_readLen;
+
+        // SDcard has a miminum read length
+        if (m_bypassLen < MINIMUM_READ_LENGTH)
+        {
+          // save original buffer
+          m_bypassPtr = m_readBuf;
+
+          // use bypass variables
+          m_readBuf = m_bypassCache;
+          m_readLen = MINIMUM_READ_LENGTH;
+          
+          // and reads cannot cross blocks
+          if ( (inBlock + MINIMUM_READ_LENGTH) > BLOCK_SIZE)
+          {
+            m_bypassAddr = m_readAddr;
+            m_readAddr = blockAddress + BLOCK_SIZE - MINIMUM_READ_LENGTH;
+          }
+        }
+        
         sdState = SD_READ_FROM_SD_CARD;
         post readFromSDCardTask();
       }
@@ -424,13 +442,8 @@ implementation {
   }
 
   task void writeToSDCardTask()
-  {
-    uint8_t ret;
-    
-    ret = writeBlock(m_cache.address, m_cache.block);
-
-    printf("%s: %d\n\r", __FUNCTION__, ret);
-    printfflush();
+  {    
+    writeBlock(m_cache.address, m_cache.block);
   }
 
   async command error_t SDCard.write(uint32_t addr, uint8_t *buf, uint16_t count) 
@@ -472,9 +485,6 @@ implementation {
           post writeToSDCardTask();
         }
       }
-
-      printf("%s: %lX, %d\n\r", __FUNCTION__, addr, length);
-      printfflush();
       
       return SUCCESS;
     }
@@ -502,10 +512,7 @@ implementation {
         m_cache.address = INVALID_ADDRESS;
         m_cache.dirty = FALSE;
       }
-      
-      printf("%s: %lX, %lX, %lX\n\r", __FUNCTION__, m_cache.address, m_sectorStart, m_sectorEnd);
-      printfflush();
-      
+            
       sdState = SD_ERASE;
       post eraseSectorsTask();
       
@@ -595,6 +602,9 @@ implementation {
   event void BusyTimer.fired()
   {
     uint8_t response;
+
+    if (sdState == SD_IDLE)
+      return;
     
     // a write should take at most 250 ms according to the standard
     m_now = call PowerTimeout.getNow();
@@ -662,8 +672,8 @@ implementation {
   // Initialize MMC card
   uint8_t reset(void)
   {
-    uint8_t i;
     uint8_t R1;
+    uint8_t i;
 
     // undocumented send 8 bytes
     for (i = 0; i < 8; i++)
@@ -706,6 +716,12 @@ implementation {
 
   uint8_t eraseSectors(uint32_t sectorStart, uint32_t sectorEnd)
   {
+    uint8_t i;
+    
+    // undocumented send 8 bytes
+    for (i = 0; i < 8; i++)
+      call SpiByte.write(DUMMY_CHAR);
+
     call Select.clr();
 
     mmcSendCmd(MMC_TAG_SECTOR_START, sectorStart, 0xff);
@@ -723,6 +739,11 @@ implementation {
   {
     uint8_t R1;
     uint8_t ret = MMC_RESPONSE_ERROR;
+    uint8_t i;
+
+    // undocumented send 8 bytes
+    for (i = 0; i < 8; i++)
+      call SpiByte.write(DUMMY_CHAR);
 
     // CS = LOW (on)
     call Select.clr();
@@ -796,6 +817,11 @@ implementation {
   {
     uint8_t R1;
     uint8_t ret = MMC_RESPONSE_ERROR;
+    uint8_t i;
+    
+    // undocumented send 8 bytes
+    for (i = 0; i < 8; i++)
+      call SpiByte.write(DUMMY_CHAR);
 
     call Select.clr();
 
@@ -851,6 +877,11 @@ implementation {
   {
     uint8_t R1;
     uint32_t cardSize = 0;
+    uint8_t k;
+    
+    // undocumented send 8 bytes
+    for (k = 0; k < 8; k++)
+      call SpiByte.write(DUMMY_CHAR);
 
     call Select.clr();
     
@@ -943,188 +974,5 @@ implementation {
   
   default event void SDCard.flushDone() {};
 
-
-/*
-  // mmc Get Responce
-  uint8_t mmcGetResponse(void)
-  {
-    //Response comes 1-8bytes after command
-    //the first bit will be a 0
-    //followed by an error code
-    //data will be 0xff until response
-    uint8_t i = 0;
-
-    uint8_t response;
-
-    while( i <= 64)
-    {
-      response = call SpiByte.write(DUMMY_CHAR);
-      
-      if(response == 0x00)
-        break;
-        
-      if(response == 0x01)
-        break;
- 
-      i++;
-    }
-    
-    return response;
-  }
-
-  uint8_t mmcGetXXResponse(const uint8_t resp)
-  {
-    //Response comes 1-8bytes after command
-    //the first bit will be a 0
-    //followed by an error code
-    //data will be 0xff until response
-    uint16_t i = 0;
-
-    uint8_t response;
-
-    while( i <= 10000)
-    {
-      response = call SpiByte.write(DUMMY_CHAR);
-      if (response == resp)
-        break;
-      i++;
-    }
-    return response;
-  }
-
-
-  // Read the Card Size from the CSD Register
-  uint32_t readCardSize(void)
-  {
-    // Read contents of Card Specific Data (CSD)  
-    uint32_t MMC_CardSize;
-    uint16_t i,      // index
-             j,      // index
-             b,      // temporary variable
-             response,   // MMC response to command
-             mmc_C_SIZE;
-
-    uint8_t mmc_READ_BL_LEN,  // Read block length
-            mmc_C_SIZE_MULT;
-
-    call Select.clr();
-    
-    call SpiByte.write(MMC_READ_CSD);   // CMD 9
-
-    for (i = 4; i > 0 ; i--)      // Send four dummy bytes
-      call SpiByte.write(0x00);
-      
-    call SpiByte.write(DUMMY_CHAR);   // Send CRC byte
-
-    response = mmcGetResponse();
-
-    // data transmission always starts with 0xFE
-    b = call SpiByte.write(DUMMY_CHAR);
-
-    if( !response )
-    {
-      while (b != 0xFE) 
-        b = call SpiByte.write(DUMMY_CHAR);
-
-      // bits 127:87
-      for( j = 5; j > 0; j--)          // Host must keep the clock running for at
-        b = call SpiByte.write(DUMMY_CHAR);
-
-      // 4 bits of READ_BL_LEN
-      // bits 84:80
-      b = call SpiByte.write(DUMMY_CHAR);  // lower 4 bits of CCC and
-      mmc_READ_BL_LEN = b & 0x0F;
-      b = call SpiByte.write(DUMMY_CHAR);
-
-printf("%02X", b);
-
-      // bits 73:62  C_Size
-      // xxCC CCCC CCCC CC
-      mmc_C_SIZE = (b & 0x03) << 10;
-      b = call SpiByte.write(DUMMY_CHAR);
-printf("%02X", b);
-      mmc_C_SIZE += b << 2;
-      b = call SpiByte.write(DUMMY_CHAR);
-printf("%02X", b);
-      mmc_C_SIZE += b >> 6;
-
-printfflush();
-      // bits 55:53
-      b = call SpiByte.write(DUMMY_CHAR);
-      // bits 49:47
-      mmc_C_SIZE_MULT = (b & 0x03) << 1;
-      b = call SpiByte.write(DUMMY_CHAR);
-      mmc_C_SIZE_MULT += b >> 7;
-      // bits 41:37
-      b = call SpiByte.write(DUMMY_CHAR);
-      b = call SpiByte.write(DUMMY_CHAR);
-      b = call SpiByte.write(DUMMY_CHAR);
-      b = call SpiByte.write(DUMMY_CHAR);
-      b = call SpiByte.write(DUMMY_CHAR);
-    }
-
-    for( j = 4; j > 0; j--)          // Host must keep the clock running for at
-      b = call SpiByte.write(DUMMY_CHAR);  // least Ncr (max = 4 bytes) cycles after
-                               // the card response is received
-    b = call SpiByte.write(DUMMY_CHAR);
-
-    call Select.clr();
-
-
-    MMC_CardSize = (mmc_C_SIZE + 1);
-    // power function with base 2 is better with a loop
-    // i = (pow(2,mmc_C_SIZE_MULT+2)+0.5);
-    for (i = 2, j = mmc_C_SIZE_MULT + 2; j > 1; j--)
-      i <<= 1;
-
-    MMC_CardSize *= i;
-
-    // power function with base 2 is better with a loop
-    //i = (pow(2,mmc_READ_BL_LEN)+0.5);
-    for (i = 2, j = mmc_READ_BL_LEN; j > 1; j--)
-      i <<= 1;
-    MMC_CardSize *= i;
-
-    return MMC_CardSize;
-  }
-  
-  // Reading the contents of the CSD and CID registers in SPI mode is a simple
-  // read-block transaction.
-  uint8_t readRegister(const uint8_t cmd_register, const uint16_t length, uint8_t *pBuffer)
-  {
-    uint8_t uc = 0;
-    uint8_t rvalue = MMC_TIMEOUT_ERROR;
-
-    if (setBlockLength(length) == MMC_SUCCESS)
-    {
-      call Select.clr();
-      
-      // CRC not used: 0xff as last byte
-      mmcSendCmd(cmd_register, 0x000000, 0xff);
-
-      // wait for response
-      // in the R1 format (0x00 is no errors)
-      if (mmcGetResponse() == 0x00)
-      {
-        if (mmcGetXXResponse(0xfe) == 0xfe)
-          for (uc = 0; uc < length; uc++)
-            pBuffer[uc] = call SpiByte.write(DUMMY_CHAR);  //mmc_buffer[uc] = spiSendByte(0xff);
-        // get CRC bytes (not really needed by us, but required by MMC)
-        call SpiByte.write(DUMMY_CHAR);
-        call SpiByte.write(DUMMY_CHAR);
-        rvalue = MMC_SUCCESS;
-      }
-      else
-        rvalue = MMC_RESPONSE_ERROR;
-      // CS = HIGH (off)
-      call Select.set();
-
-      // Send 8 Clock pulses of delay.
-      call SpiByte.write(DUMMY_CHAR);
-    }
-
-    return rvalue;
-  } // mmc_read_register
-*/
 }
 

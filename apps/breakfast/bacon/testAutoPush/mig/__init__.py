@@ -1,1 +1,1 @@
-__all__ = ['PrintfMsg', 'LogRecordDataMsg']
+__all__ = ['PrintfMsg', 'LogRecordDataMsg', 'CxRecordRequestMsg']

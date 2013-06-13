@@ -8,7 +8,7 @@ import threading
 #This class initializes the sqlite database file and creates xxx tables:
 #- raw_table
 #- meta_table
-#- flash_table
+#- cookie_table
 #- time_table
 #If the file is not a sqlite db (corruption) a new file will be created.
 #If the tables do not exist, they will be created.
@@ -53,7 +53,7 @@ class DatabaseInit(object):
                          toast_id INTEGER,
                          calibrate text);'''
                          
-    FLASH_TABLE_SQL = '''CREATE TABLE flash_table
+    FLASH_TABLE_SQL = '''CREATE TABLE cookie_table
                          (node_id INTEGER NOT NULL,
                           base_time REAL,
                           cookie INTEGER NOT NULL,

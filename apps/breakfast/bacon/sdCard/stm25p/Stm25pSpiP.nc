@@ -57,40 +57,50 @@ implementation {
 
   async command error_t ClientResource.request() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
 
     return call SDResource.request();
   }
 
   async command error_t ClientResource.immediateRequest() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
     return call SDResource.immediateRequest();
   }
   
   async command error_t ClientResource.release() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
     return call SDResource.release();
   }
 
   async command uint8_t ClientResource.isOwner() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
     return call SDResource.isOwner();
   }
 
   event void SDResource.granted() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
     signal ClientResource.granted();
   }
@@ -98,8 +108,10 @@ implementation {
 
   async command error_t Spi.powerDown() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
 //    return call SDCard.powerDown();
     return SUCCESS;
@@ -107,32 +119,25 @@ implementation {
 
   async command error_t Spi.powerUp() {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
 //    return call SDCard.powerUp();
     return SUCCESS;
   }
 
-uint8_t m_len;
-uint8_t m_cache[4];
-uint8_t *m_buf;
 
   async command error_t Spi.read( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s: %lX, %ld\n\r", __FUNCTION__, addr, len);
     printfflush();
+#endif
     
-    if (len < 4)
-    {
-      m_len = len;
-      m_buf = buf;
-
-      call SDCard.read(addr, m_cache, 4);
-    }
-    else
-      call SDCard.read(addr, buf, len);
+    call SDCard.read(addr, buf, len);
 
     // note: old newRequest() always return SUCCSS 
     return SUCCESS;
@@ -141,28 +146,22 @@ uint8_t *m_buf;
   event void SDCard.readDone(uint32_t addr, uint8_t*buf, uint16_t len, error_t error)
   {    
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s: %lX, %d\n\r", __FUNCTION__, addr, len);
     printfflush();
+#endif
 
-    if (m_len < 4)
-    {
-      uint8_t i;
-      
-      for ( i = 0; i < m_len; i++ )
-        m_buf[i] = buf[i];
-    
-      signal Spi.readDone( addr, m_buf, m_len, SUCCESS );
-    }
-    else
-      signal Spi.readDone( addr, buf, len, SUCCESS );
+    signal Spi.readDone( addr, buf, len, SUCCESS );
     // note: old readDone always return SUCCSS 
   }
 
   async command error_t Spi.pageProgram( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s: %lX, %ld\n\r", __FUNCTION__, addr, len);
     printfflush();
+#endif
     
     // note: old pageProrgam always return SUCCSS 
     call SDCard.write(addr, buf, len);
@@ -173,8 +172,10 @@ uint8_t *m_buf;
   event void SDCard.writeDone(uint32_t addr, uint8_t*buf, uint16_t len, error_t error)
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s: %lX, %d\n\r", __FUNCTION__, addr, len);
     printfflush();
+#endif
     
     // note: old pageProrgamDone always return SUCCSS 
     signal Spi.pageProgramDone( addr, buf, len, SUCCESS );
@@ -185,8 +186,10 @@ uint8_t *m_buf;
   async command error_t Spi.computeCrc( uint16_t crc, stm25p_addr_t addr, stm25p_len_t len ) 
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
+#endif
     
     // note: function only used by BlockStorage and not LogStorage
     return FAIL;
@@ -197,8 +200,10 @@ uint8_t *m_buf;
   async command error_t Spi.sectorErase( uint8_t sector ) 
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s: %d\n\r", __FUNCTION__, sector);
     printfflush();
+#endif
     
     m_addr = (stm25p_addr_t)sector << STM25P_SECTOR_SIZE_LOG2;
 
@@ -219,9 +224,11 @@ uint8_t *m_buf;
   async command error_t Spi.bulkErase() 
   {
 
+#ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
     printfflush();
-    
+#endif
+
     call SDCard.eraseSectors(0,0);
     post bulkEraseTask();
     

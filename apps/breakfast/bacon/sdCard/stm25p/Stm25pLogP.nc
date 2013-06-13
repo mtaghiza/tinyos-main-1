@@ -67,8 +67,8 @@ implementation {
 
   enum {
     NUM_LOGS = uniqueCount( "Stm25p.Log" ),
-    BLOCK_SIZE = 512,
-    BLOCK_SIZE_LOG2 = 9,
+    BLOCK_SIZE = 2048,
+    BLOCK_SIZE_LOG2 = 11,
     BLOCK_MASK = BLOCK_SIZE - 1,
     BLOCKS_PER_SECTOR = STM25P_SECTOR_SIZE / BLOCK_SIZE,
     MAX_RECORD_SIZE = 254,
@@ -123,8 +123,12 @@ implementation {
     int i;
     for ( i = 0; i < NUM_LOGS; i++ ) {
       stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[i]()];
-      m_log_info[ i ].read_addr = STM25P_INVALID_ADDRESS;
-      *write_addr = 0;
+      m_log_info[ i ].read_addr = STM25P_INIT_ADDRESS;
+
+
+      // prevent log from starting at offset 0x00
+      // since SD card use 0x00 for empty and not 0xff
+      *write_addr = STM25P_SECTOR_SIZE;
     }
     return SUCCESS;
   }
@@ -233,7 +237,7 @@ implementation {
   event void ClientResource.granted[ uint8_t id ]() {
 
     // log never used, need to find start and end of log
-    if ( m_log_info[ id ].read_addr == STM25P_INVALID_ADDRESS &&
+    if ( m_log_info[ id ].read_addr == STM25P_INIT_ADDRESS &&
        m_log_state[ id ].req != S_ERASE ) {
       stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
       //this could be improved slightly: a newly-initialized log
@@ -244,7 +248,13 @@ implementation {
       //  enforce that here. This will result in some duplicated
       //  effort, though it makes the logic simpler and reduces the
       //  amount of state that has to be tracked.
-      *write_addr = 0;
+
+
+      // prevent log from starting at offset 0x00
+      // since SD card use 0x00 for empty and not 0xff
+      *write_addr = STM25P_SECTOR_SIZE;
+
+
       m_rw_state = S_SEARCH_BLOCKS;
       call Sector.read[ id ]( 0, (uint8_t*)&m_addr, sizeof( m_addr ) );
     } else {
@@ -401,7 +411,7 @@ implementation {
         {
           uint16_t block = addr >> BLOCK_SIZE_LOG2;
           // record potential starting and ending addresses
-          if ( m_addr != STM25P_INVALID_ADDRESS ) {
+          if ( m_addr != STM25P_EMPTY_ADDRESS ) {
             if ( m_addr < log_info->read_addr ){
               log_info->read_addr = m_addr;
             }
@@ -415,10 +425,15 @@ implementation {
             call Sector.read[ id ]( addr, 
               (uint8_t*)&m_addr, 
               sizeof( m_addr ) );
-          } else if ( log_info->read_addr == STM25P_INVALID_ADDRESS ) {
+          } else if ( log_info->read_addr == STM25P_INIT_ADDRESS ) {
             // if log is empty, continue operation
-            log_info->read_addr = 0;
-            *write_addr = 0;
+
+            // prevent log from starting at offset 0x00
+            // since SD card use 0x00 for empty and not 0xff
+            log_info->read_addr = STM25P_SECTOR_SIZE; 
+            *write_addr = STM25P_SECTOR_SIZE;         
+
+
             signal ClientResource.granted[ id ]();
           } else {
           // search for last record
@@ -547,12 +562,14 @@ implementation {
     //so if this is interrupted between the record-header being
     //written and the data being written, the data will be lost but
     //the log structure will remain intact.
-    if ( !(uint16_t)*write_addr ) {
+
+    // Start of a new sector? Erase it then.
+    if ( !(*write_addr & STM25P_SECTOR_MASK) ) {
       m_log_state[ client ].m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, *write_addr ), 1 );
     } else {
       //start of new block? write write_addr
-      if ( !((uint16_t)*write_addr & BLOCK_MASK) ) {
+      if ( !(*write_addr & BLOCK_MASK) ) {
         buf = write_addr;
         len = sizeof( m_addr );
       } else if ( m_rw_state == S_HEADER ) {
@@ -573,8 +590,12 @@ implementation {
                                    error_t error ) {
     stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
     if ( m_log_state[ id ].req == S_ERASE ) {
-      m_log_info[ id ].read_addr = 0;
-      *write_addr = 0;
+
+      // prevent log from starting at offset 0x00
+      // since SD card use 0x00 for empty and not 0xff
+      m_log_info[ id ].read_addr = STM25P_SECTOR_SIZE;
+      *write_addr = STM25P_SECTOR_SIZE;
+
       signalDone( id, error );
     } else {
       // advance read pointer if write pointer has gone too far ahead
@@ -641,6 +662,10 @@ implementation {
         signal Write.syncDone[ id ]( error );
         break;
     }
+
+//    printf("LogP: %08lX %08lX\n\r", m_log_info[ id ].read_addr, write_addrs[signal Volume.getVolumeId[ id ]()]);
+//    printfflush();
+
   }
 
   event void Sector.computeCrcDone[ uint8_t id ]( stm25p_addr_t addr, stm25p_len_t len, uint16_t crc, error_t error ) {}

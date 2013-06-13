@@ -7,7 +7,7 @@ class DatabaseMissing(object):
 
     SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash 
                         AS SELECT * 
-                        FROM flash_table 
+                        FROM cookie_table 
                         ORDER BY node_id, cookie;'''
                             
     MISSING_ORDER_AGE_SQL = '''SELECT t1.node_id, 
@@ -19,7 +19,7 @@ class DatabaseMissing(object):
                             WHERE (t1.node_id = t2.node_id)
                                 AND (t1.ROWID = t2.ROWID - 1) 
                                 AND (missing > 0) 
-                                AND (t1.retry < 100)
+                                AND (t1.retry < 5)
                             ORDER BY t1.node_id, t1.cookie;'''
 
 
@@ -73,17 +73,17 @@ class DatabaseMissing(object):
                 
                 new_values = (retry_field, node_id_field, cookie_field)
                 
-                self.connection.execute('UPDATE flash_table SET retry=? WHERE node_id=? AND cookie=?', new_values)
+                self.connection.execute('UPDATE cookie_table SET retry=? WHERE node_id=? AND cookie=?', new_values)
 
                 #old_records = (node_id_field, cookie_field)
-                #self.cursor.execute('DELETE FROM flash_table WHERE node_id=? AND cookie<?', old_records)
+                #self.cursor.execute('DELETE FROM cookie_table WHERE node_id=? AND cookie<?', old_records)
         
         self.connection.commit();
 
         return missing_list
         
         #row = [node_id, time.time(), cookie, length]
-        #self.cursor.execute('INSERT INTO flash_table (node_id, base_time, cookie, length) VALUES (?,?,?,?)', row)        
+        #self.cursor.execute('INSERT INTO cookie_table (node_id, base_time, cookie, length) VALUES (?,?,?,?)', row)        
         #self.connection.commit();
 
 

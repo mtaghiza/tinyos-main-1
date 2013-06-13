@@ -25,13 +25,8 @@ module TestP{
   } 
 
   event void Timer.fired(){
-    uint8_t i;
     
     if (-- appendLimit ){
-      for (i = 0; i < curLen; i++)
-        testRec[i] = curLen;
-
-      call Timer.startOneShot(1024);
       call LogWrite.append(testRec, curLen);
     }else{
       printf("Done\r\n");
@@ -41,8 +36,15 @@ module TestP{
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
       bool recordsLost, error_t error){ 
+    uint8_t i;
+
     curLen = (curLen == 5)? sizeof(testRec) : curLen-1;
 //    printf("Append done.\n");
+
+    for (i = 0; i < curLen; i++)
+      testRec[i] = curLen;
+
+    call Timer.startOneShot(100);
   }
 
   event void LogWrite.eraseDone(error_t error){}

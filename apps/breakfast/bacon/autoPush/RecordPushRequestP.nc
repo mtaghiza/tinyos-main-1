@@ -3,7 +3,7 @@
 #include "AutoPush.h"
 
 generic module RecordPushRequestP() {
-  uses interface Boot;
+  provides interface Init as SoftwareInit;
   uses interface AMSend;
   uses interface Receive;
   uses interface LogRead;
@@ -51,7 +51,7 @@ generic module RecordPushRequestP() {
   };
   uint8_t control = C_NONE;
 
-  void readFirst(storage_cookie_t cookie, uint8_t length);
+  error_t readFirst(storage_cookie_t cookie, uint8_t length);
 
   bool requestInQueue = FALSE;
   uint8_t requestLength;
@@ -68,7 +68,7 @@ generic module RecordPushRequestP() {
 
 
 
-  event void Boot.booted()
+  command error_t SoftwareInit.init()
   {
     uint16_t highThreshold = DEFAULT_HIGH_PUSH_THRESHOLD;
     uint16_t lowThreshold = DEFAULT_LOW_PUSH_THRESHOLD;
@@ -81,36 +81,37 @@ generic module RecordPushRequestP() {
     call LogNotify.setHighThreshold(highThreshold);
     call LogNotify.setLowThreshold(lowThreshold);
 
+    call LogWrite.sync();
+    
+    return SUCCESS;
+/*
     if (SUCCESS == call LogRead.seek(SEEK_BEGINNING)){
       state = S_INIT;
+      
+      return SUCCESS;
+      
     }else{
       state = S_ERROR;
+
+      return FAIL;
     }
+*/
   }
 
 
+  event void LogWrite.syncDone(error_t error)
+  {
+    state = S_IDLE;
+
+    pushCookie = call LogWrite.currentOffset();
+  }
   
   event void LogRead.seekDone(error_t error)
   {
-    if (error == SUCCESS)
-    {
-      if (state == S_INIT)
-      {
-        state = S_IDLE;
-
-        pushCookie = call LogWrite.currentOffset();
-
-      } else if (state == S_SEEKING)
-      {
-        state = S_SOUGHT;
-        post readNext();
-
-      } else {
-        state = S_ERROR;
-      }
-    } else {
-      state = S_ERROR;
-    }
+    // seekDone either always returns SUCCESS or doesn't return at all
+    
+    state = S_SOUGHT;
+    post readNext();
   }
 
 
@@ -153,17 +154,17 @@ generic module RecordPushRequestP() {
     {
       if (pushInQueue)
       {
-        control = C_PUSH;
-
         // pushCookie is global and read at init and updated at sendDone
         // pushLength is set once during compile
-        readFirst(pushCookie, pushLength);
+        if (readFirst(pushCookie, pushLength) == SUCCESS)
+          control = C_PUSH;
 
       } else if (requestInQueue)
       {
-        control = C_REQUEST;
 
-        readFirst(requestCookie, requestLength);
+        if (readFirst(requestCookie, requestLength) == SUCCESS)
+          control = C_REQUEST;
+        
       }
       else
       {
@@ -172,7 +173,7 @@ generic module RecordPushRequestP() {
     }
   }
 
-  void readFirst(storage_cookie_t cookie, uint8_t length)
+  error_t readFirst(storage_cookie_t cookie, uint8_t length)
   {
     msg = call Pool.get();
 
@@ -196,14 +197,13 @@ generic module RecordPushRequestP() {
           state = S_SEEKING;
 
           // SUCCESS, exit function
-          return;
+          return SUCCESS;
         } 
       }
     }    
 
     // ERROR, no buffer/cannot seek
-    state = S_ERROR;
-    call LogNotify.forceFlushed();
+    return FAIL;
   }         
 
 
@@ -219,12 +219,10 @@ generic module RecordPushRequestP() {
     recordPtr->cookie = call LogRead.currentOffset();
 
     //read current record: account for log_record_t's 5-byte header
-    if (SUCCESS == call LogRead.read(recordPtr->data, readLength))
-    {
-      state = S_READING;
-    } else {
-      state = S_ERROR;
-    }
+    // will only return FAIL if LogRead is busy
+    call LogRead.read(recordPtr->data, readLength);
+
+    state = S_READING;
   }
 
 
@@ -233,8 +231,6 @@ generic module RecordPushRequestP() {
 
     if( (error == SUCCESS) && (len != 0) )
     {
-      state = S_READ;
-
       // update record_n length 
       recordPtr->length = len;
 
@@ -258,13 +254,11 @@ generic module RecordPushRequestP() {
         send();
       }
 
-    } else if ( (len == 0) )
+    } else 
     {
       //no more data or error occured, send what we got
       send();
-    } else {
-      state = S_ERROR;
-    }
+    } 
   }
 
 
@@ -319,7 +313,6 @@ generic module RecordPushRequestP() {
    
 
   //unused
-  event void LogWrite.syncDone(error_t error){}
   event void LogWrite.appendDone(void* buf, storage_len_t len, 
     bool recordsLost, error_t error){}
   event void LogWrite.eraseDone(error_t error){}
