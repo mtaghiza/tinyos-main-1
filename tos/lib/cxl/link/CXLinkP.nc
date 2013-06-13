@@ -256,6 +256,10 @@ module CXLinkP {
     } else {
       error_t error;
       call CXLinkPacket.setLen(msg, len);
+      if (localState == S_RX){
+        call FastAlarm.stop();
+        post signalRXDone();
+      }
       //TODO: set source here.
       error= subsend(msg);
   

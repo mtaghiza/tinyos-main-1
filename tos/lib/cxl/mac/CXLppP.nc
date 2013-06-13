@@ -21,6 +21,7 @@ module CXLppP {
 
   uses interface Timer<TMilli> as ProbeTimer;
   uses interface Timer<TMilli> as SleepTimer;
+  uses interface Timer<TMilli> as KeepAliveTimer;
   uses interface Random;
 } implementation {
   
@@ -41,6 +42,16 @@ module CXLppP {
     return ret;
   }
 
+  void pushSleep(){
+    if (state == S_AWAKE ){
+      if (keepAlive){
+        call KeepAliveTimer.startOneShot(LPP_SLEEP_TIMEOUT/2);
+      } else {
+        call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+      }
+    }
+  }
+
   command error_t LppControl.wakeup(){
     if (state == S_OFF){
       return EOFF;
@@ -48,10 +59,9 @@ module CXLppP {
       error_t error;
       keepAlive = TRUE;
       state = S_AWAKE;
+      pushSleep();
       error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
       printf("cxl.rx: %x\r\n", error);
-      //TODO: start sending keep-alive's: should go out some
-      //  time before sleep timer expires.
       return error;
     }
   }
@@ -61,9 +71,12 @@ module CXLppP {
       if (state == S_OFF){
         return EOFF;
       }else{
-        call CXLink.sleep();
         state = S_IDLE;
+        call CXLink.sleep();
+        keepAlive = FALSE;
         call ProbeTimer.startOneShot(randomize(probeInterval));
+        call SleepTimer.stop();
+        call KeepAliveTimer.stop();
         return SUCCESS;
       }
     }else{
@@ -81,6 +94,7 @@ module CXLppP {
     }
   }
 
+
   event void ProbeTimer.fired(){
     if (state == S_IDLE){
       state = S_CHECK;
@@ -92,6 +106,7 @@ module CXLppP {
         (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
+        printf("sprobe %p\r\n", probe);
         error = call SubSend.send(probe, 
           call CXLinkPacket.len(probe));
         if (SUCCESS != error){
@@ -102,20 +117,52 @@ module CXLppP {
       }
     }
   }
+  
+  message_t* keepAliveMsg;
+  event void KeepAliveTimer.fired(){
+    keepAliveMsg = call Pool.get();
+    if (keepAliveMsg){
+      error_t error;
+      call Packet.clear(keepAliveMsg);
+      call CXMacPacket.setMacType(keepAliveMsg, CXM_KEEPALIVE);
+      (call CXLinkPacket.getLinkHeader(keepAliveMsg))->ttl = CX_MAX_DEPTH;
+      call Packet.setPayloadLength(keepAliveMsg, 0);
+      call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
+      printf("ska %p\r\n", keepAliveMsg);
+      error = call SubSend.send(keepAliveMsg,
+        call CXLinkPacket.len(keepAliveMsg));
+      if (SUCCESS != error){
+        printf("ska: %x\r\n", error);
+        call Pool.put(keepAliveMsg);
+        call KeepAliveTimer.startOneShot(CX_KEEPALIVE_RETRY);
+      }
+    }
+    pushSleep();
+  }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    printf("sd ");
     if (state == S_CHECK){
       if (msg == probe){
+        printf("probe\r\n");
         //immediately after probe is sent, listen for a short period
         //of time.
         call CXLink.rx(CHECK_TIMEOUT, FALSE);
       }else{
-        printf("sendDone in check, but it's not a probe.\r\n");
+        printf("?\r\n");
         call Pool.put(msg);
         probe = NULL;
       }
     }else{
-      signal Send.sendDone(msg, error);
+      if (keepAlive && msg == keepAliveMsg){
+        printf("ka\r\n");
+        call Pool.put(keepAliveMsg);
+      }else{
+        printf("up\r\n");
+        signal Send.sendDone(msg, error);
+      }
+      pushSleep();
+      call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
     }
   }
 
@@ -128,7 +175,7 @@ module CXLppP {
         //fall through
       case CXM_RTS:
         if (state == S_AWAKE){
-          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+          pushSleep();
         }
         //TODO: adjust pl position
         return signal Receive.receive(msg, pl, len);
@@ -136,7 +183,7 @@ module CXLppP {
 
       case CXM_KEEPALIVE:
         if (state == S_AWAKE){
-          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+          pushSleep();
         }
         return msg;
 
@@ -146,7 +193,7 @@ module CXLppP {
              == (call CXLinkPacket.getLinkHeader(probe))->source){
           state = S_AWAKE;
           printf("woken up\r\n");
-          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+          pushSleep();
           call Pool.put(probe);
         }
         //probes DO NOT extend sleep timer.

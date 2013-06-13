@@ -33,8 +33,10 @@ configuration CXLppC {
 
   components new TimerMilliC() as ProbeTimer;
   components new TimerMilliC() as SleepTimer;
+  components new TimerMilliC() as KeepAliveTimer;
   CXLppP.ProbeTimer -> ProbeTimer;
   CXLppP.SleepTimer -> SleepTimer;
+  CXLppP.KeepAliveTimer -> KeepAliveTimer;
 
   components RandomC;
   CXLppP.Random -> RandomC;

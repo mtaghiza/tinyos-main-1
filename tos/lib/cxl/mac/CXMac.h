@@ -22,6 +22,8 @@ typedef nx_struct cx_mac_header{
 #define LPP_SLEEP_TIMEOUT 30720UL
 #endif
 
+#define CX_KEEPALIVE_RETRY 512UL
+
 #define CHECK_TIMEOUT (FRAMELEN_FAST + (FRAMELEN_FAST/2))
 #define RX_TIMEOUT_MAX (0xFFFFFFFF)
 

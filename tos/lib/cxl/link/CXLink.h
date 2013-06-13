@@ -80,4 +80,9 @@ typedef struct cx_link_metadata {
   nx_uint32_t* tsLoc;
 } cx_link_metadata_t;
 
+
+#ifndef CX_MAX_DEPTH
+#define CX_MAX_DEPTH 10
+#endif
+
 #endif
