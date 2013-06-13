@@ -89,6 +89,7 @@ module TestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       err = call Send.send(txMsg, call Packet.maxPayloadLength());
+//      err = call Send.send(txMsg, 74);
       printf("Send: %x\r\n", err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
@@ -112,7 +113,7 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %x\r\n", error);
+    printf("APP TXD %x\r\n", error);
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -124,7 +125,7 @@ module TestP{
   task void handleRX(){
     test_payload_t* pl = call Packet.getPayload(rxMsg,
       sizeof(test_payload_t));
-    printf("RX %p %p\r\n", rxMsg, pl); 
+    printf("APP RX %p %p\r\n", rxMsg, pl); 
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -173,6 +174,14 @@ module TestP{
       longProbe = (pi == LPP_DEFAULT_PROBE_INTERVAL);
     }
     printf("SPI %lu: %x\r\n", pi, error);
+  }
+ 
+  event void LppControl.wokenUp(){
+    printf("woke up\r\n");
+  }
+
+  event void LppControl.fellAsleep(){
+    printf("Fell asleep\r\n");
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
