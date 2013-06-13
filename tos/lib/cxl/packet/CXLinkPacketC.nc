@@ -42,6 +42,9 @@ module CXLinkPacketC{
     //set up defaults: increment sn, allow retx from this buffer.
     ((cx_link_header_t*)(msg->header))->sn = sn++;
     md(msg)->cx.retx = TRUE;
+    //kind of hacky: set the lqi of the phy metadata so that this
+    //looks like passed. otherwise, self re-tx will fail.
+    md(msg)->rf1a.lqi = 0x80;
   }
 
   command void* Packet.getPayload(message_t* msg, uint8_t len){
