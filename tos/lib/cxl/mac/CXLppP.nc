@@ -1,3 +1,4 @@
+#include "CXMac.h"
 module CXLppP {
   provides interface LppControl;
 
@@ -16,7 +17,23 @@ module CXLppP {
   uses interface CXMacPacket;
   //This packet interface goes to body of mac packet
   uses interface Packet;
+
+  uses interface Timer<TMilli> as ProbeTimer;
+  uses interface Timer<TMilli> as SleepTimer;
+  uses interface Random;
 } implementation {
+  
+  enum {
+    S_OFF = 0,
+    S_IDLE = 1,
+    S_CHECK = 2,
+    S_AWAKE = 3
+  };
+  bool keepAlive = FALSE;
+
+  uint8_t state = S_OFF;
+  uint32_t probeInterval;
+  message_t* probe;
 
   command error_t LppControl.wakeup(){
     return FAIL;
@@ -24,26 +41,122 @@ module CXLppP {
   command error_t LppControl.sleep(){
     return FAIL;
   }
-  command error_t LppControl.setProbeInterval(uint32_t t){
-    return FAIL;
+
+  uint32_t randomize(uint32_t mean){
+    return (mean/2) + (call Random.rand32())%mean ;
   }
 
-  command error_t Send.send(message_t* msg, uint8_t len){
-    //TODO: set TTL
-    return FAIL;
+  command error_t LppControl.setProbeInterval(uint32_t t){
+    if (state != S_OFF){
+      probeInterval = t;
+      call ProbeTimer.startOneShot(randomize(probeInterval));
+      return SUCCESS;
+    }else{
+      return EOFF;
+    }
+  }
+
+  event void ProbeTimer.fired(){
+    if (state == S_IDLE){
+      state = S_CHECK;
+      probe = call Pool.get();
+      if (probe){
+        error_t error;
+        call Packet.clear(probe);
+        call CXMacPacket.setMacType(probe, CXM_PROBE);
+        (call CXLinkPacket.getLinkHeader(probe))->ttl = 1;
+        call CXLinkPacket.setAllowRetx(probe, FALSE);
+        call Packet.setPayloadLength(probe, 0);
+        error = call SubSend.send(probe, 
+          call CXLinkPacket.len(probe));
+        if (SUCCESS != error){
+          call Pool.put(probe);
+          call ProbeTimer.startOneShot(randomize(probeInterval));
+        }
+      }
+    }
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
-    //TODO: this layer? stop it here. otherwise, signal it up.
+    if (state == S_CHECK){
+      if (msg == probe){
+        //immediately after probe is sent, listen for a short period
+        //of time.
+        call CXLink.rx(CHECK_TIMEOUT, FALSE);
+      }else{
+        printf("sendDone in check, but it's not a probe.\r\n");
+        call Pool.put(msg);
+        probe = NULL;
+      }
+    }else{
+      signal Send.sendDone(msg, error);
+    }
+  }
+
+  event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
+    switch (call CXMacPacket.getMacType(msg)){
+      case CXM_DATA:
+        //fall through
+      case CXM_CTS:
+        //fall through
+      case CXM_RTS:
+        if (state == S_AWAKE){
+          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+        }
+        //TODO: adjust pl position
+        return signal Receive.receive(msg, pl, len);
+        break;
+
+      case CXM_KEEPALIVE:
+        if (state == S_AWAKE){
+          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+        }
+        return msg;
+
+      case CXM_PROBE:
+        if (state == S_CHECK 
+          && (call CXLinkPacket.getLinkHeader(msg))->source 
+             == (call CXLinkPacket.getLinkHeader(probe))->source){
+          state = S_AWAKE;
+          call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
+          call Pool.put(probe);
+        }
+        //probes DO NOT extend sleep timer.
+        //TODO: probably want to sniff these.
+        return msg;
+
+      default:
+        printf("Unrecognized mac type %x\r\n", 
+          call CXMacPacket.getMacType(msg));
+        return msg;
+    }
+  }
+
+  event void SleepTimer.fired(){
+    call CXLink.sleep();
+    if (! call ProbeTimer.isRunning()){
+      call ProbeTimer.startOneShot(randomize(probeInterval));
+    }
   }
   
   event void CXLink.rxDone(){
+    //Still in S_CHECK? we didn't hear our probe come back. go to
+    //  sleep.
+    if (state == S_CHECK){
+      call CXLink.sleep();
+      call Pool.put(probe);
+      call ProbeTimer.startOneShot(randomize(probeInterval));
+      state = S_IDLE;
+    }
+    if (state == S_AWAKE){
+      //start next RX.
+      call CXLink.rx(0xFFFFFFFF, TRUE);
+    }
   }
   
-  event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
-    //TODO: this layer? stop it here. otherwise, signal it up.
-    //TODO: adjust payload/len refs
-    return signal Receive.receive(msg, pl, len);
+  command error_t Send.send(message_t* msg, uint8_t len){
+    //TODO: set TTL
+    return FAIL;
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
@@ -68,10 +181,17 @@ module CXLppP {
   }
 
   event void SubSplitControl.startDone(error_t error){
+    if (error == SUCCESS){
+      call ProbeTimer.startPeriodic(LPP_DEFAULT_PROBE_INTERVAL);
+      state = S_IDLE;
+    }
     signal SplitControl.startDone(error);
   }
 
   event void SubSplitControl.stopDone(error_t error){
+    if (error == SUCCESS){
+      state = S_OFF;
+    }
     signal SplitControl.stopDone(error);
   }
 

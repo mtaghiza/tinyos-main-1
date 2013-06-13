@@ -31,4 +31,12 @@ configuration CXLppC {
   CXLppP.Packet -> CXMacPacketC.Packet;
   CXLppP.CXMacPacket -> CXMacPacketC.CXMacPacket;
 
+  components new TimerMilliC() as ProbeTimer;
+  components new TimerMilliC() as SleepTimer;
+  CXLppP.ProbeTimer -> ProbeTimer;
+  CXLppP.SleepTimer -> SleepTimer;
+
+  components RandomC;
+  CXLppP.Random -> RandomC;
+
 }
