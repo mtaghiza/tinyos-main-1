@@ -61,9 +61,14 @@ module CXLppP {
       state = S_AWAKE;
       pushSleep();
       error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
-      printf("cxl.rx: %x\r\n", error);
+//      printf("cxl.rx: %x\r\n", error);
+      signal LppControl.wokenUp();
       return error;
     }
+  }
+
+  command bool LppControl.isAwake(){
+    return (state == S_AWAKE);
   }
 
   command error_t LppControl.sleep(){
@@ -72,9 +77,9 @@ module CXLppP {
         return EOFF;
       }else{
         state = S_IDLE;
-        call CXLink.sleep();
         keepAlive = FALSE;
-        call ProbeTimer.startOneShot(randomize(probeInterval));
+        call CXLink.sleep();
+        call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
         call SleepTimer.stop();
         call KeepAliveTimer.stop();
         return SUCCESS;
@@ -167,7 +172,7 @@ module CXLppP {
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
-    printf("sr.r\r\n");
+//    printf("sr.r\r\n");
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_DATA:
         //fall through
@@ -192,9 +197,9 @@ module CXLppP {
           && (call CXLinkPacket.getLinkHeader(msg))->source 
              == (call CXLinkPacket.getLinkHeader(probe))->source){
           state = S_AWAKE;
-          printf("woken up\r\n");
           pushSleep();
           call Pool.put(probe);
+          signal LppControl.wokenUp();
         }
         //probes DO NOT extend sleep timer.
         //TODO: probably want to sniff these.
@@ -208,12 +213,12 @@ module CXLppP {
   }
 
   event void SleepTimer.fired(){
-    printf("back to sleep\r\n");
+    signal LppControl.fellAsleep();
     state = S_IDLE;
     call CXLink.sleep();
-    if (! call ProbeTimer.isRunning()){
-      call ProbeTimer.startOneShot(randomize(probeInterval));
-    }
+    //We wait for a good long while before probing again to minimize
+    //the chance of spurious wakeups.
+    call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
   }
   
   event void CXLink.rxDone(){
@@ -233,8 +238,15 @@ module CXLppP {
   }
   
   command error_t Send.send(message_t* msg, uint8_t len){
-    //TODO: set TTL
-    return FAIL;
+    printf("send %p\r\n", msg);
+    if (call LppControl.isAwake()){
+      (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
+      call Packet.setPayloadLength(msg, len);
+      call CXMacPacket.setMacType(msg, CXM_DATA);
+      return call SubSend.send(msg, call CXLinkPacket.len(msg));
+    }else{ 
+      return ERETRY;
+    }
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){

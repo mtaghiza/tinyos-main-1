@@ -221,10 +221,12 @@ module CXLinkP {
     if (localState == S_IDLE || localState == S_SLEEP){
       //switch to data channel if not already on it
       error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
-        TOSH_DATA_LENGTH + sizeof(message_header_t), TRUE,
+        TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
+//      printf("rxbuf: %u\r\n", 
+//        TOSH_DATA_LENGTH + sizeof(message_header_t));
       call Packet.clear(rxMsg);
-      metadata(rxMsg)->retx = allowForward;
+      call CXLinkPacket.setAllowRetx(rxMsg, allowForward);
   
       if (SUCCESS == error){
         if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
@@ -260,7 +262,8 @@ module CXLinkP {
         call FastAlarm.stop();
         post signalRXDone();
       }
-      //TODO: set source here.
+      //TODO: source should be from ActiveMessageAddress interface
+      header(msg)->source = TOS_NODE_ID;
       error= subsend(msg);
   
       if (error == SUCCESS){
@@ -285,6 +288,7 @@ module CXLinkP {
       if (error == SUCCESS) {
         rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
         call SynchCapture.captureRisingEdge();
+//        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
       }
@@ -306,17 +310,19 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
+      printf("bad crc\r\n");
       return FALSE;
     }
   }
 
 
-
+  int rxResult;
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
     sfdAdjust = RX_SFD_ADJUST;
     rxLen = count;
+    rxResult = result;
     post handleReception();
   } 
 
@@ -345,7 +351,13 @@ module CXLinkP {
         - (FRAMELEN_SLOW*(metadata(rxMsg)->rxHopCount-1));
       localState = state;
       call Rf1aPhysicalMetadata.store(phy(rxMsg));
+      //mark as failed CRC, ugh
+      if (rxResult != SUCCESS){
+        phy(rxMsg)->lqi &= ~0x80;
+      }
     }
+//    printf("hr %p %u %u %u\r\n", rxMsg, call CXLinkPacket.len(rxMsg),
+//      rxLen, rxResult);
     if (localState == S_RX){
       if (readyForward(rxMsg) ){
         atomic{
