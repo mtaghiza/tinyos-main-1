@@ -85,12 +85,10 @@ module TestP{
       call Packet.clear(txMsg);
       pl = call Packet.getPayload(txMsg, 
         call Packet.maxPayloadLength());
-      printf("msg %p pl %p\r\n", txMsg, pl);
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       err = call Send.send(txMsg, call Packet.maxPayloadLength());
-//      err = call Send.send(txMsg, 74);
-      printf("Send: %x\r\n", err);
+      printf("APP TX %x\r\n", err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
         txMsg = NULL;
