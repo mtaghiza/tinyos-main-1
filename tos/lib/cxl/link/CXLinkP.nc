@@ -428,6 +428,7 @@ module CXLinkP {
       call Rf1aPhysical.sleep();
       post signalStopDone();
       call Pool.put(rxMsg);
+      rxMsg = NULL;
       return call Resource.release();
     }
   }

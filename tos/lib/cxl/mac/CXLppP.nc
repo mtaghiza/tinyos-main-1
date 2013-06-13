@@ -61,7 +61,6 @@ module CXLppP {
       state = S_AWAKE;
       pushSleep();
       error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
-//      printf("cxl.rx: %x\r\n", error);
       signal LppControl.wokenUp();
       return error;
     }
@@ -69,6 +68,10 @@ module CXLppP {
 
   command bool LppControl.isAwake(){
     return (state == S_AWAKE);
+  }
+
+  task void signalFellAsleep(){
+    signal LppControl.fellAsleep();
   }
 
   command error_t LppControl.sleep(){
@@ -82,6 +85,7 @@ module CXLppP {
         call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
         call SleepTimer.stop();
         call KeepAliveTimer.stop();
+        post signalFellAsleep();
         return SUCCESS;
       }
     }else{
@@ -117,6 +121,7 @@ module CXLppP {
         if (SUCCESS != error){
           printf("sp: %x\r\n", error);
           call Pool.put(probe);
+          probe = NULL;
           call ProbeTimer.startOneShot(randomize(probeInterval));
         }
       }
@@ -139,6 +144,7 @@ module CXLppP {
       if (SUCCESS != error){
         printf("ska: %x\r\n", error);
         call Pool.put(keepAliveMsg);
+        keepAliveMsg = NULL;
         call KeepAliveTimer.startOneShot(CX_KEEPALIVE_RETRY);
       }
     }
@@ -162,6 +168,7 @@ module CXLppP {
       if (keepAlive && msg == keepAliveMsg){
         printf("ka\r\n");
         call Pool.put(keepAliveMsg);
+        keepAliveMsg = NULL;
       }else{
         printf("up\r\n");
         signal Send.sendDone(msg, error);
@@ -172,7 +179,6 @@ module CXLppP {
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
-//    printf("sr.r\r\n");
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_DATA:
         //fall through
@@ -199,6 +205,7 @@ module CXLppP {
           state = S_AWAKE;
           pushSleep();
           call Pool.put(probe);
+          probe = NULL;
           signal LppControl.wokenUp();
         }
         //probes DO NOT extend sleep timer.
@@ -222,12 +229,12 @@ module CXLppP {
   }
   
   event void CXLink.rxDone(){
-    printf("rxd\r\n");
     //Still in S_CHECK? we didn't hear our probe come back. go to
     //  sleep.
     if (state == S_CHECK){
       call CXLink.sleep();
       call Pool.put(probe);
+      probe = NULL;
       call ProbeTimer.startOneShot(randomize(probeInterval));
       state = S_IDLE;
     }
