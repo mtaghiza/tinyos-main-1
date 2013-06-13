@@ -26,7 +26,7 @@ module SDCardP {
   uses interface HplMsp430GeneralIO as CardDetect;
 
   uses interface GeneralIO as Power;
-  uses interface Timer<TMilli> as PowerTimeout;
+  uses interface Timer<TMilli> as PowerTimer;
   uses interface Timer<TMilli> as ResetTimer;
   uses interface Timer<TMilli> as BusyTimer;
 }
@@ -179,9 +179,8 @@ implementation {
 //    {
       error = call SpiResource.immediateRequest();
 
-      if (error == SUCCESS){
-        stopPowerTimeout();
-      }
+      if (error == SUCCESS)
+        call PowerTimer.stop();
 //    }
 //    else
 //      error = FAIL;
@@ -326,7 +325,7 @@ implementation {
     post startPowerTimeoutTask();
   }
 
-  async event void PowerTimeout.fired()
+  event void PowerTimer.fired()
   {
     if (sdState == SD_POWER_DOWN)
     {
@@ -336,20 +335,20 @@ implementation {
   }
 
 
-  async command error_t SDCard.powerDown() 
+  command error_t SDCard.powerDown() 
   {
     if (sdState == SD_IDLE)
     {
-      call PowerTimeout.start(10);
+      call PowerTimer.startOneShot(10);
       sdState = SD_POWER_DOWN;
     }
     
     return SUCCESS;
   }
 
-  async command error_t SDCard.powerUp() 
+  command error_t SDCard.powerUp() 
   {
-    stopPowerTimeout();
+    call PowerTimer.stop();
     call Power.set();
 
     return SUCCESS;
@@ -373,7 +372,7 @@ implementation {
     readBlock(m_readAddr, m_readLen, m_readBuf);
   }
 
-  async command error_t SDCard.read(uint32_t addr, uint8_t *buf, uint16_t count) 
+  command error_t SDCard.read(uint32_t addr, uint8_t *buf, uint16_t count) 
   {
 
     if (sdState == SD_IDLE)
@@ -446,7 +445,7 @@ implementation {
     writeBlock(m_cache.address, m_cache.block);
   }
 
-  async command error_t SDCard.write(uint32_t addr, uint8_t *buf, uint16_t count) 
+  command error_t SDCard.write(uint32_t addr, uint8_t *buf, uint16_t count) 
   {
     uint16_t inBlock = addr & BLOCK_MASK;
     uint16_t length = ( (inBlock + count) > BLOCK_SIZE) ? (BLOCK_SIZE - inBlock) : count;
@@ -500,7 +499,7 @@ implementation {
     return 0;
   }
 
-  async command error_t SDCard.eraseSectors(uint32_t offset, uint16_t nbSectors)
+  command error_t SDCard.eraseSectors(uint32_t offset, uint16_t nbSectors)
   {
     if (sdState == SD_IDLE)
     {    
@@ -528,7 +527,7 @@ implementation {
   }
   
 
-  async command error_t SDCard.flush()
+  command error_t SDCard.flush()
   {
     if (sdState == SD_IDLE)
     {    
@@ -591,7 +590,7 @@ implementation {
   {
     uint8_t response;
     
-    m_start = call PowerTimeout.getNow();
+    m_start = call PowerTimer.getNow();
 
     response = call SpiByte.write(DUMMY_CHAR);
     
@@ -607,7 +606,7 @@ implementation {
       return;
     
     // a write should take at most 250 ms according to the standard
-    m_now = call PowerTimeout.getNow();
+    m_now = call PowerTimer.getNow();
 
     response = call SpiByte.write(DUMMY_CHAR);
 
@@ -762,14 +761,14 @@ implementation {
       if (R1 == MMC_R1_RESPONSE)
       {
         uint16_t now;
-        uint16_t start = call PowerTimeout.getNow();
+        uint16_t start = call PowerTimer.getNow();
 
         // now look for the data token to signify the start of the data
         // This takes at most 100 ms (req. by standard)
         do
         {
           R1 = call SpiByte.write(DUMMY_CHAR);
-          now = call PowerTimeout.getNow();
+          now = call PowerTimer.getNow();
         }
         while ( (R1 != MMC_START_DATA_BLOCK_TOKEN) && ((now - start) < 100) );
 
@@ -894,14 +893,14 @@ implementation {
     if (R1 == MMC_R1_RESPONSE)
     {
       uint16_t now;
-      uint16_t start = call PowerTimeout.getNow();
+      uint16_t start = call PowerTimer.getNow();
 
       // now look for the data token to signify the start of the data
       // This takes at most 100 ms (req. by standard)
       do
       {
         R1 = call SpiByte.write(DUMMY_CHAR);
-        now = call PowerTimeout.getNow();
+        now = call PowerTimer.getNow();
       }
       while ( (R1 != MMC_START_DATA_BLOCK_TOKEN) && ((now - start) < 100) );
 

@@ -178,7 +178,7 @@ implementation {
     
   }
   
-  async event void Spi.readDone( stm25p_addr_t addr, uint8_t* buf, 
+  event void Spi.readDone( stm25p_addr_t addr, uint8_t* buf, 
 				 stm25p_len_t len, error_t error ) {
     signalDone( error );
   }
@@ -197,7 +197,7 @@ implementation {
     
   }
   
-  async event void Spi.pageProgramDone( stm25p_addr_t addr, uint8_t* buf, 
+  event void Spi.pageProgramDone( stm25p_addr_t addr, uint8_t* buf, 
 					stm25p_len_t len, error_t error ) {
     addr += len;
     buf += len;
@@ -221,7 +221,7 @@ implementation {
     
   }
   
-  async event void Spi.sectorEraseDone( uint8_t sector, error_t error ) {
+  event void Spi.sectorEraseDone( uint8_t sector, error_t error ) {
     if ( ++m_cur_len < m_len )
       call Spi.sectorErase( STM25P_VMAP[getVolumeId(m_client)].base + m_addr +
 			    m_cur_len );
@@ -241,13 +241,13 @@ implementation {
     
   }
   
-  async event void Spi.computeCrcDone( uint16_t crc, stm25p_addr_t addr, 
+  event void Spi.computeCrcDone( uint16_t crc, stm25p_addr_t addr, 
 				       stm25p_len_t len, error_t error ) {
     m_crc = crc;
     signalDone( SUCCESS );
   }
   
-  async event void Spi.bulkEraseDone( error_t error ) {
+  event void Spi.bulkEraseDone( error_t error ) {
     
   }
   

@@ -12,7 +12,7 @@ interface SDCard {
    * @return SUCCESS if the request completed successfully, FAIL
    * otherwise.
    */
-  async command error_t powerDown();
+  command error_t powerDown();
 
   /**
    * Release chip from power down mode.
@@ -20,7 +20,7 @@ interface SDCard {
    * @return SUCCESS if the request completed successfully, FAIL
    * otherwise.
    */
-  async command error_t powerUp();
+  command error_t powerUp();
    
 	/**
    	* Commande pour l'écriture d'une chaine
@@ -32,7 +32,7 @@ interface SDCard {
    	* @return SUCCESS Si l'écriture a fonctionnée
    			FAIL sinon
    	*/
-  	async command error_t write(uint32_t addr, uint8_t*buf, uint16_t count);
+  	command error_t write(uint32_t addr, uint8_t*buf, uint16_t count);
     event void writeDone(uint32_t addr, uint8_t*buf, uint16_t count, error_t error);
 
   	/**
@@ -45,7 +45,7 @@ interface SDCard {
    	* @return SUCCESS Si la lecture est bonne
   	 		FAIL dans le cas contraire
    	*/
-  	async command error_t read(uint32_t addr, uint8_t*buf, uint16_t count);
+  	command error_t read(uint32_t addr, uint8_t*buf, uint16_t count);
     event void readDone(uint32_t addr, uint8_t*buf, uint16_t count, error_t error);
 
   	/**
@@ -78,10 +78,10 @@ interface SDCard {
 	* @return SUCCESS Si la suppression a réussie
 			FAIL Autrement
   	*/
-	command error_t async eraseSectors(uint32_t offset, uint16_t nbSectors);
+	command error_t eraseSectors(uint32_t offset, uint16_t nbSectors);
   event void eraseSectorsDone();
   
-  command error_t async flush();
+  command error_t flush();
   event void flushDone();
 
 //  command uint8_t checkBusy(void);

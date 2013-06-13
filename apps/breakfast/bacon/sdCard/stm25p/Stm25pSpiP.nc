@@ -106,7 +106,7 @@ implementation {
   }
 
 
-  async command error_t Spi.powerDown() {
+  command error_t Spi.powerDown() {
 
 #ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
@@ -117,7 +117,7 @@ implementation {
     return SUCCESS;
   }
 
-  async command error_t Spi.powerUp() {
+  command error_t Spi.powerUp() {
 
 #ifdef STM25PSPIP_DEBUG
     printf("%s\n\r", __FUNCTION__);
@@ -129,7 +129,7 @@ implementation {
   }
 
 
-  async command error_t Spi.read( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
+  command error_t Spi.read( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
   {
 
 #ifdef STM25PSPIP_DEBUG
@@ -155,7 +155,7 @@ implementation {
     // note: old readDone always return SUCCSS 
   }
 
-  async command error_t Spi.pageProgram( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
+  command error_t Spi.pageProgram( stm25p_addr_t addr, uint8_t* buf, stm25p_len_t len ) 
   {
 
 #ifdef STM25PSPIP_DEBUG
@@ -183,7 +183,7 @@ implementation {
 
 
   #warning Stm25pSpi.computeCrc not implemented  
-  async command error_t Spi.computeCrc( uint16_t crc, stm25p_addr_t addr, stm25p_len_t len ) 
+  command error_t Spi.computeCrc( uint16_t crc, stm25p_addr_t addr, stm25p_len_t len ) 
   {
 
 #ifdef STM25PSPIP_DEBUG
@@ -197,7 +197,7 @@ implementation {
   
 
 
-  async command error_t Spi.sectorErase( uint8_t sector ) 
+  command error_t Spi.sectorErase( uint8_t sector ) 
   {
 
 #ifdef STM25PSPIP_DEBUG
@@ -221,7 +221,7 @@ implementation {
   event void SDCard.flushDone()
   { ; }
 
-  async command error_t Spi.bulkErase() 
+  command error_t Spi.bulkErase() 
   {
 
 #ifdef STM25PSPIP_DEBUG
