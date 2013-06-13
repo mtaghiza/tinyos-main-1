@@ -35,7 +35,7 @@ module TestP{
     printf("-----\r\n");
     printf(" q: reset\r\n");
     printf(" t: transmit packet\r\n");
-    printf(" p: set probe interval to 1 second\r\n");
+    printf(" p: toggle probe interval between 1 second and default\r\n");
     printf(" s: sleep\r\n");
     printf(" w: wakeup\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
@@ -158,10 +158,20 @@ module TestP{
   task void wakeup(){
     printf("wakeup: %x\r\n", call LppControl.wakeup());
   }
-
+  bool longProbe = TRUE;
   task void setProbeInterval(){
-    printf("SPI: %x\r\n", 
-      call LppControl.setProbeInterval(PROBE_INTERVAL));
+    uint32_t pi;
+    error_t error;
+    if (longProbe){
+      pi = PROBE_INTERVAL;
+    }else{
+      pi = LPP_DEFAULT_PROBE_INTERVAL;
+    }
+    error = call LppControl.setProbeInterval(pi);
+    if (error == SUCCESS){
+      longProbe = (pi == LPP_DEFAULT_PROBE_INTERVAL);
+    }
+    printf("SPI %lu: %x\r\n", pi, error);
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
