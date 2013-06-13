@@ -10,6 +10,7 @@ typedef union message_header {
 } __attribute__((packed)) message_header_t;
 
 typedef struct TOSRadioFooter {
+  nx_uint16_t checksum;
 } message_footer_t;
 
 typedef struct TOSRadioMetadata {
