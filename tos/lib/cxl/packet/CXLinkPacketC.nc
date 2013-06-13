@@ -33,6 +33,10 @@ module CXLinkPacketC{
     return &(md(msg)->cx);
   }
 
+  command rf1a_metadata_t* CXLinkPacket.getPhyMetadata(message_t* msg){
+    return &(md(msg)->rf1a);
+  }
+
   command void Packet.clear(message_t* msg){
     memset(msg, 0, sizeof(message_t));
     //set up defaults: increment sn, allow retx from this buffer.
