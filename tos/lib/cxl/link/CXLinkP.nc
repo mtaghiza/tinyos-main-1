@@ -50,6 +50,9 @@ module CXLinkP {
   cx_link_metadata_t* metadata(message_t* msg){
     return (call CXLinkPacket.getLinkMetadata(msg));
   }
+  rf1a_metadata_t* phy(message_t* msg){
+    return (call CXLinkPacket.getPhyMetadata(msg));
+  }
   
   /**
    *  Immediately sleep the radio. 
@@ -60,9 +63,13 @@ module CXLinkP {
     if (localState == S_TX || localState == S_FWD){
       return EBUSY;
     }else{
+      error_t err = call Rf1aPhysical.sleep();
       call Msp430XV2ClockControl.stopMicroTimer();
       atomic state = S_SLEEP;
-      return call Rf1aPhysical.sleep();
+      if (localState == S_RX){
+        signal CXLink.rxDone();
+      }
+      return err;
     }
   }
 
@@ -124,6 +131,8 @@ module CXLinkP {
             state = S_IDLE;
             call Msp430XV2ClockControl.stopMicroTimer();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+              RF1A_OM_IDLE);
           }
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
@@ -132,6 +141,8 @@ module CXLinkP {
             call CXLinkPacket.setLen(rxMsg, rxLen);
             call Msp430XV2ClockControl.stopMicroTimer();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+              RF1A_OM_IDLE);
           }
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
@@ -160,6 +171,8 @@ module CXLinkP {
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+        call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+          RF1A_OM_IDLE);
         state = S_IDLE;
         post signalRXDone();
       }
@@ -282,11 +295,15 @@ module CXLinkP {
    * forwarding is complete.
    */
   bool readyForward(message_t* msg){
-    if(header(msg)->ttl){
-      header(msg)->hopCount++;
-      header(msg)->ttl--;
+    if (call Rf1aPhysicalMetadata.crcPassed(phy(msg))){
+      if(header(msg)->ttl){
+        header(msg)->hopCount++;
+        header(msg)->ttl--;
+      }
+      return (header(msg)->ttl > 0) && (metadata(msg)->retx);
+    }else{
+      return FALSE;
     }
-    return (header(msg)->ttl > 0) && (metadata(msg)->retx);
   }
 
 
@@ -323,6 +340,7 @@ module CXLinkP {
         - slowTicks 
         - (FRAMELEN_SLOW*(metadata(rxMsg)->rxHopCount-1));
       localState = state;
+      call Rf1aPhysicalMetadata.store(phy(rxMsg));
     }
     if (localState == S_RX){
       if (readyForward(rxMsg) ){
@@ -337,10 +355,17 @@ module CXLinkP {
           state = S_IDLE;
           call Msp430XV2ClockControl.stopMicroTimer();
           call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+          call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+            RF1A_OM_IDLE);
         }
-        rxMsg = signal Receive.receive(rxMsg, 
-          call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
-          call Packet.payloadLength(rxMsg));
+        if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg))){
+          rxMsg = signal Receive.receive(rxMsg, 
+            call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
+            call Packet.payloadLength(rxMsg));
+        }else{
+          //CRC failed, wipe it.
+          call Packet.clear(rxMsg);
+        }
         signal CXLink.rxDone();
       }
     }else{ 
