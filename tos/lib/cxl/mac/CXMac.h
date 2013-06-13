@@ -14,9 +14,15 @@ typedef nx_struct cx_mac_header{
   nx_uint8_t macType;
 } cx_mac_header_t;
 
+#ifndef LPP_DEFAULT_PROBE_INTERVAL
 #define LPP_DEFAULT_PROBE_INTERVAL 5120UL
-#define LPP_SLEEP_TIMEOUT 30720UL
+#endif
 
-#define CHECK_TIMEOUT (FRAMELEN_FAST + (FRAMELEN_FAST/4))
+#ifndef LPP_SLEEP_TIMEOUT
+#define LPP_SLEEP_TIMEOUT 30720UL
+#endif
+
+#define CHECK_TIMEOUT (FRAMELEN_FAST + (FRAMELEN_FAST/2))
+#define RX_TIMEOUT_MAX (0xFFFFFFFF)
 
 #endif

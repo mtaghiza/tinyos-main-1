@@ -36,17 +36,39 @@ module CXLppP {
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
 
-  command error_t LppControl.wakeup(){
-    return FAIL;
-  }
-  command error_t LppControl.sleep(){
-    return FAIL;
-  }
-
   uint32_t randomize(uint32_t mean){
     uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
-    printf("R %lu -> %lu\r\n", mean, ret);
     return ret;
+  }
+
+  command error_t LppControl.wakeup(){
+    if (state == S_OFF){
+      return EOFF;
+    }else{
+      error_t error;
+      keepAlive = TRUE;
+      state = S_AWAKE;
+      error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      printf("cxl.rx: %x\r\n", error);
+      //TODO: start sending keep-alive's: should go out some
+      //  time before sleep timer expires.
+      return error;
+    }
+  }
+
+  command error_t LppControl.sleep(){
+    if (state != S_IDLE){
+      if (state == S_OFF){
+        return EOFF;
+      }else{
+        call CXLink.sleep();
+        state = S_IDLE;
+        call ProbeTimer.startOneShot(randomize(probeInterval));
+        return SUCCESS;
+      }
+    }else{
+      return EALREADY;
+    }
   }
 
   command error_t LppControl.setProbeInterval(uint32_t t){
@@ -67,12 +89,13 @@ module CXLppP {
         error_t error;
         call Packet.clear(probe);
         call CXMacPacket.setMacType(probe, CXM_PROBE);
-        (call CXLinkPacket.getLinkHeader(probe))->ttl = 1;
+        (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
         error = call SubSend.send(probe, 
           call CXLinkPacket.len(probe));
         if (SUCCESS != error){
+          printf("sp: %x\r\n", error);
           call Pool.put(probe);
           call ProbeTimer.startOneShot(randomize(probeInterval));
         }
@@ -97,6 +120,7 @@ module CXLppP {
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
+    printf("sr.r\r\n");
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_DATA:
         //fall through
@@ -121,6 +145,7 @@ module CXLppP {
           && (call CXLinkPacket.getLinkHeader(msg))->source 
              == (call CXLinkPacket.getLinkHeader(probe))->source){
           state = S_AWAKE;
+          printf("woken up\r\n");
           call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
           call Pool.put(probe);
         }
@@ -136,6 +161,8 @@ module CXLppP {
   }
 
   event void SleepTimer.fired(){
+    printf("back to sleep\r\n");
+    state = S_IDLE;
     call CXLink.sleep();
     if (! call ProbeTimer.isRunning()){
       call ProbeTimer.startOneShot(randomize(probeInterval));
@@ -143,6 +170,7 @@ module CXLppP {
   }
   
   event void CXLink.rxDone(){
+    printf("rxd\r\n");
     //Still in S_CHECK? we didn't hear our probe come back. go to
     //  sleep.
     if (state == S_CHECK){
@@ -153,7 +181,7 @@ module CXLppP {
     }
     if (state == S_AWAKE){
       //start next RX.
-      call CXLink.rx(0xFFFFFFFF, TRUE);
+      call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
     }
   }
   
