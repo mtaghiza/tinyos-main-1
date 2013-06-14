@@ -27,4 +27,8 @@ typedef nx_struct cx_mac_header{
 #define CHECK_TIMEOUT (FRAMELEN_FAST + (FRAMELEN_FAST/2))
 #define RX_TIMEOUT_MAX (0xFFFFFFFF)
 
+#ifndef CX_BASESTATION 
+#define CX_BASESTATION 0
+#endif
+
 #endif

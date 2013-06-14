@@ -6,6 +6,7 @@ configuration CXLppC {
   provides interface Receive;
 
   provides interface Packet;
+  provides interface CXMacPacket;
 
   uses interface Pool<message_t>;
 } implementation {
@@ -28,6 +29,7 @@ configuration CXLppC {
   components CXMacPacketC;
   CXMacPacketC.SubPacket -> CXLinkC.Packet;
   Packet = CXMacPacketC.Packet;
+  CXMacPacket = CXMacPacketC.CXMacPacket;
   CXLppP.Packet -> CXMacPacketC.Packet;
   CXLppP.CXMacPacket -> CXMacPacketC.CXMacPacket;
 
