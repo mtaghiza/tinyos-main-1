@@ -18,4 +18,7 @@ configuration CXLeafMacC {
   components CXMacPacketC;
   CXLeafMacP.CXLinkPacket -> CXLinkPacketC;
   CXLeafMacP.CXMacPacket -> CXMacPacketC;
+
+  components CXAMAddressC;
+  CXLeafMacP.ActiveMessageAddress -> CXAMAddressC;
 }

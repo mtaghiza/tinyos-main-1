@@ -22,6 +22,7 @@ module CXLinkP {
   uses interface CXLinkPacket;
 
   uses interface Rf1aPhysicalMetadata;
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t* rxMsg;
   uint8_t rxLen;
@@ -262,8 +263,7 @@ module CXLinkP {
         call FastAlarm.stop();
         post signalRXDone();
       }
-      //TODO: source should be from ActiveMessageAddress interface
-      header(msg)->source = TOS_NODE_ID;
+      header(msg)->source = call ActiveMessageAddress.amAddress();
       error= subsend(msg);
   
       if (error == SUCCESS){
@@ -451,6 +451,7 @@ module CXLinkP {
     aCSDetected = TRUE;
   }
   async event void Rf1aPhysical.released () { }
-
+  
+  async event void ActiveMessageAddress.changed(){}
   
 }

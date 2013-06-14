@@ -7,6 +7,7 @@ module CXLeafMacP {
 
   provides interface Send;
   uses interface Send as SubSend;
+  uses interface ActiveMessageAddress;
 } implementation {
   message_t* pendingMsg = NULL;
 
@@ -22,7 +23,7 @@ module CXLeafMacP {
       (call CXLinkPacket.getLinkHeader(msg))->destination,
       pendingMsg);
     if (call CXMacPacket.getMacType(msg) == CXM_CTS 
-        && (call CXLinkPacket.getLinkHeader(msg))->destination == TOS_NODE_ID 
+        && (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()
         && pendingMsg){
       post signalGranted();
     }
@@ -56,6 +57,7 @@ module CXLeafMacP {
   command error_t Send.cancel(message_t* msg){
     return call SubSend.cancel(msg);
   }
-
+  
+  async event void ActiveMessageAddress.changed(){}
   
 }

@@ -44,5 +44,8 @@ configuration CXLinkC {
   Packet = CXLinkPacketC.Packet;
   CXLinkPacket = CXLinkPacketC.CXLinkPacket;
 
+  components CXAMAddressC;
+  CXLinkP.ActiveMessageAddress -> CXAMAddressC;
+
 }
 
