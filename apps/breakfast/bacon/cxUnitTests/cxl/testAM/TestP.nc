@@ -131,7 +131,8 @@ module TestP{
   task void handleRX(){
     test_payload_t* pl = call Packet.getPayload(rxMsg,
       sizeof(test_payload_t));
-    printf("APP RX %p %p\r\n", rxMsg, pl); 
+    printf("APP RX %p %p %u\r\n", rxMsg, pl, 
+      call Packet.payloadLength(rxMsg)); 
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
