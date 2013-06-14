@@ -24,7 +24,9 @@ module CXMacP{
     if (pendingMsg){
       error_t error = call SubSend.send(pendingMsg, pendingLen);
       if (error != SUCCESS){
-        signal Send.sendDone(pendingMsg, error);
+        message_t* msg = pendingMsg;
+        pendingMsg = NULL;
+        signal Send.sendDone(msg, error);
       }else{
         sendStarted = TRUE;
       }
