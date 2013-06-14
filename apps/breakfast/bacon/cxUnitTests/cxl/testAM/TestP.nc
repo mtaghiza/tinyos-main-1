@@ -90,8 +90,12 @@ module TestP{
       call Packet.clear(txMsg);
       pl = call Packet.getPayload(txMsg, 
         call Packet.maxPayloadLength());
+      printf("PL: %p\r\n", pl);
       err = call AMSend.send(AM_BROADCAST_ADDR, txMsg, call Packet.maxPayloadLength());
       printf("APP TX %x\r\n", err);
+      printf("PLL %u max %u\r\n", 
+        call Packet.payloadLength(txMsg), 
+        call Packet.maxPayloadLength());
       if (err != SUCCESS){
         call Pool.put(txMsg);
         txMsg = NULL;
@@ -115,6 +119,7 @@ module TestP{
   event void AMSend.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
     printf("APP TXD %x\r\n", error);
+    printf("post PLL %u\r\n", call Packet.payloadLength(msg));
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -151,8 +156,10 @@ module TestP{
 
   task void toggleStartStop(){
     if (started){
+      printf("stopping\r\n");
       call SplitControl.stop();
     }else {
+      printf("starting\r\n");
       call SplitControl.start();
     }
   }
@@ -216,6 +223,9 @@ module TestP{
          break;
        case '?':
          post usage();
+         break;
+       case 'S':
+         post toggleStartStop();
          break;
        case '\r':
          printf("\n");
