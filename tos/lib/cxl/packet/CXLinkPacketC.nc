@@ -2,7 +2,6 @@ module CXLinkPacketC{
   provides interface Packet;
   provides interface CXLinkPacket;
 } implementation {
-  uint8_t sn = 0;
   
   message_metadata_t* md(message_t* msg){
     return (message_metadata_t*)(msg->metadata);
@@ -40,7 +39,6 @@ module CXLinkPacketC{
   command void Packet.clear(message_t* msg){
     memset(msg, 0, sizeof(message_t));
     //set up defaults: increment sn, allow retx from this buffer.
-    ((cx_link_header_t*)(msg->header))->sn = sn++;
     md(msg)->cx.retx = TRUE;
     //kind of hacky: set the lqi of the phy metadata so that this
     //looks like passed. otherwise, self re-tx will fail.
@@ -66,6 +64,10 @@ module CXLinkPacketC{
 
   command uint8_t Packet.maxPayloadLength(){
     return TOSH_DATA_LENGTH;
+  }
+
+  command uint32_t CXLinkPacket.getSn(message_t* msg){
+    return ((cx_link_header_t*)(msg->header))->sn;
   }
 
 }

@@ -37,4 +37,7 @@ configuration CXMacC {
   CXMacP.SubSend -> CXLppC.Send;
 
   Packet = CXLppC.Packet;
+
+  components new TimerMilliC();
+  CXMacP.Timer -> TimerMilliC;
 }

@@ -1,5 +1,7 @@
 
  #include "CXLink.h"
+ #include "CXLinkDebug.h"
+
 module CXLinkP {
   provides interface SplitControl;
   uses interface Resource;
@@ -27,6 +29,7 @@ module CXLinkP {
   message_t* rxMsg;
   uint8_t rxLen;
   message_t* fwdMsg;
+  uint32_t sn;
 
   enum {
     S_SLEEP = 0,
@@ -135,6 +138,11 @@ module CXLinkP {
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
+          cinfo(LINK, "LTX %u %lu %u %x\r\n",
+            header(fwdMsg)->source, 
+            header(fwdMsg)->sn,
+            header(fwdMsg)->destination,
+            metadata(fwdMsg)->retx); 
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -144,6 +152,12 @@ module CXLinkP {
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
+          cinfo(LINK, "LRX %u %lu %u %u %x\r\n",
+            header(rxMsg)->source, 
+            header(rxMsg)->sn,
+            header(rxMsg)->destination, 
+            metadata(rxMsg)->rxHopCount,
+            metadata(rxMsg)->retx); 
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
@@ -151,7 +165,7 @@ module CXLinkP {
         }
       }
     }else{
-      //unexpected state
+      cwarn(LINK, "Link hsd unexpected state %x\r\n", localState);
     }
   }
 
@@ -177,7 +191,7 @@ module CXLinkP {
         post signalRXDone();
       }
     } else {
-      //TODO: handle unexpected state
+      cwarn(LINK, "Link fa.f unexpected state %x\r\n", state);
     }
   }
 
@@ -246,7 +260,7 @@ module CXLinkP {
       return EBUSY;
     }
   }
-
+  
   /**
    * Set up the radio to transmit the provided packet immediately.
    */
@@ -262,6 +276,7 @@ module CXLinkP {
         call FastAlarm.stop();
         post signalRXDone();
       }
+      header(msg)->sn = sn++;
       header(msg)->source = call ActiveMessageAddress.amAddress();
       error= subsend(msg);
   
@@ -309,7 +324,7 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
-//      printf("bad crc\r\n");
+      cdbg(LINK, "CRC fail\r\n");
       return FALSE;
     }
   }
@@ -374,6 +389,11 @@ module CXLinkP {
             RF1A_OM_IDLE);
         }
         if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg))){
+          cinfo(LINK, "LRX %u %lu %u %x\r\n",
+            header(rxMsg)->source, 
+            header(rxMsg)->sn,
+            metadata(rxMsg)->rxHopCount,
+            metadata(rxMsg)->retx); 
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));
@@ -384,7 +404,7 @@ module CXLinkP {
         signal CXLink.rxDone();
       }
     }else{ 
-      //TODO: unexpected state
+      cwarn(LINK, "Link hr unexpected state %x\r\n", localState);
     }
   }
 
@@ -412,6 +432,7 @@ module CXLinkP {
       call Msp430XV2ClockControl.stopMicroTimer();
       signal SplitControl.startDone(call Rf1aPhysical.sleep());
     }else {
+      cerror(LINK, "Link no mem @start\r\n");
       signal SplitControl.startDone(ENOMEM);
     }
   }

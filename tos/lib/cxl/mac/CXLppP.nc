@@ -1,5 +1,6 @@
 
  #include "CXMac.h"
+ #include "CXLppDebug.h"
 module CXLppP {
   provides interface LppControl;
 
@@ -45,7 +46,7 @@ module CXLppP {
   void pushSleep(){
     if (state == S_AWAKE ){
       if (keepAlive){
-        call KeepAliveTimer.startOneShot(LPP_SLEEP_TIMEOUT/2);
+        call KeepAliveTimer.startOneShot(LPP_SLEEP_TIMEOUT/4);
       } else {
         call SleepTimer.startOneShot(LPP_SLEEP_TIMEOUT);
       }
@@ -61,6 +62,7 @@ module CXLppP {
       state = S_AWAKE;
       pushSleep();
       error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      cinfo(LPP, "WAKE\r\n");
       signal LppControl.wokenUp();
       return error;
     }
@@ -71,6 +73,7 @@ module CXLppP {
   }
 
   task void signalFellAsleep(){
+    cinfo(LPP, "SLEEP\r\n");
     signal LppControl.fellAsleep();
   }
 
@@ -148,6 +151,12 @@ module CXLppP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    cinfo(LPP, "MTX %x %u %lu %u %x\r\n",
+      error,
+      (call CXLinkPacket.getLinkHeader(msg))->source,
+      (call CXLinkPacket.getLinkHeader(msg))->sn,
+      (call CXLinkPacket.getLinkHeader(msg))->destination,
+      call CXMacPacket.getMacType(msg));
     if (state == S_CHECK){
       if (msg == probe){
         //immediately after probe is sent, listen for a short period
@@ -170,6 +179,11 @@ module CXLppP {
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
+    cinfo(LPP, "MRX %u %lu %u %x\r\n",
+      (call CXLinkPacket.getLinkHeader(msg))->source,
+      (call CXLinkPacket.getLinkHeader(msg))->sn,
+      (call CXLinkPacket.getLinkHeader(msg))->destination,
+      call CXMacPacket.getMacType(msg));
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_DATA:
         //fall through
@@ -192,11 +206,20 @@ module CXLppP {
       case CXM_PROBE:
         if (state == S_CHECK 
           && (call CXLinkPacket.getLinkHeader(msg))->source 
-             == (call CXLinkPacket.getLinkHeader(probe))->source){
+             == (call CXLinkPacket.getLinkHeader(probe))->source
+          && call CXLinkPacket.getSn(msg) == call CXLinkPacket.getSn(probe)){
+          cdbg(LPP, "ACK msg %p %u %lu probe %p %u %lu\r\n",
+            msg,
+            (call CXLinkPacket.getLinkHeader(msg))->source,
+            call CXLinkPacket.getSn(msg),
+            probe, 
+            (call CXLinkPacket.getLinkHeader(probe))->source,
+            call CXLinkPacket.getSn(probe));
           state = S_AWAKE;
           pushSleep();
           call Pool.put(probe);
           probe = NULL;
+          cinfo(LPP, "WAKE\r\n");
           signal LppControl.wokenUp();
         }
         //probes DO NOT extend sleep timer.
@@ -209,6 +232,7 @@ module CXLppP {
   }
 
   event void SleepTimer.fired(){
+    cinfo(LPP, "SLEEP\r\n");
     signal LppControl.fellAsleep();
     state = S_IDLE;
     call CXLink.sleep();
