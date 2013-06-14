@@ -26,9 +26,7 @@ configuration TestAppC {
   TestP.SerialControl -> PlatformSerialC;
   TestP.Packet -> AMSenderC;
 
-  components new PoolC(message_t, 3);
-  ActiveMessageC.Pool -> PoolC;
-  TestP.Pool -> PoolC;
+  TestP.Pool -> ActiveMessageC.Pool;
   
   #if CX_BASESTATION == 1
   components CXBasestationMacC;
