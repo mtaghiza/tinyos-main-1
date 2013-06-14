@@ -11,7 +11,7 @@ module CXMacP{
     if (pendingMsg){
       return EBUSY;
     }else{
-      error_t e = call CXMacController.requestSend();
+      error_t e = call CXMacController.requestSend(msg);
       if (e == SUCCESS){
         pendingMsg = msg;
         pendingLen = len;

@@ -24,4 +24,7 @@ configuration CXBasestationMacC{
 
   components CXLinkPacketC;
   CXBasestationMacP.CXLinkPacket -> CXLinkPacketC.CXLinkPacket;
+  components CXMacPacketC;
+  CXBasestationMacP.CXMacPacket -> CXMacPacketC.CXMacPacket;
+  CXBasestationMacP.Packet -> CXMacPacketC.Packet;
 }

@@ -19,8 +19,8 @@ module CXBasestationMacP{
     signal CXMacController.requestGranted();
   }
 
-  command error_t CXMacController.requestSend(){
-    if (cts != NULL){
+  command error_t CXMacController.requestSend(message_t* msg){
+    if (cts != NULL && msg != cts){
       grantPending = TRUE;
       return SUCCESS;
     }else{
@@ -56,6 +56,7 @@ module CXBasestationMacP{
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    printf("bsm.sd\r\n");
     if (cts && cts == msg){
       call Pool.put(cts);
       cts = NULL;
