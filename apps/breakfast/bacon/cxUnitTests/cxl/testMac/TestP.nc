@@ -40,6 +40,7 @@ module TestP{
     printf(" s: sleep\r\n");
     printf(" w: wakeup\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
+    printf(" [0-9]: issue CTS\r\n");
     printf(" S: toggle start/stop\r\n");
   }
 
@@ -184,6 +185,13 @@ module TestP{
   }
 
   event void CXMacMaster.ctsDone(am_addr_t node, error_t error){
+    printf("CTSD: %x %x\r\n", node, error);
+  }
+  
+  norace am_addr_t ctsNode;
+  task void sendCts(){
+    printf("CTS: %x %x\r\n", ctsNode, 
+      call CXMacMaster.cts(ctsNode));
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -208,6 +216,19 @@ module TestP{
          break;
        case '\r':
          printf("\n");
+         break;
+       case '0':
+       case '1':
+       case '2':
+       case '3':
+       case '4':
+       case '5':
+       case '6':
+       case '7':
+       case '8':
+       case '9':
+         ctsNode = byte - '0';
+         post sendCts();
          break;
        default:
          break;
