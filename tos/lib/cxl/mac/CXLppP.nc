@@ -249,7 +249,6 @@ module CXLppP {
     if (call LppControl.isAwake()){
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
       call Packet.setPayloadLength(msg, len);
-      call CXMacPacket.setMacType(msg, CXM_DATA);
       return call SubSend.send(msg, call CXLinkPacket.len(msg));
     }else{ 
       return ERETRY;

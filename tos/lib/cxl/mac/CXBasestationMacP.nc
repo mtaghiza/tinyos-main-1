@@ -30,6 +30,7 @@ module CXBasestationMacP{
   }
   
   command error_t Send.send(message_t* msg, uint8_t len){
+    call CXMacPacket.setMacType(msg, CXM_DATA);
     return call SubSend.send(msg, len);
   }
 
