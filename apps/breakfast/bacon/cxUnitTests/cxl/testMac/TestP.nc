@@ -4,7 +4,9 @@ module TestP{
   uses interface StdControl as SerialControl;
 
   uses interface LppControl;
+  #if CX_BASESTATION == 1
   uses interface CXMacMaster;
+  #endif
   uses interface SplitControl;
   uses interface Send;
   uses interface Packet;
@@ -40,7 +42,9 @@ module TestP{
     printf(" s: sleep\r\n");
     printf(" w: wakeup\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
+    #if CX_BASESTATION == 1
     printf(" [0-9]: issue CTS\r\n");
+    #endif
     printf(" S: toggle start/stop\r\n");
   }
 
@@ -184,6 +188,7 @@ module TestP{
     printf("Fell asleep\r\n");
   }
 
+  #if CX_BASESTATION == 1
   event void CXMacMaster.ctsDone(am_addr_t node, error_t error){
     printf("CTSD: %x %x\r\n", node, error);
   }
@@ -193,6 +198,7 @@ module TestP{
     printf("CTS: %x %x\r\n", ctsNode, 
       call CXMacMaster.cts(ctsNode));
   }
+  #endif
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -217,6 +223,7 @@ module TestP{
        case '\r':
          printf("\n");
          break;
+       #if CX_BASESTATION == 1
        case '0':
        case '1':
        case '2':
@@ -230,6 +237,7 @@ module TestP{
          ctsNode = byte - '0';
          post sendCts();
          break;
+       #endif
        default:
          break;
      }

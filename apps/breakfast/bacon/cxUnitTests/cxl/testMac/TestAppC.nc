@@ -24,6 +24,8 @@ configuration TestAppC {
   CXMacC.Pool -> PoolC;
   TestP.Pool -> PoolC;
   
+  #if CX_BASESTATION == 1
   components CXBasestationMacC;
   TestP.CXMacMaster -> CXBasestationMacC.CXMacMaster;
+  #endif
 }
