@@ -9,6 +9,9 @@ module CXBasestationMacP{
   uses interface CXLinkPacket;
   uses interface CXMacPacket;
 
+  uses interface Receive as SubReceive;
+  provides interface Receive;
+
 }implementation {
 
   message_t* cts;
@@ -43,6 +46,7 @@ module CXBasestationMacP{
         error_t error;
         call Packet.clear(cts);
         call CXMacPacket.setMacType(cts, CXM_CTS);
+        call Packet.setPayloadLength(cts, 0);
         (call CXLinkPacket.getLinkHeader(cts))->destination = node;
         error = call SubSend.send(cts, 0);
         if (SUCCESS != error){
@@ -57,7 +61,6 @@ module CXBasestationMacP{
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
-    printf("bsm.sd\r\n");
     if (cts && cts == msg){
       call Pool.put(cts);
       cts = NULL;
@@ -80,5 +83,16 @@ module CXBasestationMacP{
   }
   command error_t Send.cancel(message_t* msg){
     return call SubSend.cancel(msg);
+  }
+
+  event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t
+  len){
+    if (call CXMacPacket.getMacType(msg) == CXM_DATA){
+      return signal Receive.receive(msg, 
+        pl+sizeof(cx_mac_header_t),
+        len-sizeof(cx_mac_header_t));
+    } else {
+      return msg;
+    }
   }
 }

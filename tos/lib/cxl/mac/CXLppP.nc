@@ -115,11 +115,9 @@ module CXLppP {
         (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
-        printf("sprobe %p\r\n", probe);
         error = call SubSend.send(probe, 
           call CXLinkPacket.len(probe));
         if (SUCCESS != error){
-          printf("sp: %x\r\n", error);
           call Pool.put(probe);
           probe = NULL;
           call ProbeTimer.startOneShot(randomize(probeInterval));
@@ -138,11 +136,9 @@ module CXLppP {
       (call CXLinkPacket.getLinkHeader(keepAliveMsg))->ttl = CX_MAX_DEPTH;
       call Packet.setPayloadLength(keepAliveMsg, 0);
       call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
-      printf("ska %p\r\n", keepAliveMsg);
       error = call SubSend.send(keepAliveMsg,
         call CXLinkPacket.len(keepAliveMsg));
       if (SUCCESS != error){
-        printf("ska: %x\r\n", error);
         call Pool.put(keepAliveMsg);
         keepAliveMsg = NULL;
         call KeepAliveTimer.startOneShot(CX_KEEPALIVE_RETRY);
@@ -152,25 +148,20 @@ module CXLppP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
-    printf("sd ");
     if (state == S_CHECK){
       if (msg == probe){
-        printf("probe\r\n");
         //immediately after probe is sent, listen for a short period
         //of time.
         call CXLink.rx(CHECK_TIMEOUT, FALSE);
       }else{
-        printf("?\r\n");
         call Pool.put(msg);
         probe = NULL;
       }
     }else{
       if (keepAlive && msg == keepAliveMsg){
-        printf("ka\r\n");
         call Pool.put(keepAliveMsg);
         keepAliveMsg = NULL;
       }else{
-        printf("up\r\n");
         signal Send.sendDone(msg, error);
       }
       pushSleep();
@@ -213,8 +204,6 @@ module CXLppP {
         return msg;
 
       default:
-        printf("Unrecognized mac type %x\r\n", 
-          call CXMacPacket.getMacType(msg));
         return msg;
     }
   }
@@ -245,10 +234,8 @@ module CXLppP {
   }
   
   command error_t Send.send(message_t* msg, uint8_t len){
-    printf("send %p\r\n", msg);
     if (call LppControl.isAwake()){
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
-      call Packet.setPayloadLength(msg, len);
       return call SubSend.send(msg, call CXLinkPacket.len(msg));
     }else{ 
       return ERETRY;

@@ -14,7 +14,8 @@ configuration CXBasestationMacC{
   CXMacMaster = CXBasestationMacP;
 
   //wire through
-  Receive = SubReceive;
+  Receive = CXBasestationMacP.Receive;
+  CXBasestationMacP.SubReceive = SubReceive;
   
   //intercept
   Send = CXBasestationMacP;

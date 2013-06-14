@@ -18,16 +18,19 @@ module CXLeafMacP {
 
   event message_t* SubReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
-    printf("CXLM sr.r %x %x %p\r\n", 
-      call CXMacPacket.getMacType(msg),
-      (call CXLinkPacket.getLinkHeader(msg))->destination,
-      pendingMsg);
     if (call CXMacPacket.getMacType(msg) == CXM_CTS 
         && (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()
         && pendingMsg){
       post signalGranted();
+      return msg;
+    }else if (call CXMacPacket.getMacType(msg) == CXM_DATA){
+      return signal Receive.receive(msg, 
+        pl+sizeof(cx_mac_header_t),
+        len-sizeof(cx_mac_header_t));
+    }else{
+      return msg;
     }
-    return msg;
+
   }
 
   command error_t CXMacController.requestSend(message_t* msg){

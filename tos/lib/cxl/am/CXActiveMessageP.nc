@@ -104,9 +104,9 @@ implementation {
 
     if (call AMPacket.isForMe(msg)) {
       return signal Receive.receive[call AMPacket.type(msg)](msg, payload, len);
+    }else{
+      return signal Snoop.receive[call AMPacket.type(msg)](msg, payload, len);
     }
-
-    return signal Snoop.receive[call AMPacket.type(msg)](msg, payload, len);
   }
 
 

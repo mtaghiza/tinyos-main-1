@@ -139,7 +139,6 @@ module CXLinkP {
         } else {
           atomic {
             state = S_IDLE;
-            call CXLinkPacket.setLen(rxMsg, rxLen);
             call Msp430XV2ClockControl.stopMicroTimer();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
