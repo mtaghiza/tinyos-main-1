@@ -82,7 +82,7 @@ typedef struct cx_link_metadata {
 
 
 #ifndef CX_MAX_DEPTH
-#define CX_MAX_DEPTH 2
+#define CX_MAX_DEPTH 10
 #endif
 
 #endif
