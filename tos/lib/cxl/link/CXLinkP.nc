@@ -309,7 +309,7 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
-      printf("bad crc\r\n");
+//      printf("bad crc\r\n");
       return FALSE;
     }
   }
