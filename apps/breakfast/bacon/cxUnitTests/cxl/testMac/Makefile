@@ -6,6 +6,9 @@ CFLAGS += -I$(TOSDIR)/lib/cxl/link
 CFLAGS += -I$(TOSDIR)/lib/cxl/packet
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
+CFLAGS += -DAM_ID_FROM_FLASH=0
+CFLAGS += -I$(TOSDIR)/lib/cxl/am
+
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK
 
