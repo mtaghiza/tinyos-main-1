@@ -34,12 +34,13 @@ module CXAMPacketC {
   }
 
   command void Packet.setPayloadLength(message_t* msg, uint8_t len){
-    call SubPacket.setPayloadLength(msg, len);
+    call SubPacket.setPayloadLength(msg, len + sizeof(cx_am_header_t));
   }
 
   command am_group_t AMPacket.group(message_t* amsg){
     return CX_GROUP;
   }
+
   command am_addr_t AMPacket.address(){
     return call ActiveMessageAddress.amAddress();
   }
