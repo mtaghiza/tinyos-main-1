@@ -185,7 +185,9 @@ module CXLppP {
 
   event void SubSend.sendDone(message_t* msg, error_t error){
     call TimeoutCheck.stop();
-    cwarn(LPP, "LPP ss.sd %x\r\n", error);
+    if (error != SUCCESS){
+      cwarn(LPP, "LPP ss.sd %x\r\n", error);
+    }
     cinfo(LPP, "MTX %x %u %lu %u %x\r\n",
       error,
       (call CXLinkPacket.getLinkHeader(msg))->source,
