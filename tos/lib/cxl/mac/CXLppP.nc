@@ -39,6 +39,8 @@ module CXLppP {
   bool keepAlive = FALSE;
   message_t* keepAliveMsg;
 
+  bool sending = FALSE;
+
   uint8_t state = S_OFF;
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
@@ -154,7 +156,8 @@ module CXLppP {
           probe = NULL;
           call ProbeTimer.startOneShot(randomize(probeInterval));
         }else{
-          call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2);
+          sending = TRUE;
+          call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2*2);
         }
       }
     }
@@ -177,6 +180,7 @@ module CXLppP {
         keepAliveMsg = NULL;
         call KeepAliveTimer.startOneShot(CX_KEEPALIVE_RETRY);
       }else{
+        sending = TRUE;
         call TimeoutCheck.startOneShot(FRAMELEN_SLOW*CX_MAX_DEPTH*2);
       }
     }
@@ -185,6 +189,7 @@ module CXLppP {
 
   event void SubSend.sendDone(message_t* msg, error_t error){
     call TimeoutCheck.stop();
+    sending = FALSE;
     if (error != SUCCESS){
       cwarn(LPP, "LPP ss.sd %x\r\n", error);
     }
@@ -307,7 +312,7 @@ module CXLppP {
       call ProbeTimer.startOneShot(randomize(probeInterval));
       state = S_IDLE;
     }
-    if (state == S_AWAKE){
+    if (state == S_AWAKE && ! sending){
       //start next RX.
       error_t error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
       if (error == SUCCESS){
@@ -324,6 +329,7 @@ module CXLppP {
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
       error = call SubSend.send(msg, call CXLinkPacket.len(msg));
       if (error == SUCCESS){
+        sending = TRUE;
         call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*CX_MAX_DEPTH);
       }
       return error;

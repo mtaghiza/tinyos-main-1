@@ -48,6 +48,7 @@ module CXLinkP {
   uint32_t aSfdCapture;
   bool aSynched;
   bool aCSDetected;
+  bool aExtended;
   int32_t sfdAdjust;
   
   event void StateDump.dumpRequested(){
@@ -208,8 +209,8 @@ module CXLinkP {
     if ((state == S_TX) | (state == S_FWD)){
       call DelayedSend.startSend();
     } else if (state == S_RX){
-      if (aCSDetected){
-        aCSDetected = FALSE;
+      if (aCSDetected && !aExtended){
+        aExtended = TRUE;
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
@@ -279,6 +280,7 @@ module CXLinkP {
           call SynchCapture.captureRisingEdge();
           aSfdCapture = 0;
           aCSDetected = FALSE;
+          aExtended = FALSE;
           aSynched = FALSE;
           state = S_RX;
         }
