@@ -40,4 +40,23 @@ typedef nx_struct cx_mac_header{
 #define CX_BASESTATION 0
 #endif
 
+//Basestation control messages
+typedef nx_struct cx_lpp_wakeup {
+  nx_uint32_t timeout;
+} cx_lpp_wakeup_t;
+
+typedef nx_struct cx_lpp_sleep {
+  nx_uint32_t delay;
+} cx_lpp_sleep_t;
+
+typedef nx_struct cx_lpp_cts {
+  nx_am_addr_t addr;
+} cx_lpp_cts_t;
+
+enum {
+ AM_CX_LPP_WAKEUP=0xC6,
+ AM_CX_LPP_SLEEP=0xC7,
+ AM_CX_LPP_CTS=0xC8,
+};
+
 #endif

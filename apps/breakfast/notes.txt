@@ -18,7 +18,7 @@ Some Collected Caveats
 
 AM ID's in common use:
 ======================
-SettingsStorage: 0xC0 - 0xC4 in use, 0xC5-0xCF reserved
+0xC0 - 0xC8 in use, 0xC9-0xCF reserved
 --------------
 bacon/settingsStorage/SettingsStorage.h: AM_SET_SETTINGS_STORAGE_MSG = 0xC0,
 bacon/settingsStorage/SettingsStorage.h: AM_GET_SETTINGS_STORAGE_CMD_MSG = 0xC1,
@@ -26,6 +26,10 @@ bacon/settingsStorage/SettingsStorage.h: AM_GET_SETTINGS_STORAGE_RESPONSE_MSG = 
 bacon/settingsStorage/SettingsStorage.h: AM_CLEAR_SETTINGS_STORAGE_MSG = 0xC3,
 lib/cx/scheduler/CXScheduler.h: AM_CX_SCHEDULE_MSG= 0xC4
 lib/cx/scheduler/CXScheduler.h: AM_CX_ASSIGNMENT_MSG= 0xC5
+lib/cxl/mac/CXMac.h: AM_WAKEUP = 0xC6
+lib/cxl/mac/CXMac.h: AM_SLEEP = 0xC7
+lib/cxl/mac/CXMac.h: AM_CTS = 0xC8
+
 
 
 Metadata: 0x80 - 0xB1 in use, 0xB2-0xBF reserved
