@@ -3,6 +3,10 @@
 #define RF1A_AUTOCAL 0
 #endif
 
+#ifndef RF1A_WHITENING_ENABLED
+#define RF1A_WHITENING_ENABLED == 1
+#endif
+
 module SRFS7_915_GFSK_125K_SENS_HC{
   provides interface Rf1aConfigure;
   uses interface Rf1aChannelCache;
@@ -19,7 +23,12 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     sync0:   0x91,
     pktlen:  0xff,    
     pktctrl1:0x04,   
+    #if RF1A_WHITENING_ENABLED == 1
     pktctrl0:0x45,   
+    #else
+    #warning Disable packet whitening
+    pktctrl0:0x05,   
+    #endif
     addr:    0x00,   
     channr:  0,   
     fsctrl1: 0x0C,   
