@@ -24,6 +24,10 @@ module CXLppP {
   uses interface Timer<TMilli> as SleepTimer;
   uses interface Timer<TMilli> as KeepAliveTimer;
   uses interface Random;
+
+  uses interface Timer<TMilli> as TimeoutCheck;
+
+  uses interface StateDump;
 } implementation {
   
   enum {
@@ -33,10 +37,25 @@ module CXLppP {
     S_AWAKE = 3
   };
   bool keepAlive = FALSE;
+  message_t* keepAliveMsg;
 
   uint8_t state = S_OFF;
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
+
+  event void TimeoutCheck.fired(){
+    cerror(LPP, "Operation timed out\r\n");
+    call StateDump.requestDump();
+  }
+
+  event void StateDump.dumpRequested(){
+    cerror(LPP, "LPP %x p %p ka %x kam %p pi %lu\r\n", 
+      state, 
+      probe,
+      keepAlive, 
+      keepAliveMsg, 
+      probeInterval);
+  }
 
   uint32_t randomize(uint32_t mean){
     uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
@@ -62,6 +81,11 @@ module CXLppP {
       state = S_AWAKE;
       pushSleep();
       error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      if (SUCCESS == error){
+        call TimeoutCheck.startOneShot(RX_TIMEOUT_MAX_SLOW);
+      }else{
+        cerror(LPP, "LPP.w rx %x\r\n", error);
+      }
       cinfo(LPP, "WAKE\r\n");
       signal LppControl.wokenUp();
       return error;
@@ -87,7 +111,7 @@ module CXLppP {
         keepAlive = FALSE;
         error = call CXLink.sleep();
         if (error != SUCCESS){
-          cerror(LPP, "Link.sleep failed: %x\r\n", error);
+          cerror(LPP, "LPP.s s: %x\r\n", error);
         }
         call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
         call SleepTimer.stop();
@@ -125,15 +149,17 @@ module CXLppP {
         error = call SubSend.send(probe, 
           call CXLinkPacket.len(probe));
         if (SUCCESS != error){
+          cerror(LPP, "pt.f ss %x\r\n", error);
           call Pool.put(probe);
           probe = NULL;
           call ProbeTimer.startOneShot(randomize(probeInterval));
+        }else{
+          call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2);
         }
       }
     }
   }
   
-  message_t* keepAliveMsg;
   event void KeepAliveTimer.fired(){
     keepAliveMsg = call Pool.get();
     if (keepAliveMsg){
@@ -146,15 +172,20 @@ module CXLppP {
       error = call SubSend.send(keepAliveMsg,
         call CXLinkPacket.len(keepAliveMsg));
       if (SUCCESS != error){
+        cerror(LPP, "kat.f ss %x\r\n", error);
         call Pool.put(keepAliveMsg);
         keepAliveMsg = NULL;
         call KeepAliveTimer.startOneShot(CX_KEEPALIVE_RETRY);
+      }else{
+        call TimeoutCheck.startOneShot(FRAMELEN_SLOW*CX_MAX_DEPTH*2);
       }
     }
     pushSleep();
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    call TimeoutCheck.stop();
+    cwarn(LPP, "LPP ss.sd %x\r\n", error);
     cinfo(LPP, "MTX %x %u %lu %u %x\r\n",
       error,
       (call CXLinkPacket.getLinkHeader(msg))->source,
@@ -165,12 +196,19 @@ module CXLppP {
       if (msg == probe){
         //immediately after probe is sent, listen for a short period
         //of time.
-        call CXLink.rx(CHECK_TIMEOUT, FALSE);
+        error_t err = call CXLink.rx(CHECK_TIMEOUT, FALSE);
+        if (err == SUCCESS){
+          call TimeoutCheck.startOneShot(CHECK_TIMEOUT_SLOW);
+        } else {
+          cerror(LPP, "LPP ss.sd ack rx %x\r\n", error);
+        }
+
       }else{
         call Pool.put(msg);
         probe = NULL;
       }
     }else{
+      error_t err;
       if (keepAlive && msg == keepAliveMsg){
         call Pool.put(keepAliveMsg);
         keepAliveMsg = NULL;
@@ -178,7 +216,12 @@ module CXLppP {
         signal Send.sendDone(msg, error);
       }
       pushSleep();
-      call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      err = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      if (err == SUCCESS) {
+        call TimeoutCheck.startOneShot(RX_TIMEOUT_MAX_SLOW);
+      } else {
+        cerror(LPP, "LPP ss.sd tx rx %x\r\n", error);
+      }
     }
   }
 
@@ -197,7 +240,6 @@ module CXLppP {
         if (state == S_AWAKE){
           pushSleep();
         }
-        //TODO: adjust pl position
         return signal Receive.receive(msg, pl, len);
         break;
 
@@ -236,20 +278,28 @@ module CXLppP {
   }
 
   event void SleepTimer.fired(){
+    error_t error;
     cinfo(LPP, "SLEEP\r\n");
     signal LppControl.fellAsleep();
     state = S_IDLE;
-    call CXLink.sleep();
+    error = call CXLink.sleep();
+    if (error != SUCCESS){
+      cerror(LPP, "LPP st.f s %x\r\n", error);
+    } 
     //We wait for a good long while before probing again to minimize
     //the chance of spurious wakeups.
     call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
   }
   
   event void CXLink.rxDone(){
+    call TimeoutCheck.stop();
     //Still in S_CHECK? we didn't hear our probe come back. go to
     //  sleep.
     if (state == S_CHECK){
-      call CXLink.sleep();
+      error_t error = call CXLink.sleep();
+      if (error != SUCCESS){
+        cerror(LPP, "LPP rxd s %x\r\n", error);
+      }
       call Pool.put(probe);
       probe = NULL;
       call ProbeTimer.startOneShot(randomize(probeInterval));
@@ -257,14 +307,24 @@ module CXLppP {
     }
     if (state == S_AWAKE){
       //start next RX.
-      call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      error_t error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
+      if (error == SUCCESS){
+        call TimeoutCheck.startOneShot(RX_TIMEOUT_MAX_SLOW);
+      }else{
+        cerror(LPP, "LPP rxd rx %x\r\n", error);
+      }
     }
   }
   
   command error_t Send.send(message_t* msg, uint8_t len){
     if (call LppControl.isAwake()){
+      error_t error;
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
-      return call SubSend.send(msg, call CXLinkPacket.len(msg));
+      error = call SubSend.send(msg, call CXLinkPacket.len(msg));
+      if (error == SUCCESS){
+        call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*CX_MAX_DEPTH);
+      }
+      return error;
     }else{ 
       return ERETRY;
     }

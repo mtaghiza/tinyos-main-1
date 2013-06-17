@@ -36,11 +36,16 @@ configuration CXLppC {
   components new TimerMilliC() as ProbeTimer;
   components new TimerMilliC() as SleepTimer;
   components new TimerMilliC() as KeepAliveTimer;
+  components new TimerMilliC() as TimeoutCheck;
   CXLppP.ProbeTimer -> ProbeTimer;
   CXLppP.SleepTimer -> SleepTimer;
   CXLppP.KeepAliveTimer -> KeepAliveTimer;
+  CXLppP.TimeoutCheck -> TimeoutCheck;
 
   components RandomC;
   CXLppP.Random -> RandomC;
+
+  components StateDumpC;
+  CXLppP.StateDump -> StateDumpC;
 
 }

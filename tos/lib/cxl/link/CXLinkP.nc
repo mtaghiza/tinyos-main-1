@@ -8,6 +8,7 @@ module CXLinkP {
 
   uses interface Rf1aPhysical;
   uses interface DelayedSend;
+  uses interface Rf1aStatus;
 
   uses interface GpioCapture as SynchCapture;
   uses interface Msp430XV2ClockControl;
@@ -25,6 +26,8 @@ module CXLinkP {
 
   uses interface Rf1aPhysicalMetadata;
   uses interface ActiveMessageAddress;
+
+  uses interface StateDump;
 } implementation {
   message_t* rxMsg;
   uint8_t rxLen;
@@ -46,6 +49,19 @@ module CXLinkP {
   bool aSynched;
   bool aCSDetected;
   int32_t sfdAdjust;
+  
+  event void StateDump.dumpRequested(){
+    uint8_t lState;
+    bool faRunning;
+    rf1a_status_e pState;
+    atomic {
+      lState = state;
+      faRunning = call FastAlarm.isRunning();
+      pState = call Rf1aStatus.get();
+    }
+    atomic cerror(LINK, "Link %x rxm %p fwd %p phy %x \r\n",
+      lState, rxMsg, fwdMsg, pState); 
+  }
 
   cx_link_header_t* header(message_t* msg){
     return (call CXLinkPacket.getLinkHeader(msg));

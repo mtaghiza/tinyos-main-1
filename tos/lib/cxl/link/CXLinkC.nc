@@ -26,6 +26,7 @@ configuration CXLinkC {
   Rf1aPhysicalC.Rf1aConfigure -> RadioConfigC;
 
   Rf1aStatus = Rf1aPhysicalC;
+  CXLinkP.Rf1aStatus -> Rf1aPhysicalC;
 
   components GDO1CaptureC;
   CXLinkP.SynchCapture -> GDO1CaptureC;
@@ -46,6 +47,8 @@ configuration CXLinkC {
 
   components CXAMAddressC;
   CXLinkP.ActiveMessageAddress -> CXAMAddressC;
-
+  
+  components StateDumpC;
+  CXLinkP.StateDump -> StateDumpC;
 }
 

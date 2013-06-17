@@ -24,8 +24,15 @@ typedef nx_struct cx_mac_header{
 
 #define CX_KEEPALIVE_RETRY 512UL
 
+//0.03125 s * 1.5 = 0.046875 s
 #define CHECK_TIMEOUT (FRAMELEN_FAST + (FRAMELEN_FAST/2))
+//add 50% for safety
+#define CHECK_TIMEOUT_SLOW 72UL
+
+//roughly 660 seconds
 #define RX_TIMEOUT_MAX (0xFFFFFFFF)
+//Add 50% for safety
+#define RX_TIMEOUT_MAX_SLOW 1014934UL
 
 #define MAC_RETRY_LIMIT 4
 
