@@ -157,7 +157,7 @@ module CXLppP {
           call ProbeTimer.startOneShot(randomize(probeInterval));
         }else{
           sending = TRUE;
-          call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2*2);
+          call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2);
         }
       }
     }
