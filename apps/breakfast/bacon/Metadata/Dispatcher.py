@@ -78,7 +78,16 @@ class Dispatcher(object):
             m)
             
         # note: get will block until queue is not empty or timeout has passed
-        return Dispatcher.queue.get(True, timeout)
+        try:
+            ret = Dispatcher.queue.get(True, timeout)
+        except Queue.Empty:
+            raise IOError
+
+        # the TinyOS application can be overloaded if called too often
+        # insert pause to avoid conflicts
+        time.sleep(0.1)
+
+        return ret 
     
 
 
