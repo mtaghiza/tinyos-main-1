@@ -67,7 +67,19 @@ module CXLinkP {
     if (localState == S_TX || localState == S_FWD){
       return EBUSY;
     }else{
-      error_t err = call Rf1aPhysical.sleep();
+      error_t err = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+      if (err != SUCCESS){
+        cerror(LINK, "LINK.sleep: p.rim %x\r\n", err);
+      }
+      err = call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+        RF1A_OM_IDLE);
+      if (err != SUCCESS){
+        cerror(LINK, "LINK.sleep: p.srb0 %x\r\n", err);
+      }
+      err = call Rf1aPhysical.sleep();
+      if (err != SUCCESS){
+        cerror(LINK, "LINK.sleep: p.sleep %x\r\n", err);
+      }
       call Msp430XV2ClockControl.stopMicroTimer();
       atomic state = S_SLEEP;
       if (localState == S_RX){

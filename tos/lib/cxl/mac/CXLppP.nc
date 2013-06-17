@@ -82,9 +82,13 @@ module CXLppP {
       if (state == S_OFF){
         return EOFF;
       }else{
+        error_t error;
         state = S_IDLE;
         keepAlive = FALSE;
-        call CXLink.sleep();
+        error = call CXLink.sleep();
+        if (error != SUCCESS){
+          cerror(LPP, "Link.sleep failed: %x\r\n", error);
+        }
         call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
         call SleepTimer.stop();
         call KeepAliveTimer.stop();
