@@ -79,7 +79,7 @@ configuration BaseStationAppC {
 }
 implementation {
   components SerialStartC;
-  components SerialPrintfC;
+  components PrintfC;
   components MainC, BaseStationP, LedsC, NoLedsC;
   components ActiveMessageC as Radio, SerialActiveMessageC as Serial;
 
@@ -100,8 +100,8 @@ implementation {
   BaseStationP.RadioPacket -> Radio;
   BaseStationP.RadioAMPacket -> Radio;
   
-  BaseStationP.Leds -> NoLedsC;
-  BaseStationP.CXLeds -> LedsC;
+  BaseStationP.Leds -> LedsC;
+  BaseStationP.CXLeds -> NoLedsC;
 
   components CXBasestationMacC;
   BaseStationP.CXMacMaster ->CXBasestationMacC;

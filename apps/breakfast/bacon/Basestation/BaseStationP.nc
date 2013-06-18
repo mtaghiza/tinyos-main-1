@@ -85,9 +85,11 @@ module BaseStationP @safe() {
 
 implementation
 {
+  uint8_t aux[TOSH_DATA_LENGTH];
+
   enum {
-    UART_QUEUE_LEN = 8,
-    RADIO_QUEUE_LEN = 8,
+    UART_QUEUE_LEN = 4,
+    RADIO_QUEUE_LEN = 4,
   };
 
   message_t  uartQueueBufs[UART_QUEUE_LEN];
@@ -172,18 +174,42 @@ implementation
   event message_t *RadioSnoop.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
+    printf("SNOOP %x\r\n", id);
+    printfflush();
     return receive(msg, payload, len);
   }
   
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
+    printf("RECEIVE %x pl len %u msg len %u:\n", id, len, sizeof(msg));
+    printfflush();
+//    {
+//      uint8_t i;
+//      uint8_t* pl = payload;
+//      printf("PL [");
+//      for (i = 0; i < len; i++){
+//        printf(" %x", pl[i]);
+//      }
+//      printf("]\n");
+//      printfflush();
+//    }
+//    {
+//      uint8_t i;
+//      uint8_t* pkt = (uint8_t*)msg;
+//      printf("msg [");
+//      for (i = 0; i < sizeof(message_t); i++){
+//        printf(" %x", pkt[i]);
+//        printfflush();
+//      }
+//      printf("]\n");
+//      printfflush();
+//    }
     return receive(msg, payload, len);
   }
 
   message_t* receive(message_t *msg, void *payload, uint8_t len) {
     message_t *ret = msg;
-
     atomic {
       if (!uartFull)
 	{
@@ -207,14 +233,14 @@ implementation
     
     return ret;
   }
-  
+
+
   task void uartSendTask() {
     uint8_t len;
     am_id_t id;
     am_addr_t addr, src;
     message_t* msg;
     am_group_t grp;
-    uint8_t aux[TOSH_DATA_LENGTH];
     atomic
       if (uartIn == uartOut && !uartFull)
 	{
@@ -224,42 +250,45 @@ implementation
 
     msg = uartQueue[uartOut];
     len = call RadioPacket.payloadLength(msg);
-    memcpy(aux,
-      call RadioPacket.getPayload(msg, len),
-      len);
-
     id = call RadioAMPacket.type(msg);
     addr = call RadioAMPacket.destination(msg);
     src = call RadioAMPacket.source(msg);
     grp = call RadioAMPacket.group(msg);
+    
+    //clears the serial header only: leaves body intact.
     call UartPacket.clear(msg);
     call UartAMPacket.setSource(msg, src);
     call UartAMPacket.setGroup(msg, grp);
-    memcpy(call UartPacket.getPayload(msg, len), 
-      aux,
-      len);
-
-    if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS)
+    
+    if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS){
+      memmove( call UartPacket.getPayload(msg, len),
+        call RadioPacket.getPayload(msg, len), 
+        len);
       call Leds.led1Toggle();
-    else
-      {
-	failBlink();
-	post uartSendTask();
-      }
+    }else {
+      failBlink();
+      post uartSendTask();
+    }
   }
+  
 
   event void UartSend.sendDone[am_id_t id](message_t* msg, error_t error) {
-    if (error != SUCCESS)
-      failBlink();
-    else
-      atomic
-	if (msg == uartQueue[uartOut])
-	  {
-	    if (++uartOut >= UART_QUEUE_LEN)
-	      uartOut = 0;
-	    if (uartFull)
-	      uartFull = FALSE;
-	  }
+    if (id != AM_PRINTF_MSG){
+      if (error != SUCCESS){
+        failBlink();
+      } else{
+        atomic{
+          if (msg == uartQueue[uartOut]) {
+            if (++uartOut >= UART_QUEUE_LEN){
+              uartOut = 0;
+            }
+            if (uartFull){
+              uartFull = FALSE;
+            }
+          }
+        }
+      }
+    }
     post uartSendTask();
   }
 
@@ -274,9 +303,9 @@ implementation
 
   event void CXMacMaster.ctsDone(am_addr_t src, error_t error){
     if (error == SUCCESS){
-      call Leds.led1Off();
+      call CXLeds.led1Off();
     }else{
-      call Leds.led2On();
+      call CXLeds.led2On();
     }
   }
 
@@ -338,7 +367,6 @@ implementation
     am_id_t id;
     am_addr_t addr,source;
     message_t* msg;
-    uint8_t aux[TOSH_DATA_LENGTH];
     
     atomic
       if (radioIn == radioOut && !radioFull)
@@ -349,27 +377,30 @@ implementation
 
     msg = radioQueue[radioOut];
     len = call UartPacket.payloadLength(msg);
-    memcpy(aux,
-      call UartPacket.getPayload(msg, len),
-      len);
-
     addr = call UartAMPacket.destination(msg);
     source = call UartAMPacket.source(msg);
     id = call UartAMPacket.type(msg);
-
+    
+    //move payload out of the way before clearing packet: header
+    //length mismatch might kill it.
+    memmove( aux,
+      call UartPacket.getPayload(msg, len), 
+      len);
     call RadioPacket.clear(msg);
     call RadioAMPacket.setSource(msg, source);
-    memcpy(call RadioPacket.getPayload(msg, len),
-      aux,      
-      len);
     
-    if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
+    //move payload into correct position
+    memmove( call RadioPacket.getPayload(msg, len), 
+      aux, len);
+    if (call RadioSend.send[id](addr, msg, len) == SUCCESS){
       call Leds.led0Toggle();
-    else
-      {
-	failBlink();
-	post radioSendTask();
-      }
+    }else {
+      //restore payload to original (uart) position.
+      memmove( call UartPacket.getPayload(msg, len), 
+        aux, len);
+      failBlink();
+      post radioSendTask();
+    }
   }
 
   event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error) {
