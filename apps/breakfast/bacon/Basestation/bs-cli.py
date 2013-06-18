@@ -44,6 +44,7 @@ class Dispatcher:
         self.tos_source = self.mif.addSource(motestring)
 #         #format printf's correctly
         self.mif.addListener(PrintfLogger(), PrintfMsg.PrintfMsg)
+        self.mif.addListener(GenericLogger(self.quiet), TestPayload.TestPayload)
 
     def stop(self):
         self.mif.finishAll()
