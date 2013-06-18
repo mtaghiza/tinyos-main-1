@@ -18,6 +18,7 @@ module CXMacPacketC {
 
   command void Packet.clear(message_t* msg){
     call SubPacket.clear(msg);
+    memset(header(msg), 0, sizeof(cx_mac_header_t));
     header(msg)->macType = CXM_DATA;
   }
 

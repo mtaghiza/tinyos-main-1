@@ -14,6 +14,7 @@ module CXAMPacketC {
 
   command void Packet.clear(message_t* msg){
     call SubPacket.clear(msg);
+    memset(header(msg), 0, sizeof(cx_am_header_t));
   }
 
   command uint8_t Packet.payloadLength(message_t* msg){

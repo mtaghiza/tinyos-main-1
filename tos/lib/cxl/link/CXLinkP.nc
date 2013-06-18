@@ -269,6 +269,9 @@ module CXLinkP {
 //      printf("rxbuf: %u\r\n", 
 //        TOSH_DATA_LENGTH + sizeof(message_header_t));
       call Packet.clear(rxMsg);
+      //mark as crc failed: should happen anyway, but just being safe
+      //here.
+      phy(rxMsg)->lqi &= ~0x80;
       call CXLinkPacket.setAllowRetx(rxMsg, allowForward);
   
       if (SUCCESS == error){
