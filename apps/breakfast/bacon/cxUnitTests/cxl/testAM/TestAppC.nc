@@ -11,8 +11,8 @@ configuration TestAppC {
 
   TestP.SplitControl -> ActiveMessageC;
 
-  components new AMSenderC(0xDC);
-  components new AMReceiverC(0xDC);
+  components new AMSenderC(AM_TEST_PAYLOAD);
+  components new AMReceiverC(AM_TEST_PAYLOAD);
   TestP.Receive -> AMReceiverC;
   TestP.AMSend -> AMSenderC;
 

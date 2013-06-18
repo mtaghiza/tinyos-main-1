@@ -1,3 +1,5 @@
+
+ #include "test.h"
 module TestP{
   uses interface Boot;
   uses interface UartStream;
@@ -22,36 +24,29 @@ module TestP{
   bool started = FALSE;
   task void toggleStartStop();
   
-  #ifndef PAYLOAD_LEN 
-  #define PAYLOAD_LEN 10
-  #endif
   #define SERIAL_PAUSE_TIME 10240UL
 
-  typedef nx_struct test_payload{
-    nx_uint8_t body[PAYLOAD_LEN];
-    nx_uint32_t timestamp;
-  } test_payload_t;
 
 
   task void usage(){
-    printf("USAGE\r\n");
-    printf("-----\r\n");
-    printf(" q: reset\r\n");
-    printf(" t: transmit packet\r\n");
-    printf(" p: toggle probe interval between 1 second and default\r\n");
-    printf(" s: sleep\r\n");
-    printf(" w: wakeup\r\n");
-    printf(" k: kill serial (for 10 seconds)\r\n");
+    cdbg(APP, "USAGE\r\n");
+    cdbg(APP, "-----\r\n");
+    cdbg(APP, " q: reset\r\n");
+    cdbg(APP, " t: transmit packet\r\n");
+    cdbg(APP, " p: toggle probe interval between 1 second and default\r\n");
+    cdbg(APP, " s: sleep\r\n");
+    cdbg(APP, " w: wakeup\r\n");
+    cdbg(APP, " k: kill serial (for 10 seconds)\r\n");
     #if CX_BASESTATION == 1
-    printf(" [0-9]: issue CTS\r\n");
+    cdbg(APP, " [0-9]: issue CTS\r\n");
     #endif
-    printf(" S: toggle start/stop\r\n");
+    cdbg(APP, " S: toggle start/stop\r\n");
   }
 
 
   event void Boot.booted(){
     call SerialControl.start();
-    printf("Booted\r\n");
+    cdbg(APP, "Booted\r\n");
     post usage();
     atomic{
       PMAPPWD = PMAPKEY;
@@ -82,18 +77,22 @@ module TestP{
 
   task void sendPacket(){
     if (txMsg){
-      printf("still sending\r\n");
+      cwarn(APP, "still sending\r\n");
     }else{
+      uint8_t i;
       test_payload_t* pl;
       error_t err;
       txMsg = call Pool.get();
       call Packet.clear(txMsg);
       pl = call Packet.getPayload(txMsg, 
-        call Packet.maxPayloadLength());
-      printf("PL: %p\r\n", pl);
-      err = call AMSend.send(AM_BROADCAST_ADDR, txMsg, call Packet.maxPayloadLength());
-      printf("APP TX %x\r\n", err);
-      printf("PLL %u max %u\r\n", 
+        sizeof(test_payload_t));
+      cdbg(APP, "PL: %p\r\n", pl);
+      for (i = 0; i < PAYLOAD_LEN; i++){
+        pl->body[i] = i;
+      }
+      err = call AMSend.send(AM_BROADCAST_ADDR, txMsg, sizeof(test_payload_t));
+      cinfo(APP, "APP TX %x\r\n", err);
+      cdbg(APP, "PLL %u max %u\r\n", 
         call Packet.payloadLength(txMsg), 
         call Packet.maxPayloadLength());
       if (err != SUCCESS){
@@ -104,35 +103,50 @@ module TestP{
   }
 
   task void sleep(){
-    printf("Sleep: %x\r\n", call LppControl.sleep());
+    cinfo(APP, "Sleep: %x\r\n", call LppControl.sleep());
   }
 
   event void SplitControl.startDone(error_t error){ 
-    printf("start done: %x pool: %u\r\n", error, call Pool.size());
+    cdbg(APP, "start done: %x pool: %u\r\n", error, call Pool.size());
     started = (error == SUCCESS);
   }
   event void SplitControl.stopDone(error_t error){ 
-    printf("stop done: %x pool: %u\r\n", error, call Pool.size());
+    cdbg(APP, "stop done: %x pool: %u\r\n", error, call Pool.size());
     started = FALSE;
   }
 
   event void AMSend.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("APP TXD %x\r\n", error);
-    printf("post PLL %u\r\n", call Packet.payloadLength(msg));
+    cinfo(APP, "APP TXD %x\r\n", error);
+    cdbg(APP, "post PLL %u\r\n", call Packet.payloadLength(msg));
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
     } else{
-      printf("mystery packet: %p\r\n", msg);
+      cwarn(APP, "mystery packet: %p\r\n", msg);
     }
   }
 
   task void handleRX(){
     test_payload_t* pl = call Packet.getPayload(rxMsg,
       sizeof(test_payload_t));
-    printf("APP RX %p %p %u\r\n", rxMsg, pl, 
+    cinfo(APP, "APP RX %p %p %u\r\n", rxMsg, pl, 
       call Packet.payloadLength(rxMsg)); 
+    {
+      uint8_t i;
+      uint8_t* b = (uint8_t*)rxMsg;
+      cdbg(APP, "RXP [");
+      for (i=0; i < PAYLOAD_LEN; i++){
+        cdbg(APP, "%x ", pl->body[i]);
+      }
+      cdbg(APP, "] %lx\r\n", pl->timestamp);
+
+      cdbg(APP, "RXA [");
+      for (i =0; i< sizeof(message_t); i++){
+        cdbg(APP, "%x ", b[i]);
+      }
+      cdbg(APP, "]\r\n");
+    }
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -145,11 +159,11 @@ module TestP{
         post handleRX();
         return ret;
       }else{
-        printf("pool empty\r\n");
+        cerror(APP, "pool empty\r\n");
         return msg;
       }
     }else{
-      printf("Busy RX\r\n");
+      cwarn(APP, "Busy RX\r\n");
       return msg;
     }
   }
@@ -157,16 +171,16 @@ module TestP{
 
   task void toggleStartStop(){
     if (started){
-      printf("stopping\r\n");
+      cdbg(APP, "stopping\r\n");
       call SplitControl.stop();
     }else {
-      printf("starting\r\n");
+      cdbg(APP, "starting\r\n");
       call SplitControl.start();
     }
   }
   
   task void wakeup(){
-    printf("wakeup: %x\r\n", call LppControl.wakeup());
+    cdbg(APP, "wakeup: %x\r\n", call LppControl.wakeup());
   }
 
   bool longProbe = TRUE;
@@ -182,25 +196,25 @@ module TestP{
     if (error == SUCCESS){
       longProbe = (pi == LPP_DEFAULT_PROBE_INTERVAL);
     }
-    printf("SPI %lu: %x\r\n", pi, error);
+    cdbg(APP, "SPI %lu: %x\r\n", pi, error);
   }
  
   event void LppControl.wokenUp(){
-    printf("woke up\r\n");
+    cdbg(APP, "woke up\r\n");
   }
 
   event void LppControl.fellAsleep(){
-    printf("Fell asleep\r\n");
+    cdbg(APP, "Fell asleep\r\n");
   }
 
   #if CX_BASESTATION == 1
   event void CXMacMaster.ctsDone(am_addr_t node, error_t error){
-    printf("CTSD: %x %x\r\n", node, error);
+    cinfo(APP, "CTSD: %x %x\r\n", node, error);
   }
   
   norace am_addr_t ctsNode;
   task void sendCts(){
-    printf("CTS: %x %x\r\n", ctsNode, 
+    cinfo(APP, "CTS: %x %x\r\n", ctsNode, 
       call CXMacMaster.cts(ctsNode));
   }
   #endif
