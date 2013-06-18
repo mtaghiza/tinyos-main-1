@@ -28,8 +28,8 @@ CFLAGS += -DAM_ID_FROM_FLASH=0
 
 ENABLE_PRINTF ?= 1
 CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
-CFLAGS += -DDL_LPP=DL_DEBUG
-CFLAGS += -DDL_LINK=DL_DEBUG
+CFLAGS += -DDL_LPP=DL_WARN
+CFLAGS += -DDL_LINK=DL_WARN
 
 
 MIGDIR = mig
@@ -38,12 +38,16 @@ MIGCLASSES = $(MIGDIR)/CxLppCts.py $(MIGDIR)/CxLppSleep.py $(MIGDIR)/CxLppWakeup
 #printf
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
+MIGCLASSES += $(MIGDIR)/TestPayload.py 
 
 $(MIGDIR): 
 	mkdir -p $(MIGDIR)
 
 $(MIGDIR)/%.py: $(MIGDIR) 
 	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/mac/CXMac.h $@ $(CFLAGS) 
+
+$(MIGDIR)/TestPayload.py: $(MIGDIR) 
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/cxUnitTests/cxl/testAM/test.h $@ $(CFLAGS) 
 
 $(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
