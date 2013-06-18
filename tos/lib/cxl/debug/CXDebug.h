@@ -46,10 +46,18 @@
 #define ENABLE_PRINTF 0
 #endif
 
+#ifndef RAW_SERIAL_PRINTF
+#define RAW_SERIAL_PRINTF 0
+#endif
+
 #if ENABLE_PRINTF == 0
 #define printf(...)
 #else
+#if RAW_SERIAL_PRINTF == 1
 #include <stdio.h>
+#else
+#include "printf.h"
+#endif
 #endif
 
 #define cdbg_cond(level, channel, fmt, ...) if ( DL_ ## channel <= level && DL_GLOBAL <= level){printf(fmt, ##__VA_ARGS__);}
