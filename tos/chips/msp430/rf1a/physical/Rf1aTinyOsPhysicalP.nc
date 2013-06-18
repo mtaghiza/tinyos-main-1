@@ -236,7 +236,7 @@ generic module Rf1aTinyOsPhysicalP() {
        * the message_t structure. */
       rv = call Rf1aPhysical.setReceiveBuffer(hp,
         ((uint8_t*)(rx_message + 1)) - hp, 
-        TRUE);
+        TRUE, RF1A_OM_RX);
 
       /* What do we do if this fails?  Really, it shouldn't: the only
        * way it would is if the radio was actively receiving into an
