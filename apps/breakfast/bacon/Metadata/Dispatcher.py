@@ -62,7 +62,10 @@ class Dispatcher(object):
                     
                     if __name__ == '__main__':
                         print 'Added: ', getattr(getattr(mig, messageClass), messageClass)
-
+            
+            # wait for serial port to complete
+            time.sleep(1)
+            
         Dispatcher.users = Dispatcher.users + 1
 
     def stop(self):
