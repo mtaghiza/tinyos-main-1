@@ -81,11 +81,17 @@ module BaseStationP @safe() {
   uses interface Leds as CXLeds;
   uses interface LppControl;
   uses interface CXMacMaster;
+
+  uses interface Timer<TMilli> as WakeupTimeout;
+  uses interface Timer<TMilli> as SleepDelay;
 }
 
 implementation
 {
   uint8_t aux[TOSH_DATA_LENGTH];
+
+  bool ctsPending;
+  am_addr_t ctsAddr;
 
   enum {
     UART_QUEUE_LEN = 4,
@@ -184,27 +190,6 @@ implementation
 						    uint8_t len) {
     printf("RECEIVE %x pl len %u msg len %u:\n", id, len, sizeof(msg));
     printfflush();
-//    {
-//      uint8_t i;
-//      uint8_t* pl = payload;
-//      printf("PL [");
-//      for (i = 0; i < len; i++){
-//        printf(" %x", pl[i]);
-//      }
-//      printf("]\n");
-//      printfflush();
-//    }
-//    {
-//      uint8_t i;
-//      uint8_t* pkt = (uint8_t*)msg;
-//      printf("msg [");
-//      for (i = 0; i < sizeof(message_t); i++){
-//        printf(" %x", pkt[i]);
-//        printfflush();
-//      }
-//      printf("]\n");
-//      printfflush();
-//    }
     return receive(msg, payload, len);
   }
 
@@ -294,14 +279,17 @@ implementation
 
   event void LppControl.wokenUp(){
     call CXLeds.led0On();
-    printf("woke up\r\n");
+    printf("BS WAKEUP\r\n");
     printfflush();
   }
   event void LppControl.fellAsleep(){
+    printf("BS SLEEP\r\n");
+    printfflush();
     call CXLeds.led0Off();
   }
 
   event void CXMacMaster.ctsDone(am_addr_t src, error_t error){
+    ctsPending = FALSE;
     if (error == SUCCESS){
       call CXLeds.led1Off();
     }else{
@@ -309,24 +297,69 @@ implementation
     }
   }
 
+
+  event void WakeupTimeout.fired(){
+    printf("Wakeup Timeout\r\n");
+    if (call LppControl.isAwake()){
+      if (call LppControl.sleep() != SUCCESS){
+        atomic{
+          printf("Sleep failed, hard reset\r\n");
+          printfflush();
+          WDTCTL = 0;
+        }
+      }
+    }
+  }
+
+  event void SleepDelay.fired(){
+    printf("Sleeping\r\n");
+    if (call LppControl.isAwake()){
+      if (call LppControl.sleep() != SUCCESS){
+        atomic{
+          printf("Sleep failed, hard reset\r\n");
+          printfflush();
+          WDTCTL = 0;
+        }
+      }
+    }
+  }
+
+  task void ctsTask(){
+    if (call CXMacMaster.cts(ctsAddr) != SUCCESS){
+      ctsPending = FALSE;
+      call CXLeds.led2On();
+    }else{
+      ctsPending = TRUE;
+      call CXLeds.led1On();
+    }
+  }
+
   event message_t *UartReceive.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
     if (id == AM_CX_LPP_WAKEUP){
-      if (call LppControl.wakeup() != SUCCESS){
-        call CXLeds.led2On();
+      cx_lpp_wakeup_t* pl = payload;
+      if (! call LppControl.isAwake()){
+        if (call LppControl.wakeup() != SUCCESS){
+          call CXLeds.led2On();
+        }
       }
+      call WakeupTimeout.startOneShot(pl->timeout);
       return msg;
     } else if (id == AM_CX_LPP_SLEEP){
-      if (call LppControl.sleep() != SUCCESS){
-        call CXLeds.led2On();
+      cx_lpp_sleep_t* pl = payload;
+      if (call LppControl.isAwake()){
+        call WakeupTimeout.stop();
+        call SleepDelay.startOneShot(pl->delay);
+      }else{
+        printf("Already sleeping\r\n");
       }
       return msg;
     } else if (id == AM_CX_LPP_CTS){
-      if (call CXMacMaster.cts(((cx_lpp_cts_t*)payload)->addr) != SUCCESS){
-        call CXLeds.led2On();
-      }else{
-        call CXLeds.led1On();
+      if (!ctsPending){
+        ctsAddr = ((cx_lpp_cts_t*)payload)->addr;
+        ctsPending = TRUE;
+        post ctsTask();
       }
       return msg;
     } else {

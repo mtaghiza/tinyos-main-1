@@ -107,4 +107,9 @@ implementation {
   BaseStationP.CXMacMaster ->CXBasestationMacC;
   components CXLppC;
   BaseStationP.LppControl -> CXLppC;
+
+  components new TimerMilliC() as WakeupTimeout;
+  BaseStationP.WakeupTimeout -> WakeupTimeout;
+  components new TimerMilliC() as SleepDelay;
+  BaseStationP.SleepDelay -> SleepDelay;
 }
