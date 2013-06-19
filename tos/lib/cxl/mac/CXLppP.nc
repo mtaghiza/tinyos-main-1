@@ -170,6 +170,7 @@ module CXLppP {
       call Packet.clear(keepAliveMsg);
       call CXMacPacket.setMacType(keepAliveMsg, CXM_KEEPALIVE);
       (call CXLinkPacket.getLinkHeader(keepAliveMsg))->ttl = CX_MAX_DEPTH;
+      (call CXLinkPacket.getLinkHeader(keepAliveMsg))->destination = AM_BROADCAST_ADDR;
       call Packet.setPayloadLength(keepAliveMsg, 0);
       call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
       error = call SubSend.send(keepAliveMsg,
