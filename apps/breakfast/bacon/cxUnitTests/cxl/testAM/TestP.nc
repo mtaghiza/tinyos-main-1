@@ -25,6 +25,7 @@ module TestP{
   message_t* rxMsg;
  
   uint16_t packetQueue = 0;
+  uint32_t sn = 0;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -95,7 +96,7 @@ module TestP{
       for (i = 0; i < PAYLOAD_LEN; i++){
         pl->body[i] = i;
       }
-      pl->timestamp = call LocalTime.get();
+      pl->timestamp = sn++;
       err = call AMSend.send(AM_BROADCAST_ADDR, txMsg, sizeof(test_payload_t));
       cinfo(APP, "APP TX %x\r\n", err);
       cdbg(APP, "PLL %u max %u\r\n", 
