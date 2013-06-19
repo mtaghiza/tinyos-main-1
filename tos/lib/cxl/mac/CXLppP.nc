@@ -238,26 +238,37 @@ module CXLppP {
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       (call CXLinkPacket.getLinkHeader(msg))->destination,
       call CXMacPacket.getMacType(msg));
+
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_DATA:
-        //fall through
       case CXM_CTS:
-        //fall through
       case CXM_RTS:
+      case CXM_KEEPALIVE:
+        //if state is check and we hear an ongoing non-probe transmission, 
+        // we should wake up and stop waiting to hear our probe come
+        // back.
+        if (state == S_CHECK){
+          cdbg(LPP, "ACTIVITY free probe %p \r\n",
+            probe); 
+          state = S_AWAKE;
+          signal LppControl.wokenUp();
+          if (probe !=NULL){
+            call Pool.put(probe);
+            probe = NULL;
+          }
+        }
         if (state == S_AWAKE){
           pushSleep();
         }
-        return signal Receive.receive(msg, pl, len);
+        if (call CXMacPacket.getMacType(msg) == CXM_KEEPALIVE){
+          return msg;
+        }else{
+          return signal Receive.receive(msg, pl, len);
+        }
         break;
 
-      case CXM_KEEPALIVE:
-        if (state == S_AWAKE){
-          pushSleep();
-        }
-        return msg;
-
       case CXM_PROBE:
-        if (state == S_CHECK 
+        if (state == S_CHECK && probe != NULL
           && (call CXLinkPacket.getLinkHeader(msg))->source 
              == (call CXLinkPacket.getLinkHeader(probe))->source
           && call CXLinkPacket.getSn(msg) == call CXLinkPacket.getSn(probe)){
