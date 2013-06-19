@@ -39,14 +39,15 @@ module CXLinkP {
   norace bool txHist[11];
   norace uint16_t crcHist[11];
   norace uint8_t crcIndex;
-  norace uint8_t crcOffset;
+  norace uint8_t crcFirstPassed;
 
   void logCRCs(am_addr_t src, uint32_t psn){
-    uint8_t i;
-    for (i=1; i <= crcIndex; i++ ){
-      uint8_t k = crcIndex - i;
-      //iterate backwards: i is ttl, in a sense
-      cdbg(LINK, "CH %u %lu %u %x %x\r\n", src, psn, i, txHist[k], crcHist[k]);
+    if (crcIndex){
+      uint8_t i;
+      for (i=crcFirstPassed ; i < crcIndex; i++ ){
+        uint8_t k = crcIndex - i;
+        cdbg(LINK, "CH %u %lu %u %x %x\r\n", src, psn, k, txHist[i], crcHist[i]);
+      }
     }
   }
 
@@ -318,6 +319,14 @@ module CXLinkP {
           aSynched = FALSE;
           state = S_RX;
           crcIndex = 0;
+          crcFirstPassed = 0xFF;
+          {
+            uint8_t i;
+            for (i=0; i<11; i++){
+              txHist[i] = FALSE;
+              crcHist[i] = 0;
+            }
+          }
         }
       }
       return error;
@@ -346,6 +355,7 @@ module CXLinkP {
       //initialize to 1 hop: adjacent nodes are 1 hop away.
       header(msg)->hopCount = 1;
       crcIndex = 0;
+      crcFirstPassed = 0;
       error= subsend(msg);
   
       if (error == SUCCESS){
@@ -439,6 +449,9 @@ module CXLinkP {
       //mark as failed CRC, ugh
       if (rxResult != SUCCESS){
         phy(rxMsg)->lqi &= ~0x80;
+      }
+      if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg)) && (crcIndex-1) < crcFirstPassed){
+        crcFirstPassed = crcIndex-1;
       }
     }
 //    printf("hr %p %u %u %u\r\n", rxMsg, call CXLinkPacket.len(rxMsg),
