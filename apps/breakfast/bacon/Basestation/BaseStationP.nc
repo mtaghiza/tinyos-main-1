@@ -188,7 +188,10 @@ implementation
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
-    printf("RECEIVE %x pl len %u msg len %u:\n", id, len, sizeof(msg));
+    printf("RECEIVE %x from %u pl len %u msg len %u:\n", id, 
+      call RadioAMPacket.source(msg), 
+      len, 
+      sizeof(msg));
     printfflush();
     return receive(msg, payload, len);
   }
@@ -242,15 +245,17 @@ implementation
     
     //clears the serial header only: leaves body intact.
     call UartPacket.clear(msg);
-    call UartAMPacket.setSource(msg, src);
-    call UartAMPacket.setGroup(msg, grp);
     
     if (call UartSend.send[id](addr, uartQueue[uartOut], len) == SUCCESS){
+      call UartAMPacket.setSource(msg, src);
+      call UartAMPacket.setGroup(msg, grp);
       memmove( call UartPacket.getPayload(msg, len),
         call RadioPacket.getPayload(msg, len), 
         len);
       call Leds.led1Toggle();
     }else {
+      call RadioAMPacket.setSource(msg, src);
+      call RadioAMPacket.setGroup(msg, grp);
       failBlink();
       post uartSendTask();
     }
@@ -431,6 +436,8 @@ implementation
       //restore payload to original (uart) position.
       memmove( call UartPacket.getPayload(msg, len), 
         aux, len);
+      call UartAMPacket.setDestination(msg, addr);
+      call UartAMPacket.setSource(msg, source);
       failBlink();
       post radioSendTask();
     }
