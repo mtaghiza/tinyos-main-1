@@ -52,6 +52,9 @@ generic configuration Rf1aPhysicalC () {
     interface Rf1aTransmitFragment;
     interface Rf1aConfigure;
   }
+  #if RF1A_FEC_ENABLED
+  provides interface GetNow<uint16_t> as LastCRC;
+  #endif
 } implementation {
   enum {
     /** Unique parameter used for this client */
@@ -70,6 +73,8 @@ generic configuration Rf1aPhysicalC () {
   Rf1aPhysical = Rf1aFECC.Rf1aPhysical;
   Rf1aPhysicalMetadata = Rf1aFECC.Rf1aPhysicalMetadata;
   Rf1aTransmitFragment = Rf1aFECC.Rf1aTransmitFragment;
+
+  LastCRC = Rf1aFECC;
   
   Rf1aFECC.SubRf1aPhysical -> Rf1aC.Rf1aPhysical[CLIENT];
   Rf1aFECC.SubRf1aPhysicalMetadata -> Rf1aC.Rf1aPhysicalMetadata;

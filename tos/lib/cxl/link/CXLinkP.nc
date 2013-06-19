@@ -28,11 +28,27 @@ module CXLinkP {
   uses interface ActiveMessageAddress;
 
   uses interface StateDump;
+
+  uses interface GetNow<uint16_t> as LastCRC;
 } implementation {
   message_t* rxMsg;
   uint8_t rxLen;
   message_t* fwdMsg;
   uint32_t sn;
+
+  norace bool txHist[11];
+  norace uint16_t crcHist[11];
+  norace uint8_t crcIndex;
+  norace uint8_t crcOffset;
+
+  void logCRCs(am_addr_t src, uint32_t psn){
+    uint8_t i;
+    for (i=1; i <= crcIndex; i++ ){
+      uint8_t k = crcIndex - i;
+      //iterate backwards: i is ttl, in a sense
+      cdbg(LINK, "CH %u %lu %u %x %x\r\n", src, psn, i, txHist[k], crcHist[k]);
+    }
+  }
 
   enum {
     S_SLEEP = 0,
@@ -147,6 +163,9 @@ module CXLinkP {
 
   async event void Rf1aPhysical.sendDone (int result) { 
     atomic sfdAdjust = TX_SFD_ADJUST;
+    crcHist[crcIndex] = call LastCRC.getNow();
+    txHist[crcIndex] = TRUE;
+    crcIndex++;
     post handleSendDone();
   }
 
@@ -177,6 +196,9 @@ module CXLinkP {
             header(fwdMsg)->sn,
             header(fwdMsg)->destination,
             metadata(fwdMsg)->retx); 
+          logCRCs(
+            header(fwdMsg)->source, 
+            header(fwdMsg)->sn);
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -192,6 +214,10 @@ module CXLinkP {
             header(rxMsg)->destination, 
             metadata(rxMsg)->rxHopCount,
             metadata(rxMsg)->retx); 
+          logCRCs(
+            header(rxMsg)->source, 
+            header(rxMsg)->sn);
+
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
@@ -291,6 +317,7 @@ module CXLinkP {
           aExtended = FALSE;
           aSynched = FALSE;
           state = S_RX;
+          crcIndex = 0;
         }
       }
       return error;
@@ -318,6 +345,7 @@ module CXLinkP {
       header(msg)->source = call ActiveMessageAddress.amAddress();
       //initialize to 1 hop: adjacent nodes are 1 hop away.
       header(msg)->hopCount = 1;
+      crcIndex = 0;
       error= subsend(msg);
   
       if (error == SUCCESS){
@@ -377,6 +405,9 @@ module CXLinkP {
     sfdAdjust = RX_SFD_ADJUST;
     rxLen = count;
     rxResult = result;
+    crcHist[crcIndex] = call LastCRC.getNow();
+    txHist[crcIndex] = FALSE;
+    crcIndex++;
     post handleReception();
   } 
 
@@ -435,6 +466,9 @@ module CXLinkP {
             header(rxMsg)->destination, 
             metadata(rxMsg)->rxHopCount,
             metadata(rxMsg)->retx); 
+          logCRCs(
+            header(rxMsg)->source, 
+            header(rxMsg)->sn);
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));

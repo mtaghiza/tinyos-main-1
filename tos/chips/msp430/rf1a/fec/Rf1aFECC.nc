@@ -7,9 +7,12 @@ generic configuration Rf1aFECC () {
 
   uses interface Rf1aTransmitFragment ;
   provides interface Rf1aTransmitFragment as SubRf1aTransmitFragment;
+  provides interface GetNow<uint16_t> as LastCRC;
 } implementation {
   components new Rf1aFECP();
   components CC430CRCC;
+
+  LastCRC = Rf1aFECP;
 
   //TODO: switch between encodings
   #if RF1A_FEC_ENABLED == 1

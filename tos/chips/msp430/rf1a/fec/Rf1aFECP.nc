@@ -14,9 +14,17 @@ generic module Rf1aFECP () {
   uses interface SetNow<const uint8_t*> as DefaultBuffer;
   uses interface FEC;
   uses interface Crc;
+
+  provides interface GetNow<uint16_t> as LastCRC;
 } implementation {
   
   uint8_t* lastBuffer_d;
+
+  norace uint16_t lastCRC_d;
+
+  async command uint16_t LastCRC.getNow(){
+    return lastCRC_d;
+  }
 
   //buffer swapping behavior:
   //  -  make sure that sendDone(buf) matches send(buf)
@@ -167,6 +175,7 @@ generic module Rf1aFECP () {
           epLocal_e + numEncoded_e,
           sizeof(nxCRC_d));
         crcAppended = TRUE;
+        lastCRC_d = runningCRC_d;
       }
     }
 
@@ -266,6 +275,7 @@ generic module Rf1aFECP () {
 
         decodedCrc_d = *((nx_uint16_t*)(rxBuf_d + decodedPayloadLen_d));
         computedCrc_d = call Crc.crc16(rxBuf_d, decodedPayloadLen_d);
+        lastCRC_d = computedCrc_d;
 
         //override crcPassed metadata- store result in this
         //component and intercept storeMetadata call. This is

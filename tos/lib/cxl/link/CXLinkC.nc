@@ -50,5 +50,7 @@ configuration CXLinkC {
   
   components StateDumpC;
   CXLinkP.StateDump -> StateDumpC;
+
+  CXLinkP.LastCRC -> Rf1aPhysicalC;
 }
 
