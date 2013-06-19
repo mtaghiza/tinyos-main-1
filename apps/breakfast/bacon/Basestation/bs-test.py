@@ -79,8 +79,8 @@ class Logger(object):
     def __init__(self, out):
         self.out = out
 
-    def logPacket(msg):
-        self.out.write("%0.2f"%(time.time(), msg.addr, str(msg))) 
+    def logPacket(self, msg):
+        self.out.write("%0.2f %u %s"%(time.time(), msg.addr, str(msg))) 
 
 if __name__ == '__main__':
     packetSource = 'serial@/dev/ttyUSB0:115200'
@@ -100,32 +100,36 @@ if __name__ == '__main__':
     try:
         while True:
             wakeup = CxLppWakeup.CxLppWakeup()
-            wakeup.set_timeout(2048)
+            #failsafe: if the base station goes 10 seconds without
+            # getting an explicit keep-awake, it will put the network
+            # to sleep.
+            wakeup.set_timeout(10240)
             
             wakeupDone = time.time() + wakeupLen
             while time.time() < wakeupDone:
-                d.send(wakeup, 0)
+                d.send(wakeup, bsId)
                 time.sleep(1)
 
             for node in nodeList:
                 response = True
                 while response:
+                    d.send(wakeup, bsId)
                     cts = CxLppCts.CxLppCts()
                     cts.set_addr(node)
                     print "CTS to ", node
                     d.send(cts, node)
                     response = d.receive(1.0)
-                    #TODO: validate that this response is for the
-                    #correct node.
+                    #TODO: validate that this response is from the
+                    # correct node.
                     if response:
-                        l.log(response)
+                        l.logPacket(response)
                     else:
                         print "(no response)"
-                    d.send(wakeup, 0)
                 print "Done with ", node
             print "Sleeping."
             sleep = CxLppSleep.CxLppSleep()
-            d.send(sleep, 0)
+            sleep.set_delay(0)
+            d.send(sleep, bsId)
             time.sleep(sleepPeriod)
 
     
