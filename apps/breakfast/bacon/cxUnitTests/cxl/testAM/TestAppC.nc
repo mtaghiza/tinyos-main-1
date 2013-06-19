@@ -30,6 +30,9 @@ configuration TestAppC {
 
   components LocalTimeMilliC;
   TestP.LocalTime -> LocalTimeMilliC;
+
+  components new TimerMilliC();
+  TestP.PacketTimer -> TimerMilliC;
   
   #if CX_BASESTATION == 1
   components CXBasestationMacC;

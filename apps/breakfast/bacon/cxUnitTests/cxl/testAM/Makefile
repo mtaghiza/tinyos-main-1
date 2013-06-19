@@ -1,5 +1,8 @@
 COMPONENT=TestAppC
 
+PACKET_GEN_RATE ?= 0UL
+CFLAGS += -DPACKET_GEN_RATE=$(PACKET_GEN_RATE)
+
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/cxl/debug
 CFLAGS += -I$(TOSDIR)/lib/cxl/am

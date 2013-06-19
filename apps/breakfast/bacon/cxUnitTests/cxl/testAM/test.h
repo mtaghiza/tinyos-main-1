@@ -16,6 +16,10 @@ enum {
   AM_TEST_PAYLOAD=0xDC,
 };
 
+#ifndef PACKET_GEN_RATE
+#define PACKET_GEN_RATE 0UL
+#endif
+
 #ifndef DL_APP 
 #define DL_APP DL_INFO
 #endif

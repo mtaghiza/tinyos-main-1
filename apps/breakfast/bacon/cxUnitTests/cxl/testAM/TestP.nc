@@ -17,10 +17,14 @@ module TestP{
 
   uses interface Leds;
   uses interface LocalTime<TMilli>;
+
+  uses interface Timer<TMilli> as PacketTimer;
 } implementation {
 
   message_t* txMsg;
   message_t* rxMsg;
+ 
+  uint16_t packetQueue = 0;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -108,9 +112,22 @@ module TestP{
     cinfo(APP, "Sleep: %x\r\n", call LppControl.sleep());
   }
 
+  event void PacketTimer.fired(){
+    if (packetQueue + 1 != 0){
+      packetQueue ++;
+    }
+    if (packetQueue == 1){
+      post sendPacket(); 
+    }
+  }
+
   event void SplitControl.startDone(error_t error){ 
     cdbg(APP, "start done: %x pool: %u\r\n", error, call Pool.size());
     started = (error == SUCCESS);
+
+    if (started && PACKET_GEN_RATE){
+      call PacketTimer.startPeriodic(PACKET_GEN_RATE);
+    }
   }
   event void SplitControl.stopDone(error_t error){ 
     cdbg(APP, "stop done: %x pool: %u\r\n", error, call Pool.size());
@@ -121,6 +138,14 @@ module TestP{
     call Leds.led0Toggle();
     cinfo(APP, "APP TXD %x\r\n", error);
     cdbg(APP, "post PLL %u\r\n", call Packet.payloadLength(msg));
+    if (error == SUCCESS){
+      if (packetQueue != 0){
+        packetQueue --;
+      }
+      if (packetQueue){
+        post sendPacket();
+      }
+    }
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
