@@ -4,7 +4,7 @@
 #endif
 
 #ifndef RF1A_WHITENING_ENABLED
-#define RF1A_WHITENING_ENABLED == 1
+#define RF1A_WHITENING_ENABLED 1
 #endif
 
 module SRFS7_915_GFSK_125K_SENS_HC{
