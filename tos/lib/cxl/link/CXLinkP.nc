@@ -159,6 +159,11 @@ module CXLinkP {
         subsend(fwdMsg);
       } else {
         call FastAlarm.stop();
+        cinfo(LINK, "LD %u %lu %u %u\r\n",
+          header(fwdMsg)->source,
+          header(fwdMsg)->sn,
+          header(fwdMsg)->ttl,
+          header(fwdMsg)->hopCount);
         if (localState == S_TX){
           atomic {
             state = S_IDLE;
@@ -311,6 +316,8 @@ module CXLinkP {
       }
       header(msg)->sn = sn++;
       header(msg)->source = call ActiveMessageAddress.amAddress();
+      //initialize to 1 hop: adjacent nodes are 1 hop away.
+      header(msg)->hopCount = 1;
       error= subsend(msg);
   
       if (error == SUCCESS){
@@ -357,7 +364,7 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
-      cdbg(LINK, "CRC fail\r\n");
+      cdbg(LINK, "CRCF\r\n");
       return FALSE;
     }
   }
@@ -422,9 +429,10 @@ module CXLinkP {
             RF1A_OM_IDLE);
         }
         if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg))){
-          cinfo(LINK, "LRX %u %lu %u %x\r\n",
+          cinfo(LINK, "LRX %u %lu %u %u %x\r\n",
             header(rxMsg)->source, 
             header(rxMsg)->sn,
+            header(rxMsg)->destination, 
             metadata(rxMsg)->rxHopCount,
             metadata(rxMsg)->retx); 
           rxMsg = signal Receive.receive(rxMsg, 
