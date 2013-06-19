@@ -80,23 +80,32 @@ class Logger(object):
         self.out = out
 
     def logPacket(self, msg):
-        self.out.write("%0.2f %u %s"%(time.time(), msg.addr, str(msg))) 
+        self.out.write("%0.2f %u %s\n"%(time.time(), msg.addr, str(msg).replace('\n', ''))) 
+        self.out.flush()
+    
+    def close(self):
+        self.out.close()
 
 if __name__ == '__main__':
     packetSource = 'serial@/dev/ttyUSB0:115200'
 
     if len(sys.argv) < 5:
-        print "Usage:", sys.argv[0], "packetSource", "bsId", "sleepPeriod(s)", "wakeupLen"
+        print "Usage:", sys.argv[0], "packetSource", "bsId", "sleepPeriod(s)", "wakeupLen" "[logFile=stdout]"
         sys.exit()
 
     packetSource = sys.argv[1]
     bsId = int(sys.argv[2])
     sleepPeriod = int(sys.argv[3])
     wakeupLen = int(sys.argv[4])
-
     last = None
-    l = Logger(sys.stdout)
+
+    logOutput = sys.stdout
+    if len(sys.argv) > 5:
+        print "logging to %s"%(sys.argv[5])
+        logOutput = open(sys.argv[5], 'w')
+    l = Logger(logOutput)
     d = Dispatcher(packetSource, quiet=False)
+
     try:
         while True:
             wakeup = CxLppWakeup.CxLppWakeup()
@@ -140,6 +149,7 @@ if __name__ == '__main__':
         pass
     finally:
         print "Cleaning up"
+        l.close()
         d.stop()
 
 
