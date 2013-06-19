@@ -27,6 +27,9 @@ configuration TestAppC {
   TestP.Packet -> AMSenderC;
 
   TestP.Pool -> ActiveMessageC.Pool;
+
+  components LocalTimeMilliC;
+  TestP.LocalTime -> LocalTimeMilliC;
   
   #if CX_BASESTATION == 1
   components CXBasestationMacC;

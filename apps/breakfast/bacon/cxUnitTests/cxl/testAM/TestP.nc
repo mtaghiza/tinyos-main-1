@@ -16,6 +16,7 @@ module TestP{
   uses interface Pool<message_t>;
 
   uses interface Leds;
+  uses interface LocalTime<TMilli>;
 } implementation {
 
   message_t* txMsg;
@@ -90,6 +91,7 @@ module TestP{
       for (i = 0; i < PAYLOAD_LEN; i++){
         pl->body[i] = i;
       }
+      pl->timestamp = call LocalTime.get();
       err = call AMSend.send(AM_BROADCAST_ADDR, txMsg, sizeof(test_payload_t));
       cinfo(APP, "APP TX %x\r\n", err);
       cdbg(APP, "PLL %u max %u\r\n", 
