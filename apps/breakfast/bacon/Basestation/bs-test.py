@@ -73,7 +73,7 @@ class Dispatcher:
         self.sendCount += 1
 
 
-nodeList = [1]
+nodeList = range(60)
 
 class Logger(object):
     def __init__(self, out):
