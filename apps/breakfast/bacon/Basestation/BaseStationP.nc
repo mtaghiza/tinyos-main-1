@@ -180,19 +180,19 @@ implementation
   event message_t *RadioSnoop.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
-    printf("SNOOP %x\r\n", id);
-    printfflush();
+//    printf("SNOOP %x\r\n", id);
+//    printfflush();
     return receive(msg, payload, len);
   }
   
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
-    printf("RECEIVE %x from %u pl len %u msg len %u:\n", id, 
-      call RadioAMPacket.source(msg), 
-      len, 
-      sizeof(msg));
-    printfflush();
+//    printf("RECEIVE %x from %u pl len %u msg len %u:\n", id, 
+//      call RadioAMPacket.source(msg), 
+//      len, 
+//      sizeof(msg));
+//    printfflush();
     return receive(msg, payload, len);
   }
 
@@ -284,12 +284,12 @@ implementation
 
   event void LppControl.wokenUp(){
     call CXLeds.led0On();
-    printf("BS WAKEUP\r\n");
-    printfflush();
+//    printf("BS WAKEUP\r\n");
+//    printfflush();
   }
   event void LppControl.fellAsleep(){
-    printf("BS SLEEP\r\n");
-    printfflush();
+//    printf("BS SLEEP\r\n");
+//    printfflush();
     call CXLeds.led0Off();
   }
 
@@ -304,7 +304,7 @@ implementation
 
 
   event void WakeupTimeout.fired(){
-    printf("Wakeup Timeout\r\n");
+//    printf("Wakeup Timeout\r\n");
     if (call LppControl.isAwake()){
       if (call LppControl.sleep() != SUCCESS){
         atomic{
@@ -317,7 +317,7 @@ implementation
   }
 
   event void SleepDelay.fired(){
-    printf("Sleeping\r\n");
+//    printf("Sleeping\r\n");
     if (call LppControl.isAwake()){
       if (call LppControl.sleep() != SUCCESS){
         atomic{
