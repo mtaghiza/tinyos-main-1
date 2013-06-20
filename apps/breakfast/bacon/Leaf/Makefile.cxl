@@ -28,7 +28,7 @@ CFLAGS+= -DPATABLE0_SETTING=0x8D
 CFLAGS+=-DSINGLE_RECORD_READ=1
 
 CFLAGS += -I../BaconSampler
-CFLAGS += -I./DummyToastSampler
+CFLAGS += -I../ToastSampler/DummyToastSampler
 CFLAGS += -I../ToastSampler
 CFLAGS += -I../settingsStorage
 CFLAGS += -I../RebootCounter
