@@ -70,11 +70,13 @@ module DummyToastP {
   dummy_tlv_entry_t tlve;
   event void Boot.booted(){
     uint8_t i;
+    memset(dummyTLV, 0, SLAVE_TLV_LEN);
+    dummyTLV[2] = TAG_EMPTY;
+    dummyTLV[3] = 50;
     for (i=0; i < 8; i++){
       tlve.assignments[i].sensorType = i+1;
       tlve.assignments[i].sensorId = TOS_NODE_ID;
     }
-    memset(dummyTLV, 0, SLAVE_TLV_LEN);
     tlve.tag = TAG_TOAST_ASSIGNMENTS;
     tlve.len = 8*sizeof(sensor_assignment_t);
     call TLVUtils.addEntry(tlve.tag,
@@ -93,6 +95,7 @@ module DummyToastP {
       i2c_message_t* msg){
     m = msg;
     post loadedTask();
+    return SUCCESS;
   }
 
   task void persistedTask(){

@@ -34,4 +34,5 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
 
   components LocalTime32khzC;
   DummyToastP.LocalTime -> LocalTime32khzC;
+  DummyToastP.Boot -> MainC;
 }
