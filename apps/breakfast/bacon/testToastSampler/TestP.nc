@@ -7,7 +7,7 @@ module TestP{
 } implementation {
   event void Boot.booted(){
     call Msp430XV2ClockControl.stopMicroTimer();
-//    call SplitControl.start();
+    call SplitControl.start();
   }
 
   event void SplitControl.startDone(error_t error){

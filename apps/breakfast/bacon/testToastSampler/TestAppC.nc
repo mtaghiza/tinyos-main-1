@@ -2,8 +2,8 @@
  #include "StorageVolumes.h"
  #include "RecordStorage.h"
  #include "message.h"
-// #include "printf.h"
- #define printf(...)
+ #include "printf.h"
+// #define printf(...)
 configuration TestAppC{
 } implementation {
   components new ToastSamplerC(VOLUME_RECORD, TRUE);
@@ -12,8 +12,8 @@ configuration TestAppC{
 
   components WatchDogC;
 
-//  components PrintfC;
-//  components SerialStartC;
+  components PrintfC;
+  components SerialStartC;
 
   components Msp430XV2ClockC;
 
