@@ -35,9 +35,12 @@ module CXLinkP {
   uint8_t rxLen;
   message_t* fwdMsg;
   uint32_t sn;
-
-  norace bool txHist[11];
-  norace uint16_t crcHist[11];
+  
+  enum {
+    CRC_HIST_LEN=11,
+  };
+  norace bool txHist[CRC_HIST_LEN];
+  norace uint16_t crcHist[CRC_HIST_LEN];
   norace uint8_t crcIndex;
   norace uint8_t crcFirstPassed;
 
@@ -164,9 +167,11 @@ module CXLinkP {
 
   async event void Rf1aPhysical.sendDone (int result) { 
     atomic sfdAdjust = TX_SFD_ADJUST;
-    crcHist[crcIndex] = call LastCRC.getNow();
-    txHist[crcIndex] = TRUE;
-    crcIndex++;
+    if (crcIndex < CRC_HIST_LEN){
+      crcHist[crcIndex] = call LastCRC.getNow();
+      txHist[crcIndex] = TRUE;
+      crcIndex++;
+    }
     post handleSendDone();
   }
 
@@ -322,7 +327,7 @@ module CXLinkP {
           crcFirstPassed = 0xFF;
           {
             uint8_t i;
-            for (i=0; i<11; i++){
+            for (i=0; i< CRC_HIST_LEN; i++){
               txHist[i] = FALSE;
               crcHist[i] = 0;
             }
@@ -415,9 +420,11 @@ module CXLinkP {
     sfdAdjust = RX_SFD_ADJUST;
     rxLen = count;
     rxResult = result;
-    crcHist[crcIndex] = call LastCRC.getNow();
-    txHist[crcIndex] = FALSE;
-    crcIndex++;
+    if (crcIndex < CRC_HIST_LEN){
+      crcHist[crcIndex] = call LastCRC.getNow();
+      txHist[crcIndex] = FALSE;
+      crcIndex++;
+    }
     post handleReception();
   } 
 

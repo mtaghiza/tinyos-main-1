@@ -253,6 +253,7 @@ module CXLppP {
             probe); 
           state = S_AWAKE;
           signal LppControl.wokenUp();
+          cinfo(LPP, "WAKE\r\n");
           if (probe !=NULL){
             call Pool.put(probe);
             probe = NULL;
