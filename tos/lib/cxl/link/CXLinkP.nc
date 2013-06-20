@@ -111,10 +111,14 @@ module CXLinkP {
       err = call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
         RF1A_OM_IDLE);
       if (err != SUCCESS){
+        //DBG 4
+        //This fails with an EBUSY
         cerror(LINK, "LINK.sleep: p.srb0 %x\r\n", err);
       }
       err = call Rf1aPhysical.sleep();
       if (err != SUCCESS){
+        //DBG 5
+        //This fails with an ERETRY
         cerror(LINK, "LINK.sleep: p.sleep %x\r\n", err);
       }
       call Msp430XV2ClockControl.stopMicroTimer();
@@ -349,26 +353,41 @@ module CXLinkP {
     if (localState == S_TX || localState == S_FWD){
       return localState == S_TX? EBUSY: ERETRY;
     } else {
-      error_t error;
+      error_t error = SUCCESS;
       call CXLinkPacket.setLen(msg, len);
       if (localState == S_RX){
         call FastAlarm.stop();
+        error = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+        if (error != SUCCESS){
+          cerror(LINK, "s.s.rim %x\r\n", error);
+        }else {
+          error = call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+            RF1A_OM_IDLE);
+        }
+        if (error != SUCCESS){
+          cerror(LINK, "s.s.srb0 %x\r\n", error);
+        }else{
+          localState = S_IDLE;
+        }
         post signalRXDone();
       }
-      header(msg)->sn = sn++;
-      header(msg)->source = call ActiveMessageAddress.amAddress();
-      //initialize to 1 hop: adjacent nodes are 1 hop away.
-      header(msg)->hopCount = 1;
-      crcIndex = 0;
-      crcFirstPassed = 0;
-      error= subsend(msg);
-  
+
       if (error == SUCCESS){
-        atomic{
-          aSfdCapture = 0;
-          aSynched = FALSE;
-          fwdMsg = msg;
-          state = S_TX;
+        header(msg)->sn = sn++;
+        header(msg)->source = call ActiveMessageAddress.amAddress();
+        //initialize to 1 hop: adjacent nodes are 1 hop away.
+        header(msg)->hopCount = 1;
+        crcIndex = 0;
+        crcFirstPassed = 0;
+        error= subsend(msg);
+    
+        if (error == SUCCESS){
+          atomic{
+            aSfdCapture = 0;
+            aSynched = FALSE;
+            fwdMsg = msg;
+            state = S_TX;
+          }
         }
       }
       return error;
@@ -499,6 +518,8 @@ module CXLinkP {
         signal CXLink.rxDone();
       }
     }else{ 
+      //DBG 6
+      //This gets signalled whie we're in state S_SLEEP.
       cwarn(LINK, "Link hr unexpected state %x\r\n", localState);
     }
   }
