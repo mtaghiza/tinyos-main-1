@@ -1,0 +1,30 @@
+COMPONENT=TestAppC
+
+CFLAGS +=-DADC_NUM_CHANNELS=9
+
+CFLAGS += -DNEW_PRINTF_SEMANTICS
+CFLAGS += -I$(TOSDIR)/lib/printf
+CFLAGS += -I$(TOSDIR)/lib/serial
+CFLAGS +=-DTOSH_DATA_LENGTH=140
+
+CFLAGS+=-DDEFAULT_SAMPLE_INTERVAL=5120UL
+CFLAGS+=-DSINGLE_RECORD_READ=1
+
+CFLAGS += -I../ToastSampler/DummyToastSampler
+CFLAGS += -I../ToastSampler
+CFLAGS += -I../settingsStorage
+CFLAGS += -I../RebootCounter
+
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cDiscover
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cCom
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cTLVStorage
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cADCReader
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cSynch
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/Metadata
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/autoPush
+
+CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
+
+include $(MAKERULES)
