@@ -19,6 +19,14 @@ implementation
   {
     printf("Format Flash Test\n\r");
     call UartCtl.start();
+    if (AUTOMATIC){
+      post formatTask();
+    }else{
+      printf("USAGE\r\n");
+      printf("=====\r\n");
+      printf("q: reset\r\n");
+      printf("f: format\r\n");
+    }
   }
 
   async event void UartStream.receivedByte(uint8_t byte){
