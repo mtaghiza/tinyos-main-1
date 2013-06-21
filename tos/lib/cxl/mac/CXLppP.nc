@@ -369,6 +369,7 @@ module CXLppP {
   command error_t Send.send(message_t* msg, uint8_t len){
     if (call LppControl.isAwake()){
       error_t error;
+      pushSleep();
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
       error = call SubSend.send(msg, call CXLinkPacket.len(msg));
       if (error == SUCCESS){
