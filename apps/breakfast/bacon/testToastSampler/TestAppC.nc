@@ -27,9 +27,9 @@ configuration TestAppC{
 
   TestP.SplitControl -> SerialActiveMessageC;
 
-  components new AutoPushC(VOLUME_RECORD, TRUE);
-  AutoPushC.AMSend -> AMSenderC;
-  AutoPushC.Pool -> PoolC;
-  AutoPushC.Get -> TestP.Get;
+  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
+  RecordPushRequestC.AMSend -> AMSenderC;
+  RecordPushRequestC.Pool -> PoolC;
+  RecordPushRequestC.Get -> TestP.Get;
 
 }
