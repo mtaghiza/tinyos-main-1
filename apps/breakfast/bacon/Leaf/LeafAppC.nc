@@ -1,9 +1,12 @@
  #include "StorageVolumes.h"
  #include "message.h"
- #define printf(...) 
- #define printfflush(...) 
+// #define printf(...) 
+// #define printfflush(...) 
 configuration LeafAppC{
 } implementation {
+  components SerialPrintfC;
+  components SerialStartC;
+
   components WatchDogC;
   #ifndef NO_STACKGUARD
   components StackGuardMilliC;
@@ -12,8 +15,6 @@ configuration LeafAppC{
   components MainC;
   components LeafP;
 
-//  components PrintfC;
-//  components SerialStartC;
 
   components new PoolC(message_t, 4);
 
