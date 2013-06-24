@@ -42,7 +42,7 @@ class RecordParser(object):
             prevLenVal = lenVal
             
             # panic
-            if cookieVal > self.nextCookie or lenVal > 15:
+            if cookieVal > self.nextCookie:
                 print cookieBytes
                 print self.data 
                 print self.nextCookie 
