@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 140
+DEFAULT_MESSAGE_SIZE = 102
 
 # The Active Message type associated with this message.
 AM_TYPE = 224
 
 class LogRecordDataMsg(tinyos.message.Message.Message):
-    # Create a new LogRecordDataMsg of size 140.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=140):
+    # Create a new LogRecordDataMsg of size 102.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=102):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -36,7 +36,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [data=";
-            for i in range(0, 134):
+            for i in range(0, 96):
                 s += "0x%x " % (self.getElement_data(i) & 0xff)
             s += "]\n";
         except:
@@ -128,7 +128,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     #
     def offset_data(self, index1):
         offset = 16
-        if index1 < 0 or index1 >= 134:
+        if index1 < 0 or index1 >= 96:
             raise IndexError
         offset += 0 + index1 * 8
         return (offset / 8)
@@ -138,7 +138,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     #
     def offsetBits_data(self, index1):
         offset = 16
-        if index1 < 0 or index1 >= 134:
+        if index1 < 0 or index1 >= 96:
             raise IndexError
         offset += 0 + index1 * 8
         return offset
@@ -147,7 +147,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the entire array 'data' as a short[]
     #
     def get_data(self):
-        tmp = [None]*134
+        tmp = [None]*96
         for index0 in range (0, self.numElements_data(0)):
                 tmp[index0] = self.getElement_data(index0)
         return tmp
@@ -175,13 +175,13 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the total size, in bytes, of the array 'data'
     #
     def totalSize_data(self):
-        return (1072 / 8)
+        return (768 / 8)
     
     #
     # Return the total size, in bits, of the array 'data'
     #
     def totalSizeBits_data(self):
-        return 1072
+        return 768
     
     #
     # Return the size, in bytes, of each element of the array 'data'
@@ -205,14 +205,14 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the number of elements in the array 'data'
     #
     def numElements_data():
-        return 134
+        return 96
     
     #
     # Return the number of elements in the array 'data'
     # for the given dimension.
     #
     def numElements_data(self, dimension):
-        array_dims = [ 134,  ]
+        array_dims = [ 96,  ]
         if dimension < 0 or dimension >= 1:
             raise IndexException
         if array_dims[dimension] == 0:
@@ -242,7 +242,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     #
     # Accessor methods for field: nextCookie
     #   Field type: long
-    #   Offset (bits): 1088
+    #   Offset (bits): 784
     #   Size (bits): 32
     #
 
@@ -262,13 +262,13 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'nextCookie'
     #
     def offset_nextCookie(self):
-        return (1088 / 8)
+        return (784 / 8)
     
     #
     # Return the offset (in bits) of the field 'nextCookie'
     #
     def offsetBits_nextCookie(self):
-        return 1088
+        return 784
     
     #
     # Return the value (as a long) of the field 'nextCookie'
