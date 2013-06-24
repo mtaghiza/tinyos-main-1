@@ -8,6 +8,7 @@ from autoPush.listeners import RecordListener
 from autoPush.listeners import PrintfListener
 from autoPush.messages import PrintfMsg
 from autoPush.messages import LogRecordDataMsg
+from autoPush.messages import CxRecordRequestMsg
 
 from autoPush.db import Database
 
@@ -42,6 +43,7 @@ def download(packetSource, bsId, wakeupLen, nodeList):
 
         #phase 2: clear outstanding buffers
         for node in nodeList:
+            rxc = 0
             response = True
             while response:
                 d.mif.wakeup(bsId)
@@ -69,11 +71,15 @@ def download(packetSource, bsId, wakeupLen, nodeList):
                     msg.set_length(request['missing'])
                 else:
                     msg.set_length(MAX_PACKET_PAYLOAD)
+                print "requesting %u at %u from %u"%(msg.get_length(),
+                  msg.get_cookie(), msg.get_node_id())
                 
-                d.send(msg)
+                d.send(msg, msg.get_node_id())
                 d.mif.readFrom(request['node_id'])
                 #keep-alive
                 d.mif.wakeup(bsId)
+        else:
+            print "No repairs needed"
         #done: back to sleep.
         d.mif.sleep(bsId)
 
