@@ -1,1 +1,6 @@
 mig/*.pyc
+autoPush/*.pyc
+autoPush/db/*.pyc
+autoPush/listeners/*.pyc
+autoPush/messages/*.pyc
+lpp/*.pyc
