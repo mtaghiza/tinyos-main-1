@@ -32,7 +32,7 @@ class Dispatcher(object):
     def send(self, m, dest=0):
         self.mif.send(dest, m)
 
-def download(packetSource, bsId, wakeupLen, nodeList):
+def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
     print packetSource
     d = Dispatcher(packetSource)
     db = Database.Database()
@@ -47,7 +47,7 @@ def download(packetSource, bsId, wakeupLen, nodeList):
             response = True
             while response:
                 d.mif.wakeup(bsId)
-                response = d.mif.readFrom(node)
+                response = d.mif.readFrom(node, 2)
                 if not response:
                     print "No response from %u"%(node,)
                 else:
@@ -59,9 +59,12 @@ def download(packetSource, bsId, wakeupLen, nodeList):
         request_list = db.findMissing()
         MAX_PACKET_PAYLOAD = 100
         #for request in request_list:
-        if request_list:
+        repairs = 0
+        while request_list and (repairLimit == 0 or repairs < repairLimit):
+            print "Recovery requests: ", request_list
             for request in request_list:
-                request = request_list[0]
+                #keep-alive
+                d.mif.wakeup(bsId)
     
                 msg = CxRecordRequestMsg.CxRecordRequestMsg()
                 msg.set_node_id(request['node_id'])
@@ -75,13 +78,20 @@ def download(packetSource, bsId, wakeupLen, nodeList):
                   msg.get_cookie(), msg.get_node_id())
                 
                 d.send(msg, msg.get_node_id())
-                d.mif.readFrom(request['node_id'])
-                #keep-alive
-                d.mif.wakeup(bsId)
+                #need to allow the request to go out before we issue
+                # the cts, and we don't have a good way to block on
+                # this operation.
+                time.sleep(1)
+                d.mif.readFrom(request['node_id'], 2)
+            request_list = db.findMissing()
+            repairs += 1
         else:
             print "No repairs needed"
         #done: back to sleep.
         d.mif.sleep(bsId)
+        #debug: give the mote a couple of seconds to finish up
+        # anything it's doing
+        time.sleep(5)
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:
@@ -94,10 +104,13 @@ def download(packetSource, bsId, wakeupLen, nodeList):
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
-        print "Usage:", sys.argv[0], "packetSource(e.g. serial@/dev/ttyUSB0:115200) bsId wakeupLen" 
+        print "Usage:", sys.argv[0], "packetSource(e.g.  serial@/dev/ttyUSB0:115200) bsId wakeupLen, repairLimit=0" 
         sys.exit()
 
     packetSource = sys.argv[1]
     bsId = int(sys.argv[2])
     wakeupLen = int(sys.argv[3])
-    download(packetSource, bsId, wakeupLen, [1])
+    repairLimit = 0
+    if len(sys.argv) > 4:
+        repairLimit = int(sys.argv[4])
+    download(packetSource, bsId, wakeupLen, repairLimit, [1])
