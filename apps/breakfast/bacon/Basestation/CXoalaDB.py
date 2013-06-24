@@ -38,9 +38,11 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
     db = Database.Database()
 
     try:
+        print "Wakeup start", time.time()
         #phase 1: wakeup
         d.mif.wakeup(bsId, wakeupLen)
 
+        print "Autopush", time.time()
         #phase 2: clear outstanding buffers
         for node in nodeList:
             rxc = 0
@@ -55,6 +57,7 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
                     print "RX %u from %u"%(rxc, node)
             print "Done with ", node
         
+        print "Recovery", time.time()
         #phase 3: recovery
         request_list = db.findMissing()
         MAX_PACKET_PAYLOAD = 100
@@ -87,11 +90,13 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
             repairs += 1
         else:
             print "No repairs needed"
+        print "Sleep", time.time()
         #done: back to sleep.
         d.mif.sleep(bsId)
         #debug: give the mote a couple of seconds to finish up
         # anything it's doing
         time.sleep(5)
+        print "Done", time.time()
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:
@@ -113,4 +118,4 @@ if __name__ == '__main__':
     repairLimit = 0
     if len(sys.argv) > 4:
         repairLimit = int(sys.argv[4])
-    download(packetSource, bsId, wakeupLen, repairLimit, [1])
+    download(packetSource, bsId, wakeupLen, repairLimit, range(60))
