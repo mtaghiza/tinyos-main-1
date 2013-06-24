@@ -52,6 +52,7 @@ module CXBasestationMacP{
         if (SUCCESS != error){
           call Pool.put(cts);
           cts = NULL;
+          cdbg(MAC, "CXMM.cts.ss.s: %x\r\n", error);
         }
         return error;
       } else {

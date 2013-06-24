@@ -151,6 +151,7 @@ module CXLppP {
         call Packet.setPayloadLength(probe, 0);
         error = call SubSend.send(probe, 
           call CXLinkPacket.len(probe));
+        cdbg(LPP, "MS p\r\n");
         if (SUCCESS != error){
           cerror(LPP, "pt.f ss %x\r\n", error);
           call Pool.put(probe);
@@ -176,13 +177,7 @@ module CXLppP {
       call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
       error = call SubSend.send(keepAliveMsg,
         call CXLinkPacket.len(keepAliveMsg));
-      //DBG 1
-      //receive ERETRY: means we are forwarding. We should defer this
-      //timer, then (activity was happening anyway, so no need to send
-      //it).
-      //DBG 3
-      //receive EBUSY: means we are in S_TX at link layer. this
-      //continues until we issue the sleep command.
+      cdbg(LPP, "MS k\r\n");
       if (SUCCESS != error){
         cerror(LPP, "kat.f ss %x\r\n", error);
         call Pool.put(keepAliveMsg);
@@ -199,6 +194,7 @@ module CXLppP {
   event void SubSend.sendDone(message_t* msg, error_t error){
     call TimeoutCheck.stop();
     sending = FALSE;
+    cdbg(LPP, "MS SD\r\n");
     if (error != SUCCESS){
       cwarn(LPP, "LPP ss.sd %x\r\n", error);
     }
@@ -336,27 +332,6 @@ module CXLppP {
     if (state == S_AWAKE && ! sending){
       //start next RX.
       error_t error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
-      //DBG 2
-      //receive EBUSY: we are neither in idle nor sleep.
-      //this should probably not be happening. under what
-      //circumstances can we signal rxDone but not be in a ready state
-      //to handle the next rx?
-      //* looks like if we call send while we're in S_RX, then we stop
-      //  the alarm and post a task to signal rxDone, but we don't
-      //  actually set the radio to idle/clear the rx buffer.
-      
-      // !sending because the keep alive failed
-      // so, 
-      // - we are in RX when the keep alive timer fires
-      // - the call to send fails with ERETRY: we happen to be in the
-      //   middle of a reception, so the call to Rf1aPhysical.send
-      //   fails with ERETRY. However, we still post the signalRxDone
-      //   task. The link layer is still in S_RX, and the mac layer is
-      //   in awake, !sending
-      // - the task signals rxDone, which calls rx and gets EBUSY ince
-      //   link is still in S_RX.
-      // - unclear why the sleep command at the end of the process
-      //   fails.
       
       if (error == SUCCESS){
         call TimeoutCheck.startOneShot(RX_TIMEOUT_MAX_SLOW);
@@ -373,6 +348,7 @@ module CXLppP {
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
       call CXLinkPacket.setAllowRetx(msg, TRUE);
       error = call SubSend.send(msg, call CXLinkPacket.len(msg));
+      cdbg(LPP, "MS d %x\r\n", call CXMacPacket.getMacType(msg));
       if (error == SUCCESS){
         sending = TRUE;
         call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*CX_MAX_DEPTH);

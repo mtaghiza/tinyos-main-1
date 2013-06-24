@@ -1,5 +1,6 @@
 
  #include "CXMac.h"
+ #include "CXMacDebug.h"
 module CXMacP{
   provides interface Send;
   uses interface Send as SubSend;
@@ -14,6 +15,7 @@ module CXMacP{
 
   command error_t Send.send(message_t* msg, uint8_t len){
     if (pendingMsg){
+      cdbg(MAC, "CXMP.s.s BUSY\r\n");
       return EBUSY;
     }else{
       error_t e = call CXMacController.requestSend(msg);
@@ -34,6 +36,7 @@ module CXMacP{
     if (pendingMsg){
       error_t error = call SubSend.send(pendingMsg, pendingLen);
       if (error == ERETRY || error == EBUSY){
+        cdbg(MAC, "mretry %u\r\n", retryCount);
         retryCount ++;
         if (retryCount <= MAC_RETRY_LIMIT){
           call Timer.startOneShot(128UL);
