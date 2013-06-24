@@ -57,9 +57,8 @@ class RecordListener(object):
 
     def receive(self, src, msg):
         address = msg.getAddr()
-        print "RPR rx"
-#         rp = RecordParser(msg)        
-#         records = rp.getList()
-#         print "RPR rx len %u nc %u records %u"%(rp.length, rp.nextCookie, len(records))
-#         for rec in records:
-#             self.db.insertRecord(address, rec)
+        rp = RecordParser(msg)        
+        records = rp.getList()
+        print "RPR rx len %u nc %u records %u"%(rp.length, rp.nextCookie, len(records))
+        for rec in records:
+            self.db.insertRecord(address, rec)
