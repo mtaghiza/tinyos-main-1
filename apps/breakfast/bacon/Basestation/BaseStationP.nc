@@ -190,9 +190,9 @@ implementation
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
-    printf("RRR %x from %u\r\n", id, 
-      call RadioAMPacket.source(msg));
-    printfflush();
+//    printf("RRR %x from %u\r\n", id, 
+//      call RadioAMPacket.source(msg));
+//    printfflush();
 //    printf("RECEIVE %x from %u pl len %u msg len %u:\n", id, 
 //      call RadioAMPacket.source(msg), 
 //      len, 
@@ -374,6 +374,9 @@ implementation
         ctsAddr = ((cx_lpp_cts_t*)payload)->addr;
         ctsPending = TRUE;
         post ctsTask();
+      }else{
+        printf("CTS still pending\r\n");
+        printfflush();
       }
       return msg;
     } else {
@@ -407,6 +410,7 @@ implementation
       
       return ret;
     }
+    printfflush();
   }
 
   task void radioSendTask() {
