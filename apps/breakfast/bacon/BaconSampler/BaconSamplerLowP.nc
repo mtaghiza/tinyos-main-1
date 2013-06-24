@@ -22,7 +22,7 @@ module BaconSamplerLowP{
   DEFINE_UNION_CAST(adc12memctl2int,uint8_t,adc12memctl_t)
   DEFINE_UNION_CAST(int2adc12memctl,adc12memctl_t,uint8_t)
 
-  uint32_t sampleInterval = 1024;
+  uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
   enum {
     BATTERY = 0,
     LIGHT = 1,
