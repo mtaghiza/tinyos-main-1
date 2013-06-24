@@ -20,7 +20,7 @@ configuration LeafAppC{
 
   components new RecordPushRequestC(VOLUME_RECORD, TRUE);
   components new AMSenderC(AM_LOG_RECORD_DATA_MSG);
-  components new AMReceiverC(AM_LOG_RECORD_DATA_MSG);
+  components new AMReceiverC(AM_CX_RECORD_REQUEST_MSG);
   RecordPushRequestC.Pool -> PoolC;
   RecordPushRequestC.AMSend -> AMSenderC;
   RecordPushRequestC.Receive -> AMReceiverC;
