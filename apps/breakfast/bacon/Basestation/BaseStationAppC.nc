@@ -112,4 +112,7 @@ implementation {
   BaseStationP.WakeupTimeout -> WakeupTimeout;
   components new TimerMilliC() as SleepDelay;
   BaseStationP.SleepDelay -> SleepDelay;
+  
+  components CXLinkPacketC;
+  BaseStationP.CXLinkPacket -> CXLinkPacketC;
 }

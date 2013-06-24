@@ -82,6 +82,8 @@ module BaseStationP @safe() {
   uses interface LppControl;
   uses interface CXMacMaster;
 
+  uses interface CXLinkPacket;
+
   uses interface Timer<TMilli> as WakeupTimeout;
   uses interface Timer<TMilli> as SleepDelay;
 }
@@ -188,6 +190,9 @@ implementation
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
+    printf("RRR %x from %u\r\n", id, 
+      call RadioAMPacket.source(msg));
+    printfflush();
 //    printf("RECEIVE %x from %u pl len %u msg len %u:\n", id, 
 //      call RadioAMPacket.source(msg), 
 //      len, 
@@ -264,6 +269,7 @@ implementation
 
   event void UartSend.sendDone[am_id_t id](message_t* msg, error_t error) {
     if (id != AM_PRINTF_MSG){
+      printfflush();
       if (error != SUCCESS){
         failBlink();
       } else{
@@ -288,8 +294,8 @@ implementation
 //    printfflush();
   }
   event void LppControl.fellAsleep(){
-//    printf("BS SLEEP\r\n");
-//    printfflush();
+    printf("BS SLEEP\r\n");
+    printfflush();
     call CXLeds.led0Off();
   }
 
@@ -330,8 +336,11 @@ implementation
   }
 
   task void ctsTask(){
-    if (call CXMacMaster.cts(ctsAddr) != SUCCESS){
+    error_t error = call CXMacMaster.cts(ctsAddr);
+    if ( error != SUCCESS){
       ctsPending = FALSE;
+      printf("CTS failed: %x\r\n", error);
+      printfflush();
       call CXLeds.led2On();
     }else{
       ctsPending = TRUE;
