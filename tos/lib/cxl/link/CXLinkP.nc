@@ -35,6 +35,8 @@ module CXLinkP {
   uint8_t rxLen;
   message_t* fwdMsg;
   uint32_t sn;
+
+  int aTxResult;
   
   enum {
     CRC_HIST_LEN=11,
@@ -171,6 +173,7 @@ module CXLinkP {
 
   async event void Rf1aPhysical.sendDone (int result) { 
     atomic sfdAdjust = TX_SFD_ADJUST;
+    atomic aTxResult = result;
     if (crcIndex < CRC_HIST_LEN){
       crcHist[crcIndex] = call LastCRC.getNow();
       txHist[crcIndex] = TRUE;
@@ -181,7 +184,15 @@ module CXLinkP {
 
   task void handleSendDone(){
     uint8_t localState;
+    error_t error;
     atomic localState = state;
+    atomic error = aTxResult;
+    if (error != SUCCESS){
+      cwarn(LINK, "TXR %x\r\n", error);
+//      //mark this transmission as having failed CRC so we stop
+//      //forwarding it.
+//      phy(rxMsg)->lqi &= ~0x80;
+    }
     //TODO: if time32k is not set, set it based on last sfd capture.
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
@@ -351,10 +362,13 @@ module CXLinkP {
     uint8_t localState;
     atomic localState = state;
     if (localState == S_TX || localState == S_FWD){
+      cwarn(LINK, "LS.S: %x\r\n", localState);
       return localState == S_TX? EBUSY: ERETRY;
     } else {
       error_t error = SUCCESS;
       call CXLinkPacket.setLen(msg, len);
+      cdbg(LINK, "RP.S %u %u\r\n", call CXLinkPacket.len(msg),
+        header(msg)->ttl);
       if (localState == S_RX){
         call FastAlarm.stop();
         error = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
@@ -378,8 +392,11 @@ module CXLinkP {
         //initialize to 1 hop: adjacent nodes are 1 hop away.
         header(msg)->hopCount = 1;
         crcIndex = 0;
+        //set to crc-passed initially
+        phy(msg)->lqi |= 0x80;
+
         crcFirstPassed = 0;
-        error= subsend(msg);
+        error = subsend(msg);
     
         if (error == SUCCESS){
           atomic{
@@ -388,6 +405,8 @@ module CXLinkP {
             fwdMsg = msg;
             state = S_TX;
           }
+        }else{
+          cwarn(LINK, "ss %x\r\n", error);
         }
       }
       return error;
@@ -407,6 +426,8 @@ module CXLinkP {
 //        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
+      }else{
+        cwarn(LINK, "rp.st %x\r\n", error);
       }
       return error;
     } else {
@@ -426,7 +447,7 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
-      cdbg(LINK, "CRCF\r\n");
+      cwarn(LINK, "CRCF\r\n");
       return FALSE;
     }
   }
@@ -474,6 +495,7 @@ module CXLinkP {
       call Rf1aPhysicalMetadata.store(phy(rxMsg));
       //mark as failed CRC, ugh
       if (rxResult != SUCCESS){
+        cwarn(LINK, "p.rxf %x\r\n", rxResult);
         phy(rxMsg)->lqi &= ~0x80;
       }
       if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg)) && (crcIndex-1) < crcFirstPassed){
