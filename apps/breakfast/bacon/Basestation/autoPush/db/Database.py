@@ -22,7 +22,7 @@ class Database(object):
         
         (cookie, nextCookie, length, data) = record            
         
-        print source, cookie, nextCookie, length, data
+        print "Database.insertRecord()", source, cookie, nextCookie, length, data
         
         self.insert.insertFlash(source, cookie, nextCookie, length)        
         
