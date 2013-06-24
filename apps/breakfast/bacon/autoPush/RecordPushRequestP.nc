@@ -266,6 +266,7 @@ generic module RecordPushRequestP() {
   {
     log_record_data_msg_t *recordMsgPtr = (log_record_data_msg_t*)
                   (call AMSend.getPayload(msg, sizeof(log_record_data_msg_t)));
+    error_t error;
 
     // set total record message length (used for parsing) and 
     // cookie for next record in flash
@@ -276,12 +277,14 @@ generic module RecordPushRequestP() {
 
     // use fixed packet size or variable packet size
 //    call AMSend.send(call Get.get(), msg, (uint8_t*)recordPtr - bufferStart);
-    call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
+    error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
+    printf("RPR.Send: %x %u %lu %u\r\n", error, recordMsgPtr->length, recordMsgPtr->nextCookie, recordsRead);
   }
 
 
   event void AMSend.sendDone(message_t* msg_, error_t error)
   {
+    printf("RPR.SendDone: %x\r\n", error);
     call Pool.put(msg);
 
     switch(control)
