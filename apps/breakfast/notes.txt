@@ -31,7 +31,6 @@ lib/cxl/mac/CXMac.h: AM_SLEEP = 0xC7
 lib/cxl/mac/CXMac.h: AM_CTS = 0xC8
 
 
-
 Metadata: 0x80 - 0xB1 in use, 0xB2-0xBF reserved
 --------
 bacon/Metadata/ctrl_messages.h:  AM_READ_IV_CMD_MSG = 0x80,
@@ -98,11 +97,12 @@ $(TOSDIR)/lib/printf/printf.h: AM_PRINTF_MSG = 100, //0x64
 
 Log Records: 0xE0 - 0xEF
 -------
-RecordStorage.h AM_LOG_RECORD_DATA_MSG: = 0xE0,
+tos/platforms/bacon/chips/stm25p/RecordStorage.h: AM_LOG_RECORD_DATA_MSG = 0xE0
 
 
 CX collection control: 0xF0 - 0xFF
 ------
+bacon/autoPush/RecordRequest.h: AM_CX_RECORD_REQUEST_MSG = 0xF0
 
 
 
