@@ -1,7 +1,13 @@
 #ifndef RECORD_STORAGE_H
 #define RECORD_STORAGE_H
 
-#define MAX_RECORD_PACKET_LEN TOSH_DATA_LENGTH
+#include "message.h"
+
+#ifndef MAX_RECORD_PACKET_LEN
+//give some breathing room in case we add more headers to packet.
+#define MAX_RECORD_PACKET_LEN (TOSH_DATA_LENGTH - 8)
+#endif
+
 //most efficient way to pack them in, hope byte alignment isn't too
 //much trouble.
 typedef nx_struct log_record_t {
