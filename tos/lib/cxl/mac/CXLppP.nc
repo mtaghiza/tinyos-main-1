@@ -371,10 +371,13 @@ module CXLppP {
       error_t error;
       pushSleep();
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
+      call CXLinkPacket.setAllowRetx(msg, TRUE);
       error = call SubSend.send(msg, call CXLinkPacket.len(msg));
       if (error == SUCCESS){
         sending = TRUE;
         call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*CX_MAX_DEPTH);
+      }else{
+        cwarn(LPP, "LppS.S %x\r\n", error);
       }
       return error;
     }else{ 
