@@ -99,8 +99,8 @@ class PacketSource(ThreadTask):
                         for i in packet:
                             print ord(i)," ",
                         print
-
-                    self.dispatcher.dispatchPacket(self, packet)
+                    self.dispatcher.receiveQueue.put( (self, packet))
+#                     self.dispatcher.dispatchPacket(self, packet)
                 except Exception, x:
                     if DEBUG:
                         print "Exception when dispatching packet:"

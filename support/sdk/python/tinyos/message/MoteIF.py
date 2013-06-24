@@ -46,16 +46,22 @@ try:
 except:
     tinyos.packet.SerialSource = None
 
+import Queue
+from threading import Thread
+
 DEBUG = False
 
 class MoteIFException(Exception):
     def __init__(self, *args):
         self.args = args
 
+
 class MoteIF:
     def __init__(self):
         self.listeners = {}
         self.watcher = Watcher.getInstance()
+        self.receiveQueue = Queue.Queue()
+        self.running = True
 
     def addListener(self, listener, msgClass):
         if listener not in self.listeners:
@@ -82,7 +88,7 @@ class MoteIF:
         except:
             traceback.print_exc()
 
-
+        amType = None
         try:
             data_start = serial_pkt.offset_data(0) + 1
             data_end = data_start + serial_pkt.get_header_length()
@@ -106,6 +112,16 @@ class MoteIF:
                 except Exception, x:
                     print >>sys.stderr, x
                     print >>sys.stderr, traceback.print_tb(sys.exc_info()[2])
+    
+    def readPacket(self):
+        while self.running:
+            try:
+                msgTuple = self.receiveQueue.get(True, 0.25)
+            except Queue.Empty:
+                msgTuple = None
+            if msgTuple:
+                (source, msg) = msgTuple
+                self.dispatchPacket(source, msg)
 
     def sendMsg(self, dest, addr, amType, group, msg):
         try:
@@ -146,8 +162,13 @@ class MoteIF:
         #block until the source has started up.
         source.semaphore.acquire()
         source.semaphore.release()
+        self.rxThread = Thread(target=self.readPacket,
+          name="rxDispatch")
+        self.rxThread.daemon = True
+        self.rxThread.start()
 
         return source
 
     def finishAll(self):
         tinyos.packet.PacketSource.finishAll()
+        self.running = False
