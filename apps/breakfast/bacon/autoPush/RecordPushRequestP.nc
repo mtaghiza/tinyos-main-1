@@ -150,24 +150,18 @@ generic module RecordPushRequestP() {
     // when flash is idle, check if there are any unprocessed push
     // or recovery requests queued up. 
     // push operations have higher priority than recovery requests  
-    if (state == S_IDLE)
-    {
-      if (pushInQueue)
-      {
+    if (state == S_IDLE) {
+      if (requestInQueue) {
+        if (readFirst(requestCookie, requestLength) == SUCCESS){
+          control = C_REQUEST;
+        }
+      } else if (pushInQueue) {
         // pushCookie is global and read at init and updated at sendDone
         // pushLength is set once during compile
-        if (readFirst(pushCookie, pushLength) == SUCCESS)
+        if (readFirst(pushCookie, pushLength) == SUCCESS){
           control = C_PUSH;
-
-      } else if (requestInQueue)
-      {
-
-        if (readFirst(requestCookie, requestLength) == SUCCESS)
-          control = C_REQUEST;
-        
-      }
-      else
-      {
+        }
+      } else {
         control = C_NONE;
       }
     }
@@ -278,13 +272,18 @@ generic module RecordPushRequestP() {
     // use fixed packet size or variable packet size
 //    call AMSend.send(call Get.get(), msg, (uint8_t*)recordPtr - bufferStart);
     error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
-    printf("RPR.Send: %x %u %lu %u\r\n", error, recordMsgPtr->length, recordMsgPtr->nextCookie, recordsRead);
+//    printf("RPR.Send: %x %u %lu %u %lu\r\n", 
+//      error,
+//      recordMsgPtr->length, 
+//      recordMsgPtr->nextCookie, 
+//      recordsRead, 
+//      call LocalTime.get());
   }
 
 
   event void AMSend.sendDone(message_t* msg_, error_t error)
   {
-    printf("RPR.SendDone: %x\r\n", error);
+//    printf("RPR.SendDone: %x %lu\r\n", error, call LocalTime.get());
     call Pool.put(msg);
 
     switch(control)
