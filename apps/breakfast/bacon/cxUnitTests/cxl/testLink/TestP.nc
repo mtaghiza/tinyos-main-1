@@ -19,6 +19,9 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
+  uint8_t packetLength=1;
+  uint8_t channel = 32;
+
   bool started = FALSE;
   task void toggleStartStop();
   
@@ -42,9 +45,11 @@ module TestP{
     printf(" q: reset\r\n");
     printf(" r: receive packet\r\n");
     printf(" R: receive packet, no fwd\r\n");
-    printf(" c: (check) receive with 1 second timeout\r\n");
+    printf(" C: (check) receive with 1 second timeout\r\n");
     printf(" t: transmit packet\r\n");
     printf(" T: transmit packet, no retx\r\n");
+    printf(" c: switch to next channel\r\n");
+    printf(" l: toggle between 1-byte payload or max-len payload\r\n");
     printf(" s: sleep\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
@@ -86,21 +91,31 @@ module TestP{
     post toggleStartStop();
   }
 
+  void setChannel(){
+    printf("set channel: %u %x\r\n", 
+      channel,
+      call Rf1aPhysical.setChannel(channel));
+  }
+
   task void receivePacket(){ 
+    setChannel();
     printf("RX: %x\r\n",
       call CXLink.rx(0xFFFFFFFF, TRUE));
   }
 
   task void receivePacketNoRetx(){ 
+    setChannel();
     printf("RXn: %x\r\n",
       call CXLink.rx(0xFFFFFFFF, FALSE));
   }
   task void receivePacketShort(){
+    setChannel();
     printf("RXs: %x\r\n",
       call CXLink.rx(6500000UL, TRUE));
   }
 
   void doSendPacket(bool retx){
+    setChannel();
     if (txMsg){
       printf("still sending\r\n");
     }else{
@@ -123,9 +138,11 @@ module TestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
-      call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
+      if (packetLength != 1){
+        call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
+      }
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
-      err = call Send.send(txMsg, call Packet.maxPayloadLength());
+      err = call Send.send(txMsg, packetLength);
       printf("Send: %x %x\r\n", retx, err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
@@ -158,9 +175,8 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %u %lu %x\r\n", 
+    printf("SD %u %x\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
-      ((test_payload_t*)(call Packet.getPayload(msg, sizeof(test_payload_t))))-> timestamp,
       error);
     if (msg == txMsg){
       call Pool.put(txMsg);
@@ -171,13 +187,12 @@ module TestP{
   }
 
   task void handleRX(){
-    test_payload_t* pl = call Packet.getPayload(rxMsg,
-      sizeof(test_payload_t));
-    printf("RX %p %u %p %lu\r\n",
+//    test_payload_t* pl = call Packet.getPayload(rxMsg,
+//      sizeof(test_payload_t));
+    printf("RX %p %u %u\r\n",
       rxMsg, 
       (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
-      pl,
-      pl -> timestamp);
+      call CXLinkPacket.payloadLength(rxMsg));
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -202,8 +217,6 @@ module TestP{
   event void CXLink.rxDone(){
     printf("RXD\r\n");
   }
-  event void CXLink.toneReceived(bool received){}
-  event void CXLink.toneSent(){}
 
   task void toggleStartStop(){
     if (started){
@@ -218,6 +231,16 @@ module TestP{
     call SerialControl.start();
   }
 
+  task void nextChannel(){
+    do{
+      channel += 32;
+    } while (channel == 0);
+    printf("Next channel: %u\r\n", channel);
+  }
+
+  task void togglePacketLength(){
+    packetLength = (packetLength == 1) ? call Packet.maxPayloadLength() : 1;
+  }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -230,7 +253,7 @@ module TestP{
        case 'R':
          post receivePacketNoRetx();
          break;
-       case 'c':
+       case 'C':
          post receivePacketShort();
          break;
        case 't':
@@ -244,6 +267,12 @@ module TestP{
          break;
        case 'S':
          post toggleStartStop();
+         break;
+       case 'c':
+         post nextChannel();
+         break;
+       case 'l':
+         post togglePacketLength();
          break;
        case '?':
          post usage();

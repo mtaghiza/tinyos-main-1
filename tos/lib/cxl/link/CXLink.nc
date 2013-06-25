@@ -42,34 +42,43 @@ interface CXLink {
    * CXLink's rxDone event gets signalled.
    */
   event void rxDone();
-
-  /**
-   * Listen for an extended wakeup tone on a given channel (and leave
-   * the radio tuned to that channel at its completion). If a tone is
-   * detected, this node will attempt to join in its transmission.
-   * 
-   * Returns SUCCESS if a toneReceived will eventually be signalled.
-   */
-  command error_t rxTone(uint32_t timeout, uint8_t channel);
-  /**
-   *  signal the completion of an rxTone command, either due to
-   *  timeout or reception of a tone. This will not signal up until
-   *  the forwarding of the tone is complete.
-   *  "received" is true if a tone was detected, false if not.
-   *  The radio is left to the channel specified in the original
-   *  rxTone call.
-   */
-  event void toneReceived(bool received);
   
-  /** 
-   * Send an extended wakeup tone on a given channel, and leave the
-   * radio tuned to that channel.
-   * 
-   * Returns SUCCESS if a toneSent event will eventually be signalled.
-   */
-  command error_t txTone(uint8_t channel);
   /**
-   * Indicates the completion of a txTone command.
+   * Pass through to Rf1aPhysical's setChannel command (after checking
+   * state safety)
    */
-  event void toneSent();
+  command error_t setChannel(uint8_t channel);
+
+//Obsoleted: link layer uses shorter forward times for packets with 1
+//byte (e.g. MAC layer control packets). This lets us get most of the
+//benefit of wakeup tones with a lot more code reuse
+//  /**
+//   * Listen for an extended wakeup tone on a given channel (and leave
+//   * the radio tuned to that channel at its completion). If a tone is
+//   * detected, this node will attempt to join in its transmission.
+//   * 
+//   * Returns SUCCESS if a toneReceived will eventually be signalled.
+//   */
+//  command error_t rxTone(uint32_t timeout, uint8_t channel);
+//  /**
+//   *  signal the completion of an rxTone command, either due to
+//   *  timeout or reception of a tone. This will not signal up until
+//   *  the forwarding of the tone is complete.
+//   *  "received" is true if a tone was detected, false if not.
+//   *  The radio is left to the channel specified in the original
+//   *  rxTone call.
+//   */
+//  event void toneReceived(bool received);
+//  
+//  /** 
+//   * Send an extended wakeup tone on a given channel, and leave the
+//   * radio tuned to that channel.
+//   * 
+//   * Returns SUCCESS if a toneSent event will eventually be signalled.
+//   */
+//  command error_t txTone(uint8_t channel);
+//  /**
+//   * Indicates the completion of a txTone command.
+//   */
+//  event void toneSent();
 }

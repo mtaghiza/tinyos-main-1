@@ -87,7 +87,7 @@ module CXActivitySchedulerP {
       //TODO: assign rx timeout here: if we correctly synch at the end
       //of this, then we can use a short timeout. If we have no synch
       //at all, then this should be FRAMELEN_SLOW*maxDepth
-      call FrameTimer.startPeriodic(FRAMELEN_SLOW);
+      call FrameTimer.startPeriodicAt(refTime, FRAMELEN_SLOW);
     }
   }
   event void CXLink.toneSent(uint32_t refTime){

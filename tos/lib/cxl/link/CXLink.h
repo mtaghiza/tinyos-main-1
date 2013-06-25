@@ -12,10 +12,19 @@
 #define FRAMELEN_SLOW (1024UL * CX_SCALE_TIME)
 #endif
 
-#ifndef FRAMELEN_FAST
+#ifndef FRAMELEN_FAST_NORMAL
 //6.5M = 2**5 * 5**16 * 13
-#define FRAMELEN_FAST (203125UL * CX_SCALE_TIME)
+#define FRAMELEN_FAST_NORMAL (203125UL * CX_SCALE_TIME)
 #endif
+
+#ifndef FRAMELEN_FAST_SHORT
+//set to 4.4 ms: short packet is estimated to take 1.1 ms to send,
+//add an equal amount of padding time 
+#define FRAMELEN_FAST_SHORT (14300UL * CX_SCALE_TIME)
+#endif
+
+//Short packet: mac header only
+#define SHORT_PACKET 1
 
 //worst case: 8 byte-times (preamble, sfd)
 //(64/125000.0)*6.5e6=3328, round up a bit.

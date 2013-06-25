@@ -68,6 +68,7 @@ module CXLinkP {
 
   uint8_t state = S_SLEEP;
   uint32_t aSfdCapture;
+  uint32_t frameLen;
   bool aSynched;
   bool aCSDetected;
   bool aExtended;
@@ -144,13 +145,13 @@ module CXLinkP {
           //first synch point: computed based on sfd capture (either RX
           //or TX)
           call FastAlarm.startAt(aSfdCapture,  
-            FRAMELEN_FAST - sfdAdjust);
+            frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
           //every subsequent transmission: should be based on the
           //  previous one.
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
-            FRAMELEN_FAST);
+            frameLen);
         }
       }else{
 //        //N.B.: at this point, packet is already loaded into
@@ -426,6 +427,9 @@ module CXLinkP {
 //        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
+        if (error == SUCCESS){
+          frameLen = (call Packet.payloadLength(msg) <= SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
+        }
       }else{
         cwarn(LINK, "rp.st %x\r\n", error);
       }
@@ -470,7 +474,7 @@ module CXLinkP {
 
   uint32_t fastToSlow(uint32_t fastTicks){
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
-    return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST;
+    return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
   }
 
   /**
@@ -547,11 +551,14 @@ module CXLinkP {
   }
 
 
-  command error_t CXLink.txTone(uint8_t channel){
-    return FAIL;
-  }
-  command error_t CXLink.rxTone(uint32_t timeout, uint8_t channel){
-    return FAIL;
+  command error_t CXLink.setChannel(uint8_t channel){
+    uint8_t localState;
+    atomic localState = state;
+    if (localState == S_IDLE || localState == S_SLEEP){
+      return call Rf1aPhysical.setChannel(channel);
+    }else{
+      return ERETRY;
+    }
   }
 
   //------------
