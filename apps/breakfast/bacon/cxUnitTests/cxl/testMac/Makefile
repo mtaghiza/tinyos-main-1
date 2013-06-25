@@ -1,6 +1,7 @@
 COMPONENT=TestAppC
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+CFLAGS += -I$(TOSDIR)/lib/cxl/debug
 CFLAGS += -I$(TOSDIR)/lib/cxl/mac
 CFLAGS += -I$(TOSDIR)/lib/cxl/link
 CFLAGS += -I$(TOSDIR)/lib/cxl/packet
