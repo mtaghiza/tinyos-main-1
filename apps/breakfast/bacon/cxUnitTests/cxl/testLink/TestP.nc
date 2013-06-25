@@ -20,7 +20,7 @@ module TestP{
   message_t* rxMsg;
 
   uint8_t packetLength=1;
-  uint8_t channel = 32;
+  uint8_t channel = 0;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -92,9 +92,11 @@ module TestP{
   }
 
   void setChannel(){
-    printf("set channel: %u %x\r\n", 
-      channel,
-      call Rf1aPhysical.setChannel(channel));
+    error_t error;
+    printf("Fixing to set channel to %u\r\n", channel);
+    
+    error = call CXLink.setChannel(channel);
+    printf("set channel: %u %x\r\n", channel, error);
   }
 
   task void receivePacket(){ 
@@ -128,7 +130,7 @@ module TestP{
 //      pl = call Packet.getPayload(txMsg, sizeof(test_payload_t));
       pl = call Packet.getPayload(txMsg, 
         call Packet.maxPayloadLength());
-      printf("msg %p header %p pl %p md %p sn %u\r\n",
+      printf("msg %p header %p pl %p md %p sn %lu\r\n",
         txMsg,
         header,
         pl,
@@ -175,7 +177,7 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %u %x\r\n", 
+    printf("SD %lu %x\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       error);
     if (msg == txMsg){
@@ -189,10 +191,10 @@ module TestP{
   task void handleRX(){
 //    test_payload_t* pl = call Packet.getPayload(rxMsg,
 //      sizeof(test_payload_t));
-    printf("RX %p %u %u\r\n",
+    printf("RX %p %lu %u\r\n",
       rxMsg, 
       (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
-      call CXLinkPacket.payloadLength(rxMsg));
+      call Packet.payloadLength(rxMsg));
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -232,9 +234,9 @@ module TestP{
   }
 
   task void nextChannel(){
-    do{
+//    do{
       channel += 32;
-    } while (channel == 0);
+//    } while (channel == 0);
     printf("Next channel: %u\r\n", channel);
   }
 
