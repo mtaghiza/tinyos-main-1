@@ -4,14 +4,16 @@ import sys, time, thread
 
 import Queue
 
-from tinyos.message import *
-from tinyos.message.Message import *
-from tinyos.message.SerialPacket import *
+import MoteIF
+#from tinyos.message import *
+#from tinyos.message.Message import *
+#from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 #import tos
 import mig
 from mig import *
 
+import threading
 
 
 class PrintfLogger(object):
@@ -71,6 +73,7 @@ class Dispatcher(object):
     def stop(self):
         if Dispatcher.users == 1:
             self.mif.finishAll()
+            Dispatcher.mif = None
             
         Dispatcher.users = Dispatcher.users - 1 
 
@@ -89,6 +92,8 @@ class Dispatcher(object):
         # the TinyOS application can be overloaded if called too often
         # insert pause to avoid conflicts
         time.sleep(0.1)
+
+        #print "send()", threading.current_thread().name
 
         return ret 
     

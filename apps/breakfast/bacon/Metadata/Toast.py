@@ -27,8 +27,8 @@ class Toast(object):
 
     busPower = None
 
-    def __init__(self):
-        self.dispatcher = Dispatcher()
+    def __init__(self, motestring='serial@/dev/ttyUSB0:115200'):
+        self.dispatcher = Dispatcher(motestring)
         
     def stop(self):
         self.dispatcher.stop()
@@ -93,6 +93,16 @@ class Toast(object):
             
         return ret.get_version()
 
+    def writeVersion(self, version):
+        """ Write Toast TLV version number. 
+        """
+        msg = WriteToastVersionCmdMsg.WriteToastVersionCmdMsg()        
+        msg.set_version(version)
+        
+        ret = self.dispatcher.send(msg)
+        if ret.get_error() != TOS.SUCCESS:
+            raise UnexpectedResponseError
+
     def readBarcode(self):
         """ Read unique ID from Toast TLV region.
         """
@@ -109,11 +119,12 @@ class Toast(object):
     def writeBarcode(self, newBarcode):    
         """ Write unique ID to Toast TLV region. Requires input array to have 8 elements.
         """
+        msg = WriteToastBarcodeIdCmdMsg.WriteToastBarcodeIdCmdMsg()        
+
         # consistency check on the given array's length
         if len(newBarcode) != msg.totalSize_barcodeId():
             raise InvalidInputError
         
-        msg = WriteToastBarcodeIdCmdMsg.WriteToastBarcodeIdCmdMsg()        
         msg.set_barcodeId(newBarcode)
         
         ret = self.dispatcher.send(msg)            
@@ -216,12 +227,14 @@ class Toast(object):
         if ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
             
-        return [ret.get_assignments_sensorType(), ret.get_assignments_sensorId()]
+        return [ret.get_assignments_sensorId(), ret.get_assignments_sensorType()]
 
-    def writeAssignments(self, newIds, newTypes):
+    def writeAssignments(self, assignments):
         """ Write sensor assignments to TLV. Input: ID array, Type array.
         """
         msg = WriteToastAssignmentsCmdMsg.WriteToastAssignmentsCmdMsg()
+
+        [newIds, newTypes] = assignments
 
         # check size consistency
         if ((len(newIds) != msg.numElements_assignments_sensorId(0)) 
@@ -230,7 +243,9 @@ class Toast(object):
             
         msg.set_assignments_sensorId(newIds)
         msg.set_assignments_sensorType(newTypes)
-        
+        msg.set_len(24)
+
+        print msg
         ret = self.dispatcher.send(msg)
         if ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
@@ -297,19 +312,31 @@ class Toast(object):
         return [ret.get_sample_sampleTime(), ret.get_sample_sample()]
     
 if __name__ == '__main__':
-    toast = Toast()
+
+    import os
+    if os.name == 'nt': 
+        toast = Toast('serial@COM26:115200')
+    else:
+        toast = Toast('serial@/dev/ttyUSB0:115200')
     
     toast.powerOn()
     toast.discover()
     
-    print toast.readVersion()
-    print toast.readBarcode()
+    try:
+        #print toast.readVersion()
+        print toast.readBarcode()
 
-    print toast.readTLV()
-    print toast.readTLVEntry(Toast.TAG_VERSION)
-    print toast.readTLVEntry(Toast.TAG_GLOBAL_ID)
-
-    #toast.writeAssignments([1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8])
+        print toast.readTLV()
+        #print toast.readTLVEntry(Toast.TAG_VERSION)
+        #print toast.readTLVEntry(Toast.TAG_GLOBAL_ID)
+        #print toast.readTLVEntry(Toast.TAG_DCO_30)
+        print toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
+        print toast.readTLVEntry(Toast.TAG_ADC12_1)
+    except:
+        pass
+        
+    #toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
+    #toast.writeAssignments([[1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8]])
     
     print toast.readAssignments()
     

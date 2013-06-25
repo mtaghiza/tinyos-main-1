@@ -210,17 +210,17 @@ if __name__ == '__main__':
 #    print bacon.writeVersion(0x42)
     #print bacon.writeBarcode([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09])
 
-    #print bacon.readVersion()
-    #print bacon.readIV()
-    #print bacon.readMfrID()
+    print bacon.readVersion()
+    print bacon.readIV()
+    print bacon.readMfrID()
     
-    print bacon.readTLV()
+    #print bacon.readTLV()
     
     #print bacon.deleteTLVEntry(Bacon.TAG_GLOBAL_ID), Bacon.TAG_GLOBAL_ID
     #print bacon.addTLVEntry(Bacon.TAG_GLOBAL_ID, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
 
-    print bacon.readTLVEntry(Bacon.TAG_VERSION), Bacon.TAG_VERSION
-    print bacon.readTLVEntry(Bacon.TAG_GLOBAL_ID), Bacon.TAG_GLOBAL_ID
+    #print bacon.readTLVEntry(Bacon.TAG_VERSION)
+    print bacon.readTLVEntry(Bacon.TAG_GLOBAL_ID)
     
     #try:
     #    print 'barcode: ', bacon.readBarcode()
