@@ -397,9 +397,6 @@ module CXLppP {
     signal SplitControl.stopDone(error);
   }
 
-  event void CXLink.toneSent(){}
-  event void CXLink.toneReceived(bool received){}
-
   default event void LppControl.wokenUp(){
   }
   default event void LppControl.fellAsleep(){
