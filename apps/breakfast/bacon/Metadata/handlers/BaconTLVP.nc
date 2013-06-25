@@ -331,22 +331,29 @@ module BaconTLVP{
   task void respondAddBaconTlvEntry(){
     add_bacon_tlv_entry_cmd_msg_t* commandPl = (add_bacon_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(add_bacon_tlv_entry_cmd_msg_t)));
     error_t err = SUCCESS;
+    tlv_entry_t* e;
     //add tag and initialize from commandPl
-    uint8_t offset;
+    uint8_t offset = call TLVUtils.findEntry(commandPl->tag, 0, &e,
+      tlvs);
+    if (offset != 0){
+      err = call TLVUtils.deleteEntry(offset, tlvs);
+    }
 //    printf("AddEntry %x %u %p %p %u\n", commandPl->tag, commandPl->len,
 //      (tlv_entry_t*)commandPl, tlvs, 0);
 //    printfflush();
-    offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
-      (tlv_entry_t*)commandPl, tlvs, 0);
-    if (offset == 0){
-      err = ESIZE;
-    } else {
-      err = persistTLVStorage(tlvs);
+    if (err == SUCCESS){
+      offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
+        (tlv_entry_t*)commandPl, tlvs, 0);
+      if (offset == 0){
+        err = ESIZE;
+      } else {
+        err = persistTLVStorage(tlvs);
+      }
     }
 
     if (err != SUCCESS){
       add_bacon_tlv_entry_response_msg_t* responsePl = (add_bacon_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t)));
-      responsePl->error = ESIZE;
+      responsePl->error = err;
       switch(commandPl->tag){
         case TAG_VERSION:
           call WriteBaconVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_bacon_tlv_entry_response_msg_t));

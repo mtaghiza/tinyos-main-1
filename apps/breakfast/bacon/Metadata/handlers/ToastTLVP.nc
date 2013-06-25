@@ -365,13 +365,23 @@ module ToastTLVP{
   task void respondAddToastTlvEntry(){
     add_toast_tlv_entry_cmd_msg_t* commandPl = (add_toast_tlv_entry_cmd_msg_t*)(call Packet.getPayload(cmdMsg, sizeof(add_toast_tlv_entry_cmd_msg_t)));
     error_t err = SUCCESS;
+    tlv_entry_t* e;
     //add tag and initialize from commandPl
-    uint8_t offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
-      (tlv_entry_t*)commandPl, tlvs, 0);
-    if (offset == 0){
-      err = ESIZE;
-    } else {
-      err = call I2CTLVStorageMaster.persistTLVStorage(call LastSlave.get(), i2c_msg);
+    uint8_t offset = call TLVUtils.findEntry(commandPl->tag, 0, &e,
+      tlvs);
+
+    if (offset != 0){
+      err = call TLVUtils.deleteEntry(offset, tlvs);
+    }
+
+    if (err == SUCCESS){
+      offset = call TLVUtils.addEntry(commandPl->tag, commandPl->len,
+        (tlv_entry_t*)commandPl, tlvs, 0);
+      if (offset == 0){
+        err = ESIZE;
+      } else {
+        err = call I2CTLVStorageMaster.persistTLVStorage(call LastSlave.get(), i2c_msg);
+      }
     }
 
     if (err != SUCCESS){
