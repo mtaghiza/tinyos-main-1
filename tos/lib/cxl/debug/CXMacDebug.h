@@ -1,5 +1,5 @@
-#ifndef CX_LINK_DEBUG_H
-#define CX_LINK_DEBUG_H
+#ifndef CX_MAC_DEBUG_H
+#define CX_MAC_DEBUG_H
 #include "CXDebug.h"
 
 #ifndef DL_MAC
