@@ -31,7 +31,10 @@ class Handler(object):
         for listener in self.connectListeners:
             listener(False)
             
-        self.toast.powerOff()
+        try:
+            self.toast.powerOff()
+        except:
+            pass
         self.toast.stop()
         self.bacon.stop()
 

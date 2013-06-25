@@ -88,7 +88,9 @@ class Toast(object):
         msg = ReadToastVersionCmdMsg.ReadToastVersionCmdMsg()
         
         ret = self.dispatcher.send(msg)
-        if ret.get_error() != TOS.SUCCESS:
+        if (ret.get_error() == TOS.EINVAL):
+            raise TagNotFoundError
+        elif ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
             
         return ret.get_version()
@@ -131,6 +133,17 @@ class Toast(object):
         if ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
 
+    def readAdcConstants(self):
+        """ Read ADC constants from Toast TLV region.
+        """
+        adc = self.readTLVEntry(Toast.TAG_ADC12_1)
+        
+        return adc[0:16]
+
+    def writeAdcConstants(self, adc):
+        """ Write ADC constants to Toast TLV region.
+        """
+        self.addTLVEntry(Toast.TAG_ADC12_1, adc)
 
     #
     # Direct TLV commands
@@ -157,11 +170,12 @@ class Toast(object):
     def writeTLV(self, newTLV):
         """ Write entire TLV. Requires input array to have 64 elements.
         """        
+        msg = WriteToastTlvCmdMsg.WriteToastTlvCmdMsg()
+
         # consistency check on the given array's length
         if len(newTLV) != msg.totalSize_tlvs():
             raise InvalidInputError
         
-        msg = WriteToastTlvCmdMsg.WriteToastTlvCmdMsg()
         msg.set_tlvs(newTLV)
         
         ret = self.dispatcher.send(msg)
@@ -210,7 +224,9 @@ class Toast(object):
         msg.set_tag(tag)
         
         ret = self.dispatcher.send(msg)
-        if ret.get_error() != TOS.SUCCESS:
+        if (ret.get_error() == TOS.EINVAL):
+            raise TagNotFoundError
+        elif ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
 
 
@@ -224,7 +240,9 @@ class Toast(object):
         msg.set_tag(Toast.TAG_TOAST_ASSIGNMENTS)
         
         ret = self.dispatcher.send(msg)
-        if ret.get_error() != TOS.SUCCESS:
+        if (ret.get_error() == TOS.EINVAL):
+            raise TagNotFoundError
+        elif ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
             
         return [ret.get_assignments_sensorId(), ret.get_assignments_sensorType()]
@@ -247,7 +265,10 @@ class Toast(object):
 
         print msg
         ret = self.dispatcher.send(msg)
-        if ret.get_error() != TOS.SUCCESS:
+        
+        if ret.get_error() == TOS.ESIZE:
+            raise OutOfSpaceError # this is a workaround. the bacon should return ENOMEM instead of ESIZE
+        elif ret.get_error() != TOS.SUCCESS:
             raise UnexpectedResponseError
 
 
@@ -321,24 +342,34 @@ if __name__ == '__main__':
     
     toast.powerOn()
     toast.discover()
-    
-    try:
-        #print toast.readVersion()
-        print toast.readBarcode()
 
-        print toast.readTLV()
+    tlv = toast.readTLV()
+    #tlv[6] = 254
+    #tlv[7] = 12
+    #tlv[8] = 255
+    #tlv[9] = 255
+    #tlv[10] = 255
+    #tlv[11] = 255
+    print tlv
+    #toast.writeTLV(tlv)
+    print toast.readAdcConstants()
+    #toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
+    
+    #try:
+        #print toast.readVersion()
+        #print toast.readBarcode()
+        #print toast.readTLV()
         #print toast.readTLVEntry(Toast.TAG_VERSION)
         #print toast.readTLVEntry(Toast.TAG_GLOBAL_ID)
         #print toast.readTLVEntry(Toast.TAG_DCO_30)
-        print toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
-        print toast.readTLVEntry(Toast.TAG_ADC12_1)
-    except:
-        pass
+        #print toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
+        #print toast.readTLVEntry(Toast.TAG_ADC12_1)
+    #except:
+        #pass
         
-    #toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
     #toast.writeAssignments([[1,2,3,4,5,6,7,8],[1,2,3,4,5,6,7,8]])
     
-    print toast.readAssignments()
+    #print toast.readAssignments()
     
     #print toast.readSensor(11, 2000, 10)
     #print toast.readSensor(0, 2000, 10)

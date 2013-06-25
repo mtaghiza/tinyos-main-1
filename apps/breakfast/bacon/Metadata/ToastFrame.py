@@ -348,10 +348,16 @@ class ToastFrame(Frame):
 
         if change:
             print self.assignments
-            self.handler.setAssignments(self.assignments)
-            for i in range(0,8):
-                eval("self.sensor%dnewIDVar.set('')" % i)
-                eval("self.sensor%dnewTypeVar.set('')" % i)
-            self.redrawAssignments()
+            try:
+                self.handler.setAssignments(self.assignments)
+            except OutOfSpaceError:
+                self.assignmentVar.set("Out of memory")
+            except UnexpectedResponseError:
+                self.assignmentVar.set("Update Failed")
+            else:
+                for i in range(0,8):
+                    eval("self.sensor%dnewIDVar.set('')" % i)
+                    eval("self.sensor%dnewTypeVar.set('')" % i)
+                self.redrawAssignments()
 
 

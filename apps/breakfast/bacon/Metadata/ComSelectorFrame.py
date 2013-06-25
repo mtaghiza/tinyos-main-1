@@ -4,7 +4,7 @@ import Tkinter
 from Tkinter import *
 from serial.tools.list_ports import *
 #from ttk import *
-from Chef import Chef
+from Handler import Handler
 import ttk
 
 class ComSelectorFrame(Frame):
@@ -115,7 +115,8 @@ class ComSelectorFrame(Frame):
                 self.basestationButton.config(state=NORMAL)
             else:
                 # no devices found. disable menu and all buttons.
-                menu.add_command(label=self.DEFAULT_STRING, command=lambda value=string: self.comVar.set(self.DEFAULT_STRING))
+                menu.add_command(label=self.DEFAULT_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_STRING))
+                #menu.add_command(label=self.DEFAULT_STRING, command=lambda value=string: self.comVar.set(self.DEFAULT_STRING))
                 self.comVar.set(self.DEFAULT_STRING)
                 self.comOption.config(state=DISABLED)
                 self.connectButton.config(bg="gray", state=DISABLED)
@@ -217,7 +218,7 @@ class ComSelectorFrame(Frame):
 if __name__ == '__main__':
     root = Tk()
     
-    chef = Chef()    
-    comFrame = ComSelectorFrame(root, chef)
+    handler = Handler()    
+    comFrame = ComSelectorFrame(root, handler)
     
     root.mainloop()

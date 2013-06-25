@@ -78,19 +78,21 @@ class BaconFrame(Frame):
 
     def connectSignal(self, connected):
         if connected:
-            self.enableUI()
-
             mfrStr = "<not available>"
             barcodeStr = "<not available>"
+            
             try:
                 mfrStr = self.handler.getMfrID()
                 barcodeStr = self.handler.getBaconBarcode()
             except TagNotFoundError:
                 self.barcodeVar.set("<Barcode not set>")
             except Exception:
-                print Exception
-            self.mfrVar.set(mfrStr)
-            self.barcodeVar.set(barcodeStr)
+                self.mfrVar.set("<connection error>")
+                self.barcodeVar.set("<connection error>")
+            else:
+                self.enableUI()
+                self.mfrVar.set(mfrStr)
+                self.barcodeVar.set(barcodeStr)
             
         else:
             self.disableUI()

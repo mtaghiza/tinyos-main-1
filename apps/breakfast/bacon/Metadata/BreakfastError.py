@@ -14,3 +14,6 @@ class InvalidInputError(Exception):
 class NoDeviceError(Exception):
     pass
     
+class OutOfSpaceError(Exception):
+    pass
+    
