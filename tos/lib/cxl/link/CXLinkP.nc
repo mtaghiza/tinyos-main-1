@@ -367,7 +367,7 @@ module CXLinkP {
       return localState == S_TX? EBUSY: ERETRY;
     } else {
       error_t error = SUCCESS;
-      call CXLinkPacket.setLen(msg, len);
+      call Packet.setPayloadLength(msg, len);
       cdbg(LINK, "RP.S %u %u\r\n", call CXLinkPacket.len(msg),
         header(msg)->ttl);
       if (localState == S_RX){

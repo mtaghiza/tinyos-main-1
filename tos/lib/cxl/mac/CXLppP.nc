@@ -19,6 +19,8 @@ module CXLppP {
   uses interface CXMacPacket;
   //This packet interface goes to body of mac packet
   uses interface Packet;
+  //and this goes to body of link packet
+  uses interface Packet as LinkPacket;
 
   uses interface Timer<TMilli> as ProbeTimer;
   uses interface Timer<TMilli> as SleepTimer;
@@ -150,7 +152,7 @@ module CXLppP {
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
         error = call SubSend.send(probe, 
-          call CXLinkPacket.len(probe));
+          call LinkPacket.getPayloadLength(probe));
         cdbg(LPP, "MS p\r\n");
         if (SUCCESS != error){
           cerror(LPP, "pt.f ss %x\r\n", error);
@@ -176,7 +178,7 @@ module CXLppP {
       call Packet.setPayloadLength(keepAliveMsg, 0);
       call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
       error = call SubSend.send(keepAliveMsg,
-        call CXLinkPacket.len(keepAliveMsg));
+        call LinkPacket.getPayloadLength(keepAliveMsg));
       cdbg(LPP, "MS k\r\n");
       if (SUCCESS != error){
         cerror(LPP, "kat.f ss %x\r\n", error);
@@ -347,7 +349,7 @@ module CXLppP {
       pushSleep();
       (call CXLinkPacket.getLinkHeader(msg))->ttl = CX_MAX_DEPTH;
       call CXLinkPacket.setAllowRetx(msg, TRUE);
-      error = call SubSend.send(msg, call CXLinkPacket.len(msg));
+      error = call SubSend.send(msg, call LinkPacket.payloadLength(msg));
       cdbg(LPP, "MS d %x\r\n", call CXMacPacket.getMacType(msg));
       if (error == SUCCESS){
         sending = TRUE;
