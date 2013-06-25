@@ -20,7 +20,7 @@ module TestP{
   message_t* rxMsg;
 
   uint8_t packetLength=1;
-  uint8_t channel = 0;
+  uint8_t channel = 32;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -234,9 +234,9 @@ module TestP{
   }
 
   task void nextChannel(){
-//    do{
+    do{
       channel += 32;
-//    } while (channel == 0);
+    } while (channel == 0);
     printf("Next channel: %u\r\n", channel);
   }
 
