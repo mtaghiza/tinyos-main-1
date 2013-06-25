@@ -13,12 +13,12 @@ from autoPush.messages import CxRecordRequestMsg
 from autoPush.db import Database
 
 class Dispatcher(object):
-    def __init__(self, motestring):
+    def __init__(self, motestring, bsId):
         #hook up to mote
         self.mif = LppMoteIF.LppMoteIF()
         self.tos_source = self.mif.addSource(motestring)
         #format printf's correctly
-        self.mif.addListener(PrintfListener.PrintfListener(), 
+        self.mif.addListener(PrintfListener.PrintfListener(bsId), 
           PrintfMsg.PrintfMsg)
         self.mif.addListener(RecordListener.RecordListener(), 
           LogRecordDataMsg.LogRecordDataMsg)
@@ -34,7 +34,7 @@ class Dispatcher(object):
 
 def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
     print packetSource
-    d = Dispatcher(packetSource)
+    d = Dispatcher(packetSource, bsId)
     db = Database.Database()
 
     try:
@@ -49,7 +49,7 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
             response = True
             while response:
                 d.mif.wakeup(bsId)
-                response = d.mif.readFrom(node, 2)
+                response = d.mif.readFrom(node, 2.1)
                 if not response:
                     print "No response from %u"%(node,)
                 else:
@@ -85,7 +85,7 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
                 # the cts, and we don't have a good way to block on
                 # this operation.
                 time.sleep(1)
-                d.mif.readFrom(request['node_id'], 2)
+                d.mif.readFrom(request['node_id'], 2.1)
             request_list = db.findMissing()
             repairs += 1
         else:
