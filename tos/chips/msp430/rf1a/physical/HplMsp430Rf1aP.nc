@@ -1622,7 +1622,6 @@ generic module HplMsp430Rf1aP () @safe() {
     if (rv!= SUCCESS){
       return rv;
     }
-//    printf("setchannel %u\r\n", channel);
 
     atomic {
       bool radio_online;
@@ -1678,9 +1677,15 @@ generic module HplMsp430Rf1aP () @safe() {
           //  have to wait until this has returned to idle.
           //  Seems like errata to me, but I don't see it and can't
           //  figure out how to report it :(
-          do {
-            marcstate = call Rf1aIf.readRegister(MARCSTATE);
-          } while (RF1A_MS_IDLE != (0xff & marcstate));
+          //  On the other hand: if we the radio is "offline," then
+          //  this check never passes, so we skip it.
+          if (radio_online){
+            do {
+              marcstate = call Rf1aIf.readRegister(MARCSTATE);
+            } while (RF1A_MS_IDLE != (0xff & marcstate));
+          }else{
+//            printf("skip marcstate check\r\n");
+          }
 
           newCal.fscal1 = call Rf1aIf.readRegister(FSCAL1);
           newCal.fscal2 = call Rf1aIf.readRegister(FSCAL2);
