@@ -19,7 +19,8 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLength=1;
+  #define SHORT_LEN 2
+  uint8_t packetLength=SHORT_LEN;
   uint8_t channel = 32;
 
   bool started = FALSE;
@@ -37,6 +38,8 @@ module TestP{
 
   task void getStatus(){
     printf("* Radio Status: %x\r\n", call Rf1aStatus.get());
+    printf("* Channel: %u\r\n", channel);
+    printf("* packetLength: %u\r\n", packetLength);
   }
 
   task void usage(){
@@ -93,10 +96,7 @@ module TestP{
 
   void setChannel(){
     error_t error;
-    printf("Fixing to set channel to %u\r\n", channel);
-    
     error = call CXLink.setChannel(channel);
-    printf("set channel: %u %x\r\n", channel, error);
   }
 
   task void receivePacket(){ 
@@ -136,17 +136,19 @@ module TestP{
         pl,
         call CXLinkPacket.getLinkMetadata(txMsg),
         header->sn);
-      header->ttl = 1;
+      header->ttl = 2;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
-      if (packetLength != 1){
+      if (packetLength != SHORT_LEN){
         call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
       }
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
       err = call Send.send(txMsg, packetLength);
-      printf("Send: %x %x\r\n", retx, err);
+//      printf("Send: %x %x %u\r\n", retx, err, 
+//        call Packet.payloadLength(txMsg));
       if (err != SUCCESS){
+        printf("Send failed\r\n");
         call Pool.put(txMsg);
         txMsg = NULL;
       }
@@ -177,9 +179,10 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %lu %x\r\n", 
+    printf("SD %lu %x %u\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
-      error);
+      error,
+      call Packet.payloadLength(msg));
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -241,7 +244,8 @@ module TestP{
   }
 
   task void togglePacketLength(){
-    packetLength = (packetLength == 1) ? call Packet.maxPayloadLength() : 1;
+    packetLength = (packetLength == SHORT_LEN) ? call Packet.maxPayloadLength() : SHORT_LEN;
+    printf("Packet length %u\r\n", packetLength);
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
