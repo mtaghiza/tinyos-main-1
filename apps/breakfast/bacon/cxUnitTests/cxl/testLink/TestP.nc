@@ -19,7 +19,7 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLength = 2;
+  uint8_t packetLength = 1;
   uint8_t channel = 32;
 
   bool started = FALSE;
