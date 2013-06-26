@@ -16,10 +16,11 @@ module CXLinkPacketC{
     md(msg)->cx.tsLoc = tsLoc;
   }
   
+  //These commands deal with the *real* packet length (including
+  //padding)
   command void CXLinkPacket.setLen(message_t* msg, uint8_t len){
     md(msg)->rf1a.payload_length = len - sizeof(message_header_t);
   }
-
   command uint8_t CXLinkPacket.len(message_t* msg){
     return md(msg)->rf1a.payload_length + sizeof(message_header_t);
   }
@@ -54,14 +55,19 @@ module CXLinkPacketC{
       return NULL;
     }
   }
+  
 
+  //get payload length: just read from the header.
   command uint8_t Packet.payloadLength(message_t* msg){
-    return md(msg)->rf1a.payload_length;
+    return (call CXLinkPacket.getLinkHeader(msg))->bodyLen;
   }
-
+  
+  //Set payload length: fill in bodyLen in header, set payload length
+  //in metadata
   command void Packet.setPayloadLength(message_t* msg, 
       uint8_t len){
-    md(msg)->rf1a.payload_length = len;
+    (call CXLinkPacket.getLinkHeader(msg))->bodyLen = len;
+    call CXLinkPacket.setLen(msg, len + sizeof(message_header_t));
   }
 
   command uint8_t Packet.maxPayloadLength(){

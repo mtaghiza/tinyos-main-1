@@ -382,7 +382,27 @@ module CXLinkP {
       return localState == S_TX? EBUSY: ERETRY;
     } else {
       error_t error = SUCCESS;
+      //setPayloadLength will set up the header and will set the
+      //  md's length field to a "tight fit."
+      //Due to life being awesome, packets that are < 64 bytes
+      //(encoded) have lots of weird timing characteristics, while
+      //packets that are >= 64 bytes all behave the same.
+      //In order to handle this, we force packets to either be:
+      // a. SHORT_PACKET bytes long
+      // b. >= LONG_PACKET bytes long
+      //CXLinkPacket.setLen does not disrupt the header, though it
+      // will dictate how many bytes we actually send out over the
+      // radio.
+      //Incidentally, since apparently Packet.clear() is meant to just
+      //  wipe out headers, there may be garbage left over in the
+      //  payload area after the "real" payload. As long as that
+      //  garbage gets forwarded consistently, we don't really care.
       call Packet.setPayloadLength(msg, len);
+      if (call CXLinkPacket.len(msg) <= SHORT_PACKET){
+        call CXLinkPacket.setLen(msg, SHORT_PACKET);
+      }else if (call CXLinkPacket.len(msg) < LONG_PACKET){
+        call CXLinkPacket.setLen(msg, LONG_PACKET); 
+      }
       cdbg(LINK, "RP.S %u %u\r\n", call CXLinkPacket.len(msg),
         header(msg)->ttl);
       if (localState == S_RX){
@@ -443,7 +463,7 @@ module CXLinkP {
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
         if (error == SUCCESS){
-          frameLen = (call Packet.payloadLength(msg) <= SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
+          frameLen = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
         }
       }else{
         cwarn(LINK, "rp.st %x\r\n", error);
