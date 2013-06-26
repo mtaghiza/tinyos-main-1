@@ -72,24 +72,23 @@ module TestP{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
 //      //SMCLK to 1.1
-      P1MAP1 = PM_SMCLK;
+//      P1MAP1 = PM_SMCLK;
       //GDO to 2.4 (synch)
       P2MAP4 = PM_RFGDO0;
       PMAPPWD = 0x00;
 
-      P1DIR |= BIT1;
-      P1SEL &= ~BIT1;
-      P1OUT &= ~BIT1;
-      P1SEL |= BIT1;
       P2DIR |= BIT4;
       P2SEL |= BIT4;
       
       //power on flash chip
       P2SEL &=~BIT1;
       P2OUT |=BIT1;
+
       //enable p1.2,3,4 for gpio
-      P1DIR |= BIT2 | BIT3 | BIT4;
-      P1SEL &= ~(BIT2 | BIT3 | BIT4);
+      P1DIR |= BIT1 | BIT2 | BIT3 | BIT4;
+      P1SEL &= ~(BIT1 | BIT2 | BIT3 | BIT4);
+
+      P1OUT &= ~(BIT1|BIT2|BIT3|BIT4);
     }
     post toggleStartStop();
   }
@@ -136,7 +135,7 @@ module TestP{
         pl,
         call CXLinkPacket.getLinkMetadata(txMsg),
         header->sn);
-      header->ttl = 2;
+      header->ttl = 4;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
