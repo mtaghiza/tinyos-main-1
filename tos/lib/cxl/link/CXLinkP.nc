@@ -138,24 +138,32 @@ module CXLinkP {
   bool readyForward(message_t* msg);
   error_t subsend(message_t* msg);
 
+  task void startImmediately(){
+    atomic{
+      signal FastAlarm.fired();
+    }
+  }
+
   event void DelayedSend.sendReady(){
     
     atomic {
-      P1OUT |= BIT2;
       if (aSfdCapture){
         if(!aSynched){
+          P1OUT |= BIT1;
           //first synch point: computed based on sfd capture (either RX
           //or TX)
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
+          P1OUT |= BIT2;
           //every subsequent transmission: should be based on the
           //  previous one.
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
         }
       }else{
+        P1OUT |= BIT3;
 //        //N.B.: at this point, packet is already loaded into
 //        // buffer, so we can't modify it. Need to either use
 //        // fragmentation (+ROM) or suck it up and timestamp it above
@@ -169,7 +177,7 @@ module CXLinkP {
 //          *(metadata(fwdMsg)->tsLoc) = (call LocalTime.get() + TS_CORRECTION );
 //        }
         //first transmission: ok to trigger alarm immediately
-        call FastAlarm.start(0);
+        post startImmediately();
       }
     }
   }
@@ -178,7 +186,6 @@ module CXLinkP {
     atomic{
       sfdAdjust = TX_SFD_ADJUST;
       aTxResult = result;
-      P1OUT &= ~(BIT2|BIT3);
     }
     if (crcIndex < CRC_HIST_LEN){
       crcHist[crcIndex] = call LastCRC.getNow();
@@ -262,11 +269,13 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
-    P1OUT |= BIT3;
+    P1OUT &= ~(BIT1|BIT2|BIT3);
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
+      P1OUT |= (BIT1|BIT2|BIT3);
       call DelayedSend.startSend();
+      P1OUT &= ~(BIT1|BIT2|BIT3);
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
@@ -431,10 +440,8 @@ module CXLinkP {
         rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
         call SynchCapture.captureRisingEdge();
 //        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
-        P1OUT |= BIT1;
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
-        P1OUT &= ~BIT1;
         if (error == SUCCESS){
           frameLen = (call Packet.payloadLength(msg) <= SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
         }
@@ -469,6 +476,10 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    //TODO: if this does turn out to be length-dependent (still don't
+    //see how that could be the case), then replace this with a lookup
+    //into a table by count. This table might be annoyingly big, say
+    //4*110 bytes.
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
