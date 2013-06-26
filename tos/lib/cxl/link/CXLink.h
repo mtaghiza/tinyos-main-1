@@ -21,7 +21,8 @@
 //set to 4.4 ms: short packet is estimated to take 1.1 ms to send,
 //add an equal amount of padding time 
 //#define FRAMELEN_FAST_SHORT (84500UL * CX_SCALE_TIME)
-#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
+//#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
+#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL
 #endif
 
 //Short packet: mac header only
@@ -32,10 +33,11 @@
 #define CX_CS_TIMEOUT_EXTEND 3500UL
 
 //time from strobe command to SFD: 0.000523 S
-#define TX_SFD_ADJUST 3395UL
+//argh, this looks less constant than I want it to be...
+#define TX_SFD_ADJUST 3346UL
 
 //difference between transmitter SFD and receiver SFD: 60.45 fast ticks
-#define T_SFD_PROP_TIME 60UL 
+#define T_SFD_PROP_TIME (60UL - 24UL)
 
 #define RX_SFD_ADJUST (TX_SFD_ADJUST + T_SFD_PROP_TIME)
 
