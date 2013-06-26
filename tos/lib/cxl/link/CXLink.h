@@ -38,9 +38,11 @@
 #define TX_SFD_ADJUST 3346UL
 
 //difference between transmitter SFD and receiver SFD: 60.45 fast ticks
-#define T_SFD_PROP_TIME (60UL - 24UL)
+#define T_SFD_PROP_TIME_FAST (60UL - 24UL)
+#define T_SFD_PROP_TIME_NORMAL (60UL)
 
-#define RX_SFD_ADJUST (TX_SFD_ADJUST + T_SFD_PROP_TIME)
+#define RX_SFD_ADJUST_FAST   (TX_SFD_ADJUST + T_SFD_PROP_TIME_FAST)
+#define RX_SFD_ADJUST_NORMAL (TX_SFD_ADJUST + T_SFD_PROP_TIME_NORMAL)
 
 //const uint8_t tonePacket[255] = {
 // 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
