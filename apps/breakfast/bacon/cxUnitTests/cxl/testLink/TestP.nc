@@ -19,8 +19,9 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  #define SHORT_LEN 2
-  uint8_t packetLength=SHORT_LEN;
+  uint8_t packetLengths[4] = {2, 10, 60, 110};
+  uint8_t packetLength = 2;
+  uint8_t packetLengthIndex = 0;
   uint8_t channel = 32;
 
   bool started = FALSE;
@@ -139,7 +140,7 @@ module TestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
-      if (packetLength != SHORT_LEN){
+      if (packetLength >= sizeof(test_payload_t)){
         call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
       }
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
@@ -243,7 +244,8 @@ module TestP{
   }
 
   task void togglePacketLength(){
-    packetLength = (packetLength == SHORT_LEN) ? call Packet.maxPayloadLength() : SHORT_LEN;
+    packetLengthIndex = (1+packetLengthIndex)%4;
+    packetLength = packetLengths[packetLengthIndex];
     printf("Packet length %u\r\n", packetLength);
   }
 
