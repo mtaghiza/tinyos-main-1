@@ -22,7 +22,8 @@
 //add an equal amount of padding time 
 //#define FRAMELEN_FAST_SHORT (84500UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
-#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL
+//#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL
+#define FRAMELEN_FAST_SHORT 19500UL
 #endif
 
 //Short packet: mac header only
