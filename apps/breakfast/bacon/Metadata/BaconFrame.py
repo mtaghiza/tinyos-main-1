@@ -105,10 +105,13 @@ class BaconFrame(Frame):
             self.handler.setBaconBarcode(self.newBarcodeVar.get())
             barcodeStr = self.handler.getBaconBarcode()
         except ValueError:
-            self.barcodeVar.set("<barcode must be an integer>")
+            self.barcodeVar.set("<barcode not an integer>")
+            self.barcodeVarLabel.config(fg="red")
         except:
             self.barcodeVar.set("<update failed>")
+            self.barcodeVarLabel.config(fg="red")
         else:    
             self.barcodeVar.set(barcodeStr)
-
+            self.barcodeVarLabel.config(fg="black")
+            self.newBarcodeVar.set("")
     

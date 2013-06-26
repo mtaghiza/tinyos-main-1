@@ -25,6 +25,8 @@ class Toast(object):
     TAG_TOAST_ASSIGNMENTS = 0x05    # Toast sensor assignments
     TAG_ADC12_1 = 0x08              # Toast ADC Calibration constants
 
+    EMPTY_ASSIGNMENTS = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+    
     busPower = None
 
     def __init__(self, motestring='serial@/dev/ttyUSB0:115200'):
@@ -145,6 +147,20 @@ class Toast(object):
         """
         self.addTLVEntry(Toast.TAG_ADC12_1, adc)
 
+
+    def readCustomDCO(self):
+        """ Read custom DCO constant from Toast TLV region.
+        """
+        dco = self.readTLVEntry(Toast.TAG_DCO_CUSTOM)
+        
+        return dco[0:2]
+
+    def writeCustomDCO(self, dco):
+        """ Write custom DCO constant to Toast TLV region.
+        """
+        self.addTLVEntry(Toast.TAG_DCO_CUSTOM, dco)
+
+
     #
     # Direct TLV commands
     #
@@ -263,7 +279,7 @@ class Toast(object):
         msg.set_assignments_sensorType(newTypes)
         msg.set_len(24)
 
-        print msg
+        #print msg
         ret = self.dispatcher.send(msg)
         
         if ret.get_error() == TOS.ESIZE:
@@ -343,6 +359,19 @@ if __name__ == '__main__':
     toast.powerOn()
     toast.discover()
 
+
+    # step 1
+    #toast.writeVersion(0)
+    
+    # step 2 
+    # reboot
+
+    #toast.deleteTLVEntry(Toast.TAG_DCO_30)
+    
+    #adc = toast.readAdcConstants()
+    #toast.writeAdcConstants(adc)
+    
+
     tlv = toast.readTLV()
     #tlv[6] = 254
     #tlv[7] = 12
@@ -352,8 +381,15 @@ if __name__ == '__main__':
     #tlv[11] = 255
     print tlv
     #toast.writeTLV(tlv)
-    print toast.readAdcConstants()
-    #toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
+
+    
+    #print toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
+    #adc = toast.readAdcConstants()
+    #toast.writeAdcConstants(adc)
+
+    #dco = toast.readCustomDCO()
+    #toast.writeCustomDCO(dco)
+
     
     #try:
         #print toast.readVersion()

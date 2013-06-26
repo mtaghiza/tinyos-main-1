@@ -4,7 +4,9 @@ from CC430bsl.Progress import Progress
 import Queue
 from Bacon import Bacon
 from Toast import Toast
+from ToastSampling import ToastSampling
 from BreakfastError import *
+
 
 import time
 
@@ -13,11 +15,15 @@ class Handler(object):
 
     def __init__(self):
         self.connectListeners = []
+        self.sampleListeners = []
         self.bacon = None
         self.toast = None
 
     def addConnectListener(self, callMe):
         self.connectListeners.append(callMe)
+
+    def addSampleListener(self, callMe):
+        self.sampleListeners.append(callMe)
 
     def connect(self, port, statusVar):
         self.bacon = Bacon('serial@%s:115200' % port)
@@ -58,19 +64,11 @@ class Handler(object):
         return barcodeStr
 
     def setBaconBarcode(self, barcodeStr):
-
         # format barcode into int array, this also validates input
         barcode = int(barcodeStr, 16)
         output = []
         for i in range(0,8):
             output.append((barcode >> ((7-i)*8)) & 0xFF)
-        
-        # remove all barcode entries in TLV
-        try:
-            while(True):
-                self.bacon.deleteTLVEntry(Bacon.TAG_GLOBAL_ID)
-        except:
-            pass
             
         self.bacon.writeBarcode(output)
 
@@ -93,12 +91,58 @@ class Handler(object):
     #
     # Toast
     #
-    def connectToast(self):
-        
+    def connectToast(self):                
+        self.powerCycle()
+
+        try:
+            self.toast.readVersion()
+        except TagNotFoundError:
+            try:
+                print "New Toast"
+                self.toast.writeVersion(0)
+                self.powerCycle()
+                self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
+                adc = self.toast.readAdcConstants()
+                self.toast.writeAdcConstants(adc)
+            except:
+                pass
+        except:
+            pass
+
+
+    def powerCycle(self):
         self.toast.powerOff()
         time.sleep(1)
         self.toast.powerOn()
-        self.toast.discover()    
+        self.toast.discover()
+
+    def resetToast(self):
+        try:
+            self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
+        except TagNotFoundError:
+            pass
+        
+        try:
+            self.toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
+        except TagNotFoundError:
+            pass
+            
+        try:
+            self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
+        except TagNotFoundError:
+            pass
+            
+        try:
+            self.toast.deleteTLVEntry(Toast.TAG_DCO_CUSTOM)
+        except TagNotFoundError:
+            pass
+            
+        self.powerCycle()
+        
+        adc = self.toast.readAdcConstants()
+        self.toast.writeAdcConstants(adc)
+
+
 
     def getToastBarcode(self):
         barcode = self.toast.readBarcode()
@@ -115,13 +159,6 @@ class Handler(object):
         output = []
         for i in range(0,8):
             output.append((barcode >> ((7-i)*8)) & 0xFF)
-        
-        # remove all barcode entries in TLV
-        try:
-            while(True):
-                self.toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
-        except:
-            pass
             
         self.toast.writeBarcode(output)
 
@@ -129,14 +166,10 @@ class Handler(object):
         return self.toast.readAssignments()
 
     def setAssignments(self, assignments):
-    
-        # remove all barcode entries in TLV
         try:
-            while(True):
-                self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
-        except:
+            self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
+        except TagNotFoundError:
             pass
-               
         self.toast.writeAssignments(assignments)
     
     def getADCSettings(self):
@@ -154,29 +187,28 @@ class Handler(object):
         
         return dcoStr
 
-    def updateDCO(self):
-        # remove all DCO entries in TLV
-        try:
-            while(True):
-                self.toast.deleteTLVEntry(Toast.TAG_DCO_CUSTOM)
-        except:
-            pass
+    #
+    # Sensor
+    #
+    def startSampling(self, sensors):
+        self.sampleThread = ToastSampling(self, sensors)
+        self.sampleThread.start()
+        
+        for listener in self.sampleListeners:
+            listener(True)
 
-        try:
-            while(True):
-                self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
-        except:
-            pass
+    def stopSampling(self):
+        self.sampleThread.stop()
+        
+        for listener in self.sampleListeners:
+            listener(False)
 
-        try:
-            while(True):
-                self.toast.deleteTLVEntry(Toast.TAG_VERSION)
-        except:
-            pass
+    def readSensor(self, channel, sensorImpedance=10000, warmUpMs = 10, 
+      sref = Toast.REFERENCE_VREFplus_AVss, ref2_5v = True, samplePeriod32k = 0):
+      
+      return self.toast.readSensor(channel, sensorImpedance, warmUpMs, 
+      sref, ref2_5v, samplePeriod32k)
 
-        self.toast.writeVersion(0x01)
-        self.toast.powerOff()
-        time.sleep(1)
-        self.toast.powerOn()
-        self.toast.discover()
-    
+    def getReadings(self):
+        return self.sampleThread.queue.get(False)
+
