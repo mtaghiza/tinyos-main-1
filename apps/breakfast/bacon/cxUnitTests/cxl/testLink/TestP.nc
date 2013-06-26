@@ -19,9 +19,7 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLengths[4] = {2, 10, 60, 110};
   uint8_t packetLength = 2;
-  uint8_t packetLengthIndex = 0;
   uint8_t channel = 32;
 
   bool started = FALSE;
@@ -244,8 +242,7 @@ module TestP{
   }
 
   task void togglePacketLength(){
-    packetLengthIndex = (1+packetLengthIndex)%4;
-    packetLength = packetLengths[packetLengthIndex];
+    packetLength = (packetLength + 4)%114;
     printf("Packet length %u\r\n", packetLength);
   }
 
