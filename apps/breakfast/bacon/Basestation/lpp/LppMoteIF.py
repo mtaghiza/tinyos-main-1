@@ -56,6 +56,13 @@ class LppMoteIF(MoteIF):
         
 
     def readFrom(self, addr, timeout=DEFAULT_READ_TIMEOUT):
+        #first, flush out anything that's kicking around in the queue.
+        while self.queue.qsize():
+            m = self.queue.get(False)
+            if m.addr == addr:
+                return m
+        #if there's no data from this node left in the queue, then
+        # send it a CTS and wait for a response
         cts = CxLppCts.CxLppCts()
         cts.set_addr(addr)
         self.send(addr, cts)
