@@ -43,12 +43,15 @@ module BaconSamplerLowP{
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
-    call Timer.startPeriodic(sampleInterval);
+    call Timer.startOneShot(sampleInterval);
   }
   
   task void readBattery();
   event void Timer.fired(){
     sampleRec.baseTime = call Timer.getNow();
+    call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
+      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
     sampleRec.battery = 0x0000;
     sampleRec.light = 0x0000;
     post readBattery();

@@ -62,11 +62,14 @@ module ToastSamplerP{
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
     sampleRec.recordType = RECORD_TYPE_SAMPLE;
-    call Timer.startPeriodic(sampleInterval);
+    call Timer.startOneShot(sampleInterval);
   }
 
   event void Timer.fired(){
     uint8_t i;
+    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
     if (!busy){
       busy = TRUE;
       for (i=0; i < MAX_BUS_LEN; i++){
