@@ -100,11 +100,17 @@ Log Records: 0xE0 - 0xEF
 tos/platforms/bacon/chips/stm25p/RecordStorage.h: AM_LOG_RECORD_DATA_MSG = 0xE0
 
 
-CX collection control: 0xF0 - 0xFF
+CX collection control: 0xF0 - 0xF7
 ------
 bacon/autoPush/RecordRequest.h: AM_CX_RECORD_REQUEST_MSG = 0xF0
 
+Ping: 0xF8-0xF9
+------
+bacon/ping/ping.h: AM_PING_MSG=0xF8
+bacon/ping/ping.h: AM_PONG_MSG=0xF9
 
+Unused : 0xFA-0xFF
+------
 
 Log record types
 ==============
