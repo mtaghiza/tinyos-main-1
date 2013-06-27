@@ -20,19 +20,22 @@ module PingP {
       sizeof(ping_msg_t));
     uint32_t pingId = pingPl->pingId;
     am_addr_t from = call AMPacket.source(pkt);
-    pong_msg_t* pongPl;
+    pong_msg_t* pongPl = call Packet.getPayload(pkt,
+      sizeof(pong_msg_t));
+    error_t error;
     call Packet.clear(pkt);
     pongPl->pingId = pingId;
     pongPl->rebootCounter = call RebootCounter.get();
     pongPl->tsMilli = tm;
     pongPl->ts32k   = t32k;
-    if (SUCCESS != call AMSend.send(from, pkt, sizeof(pong_msg_t))){
+    error = call AMSend.send(from, pkt, sizeof(pong_msg_t));
+    if (SUCCESS != error){
       call Pool.put(pkt);
     }
   }
 
   event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
-    if (pkt == NULL){
+    if (pkt != NULL){
       return msg;
     }else{
       message_t* ret;
