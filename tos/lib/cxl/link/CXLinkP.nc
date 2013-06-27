@@ -148,18 +148,18 @@ module CXLinkP {
     
     atomic {
       if (aSfdCapture){
-        if(!aSynched){
+//        if(!aSynched){
           //first synch point: computed based on sfd capture (either RX
           //or TX)
-          call FastAlarm.startAt(aSfdCapture,  
-            frameLen - sfdAdjust);
-          aSynched = TRUE;
-        }else{
-          //every subsequent transmission: should be based on the
-          //  previous one.
-          call FastAlarm.startAt(call FastAlarm.getAlarm(),
-            frameLen);
-        }
+        call FastAlarm.startAt(aSfdCapture,  
+          frameLen - sfdAdjust);
+//        aSynched = TRUE;
+//        }else{
+//          //every subsequent transmission: should be based on the
+//          //  previous one.
+//          call FastAlarm.startAt(call FastAlarm.getAlarm(),
+//            frameLen);
+//        }
       }else{
 //        //N.B.: at this point, packet is already loaded into
 //        // buffer, so we can't modify it. Need to either use
@@ -547,7 +547,7 @@ module CXLinkP {
         crcFirstPassed = crcIndex-1;
       }
 
-      sfdAdjust += (SFD_ADJUST_HOP * (header(rxMsg)->hopCount -1));
+//      sfdAdjust += (SFD_ADJUST_HOP * (header(rxMsg)->hopCount -1));
     }
 //    printf("hr %p %u %u %u\r\n", rxMsg, call CXLinkPacket.len(rxMsg),
 //      rxLen, rxResult);

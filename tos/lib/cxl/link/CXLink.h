@@ -40,11 +40,9 @@
 //argh, this looks less constant than I want it to be...
 #define TX_SFD_ADJUST 3346UL
 
-#define SFD_ADJUST_HOP 49UL
-
 //difference between transmitter SFD and receiver SFD: 60.45 fast ticks
 //#define T_SFD_PROP_TIME_FAST (60UL - 12UL)
-#define T_SFD_PROP_TIME_NORMAL (60UL)
+#define T_SFD_PROP_TIME_NORMAL (59UL)
 #define T_SFD_PROP_TIME_FAST T_SFD_PROP_TIME_NORMAL 
 
 #define RX_SFD_ADJUST_NORMAL (TX_SFD_ADJUST + T_SFD_PROP_TIME_NORMAL)
