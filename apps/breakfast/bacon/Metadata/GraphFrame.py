@@ -13,11 +13,13 @@ class GraphFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        self.handler.addConnectListener(self.connectSignal)
+        self.handler.addToastListener(self.connectSignal)
         self.handler.addSampleListener(self.sampleSignal)
         self.simplot = simplot
         self.allPoints = []
-
+        
+        self.graph = None
+        
         self.mean = [0,0,0,0,0,0,0,0]
         self.count = [0,0,0,0,0,0,0,0]
         self.values = {}
@@ -29,11 +31,7 @@ class GraphFrame(Frame):
         self.pack()
 
     def initUI(self):
-        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
-        self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
-        self.obj = self.simplot.makeGraphObjects([self.sym])
-        self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
-        self.graph.grid(column=1, row=1)
+        self.initGraph()
         
         self.sFrame = Frame(self, width=400, height=300)
         self.meanLabel = Label(self.sFrame, text="Mean")
@@ -115,7 +113,9 @@ class GraphFrame(Frame):
         #self.sFrame.grid_propagate(False)
 
     def enableUI(self):
-        self.graph.grid(column=1, row=1)                   
+        self.initGraph()
+        self.resetStat()
+        #self.graph.grid(column=1, row=1)                   
         self.meanLabel.config(state=NORMAL)
         self.stdLabel.config(state=NORMAL)
         self.countLabel.config(state=NORMAL)
@@ -128,6 +128,7 @@ class GraphFrame(Frame):
  
     def disableUI(self):
         self.graph.grid_forget()
+        self.resetStat()
         self.meanLabel.config(state=DISABLED)
         self.stdLabel.config(state=DISABLED)
         self.countLabel.config(state=DISABLED)
@@ -143,46 +144,72 @@ class GraphFrame(Frame):
         else:
             self.disableUI()
 
-    def sampleSignal(self, sampling):
-        self.sampling = sampling
-        if self.sampling:
-            self.resetGraph()
-            self.graph.after(1000, self.update)
 
+
+    def initGraph(self):
+        if self.graph:
+            self.graph.grid_forget()
+            
+        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
+        self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
+        self.obj = self.simplot.makeGraphObjects([self.sym])
+        self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
+        self.graph.grid(column=1, row=1)
 
     def resetGraph(self):
+        oldGraph = self.graph
+        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
+        self.graph.grid(column=1, row=1)
+        oldGraph.grid_forget()
+    
+    def resetStat(self):
         self.allPoints = []
         for i in range(0,8):
             self.mean[i] = 0
             self.count[i] = 0
             self.values[i] = []
             
-        self.graph.grid_forget()
-        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
+            eval("self.sensor%dMeanVar.set(0.0)" % i)
+            eval("self.sensor%dStdVar.set(0.0)" % i) 
+            eval("self.sensor%dCountVar.set(0)" % i) 
+
+    #
+    # Graph and stat update
+    #    
+    def sampleSignal(self, sampling):
+        self.sampling = sampling
+        if self.sampling:
+            self.resetGraph()
+            self.resetStat()
+            self.graph.after(1000, self.update)
 
     def update(self):
-        try:
-            while(True):
-                (sensor, adc) = self.handler.getReadings()
-                self.allPoints.append((sensor, adc))
-                self.mean[sensor] += adc
-                self.count[sensor] += 1
-                self.values[sensor].append(adc)
-        except Queue.Empty:
-            pass
-        
-        self.drawPoints()
-        self.calculateStats()
         if self.sampling:
+            try:
+                while(True):
+                    (sensor, adc) = self.handler.getReadings()
+                    self.allPoints.append((sensor, adc))
+                    
+                    # sensors are labeled 1-8
+                    self.mean[sensor-1] += adc
+                    self.count[sensor-1] += 1
+                    self.values[sensor-1].append(adc)
+            except Queue.Empty:
+                pass
+            
+            self.drawPoints()
+            self.calculateStats()
             self.graph.after(1000, self.update)
 
     def drawPoints(self):    
         #self.graph = self.simplot.makeGraphBase(self, 500, 300, xtitle="Sensor", ytitle="ADC")  
+        #self.resetGraph()
+        self.graph.clear()
         self.symbols = self.simplot.makeSymbols(self.allPoints, marker="dot", size=1, fillcolor="red")
         self.objects = self.simplot.makeGraphObjects([self.symbols])
         #self.graph.draw(self.objects, xaxis=(0,9), yaxis=(0,4096))
         self.graph.draw(self.objects, xaxis=(0,9), yaxis="automatic")
-        self.graph.grid(column=1, row=1)
+ 
         #print self.allPoints
 
     def calculateStats(self):

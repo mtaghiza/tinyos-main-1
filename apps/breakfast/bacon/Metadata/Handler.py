@@ -16,6 +16,7 @@ class Handler(object):
     def __init__(self):
         self.connectListeners = []
         self.sampleListeners = []
+        self.toastListeners = []
         self.bacon = None
         self.toast = None
 
@@ -25,15 +26,26 @@ class Handler(object):
     def addSampleListener(self, callMe):
         self.sampleListeners.append(callMe)
 
-    def connect(self, port, statusVar):
-        self.bacon = Bacon('serial@%s:115200' % port)
-        self.toast = Toast('serial@%s:115200' % port)
+    def addToastListener(self, callMe):
+        self.toastListeners.append(callMe)
+
+    def connect(self, port):
+        self.currentPort = port
+        input = "-S 115200 -c %s -r" % port
+        
+        cc430 = CC430bsl.CC430bsl(input, self.resetDone)
+        cc430.start()
+
+    def resetDone(self, result):
+        time.sleep(1)
+        self.bacon = Bacon('serial@%s:115200' % self.currentPort)
+        self.toast = Toast('serial@%s:115200' % self.currentPort)
 
         for listener in self.connectListeners:
             listener(True)
         
     
-    def disconnect(self, statusVar):        
+    def disconnect(self):        
         for listener in self.connectListeners:
             listener(False)
             
@@ -53,6 +65,18 @@ class Handler(object):
         for i in mfr:
             mfrStr += "%02X" % i
         return mfrStr
+
+    def getBaconADCSettings(self):
+        adc = self.bacon.readAdcC()
+        
+        adcList = []
+        for i in range(0,16,2):
+            adcList.append((adc[i+1] << 8) + adc[i])
+
+        for i in range(18,24,2):
+            adcList.append((adc[i+1] << 8) + adc[i])
+
+        return adcList
 
     def getBaconBarcode(self):
         barcode = self.bacon.readBarcode()
@@ -91,6 +115,10 @@ class Handler(object):
     #
     # Toast
     #
+    def signalToast(self, connected):
+        for listener in self.toastListeners:
+            listener(connected)        
+    
     def connectToast(self):                
         self.powerCycle()
 
@@ -166,20 +194,20 @@ class Handler(object):
         return self.toast.readAssignments()
 
     def setAssignments(self, assignments):
-        try:
-            self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
-        except TagNotFoundError:
-            pass
+        #try:
+        #    self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
+        #except TagNotFoundError:
+        #    pass
         self.toast.writeAssignments(assignments)
     
-    def getADCSettings(self):
+    def getToastADCSettings(self):
         adc = self.toast.readTLVEntry(Toast.TAG_ADC12_1)
         
-        adcStr = ""
-        for i in range(0,16):
-            adcStr += "%02X" % adc[i]
+        adcList = []
+        for i in range(0,16,2):
+            adcList.append((adc[i+1] << 8) + adc[i])
             
-        return adcStr
+        return adcList
 
     def getDCOSettings(self):
         dco = self.toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)

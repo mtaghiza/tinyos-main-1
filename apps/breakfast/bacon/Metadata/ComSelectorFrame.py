@@ -18,8 +18,7 @@ class ComSelectorFrame(Frame):
         self.handler = handler
         
         # 
-        self.connectVar = BooleanVar()
-        self.connectVar.trace("w", self.connectionChanged)
+        self.connected = False
         
         # 
         self.programVar = BooleanVar()
@@ -41,11 +40,11 @@ class ComSelectorFrame(Frame):
         
         # connect button. disabled when no device detected and when already connected
         # turns green when connected otherwise gray
-        self.connectButton = Button(self, text="Connect", background="gray", state=DISABLED, command=Tkinter._setit(self.connectVar, True))
+        self.connectButton = Button(self, text="Connect", background="gray", state=DISABLED, command=self.connect)
         self.connectButton.grid(column=2,row=1)
         
         # disconnect button. disabled and red when not connected otherwise gray.
-        self.disconnectButton = Button(self, text="Disonnected", bg="red", state=DISABLED, command=Tkinter._setit(self.connectVar, False))
+        self.disconnectButton = Button(self, text="Disonnected", bg="red", state=DISABLED, command=self.disconnect)
         self.disconnectButton.grid(column=3,row=1)
         
         # program buttons
@@ -81,8 +80,8 @@ class ComSelectorFrame(Frame):
             newDict[desc] = port
         
         # call disconnect function if the current device disappears
-        if self.connectVar.get() and self.comVar.get() not in newDict:
-            self.connectVar.set(False)
+        if self.connected and self.comVar.get() not in newDict:
+            self.disconnect()
         
         # update menu when not currently connected
         if newDict != self.comDict:
@@ -133,33 +132,35 @@ class ComSelectorFrame(Frame):
         self.comOption.after(1000, self.deviceDetection)
 
 
-    def connectionChanged(self, name, index, mode):
+    def connect(self):
         """ Event handler for changing connection status.
         """        
-        if self.connectVar.get():
-            
-            self.handler.connect(self.comDict[self.comVar.get()], self.connectVar)
-            
-            # enable/disable buttons and change color
-            self.comOption.config(state=DISABLED)
-            self.connectButton.config(text="Connected", bg="green", state=DISABLED)
-            self.disconnectButton.config(text="Disconnect", bg="gray", state=NORMAL)
-            self.toasterButton.config(state=DISABLED)
-            self.leafButton.config(state=DISABLED)
-            self.routerButton.config(state=DISABLED)
-            self.basestationButton.config(state=DISABLED)
-        else:
-            
-            self.handler.disconnect(self.connectVar)
-            
-            # enable/disable buttons and change color
-            self.comOption.config(state=NORMAL)
-            self.connectButton.config(text="Connect", bg="gray", state=NORMAL)
-            self.disconnectButton.config(text="Disconnected", bg="red", state=DISABLED)
-            self.toasterButton.config(state=NORMAL)
-            self.leafButton.config(state=NORMAL)
-            self.routerButton.config(state=NORMAL)
-            self.basestationButton.config(state=NORMAL)
+        self.connected = True
+        self.handler.connect(self.comDict[self.comVar.get()])
+        
+        # enable/disable buttons and change color
+        self.comOption.config(state=DISABLED)
+        self.connectButton.config(text="Connected", bg="green", state=DISABLED)
+        self.disconnectButton.config(text="Disconnect", bg="gray", state=NORMAL)
+        self.toasterButton.config(state=DISABLED)
+        self.leafButton.config(state=DISABLED)
+        self.routerButton.config(state=DISABLED)
+        self.basestationButton.config(state=DISABLED)
+
+    def disconnect(self):
+        """ Event handler for changing connection status.
+        """        
+        self.connected = False
+        self.handler.disconnect()
+        
+        # enable/disable buttons and change color
+        self.comOption.config(state=NORMAL)
+        self.connectButton.config(text="Connect", bg="gray", state=NORMAL)
+        self.disconnectButton.config(text="Disconnected", bg="red", state=DISABLED)
+        self.toasterButton.config(state=NORMAL)
+        self.leafButton.config(state=NORMAL)
+        self.routerButton.config(state=NORMAL)
+        self.basestationButton.config(state=NORMAL)
 
     def disableUI(self):
         self.programming = True

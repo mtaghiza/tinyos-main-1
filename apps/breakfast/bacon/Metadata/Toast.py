@@ -17,6 +17,16 @@ class Toast(object):
     REFERENCE_VREFplus_VREFnegterm = 5
     REFERENCE_VeREFplus_VREFnegterm = 6
 
+    # ADC calibration fields
+    CAL_ADC_25T85 = 7
+    CAL_ADC_25T30 = 6
+    CAL_ADC_25VREF_FACTOR = 5
+    CAL_ADC_15T85 = 4
+    CAL_ADC_15T30 = 3
+    CAL_ADC_15VREF_FACTOR = 2 
+    CAL_ADC_OFFSET = 1
+    CAL_ADC_GAIN_FACTOR = 0
+
     # TLV tags
     TAG_DCO_30  = 0x01              # Toast factory clock calibration, delete
     TAG_VERSION = 0x02              # Required by storage utility
@@ -285,6 +295,7 @@ class Toast(object):
         if ret.get_error() == TOS.ESIZE:
             raise OutOfSpaceError # this is a workaround. the bacon should return ENOMEM instead of ESIZE
         elif ret.get_error() != TOS.SUCCESS:
+            print ret.get_error()
             raise UnexpectedResponseError
 
 

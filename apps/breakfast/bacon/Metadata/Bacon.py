@@ -65,7 +65,17 @@ class Bacon(object):
             raise UnexpectedResponseError
         
         return ret.get_mfrId()
-
+    
+    def readAdcC(self):
+        """ Read ADC calibration constants from Bacon ROM
+        """
+        msg = ReadAdcCCmdMsg.ReadAdcCCmdMsg()
+        
+        ret = self.dispatcher.send(msg)
+        if ret.get_error() != TOS.SUCCESS:
+            raise UnexpectedResponseError
+        
+        return ret.get_adc()
     #
     # Bacon TLV functions
     #
@@ -205,14 +215,14 @@ if __name__ == '__main__':
         bacon = Bacon('serial@/dev/ttyUSB0:115200')
         
 
-    time.sleep(2)
+    #time.sleep(2)
 
 #    print bacon.writeVersion(0x42)
     #print bacon.writeBarcode([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x09])
 
-    print bacon.readVersion()
-    print bacon.readIV()
-    print bacon.readMfrID()
+    #print bacon.readVersion()
+    #print bacon.readIV()
+    print bacon.readAdcC()
     
     #print bacon.readTLV()
     
@@ -220,7 +230,7 @@ if __name__ == '__main__':
     #print bacon.addTLVEntry(Bacon.TAG_GLOBAL_ID, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])
 
     #print bacon.readTLVEntry(Bacon.TAG_VERSION)
-    print bacon.readTLVEntry(Bacon.TAG_GLOBAL_ID)
+    #print bacon.readTLVEntry(Bacon.TAG_GLOBAL_ID)
     
     #try:
     #    print 'barcode: ', bacon.readBarcode()

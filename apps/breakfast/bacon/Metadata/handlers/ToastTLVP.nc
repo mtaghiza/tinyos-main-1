@@ -386,7 +386,7 @@ module ToastTLVP{
 
     if (err != SUCCESS){
       add_toast_tlv_entry_response_msg_t* responsePl = (add_toast_tlv_entry_response_msg_t*)(call Packet.getPayload(responseMsg, sizeof(add_toast_tlv_entry_response_msg_t)));
-      responsePl->error = ESIZE;
+      responsePl->error = err;
       switch(commandPl->tag){
         case TAG_VERSION:
           call WriteToastVersionResponseSend.send(cmdSource, responseMsg, sizeof(add_toast_tlv_entry_response_msg_t));

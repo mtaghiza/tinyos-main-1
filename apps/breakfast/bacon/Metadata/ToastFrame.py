@@ -30,28 +30,33 @@ class ToastFrame(Frame):
         #self.adcVarLabel = Label(self, textvar=self.adcVar)
         #self.adcVarLabel.grid(column=2, row=1)
 
-        self.dcoVar = StringVar()
-        self.dcoVar.set("<not available>")        
-        self.dcoLabel = Label(self, text="DCO:")
-        self.dcoLabel.grid(column=1, row=1)
-        self.dcoVarLabel = Label(self, textvar=self.dcoVar)
-        self.dcoVarLabel.grid(column=2, row=1)
-
-        self.reconnectButton = Button(self, text="Reconnect", command=self.reconnect)
-        self.reconnectButton.grid(column=4, row=1) 
+        self.currentLabel = Label(self, text="Current Value")
+        self.currentLabel.grid(column=2, row=1)
+        self.newLabel = Label(self, text="New Value")
+        self.newLabel.grid(column=3, row=1, columnspan=2)
     
+        self.barcodeLabel = Label(self, text="Toast ID:")
+        self.barcodeLabel.grid(column=1, row=2)
         self.barcodeVar = StringVar()
         self.barcodeVar.set("<not available>")
-        self.barcodeLabel = Label(self, text="Toast ID:")
-        self.barcodeLabel.grid(column=1, row=3)
         self.barcodeVarLabel = Label(self, textvar=self.barcodeVar)
-        self.barcodeVarLabel.grid(column=2, row=3)
+        self.barcodeVarLabel.grid(column=2, row=2)
         self.newBarcodeVar = StringVar()
         self.newBarcodeEntry = Entry(self, textvar=self.newBarcodeVar)
-        self.newBarcodeEntry.grid(column=3, row=3)
         self.newBarcodeEntry.bind("<Return>", self.updateBarcodeKey)
+        self.newBarcodeEntry.grid(column=3, row=2, columnspan=2)
+
+        self.dcoLabel = Label(self, text="DCO:")
+        self.dcoLabel.grid(column=1, row=3)
+        self.dcoVar = StringVar()
+        self.dcoVar.set("<not available>")        
+        self.dcoVarLabel = Label(self, textvar=self.dcoVar)
+        self.dcoVarLabel.grid(column=2, row=3)        
+        self.reconnectButton = Button(self, text="Reconnect", command=self.reconnect)
+        self.reconnectButton.grid(column=3, row=3) 
         self.newBarcodeButton = Button(self, text="Update", command=self.updateBarcode)
         self.newBarcodeButton.grid(column=4, row=3) 
+
 
 
         self.assignmentVar = StringVar()
@@ -61,16 +66,19 @@ class ToastFrame(Frame):
         self.assignmentVarLabel = Label(self, textvar=self.assignmentVar)
         self.assignmentVarLabel.grid(column=2, row=4, columnspan=3)
         
-        
+        #
+        # sensor assignment frame
+        #
         self.aFrame = Frame(self, bd=1, relief=SUNKEN)
         
         self.e1Frame = Frame(self.aFrame)
-        self.e1Frame.grid(column=1, row=0, columnspan=4)
-        self.typeLabel = Label(self.aFrame, text="New Type")
-        self.typeLabel.grid(column=5, row=0)
-        self.IDLabel = Label(self.aFrame, text="New ID")
-        self.IDLabel.grid(column=6, row=0)
-        
+        self.e1Frame.grid(column=1, row=0)
+        self.typeLabel = Label(self.aFrame, text="Type")
+        self.typeLabel.grid(column=2, row=0)
+        self.idLabel = Label(self.aFrame, text="ID")
+        self.idLabel.grid(column=3, row=0)
+        self.codeLabel = Label(self.aFrame, text="Barcode")
+        self.codeLabel.grid(column=4, row=0, columnspan=2)
         
         self.sensor0Label = Label(self.aFrame, text="Sensor 1")
         self.sensor1Label = Label(self.aFrame, text="Sensor 2")
@@ -81,8 +89,8 @@ class ToastFrame(Frame):
         self.sensor6Label = Label(self.aFrame, text="Sensor 7")
         self.sensor7Label = Label(self.aFrame, text="Sensor 8")
         for i in range(0,8):
-            eval("self.sensor%dLabel.grid(column=%d, row=%d+1)" % (i, 2, i))
-
+            eval("self.sensor%dLabel.grid(column=%d, row=%d+1)" % (i, 1, i))
+        
         self.sensor0TypeVar = StringVar()
         self.sensor1TypeVar = StringVar()
         self.sensor2TypeVar = StringVar()
@@ -101,7 +109,7 @@ class ToastFrame(Frame):
         self.sensor7TypeLabel = Label(self.aFrame, textvariable=self.sensor7TypeVar)
         for i in range(0,8):
             eval("self.sensor%dTypeVar.set('N/A')" % i)
-            eval("self.sensor%dTypeLabel.grid(column=%d, row=%d+1)" % (i, 3, i))
+            eval("self.sensor%dTypeLabel.grid(column=%d, row=%d+1)" % (i, 2, i))
 
         self.sensor0IDVar = StringVar()
         self.sensor1IDVar = StringVar()
@@ -121,28 +129,7 @@ class ToastFrame(Frame):
         self.sensor7IDLabel = Label(self.aFrame, textvariable=self.sensor7IDVar)
         for i in range(0,8):
             eval("self.sensor%dIDVar.set('N/A')" % i)
-            eval("self.sensor%dIDLabel.grid(column=%d, row=%d+1)" % (i, 4, i))
-
-        self.sensor0newTypeVar = StringVar()
-        self.sensor1newTypeVar = StringVar()
-        self.sensor2newTypeVar = StringVar()
-        self.sensor3newTypeVar = StringVar()
-        self.sensor4newTypeVar = StringVar()
-        self.sensor5newTypeVar = StringVar()
-        self.sensor6newTypeVar = StringVar()
-        self.sensor7newTypeVar = StringVar()
-        self.sensor0newTypeEntry = Entry(self.aFrame, textvariable=self.sensor0newTypeVar)
-        self.sensor1newTypeEntry = Entry(self.aFrame, textvariable=self.sensor1newTypeVar)
-        self.sensor2newTypeEntry = Entry(self.aFrame, textvariable=self.sensor2newTypeVar)
-        self.sensor3newTypeEntry = Entry(self.aFrame, textvariable=self.sensor3newTypeVar)
-        self.sensor4newTypeEntry = Entry(self.aFrame, textvariable=self.sensor4newTypeVar)
-        self.sensor5newTypeEntry = Entry(self.aFrame, textvariable=self.sensor5newTypeVar)
-        self.sensor6newTypeEntry = Entry(self.aFrame, textvariable=self.sensor6newTypeVar)
-        self.sensor7newTypeEntry = Entry(self.aFrame, textvariable=self.sensor7newTypeVar)
-
-        for i in range(0,8):
-            eval("self.sensor%dnewTypeEntry.grid(column=%d, row=%d+1)" % (i, 5, i))
-            eval("self.sensor%dnewTypeEntry.bind('<Return>', self.changeFocus)" % i)
+            eval("self.sensor%dIDLabel.grid(column=%d, row=%d+1)" % (i, 3, i))
 
 
         self.sensor0newIDVar = StringVar()
@@ -162,23 +149,20 @@ class ToastFrame(Frame):
         self.sensor6newIDEntry = Entry(self.aFrame, textvariable=self.sensor6newIDVar)
         self.sensor7newIDEntry = Entry(self.aFrame, textvariable=self.sensor7newIDVar)
         for i in range(0,8):
-            eval("self.sensor%dnewIDEntry.grid(column=%d, row=%d+1)" % (i, 6, i))
+            eval("self.sensor%dnewIDEntry.grid(column=%d, row=%d+1, columnspan=2)" % (i, 4, i))
             eval("self.sensor%dnewIDEntry.bind('<Return>', self.changeFocus)" % i)
         # overwrite the last entries behavior
         self.sensor7newIDEntry.bind('<Return>', self.updateAssignmentsKey)
 
 
-        self.e2Frame = Frame(self.aFrame)
-        self.e2Frame.grid(column=1, row=1, columnspan=5)
-        
         self.resetButton = Button(self.aFrame, text="Reset", command=self.reset)
-        self.resetButton.grid(column=4, row=10) 
+        self.resetButton.grid(column=1, row=10) 
 
         self.sampleButton = Button(self.aFrame, text="Sample", command=self.sample)
-        self.sampleButton.grid(column=5, row=10) 
+        self.sampleButton.grid(column=4, row=10) 
         
         self.assignButton = Button(self.aFrame, text="Update", command=self.updateAssignments)
-        self.assignButton.grid(column=6, row=10)
+        self.assignButton.grid(column=5, row=10)
 
         self.aFrame.grid(column=1,row=5, columnspan=4)
         
@@ -188,6 +172,8 @@ class ToastFrame(Frame):
     def enableUI(self):
         #self.adcLabel.config(state=NORMAL)
         #self.adcVarLabel.config(state=NORMAL)
+        self.currentLabel.config(state=NORMAL)
+        self.newLabel.config(state=NORMAL)
         self.dcoLabel.config(state=NORMAL)
         self.dcoVarLabel.config(state=NORMAL)
         self.reconnectButton.config(state=NORMAL)
@@ -200,12 +186,12 @@ class ToastFrame(Frame):
 
         # assignment frame
         self.typeLabel.config(state=NORMAL)
-        self.IDLabel.config(state=NORMAL)
+        self.idLabel.config(state=NORMAL)
+        self.codeLabel.config(state=NORMAL)
         for i in range(0,8):
             eval("self.sensor%dLabel.config(state=NORMAL)" % i) 
             eval("self.sensor%dTypeLabel.config(state=NORMAL)" % i)        
             eval("self.sensor%dIDLabel.config(state=NORMAL)" % i)
-            eval("self.sensor%dnewTypeEntry.config(state=NORMAL)" % i)        
             eval("self.sensor%dnewIDEntry.config(state=NORMAL)" % i)
         self.assignButton.config(state=NORMAL)
         self.resetButton.config(state=NORMAL)
@@ -214,6 +200,8 @@ class ToastFrame(Frame):
     def disableUI(self):
         #self.adcLabel.config(state=DISABLED)
         #self.adcVarLabel.config(state=DISABLED)
+        self.currentLabel.config(state=DISABLED)
+        self.newLabel.config(state=DISABLED)
         self.dcoLabel.config(state=DISABLED)
         self.dcoVarLabel.config(state=DISABLED)
         self.reconnectButton.config(state=DISABLED)
@@ -226,12 +214,12 @@ class ToastFrame(Frame):
 
         # assignment frame
         self.typeLabel.config(state=DISABLED)
-        self.IDLabel.config(state=DISABLED)
+        self.idLabel.config(state=DISABLED)
+        self.codeLabel.config(state=DISABLED)
         for i in range(0,8):
             eval("self.sensor%dLabel.config(state=DISABLED)" % i) 
             eval("self.sensor%dTypeLabel.config(state=DISABLED)" % i)        
             eval("self.sensor%dIDLabel.config(state=DISABLED)" % i)
-            eval("self.sensor%dnewTypeEntry.config(state=DISABLED)" % i)        
             eval("self.sensor%dnewIDEntry.config(state=DISABLED)" % i)
         self.assignButton.config(state=DISABLED)
         self.sampleButton.config(state=DISABLED)
@@ -245,7 +233,14 @@ class ToastFrame(Frame):
     def connectSignal(self, connected):
         if connected:
             self.reconnect()
-        else:
+        else:            
+            # signal Toast listeners to switch off UI
+            self.handler.signalToast(False)
+            
+            # if currently sampling, stop sampling
+            if self.sampling:
+                self.sample()
+            
             self.disableUI()
 
     def reconnect(self):
@@ -255,10 +250,18 @@ class ToastFrame(Frame):
             self.dcoVar.set("<no device detected>")
             self.assignmentVar.set("<no device detected>")
             self.barcodeVar.set("<no device detected>")
+
+            # disable ToastFrame and GraphFrame UI, keep reconnect button on
             self.disableUI()
+            self.reconnectButton.config(state=NORMAL)
+            
+            # signal event handler that no Toast board has been detected
+            self.handler.signalToast(False)
             return
         else:
             self.enableUI()
+            # signal event handler that a Toast board has been detected
+            self.handler.signalToast(True)
         
         self.redrawDCO()
         self.redrawBarcode()
@@ -275,17 +278,18 @@ class ToastFrame(Frame):
             self.handler.stopSampling()
             self.enableUI()
             self.sampleButton.config(state=NORMAL, text="Sample")            
-        else:
-            self.sampling = True
-            
+        else:            
             self.sensors = []
             for i in range(0,8):
                 if self.assignments[0][i]:
                     self.sensors.append(i)
             
-            self.disableUI()
-            self.sampleButton.config(state=NORMAL, text="Stop")
-            self.handler.startSampling(self.sensors)
+            if self.sensors:
+                self.sampling = True
+                
+                self.disableUI()
+                self.sampleButton.config(state=NORMAL, text="Stop")
+                self.handler.startSampling(self.sensors)
 
 
     def redrawDCO(self):
@@ -298,10 +302,6 @@ class ToastFrame(Frame):
         else:
             self.dcoVar.set(dcoStr)
     
-
-    def updateDCO(self):
-        self.handler.updateDCO()
-        self.redrawDCO()
 
     def redrawBarcode(self):
         try:
@@ -355,7 +355,7 @@ class ToastFrame(Frame):
                 tmpID = self.assignments[0][i]
                 if tmpID:
                     tmpStr = "%02X%02X" % ((tmpID >> 8) & 0xFF, tmpID & 0xFF)
-                    tmpType = self.assignments[1][i]
+                    tmpType = "%02X" % self.assignments[1][i]
                 else:
                     tmpStr = "N/A"
                     tmpType = "N/A"
@@ -373,31 +373,19 @@ class ToastFrame(Frame):
         for i in range(0,8):
             newID = self.assignments[0][i]
             newType = self.assignments[1][i]
-
-            setattr(self, "id", eval("self.sensor%dnewIDVar.get()" % i))
-            setattr(self, "type", eval("self.sensor%dnewTypeVar.get()" % i))
             
-            if self.id != "":
+            setattr(self, "code", eval("self.sensor%dnewIDVar.get()" % i))
+            
+            if self.code != "":
                 try:
-                    newID = int(self.id, 16) & 0xFFFF
+                    tmp = int(self.code, 16)
+                    newID = tmp & 0xFFFF
+                    newType = (tmp >> 16) & 0xFF
                 except:
-                    self.assignmentVar.set("<Invalid input>")
+                    self.assignmentVar.set("<invalid input>")
                     self.assignmentVarLabel.config(fg="red")
                     return
                 
-            if self.type != "":
-                try:
-                    newType = int(self.type) & 0xFF
-                except:
-                    self.assignmentVar.set("<Invalid input>")
-                    self.assignmentVarLabel.config(fg="red")
-                    return
-
-            if (newID and not newType) or (not newID and newType):
-                self.assignmentVar.set("<Invalid input>")
-                self.assignmentVarLabel.config(fg="red")
-                return            
-            else:
                 if self.assignments[0][i] != newID:
                     self.assignments[0][i] = newID
                     change = True
@@ -405,8 +393,7 @@ class ToastFrame(Frame):
                 if self.assignments[1][i] != newType:
                     self.assignments[1][i] = newType
                     change = True
-
-
+            
         if change:
             print self.assignments
             try:
@@ -418,7 +405,6 @@ class ToastFrame(Frame):
             else:
                 for i in range(0,8):
                     eval("self.sensor%dnewIDVar.set('')" % i)
-                    eval("self.sensor%dnewTypeVar.set('')" % i)
                 self.redrawAssignments()
 
 

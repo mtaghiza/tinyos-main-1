@@ -1,8 +1,8 @@
 #ifndef CTRL_MESSAGES_H
 #define CTRL_MESSAGES_H
 
-#define BACON_BARCODE_LEN 8 
-#define TOAST_BARCODE_LEN 8 
+#define BACON_BARCODE_LEN 8
+#define TOAST_BARCODE_LEN 8
 
 #include "I2CADCReader.h"
 
@@ -26,6 +26,16 @@ typedef nx_struct read_mfr_id_response_msg{
   nx_uint8_t error;
   nx_uint8_t mfrId[8];
 } read_mfr_id_response_msg_t;
+
+//Read ADC Constants
+typedef nx_struct read_adc_c_cmd_msg{
+  nx_uint8_t dummy[0];
+} read_adc_c_cmd_msg_t;
+
+typedef nx_struct read_adc_c_response_msg{
+  nx_uint8_t error;
+  nx_uint8_t adc[24];
+} read_adc_c_response_msg_t;
 
 //Read bacon barcode ID
 typedef nx_struct read_bacon_barcode_id_cmd_msg{
@@ -300,6 +310,8 @@ enum{
   AM_READ_IV_RESPONSE_MSG = 0x81,
   AM_READ_MFR_ID_CMD_MSG = 0x82,
   AM_READ_MFR_ID_RESPONSE_MSG = 0x83,
+  AM_READ_ADC_C_CMD_MSG = 0xB2,
+  AM_READ_ADC_C_RESPONSE_MSG = 0xB3,
   //
   //Bacon Commands
   //
@@ -337,7 +349,7 @@ enum{
   //uses generic read tlv
   AM_READ_TOAST_VERSION_CMD_MSG = 0xA8,
   AM_READ_TOAST_VERSION_RESPONSE_MSG = 0xAD,
-  
+
   //
   //ANALOG SENSOR COMMANDS
   //

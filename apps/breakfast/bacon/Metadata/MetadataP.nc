@@ -13,10 +13,12 @@ module MetadataP{
   //Receive
   uses interface Receive as ReadIvCmdReceive;
   uses interface Receive as ReadMfrIdCmdReceive;
+  uses interface Receive as ReadAdcCCmdReceive;
   uses interface Receive as ResetBaconCmdReceive;
   //Send
   uses interface AMSend as ReadIvResponseSend;
   uses interface AMSend as ReadMfrIdResponseSend;
+  uses interface AMSend as ReadAdcCResponseSend;
   uses interface AMSend as ResetBaconResponseSend;
 
   uses interface AMPacket;
@@ -199,6 +201,54 @@ module MetadataP{
     ReadMfrId_response_msg = NULL;
   }
 
+
+
+
+  //Read bacon Manufacture info
+  message_t* ReadAdcC_cmd_msg = NULL;
+  message_t* ReadAdcC_response_msg = NULL;
+  task void respondReadAdcC();
+
+  event message_t* ReadAdcCCmdReceive.receive(message_t* msg_, 
+      void* payload,
+      uint8_t len){
+    if (ReadAdcC_cmd_msg != NULL){
+      printf("RX: ReadAdcC");
+      printf(" BUSY!\n");
+      printfflush();
+      return msg_;
+    }else{
+      if ((call Pool.size()) >= 2){
+        message_t* ret = call Pool.get();
+        ReadAdcC_response_msg = call Pool.get();
+        ReadAdcC_cmd_msg = msg_;
+        cmdSource = call AMPacket.source(msg_);
+        post respondReadAdcC();
+        return ret;
+      }else{
+        printf("RX: ReadAdcC");
+        printf(" Pool Empty!\n");
+        printfflush();
+        return msg_;
+      }
+    }
+  }
+
+  task void respondReadAdcC(){
+//    read_mfr_id_cmd_msg_t* commandPl = (read_mfr_id_cmd_msg_t*)(call Packet.getPayload(ReadAdcC_cmd_msg, sizeof(read_mfr_id_cmd_msg_t)));
+    read_adc_c_response_msg_t* responsePl = (read_adc_c_response_msg_t*)(call Packet.getPayload(ReadAdcC_response_msg, sizeof(read_adc_c_response_msg_t)));
+    memcpy(&(responsePl->adc), (void*)0x1A16, 24);
+    responsePl->error = SUCCESS;
+    call ReadAdcCResponseSend.send(cmdSource, ReadAdcC_response_msg, sizeof(read_adc_c_response_msg_t));
+  }
+
+  event void ReadAdcCResponseSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(ReadAdcC_response_msg);
+    call Pool.put(ReadAdcC_cmd_msg);
+    ReadAdcC_cmd_msg = NULL;
+    ReadAdcC_response_msg = NULL;
+  }
 
 //End completed implementations
 

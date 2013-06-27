@@ -11,6 +11,7 @@ class BaconFrame(Frame):
         
         self.handler = handler
         self.handler.addConnectListener(self.connectSignal)
+        self.handler.addSampleListener(self.sampleSignal)
 
         self.initUI()
         self.disableUI()
@@ -96,6 +97,12 @@ class BaconFrame(Frame):
             
         else:
             self.disableUI()
+
+    def sampleSignal(self, sampling):
+        if sampling:
+            self.disableUI()
+        else:
+            self.enableUI()
 
     def updateBarcodeKey(self, event):
         self.updateBarcode()

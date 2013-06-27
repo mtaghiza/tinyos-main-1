@@ -281,6 +281,8 @@ class CC430bsl(threading.Thread):
                     bsl.actionProgram,
                 ])
             filename = args[0]
+        elif reset:
+            pass
         else:                                           #number of args is wrong
             raise InvalidInputError
 
@@ -416,8 +418,10 @@ if __name__ == '__main__':
         print status
 
     input = "-S 115200 -c COM26 -r -e -I -p ..\\build\\bacon2\\main.ihex"
+    reset = "-S 115200 -c /dev/ttyUSB0 -r"
 
-    cc430 = CC430bsl(input, callme)
+    #cc430 = CC430bsl(input, callme)
+    cc430 = CC430bsl(reset, callme)
     cc430.start()
 
     print "done"

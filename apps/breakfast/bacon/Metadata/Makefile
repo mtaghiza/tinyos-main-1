@@ -8,6 +8,8 @@ CFLAGS+=-DTOS_DEFAULT_BAUDRATE=$(BAUDRATE)
 #grep 'msg{' ctrl_messages.h | awk '{print $3}' | tr -d '{' | sed -re 's,(_|^)([a-z]),\u\2,g' -e 's,^,$(MIGDIR)/,g' -e 's,$,.py,g'
 MIGCLASSES =
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
+MIGCLASSES += $(MIGDIR)/ReadAdcCCmdMsg.py
+MIGCLASSES += $(MIGDIR)/ReadAdcCResponseMsg.py
 
 USE_AM_RADIO?=0
 CFLAGS += -DUSE_AM_RADIO=$(USE_AM_RADIO)
@@ -47,7 +49,7 @@ $(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
 
 $(MIGDIR)/%.py: $(MIGDIR) ctrl_messages.h
-	./genMig.sh $(PLATFORM) ctrl_messages.h $@ $(CFLAGS) 
+	genMig.sh $(PLATFORM) ctrl_messages.h $@ $(CFLAGS) 
 
 migClasses: $(MIGCLASSES)
 

@@ -7,6 +7,8 @@ ReadIvCmdMsg
 ReadIvResponseMsg
 ReadMfrIdCmdMsg
 ReadMfrIdResponseMsg
+ReadAdcCCmdMsg
+ReadAdcCResponseMsg
 ReadBaconBarcodeIdCmdMsg
 ReadBaconBarcodeIdResponseMsg
 WriteBaconBarcodeIdCmdMsg

@@ -19,7 +19,7 @@ class ToastSampling(threading.Thread):
         return self._stop.isSet()
 
     def run(self):
-        while(not self.stopped()):
+        while(True):
             for s in self.sensors:
                 try:
                     time, adc = self.handler.readSensor(s, 2000, 10)
@@ -27,3 +27,5 @@ class ToastSampling(threading.Thread):
                     pass
                 else:
                     self.queue.put((s+1, adc))
+            if self.stopped():
+                break;

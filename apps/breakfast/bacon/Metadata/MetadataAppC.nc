@@ -45,6 +45,8 @@ configuration MetadataAppC{
   MetadataP.ReadIvCmdReceive -> ReadIvCmdReceive;
   components new MDAMReceiverC(AM_READ_MFR_ID_CMD_MSG) as ReadMfrIdCmdReceive;
   MetadataP.ReadMfrIdCmdReceive -> ReadMfrIdCmdReceive;
+  components new MDAMReceiverC(AM_READ_ADC_C_CMD_MSG) as ReadAdcCCmdReceive;
+  MetadataP.ReadAdcCCmdReceive -> ReadAdcCCmdReceive;
   components new MDAMReceiverC(AM_RESET_BACON_CMD_MSG) as ResetBaconCmdReceive;
   MetadataP.ResetBaconCmdReceive -> ResetBaconCmdReceive;
   //Send
@@ -52,6 +54,8 @@ configuration MetadataAppC{
   MetadataP.ReadIvResponseSend -> ReadIvResponseSend;
   components new MDAMSenderC(AM_READ_MFR_ID_RESPONSE_MSG) as ReadMfrIdResponseSend;
   MetadataP.ReadMfrIdResponseSend -> ReadMfrIdResponseSend;
+  components new MDAMSenderC(AM_READ_ADC_C_RESPONSE_MSG) as ReadAdcCResponseSend;
+  MetadataP.ReadAdcCResponseSend -> ReadAdcCResponseSend;
   components new MDAMSenderC(AM_RESET_BACON_RESPONSE_MSG) as ResetBaconResponseSend;
   MetadataP.ResetBaconResponseSend -> ResetBaconResponseSend;
   
