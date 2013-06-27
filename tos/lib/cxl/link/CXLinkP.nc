@@ -149,21 +149,18 @@ module CXLinkP {
     atomic {
       if (aSfdCapture){
         if(!aSynched){
-          P1OUT |= BIT1;
           //first synch point: computed based on sfd capture (either RX
           //or TX)
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
-          P1OUT |= BIT2;
           //every subsequent transmission: should be based on the
           //  previous one.
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
         }
       }else{
-        P1OUT |= BIT3;
 //        //N.B.: at this point, packet is already loaded into
 //        // buffer, so we can't modify it. Need to either use
 //        // fragmentation (+ROM) or suck it up and timestamp it above
@@ -269,13 +266,12 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
-    P1OUT &= ~(BIT1|BIT2|BIT3);
+    P1OUT |= BIT2;
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
-      P1OUT |= (BIT1|BIT2|BIT3);
       call DelayedSend.startSend();
-      P1OUT &= ~(BIT1|BIT2|BIT3);
+      P1OUT &= ~(BIT2);
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
@@ -333,7 +329,10 @@ module CXLinkP {
       //switch to data channel if not already on it
       error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
-        RF1A_OM_FSTXON );
+        RF1A_OM_IDLE );
+//      error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
+//        TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
+//        RF1A_OM_FSTXON );
 //      printf("rxbuf: %u\r\n", 
 //        TOSH_DATA_LENGTH + sizeof(message_header_t));
       call Packet.clear(rxMsg);
@@ -455,9 +454,12 @@ module CXLinkP {
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
         call Msp430XV2ClockControl.startMicroTimer();
       }
+      //TODO: Debug: remove me!
+      call Rf1aPhysical.setChannel(32* (header(msg)->hopCount));
       error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
       if (error == SUCCESS) {
-        rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
+//        rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
+        rf1a_offmode_t om = RF1A_OM_IDLE;
         call SynchCapture.captureRisingEdge();
 //        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
@@ -544,6 +546,8 @@ module CXLinkP {
       if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg)) && (crcIndex-1) < crcFirstPassed){
         crcFirstPassed = crcIndex-1;
       }
+
+      sfdAdjust += (SFD_ADJUST_HOP * (header(rxMsg)->hopCount -1));
     }
 //    printf("hr %p %u %u %u\r\n", rxMsg, call CXLinkPacket.len(rxMsg),
 //      rxLen, rxResult);

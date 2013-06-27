@@ -19,8 +19,8 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLength = 1;
-  uint8_t channel = 32;
+  uint8_t packetLength = 50;
+  uint8_t channel;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -64,6 +64,7 @@ module TestP{
   }
 
   event void Boot.booted(){
+    channel = (TOS_NODE_ID)*(32);
     call SerialControl.start();
     printf("Booted\r\n");
     post usage();
@@ -169,6 +170,9 @@ module TestP{
   event void SplitControl.startDone(error_t error){ 
     printf("start done: %x pool: %u\r\n", error, call Pool.size());
     started = (error == SUCCESS);
+    if (TOS_NODE_ID != 0){
+      post receivePacket();
+    }
   }
   event void SplitControl.stopDone(error_t error){ 
     printf("stop done: %x pool: %u\r\n", error, call Pool.size());
