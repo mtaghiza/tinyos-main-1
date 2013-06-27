@@ -39,6 +39,7 @@ CFLAGS += -I../BaconSampler
 CFLAGS += -I../ToastSampler
 CFLAGS += -I../settingsStorage
 CFLAGS += -I../RebootCounter
+CFLAGS += -I../Ping
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/i2cDiscover

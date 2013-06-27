@@ -28,6 +28,9 @@ configuration LeafAppC{
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
 
+  components PingC;
+  PingC.Pool -> PoolC;
+
   //TODO: should be from scheduler
   RecordPushRequestC.Get -> LeafP.Get;
   
