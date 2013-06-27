@@ -266,12 +266,10 @@ module CXLinkP {
   }
 
   async event void FastAlarm.fired(){
-    P1OUT |= BIT2;
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
       call DelayedSend.startSend();
-      P1OUT &= ~(BIT2);
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
@@ -329,10 +327,7 @@ module CXLinkP {
       //switch to data channel if not already on it
       error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
-        RF1A_OM_IDLE );
-//      error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
-//        TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
-//        RF1A_OM_FSTXON );
+        RF1A_OM_FSTXON );
 //      printf("rxbuf: %u\r\n", 
 //        TOSH_DATA_LENGTH + sizeof(message_header_t));
       call Packet.clear(rxMsg);
@@ -458,8 +453,7 @@ module CXLinkP {
       call Rf1aPhysical.setChannel(32* (header(msg)->hopCount));
       error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
       if (error == SUCCESS) {
-//        rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
-        rf1a_offmode_t om = RF1A_OM_IDLE;
+        rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
         call SynchCapture.captureRisingEdge();
 //        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
