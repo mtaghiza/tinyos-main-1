@@ -6,12 +6,25 @@ from Bacon import Bacon
 from Toast import Toast
 from ToastSampling import ToastSampling
 from BreakfastError import *
+from Dispatcher import Dispatcher 
 
 
 import time
+from threading import Thread
+
+class CleanUpThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+
+    def run(self):
+        Dispatcher.stopAll()
+        print "cleanup"
+        #input = "-S 115200 -c %s -r" % self.currentPort
+        #
+        #cc430 = CC430bsl.CC430bsl(input, self.resetDone)
+        #cc430.start()    
 
 class Handler(object):
-
 
     def __init__(self):
         self.connectListeners = []
@@ -31,19 +44,24 @@ class Handler(object):
 
     def connect(self, port):
         self.currentPort = port
-        input = "-S 115200 -c %s -r" % port
+        input = "-S 115200 -c %s -r" % self.currentPort
         
         cc430 = CC430bsl.CC430bsl(input, self.resetDone)
         cc430.start()
 
     def resetDone(self, result):
         time.sleep(1)
-        self.bacon = Bacon('serial@%s:115200' % self.currentPort)
+        self.bacon = Bacon('serial@%s:115200' % self.currentPort, self.signalError)
         self.toast = Toast('serial@%s:115200' % self.currentPort)
 
         for listener in self.connectListeners:
             listener(True)
-        
+
+    def signalError(self):
+        print "event handler"
+        cleanup = CleanUpThread()
+        cleanup.start()
+
     
     def disconnect(self):        
         for listener in self.connectListeners:
@@ -53,8 +71,14 @@ class Handler(object):
             self.toast.powerOff()
         except:
             pass
-        self.toast.stop()
-        self.bacon.stop()
+        try:
+            self.toast.stop()
+        except:
+            pass
+        try:
+            self.bacon.stop()
+        except:
+            pass
 
     #
     # Bacon

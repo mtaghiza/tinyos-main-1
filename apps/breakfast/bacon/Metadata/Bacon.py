@@ -17,8 +17,8 @@ class Bacon(object):
     TAG_TOAST_ASSIGNMENTS = 0x05    # Toast sensor assignments
     TAG_ADC12_1 = 0x08              # Toast ADC Calibration constants
 
-    def __init__(self, motestring='serial@/dev/ttyUSB0:115200'):
-        self.dispatcher = Dispatcher(motestring)
+    def __init__(self, motestring='serial@/dev/ttyUSB0:115200', signalError=lambda : None):
+        self.dispatcher = Dispatcher(motestring, signalError)
 
     def stop(self):
         self.dispatcher.stop()

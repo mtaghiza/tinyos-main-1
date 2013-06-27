@@ -80,21 +80,15 @@ class BaconFrame(Frame):
     def connectSignal(self, connected):
         if connected:
             mfrStr = "<not available>"
-            barcodeStr = "<not available>"
             
             try:
                 mfrStr = self.handler.getMfrID()
-                barcodeStr = self.handler.getBaconBarcode()
-            except TagNotFoundError:
-                self.barcodeVar.set("<Barcode not set>")
             except Exception:
                 self.mfrVar.set("<connection error>")
-                self.barcodeVar.set("<connection error>")
             else:
                 self.enableUI()
                 self.mfrVar.set(mfrStr)
-                self.barcodeVar.set(barcodeStr)
-            
+                self.redrawBarcode()
         else:
             self.disableUI()
 
@@ -110,7 +104,6 @@ class BaconFrame(Frame):
     def updateBarcode(self):
         try:
             self.handler.setBaconBarcode(self.newBarcodeVar.get())
-            barcodeStr = self.handler.getBaconBarcode()
         except ValueError:
             self.barcodeVar.set("<barcode not an integer>")
             self.barcodeVarLabel.config(fg="red")
@@ -118,7 +111,18 @@ class BaconFrame(Frame):
             self.barcodeVar.set("<update failed>")
             self.barcodeVarLabel.config(fg="red")
         else:    
+            self.redrawBarcode()
+            self.newBarcodeVar.set("")
+    
+    def redrawBarcode(self):
+        try:
+            barcodeStr = self.handler.getBaconBarcode()
+        except TagNotFoundError:
+            self.barcodeVar.set("<barcode not set>")
+        except:
+            self.barcodeVar.set("<connection error>")
+            self.barcodeVarLabel.config(fg="red")
+        else:
             self.barcodeVar.set(barcodeStr)
             self.barcodeVarLabel.config(fg="black")
-            self.newBarcodeVar.set("")
     

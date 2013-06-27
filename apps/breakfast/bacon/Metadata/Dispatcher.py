@@ -4,11 +4,11 @@ import sys, time, thread
 
 import Queue
 
-import MoteIF
+from tos.MoteIF import MoteIF
 #from tinyos.message import *
 #from tinyos.message.Message import *
 #from tinyos.message.SerialPacket import *
-from tinyos.packet.Serial import Serial
+#from tinyos.packet.Serial import Serial
 #import tos
 import mig
 from mig import *
@@ -42,15 +42,19 @@ class Dispatcher(object):
     tos_source = None
     users = 0
     
-    def __init__(self, motestring='serial@/dev/ttyUSB0:115200'):
+    def __init__(self, motestring='serial@/dev/ttyUSB0:115200', signalError=lambda : None):
         if Dispatcher.mif is None:
+            self.motestring = motestring
+            self.signalError = signalError
+            
             #hook up to mote
-            Dispatcher.mif = MoteIF.MoteIF()
-            Dispatcher.tos_source = Dispatcher.mif.addSource(motestring)
-
+            Dispatcher.mif = MoteIF()
+            Dispatcher.mif.addErrorSignal(self.signalError)
+            Dispatcher.tos_source = Dispatcher.mif.addSource(self.motestring)
+            
             #format printf's correctly
             Dispatcher.mif.addListener(PrintfLogger(), PrintfMsg.PrintfMsg)
-
+            
             # use Queue to synchronize communication between send and receive
             # note: queue is thread safe and can block/notify threads
             Dispatcher.queue = Queue.Queue()
@@ -72,17 +76,28 @@ class Dispatcher(object):
 
     def stop(self):
         if Dispatcher.users == 1:
-            self.mif.finishAll()
+            Dispatcher.mif.finishAll()
             Dispatcher.mif = None
+            print "finished"
             
         Dispatcher.users = Dispatcher.users - 1 
 
+    @staticmethod
+    def stopAll():
+        Dispatcher.mif.finishAll()
+        Dispatcher.mif = None
+        print "finished"
+
     def send(self, m, timeout=10):
-        Dispatcher.mif.sendMsg(Dispatcher.tos_source,
-            0,
-            m.get_amType(), 0,
-            m)
-            
+        try:
+            Dispatcher.mif.sendMsg(Dispatcher.tos_source,
+                0,
+                m.get_amType(), 0,
+                m)
+        except:
+            self.mif.finishAll()
+            raise IOError
+    
         # note: get will block until queue is not empty or timeout has passed
         try:
             ret = Dispatcher.queue.get(True, timeout)
