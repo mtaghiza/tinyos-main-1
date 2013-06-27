@@ -149,6 +149,8 @@ module CXLppP {
         call Packet.clear(probe);
         call CXMacPacket.setMacType(probe, CXM_PROBE);
         (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
+        (call CXLinkPacket.getLinkHeader(probe))->destination =
+          AM_BROADCAST_ADDR;
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
         error = call SubSend.send(probe, 
