@@ -42,12 +42,19 @@ MIGCLASSES = $(MIGDIR)/CxLppCts.py $(MIGDIR)/CxLppSleep.py $(MIGDIR)/CxLppWakeup
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
 MIGCLASSES += $(MIGDIR)/TestPayload.py 
+MIGCLASSES += $(MIGDIR)/PingMsg.py $(MIGDIR)/PongMsg.py 
 
 $(MIGDIR): 
 	mkdir -p $(MIGDIR)
 
 $(MIGDIR)/%.py: $(MIGDIR) 
 	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/mac/CXMac.h $@ $(CFLAGS) 
+
+$(MIGDIR)/PingMsg.py: $(MIGDIR) 
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
+
+$(MIGDIR)/PongMsg.py: $(MIGDIR) 
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
 
 $(MIGDIR)/TestPayload.py: $(MIGDIR) 
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/cxUnitTests/cxl/testAM/test.h $@ $(CFLAGS) 

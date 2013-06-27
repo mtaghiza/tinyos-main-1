@@ -36,6 +36,7 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
     print packetSource
     d = Dispatcher(packetSource, bsId)
     db = Database.Database()
+    pingId = 0
 
     try:
         print "Wakeup start", time.time()
@@ -47,6 +48,12 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
         for node in nodeList:
             rxc = 0
             response = True
+            ping = PingMsg.PingMsg()
+            ping.set_pingId(pingId)
+            pingId += 1
+            localTime = time.time()
+            d.send(ping, node)
+            print "Ping %u id %u at %.2f"%(node, pingId, localTime)
             while response:
                 d.mif.wakeup(bsId)
                 response = d.mif.readFrom(node, 2.1)
