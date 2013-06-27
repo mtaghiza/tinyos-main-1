@@ -6,9 +6,12 @@ from lpp import LppMoteIF
 
 from autoPush.listeners import RecordListener
 from autoPush.listeners import PrintfListener
+from autoPush.listeners import PongListener
 from autoPush.messages import PrintfMsg
 from autoPush.messages import LogRecordDataMsg
 from autoPush.messages import CxRecordRequestMsg
+from autoPush.messages import PingMsg
+from autoPush.messages import PongMsg
 
 from autoPush.db import Database
 
@@ -22,6 +25,8 @@ class Dispatcher(object):
           PrintfMsg.PrintfMsg)
         self.mif.addListener(RecordListener.RecordListener(), 
           LogRecordDataMsg.LogRecordDataMsg)
+        self.mif.addListener(PongListener.PongListener(), 
+          PongMsg.PongMsg)
         #ugh: not guaranteed that the serial connection is fully
         # opened by this point
         time.sleep(1)
@@ -50,10 +55,11 @@ def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
             response = True
             ping = PingMsg.PingMsg()
             ping.set_pingId(pingId)
-            pingId += 1
             localTime = time.time()
             d.send(ping, node)
             print "Ping %u id %u at %.2f"%(node, pingId, localTime)
+            pingId += 1
+            time.sleep(1)
             while response:
                 d.mif.wakeup(bsId)
                 response = d.mif.readFrom(node, 2.1)
