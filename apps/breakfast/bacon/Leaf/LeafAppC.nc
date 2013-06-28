@@ -1,11 +1,12 @@
  #include "StorageVolumes.h"
  #include "message.h"
-// #define printf(...) 
-// #define printfflush(...) 
+ #include "CXDebug.h"
 configuration LeafAppC{
 } implementation {
+  #if ENABLE_PRINTF == 1
   components SerialPrintfC;
   components SerialStartC;
+  #endif
 
   components WatchDogC;
   #ifndef NO_STACKGUARD
