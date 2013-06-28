@@ -1,5 +1,5 @@
 COMPONENT=MetadataAppC
-MIGDIR = mig
+MIGDIR = $(TOSROOT)/apps/breakfast/tools/Toaster/mig
 
 BAUDRATE?=115200
 CFLAGS+=-DTOS_DEFAULT_BAUDRATE=$(BAUDRATE)
