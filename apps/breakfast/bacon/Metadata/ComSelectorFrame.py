@@ -9,6 +9,11 @@ import ttk
 
 class ComSelectorFrame(Frame):
 
+    BASESTATION_SIZE = 3326
+    ROUTER_SIZE = 3326
+    LEAF_SIZE = 3326
+    TOASTER_SIZE = 19864
+
     comDict = {}
     DEFAULT_STRING = "<no device detected>"
 
@@ -16,7 +21,7 @@ class ComSelectorFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        
+
         # 
         self.connected = False
         
@@ -106,24 +111,26 @@ class ComSelectorFrame(Frame):
                     self.comVar.set(ports[0][1])
                 
                 # enable menu and connect/programming buttons
-                self.comOption.config(state=NORMAL)
-                self.connectButton.config(state=NORMAL)
-                self.toasterButton.config(state=NORMAL)
-                self.leafButton.config(state=NORMAL)
-                self.routerButton.config(state=NORMAL)
-                self.basestationButton.config(state=NORMAL)
+                self.enableUI()
+                #self.comOption.config(state=NORMAL)
+                #self.connectButton.config(state=NORMAL)
+                #self.toasterButton.config(state=NORMAL)
+                #self.leafButton.config(state=NORMAL)
+                #self.routerButton.config(state=NORMAL)
+                #self.basestationButton.config(state=NORMAL)
             else:
                 # no devices found. disable menu and all buttons.
                 menu.add_command(label=self.DEFAULT_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_STRING))
                 #menu.add_command(label=self.DEFAULT_STRING, command=lambda value=string: self.comVar.set(self.DEFAULT_STRING))
                 self.comVar.set(self.DEFAULT_STRING)
-                self.comOption.config(state=DISABLED)
-                self.connectButton.config(bg="gray", state=DISABLED)
-                self.disconnectButton.config(bg="red", state=DISABLED)
-                self.toasterButton.config(state=DISABLED)
-                self.leafButton.config(state=DISABLED)
-                self.routerButton.config(state=DISABLED)
-                self.basestationButton.config(state=DISABLED)
+                #self.comOption.config(state=DISABLED)
+                #self.toasterButton.config(state=DISABLED)
+                #self.leafButton.config(state=DISABLED)
+                #self.routerButton.config(state=DISABLED)
+                #self.basestationButton.config(state=DISABLED)
+                self.disableUI()
+                self.connectButton.config(bg="gray", state=DISABLED, cursor="")
+                self.disconnectButton.config(bg="red", state=DISABLED, cursor="")
             
             # update
             self.comDict = newDict
@@ -135,69 +142,92 @@ class ComSelectorFrame(Frame):
     def connect(self):
         """ Event handler for changing connection status.
         """        
+        self.handler.busy()
         self.connected = True
-        self.handler.connect(self.comDict[self.comVar.get()])
         
         # enable/disable buttons and change color
-        self.comOption.config(state=DISABLED)
-        self.connectButton.config(text="Connected", bg="green", state=DISABLED)
-        self.disconnectButton.config(text="Disconnect", bg="gray", state=NORMAL)
-        self.toasterButton.config(state=DISABLED)
-        self.leafButton.config(state=DISABLED)
-        self.routerButton.config(state=DISABLED)
-        self.basestationButton.config(state=DISABLED)
+        #self.comOption.config(state=DISABLED)
+        #self.toasterButton.config(state=DISABLED)
+        #self.leafButton.config(state=DISABLED)
+        #self.routerButton.config(state=DISABLED)
+        #self.basestationButton.config(state=DISABLED)
+        self.disableUI()
+        self.connectButton.config(text="Connected", bg="green", state=DISABLED, cursor="")
+        self.disconnectButton.config(text="Disconnect", bg="gray", state=NORMAL, cursor="hand2")
+        
+        self.handler.connect(self.comDict[self.comVar.get()])
 
     def disconnect(self):
         """ Event handler for changing connection status.
         """        
+        self.handler.busy()
         self.connected = False
-        self.handler.disconnect()
         
         # enable/disable buttons and change color
-        self.comOption.config(state=NORMAL)
-        self.connectButton.config(text="Connect", bg="gray", state=NORMAL)
-        self.disconnectButton.config(text="Disconnected", bg="red", state=DISABLED)
-        self.toasterButton.config(state=NORMAL)
-        self.leafButton.config(state=NORMAL)
-        self.routerButton.config(state=NORMAL)
-        self.basestationButton.config(state=NORMAL)
+        #self.comOption.config(state=NORMAL)
+        #self.toasterButton.config(state=NORMAL)
+        #self.leafButton.config(state=NORMAL)
+        #self.routerButton.config(state=NORMAL)
+        #self.basestationButton.config(state=NORMAL)
+        self.enableUI()
+        self.connectButton.config(text="Connect", bg="gray", state=NORMAL, cursor="hand2")
+        self.disconnectButton.config(text="Disconnected", bg="red", state=DISABLED, cursor="")
+        
+        self.handler.disconnect()
+        self.handler.notbusy()
+
 
     def disableUI(self):
-        self.programming = True
-        self.comOption.config(state=DISABLED)
-        self.connectButton.config(state=DISABLED)
-        self.toasterButton.config(state=DISABLED)
-        self.leafButton.config(state=DISABLED)
-        self.routerButton.config(state=DISABLED)
-        self.basestationButton.config(state=DISABLED)
+        self.comOption.config(state=DISABLED, cursor="")
+        self.connectButton.config(state=DISABLED, cursor="")
+        self.toasterButton.config(state=DISABLED, cursor="")
+        self.leafButton.config(state=DISABLED, cursor="")
+        self.routerButton.config(state=DISABLED, cursor="")
+        self.basestationButton.config(state=DISABLED, cursor="")
 
     def enableUI(self):
-        self.programming = False
-        self.comOption.config(state=NORMAL)
-        self.connectButton.config(state=NORMAL)
-        self.toasterButton.config(state=NORMAL)
-        self.leafButton.config(state=NORMAL)
-        self.routerButton.config(state=NORMAL)
-        self.basestationButton.config(state=NORMAL)
+        self.comOption.config(state=NORMAL, cursor="hand2")
+        self.connectButton.config(state=NORMAL, cursor="hand2")
+        self.disconnectButton.config(bg="red", state=DISABLED, cursor="")
+        self.toasterButton.config(state=NORMAL, cursor="hand2")
+        self.leafButton.config(state=NORMAL, cursor="hand2")
+        self.routerButton.config(state=NORMAL, cursor="hand2")
+        self.basestationButton.config(state=NORMAL, cursor="hand2")
 
     def programtoaster(self):
+        self.handler.busy()
         self.disableUI()
-        self.handler.program("toaster", self.comDict[self.comVar.get()], self.programDone)
 
-        TOASTER_SIZE = 19864
-        self.programSize = TOASTER_SIZE
+        self.programming = True
+        self.programSize = self.TOASTER_SIZE
         self.programProgress()
+        self.handler.program("toaster", self.comDict[self.comVar.get()], self.programDone)
     
     def programLeaf(self):
+        self.handler.busy()
         self.disableUI()
+
+        self.programming = True
+        self.programSize = self.LEAF_SIZE
+        self.programProgress()
         self.handler.program("leaf", self.comDict[self.comVar.get()], self.programDone)
 
     def programRouter(self):
+        self.handler.busy()
         self.disableUI()
+
+        self.programming = True
+        self.programSize = self.ROUTER_SIZE
+        self.programProgress()
         self.handler.program("router", self.comDict[self.comVar.get()], self.programDone)
 
     def programBasestation(self):
+        self.handler.busy()
         self.disableUI()
+
+        self.programming = True
+        self.programSize = self.BASESTATION_SIZE
+        self.programProgress()
         self.handler.program("basestation", self.comDict[self.comVar.get()], self.programDone)
 
     def programProgress(self):
@@ -212,7 +242,9 @@ class ComSelectorFrame(Frame):
             self.progressVar.set(0)
 
     def programDone(self, status):
+        self.programming = False
         self.enableUI()
+        self.handler.notbusy()
         print status
 
 

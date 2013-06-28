@@ -13,8 +13,6 @@ class GraphFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        self.handler.addToastListener(self.connectSignal)
-        self.handler.addSampleListener(self.sampleSignal)
         self.simplot = simplot
         self.allPoints = []
         

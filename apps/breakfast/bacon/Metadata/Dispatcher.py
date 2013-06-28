@@ -84,9 +84,15 @@ class Dispatcher(object):
 
     @staticmethod
     def stopAll():
+        print "finished 1"
+        #Dispatcher.tos_source.cancel()
+        #Dispatcher.tos_source.close()
+        #Dispatcher.tos_source.finish()
+        print "finished 2"
         Dispatcher.mif.finishAll()
+        print "finished 3"
         Dispatcher.mif = None
-        print "finished"
+        print "finished 4"
 
     def send(self, m, timeout=10):
         try:

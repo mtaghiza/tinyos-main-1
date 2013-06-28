@@ -14,6 +14,8 @@
 import os, sys
 import getopt
 import threading
+import time
+from serial import SerialException 
 
 from BreakfastError import *
 from BootStrapLoader import BootStrapLoader
@@ -406,7 +408,12 @@ class CC430bsl(threading.Thread):
                 break
             except InvalidInputError:
                 break
+            except SerialException:
+                time.sleep(1)
+                print "serial exception, wait"
+                pass
             except Exception:
+                print "CC430bsl exception"
                 pass
         
         self.callback(result)

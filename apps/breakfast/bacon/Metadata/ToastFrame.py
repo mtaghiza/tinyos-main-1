@@ -12,7 +12,6 @@ class ToastFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        self.handler.addConnectListener(self.connectSignal)
         
         self.assignments = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
         self.sampling = False
@@ -176,11 +175,11 @@ class ToastFrame(Frame):
         self.newLabel.config(state=NORMAL)
         self.dcoLabel.config(state=NORMAL)
         self.dcoVarLabel.config(state=NORMAL)
-        self.reconnectButton.config(state=NORMAL)
+        self.reconnectButton.config(state=NORMAL, cursor="hand2")
         self.barcodeLabel.config(state=NORMAL)
         self.barcodeVarLabel.config(state=NORMAL)
         self.newBarcodeEntry.config(state=NORMAL)
-        self.newBarcodeButton.config(state=NORMAL)
+        self.newBarcodeButton.config(state=NORMAL, cursor="hand2")
         self.assignmentLabel.config(state=NORMAL)
         self.assignmentVarLabel.config(state=NORMAL)
 
@@ -193,9 +192,9 @@ class ToastFrame(Frame):
             eval("self.sensor%dTypeLabel.config(state=NORMAL)" % i)        
             eval("self.sensor%dIDLabel.config(state=NORMAL)" % i)
             eval("self.sensor%dnewIDEntry.config(state=NORMAL)" % i)
-        self.assignButton.config(state=NORMAL)
-        self.resetButton.config(state=NORMAL)
-        self.sampleButton.config(state=NORMAL)
+        self.assignButton.config(state=NORMAL, cursor="hand2")
+        self.resetButton.config(state=NORMAL, cursor="hand2")
+        self.sampleButton.config(state=NORMAL, cursor="hand2")
         
     def disableUI(self):
         #self.adcLabel.config(state=DISABLED)
@@ -204,11 +203,11 @@ class ToastFrame(Frame):
         self.newLabel.config(state=DISABLED)
         self.dcoLabel.config(state=DISABLED)
         self.dcoVarLabel.config(state=DISABLED)
-        self.reconnectButton.config(state=DISABLED)
+        self.reconnectButton.config(state=DISABLED, cursor="")
         self.barcodeLabel.config(state=DISABLED)
         self.barcodeVarLabel.config(state=DISABLED)
         self.newBarcodeEntry.config(state=DISABLED)
-        self.newBarcodeButton.config(state=DISABLED)
+        self.newBarcodeButton.config(state=DISABLED, cursor="")
         self.assignmentLabel.config(state=DISABLED)
         self.assignmentVarLabel.config(state=DISABLED)
 
@@ -221,9 +220,9 @@ class ToastFrame(Frame):
             eval("self.sensor%dTypeLabel.config(state=DISABLED)" % i)        
             eval("self.sensor%dIDLabel.config(state=DISABLED)" % i)
             eval("self.sensor%dnewIDEntry.config(state=DISABLED)" % i)
-        self.assignButton.config(state=DISABLED)
-        self.sampleButton.config(state=DISABLED)
-        self.resetButton.config(state=DISABLED)
+        self.assignButton.config(state=DISABLED, cursor="")
+        self.sampleButton.config(state=DISABLED, cursor="")
+        self.resetButton.config(state=DISABLED, cursor="")
 
     def changeFocus(self, event):
         event.widget.tk_focusNext().focus()
@@ -234,9 +233,6 @@ class ToastFrame(Frame):
         if connected:
             self.reconnect()
         else:            
-            # signal Toast listeners to switch off UI
-            self.handler.signalToast(False)
-            
             # if currently sampling, stop sampling
             if self.sampling:
                 self.sample()
@@ -244,6 +240,7 @@ class ToastFrame(Frame):
             self.disableUI()
 
     def reconnect(self):
+        self.handler.busy()
         try:
             self.handler.connectToast()
         except:
@@ -253,21 +250,21 @@ class ToastFrame(Frame):
 
             # disable ToastFrame and GraphFrame UI, keep reconnect button on
             self.disableUI()
-            self.reconnectButton.config(state=NORMAL)
+            self.reconnectButton.config(state=NORMAL, cursor="hand2")
             
-            # signal event handler that no Toast board has been detected
-            self.handler.signalToast(False)
+            self.handler.notbusy()
             return
         else:
             self.enableUI()
-            # signal event handler that a Toast board has been detected
-            self.handler.signalToast(True)
+            self.handler.graphFrame.connectSignal(True)
         
         self.redrawDCO()
         self.redrawBarcode()
         self.redrawAssignments()
-    
+        self.handler.notbusy()    
+
     def reset(self):
+        self.handler.busy()
         self.handler.resetToast()
         self.reconnect()
 
@@ -277,7 +274,7 @@ class ToastFrame(Frame):
             
             self.handler.stopSampling()
             self.enableUI()
-            self.sampleButton.config(state=NORMAL, text="Sample")            
+            self.sampleButton.config(state=NORMAL, text="Sample", cursor="hand2")
         else:            
             self.sensors = []
             for i in range(0,8):
@@ -288,7 +285,7 @@ class ToastFrame(Frame):
                 self.sampling = True
                 
                 self.disableUI()
-                self.sampleButton.config(state=NORMAL, text="Stop")
+                self.sampleButton.config(state=NORMAL, text="Stop", cursor="hand2")
                 self.handler.startSampling(self.sensors)
 
 
@@ -309,6 +306,7 @@ class ToastFrame(Frame):
         except TagNotFoundError:
             self.barcodeVar.set("<no assignemnts set>")
             self.barcodeVarLabel.config(fg="black")
+            self.newBarcodeEntry.focus_set()
         except Exception:
             self.barcodeVar.set("<read error>")
             self.barcodeVarLabel.config(fg="red")

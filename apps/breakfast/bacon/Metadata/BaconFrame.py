@@ -1,4 +1,4 @@
-
+import time
 import Tkinter
 from Tkinter import *
 
@@ -10,8 +10,6 @@ class BaconFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        self.handler.addConnectListener(self.connectSignal)
-        self.handler.addSampleListener(self.sampleSignal)
 
         self.initUI()
         self.disableUI()
@@ -27,7 +25,7 @@ class BaconFrame(Frame):
         self.currentLabel.grid(column=2, row=1)
         
         self.newLabel = Label(self, text="New Value")
-        self.newLabel.grid(column=3, row=1)
+        self.newLabel.grid(column=3, row=1, columnspan=2)
         
         # row 2
         self.barcodeLabel = Label(self, text="Bacon ID:")
@@ -42,7 +40,7 @@ class BaconFrame(Frame):
         self.newBarcodeVar = StringVar()
         self.barcodeEntry = Entry(self, textvariable=self.newBarcodeVar)
         self.barcodeEntry.bind("<Return>", self.updateBarcodeKey)
-        self.barcodeEntry.grid(column=3, row=2)
+        self.barcodeEntry.grid(column=3, row=2, columnspan=2)
         
         # row 3
         self.mfrLabel = Label(self, text="Manufacture ID:")
@@ -53,8 +51,11 @@ class BaconFrame(Frame):
         self.mfrVarLabel = Label(self, textvariable=self.mfrVar)
         self.mfrVarLabel.grid(column=2, row=3)
         
+        self.reconnectButton = Button(self, text="Reconnect", command=self.reconnect)
+        self.reconnectButton.grid(column=3, row=3)
+
         self.barcodeButton = Button(self, text="Update", command=self.updateBarcode)
-        self.barcodeButton.grid(column=3, row=3)
+        self.barcodeButton.grid(column=4, row=3)
 
     def enableUI(self):
         self.currentLabel.config(state=NORMAL)
@@ -63,7 +64,8 @@ class BaconFrame(Frame):
         self.mfrLabel.config(state=NORMAL)
         self.barcodeVarLabel.config(state=NORMAL)
         self.barcodeEntry.config(state=NORMAL)
-        self.barcodeButton.config(state=NORMAL)
+        self.barcodeButton.config(state=NORMAL, cursor="hand2")
+        self.reconnectButton.config(state=NORMAL, cursor="hand2")
         self.mfrVarLabel.config(state=NORMAL)
 
     def disableUI(self):
@@ -73,7 +75,8 @@ class BaconFrame(Frame):
         self.mfrLabel.config(state=DISABLED)
         self.barcodeVarLabel.config(state=DISABLED)
         self.barcodeEntry.config(state=DISABLED)
-        self.barcodeButton.config(state=DISABLED)
+        self.barcodeButton.config(state=DISABLED, cursor="")
+        self.reconnectButton.config(state=DISABLED, cursor="")
         self.mfrVarLabel.config(state=DISABLED)
 
 
@@ -85,12 +88,21 @@ class BaconFrame(Frame):
                 mfrStr = self.handler.getMfrID()
             except Exception:
                 self.mfrVar.set("<connection error>")
+                self.handler.programToaster()
             else:
                 self.enableUI()
                 self.mfrVar.set(mfrStr)
                 self.redrawBarcode()
+                self.handler.toastFrame.connectSignal(True)
+                self.handler.adcFrame.connectSignal(True)
         else:
             self.disableUI()
+
+    def reconnect(self):
+        self.handler.busy()
+        self.handler.publicDisconnect()
+        time.sleep(1)
+        self.handler.publicConnect()
 
     def sampleSignal(self, sampling):
         if sampling:
@@ -102,23 +114,28 @@ class BaconFrame(Frame):
         self.updateBarcode()
 
     def updateBarcode(self):
+        self.handler.busy()
         try:
             self.handler.setBaconBarcode(self.newBarcodeVar.get())
         except ValueError:
             self.barcodeVar.set("<barcode not an integer>")
             self.barcodeVarLabel.config(fg="red")
+            self.handler.notbusy()
         except:
             self.barcodeVar.set("<update failed>")
             self.barcodeVarLabel.config(fg="red")
+            self.handler.notbusy()
         else:    
             self.redrawBarcode()
             self.newBarcodeVar.set("")
+            self.handler.notbusy()
     
     def redrawBarcode(self):
         try:
             barcodeStr = self.handler.getBaconBarcode()
         except TagNotFoundError:
             self.barcodeVar.set("<barcode not set>")
+            self.barcodeEntry.focus_set()
         except:
             self.barcodeVar.set("<connection error>")
             self.barcodeVarLabel.config(fg="red")

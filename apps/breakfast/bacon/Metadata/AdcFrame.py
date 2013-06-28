@@ -10,9 +10,6 @@ class AdcFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.handler = handler
-        self.handler.addConnectListener(self.connectSignal)
-        self.handler.addSampleListener(self.sampleSignal)
-        self.handler.addToastListener(self.toastSignal)
 
         self.initUI()
         self.disableUI()

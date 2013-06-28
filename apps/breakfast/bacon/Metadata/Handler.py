@@ -13,34 +13,61 @@ import time
 from threading import Thread
 
 class CleanUpThread(Thread):
-    def __init__(self):
+    def __init__(self, handler):
         Thread.__init__(self)
+        self.handler = handler
 
     def run(self):
-        Dispatcher.stopAll()
         print "cleanup"
+        Dispatcher.stopAll()
+        self.handler.publicDisconnect()
+        self.notbusy()
+
         #input = "-S 115200 -c %s -r" % self.currentPort
         #
         #cc430 = CC430bsl.CC430bsl(input, self.resetDone)
         #cc430.start()    
 
+class ToasterThread(Thread):
+    def __init__(self, handler):
+        Thread.__init__(self)
+        self.handler = handler
+
+    def run(self):
+        print "autotoast"
+        self.handler.comFrame.disconnect()
+        time.sleep(1)
+        self.handler.program("toaster", self.handler.currentPort, self.handler.programToasterDone)
+
 class Handler(object):
 
-    def __init__(self):
-        self.connectListeners = []
-        self.sampleListeners = []
-        self.toastListeners = []
+    def __init__(self, root):
         self.bacon = None
         self.toast = None
+        self.autoToast = False
+        self.root = root
+        self.currentProgress = 0
 
-    def addConnectListener(self, callMe):
-        self.connectListeners.append(callMe)
+    def busy(self):
+        self.root.config(cursor="watch")
 
-    def addSampleListener(self, callMe):
-        self.sampleListeners.append(callMe)
+    def notbusy(self):
+        self.root.config(cursor="")
 
-    def addToastListener(self, callMe):
-        self.toastListeners.append(callMe)
+    def addComFrame(self, com):
+        self.comFrame = com
+
+    def addBaconFrame(self, bacon):
+        self.baconFrame = bacon
+
+    def addToastFrame(self, toast):
+        self.toastFrame = toast
+
+    def addGraphFrame(self, graph):
+        self.graphFrame = graph
+
+    def addAdcFrame(self, adc):
+        self.adcFrame = adc
 
     def connect(self, port):
         self.currentPort = port
@@ -53,20 +80,38 @@ class Handler(object):
         time.sleep(1)
         self.bacon = Bacon('serial@%s:115200' % self.currentPort, self.signalError)
         self.toast = Toast('serial@%s:115200' % self.currentPort)
+        
+        self.baconFrame.connectSignal(True)
+        
+        if self.autoToast:
+            self.autoToast = False
+            toaster = ToasterThread(self)
+            toaster.start()
+        else:
+            self.notbusy()
 
-        for listener in self.connectListeners:
-            listener(True)
+    def programToaster(self):
+        self.autoToast = True
+
+    def programToasterDone(self, status):
+        self.comFrame.connect()
+        
 
     def signalError(self):
-        print "event handler"
-        cleanup = CleanUpThread()
+        #print "event handler"
+        #Dispatcher.stopAll()
+        #self.publicDisconnect()
+        #self.publicConnect()
+        self.busy()
+        cleanup = CleanUpThread(self)
         cleanup.start()
 
-    
+        #input = "-S 115200 -c %s -r" % self.currentPort
+        #
+        #cc430 = CC430bsl.CC430bsl(input, self.resetDone)
+        #cc430.start()    
+
     def disconnect(self):        
-        for listener in self.connectListeners:
-            listener(False)
-            
         try:
             self.toast.powerOff()
         except:
@@ -79,6 +124,12 @@ class Handler(object):
             self.bacon.stop()
         except:
             pass
+        
+        # order is important
+        self.toastFrame.connectSignal(False)
+        self.graphFrame.connectSignal(False)
+        self.baconFrame.connectSignal(False)
+        self.adcFrame.connectSignal(False)
 
     #
     # Bacon
@@ -138,11 +189,7 @@ class Handler(object):
 
     #
     # Toast
-    #
-    def signalToast(self, connected):
-        for listener in self.toastListeners:
-            listener(connected)        
-    
+    #    
     def connectToast(self):                
         self.powerCycle()
 
@@ -246,14 +293,17 @@ class Handler(object):
         self.sampleThread = ToastSampling(self, sensors)
         self.sampleThread.start()
         
-        for listener in self.sampleListeners:
-            listener(True)
+        self.baconFrame.disableUI()
+        self.adcFrame.disableUI()
+        self.graphFrame.sampleSignal(True)
 
     def stopSampling(self):
         self.sampleThread.stop()
         
-        for listener in self.sampleListeners:
-            listener(False)
+        self.baconFrame.enableUI()
+        self.adcFrame.enableUI()
+        self.graphFrame.sampleSignal(False)
+
 
     def readSensor(self, channel, sensorImpedance=10000, warmUpMs = 10, 
       sref = Toast.REFERENCE_VREFplus_AVss, ref2_5v = True, samplePeriod32k = 0):
