@@ -52,6 +52,7 @@
 
 #if ENABLE_PRINTF == 0
 #define printf(...)
+#define printfflush()
 #else
 #if RAW_SERIAL_PRINTF == 1
 #include <stdio.h>
