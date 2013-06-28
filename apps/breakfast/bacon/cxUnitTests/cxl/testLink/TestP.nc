@@ -19,7 +19,7 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLength = 50;
+  uint8_t packetLength = 1;
   uint8_t channel;
 
   bool started = FALSE;
@@ -64,7 +64,8 @@ module TestP{
   }
 
   event void Boot.booted(){
-    channel = (TOS_NODE_ID)*(32);
+//    channel = (TOS_NODE_ID)*(32);
+    channel = 0;
     call SerialControl.start();
     printf("Booted\r\n");
     post usage();
@@ -135,7 +136,7 @@ module TestP{
         pl,
         call CXLinkPacket.getLinkMetadata(txMsg),
         header->sn);
-      header->ttl = 5;
+      header->ttl = 10;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
