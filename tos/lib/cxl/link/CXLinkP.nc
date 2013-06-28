@@ -148,18 +148,18 @@ module CXLinkP {
     
     atomic {
       if (aSfdCapture){
-//        if(!aSynched){
+        if( SELF_SFD_SYNCH ||  !aSynched ){
           //first synch point: computed based on sfd capture (either RX
           //or TX)
-        call FastAlarm.startAt(aSfdCapture,  
-          frameLen - sfdAdjust);
-//        aSynched = TRUE;
-//        }else{
+          call FastAlarm.startAt(aSfdCapture,  
+            frameLen - sfdAdjust);
+          aSynched = TRUE;
+        }else{
 //          //every subsequent transmission: should be based on the
 //          //  previous one.
-//          call FastAlarm.startAt(call FastAlarm.getAlarm(),
-//            frameLen);
-//        }
+          call FastAlarm.startAt(call FastAlarm.getAlarm(),
+            frameLen);
+        }
       }else{
 //        //N.B.: at this point, packet is already loaded into
 //        // buffer, so we can't modify it. Need to either use
@@ -324,12 +324,9 @@ module CXLinkP {
     uint8_t localState;
     atomic localState = state;
     if (localState == S_IDLE || localState == S_SLEEP){
-      //switch to data channel if not already on it
       error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
-//      printf("rxbuf: %u\r\n", 
-//        TOSH_DATA_LENGTH + sizeof(message_header_t));
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
       //here.
@@ -449,13 +446,14 @@ module CXLinkP {
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
         call Msp430XV2ClockControl.startMicroTimer();
       }
-      //TODO: Debug: remove me!
-      call Rf1aPhysical.setChannel(32* (header(msg)->hopCount));
+//      //This is debug code for faking multi-hop networks. N.B. you may
+//      // need to set the offmode to IDLE rather than FSTXON
+//      // everywhere that this ability is used. 
+//      call Rf1aPhysical.setChannel(32* (header(msg)->hopCount));
       error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
       if (error == SUCCESS) {
         rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
         call SynchCapture.captureRisingEdge();
-//        printf("ss %p %u\r\n", msg, call CXLinkPacket.len(msg));
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
         if (error == SUCCESS){
@@ -492,10 +490,6 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
-    //TODO: if this does turn out to be length-dependent (still don't
-    //see how that could be the case), then replace this with a lookup
-    //into a table by count. This table might be annoyingly big, say
-    //4*110 bytes.
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
@@ -540,11 +534,8 @@ module CXLinkP {
       if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg)) && (crcIndex-1) < crcFirstPassed){
         crcFirstPassed = crcIndex-1;
       }
-
-//      sfdAdjust += (SFD_ADJUST_HOP * (header(rxMsg)->hopCount -1));
     }
-//    printf("hr %p %u %u %u\r\n", rxMsg, call CXLinkPacket.len(rxMsg),
-//      rxLen, rxResult);
+
     if (localState == S_RX){
       if (readyForward(rxMsg) ){
         atomic{

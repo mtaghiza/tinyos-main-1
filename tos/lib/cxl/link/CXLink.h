@@ -67,6 +67,29 @@ typedef struct cx_link_metadata {
 } cx_link_metadata_t;
 
 
+//This flag determines whether nodes re-synch to their own SFD on
+//every rx/tx or whether they use the first SFD capture as the basis
+//for a periodic alarm. 
+//
+// Experiments indicate that re-synching to your own SFD on every
+// TX/RX provides
+// slightly better performance with long packets. However, short (< 64
+// byte) packets show some odd behavior that is handled better with
+// single-synchronization. 
+//
+// The same amount of time elapses
+// between the alarm.fired and SFD event for every *source*
+// transmission, while the forwarders initially take less time for
+// this process. The forwarder time does converge to the source time
+// eventually, though. By using a single synchronization point, as
+// long as that is computed correctly, the transmitters will be back
+// in synchronization when they converge to the source's transmission
+// timing.
+#ifndef SELF_SFD_SYNCH
+#define SELF_SFD_SYNCH 0
+#endif
+
+
 #ifndef CX_MAX_DEPTH
 #define CX_MAX_DEPTH 10
 #endif
