@@ -22,6 +22,7 @@ configuration CXLppC {
   CXLppP.SubReceive -> CXLinkC.Receive;
   CXLppP.CXLink -> CXLinkC.CXLink;
   CXLppP.CXLinkPacket -> CXLinkC.CXLinkPacket;
+  CXLppP.LinkPacket -> CXLinkC.Packet;
 
   CXLinkC.Pool = Pool;
   CXLppP.Pool = Pool;

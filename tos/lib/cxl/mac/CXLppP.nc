@@ -154,7 +154,7 @@ module CXLppP {
         call CXLinkPacket.setAllowRetx(probe, FALSE);
         call Packet.setPayloadLength(probe, 0);
         error = call SubSend.send(probe, 
-          call LinkPacket.getPayloadLength(probe));
+          call LinkPacket.payloadLength(probe));
         cdbg(LPP, "MS p\r\n");
         if (SUCCESS != error){
           cerror(LPP, "pt.f ss %x\r\n", error);
@@ -180,7 +180,7 @@ module CXLppP {
       call Packet.setPayloadLength(keepAliveMsg, 0);
       call CXLinkPacket.setAllowRetx(keepAliveMsg, TRUE);
       error = call SubSend.send(keepAliveMsg,
-        call LinkPacket.getPayloadLength(keepAliveMsg));
+        call LinkPacket.payloadLength(keepAliveMsg));
       cdbg(LPP, "MS k\r\n");
       if (SUCCESS != error){
         cerror(LPP, "kat.f ss %x\r\n", error);
