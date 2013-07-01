@@ -44,9 +44,10 @@ module SlotSchedulerP {
     S_SLOT_END_READY = 0x09,
     S_SLOT_END_SENDING = 0x0a,
     
-    //heard a CTS for somebody else, waiting for them to respond with
-    //status.
-    S_STATUS_WAIT = 0x10,
+    //got the cts, will start checking at the next frame start.
+    S_STATUS_WAIT_READY = 0x10,
+    //waiting for the status to come in.
+    S_STATUS_WAIT = 0x11,
 
     //this slot is in use, and we are a forwarder. 
     S_ACTIVE_SLOT = 0xFE,
@@ -55,6 +56,8 @@ module SlotSchedulerP {
     //is no data coming during this slot).
     S_UNUSED_SLOT = 0xFF,
   };
+
+  uint8_t state = S_UNSYNCH;
   
 
   message_t* pending;
@@ -86,7 +89,7 @@ module SlotSchedulerP {
           post sendStatus();
         }else{
           //synchronize receives to CTS timestamp - slack
-          state = S_STATUS_WAIT;
+          state = S_STATUS_WAIT_READY;
           call FrameTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, FRAME_LENGTH);
         }
         return msg;
@@ -124,10 +127,41 @@ module SlotSchedulerP {
 
   event void FrameTimer.fired(){
     framesLeft --;
+    //before we do anything else: bail out if there's no response from
+    //owner.
+    if (state == S_STATUS_WAIT){
+    }
+
     if (pendingRX){
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
+    } else if (framesLeft == 1){
+      //TODO: framesLeft should be 0 or 1?
+      switch(state){
+        case S_UNUSED_SLOT:
+        case S_ACTIVE_SLOT:
+          //on last frame: wait around for an
+          //  end-of-message/data-pending from the owner
+          error_t error = rx(CTS_TIMEOUT, TRUE);
+          if (error != SUCCESS){
+            cerror("FT %x: rx %x\r\n", state, error);
+          }
+          break;
+
+        case S_SLOT_END_READY:
+          error_t error = call SubSend.send(eosMsg, sizeof(cx_eos_t));
+          if (error == SUCCESS){
+            state = S_SLOT_END_SENDING;
+          }else{ 
+            cerror(SCHED, "ft.f %x %x fl 1\r\n", state, error);
+          }
+          break;
+
+        default:
+          cerror(SCHED, "Unexpected state %x with fl 1\r\n", state);
+          break;
+      }
     } else {
       switch (state){
         case S_STATUS_READY:
@@ -138,7 +172,7 @@ module SlotSchedulerP {
             cerror("FT %x: SS.S %x\r\n", state, error);
           }
           break;
-  
+
         case S_STATUS_WAIT:
           framesWaited ++;
           if (framesWaited >= MAXDEPTH + 1){
@@ -150,6 +184,15 @@ module SlotSchedulerP {
               cerror(SCHED, "Status timeout, sleep failed %x\r\n",
                 error);
             }
+            return;
+          }
+          //fall-through
+        case S_STATUS_WAIT_READY:
+          error_t error = rx(DATA_TIMEOUT, TRUE);
+          if (error != SUCCESS){
+            cerror("FT %x: rx %x\r\n", state, error);
+          }else{
+            state = S_STATUS_WAIT;
           }
           break;
   
@@ -174,26 +217,6 @@ module SlotSchedulerP {
           error_t error = rx(DATA_TIMEOUT, TRUE);
           if (error != SUCCESS){
             cerror("FT %x: rx %x\r\n", state, error);
-          }
-          break;
-
-        case S_UNUSED_SLOT:
-          //on last frame: wait around for an
-          //  end-of-message/data-pending from the owner
-          //TODO: framesLeft should be 0 or 1?
-          if (framesLeft == 1){
-            error_t error = rx(CTS_TIMEOUT, TRUE);
-            if (error != SUCCESS){
-              cerror("FT %x: rx %x\r\n", state, error);
-            }
-          }
-          break;
-
-        case S_SLOT_END_READY:
-          //on last frame: send the eos message
-          //TODO: framesLeft should be 0 or 1?
-          if (framesLeft == 1){
-            call SubSend.send(eosMsg, sizeof(cx_eos_t));
           }
           break;
 
@@ -223,9 +246,17 @@ module SlotSchedulerP {
       }
     }else if (state == S_DATA_SENDING){
       state = S_IDLE;
+      if (framesLeft == 2){
+        //TODO: set up eos packet, next frame we're going to shoot it
+        //off.
+      }
+      pendingMsg = NULL;
       signal Send.sendDone(msg, error);
     } else if (state == S_CTS_SENDING){
-      call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
+      //master starts frame duty cycle based on CTS transmission
+      call FrameTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+      //start waiting for the status packet to come back.
+      state = S_STATUS_WAIT;
     } else {
       cerror("Unexpected send done state %x\r\n", state);
     }
@@ -252,7 +283,7 @@ module SlotSchedulerP {
 
   task void nextRX(){
     if (state == S_WAKEUP){
-      if (wakeupTimeoutStillGoing){
+      if (wakeupTimeoutStillGoing()){
         //TODO: set timeout to be from now until end of active period
         //wakeup.
         error_t error = call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
@@ -261,7 +292,8 @@ module SlotSchedulerP {
         }
       } else {
         if (signal SlotController.isMaster()){
-          call SlotTimer.startOneShot(0);
+          call SlotTimer.startPeriodic(SLOT_LENGTH);
+          signal SlotTimer.fired();
         } else {
           //TODO: this should be one probe interval
           call CXLink.rx(RX_TIMEOUT_MAX, TRUE);
