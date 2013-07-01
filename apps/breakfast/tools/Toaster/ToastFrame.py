@@ -316,7 +316,7 @@ class ToastFrame(Frame):
 
     def updateBarcodeKey(self, event):
         self.updateBarcode()
-        self.sensor0newTypeEntry.focus()
+        self.sensor0newIDEntry.focus()
 
     def updateBarcode(self):
         try:

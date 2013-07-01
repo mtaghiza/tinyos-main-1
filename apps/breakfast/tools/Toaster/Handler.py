@@ -157,7 +157,7 @@ class Handler(object):
         barcode = self.bacon.readBarcode()
         
         barcodeStr = ""
-        for i in barcode:
+        for i in reversed(barcode): # byte array is little endian
             barcodeStr += "%02X" % i
             
         return barcodeStr
@@ -167,7 +167,7 @@ class Handler(object):
         barcode = int(barcodeStr, 16)
         output = []
         for i in range(0,8):
-            output.append((barcode >> ((7-i)*8)) & 0xFF)
+            output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
             
         self.bacon.writeBarcode(output)
 
@@ -247,7 +247,7 @@ class Handler(object):
         barcode = self.toast.readBarcode()
         
         barcodeStr = ""
-        for i in barcode:
+        for i in reversed(barcode): # byte array is little endian
             barcodeStr += "%02X" % i
         
         return barcodeStr
@@ -257,7 +257,7 @@ class Handler(object):
         barcode = int(barcodeStr, 16)
         output = []
         for i in range(0,8):
-            output.append((barcode >> ((7-i)*8)) & 0xFF)
+            output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
             
         self.toast.writeBarcode(output)
 
