@@ -113,6 +113,7 @@ module SlotSchedulerP {
 
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
+      cdbg(SCHED, "Sched wakeup\r\n");
       signalEnd = TRUE;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
@@ -457,7 +458,7 @@ module SlotSchedulerP {
       cerror(SCHED, "RX while pending\r\n");
       return EBUSY;
     } else {
-      error_t error = rx(timeout, retx);
+      error_t error = call CXLink.rx(timeout, retx);
       if (error == SUCCESS){
         pendingRX = TRUE;
       }
@@ -469,17 +470,30 @@ module SlotSchedulerP {
     return (call SlotTimer.getNow() - wakeupStart) 
       < call SlotController.wakeupLen();
   }
+  
+  uint32_t slowToFast(uint32_t slowTicks){
+    return (slowTicks * FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW;
+  }
 
   task void nextRX(){
+    cdbg(SCHED, "next RX ");
     if (state == S_WAKEUP){
+      cdbg(SCHED, "wakeup\r\n");
       if (wakeupTimeoutStillGoing()){
-        //TODO: set timeout to be from now until end of active period
-        //wakeup.
-        error_t error = rx(RX_TIMEOUT_MAX, TRUE);
+        // - allow rest of network to wake up
+        // - add 1 slow frame for the first CTS to go down
+        uint32_t remainingTime = slowToFast(
+            call SlotController.wakeupLen() - call SlotTimer.getNow()
+            + FRAMELEN_SLOW);
+        error_t error;
+        cdbg(SCHED, "rx for %lu\r\n", remainingTime);
+        error = rx(remainingTime, TRUE);
+        cdbg(SCHED, "err %x\r\n", error);
         if (error != SUCCESS){
           cwarn(SCHED, "wakeup re-rx: %x\r\n", error);
         }
       } else {
+        cdbg(SCHED, "Done waking\r\n");
         if (call SlotController.isMaster()){
           call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
@@ -495,12 +509,15 @@ module SlotSchedulerP {
       //sleep when we've exceeded a few of them. N.B. each of these
       //timeout slots adds 30 ms of on-time (not too shabby!).
       error_t error = call LppControl.sleep();
+      cdbg(SCHED, "No CTS\r\n");
       if (error == SUCCESS){
         state = S_UNSYNCHED;
       }else{
         //awjeez awjeez
         cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
       }
+    }else{
+      cerror(SCHED, "unexpected state at nextRX %x\r\n", state);
     }
   }
   
