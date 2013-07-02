@@ -15,6 +15,12 @@ module NeighborhoodC {
   }
 
   event void LppProbeSniffer.sniffProbe(am_addr_t src){
+    uint8_t i = 0;
+    for (i = 0; i < neighborIndex; i++){
+      if (neighbors[i] == src){
+        return;
+      }
+    }
     neighbors[neighborIndex] = src;
     neighborIndex = (neighborIndex + 1) % CX_NEIGHBORHOOD_SIZE;
     if (numNeighbors < CX_NEIGHBORHOOD_SIZE){
