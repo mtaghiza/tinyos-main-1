@@ -73,6 +73,11 @@ module CXLinkP {
   bool aCSDetected;
   bool aExtended;
   int32_t sfdAdjust;
+
+  uint32_t fastToSlow(uint32_t fastTicks){
+    //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
+    return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
+  }
   
   event void StateDump.dumpRequested(){
     uint8_t lState;
@@ -203,7 +208,22 @@ module CXLinkP {
 //      //forwarding it.
 //      phy(rxMsg)->lqi &= ~0x80;
     }
-    //TODO: if time32k is not set, set it based on last sfd capture.
+    
+    //apply the timestamp.
+    if (metadata(fwdMsg)->time32k == 0){
+      atomic{
+        uint32_t fastRef1 = call FastAlarm.getNow();
+        uint32_t slowRef = call LocalTime.get();
+        uint32_t fastRef2 = call FastAlarm.getNow();
+        uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - aSfdCapture - sfdAdjust;
+        uint32_t slowTicks = fastToSlow(fastTicks);
+        
+        metadata(fwdMsg)->time32k = slowRef 
+          - slowTicks 
+          - (FRAMELEN_SLOW*(metadata(fwdMsg)->rxHopCount-1));
+      }
+    }
+
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
         subsend(fwdMsg);
@@ -501,10 +521,6 @@ module CXLinkP {
     post handleReception();
   } 
 
-  uint32_t fastToSlow(uint32_t fastTicks){
-    //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
-    return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
-  }
 
   /**
    * Deal with the aftermath of packet reception: record

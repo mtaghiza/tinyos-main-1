@@ -152,7 +152,10 @@ module TestP{
   
   #if CX_ROUTER == 1
   task void download(){
-    printf("Download %x\r\n", call CXDownload.download());
+    printf("Download %x\r\n", call CXDownload.startDownload());
+  }
+  event void CXDownload.downloadFinished(){
+    printf("Download finished\r\n");
   }
   #endif
 

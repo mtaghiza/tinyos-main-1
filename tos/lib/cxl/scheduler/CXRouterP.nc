@@ -1,3 +1,6 @@
+
+ #include "CXRouter.h"
+ #include "CXRouterDebug.h"
 module CXRouterP {
   provides interface SlotController;
   provides interface CXDownload;
@@ -15,24 +18,35 @@ module CXRouterP {
    *  - on receiving EOS, mark node as finished or outstanding
    *  - update isActive accordingly
    **/
+
   //TODO: how to push to nodes?
   //      - nodes treat CTS src == dest as "this is flood from master"
   //      - status is data-pending (or, could skip status wait)
   //      - send whatever you got
-  nx_am_addr_t contactList[CX_MAX_SUBNETWORK_SIZE];
+  contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
   uint8_t contactIndex;
   uint8_t toContact;
 
   command error_t CXDownload.startDownload(){
-    memset(contactList, sizeof(contactList), 0xFF);
-    contactIndex = 0;
-    call LppControl.wakeup();
+    error_t error = call LppControl.wakeup();
+    if (error == SUCCESS){
+      memset(contactList, sizeof(contactList), 0xFF);
+      contactIndex = 0;
+    }
+    return error;
   }
 
-  command bool SlotController.endSlot(){
+  task void downloadFinished(){
+    signal CXDownload.downloadFinished();
+  }
+
+  command void SlotController.endSlot(){
     if (toContact > 0){
       contactIndex++;
       toContact --;
+    }
+    if (toContact == 0){
+      post downloadFinished();
     }
   }
 
@@ -70,7 +84,9 @@ module CXRouterP {
         }
         if (! found){
           if (toContact + contactIndex < CX_MAX_SUBNETWORK_SIZE){
-            contactList[toContact + contactIndex] = pl->neighbors[i];
+            contactList[toContact + contactIndex].nodeId = pl->neighbors[i];
+            contactList[toContact + contactIndex].contacted = FALSE;
+            contactList[toContact + contactIndex].attempted = FALSE;
             cdbg(ROUTER, "Add %x at %u toContact %u\r\n",
               pl->neighbors[i], 
               toContact+contactIndex, 
@@ -99,11 +115,17 @@ module CXRouterP {
     return CX_MAX_DEPTH;
   }
 
-  command message_t* SlotController.receiveEOS(message_t* msg,
-      cx_eos_t* pl){
-    contactList[contactIndex].dataPending = dataPending;
-    return msg;
+  command uint32_t SlotController.wakeupLen(){
+    return CX_WAKEUP_LEN;
   }
 
+  command message_t* SlotController.receiveEOS(message_t* msg,
+      cx_eos_t* pl){
+    contactList[contactIndex].dataPending = pl->dataPending;
+    return msg;
+  }
+  
+  event void LppControl.fellAsleep(){}
+  event void LppControl.wokenUp(){}
   
 }

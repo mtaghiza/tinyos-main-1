@@ -27,4 +27,7 @@
 
 #define CX_DEFAULT_BW 2
 
+//This is in 32K ticks
+#define CX_WAKEUP_LEN ((LPP_DEFAULT_PROBE_INTERVAL * CX_MAX_DEPTH) >> 5)
+
 #endif

@@ -466,8 +466,8 @@ module SlotSchedulerP {
   }
 
   bool wakeupTimeoutStillGoing(){
-    //TODO: this should be computed based on current time and wakeup.
-    return FALSE;
+    return (call SlotTimer.getNow() - wakeupStart) 
+      < call SlotController.wakeupLen();
   }
 
   task void nextRX(){
@@ -577,13 +577,16 @@ module SlotSchedulerP {
   default command uint8_t SlotController.maxDepth(){
     return CX_MAX_DEPTH;
   }
+  default command uint32_t SlotController.wakeupLen(){
+    return CX_WAKEUP_LEN;
+  }
 
   default command message_t* SlotController.receiveEOS(
-      message_t* msg, void* pl){
+      message_t* msg, cx_eos_t* pl){
     return msg;
   }
   default command message_t* SlotController.receiveStatus(
-      message_t* msg, void *pl){
+      message_t* msg, cx_status_t *pl){
     return msg;
   }
   default command void SlotController.endSlot(){

@@ -7,4 +7,9 @@ typedef struct contact_entry{
   bool contacted;
   bool dataPending;
 } contact_entry_t;
+
+#ifndef CX_MAX_SUBNETWORK_SIZE
+#define CX_MAX_SUBNETWORK_SIZE 60
+#endif
+
 #endif
