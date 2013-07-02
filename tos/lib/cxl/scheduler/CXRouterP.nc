@@ -32,6 +32,7 @@ module CXRouterP {
     if (error == SUCCESS){
       memset(contactList, sizeof(contactList), 0xFF);
       contactIndex = 0;
+      toContact = 0;
     }
     return error;
   }

@@ -5,6 +5,7 @@ module NeighborhoodC {
 } implementation {
   nx_am_addr_t neighbors[CX_NEIGHBORHOOD_SIZE];
   uint8_t neighborIndex = 0;
+  uint8_t numNeighbors;
 
   command error_t Init.init(){
     uint8_t i;
@@ -16,8 +17,16 @@ module NeighborhoodC {
   event void LppProbeSniffer.sniffProbe(am_addr_t src){
     neighbors[neighborIndex] = src;
     neighborIndex = (neighborIndex + 1) % CX_NEIGHBORHOOD_SIZE;
+    if (numNeighbors < CX_NEIGHBORHOOD_SIZE){
+      numNeighbors ++;
+    }
   }
-  
+
+  command void Neighborhood.clear(){
+    numNeighbors = 0;
+    neighborIndex = 0;
+  }
+
   command void Neighborhood.copyNeighborhood(void* dest){
     memcpy(dest, neighbors, sizeof(neighbors));
   }
@@ -27,7 +36,7 @@ module NeighborhoodC {
   }
 
   command uint8_t Neighborhood.numNeighbors(){
-    return CX_NEIGHBORHOOD_SIZE;
+    return numNeighbors;
   }
 
 }

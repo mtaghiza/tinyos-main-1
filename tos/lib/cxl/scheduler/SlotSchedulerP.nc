@@ -113,6 +113,7 @@ module SlotSchedulerP {
 
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
+      call Neighborhood.clear();
       cdbg(SCHED, "Sched wakeup\r\n");
       signalEnd = TRUE;
       state = S_WAKEUP;
@@ -466,29 +467,31 @@ module SlotSchedulerP {
     }
   }
 
-  bool wakeupTimeoutStillGoing(){
-    return (call SlotTimer.getNow() - wakeupStart) 
+  bool wakeupTimeoutStillGoing(uint32_t t){
+    return (t - wakeupStart) 
       < call SlotController.wakeupLen();
   }
   
   uint32_t slowToFast(uint32_t slowTicks){
-    return (slowTicks * FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW;
+    return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
   }
 
   task void nextRX(){
     cdbg(SCHED, "next RX ");
     if (state == S_WAKEUP){
+      uint32_t t = call SlotTimer.getNow();
       cdbg(SCHED, "wakeup\r\n");
-      if (wakeupTimeoutStillGoing()){
+      if (wakeupTimeoutStillGoing(t)){
         // - allow rest of network to wake up
         // - add 1 slow frame for the first CTS to go down
         uint32_t remainingTime = slowToFast(
-            call SlotController.wakeupLen() - call SlotTimer.getNow()
-            + FRAMELEN_SLOW);
+            call SlotController.wakeupLen() - (t - wakeupStart) + FRAMELEN_SLOW);
         error_t error;
-        cdbg(SCHED, "rx for %lu\r\n", remainingTime);
+        cdbg(SCHED, "rx for %lu / %lu (%lu)\r\n", 
+          remainingTime, 
+          call SlotController.wakeupLen(),
+          slowToFast(call SlotController.wakeupLen()));
         error = rx(remainingTime, TRUE);
-        cdbg(SCHED, "err %x\r\n", error);
         if (error != SUCCESS){
           cwarn(SCHED, "wakeup re-rx: %x\r\n", error);
         }
@@ -532,6 +535,7 @@ module SlotSchedulerP {
     if (call SlotController.isMaster()){
       if(call SlotController.isActive()){
         am_addr_t activeNode = call SlotController.activeNode();
+        cdbg(SCHED, "master + active: next %x\r\n", activeNode);
         signalEnd = TRUE;
         if (ctsMsg == NULL){
           ctsMsg = call Pool.get();
@@ -559,6 +563,7 @@ module SlotSchedulerP {
           cerror(SCHED, "CTS msg not available.\r\n");
         }
       } else {
+        cdbg(SCHED, "End of active\r\n");
         //end of active period: can sleep now.
         call LppControl.sleep();
         call SlotTimer.stop();
