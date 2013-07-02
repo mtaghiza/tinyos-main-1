@@ -8,7 +8,7 @@
 #define CXM_KEEPALIVE 2
 #define CXM_CTS 3
 #define CXM_RTS 4
-//TODO: maybe add acks
+#define CXM_STATUS 5
 
 typedef nx_struct cx_mac_header{
   nx_uint8_t macType;
@@ -52,6 +52,11 @@ typedef nx_struct cx_lpp_sleep {
 typedef nx_struct cx_lpp_cts {
   nx_am_addr_t addr;
 } cx_lpp_cts_t;
+
+typedef nx_struct cx_status {
+  nx_uint8_t distance;
+  nx_uint8_t bw;
+}; 
 
 enum {
  AM_CX_LPP_WAKEUP=0xC6,
