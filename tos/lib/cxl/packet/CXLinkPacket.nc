@@ -9,6 +9,7 @@ interface CXLinkPacket {
   command void setAllowRetx(message_t* msg, bool allow);
   command void setTSLoc(message_t* msg, nx_uint32_t* tsLoc);
 
+  command void setTtl(message_t* msg, uint8_t ttl);
   command am_addr_t source(message_t* msg);
   command void setSource(message_t* msg, am_addr_t addr);
   command am_addr_t destination(message_t* msg);

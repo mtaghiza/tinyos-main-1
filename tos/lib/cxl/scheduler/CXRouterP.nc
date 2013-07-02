@@ -92,7 +92,7 @@ module CXRouterP {
   }
 
   command uint8_t SlotController.bw(){
-    return CX_BW;
+    return CX_DEFAULT_BW;
   }
 
   command uint8_t SlotController.maxDepth(){

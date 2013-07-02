@@ -6,4 +6,5 @@ interface SlotController {
   command uint8_t maxDepth();
   command message_t* receiveEOS(message_t* msg, void* pl);
   command message_t* receiveStatus(message_t* msg, void* pl);
+  command void endSlot();
 }

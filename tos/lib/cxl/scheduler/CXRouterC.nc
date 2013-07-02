@@ -1,6 +1,7 @@
 configuration CXRouterC {
   provides interface SplitControl;
   provides interface Send;
+  provides interface Packet;
   provides interface Receive;
 
   provides interface CXDownload;
@@ -15,6 +16,7 @@ configuration CXRouterC {
   CXRouterP.Neighborhood -> SlotSchedulerC;
 
   Send = SlotSchedulerC;
+  Packet = SlotSchedulerC;
   Receive = SlotSchedulerC;
   SplitControl = SlotSchedulerC;
 

@@ -7,6 +7,11 @@ module CXLinkPacketC{
     return (message_metadata_t*)(msg->metadata);
   }
 
+  command void CXLinkPacket.setTtl(message_t* msg, 
+      uint8_t ttl){
+    (call CXLinkPacket.getLinkHeader(msg))->ttl = ttl;
+  }
+
   command void CXLinkPacket.setSource(message_t* msg, 
       am_addr_t addr){
     (call CXLinkPacket.getLinkHeader(msg))->source = addr;

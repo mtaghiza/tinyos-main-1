@@ -2,6 +2,7 @@ configuration SlotSchedulerC{
 
   provides interface SplitControl;
   provides interface Send;
+  provides interface Packet;
   provides interface Receive;
 
   uses interface Pool<message_t>;
@@ -31,6 +32,8 @@ configuration SlotSchedulerC{
   components NeighborhoodC;
   SlotSchedulerP.Neighborhood -> NeighborhoodC;
   Neighborhood = NeighborhoodC;
-  NeighborhoodC.LppSniffer -> CXWakeupC;
+  NeighborhoodC.LppProbeSniffer -> CXWakeupC;
+
+  Packet = CXWakeupC.Packet;
 
 }
