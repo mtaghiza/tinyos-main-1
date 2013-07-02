@@ -211,7 +211,7 @@ module CXWakeupP {
         }else{
           //nope: it's from another node. record it for topology/time
           //synch.
-          //TODO: sniff overheard probes
+          signal LppProbeSniffer.sniffProbe(call CXLinkPacket.source(msg));
           cinfo(LPP, "Sniff\r\n");
           return msg;
         }

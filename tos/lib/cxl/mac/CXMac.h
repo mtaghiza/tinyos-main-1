@@ -40,6 +40,10 @@ typedef nx_struct cx_mac_header{
 #define CX_BASESTATION 0
 #endif
 
+#ifndef CX_NEIGHBORHOOD_SIZE
+#define CX_NEIGHBORHOOD_SIZE 4
+#endif
+
 //Basestation control messages
 typedef nx_struct cx_lpp_wakeup {
   nx_uint32_t timeout;
@@ -56,7 +60,12 @@ typedef nx_struct cx_lpp_cts {
 typedef nx_struct cx_status {
   nx_uint8_t distance;
   nx_uint8_t bw;
-}; 
+  nx_uint8_t neighbors[CX_NEIGHBORHOOD_SIZE]
+} cx_status_t; 
+
+typedef nx_struct cx_eos {
+  nx_uint8_t dataPending;
+} cx_eos_t;
 
 enum {
  AM_CX_LPP_WAKEUP=0xC6,

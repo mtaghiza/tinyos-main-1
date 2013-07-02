@@ -1,9 +1,15 @@
 
 module SlotSchedulerP {
+  provides interface Send;
+  provides interface Receive;
+
   uses interface CXLink;
   uses interface LppControl;
   uses interface CXMacPacket;
-  provides interface Send
+
+  uses interface SlotController;
+  uses interface Neighborhood;
+
   uses interface Send as SubSend;
   uses interface Receive as SubReceive;
 
@@ -67,9 +73,14 @@ module SlotSchedulerP {
   message_t* statusMsg;
   message_t* ctsMsg;
   message_t* eosMsg;
+  
+  //deal with fencepost issues w.r.t signalling end of last
+  //slot/beginning of next slot.
+  bool signalEnd;
 
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
+      signalEnd = TRUE;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.now();
       post nextRX();
@@ -126,7 +137,8 @@ module SlotSchedulerP {
           call CXLinkPacket.destination(msg),
           call CXLinkPacket.src(msg), 
           pl->distance);
-        if (shouldForward(call CXLinkPacket.src(msg), 
+
+        if (pl->dataPending && shouldForward(call CXLinkPacket.src(msg), 
             call CXLinkPacket.destination(msg)),
             pl->bw){
           state = S_ACTIVE_SLOT;
@@ -138,10 +150,10 @@ module SlotSchedulerP {
           }
           state = S_UNUSED_SLOT;
         }
-        return msg;
+        return call SlotController.receiveStatus(msg);
 
       case CXM_EOS:
-        return signal SlotController.receiveEOS(msg);
+        return call SlotController.receiveEOS(msg);
 
       case CXM_DATA:
         return signal Receive.receive(msg, pl, len);
@@ -156,15 +168,17 @@ module SlotSchedulerP {
   task void sendStatus(){
     if (statusMsg == NULL){
       statusMsg = call Pool.get();
-      cx_setup_t* pl = call Send.getPayload(statusMsg, sizeof(setup_t));
+      cx_status_t* pl = call Send.getPayload(statusMsg, sizeof(setup_t));
       call Packet.clear(statusMsg);
       call CXMacPacket.setType(statusMsg, CXM_STATUS);
       call CXLinkPacket.setDestination(statusMsg, master);
+
       //future: adjust bw depending on how much uncertainty we
       //observe.
       pl -> bw = CX_BW;
       pl -> distance = call CXRoutingTable.distance(dest, 
         call ActiveMessageAddress.amAddress());
+      call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
       state = S_STATUS_READY;
@@ -196,12 +210,26 @@ module SlotSchedulerP {
           }
           break;
 
+        case S_IDLE:
+          //fall through
         case S_SLOT_END_PREP:
-          //TODO: set up the  end-of-slot message
+          if (eosMsg == NULL){
+            eosMsg = call Pool.get();
+            if (eosMsg == NULL){
+              cerror(SCHED, "No EOS in pool\r\n");
+              state = S_ACTIVE_SLOT;
+              return;
+            }else{
+              cx_eos_t* pl = call Packet.getPayload(eosMsg);
+              call Packet.clear(eosMsg);
+              pl -> dataPending = (pendingMsg != NULL);
+              call CXLinkPacket.setDestination(eosMsg, master);
+            }
+          }
           //fall through
         case S_SLOT_END_READY:
           error_t error = send(eosMsg, sizeof(cx_eos_t), 
-            signal SlotController.maxDepth());
+            call SlotController.maxDepth());
           if (error == SUCCESS){
             state = S_SLOT_END_SENDING;
           }else{ 
@@ -219,7 +247,7 @@ module SlotSchedulerP {
       switch (state){
         case S_STATUS_READY:
           error_t error = send(statusMsg, sizeof(setup_t), 
-            signal SlotController.maxDepth());
+            call SlotController.maxDepth());
           if (error == SUCCESS){
             state = S_STATUS_SENDING;
           }else{
@@ -251,15 +279,12 @@ module SlotSchedulerP {
           break;
   
         case S_DATA_READY:
-          //TODO: if there is not enough time to send this out in this
-          //slot, we should wait until the data pending/EOM frame to
-          //indicate what's up.
           error_t error = send(pendingMsg, 
             pendingLen, 
             call RoutingTable.distance(
               call ActiveMessageAddress.amAddress(), 
               call CXLinkPacket.destination(pendingMsg))
-              + signal SlotController.bw()
+              + call SlotController.bw()
             );
           if (error == SUCCESS){
             state = S_DATA_SENDING;
@@ -271,7 +296,7 @@ module SlotSchedulerP {
         case S_CTS_READY:
           error_t error = send(ctsMsg,
             sizeof(cx_lpp_cts_t),
-            signal SlotController.maxDepth());
+            call SlotController.maxDepth());
           break;
 
         case S_ACTIVE_SLOT:
@@ -285,6 +310,13 @@ module SlotSchedulerP {
           break;
       }
     }
+  }
+
+  uint8_t clearTime(message_t* msg){
+    return call RoutingTable.distance(
+      call CXLinkPacket.source(msg),
+      call CXLinkPacket.destination(msg)) 
+      + call SlotController.bw();
   }
 
   command error_t Send.send(){
@@ -338,11 +370,7 @@ module SlotSchedulerP {
           statusMsg, msg);
       }
     }else if (state == S_DATA_SENDING){
-      //TODO: check if there is enough time to send another data
-      //  packet
-      if (framesLeft <= framesAway(msg)){
-        //TODO: set up eos packet, next frame we're going to shoot it
-        //off.
+      if (framesLeft <= clearTime(msg)){
         state = S_SLOT_END_PREP;
       }else{
         state = S_IDLE;
@@ -391,7 +419,7 @@ module SlotSchedulerP {
           cwarn(SCHED, "wakeup re-rx: %x\r\n", error);
         }
       } else {
-        if (signal SlotController.isMaster()){
+        if (call SlotController.isMaster()){
           call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
         } else {
@@ -418,9 +446,14 @@ module SlotSchedulerP {
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
-    if (signal SlotController.isMaster()){
-      if(signal SlotController.isActive()){
-        am_addr_t activeNode = signal SlotController.activeNode();
+    if (signalEnd){
+      call SlotController.endSlot();
+      signalEnd = FALSE;
+    }
+    if (call SlotController.isMaster()){
+      if(call SlotController.isActive()){
+        am_addr_t activeNode = call SlotController.activeNode();
+        signalEnd = TRUE;
         if (ctsMsg == NULL){
           ctsMsg = call Pool.get();
           if (ctsMsg == NULL){
@@ -435,7 +468,7 @@ module SlotSchedulerP {
             
             error = send(ctsMsg, 
               sizeof(lpp_cts_t),
-              signal SlotController.maxDepth());
+              call SlotController.maxDepth());
             if (error == SUCCESS){
               state = S_CTS_SENDING;
             }else{
@@ -466,15 +499,27 @@ module SlotSchedulerP {
     state = S_UNSYNCH;
   }
   
-  default event am_addr_t SlotController.activeNode(){
+  default command am_addr_t SlotController.activeNode(){
     return AM_BROADCAST_ADDR;
   }
 
-  default event bool SlotController.isMaster(){
+  default command bool SlotController.isMaster(){
     return FALSE;
   }
+  default command bool SlotController.isActive(){
+    return FALSE;
+  }
+  default command uint8_t SlotController.bw(){
+    return CX_BW;
+  }
+  default command uint8_t SlotController.maxDepth(){
+    return CX_MAX_DEPTH;
+  }
 
-  default event message_t* SlotController.receiveEOS(message_t* msg){
+  default command message_t* SlotController.receiveEOS(message_t* msg){
+    return msg;
+  }
+  default command message_t* SlotController.receiveStatus(message_t* msg){
     return msg;
   }
 
