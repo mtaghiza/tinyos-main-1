@@ -10,6 +10,7 @@ module SlotSchedulerP {
   uses interface LppControl;
   uses interface CXMacPacket;
   uses interface CXLinkPacket;
+  //This goes to the body of the mac packet
   uses interface Packet;
 
   uses interface SlotController;
@@ -93,6 +94,9 @@ module SlotSchedulerP {
 
   bool pendingRX = FALSE;
   bool pendingTX = FALSE;
+  //To identify cases where we can safely cancel a pending
+  //transmission
+  bool dataCommitted = FALSE;
   
   //deal with fencepost issues w.r.t signalling end of last
   //slot/beginning of next slot.
@@ -218,6 +222,7 @@ module SlotSchedulerP {
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
+      dataCommitted = TRUE;
       state = S_STATUS_READY;
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.
@@ -330,7 +335,7 @@ module SlotSchedulerP {
         case S_DATA_READY:
           { 
             error_t error = send(pendingMsg, 
-              pendingLen, 
+              pendingLen,
               call RoutingTable.getDistance(
                 call ActiveMessageAddress.amAddress(), 
                 call CXLinkPacket.destination(pendingMsg))
@@ -389,6 +394,7 @@ module SlotSchedulerP {
     } else {
       error_t error;
       call CXLinkPacket.setTtl(msg, ttl);
+      call Packet.setPayloadLength(msg, len + sizeof(cx_mac_header_t));
       error = call SubSend.send(msg, len);
       if (error == SUCCESS){
         pendingTX = TRUE;
@@ -460,8 +466,8 @@ module SlotSchedulerP {
   }
 
   bool wakeupTimeoutStillGoing(){
-    //TODO: fill em in
-    return TRUE;
+    //TODO: this should be computed based on current time and wakeup.
+    return FALSE;
   }
 
   task void nextRX(){
@@ -501,6 +507,7 @@ module SlotSchedulerP {
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
+    dataCommitted = FALSE;
     if (signalEnd){
       call SlotController.endSlot();
       signalEnd = FALSE;
@@ -583,17 +590,19 @@ module SlotSchedulerP {
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
-    //TODO: header math
-    return NULL;
+    return call Packet.getPayload(msg, len);
   }
   command uint8_t Send.maxPayloadLength(){
-    //TODO: header math
-    return 0;
+    return call Packet.maxPayloadLength();
   }
+
   command error_t Send.cancel(message_t* msg){
-    //TODO: ok to cancel it if we haven't reported a data
-    //pending/haven't started sending it.
-    return FAIL;
+    if (pendingMsg == msg && ! dataCommitted){
+      pendingMsg = NULL;
+      return SUCCESS;
+    } else {
+      return FAIL;
+    }
   }
 
   async event void ActiveMessageAddress.changed(){ }
