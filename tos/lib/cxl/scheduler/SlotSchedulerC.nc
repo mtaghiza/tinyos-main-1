@@ -16,16 +16,21 @@ configuration SlotSchedulerC{
 
   components new Timer32khzC() as SlotTimer;
   components new Timer32khzC() as FrameTimer;
+  SlotSchedulerP.SlotTimer -> SlotTimer;
+  SlotSchedulerP.FrameTimer -> FrameTimer;
 
   Send = SlotSchedulerP.Send;
   Receive = SlotSchedulerP.Receive;
   SplitControl = CXWakeupC.SplitControl;
   SlotSchedulerP.Pool = Pool;
+  CXWakeupC.Pool = Pool;
   SlotSchedulerP.SlotController = SlotController;
   
   SlotSchedulerP.CXLink -> CXWakeupC.CXLink;
   SlotSchedulerP.LppControl -> CXWakeupC.LppControl;
   SlotSchedulerP.CXMacPacket -> CXWakeupC.CXMacPacket;
+  SlotSchedulerP.CXLinkPacket -> CXWakeupC.CXLinkPacket;
+  SlotSchedulerP.Packet -> CXWakeupC.Packet;
   SlotSchedulerP.SubSend -> CXWakeupC.Send;
   SlotSchedulerP.SubReceive -> CXWakeupC.Receive;
 
@@ -35,5 +40,11 @@ configuration SlotSchedulerC{
   NeighborhoodC.LppProbeSniffer -> CXWakeupC;
 
   Packet = CXWakeupC.Packet;
+
+  components CXAMAddressC;
+  SlotSchedulerP.ActiveMessageAddress -> CXAMAddressC;
+
+  components CXRoutingTableC;
+  SlotSchedulerP.RoutingTable -> CXRoutingTableC;
 
 }

@@ -379,6 +379,7 @@ module SlotSchedulerP {
           state = S_DATA_READY;
         }
       }
+      return SUCCESS;
     }
   }
 
@@ -577,6 +578,8 @@ module SlotSchedulerP {
   default command message_t* SlotController.receiveStatus(
       message_t* msg, void *pl){
     return msg;
+  }
+  default command void SlotController.endSlot(){
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
