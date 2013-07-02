@@ -6,6 +6,7 @@ module SlotSchedulerP {
   uses interface CXLink;
   uses interface LppControl;
   uses interface CXMacPacket;
+  uses interface CXLinkPacket;
 
   uses interface SlotController;
   uses interface Neighborhood;
@@ -17,6 +18,8 @@ module SlotSchedulerP {
   uses interface Timer<T32khz> as FrameTimer;
 
   uses interface Pool<message_t>;
+  uses interface ActiveMessageAddress;
+  uses interface RoutingTable;
 } implementation {
 
   enum {
@@ -92,8 +95,8 @@ module SlotSchedulerP {
   bool shouldForward(am_addr_t src, am_addr_t dest, uint8_t bw){
     am_addr_t self = call ActiveMessageAddress.amAddress();
 
-    if (getDistance(src, self) + getDistance(self, dest) 
-        <= getDistance(src, dest) + bw){
+    if (call RoutingTable.getDistance(src, self) + call RoutingTable.getDistance(self, dest) 
+        <= call RoutingTable.getDistance(src, dest) + bw){
       return TRUE;
     }else{
       return FALSE;
@@ -103,7 +106,7 @@ module SlotSchedulerP {
 
   event message_t* SubReceive.receive(message_t* msg, void* pl,
       uint8_t len){
-    call RoutingTable.addMeasurement(call CXLinkPacket.src(msg), 
+    call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
       call ActiveMessageAddress.amAddress(), 
       call CXLinkPacket.rxHopCount(msg));
     switch (call CXMacPacket.getMacType(msg)){
@@ -135,10 +138,10 @@ module SlotSchedulerP {
         cx_status_t* pl = (cx_status_t*) pl;
         call RoutingTable.addMeasurement(
           call CXLinkPacket.destination(msg),
-          call CXLinkPacket.src(msg), 
+          call CXLinkPacket.source(msg), 
           pl->distance);
 
-        if (pl->dataPending && shouldForward(call CXLinkPacket.src(msg), 
+        if (pl->dataPending && shouldForward(call CXLinkPacket.source(msg), 
             call CXLinkPacket.destination(msg)),
             pl->bw){
           state = S_ACTIVE_SLOT;

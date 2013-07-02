@@ -30,6 +30,8 @@ module CXWakeupP {
   uses interface Timer<TMilli> as TimeoutCheck;
 
   uses interface StateDump;
+
+  provides interface LppProbeSniffer;
 } implementation {
   
   enum {

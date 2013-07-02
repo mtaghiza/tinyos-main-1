@@ -182,10 +182,6 @@ module TestP{
      printf("%c", byte);
   }
 
-  event void CXLink.rxDone(){
-    printf("RXD\r\n");
-  }
-
   async event void UartStream.receiveDone( uint8_t* buf, uint16_t len,
     error_t error ){}
   async event void UartStream.sendDone( uint8_t* buf, uint16_t len,

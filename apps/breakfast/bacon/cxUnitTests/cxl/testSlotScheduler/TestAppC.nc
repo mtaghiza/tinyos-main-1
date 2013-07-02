@@ -1,8 +1,9 @@
 configuration TestAppC {
 } implementation {
-  components TestP;
   components PlatformSerialC;
   components SerialPrintfC;
+
+  components TestP;
   #if CX_ROUTER == 1
   components CXRouterC as Scheduler;
   TestP.CXDownload -> Scheduler;

@@ -60,7 +60,7 @@ typedef nx_struct cx_lpp_cts {
 typedef nx_struct cx_status {
   nx_uint8_t distance;
   nx_uint8_t bw;
-  nx_uint8_t neighbors[CX_NEIGHBORHOOD_SIZE]
+  nx_uint8_t neighbors[CX_NEIGHBORHOOD_SIZE];
 } cx_status_t; 
 
 typedef nx_struct cx_eos {

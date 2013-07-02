@@ -10,6 +10,8 @@ configuration CXWakeupC {
   provides interface CXLink;
   provides interface CXLinkPacket;
 
+  provides interface LppProbeSniffer;
+
   uses interface Pool<message_t>;
 } implementation {
   components CXWakeupP;
@@ -48,5 +50,7 @@ configuration CXWakeupC {
 
   components StateDumpC;
   CXWakeupP.StateDump -> StateDumpC;
+
+  LppProbeSniffer = CXWakeupP.LppProbeSniffer;
 
 }

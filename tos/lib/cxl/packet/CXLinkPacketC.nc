@@ -6,6 +6,18 @@ module CXLinkPacketC{
   message_metadata_t* md(message_t* msg){
     return (message_metadata_t*)(msg->metadata);
   }
+  
+  command am_addr_t CXLinkPacket.source(message_t* msg){
+    return (call CXLinkPacket.getLinkHeader(msg))->source;
+  }
+
+  command am_addr_t CXLinkPacket.destination(message_t* msg){
+    return (call CXLinkPacket.getLinkHeader(msg))->destination;
+  }
+
+  command uint8_t CXLinkPacket.rxHopCount(message_t* msg){
+    return (call CXLinkPacket.getLinkMetadata(msg))->rxHopCount;
+  }
 
   command void CXLinkPacket.setAllowRetx(message_t* msg, bool allowRetx){
     md(msg)->cx.retx = allowRetx;
