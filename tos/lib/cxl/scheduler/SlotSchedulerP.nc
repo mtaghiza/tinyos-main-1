@@ -114,7 +114,7 @@ module SlotSchedulerP {
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
       call Neighborhood.clear();
-      cdbg(SCHED, "Sched wakeup\r\n");
+      cinfo(SCHED, "Sched wakeup\r\n");
       signalEnd = TRUE;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();

@@ -226,6 +226,7 @@ module CXLinkP {
 
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
+        cdbg(LINK, "LFWD\r\n");
         subsend(fwdMsg);
       } else {
         call FastAlarm.stop();
