@@ -10,7 +10,9 @@ interface CXLinkPacket {
   command void setTSLoc(message_t* msg, nx_uint32_t* tsLoc);
 
   command am_addr_t source(message_t* msg);
+  command void setSource(message_t* msg, am_addr_t addr);
   command am_addr_t destination(message_t* msg);
+  command void setDestination(message_t* msg, am_addr_t addr);
   command uint8_t rxHopCount(message_t* msg);
 
   command uint32_t getSn(message_t* msg);

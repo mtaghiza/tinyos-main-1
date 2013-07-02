@@ -9,6 +9,7 @@
 #define CXM_CTS 3
 #define CXM_RTS 4
 #define CXM_STATUS 5
+#define CXM_EOS 6
 
 typedef nx_struct cx_mac_header{
   nx_uint8_t macType;
@@ -25,7 +26,7 @@ typedef nx_struct cx_mac_header{
 #define CX_KEEPALIVE_RETRY 512UL
 
 //0.03125 s * 1.5 = 0.046875 s
-#define CHECK_TIMEOUT (FRAMELEN_FAST_NORMAL + (FRAMELEN_FAST_NORMAL/2))
+#define CHECK_TIMEOUT (FRAMELEN_FAST_SHORT + (FRAMELEN_FAST_SHORT/2))
 //add 50% for safety
 #define CHECK_TIMEOUT_SLOW 72UL
 
@@ -59,6 +60,7 @@ typedef nx_struct cx_lpp_cts {
 
 typedef nx_struct cx_status {
   nx_uint8_t distance;
+  nx_uint8_t dataPending;
   nx_uint8_t bw;
   nx_uint8_t neighbors[CX_NEIGHBORHOOD_SIZE];
 } cx_status_t; 

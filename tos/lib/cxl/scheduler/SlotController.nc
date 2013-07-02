@@ -4,5 +4,6 @@ interface SlotController {
   command bool isActive();
   command uint8_t bw();
   command uint8_t maxDepth();
-  command message_t* receiveEOS(message_t* msg);
+  command message_t* receiveEOS(message_t* msg, void* pl);
+  command message_t* receiveStatus(message_t* msg, void* pl);
 }

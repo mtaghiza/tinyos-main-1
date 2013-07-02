@@ -18,8 +18,6 @@
 #endif
 
 #ifndef FRAMELEN_FAST_SHORT
-//set to 4.4 ms: short packet is estimated to take 1.1 ms to send,
-//add an equal amount of padding time 
 //#define FRAMELEN_FAST_SHORT (84500UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL

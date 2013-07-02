@@ -6,6 +6,16 @@ module CXLinkPacketC{
   message_metadata_t* md(message_t* msg){
     return (message_metadata_t*)(msg->metadata);
   }
+
+  command void CXLinkPacket.setSource(message_t* msg, 
+      am_addr_t addr){
+    (call CXLinkPacket.getLinkHeader(msg))->source = addr;
+  }
+
+  command void CXLinkPacket.setDestination(message_t* msg,
+      am_addr_t addr){
+    (call CXLinkPacket.getLinkHeader(msg))->destination = addr;
+  }
   
   command am_addr_t CXLinkPacket.source(message_t* msg){
     return (call CXLinkPacket.getLinkHeader(msg))->source;

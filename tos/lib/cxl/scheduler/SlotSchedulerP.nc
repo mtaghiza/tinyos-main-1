@@ -1,4 +1,7 @@
 
+ #include "CXScheduleDebug.h"
+ #include "CXSchedule.h"
+ #include "CXMac.h"
 module SlotSchedulerP {
   provides interface Send;
   provides interface Receive;
@@ -7,6 +10,7 @@ module SlotSchedulerP {
   uses interface LppControl;
   uses interface CXMacPacket;
   uses interface CXLinkPacket;
+  uses interface Packet;
 
   uses interface SlotController;
   uses interface Neighborhood;
@@ -25,7 +29,7 @@ module SlotSchedulerP {
   enum {
     //no idea when we're going to get woken up. transition out at
     //LppControl.wokenUp.
-    S_UNSYNCH = 0x00,
+    S_UNSYNCHED = 0x00,
 
     //Just woken up: should be RX'ing with retx until the wakeup
     //period has ended.
@@ -69,23 +73,33 @@ module SlotSchedulerP {
     S_UNUSED_SLOT = 0xFF,
   };
 
-  uint8_t state = S_UNSYNCH;
+  uint8_t state = S_UNSYNCHED;
   
 
-  message_t* pending;
+  message_t* pendingMsg;
   message_t* statusMsg;
   message_t* ctsMsg;
   message_t* eosMsg;
+
+  bool pendingRX = FALSE;
+  bool pendingTX = FALSE;
   
   //deal with fencepost issues w.r.t signalling end of last
   //slot/beginning of next slot.
   bool signalEnd;
 
+  uint32_t wakeupStart;
+  uint8_t framesLeft;
+  am_addr_t master;
+
+  task void nextRX();
+  error_t rx(uint32_t timeout, bool retx);
+
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
       signalEnd = TRUE;
       state = S_WAKEUP;
-      wakeupStart = call SlotTimer.now();
+      wakeupStart = call SlotTimer.getNow();
       post nextRX();
     }else{
       cerror(SCHED, "Unexpected state for wake up %x\r\n", state);
@@ -104,6 +118,12 @@ module SlotSchedulerP {
     
   }
 
+  uint32_t timestamp(message_t* msg){
+    return (call CXLinkPacket.getLinkMetadata(msg))->time32k;
+  }
+
+  task void sendStatus();
+
   event message_t* SubReceive.receive(message_t* msg, void* pl,
       uint8_t len){
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
@@ -120,8 +140,8 @@ module SlotSchedulerP {
           if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
             //synchronize sends to CTS timestamp
             call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
-            master = (call CXLinkPacket.getLinkHeader(msg))->src;
-            status = S_STATUS_PREP;
+            master = call CXLinkPacket.source(msg);
+            state = S_STATUS_PREP;
             post sendStatus();
           }else{
             //synchronize receives to CTS timestamp - slack
@@ -135,34 +155,35 @@ module SlotSchedulerP {
         return msg;
 
       case CXM_STATUS:
-        cx_status_t* pl = (cx_status_t*) pl;
-        call RoutingTable.addMeasurement(
-          call CXLinkPacket.destination(msg),
-          call CXLinkPacket.source(msg), 
-          pl->distance);
-
-        if (pl->dataPending && shouldForward(call CXLinkPacket.source(msg), 
-            call CXLinkPacket.destination(msg)),
-            pl->bw){
-          state = S_ACTIVE_SLOT;
-        } else {
-          error_t error = call CXLink.sleep();
-          call FrameTimer.stop();
-          if (error != SUCCESS){
-            cerror("no fwd sleep %x\r\n", error);
+        {
+          cx_status_t* status = (cx_status_t*) pl;
+          call RoutingTable.addMeasurement(
+            call CXLinkPacket.destination(msg),
+            call CXLinkPacket.source(msg), 
+            status->distance);
+  
+          if (status->dataPending && shouldForward(call CXLinkPacket.source(msg), 
+              call CXLinkPacket.destination(msg), status->bw)){
+            state = S_ACTIVE_SLOT;
+          } else {
+            error_t error = call CXLink.sleep();
+            call FrameTimer.stop();
+            if (error != SUCCESS){
+              cerror(SCHED, "no fwd sleep %x\r\n", error);
+            }
+            state = S_UNUSED_SLOT;
           }
-          state = S_UNUSED_SLOT;
+          return call SlotController.receiveStatus(msg, pl);
         }
-        return call SlotController.receiveStatus(msg);
 
       case CXM_EOS:
-        return call SlotController.receiveEOS(msg);
+        return call SlotController.receiveEOS(msg, pl);
 
       case CXM_DATA:
         return signal Receive.receive(msg, pl, len);
 
       default:
-        cerror("unexpected CXM %x\r\n", 
+        cerror(SCHED, "unexpected CXM %x\r\n", 
           call CXMacPacket.getMacType(msg));
         return msg;
     }
@@ -170,16 +191,17 @@ module SlotSchedulerP {
 
   task void sendStatus(){
     if (statusMsg == NULL){
+      cx_status_t* pl;
       statusMsg = call Pool.get();
-      cx_status_t* pl = call Send.getPayload(statusMsg, sizeof(setup_t));
+      pl = call Send.getPayload(statusMsg, sizeof(cx_status_t));
       call Packet.clear(statusMsg);
-      call CXMacPacket.setType(statusMsg, CXM_STATUS);
+      call CXMacPacket.setMacType(statusMsg, CXM_STATUS);
       call CXLinkPacket.setDestination(statusMsg, master);
 
       //future: adjust bw depending on how much uncertainty we
       //observe.
-      pl -> bw = CX_BW;
-      pl -> distance = call CXRoutingTable.distance(dest, 
+      pl -> bw = call SlotController.bw();
+      pl -> distance = call RoutingTable.getDistance(master, 
         call ActiveMessageAddress.amAddress());
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
@@ -188,7 +210,7 @@ module SlotSchedulerP {
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.
     }else{
-      cerror("Status msg not free\r\n");
+      cerror(SCHED, "Status msg not free\r\n");
     }
   }
 
@@ -203,13 +225,15 @@ module SlotSchedulerP {
       switch(state){
         case S_UNUSED_SLOT:
         case S_ACTIVE_SLOT:
-          //on last frame: wait around for an
-          //  end-of-message/data-pending from the owner
-          error_t error = rx(CTS_TIMEOUT, TRUE);
-          if (error != SUCCESS){
-            cerror("FT %x: rx %x\r\n", state, error);
-          }else {
-            state = S_SLOT_END;
+          {
+            //on last frame: wait around for an
+            //  end-of-message/data-pending from the owner
+            error_t error = rx(CTS_TIMEOUT, TRUE);
+            if (error != SUCCESS){
+              cerror("FT %x: rx %x\r\n", state, error);
+            }else {
+              state = S_SLOT_END;
+            }
           }
           break;
 
@@ -438,7 +462,7 @@ module SlotSchedulerP {
       //timeout slots adds 30 ms of on-time (not too shabby!).
       error_t error = call LppControl.sleep();
       if (error == SUCCESS){
-        state = S_UNSYNCH;
+        state = S_UNSYNCHED;
       }else{
         //awjeez awjeez
         cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
@@ -499,7 +523,7 @@ module SlotSchedulerP {
   }
 
   event void LppControl.fellAsleep(){
-    state = S_UNSYNCH;
+    state = S_UNSYNCHED;
   }
   
   default command am_addr_t SlotController.activeNode(){
@@ -519,10 +543,12 @@ module SlotSchedulerP {
     return CX_MAX_DEPTH;
   }
 
-  default command message_t* SlotController.receiveEOS(message_t* msg){
+  default command message_t* SlotController.receiveEOS(
+      message_t* msg, void* pl){
     return msg;
   }
-  default command message_t* SlotController.receiveStatus(message_t* msg){
+  default command message_t* SlotController.receiveStatus(
+      message_t* msg, void *pl){
     return msg;
   }
 
