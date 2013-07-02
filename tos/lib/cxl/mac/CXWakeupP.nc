@@ -214,7 +214,6 @@ module CXWakeupP {
           //nope: it's from another node. record it for topology/time
           //synch.
           signal LppProbeSniffer.sniffProbe(call CXLinkPacket.source(msg));
-          cinfo(LPP, "Sniff\r\n");
           return msg;
         }
     } else {
@@ -395,4 +394,6 @@ module CXWakeupP {
   }
   default event void LppControl.fellAsleep(){
   }
+
+  default event void LppProbeSniffer.sniffProbe(am_addr_t src){}
 }
