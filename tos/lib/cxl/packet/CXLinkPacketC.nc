@@ -68,6 +68,9 @@ module CXLinkPacketC{
     memset(call CXLinkPacket.getLinkHeader(msg), 
       0, 
       sizeof(cx_link_header_t));
+    memset(md(msg), 
+      0, 
+      sizeof(message_metadata_t));
     //set up defaults: increment sn, allow retx from this buffer.
     md(msg)->cx.retx = TRUE;
     //kind of hacky: set the lqi of the phy metadata so that this

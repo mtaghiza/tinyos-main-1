@@ -220,7 +220,11 @@ module CXLinkP {
         
         metadata(fwdMsg)->time32k = slowRef 
           - slowTicks 
-          - (FRAMELEN_SLOW*(metadata(fwdMsg)->rxHopCount-1));
+          - (frameLen*(metadata(fwdMsg)->rxHopCount-1));
+//        cdbg(SCHED, "TS %lu - %lu - (%lu * (%u - 1)) = %lu \r\n",
+//          slowRef, slowTicks, 
+//          frameLen, metadata(fwdMsg)->rxHopCount,
+//          metadata(fwdMsg)->time32k);
       }
     }
 
@@ -439,6 +443,7 @@ module CXLinkP {
         header(msg)->source = call ActiveMessageAddress.amAddress();
         //initialize to 1 hop: adjacent nodes are 1 hop away.
         header(msg)->hopCount = 1;
+        metadata(msg)->rxHopCount = 1;
         crcIndex = 0;
         //set to crc-passed initially
         phy(msg)->lqi |= 0x80;
@@ -540,7 +545,7 @@ module CXLinkP {
       metadata(rxMsg)->rxHopCount = header(rxMsg)->hopCount;
       metadata(rxMsg)->time32k = slowRef 
         - slowTicks 
-        - (FRAMELEN_SLOW*(metadata(rxMsg)->rxHopCount-1));
+        - (frameLen*(metadata(rxMsg)->rxHopCount-1));
       localState = state;
       call Rf1aPhysicalMetadata.store(phy(rxMsg));
       //mark as failed CRC, ugh
