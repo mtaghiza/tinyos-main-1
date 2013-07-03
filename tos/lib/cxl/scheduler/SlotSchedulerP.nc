@@ -150,7 +150,9 @@ module SlotSchedulerP {
     cdbg(SCHED, "sr.r %x\r\n", call CXMacPacket.getMacType(msg));
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_CTS:
-        if (state == S_SLOT_CHECK){
+        //if this is the start of a known slot or during the wakeup
+        //period, treat it the same.
+        if (state == S_SLOT_CHECK || state == S_WAKEUP){
           //Set the slot/frame timing based on the master's CTS message.
           framesLeft = SLOT_LENGTH / FRAME_LENGTH;
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
@@ -237,14 +239,22 @@ module SlotSchedulerP {
   event void FrameTimer.fired(){
     framesLeft --;
     if (pendingRX || pendingTX){
+      cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
-    } else if (framesLeft >= 1){
+    } else if (framesLeft <= 1){
       //TODO: framesLeft should be 0 or 1?
       switch(state){
+        //We can be in any of these three states when the last frame
+        //starts.
         case S_UNUSED_SLOT:
+          //maybe a node added data mid-slot (so it originally
+          //reported none pending)
         case S_ACTIVE_SLOT:
+          //node had data
+        case S_STATUS_WAIT:
+          //no status packet received (maybe lost)
           {
             //on last frame: wait around for an
             //  end-of-message/data-pending from the owner
@@ -294,6 +304,7 @@ module SlotSchedulerP {
       call FrameTimer.stop();
 
     } else {
+      cdbg(SCHED, "FTN %x\r\n", state);
       switch (state){
         case S_STATUS_READY:
           {
@@ -401,6 +412,8 @@ module SlotSchedulerP {
       error = call SubSend.send(msg, len);
       if (error == SUCCESS){
         pendingTX = TRUE;
+      }else{
+        cerror(SCHED, "SS.S %x\r\n", error);
       }
       return error;
     }
@@ -521,7 +534,8 @@ module SlotSchedulerP {
         cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
       }
     }else{
-      cerror(SCHED, "unexpected state at nextRX %x\r\n", state);
+      //ignore next rx (e.g. handled at frametimer.fired)
+      cdbg(SCHED, "nrxi %x\r\n", state);
     }
   }
   
