@@ -5,4 +5,8 @@
 #define DL_SCHED DL_WARN
 #endif
 
+#ifndef DL_SCHED_CHECKED
+#define DL_SCHED_CHECKED DL_WARN
+#endif
+
 #endif
