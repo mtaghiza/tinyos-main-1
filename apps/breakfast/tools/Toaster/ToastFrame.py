@@ -257,6 +257,7 @@ class ToastFrame(Frame):
         else:
             self.enableUI()
             self.handler.graphFrame.connectSignal(True)
+            self.handler.adcFrame.toastSignal(True)
         
         self.redrawDCO()
         self.redrawBarcode()
@@ -319,9 +320,9 @@ class ToastFrame(Frame):
         self.sensor0newIDEntry.focus()
 
     def updateBarcode(self):
+        self.handler.busy()
         try:
             self.handler.setToastBarcode(self.newBarcodeVar.get())
-            barcodeStr = self.handler.getToastBarcode()
         except ValueError:
             self.barcodeVar.set("<barcode not an integer>")
             self.barcodeVarLabel.config(fg="red")
@@ -329,9 +330,10 @@ class ToastFrame(Frame):
             self.barcodeVar.set("<update failed>")
             self.barcodeVarLabel.config(fg="red")
         else:    
-            self.newBarcodeVar.set("")
             self.redrawBarcode()
-
+            self.newBarcodeVar.set("")
+            self.handler.insertToast()
+        self.handler.notbusy()
 
 
     def redrawAssignments(self):
@@ -368,6 +370,8 @@ class ToastFrame(Frame):
     def updateAssignments(self):
         self.assignmentVar.set("")
         change = False
+        duplicate = {}
+        
         for i in range(0,8):
             newID = self.assignments[0][i]
             newType = self.assignments[1][i]
@@ -378,7 +382,7 @@ class ToastFrame(Frame):
                 try:
                     tmp = int(self.code, 16)
                     newID = tmp & 0xFFFF
-                    newType = (tmp >> 16) & 0xFF
+                    newType = (tmp >> 16) & 0xFF                                        
                 except:
                     self.assignmentVar.set("<invalid input>")
                     self.assignmentVarLabel.config(fg="red")
@@ -391,8 +395,19 @@ class ToastFrame(Frame):
                 if self.assignments[1][i] != newType:
                     self.assignments[1][i] = newType
                     change = True
+                
+            if newID and newType:
+                print (str(newID)+str(newType))
+                if (str(newID)+str(newType)) in duplicate:
+                    self.assignmentVar.set("<invalid input>")
+                    self.assignmentVarLabel.config(fg="red")
+                    return
+                else:
+                    duplicate[(str(newID)+str(newType))] = 1
+            
             
         if change:
+            self.handler.busy()
             print self.assignments
             try:
                 self.handler.setAssignments(self.assignments)
@@ -404,5 +419,9 @@ class ToastFrame(Frame):
                 for i in range(0,8):
                     eval("self.sensor%dnewIDVar.set('')" % i)
                 self.redrawAssignments()
+                self.handler.insertSensors()
+            self.handler.notbusy()
+            
+        self.handler.exportCSV()
 
 

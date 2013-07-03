@@ -11,32 +11,42 @@ from AdcFrame import AdcFrame
 
 from SimPy.SimPlot import * 
 
+def selectall(event):
+    event.widget.select_range(0, END)
+
+
 simplot = SimPlot()
 root = simplot.root
 #root = Tk()
 
 handler = Handler(root)    
 
-root.geometry("1024x768")
+root.geometry("1280x720")
 root.title("Toaster")
+root.bind_class("Entry","<Control-a>", selectall)
 
-comFrame = ComSelectorFrame(root, handler, width=1024, height=68, bd=1, relief=SUNKEN)
+comFrame = ComSelectorFrame(root, handler, width=1280, height=40, bd=1, relief=SUNKEN)
+comFrame.grid_propagate(False)
 comFrame.grid(column=1, row=1, columnspan=2)
 handler.addComFrame(comFrame)
 
-baconFrame = BaconFrame(root, handler, width=500, height=300, bd=1, relief=SUNKEN)
+baconFrame = BaconFrame(root, handler, width=420, height=100, bd=1, relief=SUNKEN)
+baconFrame.grid_propagate(False)
 baconFrame.grid(column=1, row=2)
 handler.addBaconFrame(baconFrame)
 
-toastFrame = ToastFrame(root, handler, width=524, height=300, bd=1, relief=SUNKEN)
+toastFrame = ToastFrame(root, handler, width=420, height=400, bd=1, relief=SUNKEN)
+toastFrame.grid_propagate(False)
 toastFrame.grid(column=1, row=3)
 handler.addToastFrame(toastFrame)
 
-graphFrame = GraphFrame(root, handler, simplot, width=1024, height=400, bd=1, relief=SUNKEN)
+graphFrame = GraphFrame(root, handler, simplot, width=860, height=500, bd=1, relief=SUNKEN)
+graphFrame.grid_propagate(False)
 graphFrame.grid(column=2, row=2, rowspan=2)
 handler.addGraphFrame(graphFrame)
 
-adcFrame = AdcFrame(root, handler, width=1024, height=30, bd=1, relief=SUNKEN)
+adcFrame = AdcFrame(root, handler, width=1280, height=60, bd=1, relief=SUNKEN)
+adcFrame.grid_propagate(False)
 adcFrame.grid(column=1, row=4, columnspan=2)
 handler.addAdcFrame(adcFrame)
 

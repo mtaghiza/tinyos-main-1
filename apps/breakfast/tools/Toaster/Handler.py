@@ -8,6 +8,7 @@ from ToastSampling import ToastSampling
 from BreakfastError import *
 from Dispatcher import Dispatcher 
 
+from Database import Database
 
 import time
 from threading import Thread
@@ -47,6 +48,15 @@ class Handler(object):
         self.autoToast = False
         self.root = root
         self.currentProgress = 0
+        self.database = Database()
+
+        self.baconIdStr = ""
+        self.mfrStr = ""
+        self.baconAdcList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        
+        self.toastIdStr = ""
+        self.toastAdcList = [0, 0, 0, 0, 0, 0, 0, 0]
+
 
     def busy(self):
         self.root.config(cursor="watch")
@@ -136,34 +146,35 @@ class Handler(object):
     #
     def getMfrID(self):
         mfr = self.bacon.readMfrID()
-        mfrStr = ""
+        self.mfrStr = ""
         for i in mfr:
-            mfrStr += "%02X" % i
-        return mfrStr
+            self.mfrStr += "%02X" % i
+        return self.mfrStr
 
     def getBaconADCSettings(self):
         adc = self.bacon.readAdcC()
         
-        adcList = []
+        self.baconAdcList = []
         for i in range(0,16,2):
-            adcList.append((adc[i+1] << 8) + adc[i])
+            self.baconAdcList.append((adc[i+1] << 8) + adc[i])
 
         for i in range(18,24,2):
-            adcList.append((adc[i+1] << 8) + adc[i])
+            self.baconAdcList.append((adc[i+1] << 8) + adc[i])
 
-        return adcList
+        return self.baconAdcList
 
     def getBaconBarcode(self):
         barcode = self.bacon.readBarcode()
         
-        barcodeStr = ""
+        self.baconIdStr = ""
         for i in reversed(barcode): # byte array is little endian
-            barcodeStr += "%02X" % i
+            self.baconIdStr += "%02X" % i
             
-        return barcodeStr
+        return self.baconIdStr
 
     def setBaconBarcode(self, barcodeStr):
-        # format barcode into int array, this also validates input
+        self.baconIdStr = barcodeStr
+        # format barcode into int array, self also validates input
         barcode = int(barcodeStr, 16)
         output = []
         for i in range(0,8):
@@ -246,14 +257,16 @@ class Handler(object):
     def getToastBarcode(self):
         barcode = self.toast.readBarcode()
         
-        barcodeStr = ""
+        self.toastIdStr = ""
         for i in reversed(barcode): # byte array is little endian
-            barcodeStr += "%02X" % i
+            self.toastIdStr += "%02X" % i
         
-        return barcodeStr
+        return self.toastIdStr
 
     def setToastBarcode(self, barcodeStr):
-        # format barcode into int array, this also validates input
+        self.toastIdStr = barcodeStr
+        
+        # format barcode into int array, self also validates input
         barcode = int(barcodeStr, 16)
         output = []
         for i in range(0,8):
@@ -269,16 +282,17 @@ class Handler(object):
         #    self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
         #except TagNotFoundError:
         #    pass
+        self.toastAssignments = assignments
         self.toast.writeAssignments(assignments)
     
     def getToastADCSettings(self):
         adc = self.toast.readTLVEntry(Toast.TAG_ADC12_1)
         
-        adcList = []
+        self.toastAdcList = []
         for i in range(0,16,2):
-            adcList.append((adc[i+1] << 8) + adc[i])
+            self.toastAdcList.append((adc[i+1] << 8) + adc[i])
             
-        return adcList
+        return self.toastAdcList
 
     def getDCOSettings(self):
         dco = self.toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
@@ -314,3 +328,33 @@ class Handler(object):
     def getReadings(self):
         return self.sampleThread.queue.get(False)
 
+    #
+    # database
+    #
+    def insertBacon(self):
+        bacon = []
+        bacon.append(self.baconIdStr)
+        bacon.append(int(time.time()))
+        bacon.append(self.mfrStr)
+        bacon.extend(self.baconAdcList)
+        
+        self.database.insertBacon(bacon)
+
+    def insertToast(self):
+        toast = []
+        toast.append(self.toastIdStr)
+        toast.append(int(time.time()))
+        toast.extend(self.toastAdcList)
+        
+        self.database.insertToast(toast)
+
+    def insertSensors(self):
+        sensors = []
+        sensors.append(self.toastIdStr)
+        sensors.append(int(time.time()))
+        sensors.append(self.toastAssignments)
+        
+        self.database.insertSensors(sensors)
+
+    def exportCSV(self):
+        self.database.exportCSV()

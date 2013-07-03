@@ -120,15 +120,14 @@ class BaconFrame(Frame):
         except ValueError:
             self.barcodeVar.set("<barcode not an integer>")
             self.barcodeVarLabel.config(fg="red")
-            self.handler.notbusy()
         except:
             self.barcodeVar.set("<update failed>")
             self.barcodeVarLabel.config(fg="red")
-            self.handler.notbusy()
         else:    
             self.redrawBarcode()
             self.newBarcodeVar.set("")
-            self.handler.notbusy()
+            self.handler.insertBacon()
+        self.handler.notbusy()
     
     def redrawBarcode(self):
         try:

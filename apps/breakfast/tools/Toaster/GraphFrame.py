@@ -31,7 +31,7 @@ class GraphFrame(Frame):
     def initUI(self):
         self.initGraph()
         
-        self.sFrame = Frame(self, width=400, height=300)
+        self.sFrame = Frame(self, width=200, height=500)
         self.meanLabel = Label(self.sFrame, text="Mean")
         self.meanLabel.grid(column=2, row=0)
         self.stdLabel = Label(self.sFrame, text="Std")
@@ -108,7 +108,7 @@ class GraphFrame(Frame):
             eval("self.sensor%dCountLabel.grid(column=%d, row=%d+1)" % (i, 4, i)) 
             
         self.sFrame.grid(column=2, row=1)
-        #self.sFrame.grid_propagate(False)
+        self.sFrame.grid_propagate(False)
 
     def enableUI(self):
         self.initGraph()
@@ -147,16 +147,22 @@ class GraphFrame(Frame):
     def initGraph(self):
         if self.graph:
             self.graph.grid_forget()
-            
-        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
+        
+        bgcolor = self.cget('bg')
+        
+        self.gFrame = Frame(self, width=650, height=500)
+        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, 500, xtitle="Sensor", ytitle="ADC", background=bgcolor)  
         self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
         self.obj = self.simplot.makeGraphObjects([self.sym])
         self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
         self.graph.grid(column=1, row=1)
 
+        self.gFrame.grid_propagate(False)
+        self.gFrame.grid(column=1, row=1)
+
     def resetGraph(self):
         oldGraph = self.graph
-        self.graph = self.simplot.makeGraphBase(self, 500, 400, xtitle="Sensor", ytitle="ADC")  
+        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, 500, xtitle="Sensor", ytitle="ADC")  
         self.graph.grid(column=1, row=1)
         oldGraph.grid_forget()
     
