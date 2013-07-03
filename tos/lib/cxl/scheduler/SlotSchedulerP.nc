@@ -546,6 +546,7 @@ module SlotSchedulerP {
       //sleep when we've exceeded a few of them. N.B. each of these
       //timeout slots adds 30 ms of on-time (not too shabby!).
       error_t error = call LppControl.sleep();
+      call SlotTimer.stop();
       cdbg(SCHED, "No CTS\r\n");
       if (error == SUCCESS){
         state = S_UNSYNCHED;
