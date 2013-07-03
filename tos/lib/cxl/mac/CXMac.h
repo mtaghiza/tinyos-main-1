@@ -25,10 +25,12 @@ typedef nx_struct cx_mac_header{
 
 #define CX_KEEPALIVE_RETRY 512UL
 
-//0.03125 s * 1.5 = 0.046875 s
-#define CHECK_TIMEOUT (FRAMELEN_FAST_SHORT + (FRAMELEN_FAST_SHORT/2))
-//add 50% for safety
-#define CHECK_TIMEOUT_SLOW 72UL
+//On the logic analyzer, there is a 1.02 ms gap between the end of the
+//probe TX and the SFD from its rebroadcast. In practice, we're not
+//going to be able to start listening for the ack immediately, so
+//using a 1.02 ms timeout is pretty conservative.
+#define CHECK_TIMEOUT (6630UL)
+#define CHECK_TIMEOUT_SLOW (34UL)
 
 //roughly 660 seconds
 #define RX_TIMEOUT_MAX (0xFFFFFFFF)
