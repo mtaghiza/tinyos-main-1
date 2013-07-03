@@ -155,19 +155,28 @@ module SlotSchedulerP {
         if (state == S_SLOT_CHECK || state == S_WAKEUP){
           //Set the slot/frame timing based on the master's CTS message.
           framesLeft = SLOT_LENGTH / FRAME_LENGTH;
+          //TODO: right base time?
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
           //If we are going to be sending data, then we need to send a
           //status back (for forwarder selection)
           if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
             //synchronize sends to CTS timestamp
-            call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
+            cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
+              timestamp(msg), 
+              FRAME_LENGTH, call FrameTimer.getNow());
+            call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg), FRAME_LENGTH);
             master = call CXLinkPacket.source(msg);
             state = S_STATUS_PREP;
             post sendStatus();
           }else{
+            cdbg(SCHED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
+              timestamp(msg), RX_SLACK, 
+              timestamp(msg) - RX_SLACK,
+              FRAME_LENGTH, 
+              call FrameTimer.getNow());
             //synchronize receives to CTS timestamp - slack
             state = S_STATUS_WAIT_READY;
-            call FrameTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+            call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg) - RX_SLACK, FRAME_LENGTH);
           }
         } else {
           cerror(SCHED, "Unexpected state %x for rx(cts)\r\n", 
@@ -177,7 +186,7 @@ module SlotSchedulerP {
 
       case CXM_STATUS:
         {
-          cx_status_t* status = (cx_status_t*) pl;
+          cx_status_t* status = (cx_status_t*) (call Packet.getPayload(msg, sizeof(cx_status_t)));
           call RoutingTable.addMeasurement(
             call CXLinkPacket.destination(msg),
             call CXLinkPacket.source(msg), 
@@ -237,6 +246,7 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
+    P1OUT ^= BIT2;
     framesLeft --;
     if (pendingRX || pendingTX){
       cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
@@ -450,8 +460,14 @@ module SlotSchedulerP {
       pendingMsg = NULL;
       signal Send.sendDone(msg, error);
     } else if (state == S_CTS_SENDING){
+      call Pool.put(ctsMsg);
+      ctsMsg = NULL;
       //master starts frame duty cycle based on CTS transmission
-      call FrameTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+      cdbg(SCHED, "m FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
+        timestamp(msg), RX_SLACK, 
+        timestamp(msg) - RX_SLACK,
+        FRAME_LENGTH, call FrameTimer.getNow());
+      call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg) - RX_SLACK, FRAME_LENGTH);
       //start waiting for the status packet to come back.
       state = S_STATUS_WAIT_READY;
     } else if (state == S_SLOT_END_SENDING){
@@ -512,6 +528,7 @@ module SlotSchedulerP {
       } else {
         cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster()){
+          //TODO: base time?
           call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
         } else {
