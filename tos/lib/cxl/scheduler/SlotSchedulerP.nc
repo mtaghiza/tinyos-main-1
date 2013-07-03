@@ -203,14 +203,17 @@ module SlotSchedulerP {
             }
             state = S_UNUSED_SLOT;
           }
-          return call SlotController.receiveStatus(msg, pl);
+          return call SlotController.receiveStatus(msg, status);
         }
 
       case CXM_EOS:
-        return call SlotController.receiveEOS(msg, pl);
+        return call SlotController.receiveEOS(msg, 
+          call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
       case CXM_DATA:
-        return signal Receive.receive(msg, pl, len);
+        return signal Receive.receive(msg, 
+          call Packet.getPayload(msg, call Packet.payloadLength(msg)), 
+          call Packet.payloadLength(msg));
 
       default:
         cerror(SCHED, "unexpected CXM %x\r\n", 
@@ -223,7 +226,7 @@ module SlotSchedulerP {
     if (statusMsg == NULL){
       cx_status_t* pl;
       statusMsg = call Pool.get();
-      pl = call Send.getPayload(statusMsg, sizeof(cx_status_t));
+      pl = call Packet.getPayload(statusMsg, sizeof(cx_status_t));
       call Packet.clear(statusMsg);
       call CXMacPacket.setMacType(statusMsg, CXM_STATUS);
       call CXLinkPacket.setDestination(statusMsg, master);
@@ -434,7 +437,7 @@ module SlotSchedulerP {
     if (state == S_STATUS_SENDING){
       if (msg == statusMsg){
         if (error == SUCCESS){
-          cx_status_t* pl = call Send.getPayload(msg,
+          cx_status_t* pl = call Packet.getPayload(msg,
             sizeof(cx_status_t));
           if (pl -> dataPending && pendingMsg != NULL){
             state = S_DATA_READY;
