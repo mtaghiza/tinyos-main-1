@@ -147,6 +147,7 @@ module SlotSchedulerP {
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
       call ActiveMessageAddress.amAddress(), 
       call CXLinkPacket.rxHopCount(msg));
+    cdbg(SCHED, "sr.r %x\r\n", call CXMacPacket.getMacType(msg));
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_CTS:
         if (state == S_SLOT_CHECK){
@@ -396,7 +397,7 @@ module SlotSchedulerP {
     } else {
       error_t error;
       call CXLinkPacket.setTtl(msg, ttl);
-      call Packet.setPayloadLength(msg, len + sizeof(cx_mac_header_t));
+      call Packet.setPayloadLength(msg, len);
       error = call SubSend.send(msg, len);
       if (error == SUCCESS){
         pendingTX = TRUE;
@@ -477,17 +478,17 @@ module SlotSchedulerP {
   }
 
   task void nextRX(){
-    cdbg(SCHED, "next RX ");
+    cdbg(SCHED_CHECKED, "next RX ");
     if (state == S_WAKEUP){
       uint32_t t = call SlotTimer.getNow();
-      cdbg(SCHED, "wakeup\r\n");
+      cdbg(SCHED_CHECKED, "wakeup\r\n");
       if (wakeupTimeoutStillGoing(t)){
         // - allow rest of network to wake up
         // - add 1 slow frame for the first CTS to go down
         uint32_t remainingTime = slowToFast(
             call SlotController.wakeupLen() - (t - wakeupStart) + FRAMELEN_SLOW);
         error_t error;
-        cdbg(SCHED, "rx for %lu / %lu (%lu)\r\n", 
+        cdbg(SCHED_CHECKED, "rx for %lu / %lu (%lu)\r\n", 
           remainingTime, 
           call SlotController.wakeupLen(),
           slowToFast(call SlotController.wakeupLen()));
@@ -496,7 +497,7 @@ module SlotSchedulerP {
           cwarn(SCHED, "wakeup re-rx: %x\r\n", error);
         }
       } else {
-        cdbg(SCHED, "Done waking\r\n");
+        cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster()){
           call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
@@ -543,14 +544,14 @@ module SlotSchedulerP {
             cerror(SCHED, "No msg in pool for cts\r\n");
           } else {
             error_t error;
-            cx_lpp_cts_t* pl = call Packet.getPayload(ctsMsg,
-              sizeof(cx_lpp_cts_t));
+//            cx_lpp_cts_t* pl = call Packet.getPayload(ctsMsg,
+//              sizeof(cx_lpp_cts_t));
             call Packet.clear(ctsMsg);
-            pl -> addr = activeNode;
+            call CXMacPacket.setMacType(ctsMsg, CXM_CTS);
+//            pl -> addr = activeNode;
             call CXLinkPacket.setDestination(ctsMsg, activeNode);
-
-            error = send(ctsMsg, 
-              sizeof(cx_lpp_cts_t),
+            //header only
+            error = send(ctsMsg, 0,
               call SlotController.maxDepth());
             if (error == SUCCESS){
               state = S_CTS_SENDING;
