@@ -15,7 +15,7 @@ class GraphFrame(Frame):
         self.handler = handler
         self.simplot = simplot
         self.allPoints = []
-        
+        self.meanPoints = []
         self.graph = None
         
         self.mean = [0,0,0,0,0,0,0,0]
@@ -39,14 +39,14 @@ class GraphFrame(Frame):
         self.countLabel = Label(self.sFrame, text="Count")
         self.countLabel.grid(column=4, row=0)
         
-        self.sensor0Label = Label(self.sFrame, text="Sensor 1")
-        self.sensor1Label = Label(self.sFrame, text="Sensor 2")
-        self.sensor2Label = Label(self.sFrame, text="Sensor 3")
-        self.sensor3Label = Label(self.sFrame, text="Sensor 4")
-        self.sensor4Label = Label(self.sFrame, text="Sensor 5")
-        self.sensor5Label = Label(self.sFrame, text="Sensor 6")
-        self.sensor6Label = Label(self.sFrame, text="Sensor 7")
-        self.sensor7Label = Label(self.sFrame, text="Sensor 8")
+        self.sensor0Label = Label(self.sFrame, text="Channel 1")
+        self.sensor1Label = Label(self.sFrame, text="Channel 2")
+        self.sensor2Label = Label(self.sFrame, text="Channel 3")
+        self.sensor3Label = Label(self.sFrame, text="Channel 4")
+        self.sensor4Label = Label(self.sFrame, text="Channel 5")
+        self.sensor5Label = Label(self.sFrame, text="Channel 6")
+        self.sensor6Label = Label(self.sFrame, text="Channel 7")
+        self.sensor7Label = Label(self.sFrame, text="Channel 8")
         for i in range(0,8):
             eval("self.sensor%dLabel.grid(column=%d, row=%d+1)" % (i, 1, i))            
 
@@ -210,14 +210,15 @@ class GraphFrame(Frame):
         #self.resetGraph()
         self.graph.clear()
         self.symbols = self.simplot.makeSymbols(self.allPoints, marker="dot", size=1, fillcolor="red")
-        self.objects = self.simplot.makeGraphObjects([self.symbols])
+        self.means = self.simplot.makeSymbols(self.meanPoints, marker="circle", size=1.5, fillcolor="green")
+        self.objects = self.simplot.makeGraphObjects([self.symbols, self.means])
         #self.graph.draw(self.objects, xaxis=(0,9), yaxis=(0,4096))
         self.graph.draw(self.objects, xaxis=(0,9), yaxis="automatic")
  
         #print self.allPoints
 
     def calculateStats(self):
-            
+        self.meanPoints = []
         for i in range(0,8):
             if self.count[i]:
                 mean = self.mean[i] / self.count[i]
@@ -225,3 +226,4 @@ class GraphFrame(Frame):
                 eval("self.sensor%dMeanVar.set(%0.1f)" % (i, mean))
                 eval("self.sensor%dStdVar.set(%0.1f)" % (i, std))  
                 eval("self.sensor%dCountVar.set(%d)" % (i, self.count[i]))  
+                self.meanPoints.append((i+1, mean))

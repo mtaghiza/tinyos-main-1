@@ -17,7 +17,7 @@ import threading
 import time
 from serial import SerialException 
 
-from BreakfastError import *
+from toaster.BreakfastError import *
 from BootStrapLoader import BootStrapLoader
 from Memory import Memory
 from Debug import Debug

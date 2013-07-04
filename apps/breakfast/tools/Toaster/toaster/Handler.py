@@ -13,6 +13,8 @@ from Database import Database
 import time
 from threading import Thread
 
+import os
+
 class CleanUpThread(Thread):
     def __init__(self, handler):
         Thread.__init__(self)
@@ -36,9 +38,10 @@ class ToasterThread(Thread):
 
     def run(self):
         print "autotoast"
-        self.handler.comFrame.disconnect()
+        self.handler.menuFrame.disconnect()
         time.sleep(1)
-        self.handler.program("toaster", self.handler.currentPort, self.handler.programToasterDone)
+        toaster_file = os.path.join('firmware', 'toaster.ihex')        
+        self.handler.program(toaster_file, self.handler.currentPort, self.handler.programToasterDone)
 
 class Handler(object):
 
@@ -64,8 +67,8 @@ class Handler(object):
     def notbusy(self):
         self.root.config(cursor="")
 
-    def addComFrame(self, com):
-        self.comFrame = com
+    def addMenuFrame(self, menu):
+        self.menuFrame = menu
 
     def addBaconFrame(self, bacon):
         self.baconFrame = bacon
@@ -104,7 +107,7 @@ class Handler(object):
         self.autoToast = True
 
     def programToasterDone(self, status):
-        self.comFrame.connect()
+        self.menuFrame.connect()
         
 
     def signalError(self):
@@ -185,7 +188,7 @@ class Handler(object):
     def program(self, name, port, callMe):
         print name, port
         self.currentProgress = 0
-        input = "-S 115200 -c %s -r -e -I -p %s.ihex" % (port, name)
+        input = "-S 115200 -c %s -r -e -I -p %s" % (port, name)
         
         cc430 = CC430bsl.CC430bsl(input, callMe)
         cc430.start()
@@ -290,8 +293,9 @@ class Handler(object):
         
         self.toastAdcList = []
         for i in range(0,16,2):
-            self.toastAdcList.append((adc[i+1] << 8) + adc[i])
+            tmp = (adc[i+1] << 8) + adc[i]
             
+            self.toastAdcList.append(tmp)
         return self.toastAdcList
 
     def getDCOSettings(self):

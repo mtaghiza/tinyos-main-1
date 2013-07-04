@@ -2,12 +2,12 @@
 
 from Tkinter import *
 
-from ComSelectorFrame import ComSelectorFrame
-from BaconFrame import BaconFrame
-from ToastFrame import ToastFrame
-from Handler import Handler
-from GraphFrame import GraphFrame
-from AdcFrame import AdcFrame
+from toaster.MenuFrame import MenuFrame
+from toaster.BaconFrame import BaconFrame
+from toaster.ToastFrame import ToastFrame
+from toaster.Handler import Handler
+from toaster.GraphFrame import GraphFrame
+from toaster.AdcFrame import AdcFrame
 
 from SimPy.SimPlot import * 
 
@@ -25,10 +25,10 @@ root.geometry("1280x720")
 root.title("Toaster")
 root.bind_class("Entry","<Control-a>", selectall)
 
-comFrame = ComSelectorFrame(root, handler, width=1280, height=40, bd=1, relief=SUNKEN)
-comFrame.grid_propagate(False)
-comFrame.grid(column=1, row=1, columnspan=2)
-handler.addComFrame(comFrame)
+menuFrame = MenuFrame(root, handler, width=1280, height=40, bd=1, relief=SUNKEN)
+menuFrame.grid_propagate(False)
+menuFrame.grid(column=1, row=1, columnspan=2)
+handler.addMenuFrame(menuFrame)
 
 baconFrame = BaconFrame(root, handler, width=420, height=100, bd=1, relief=SUNKEN)
 baconFrame.grid_propagate(False)

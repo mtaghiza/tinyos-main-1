@@ -64,14 +64,14 @@ class AdcFrame(Frame):
 
 
         self.tFrame = Frame(self)
-        self.adc0ToastLabel = Label(self.tFrame, text="Gain:")
-        self.adc1ToastLabel = Label(self.tFrame, text="Offset:")
-        self.adc2ToastLabel = Label(self.tFrame, text="1.5VREF:")
-        self.adc3ToastLabel = Label(self.tFrame, text="1.5T30:")
-        self.adc4ToastLabel = Label(self.tFrame, text="1.5T85:")
-        self.adc5ToastLabel = Label(self.tFrame, text="2.5VREF:")
-        self.adc6ToastLabel = Label(self.tFrame, text="2.5T30:")
-        self.adc7ToastLabel = Label(self.tFrame, text="2.5T85")
+        self.adc0ToastLabel = Label(self.tFrame, text="Gain:")      # 0
+        self.adc1ToastLabel = Label(self.tFrame, text="Offset:")    # 1
+        self.adc2ToastLabel = Label(self.tFrame, text="1.5T30:")    # 3
+        self.adc3ToastLabel = Label(self.tFrame, text="1.5T85:")    # 4
+        self.adc4ToastLabel = Label(self.tFrame, text="2.5T30:")    # 6
+        self.adc5ToastLabel = Label(self.tFrame, text="2.5T85")     # 7
+        self.adc6ToastLabel = Label(self.tFrame, text="1.5VREF:")   # 2
+        self.adc7ToastLabel = Label(self.tFrame, text="2.5VREF:")   # 5
         for i in range(0,8):
             eval("self.adc%dToastLabel.grid(column=%d*2+1, row=%d)" % (i, i, 2))
 
@@ -83,17 +83,17 @@ class AdcFrame(Frame):
         self.adc5ToastVar = IntVar()
         self.adc6ToastVar = IntVar()
         self.adc7ToastVar = IntVar()
-        self.adc0ToastVarLabel = Label(self.tFrame, textvar=self.adc0ToastVar)
-        self.adc1ToastVarLabel = Label(self.tFrame, textvar=self.adc1ToastVar)
-        self.adc2ToastVarLabel = Label(self.tFrame, textvar=self.adc2ToastVar)
-        self.adc3ToastVarLabel = Label(self.tFrame, textvar=self.adc3ToastVar)
-        self.adc4ToastVarLabel = Label(self.tFrame, textvar=self.adc4ToastVar)
-        self.adc5ToastVarLabel = Label(self.tFrame, textvar=self.adc5ToastVar)
-        self.adc6ToastVarLabel = Label(self.tFrame, textvar=self.adc6ToastVar)
-        self.adc7ToastVarLabel = Label(self.tFrame, textvar=self.adc7ToastVar)
+        self.adc0ToastVarLabel = Label(self.tFrame, textvar=self.adc0ToastVar) # re-arranged order
+        self.adc1ToastVarLabel = Label(self.tFrame, textvar=self.adc1ToastVar) # re-arranged order
+        self.adc2ToastVarLabel = Label(self.tFrame, textvar=self.adc3ToastVar) # re-arranged order
+        self.adc3ToastVarLabel = Label(self.tFrame, textvar=self.adc4ToastVar) # re-arranged order
+        self.adc4ToastVarLabel = Label(self.tFrame, textvar=self.adc6ToastVar) # re-arranged order
+        self.adc5ToastVarLabel = Label(self.tFrame, textvar=self.adc7ToastVar) # re-arranged order
+        self.adc6ToastVarLabel = Label(self.tFrame, textvar=self.adc2ToastVar) # re-arranged order
+        self.adc7ToastVarLabel = Label(self.tFrame, textvar=self.adc5ToastVar) # re-arranged order
         for i in range(0,8):
             eval("self.adc%dToastVarLabel.grid(column=(%d+1)*2, row=%d)" % (i, i, 2))
-        self.tFrame.grid(column=2, row=2)
+        self.tFrame.grid(column=2, row=2, sticky=W)
 
     def enableUI(self):
         for i in range(0,11):

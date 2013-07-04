@@ -79,14 +79,14 @@ class ToastFrame(Frame):
         self.codeLabel = Label(self.aFrame, text="Barcode")
         self.codeLabel.grid(column=4, row=0, columnspan=2)
         
-        self.sensor0Label = Label(self.aFrame, text="Sensor 1")
-        self.sensor1Label = Label(self.aFrame, text="Sensor 2")
-        self.sensor2Label = Label(self.aFrame, text="Sensor 3")
-        self.sensor3Label = Label(self.aFrame, text="Sensor 4")
-        self.sensor4Label = Label(self.aFrame, text="Sensor 5")
-        self.sensor5Label = Label(self.aFrame, text="Sensor 6")
-        self.sensor6Label = Label(self.aFrame, text="Sensor 7")
-        self.sensor7Label = Label(self.aFrame, text="Sensor 8")
+        self.sensor0Label = Label(self.aFrame, text="Channel 1")
+        self.sensor1Label = Label(self.aFrame, text="Channel 2")
+        self.sensor2Label = Label(self.aFrame, text="Channel 3")
+        self.sensor3Label = Label(self.aFrame, text="Channel 4")
+        self.sensor4Label = Label(self.aFrame, text="Channel 5")
+        self.sensor5Label = Label(self.aFrame, text="Channel 6")
+        self.sensor6Label = Label(self.aFrame, text="Channel 7")
+        self.sensor7Label = Label(self.aFrame, text="Channel 8")
         for i in range(0,8):
             eval("self.sensor%dLabel.grid(column=%d, row=%d+1)" % (i, 1, i))
         
@@ -422,6 +422,5 @@ class ToastFrame(Frame):
                 self.handler.insertSensors()
             self.handler.notbusy()
             
-        self.handler.exportCSV()
 
 

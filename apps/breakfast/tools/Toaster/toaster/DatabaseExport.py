@@ -42,7 +42,7 @@ class DatabaseExport(object):
 
             with open(nameStr[j], 'wb') as csvfile:
                 csvWriter = csv.writer(csvfile)
-                csvWriter.writerow(['# '] + [i[0] for i in self.cursor.description]) # write headers
+                csvWriter.writerow([i[0] for i in self.cursor.description]) # write headers
                 csvWriter.writerows(self.cursor)
 
 

@@ -28,8 +28,8 @@ class BaconFrame(Frame):
         self.newLabel.grid(column=3, row=1, columnspan=2)
         
         # row 2
-        self.barcodeLabel = Label(self, text="Bacon ID:")
-        self.barcodeLabel.grid(column=1, row=2)
+        self.barcodeLabel = Label(self, text="Bacon ID:", width=15)
+        self.barcodeLabel.grid(column=1, row=2, sticky=E)
         
         self.barcodeVar = StringVar()
         self.barcodeVar.set("<not available>")
@@ -43,8 +43,8 @@ class BaconFrame(Frame):
         self.barcodeEntry.grid(column=3, row=2, columnspan=2)
         
         # row 3
-        self.mfrLabel = Label(self, text="Manufacture ID:")
-        self.mfrLabel.grid(column=1, row=3)
+        self.mfrLabel = Label(self, text="Manufacture ID:", width=15)
+        self.mfrLabel.grid(column=1, row=3, sticky=E)
         
         self.mfrVar = StringVar()
         self.mfrVar.set("<not available>")
