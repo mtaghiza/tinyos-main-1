@@ -28,33 +28,33 @@ class BaconFrame(Frame):
         self.newLabel.grid(column=3, row=1, columnspan=2)
         
         # row 2
-        self.barcodeLabel = Label(self, text="Bacon ID:", width=15)
-        self.barcodeLabel.grid(column=1, row=2, sticky=E)
+        self.barcodeLabel = Label(self, text="Bacon ID:", width=11, anchor=E)
+        self.barcodeLabel.grid(column=1, row=2)
         
         self.barcodeVar = StringVar()
         self.barcodeVar.set("<not available>")
         
-        self.barcodeVarLabel = Label(self, textvariable=self.barcodeVar)
+        self.barcodeVarLabel = Label(self, textvariable=self.barcodeVar, width=18)
         self.barcodeVarLabel.grid(column=2, row=2)
         
         self.newBarcodeVar = StringVar()
-        self.barcodeEntry = Entry(self, textvariable=self.newBarcodeVar)
+        self.barcodeEntry = Entry(self, textvariable=self.newBarcodeVar, width=18)
         self.barcodeEntry.bind("<Return>", self.updateBarcodeKey)
         self.barcodeEntry.grid(column=3, row=2, columnspan=2)
         
         # row 3
-        self.mfrLabel = Label(self, text="Manufacture ID:", width=15)
+        self.mfrLabel = Label(self, text="Mfr. ID:", width=11, anchor=E)
         self.mfrLabel.grid(column=1, row=3, sticky=E)
         
         self.mfrVar = StringVar()
         self.mfrVar.set("<not available>")
-        self.mfrVarLabel = Label(self, textvariable=self.mfrVar)
+        self.mfrVarLabel = Label(self, textvariable=self.mfrVar, width=18)
         self.mfrVarLabel.grid(column=2, row=3)
         
-        self.reconnectButton = Button(self, text="Reconnect", command=self.reconnect)
+        self.reconnectButton = Button(self, text="Reload", command=self.reconnect, width=6)
         self.reconnectButton.grid(column=3, row=3)
 
-        self.barcodeButton = Button(self, text="Update", command=self.updateBarcode)
+        self.barcodeButton = Button(self, text="Save", command=self.updateBarcode, width=6)
         self.barcodeButton.grid(column=4, row=3)
 
     def enableUI(self):

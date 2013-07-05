@@ -119,6 +119,9 @@ class MoteIF:
                 msgTuple = self.receiveQueue.get(True, 0.25)
             except Queue.Empty:
                 msgTuple = None
+            except:
+                pass
+                
             if msgTuple:
                 (source, msg) = msgTuple
                 self.dispatchPacket(source, msg)

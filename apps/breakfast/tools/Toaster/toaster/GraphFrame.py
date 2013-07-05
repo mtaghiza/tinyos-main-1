@@ -23,6 +23,8 @@ class GraphFrame(Frame):
         self.values = {}
         for i in range(0,8):
             self.values[i] = []
+
+        self.sampling = False
         
         self.initUI()
         self.disableUI()
@@ -31,15 +33,15 @@ class GraphFrame(Frame):
     def initUI(self):
         self.initGraph()
         
-        self.sFrame = Frame(self, width=200, height=500)
-        self.meanLabel = Label(self.sFrame, text="Mean")
+        self.sFrame = Frame(self, width=230, height=500)
+        self.meanLabel = Label(self.sFrame, text="Mean", width=5, padx=5)
         self.meanLabel.grid(column=2, row=0)
-        self.stdLabel = Label(self.sFrame, text="Std")
+        self.stdLabel = Label(self.sFrame, text="Std", width=4)
         self.stdLabel.grid(column=3, row=0)
         self.countLabel = Label(self.sFrame, text="Count")
         self.countLabel.grid(column=4, row=0)
         
-        self.sensor0Label = Label(self.sFrame, text="Channel 1")
+        self.sensor0Label = Label(self.sFrame, text="Channel 1", width=9)
         self.sensor1Label = Label(self.sFrame, text="Channel 2")
         self.sensor2Label = Label(self.sFrame, text="Channel 3")
         self.sensor3Label = Label(self.sFrame, text="Channel 4")
@@ -58,16 +60,16 @@ class GraphFrame(Frame):
         self.sensor5MeanVar = DoubleVar()
         self.sensor6MeanVar = DoubleVar()
         self.sensor7MeanVar = DoubleVar()
-        self.sensor0MeanLabel = Label(self.sFrame, textvar=self.sensor0MeanVar)
-        self.sensor1MeanLabel = Label(self.sFrame, textvar=self.sensor1MeanVar)
-        self.sensor2MeanLabel = Label(self.sFrame, textvar=self.sensor2MeanVar)
-        self.sensor3MeanLabel = Label(self.sFrame, textvar=self.sensor3MeanVar)
-        self.sensor4MeanLabel = Label(self.sFrame, textvar=self.sensor4MeanVar)
-        self.sensor5MeanLabel = Label(self.sFrame, textvar=self.sensor5MeanVar)
-        self.sensor6MeanLabel = Label(self.sFrame, textvar=self.sensor6MeanVar)
-        self.sensor7MeanLabel = Label(self.sFrame, textvar=self.sensor7MeanVar)
+        self.sensor0MeanLabel = Label(self.sFrame, textvar=self.sensor0MeanVar, padx=5, anchor=E, width=5)
+        self.sensor1MeanLabel = Label(self.sFrame, textvar=self.sensor1MeanVar, padx=5, anchor=E, width=5)
+        self.sensor2MeanLabel = Label(self.sFrame, textvar=self.sensor2MeanVar, padx=5, anchor=E, width=5)
+        self.sensor3MeanLabel = Label(self.sFrame, textvar=self.sensor3MeanVar, padx=5, anchor=E, width=5)
+        self.sensor4MeanLabel = Label(self.sFrame, textvar=self.sensor4MeanVar, padx=5, anchor=E, width=5)
+        self.sensor5MeanLabel = Label(self.sFrame, textvar=self.sensor5MeanVar, padx=5, anchor=E, width=5)
+        self.sensor6MeanLabel = Label(self.sFrame, textvar=self.sensor6MeanVar, padx=5, anchor=E, width=5)
+        self.sensor7MeanLabel = Label(self.sFrame, textvar=self.sensor7MeanVar, padx=5, anchor=E, width=5)
         for i in range(0,8):
-            eval("self.sensor%dMeanLabel.grid(column=%d, row=%d+1)" % (i, 2, i))            
+            eval("self.sensor%dMeanLabel.grid(column=%d, row=%d+1, sticky=E)" % (i, 2, i))            
 
         self.sensor0StdVar = DoubleVar()
         self.sensor1StdVar = DoubleVar()
@@ -77,16 +79,16 @@ class GraphFrame(Frame):
         self.sensor5StdVar = DoubleVar()
         self.sensor6StdVar = DoubleVar()
         self.sensor7StdVar = DoubleVar()
-        self.sensor0StdLabel = Label(self.sFrame, textvar=self.sensor0StdVar)
-        self.sensor1StdLabel = Label(self.sFrame, textvar=self.sensor1StdVar)
-        self.sensor2StdLabel = Label(self.sFrame, textvar=self.sensor2StdVar)
-        self.sensor3StdLabel = Label(self.sFrame, textvar=self.sensor3StdVar)
-        self.sensor4StdLabel = Label(self.sFrame, textvar=self.sensor4StdVar)
-        self.sensor5StdLabel = Label(self.sFrame, textvar=self.sensor5StdVar)
-        self.sensor6StdLabel = Label(self.sFrame, textvar=self.sensor6StdVar)
-        self.sensor7StdLabel = Label(self.sFrame, textvar=self.sensor7StdVar)
+        self.sensor0StdLabel = Label(self.sFrame, textvar=self.sensor0StdVar, anchor=E, width=4)
+        self.sensor1StdLabel = Label(self.sFrame, textvar=self.sensor1StdVar, anchor=E, width=4)
+        self.sensor2StdLabel = Label(self.sFrame, textvar=self.sensor2StdVar, anchor=E, width=4)
+        self.sensor3StdLabel = Label(self.sFrame, textvar=self.sensor3StdVar, anchor=E, width=4)
+        self.sensor4StdLabel = Label(self.sFrame, textvar=self.sensor4StdVar, anchor=E, width=4)
+        self.sensor5StdLabel = Label(self.sFrame, textvar=self.sensor5StdVar, anchor=E, width=4)
+        self.sensor6StdLabel = Label(self.sFrame, textvar=self.sensor6StdVar, anchor=E, width=4)
+        self.sensor7StdLabel = Label(self.sFrame, textvar=self.sensor7StdVar, anchor=E, width=4)
         for i in range(0,8):
-            eval("self.sensor%dStdLabel.grid(column=%d, row=%d+1)" % (i, 3, i))            
+            eval("self.sensor%dStdLabel.grid(column=%d, row=%d+1, sticky=E)" % (i, 3, i))            
 
         self.sensor0CountVar = IntVar()
         self.sensor1CountVar = IntVar()
@@ -96,17 +98,21 @@ class GraphFrame(Frame):
         self.sensor5CountVar = IntVar()
         self.sensor6CountVar = IntVar()
         self.sensor7CountVar = IntVar()
-        self.sensor0CountLabel = Label(self.sFrame, textvar=self.sensor0CountVar)
-        self.sensor1CountLabel = Label(self.sFrame, textvar=self.sensor1CountVar)
-        self.sensor2CountLabel = Label(self.sFrame, textvar=self.sensor2CountVar)
-        self.sensor3CountLabel = Label(self.sFrame, textvar=self.sensor3CountVar)
-        self.sensor4CountLabel = Label(self.sFrame, textvar=self.sensor4CountVar)
-        self.sensor5CountLabel = Label(self.sFrame, textvar=self.sensor5CountVar)
-        self.sensor6CountLabel = Label(self.sFrame, textvar=self.sensor6CountVar)
-        self.sensor7CountLabel = Label(self.sFrame, textvar=self.sensor7CountVar)
+        self.sensor0CountLabel = Label(self.sFrame, textvar=self.sensor0CountVar, anchor=E, width=4)
+        self.sensor1CountLabel = Label(self.sFrame, textvar=self.sensor1CountVar, anchor=E, width=4)
+        self.sensor2CountLabel = Label(self.sFrame, textvar=self.sensor2CountVar, anchor=E, width=4)
+        self.sensor3CountLabel = Label(self.sFrame, textvar=self.sensor3CountVar, anchor=E, width=4)
+        self.sensor4CountLabel = Label(self.sFrame, textvar=self.sensor4CountVar, anchor=E, width=4)
+        self.sensor5CountLabel = Label(self.sFrame, textvar=self.sensor5CountVar, anchor=E, width=4)
+        self.sensor6CountLabel = Label(self.sFrame, textvar=self.sensor6CountVar, anchor=E, width=4)
+        self.sensor7CountLabel = Label(self.sFrame, textvar=self.sensor7CountVar, anchor=E, width=4)
         for i in range(0,8):
             eval("self.sensor%dCountLabel.grid(column=%d, row=%d+1)" % (i, 4, i)) 
             
+        
+        self.sampleButton = Button(self.sFrame, text="Start sampling", command=self.sample, width=15)
+        self.sampleButton.grid(column=1, row=9, columnspan=4) 
+        
         self.sFrame.grid(column=2, row=1)
         self.sFrame.grid_propagate(False)
 
@@ -122,6 +128,7 @@ class GraphFrame(Frame):
             eval("self.sensor%dMeanLabel.config(state=NORMAL)" % i)        
             eval("self.sensor%dStdLabel.config(state=NORMAL)" % i)
             eval("self.sensor%dCountLabel.config(state=NORMAL)" % i)
+        self.sampleButton.config(state=NORMAL, cursor="hand2")
 
  
     def disableUI(self):
@@ -135,11 +142,16 @@ class GraphFrame(Frame):
             eval("self.sensor%dMeanLabel.config(state=DISABLED)" % i)        
             eval("self.sensor%dStdLabel.config(state=DISABLED)" % i)
             eval("self.sensor%dCountLabel.config(state=DISABLED)" % i)
+        self.sampleButton.config(state=DISABLED, cursor="")
 
     def connectSignal(self, connected):
         if connected:
             self.enableUI()            
         else:
+            # if currently sampling, stop sampling
+            if self.sampling:
+                self.sample()
+            
             self.disableUI()
 
 
@@ -180,8 +192,28 @@ class GraphFrame(Frame):
     #
     # Graph and stat update
     #    
+    def sample(self):
+        if self.sampling:
+            self.sampling = False
+            
+            self.handler.stopSampling()
+            #self.enableUI()
+            self.sampleButton.config(state=NORMAL, text="Start sampling", cursor="hand2")
+        else:            
+            self.sensors = []
+            for i in range(0,8):
+                if self.handler.toastFrame.assignments[0][i]:
+                    self.sensors.append(i)
+            
+            if self.sensors:
+                self.sampling = True
+                
+                #self.disableUI()
+                self.sampleButton.config(state=NORMAL, text="Stop sampling", cursor="hand2")
+                self.handler.startSampling(self.sensors)
+
     def sampleSignal(self, sampling):
-        self.sampling = sampling
+        #self.sampling = sampling
         if self.sampling:
             self.resetGraph()
             self.resetStat()
@@ -201,8 +233,8 @@ class GraphFrame(Frame):
             except Queue.Empty:
                 pass
             
-            self.drawPoints()
             self.calculateStats()
+            self.drawPoints()
             self.graph.after(1000, self.update)
 
     def drawPoints(self):    

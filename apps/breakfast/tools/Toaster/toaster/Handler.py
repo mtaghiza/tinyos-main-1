@@ -312,6 +312,7 @@ class Handler(object):
         self.sampleThread.start()
         
         self.baconFrame.disableUI()
+        self.toastFrame.disableUI()
         self.adcFrame.disableUI()
         self.graphFrame.sampleSignal(True)
 
@@ -319,6 +320,7 @@ class Handler(object):
         self.sampleThread.stop()
         
         self.baconFrame.enableUI()
+        self.toastFrame.enableUI()
         self.adcFrame.enableUI()
         self.graphFrame.sampleSignal(False)
 

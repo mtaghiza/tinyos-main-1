@@ -67,7 +67,7 @@ class MenuFrame(Frame):
         self.s3Frame.grid(column=4, row=1)
     
         # export CSV
-        self.exportButton = Button(self, text="Export CSV", bg="gray", state=DISABLED, command=self.exportCSV)
+        self.exportButton = Button(self, text="Export Database", bg="gray", state=DISABLED, command=self.exportCSV)
         self.exportButton.grid(column=5, row=1)
 
         # space
