@@ -123,6 +123,9 @@ module CXRouterP {
   command message_t* SlotController.receiveEOS(message_t* msg,
       cx_eos_t* pl){
     contactList[contactIndex].dataPending = pl->dataPending;
+    cdbg(SCHED_CHECKED, "node %u pending %u\r\n",
+      contactList[contactIndex].nodeId,
+      contactList[contactIndex].dataPending);
     return msg;
   }
   
