@@ -56,9 +56,9 @@ typedef nx_struct cx_lpp_sleep {
   nx_uint32_t delay;
 } cx_lpp_sleep_t;
 
-//typedef nx_struct cx_lpp_cts {
-//  nx_am_addr_t addr;
-//} cx_lpp_cts_t;
+typedef nx_struct cx_lpp_cts {
+  nx_am_addr_t addr;
+} cx_lpp_cts_t;
 
 typedef nx_struct cx_status {
   nx_uint8_t distance;
