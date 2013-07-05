@@ -62,6 +62,8 @@ module ToastSamplerP{
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
     sampleRec.recordType = RECORD_TYPE_SAMPLE;
+    disconnection.rebootCounter = sampleRec.rebootCounter;
+    connection.rebootCounter = sampleRec.rebootCounter;
     call Timer.startOneShot(sampleInterval);
   }
 
@@ -190,6 +192,7 @@ module ToastSamplerP{
     memcpy(&disconnection.globalAddr, 
       &attached[mdSynchIndex].val.globalAddr,
       GLOBAL_ID_LEN);
+    disconnection.time = call Timer.getNow();
     if( SUCCESS != call LogWrite.append(&disconnection, sizeof(disconnection))){
       toastState[mdSynchIndex] = FREE;
       mdSynchIndex++;
@@ -205,6 +208,7 @@ module ToastSamplerP{
     if (error == SUCCESS){
       //set up connection record header
       connection.recordType = RECORD_TYPE_TOAST_CONNECTED;
+      connection.time = call Timer.getNow();
       //copy in the contents of the TLV storage
       memcpy(&connection.tlvContents,
         tlvs, 
