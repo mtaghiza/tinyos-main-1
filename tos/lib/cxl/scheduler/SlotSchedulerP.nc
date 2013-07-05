@@ -115,7 +115,8 @@ module SlotSchedulerP {
   event void LppControl.wokenUp(){
     if (state == S_UNSYNCHED){
       call Neighborhood.clear();
-      cinfo(SCHED, "Sched wakeup\r\n");
+      cinfo(SCHED, "Sched wakeup for %lu\r\n", call
+      SlotController.wakeupLen());
       signalEnd = TRUE;
       missedCTS = 0;
       state = S_WAKEUP;
@@ -336,7 +337,7 @@ module SlotSchedulerP {
 
         case S_STATUS_WAIT:
           framesWaited ++;
-          if (framesWaited >= call SlotController.maxDepth() + 1){
+          if (framesWaited > call SlotController.maxDepth()){
             error_t error = call CXLink.sleep();
             if (error == SUCCESS){
               call FrameTimer.stop();
