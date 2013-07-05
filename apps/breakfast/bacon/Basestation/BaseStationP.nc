@@ -146,12 +146,12 @@ implementation
       //map SFD to 1.2
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
-      P1MAP2 = PM_RFGDO0;
+      P2MAP4 = PM_RFGDO0;
       PMAPPWD = 0x00;
   
       //set as output/function
-      P1SEL |= BIT2;
-      P1DIR |= BIT2;
+      P2SEL |= BIT4;
+      P2DIR |= BIT4;
   
       //disable flash chip
       P2SEL &= ~BIT1;
