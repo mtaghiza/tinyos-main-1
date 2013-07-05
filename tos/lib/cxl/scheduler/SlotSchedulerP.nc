@@ -156,7 +156,7 @@ module SlotSchedulerP {
         //period, treat it the same.
         if (state == S_SLOT_CHECK || state == S_WAKEUP){
           //Set the slot/frame timing based on the master's CTS message.
-          framesLeft = SLOT_LENGTH / FRAME_LENGTH;
+          framesLeft = (SLOT_LENGTH / FRAME_LENGTH) - 1;
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
           //If we are going to be sending data, then we need to send a
           //status back (for forwarder selection)
@@ -165,7 +165,7 @@ module SlotSchedulerP {
             cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
               timestamp(msg), 
               FRAME_LENGTH, call FrameTimer.getNow());
-            call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg), FRAME_LENGTH);
+            call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
             master = call CXLinkPacket.source(msg);
             state = S_STATUS_PREP;
             post sendStatus();
@@ -177,7 +177,7 @@ module SlotSchedulerP {
               call FrameTimer.getNow());
             //synchronize receives to CTS timestamp - slack
             state = S_STATUS_WAIT_READY;
-            call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+            call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
           }
         } else {
           cerror(SCHED, "Unexpected state %x for rx(cts)\r\n", 
@@ -250,13 +250,14 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
+    P1OUT ^= BIT2;
     framesLeft --;
     if (pendingRX || pendingTX){
       cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
-    } else if (framesLeft <= 2){
+    } else if (framesLeft <= 1){
       //TODO: framesLeft should be 0 or 1?
       switch(state){
         //We can be in any of these three states when the last frame
@@ -407,9 +408,20 @@ module SlotSchedulerP {
       pendingMsg = msg;
       pendingLen = len;
       if (state == S_IDLE){
-        if (framesLeft <= clearTime(msg)){
+        cdbg(SCHED_CHECKED, "fl %u ct %u d(%u, %u) %u bw %u:",
+          framesLeft, clearTime(msg),
+          call CXLinkPacket.source(msg),
+          call CXLinkPacket.destination(msg),
+          call RoutingTable.getDistance( 
+            call CXLinkPacket.source(msg),
+            call CXLinkPacket.destination(msg)),
+          call SlotController.bw());
+        //need to leave 1 frame for EOS message
+        if (framesLeft <= clearTime(msg) + 1){
+          cdbg(SCHED, "end\r\n");
           state = S_SLOT_END_PREP;
         }else{
+          cdbg(SCHED, "continue\r\n");
           state = S_DATA_READY;
         }
       }
@@ -472,8 +484,9 @@ module SlotSchedulerP {
         timestamp(msg), RX_SLACK, 
         timestamp(msg) - RX_SLACK,
         FRAME_LENGTH, call FrameTimer.getNow());
-      call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+      call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
       call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
+      framesLeft = (SLOT_LENGTH/FRAME_LENGTH) - 1;
       //start waiting for the status packet to come back.
       state = S_STATUS_WAIT_READY;
     } else if (state == S_SLOT_END_SENDING){
@@ -534,8 +547,6 @@ module SlotSchedulerP {
       } else {
         cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster()){
-//          //TODO: base time?
-//          call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
         } else {
           //TODO: this should be one probe interval
@@ -548,6 +559,7 @@ module SlotSchedulerP {
       cdbg(SCHED, "No CTS\r\n");
       if (missedCTS < MISSED_CTS_THRESH){
         cdbg(SCHED, "Sleep this slot\r\n");
+        call FrameTimer.stop();
         call CXLink.sleep();
         state = S_UNUSED_SLOT;
       }else {
@@ -555,6 +567,7 @@ module SlotSchedulerP {
         error_t error = call LppControl.sleep();
         cdbg(SCHED, "Back to sleep.\r\n");
         call SlotTimer.stop();
+        call FrameTimer.stop();
         if (error == SUCCESS){
           state = S_UNSYNCHED;
         }else{
@@ -573,6 +586,7 @@ module SlotSchedulerP {
   event void SlotTimer.fired(){
     P1OUT ^= BIT2;
     dataCommitted = FALSE;
+    framesLeft = SLOT_LENGTH/FRAME_LENGTH;
     if (signalEnd){
       call SlotController.endSlot();
       signalEnd = FALSE;
