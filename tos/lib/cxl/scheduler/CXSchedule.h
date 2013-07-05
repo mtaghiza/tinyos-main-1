@@ -30,4 +30,9 @@
 //This is in 32K ticks, not ms
 #define CX_WAKEUP_LEN ((LPP_DEFAULT_PROBE_INTERVAL * CX_MAX_DEPTH) << 5)
 
+//back to sleep when we miss this many CTS packets in a download.
+#ifndef MISSED_CTS_THRESH
+#define MISSED_CTS_THRESH 2
+#endif
+
 #endif

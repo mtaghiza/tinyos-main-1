@@ -106,6 +106,7 @@ module SlotSchedulerP {
   uint8_t framesLeft;
   uint8_t framesWaited;
   am_addr_t master;
+  uint8_t missedCTS;
 
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
@@ -116,6 +117,7 @@ module SlotSchedulerP {
       call Neighborhood.clear();
       cinfo(SCHED, "Sched wakeup\r\n");
       signalEnd = TRUE;
+      missedCTS = 0;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
       post nextRX();
@@ -541,18 +543,23 @@ module SlotSchedulerP {
         }
       }
     }else if (state == S_SLOT_CHECK){
-      //we didn't get a CTS, so we deem the active period over.
-      //TODO safer: count up the number of non-CTS-bearing slots and
-      //sleep when we've exceeded a few of them. N.B. each of these
-      //timeout slots adds 30 ms of on-time (not too shabby!).
-      error_t error = call LppControl.sleep();
-      call SlotTimer.stop();
+      missedCTS++;
       cdbg(SCHED, "No CTS\r\n");
-      if (error == SUCCESS){
-        state = S_UNSYNCHED;
-      }else{
-        //awjeez awjeez
-        cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
+      if (missedCTS < MISSED_CTS_THRESH){
+        cdbg(SCHED, "Sleep this slot\r\n");
+        call CXLink.sleep();
+        state = S_UNUSED_SLOT;
+      }else {
+        //CTS limit exceeded, back to sleep
+        error_t error = call LppControl.sleep();
+        cdbg(SCHED, "Back to sleep.\r\n");
+        call SlotTimer.stop();
+        if (error == SUCCESS){
+          state = S_UNSYNCHED;
+        }else{
+          //awjeez awjeez
+          cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
+        }
       }
     }else{
       //ignore next rx (e.g. handled at frametimer.fired)
@@ -603,6 +610,7 @@ module SlotSchedulerP {
         //end of active period: can sleep now.
         call LppControl.sleep();
         call SlotTimer.stop();
+        call FrameTimer.stop();
       }
     } else {
       error_t error = rx(CTS_TIMEOUT, TRUE);
