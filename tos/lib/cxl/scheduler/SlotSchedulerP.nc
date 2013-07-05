@@ -251,14 +251,14 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
-    P1OUT ^= BIT2;
+//    P1OUT ^= BIT2;
     framesLeft --;
     if (pendingRX || pendingTX){
       cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
-    } else if (framesLeft <= 1){
+    } else if (framesLeft <= 2){
       //TODO: framesLeft should be 0 or 1?
       switch(state){
         //We can be in any of these three states when the last frame
@@ -295,6 +295,7 @@ module SlotSchedulerP {
               cx_eos_t* pl = call Packet.getPayload(eosMsg,
                 sizeof(cx_eos_t));
               call Packet.clear(eosMsg);
+              call CXMacPacket.setMacType(eosMsg, CXM_EOS);
               pl -> dataPending = (pendingMsg != NULL);
               call CXLinkPacket.setDestination(eosMsg, master);
             }
@@ -305,6 +306,7 @@ module SlotSchedulerP {
             error_t error = send(eosMsg, sizeof(cx_eos_t), 
               call SlotController.maxDepth());
             if (error == SUCCESS){
+              cdbg(SCHED, "SES\r\n");
               state = S_SLOT_END_SENDING;
             }else{ 
               cerror(SCHED, "ft.f %x %x fl 1\r\n", state, error);
