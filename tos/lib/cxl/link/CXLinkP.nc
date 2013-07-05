@@ -157,7 +157,7 @@ module CXLinkP {
   }
 
   event void DelayedSend.sendReady(){
-    P1OUT |= BIT2;
+//    P1OUT |= BIT2;
     atomic {
       uint32_t now = call FastAlarm.getNow();
       if (aSfdCapture){
@@ -167,6 +167,8 @@ module CXLinkP {
           //TODO: we should make sure that this is legit here: 
           // if now-aSfdCapture > frameLen-sfdAdjust, then we missed
           // the deadline. 
+          // Best way to recover would be to pretend that we forwarded
+          // it and pick up at the next transmission.
           if (now - aSfdCapture > frameLen - sfdAdjust){
             post logSynchMiss();
           }
@@ -312,7 +314,7 @@ module CXLinkP {
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
       call DelayedSend.startSend();
-      P1OUT &= ~BIT2;
+//      P1OUT &= ~BIT2;
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
