@@ -11,6 +11,8 @@ configuration TestAppC {
   components CXLeafC as Scheduler;
   #endif
 
+  components CXLinkC;
+
   components LedsC;
 
   TestP.SplitControl -> Scheduler;
@@ -24,6 +26,7 @@ configuration TestAppC {
   TestP.UartStream -> PlatformSerialC;
   TestP.SerialControl -> PlatformSerialC;
   TestP.Packet -> Scheduler;
+  TestP.CXLinkPacket -> CXLinkC;
 
   components new PoolC(message_t, 4);
   Scheduler.Pool -> PoolC;

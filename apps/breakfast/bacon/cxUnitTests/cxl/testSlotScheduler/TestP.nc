@@ -6,6 +6,7 @@ module TestP{
   uses interface SplitControl;
   uses interface Send;
   uses interface Packet;
+  uses interface CXLinkPacket;
   uses interface Receive;
   uses interface Pool<message_t>;
   
@@ -19,6 +20,7 @@ module TestP{
   message_t* rxMsg;
 
   bool started = FALSE;
+  bool continuousSend;
   task void toggleStartStop();
   
   #ifndef PAYLOAD_LEN 
@@ -42,6 +44,7 @@ module TestP{
     printf(" d: download\r\n");
     #endif
     printf(" t: transmit packet\r\n");
+    printf(" T: toggle continuous transmission\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
   }
@@ -76,7 +79,10 @@ module TestP{
     }
     post toggleStartStop();
   }
-
+  
+  task void toggleContinuous(){
+    continuousSend = !continuousSend;
+  }
 
   task void sendPacket(){
     if (txMsg){
@@ -87,6 +93,9 @@ module TestP{
       error_t err;
       txMsg = call Pool.get();
       call Packet.clear(txMsg);
+      //N.B. This should be done by AM/etc layers
+      call CXLinkPacket.setDestination(txMsg, TEST_DESTINATION);
+      call CXLinkPacket.setSource(txMsg, TOS_NODE_ID);
       err = call Send.send(txMsg, call Packet.maxPayloadLength());
       printf("APP TX %x\r\n", err);
       if (err != SUCCESS){
@@ -113,6 +122,9 @@ module TestP{
       txMsg = NULL;
     } else{
       printf("mystery packet: %p\r\n", msg);
+    }
+    if (continuousSend){
+      post sendPacket();
     }
   }
 
@@ -166,6 +178,10 @@ module TestP{
          WDTCTL = 0;
          break;
        case 't':
+         post sendPacket();
+         break;
+       case 'T':
+         post toggleContinuous();
          post sendPacket();
          break;
        #if CX_ROUTER == 1
