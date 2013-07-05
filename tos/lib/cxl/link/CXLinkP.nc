@@ -34,7 +34,7 @@ module CXLinkP {
   message_t* rxMsg;
   uint8_t rxLen;
   message_t* fwdMsg;
-  uint32_t sn;
+  uint16_t sn;
 
   int aTxResult;
   
@@ -46,12 +46,12 @@ module CXLinkP {
   norace uint8_t crcIndex;
   norace uint8_t crcFirstPassed;
 
-  void logCRCs(am_addr_t src, uint32_t psn){
+  void logCRCs(am_addr_t src, uint16_t psn){
     if (crcIndex){
       uint8_t i;
       for (i=crcFirstPassed ; i < crcIndex; i++ ){
         uint8_t k = crcIndex - i;
-        cdbg(LINK, "CH %u %lu %u %x %x\r\n", src, psn, k, txHist[i], crcHist[i]);
+        cdbg(LINK, "CH %u %u %u %x %x\r\n", src, psn, k, txHist[i], crcHist[i]);
       }
     }
   }
@@ -150,7 +150,7 @@ module CXLinkP {
   }
 
   event void DelayedSend.sendReady(){
-    
+    P1OUT |= BIT2;
     atomic {
       if (aSfdCapture){
         if( SELF_SFD_SYNCH ||  !aSynched ){
@@ -234,7 +234,7 @@ module CXLinkP {
         subsend(fwdMsg);
       } else {
         call FastAlarm.stop();
-        cinfo(LINK, "LD %u %lu %u %u\r\n",
+        cinfo(LINK, "LD %u %u %u %u\r\n",
           header(fwdMsg)->source,
           header(fwdMsg)->sn,
           header(fwdMsg)->ttl,
@@ -247,7 +247,7 @@ module CXLinkP {
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
-          cinfo(LINK, "LTX %u %lu %u %x\r\n",
+          cinfo(LINK, "LTX %u %u %u %x\r\n",
             header(fwdMsg)->source, 
             header(fwdMsg)->sn,
             header(fwdMsg)->destination,
@@ -264,7 +264,7 @@ module CXLinkP {
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
-          cinfo(LINK, "LRX %u %lu %u %u %x\r\n",
+          cinfo(LINK, "LRX %u %u %u %u %x\r\n",
             header(rxMsg)->source, 
             header(rxMsg)->sn,
             header(rxMsg)->destination, 
@@ -294,6 +294,7 @@ module CXLinkP {
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
+      P1OUT &= ~BIT2;
       call DelayedSend.startSend();
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
@@ -575,7 +576,7 @@ module CXLinkP {
             RF1A_OM_IDLE);
         }
         if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg))){
-          cinfo(LINK, "LRX %u %lu %u %u %x\r\n",
+          cinfo(LINK, "LRX %u %u %u %u %x\r\n",
             header(rxMsg)->source, 
             header(rxMsg)->sn,
             header(rxMsg)->destination, 

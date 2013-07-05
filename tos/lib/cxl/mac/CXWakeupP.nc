@@ -100,7 +100,7 @@ module CXWakeupP {
     if (error != SUCCESS){
       cwarn(LPP, "LPP ss.sd %x\r\n", error);
     }
-    cinfo(LPP, "MTX %x %u %lu %u %x\r\n",
+    cinfo(LPP, "MTX %x %u %u %u %x\r\n",
       error,
       (call CXLinkPacket.getLinkHeader(msg))->source,
       (call CXLinkPacket.getLinkHeader(msg))->sn,
@@ -183,7 +183,7 @@ module CXWakeupP {
   }
 
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
-    cinfo(LPP, "MRX %u %lu %u %x\r\n",
+    cinfo(LPP, "MRX %u %u %u %x\r\n",
       (call CXLinkPacket.getLinkHeader(msg))->source,
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       (call CXLinkPacket.getLinkHeader(msg))->destination,
@@ -196,7 +196,7 @@ module CXWakeupP {
            == (call CXLinkPacket.getLinkHeader(probe))->source
           && call CXLinkPacket.getSn(msg) == call CXLinkPacket.getSn(probe)){
           //yup. src/sn match.
-          cdbg(LPP, "ACK msg %p %u %lu probe %p %u %lu\r\n",
+          cdbg(LPP, "ACK msg %p %u %u probe %p %u %u\r\n",
             msg,
             (call CXLinkPacket.getLinkHeader(msg))->source,
             call CXLinkPacket.getSn(msg),

@@ -25,7 +25,7 @@
 #endif
 
 //TODO: these should be based on sizeof's/whether FEC is in use.
-//Short packet: mac header only
+//Short packet: up to 2 bytes payload.
 #define SHORT_PACKET 12
 //Long packet: at least 64 bytes, when encoded (also: 2 byte crc)
 #define LONG_PACKET 30
@@ -53,7 +53,7 @@ typedef nx_struct cx_link_header {
   nx_uint8_t hopCount;
   nx_am_addr_t destination;
   nx_am_addr_t source;
-  nx_uint32_t sn;
+  nx_uint16_t sn;
   nx_uint8_t bodyLen;
 } cx_link_header_t;
 

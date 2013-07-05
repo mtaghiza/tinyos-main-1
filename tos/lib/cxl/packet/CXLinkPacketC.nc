@@ -71,7 +71,7 @@ module CXLinkPacketC{
     memset(md(msg), 
       0, 
       sizeof(message_metadata_t));
-    //set up defaults: increment sn, allow retx from this buffer.
+    //set up defaults: allow retx from this buffer.
     md(msg)->cx.retx = TRUE;
     //kind of hacky: set the lqi of the phy metadata so that this
     //looks like passed. otherwise, self re-tx will fail.
@@ -104,7 +104,7 @@ module CXLinkPacketC{
     return TOSH_DATA_LENGTH;
   }
 
-  command uint32_t CXLinkPacket.getSn(message_t* msg){
+  command uint16_t CXLinkPacket.getSn(message_t* msg){
     return ((cx_link_header_t*)(msg->header))->sn;
   }
 
