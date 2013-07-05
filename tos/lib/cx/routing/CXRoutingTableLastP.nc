@@ -4,7 +4,7 @@ module CXRoutingTableLastP {
   provides interface RoutingTable;
   uses interface Boot;
 } implementation {
-  uint8_t defaultDistance;
+  uint8_t defaultDistance = CX_MAX_DEPTH;
   uint8_t evictionIndex = 0;
 
   typedef struct rt_entry {
@@ -31,6 +31,8 @@ module CXRoutingTableLastP {
       am_addr_t to){
     if (to == AM_BROADCAST_ADDR){
       return defaultDistance;
+    } else if (from == to){
+      return 0;
     } else {
       uint8_t i;
       for (i = 0; i < RT_LEN; i++){
