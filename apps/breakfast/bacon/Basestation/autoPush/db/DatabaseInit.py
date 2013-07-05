@@ -67,7 +67,50 @@ class DatabaseInit(object):
                          base_time REAL,
                          node_time INTEGER,
                          neighbor_id INTEGER);'''
-                     
+
+    BACON_SAMPLE_SQL = '''CREATE TABLE bacon_sample
+                        (node_id INTEGER,
+                         cookie INTEGER,
+                         reboot_counter INTEGER,
+                         base_time INTEGER,
+                         battery INTEGER,
+                         light INTEGER,
+                         thermistor INTEGER);'''
+
+    TOAST_SAMPLE_SQL = '''CREATE TABLE toast_sample
+                        (node_id INTEGER,
+                         cookie INTEGER,
+                         reboot_counter INTEGER,
+                         base_time INTEGER,
+                         toast_id INTEGER);'''
+
+    SENSOR_SAMPLE_SQL= '''CREATE TABLE sensor_sample
+                        (node_id INTEGER,
+                         cookie INTEGER,
+                         channel_number INTEGER,
+                         sample INTEGER);'''
+
+    TOAST_CONNECTION_SQL= '''CREATE TABLE toast_connection
+                           (node_id INTEGER,
+                            cookie INTEGER,
+                            reboot_counter INTEGER,
+                            time INTEGER,
+                            toast_id INTEGER,
+                            tlv BLOB);'''
+
+    SENSOR_CONNECTION_SQL='''CREATE TABLE sensor_connection
+                           (node_id INTEGER,
+                            cookie INTEGER,
+                            channel_number INTEGER,
+                            sensor_type INTEGER,
+                            sensor_id INTEGER);'''
+
+    TOAST_DISCONNECTION_SQL='''CREATE TABLE toast_disconnection
+                             (node_id INTEGER,
+                              cookie INTEGER,
+                              reboot_counter INTEGER,
+                              time INTEGER,
+                              toast_id INTEGER);'''
 
 
     # class finds suitable filename for DB and creates tables if needed
@@ -92,6 +135,12 @@ class DatabaseInit(object):
                     cursor.execute(DatabaseInit.META_TABLE_SQL);
                     cursor.execute(DatabaseInit.FLASH_TABLE_SQL);
                     cursor.execute(DatabaseInit.TIME_TABLE_SQL);
+                    cursor.execute(DatabaseInit.BACON_SAMPLE_SQL);
+                    cursor.execute(DatabaseInit.TOAST_SAMPLE_SQL);
+                    cursor.execute(DatabaseInit.SENSOR_SAMPLE_SQL);
+                    cursor.execute(DatabaseInit.TOAST_CONNECTION_SQL);
+                    cursor.execute(DatabaseInit.SENSOR_CONNECTION_SQL);
+                    cursor.execute(DatabaseInit.TOAST_DISCONNECTION_SQL);
                     connection.commit();
  
                 # only set name if no exceptions thrown

@@ -28,16 +28,18 @@ class RecordParser(object):
             lenVal = self.val(self.data[index:index+RecordParser.LENGTH_LEN])
             index += RecordParser.LENGTH_LEN
             
-            recordData = self.data[index:index + lenVal]
+            recordType = self.data[index]
+            recordData = self.data[index+1:index + lenVal]
             index += lenVal
             
             if prevLenVal != 0:
-                recordList.append( (prevCookieVal, cookieVal, prevLenVal, prevRecordData) )
+                recordList.append( (prevCookieVal, cookieVal, prevLenVal, prevRecordType, prevRecordData) )
 
             if index == self.length:
-                recordList.append( (cookieVal, self.nextCookie, lenVal, recordData) )               
+                recordList.append( (cookieVal, self.nextCookie, lenVal, recordType, recordData) )               
              
             prevCookieVal = cookieVal
+            prevRecordType = recordType
             prevRecordData = recordData
             prevLenVal = lenVal
             
@@ -51,9 +53,8 @@ class RecordParser(object):
         return recordList
 
 class RecordListener(object):
-    def __init__(self):
-        #TODO: should this take in a db file name as argument?
-        self.db = Database.Database()
+    def __init__(self, db):
+        self.db = db
 
     def receive(self, src, msg):
         address = msg.getAddr()

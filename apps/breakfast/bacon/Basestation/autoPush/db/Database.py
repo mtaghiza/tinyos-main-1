@@ -11,21 +11,28 @@ class Database(object):
 
     def __init__(self):
         init = DatabaseInit('database')
-        dbName = init.getName()
+        self.dbName = init.getName()
 
-        self.insert = DatabaseInsert(dbName)
-        self.missing = DatabaseMissing(dbName)
+        self.insert = DatabaseInsert(self.dbName)
+        self.missing = DatabaseMissing(self.dbName)
+        self.decoders = {}
         
+
+    def addDecoder(self, decoderClass):
+        self.decoders[decoderClass.recordType()] = decoderClass(self.dbName)
+
 
     def insertRecord(self, source, record):
         #print "Database.insertRecord()", threading.current_thread().name
         
-        (cookie, nextCookie, length, data) = record            
+        (cookie, nextCookie, length, recordType, data) = record            
         
-        print "Database.insertRecord()", source, cookie, nextCookie, length, data
+        print "Database.insertRecord()", source, cookie, nextCookie, length, recordType, data
         
         self.insert.insertFlash(source, cookie, nextCookie, length)        
-        
+        if recordType in self.decoders:
+            self.decoders[recordType].insert(source, cookie, data)
+
             ##calcLen = cookieVal - self.oldCookieVal - 1
             ##print "# %X" % cookieVal, calcLen, self.oldLenVal
             ##if calcLen != self.oldLenVal:
@@ -34,6 +41,8 @@ class Database(object):
             ## print lenVal, recordData
             ##self.oldCookieVal = cookieVal
             ##self.oldLenVal = lenVal
+        else: 
+            print "No decoder for ", recordType
 
     def findMissing(self):
         

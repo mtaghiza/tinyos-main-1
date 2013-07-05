@@ -15,15 +15,17 @@ from autoPush.messages import PongMsg
 
 from autoPush.db import Database
 
+from autoPush.decoders import BaconSample
+
 class Dispatcher(object):
-    def __init__(self, motestring, bsId):
+    def __init__(self, motestring, bsId, db):
         #hook up to mote
         self.mif = LppMoteIF.LppMoteIF()
         self.tos_source = self.mif.addSource(motestring)
         #format printf's correctly
         self.mif.addListener(PrintfListener.PrintfListener(bsId), 
           PrintfMsg.PrintfMsg)
-        self.mif.addListener(RecordListener.RecordListener(), 
+        self.mif.addListener(RecordListener.RecordListener(db), 
           LogRecordDataMsg.LogRecordDataMsg)
         self.mif.addListener(PongListener.PongListener(), 
           PongMsg.PongMsg)
@@ -39,8 +41,9 @@ class Dispatcher(object):
 
 def download(packetSource, bsId, wakeupLen, repairLimit, nodeList):
     print packetSource
-    d = Dispatcher(packetSource, bsId)
     db = Database.Database()
+    d = Dispatcher(packetSource, bsId, db)
+    db.addDecoder(BaconSample.BaconSample)
     pingId = 0
 
     try:
@@ -131,4 +134,4 @@ if __name__ == '__main__':
     repairLimit = 0
     if len(sys.argv) > 4:
         repairLimit = int(sys.argv[4])
-    download(packetSource, bsId, wakeupLen, repairLimit, range(60))
+    download(packetSource, bsId, wakeupLen, repairLimit, [1])
