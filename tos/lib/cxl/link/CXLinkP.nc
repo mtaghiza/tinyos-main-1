@@ -74,6 +74,7 @@ module CXLinkP {
   bool aExtended;
   int32_t sfdAdjust;
 
+
   uint32_t fastToSlow(uint32_t fastTicks){
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
@@ -101,6 +102,19 @@ module CXLinkP {
   }
   rf1a_metadata_t* phy(message_t* msg){
     return (call CXLinkPacket.getPhyMetadata(msg));
+  }
+
+  void applyTimestamp(message_t* msg){
+    atomic{
+      uint32_t fastRef1 = call FastAlarm.getNow();
+      uint32_t slowRef = call LocalTime.get();
+      uint32_t fastRef2 = call FastAlarm.getNow();
+      uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - metadata(msg)->timeFast;
+      uint32_t slowTicks = fastToSlow(fastTicks);
+      metadata(msg)->time32k = slowRef 
+        - slowTicks 
+        - fastToSlow((frameLen*(metadata(msg)->rxHopCount-1)));
+    }
   }
   
   /**
@@ -229,22 +243,12 @@ module CXLinkP {
     }
     
     //apply the timestamp.
-    if (metadata(fwdMsg)->time32k == 0){
-      atomic{
-        uint32_t fastRef1 = call FastAlarm.getNow();
-        uint32_t slowRef = call LocalTime.get();
-        uint32_t fastRef2 = call FastAlarm.getNow();
-        uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - aSfdCapture - sfdAdjust;
-        uint32_t slowTicks = fastToSlow(fastTicks);
-        
-        metadata(fwdMsg)->time32k = slowRef 
-          - slowTicks 
-          - (frameLen*(metadata(fwdMsg)->rxHopCount-1));
+    if (metadata(fwdMsg)->timeFast == 0){
+      atomic metadata(fwdMsg)->timeFast = aSfdCapture - sfdAdjust;
 //        cdbg(SCHED, "TS %lu - %lu - (%lu * (%u - 1)) = %lu \r\n",
 //          slowRef, slowTicks, 
 //          frameLen, metadata(fwdMsg)->rxHopCount,
 //          metadata(fwdMsg)->time32k);
-      }
     }
 
     if (localState == S_TX || localState == S_FWD){
@@ -274,6 +278,7 @@ module CXLinkP {
           logCRCs(
             header(fwdMsg)->source, 
             header(fwdMsg)->sn);
+          applyTimestamp(fwdMsg);
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -292,7 +297,7 @@ module CXLinkP {
           logCRCs(
             header(rxMsg)->source, 
             header(rxMsg)->sn);
-
+          applyTimestamp(rxMsg);
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
@@ -463,6 +468,8 @@ module CXLinkP {
         header(msg)->source = call ActiveMessageAddress.amAddress();
         //initialize to 1 hop: adjacent nodes are 1 hop away.
         header(msg)->hopCount = 1;
+        //initialize to 1: this makes timestamp computation uniform at
+        //src/forwarder
         metadata(msg)->rxHopCount = 1;
         crcIndex = 0;
         //set to crc-passed initially
@@ -555,8 +562,6 @@ module CXLinkP {
   task void handleReception(){
     uint8_t localState;
     atomic{
-
-      
       call CXLinkPacket.setLen(rxMsg, rxLen);
       metadata(rxMsg)->rxHopCount = header(rxMsg)->hopCount;
       metadata(rxMsg)->timeFast = aSfdCapture - sfdAdjust;
@@ -598,17 +603,7 @@ module CXLinkP {
           logCRCs(
             header(rxMsg)->source, 
             header(rxMsg)->sn);
-          atomic{
-            uint32_t fastRef1 = call FastAlarm.getNow();
-            uint32_t slowRef = call LocalTime.get();
-            uint32_t fastRef2 = call FastAlarm.getNow();
-            uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - metadata(rxMsg)->timeFast;
-            uint32_t slowTicks = fastToSlow(fastTicks);
-            //This is incorrect: frameLen here is in fast ticks.
-            metadata(rxMsg)->time32k = slowRef 
-              - slowTicks 
-              - fastToSlow((frameLen*(metadata(rxMsg)->rxHopCount-1)));
-          }
+          applyTimestamp(rxMsg);
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));
