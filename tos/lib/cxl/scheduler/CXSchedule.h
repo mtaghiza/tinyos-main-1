@@ -25,7 +25,9 @@
 
 #define CTS_TIMEOUT (FRAMELEN_FAST_SHORT*CX_MAX_DEPTH)
 
+#ifndef CX_DEFAULT_BW
 #define CX_DEFAULT_BW 2
+#endif
 
 //This is in 32K ticks, not ms
 #define CX_WAKEUP_LEN ((LPP_DEFAULT_PROBE_INTERVAL * CX_MAX_DEPTH) << 5)
