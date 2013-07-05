@@ -157,7 +157,6 @@ module SlotSchedulerP {
         if (state == S_SLOT_CHECK || state == S_WAKEUP){
           //Set the slot/frame timing based on the master's CTS message.
           framesLeft = SLOT_LENGTH / FRAME_LENGTH;
-          //TODO: right base time?
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
           //If we are going to be sending data, then we need to send a
           //status back (for forwarder selection)
@@ -251,7 +250,6 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
-//    P1OUT ^= BIT2;
     framesLeft --;
     if (pendingRX || pendingTX){
       cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
@@ -475,6 +473,7 @@ module SlotSchedulerP {
         timestamp(msg) - RX_SLACK,
         FRAME_LENGTH, call FrameTimer.getNow());
       call FrameTimer.startPeriodicAt(FRAME_LENGTH + timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+      call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
       //start waiting for the status packet to come back.
       state = S_STATUS_WAIT_READY;
     } else if (state == S_SLOT_END_SENDING){
@@ -535,8 +534,8 @@ module SlotSchedulerP {
       } else {
         cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster()){
-          //TODO: base time?
-          call SlotTimer.startPeriodic(SLOT_LENGTH);
+//          //TODO: base time?
+//          call SlotTimer.startPeriodic(SLOT_LENGTH);
           signal SlotTimer.fired();
         } else {
           //TODO: this should be one probe interval
@@ -572,6 +571,7 @@ module SlotSchedulerP {
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
+    P1OUT ^= BIT2;
     dataCommitted = FALSE;
     if (signalEnd){
       call SlotController.endSlot();
