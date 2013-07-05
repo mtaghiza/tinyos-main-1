@@ -195,6 +195,17 @@ module CXLppP {
     pushSleep();
   }
 
+  error_t txError;
+  am_addr_t txSrc;
+  uint16_t txSn;
+  am_addr_t txDest;
+  uint8_t txMac;
+
+  task void logTx(){
+    cinfo(LPP, "MTX %x %u %u %u %x\r\n",
+      txError, txSrc, txSn, txDest, txMac);
+  }
+
   event void SubSend.sendDone(message_t* msg, error_t error){
     call TimeoutCheck.stop();
     sending = FALSE;
@@ -202,12 +213,13 @@ module CXLppP {
     if (error != SUCCESS){
       cwarn(LPP, "LPP ss.sd %x\r\n", error);
     }
-    cinfo(LPP, "MTX %x %u %u %u %x\r\n",
-      error,
-      (call CXLinkPacket.getLinkHeader(msg))->source,
-      (call CXLinkPacket.getLinkHeader(msg))->sn,
-      (call CXLinkPacket.getLinkHeader(msg))->destination,
-      call CXMacPacket.getMacType(msg));
+    txError = error;
+    txSrc= (call CXLinkPacket.getLinkHeader(msg))->source;
+    txSn = (call CXLinkPacket.getLinkHeader(msg))->sn;
+    txDest = (call CXLinkPacket.getLinkHeader(msg))->destination;
+    txMac = call CXMacPacket.getMacType(msg);
+    post logTx();
+
     if (state == S_CHECK){
       if (msg == probe){
         //immediately after probe is sent, listen for a short period
