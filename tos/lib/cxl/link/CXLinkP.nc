@@ -149,19 +149,36 @@ module CXLinkP {
     }
   }
 
+  task void logRetxMiss(){
+    cerror(LINK, "RMD\r\n");
+  }
+  task void logSynchMiss(){
+    cerror(LINK, "SMD\r\n");
+  }
+
   event void DelayedSend.sendReady(){
     P1OUT |= BIT2;
     atomic {
+      uint32_t now = call FastAlarm.getNow();
       if (aSfdCapture){
         if( SELF_SFD_SYNCH ||  !aSynched ){
           //first synch point: computed based on sfd capture (either RX
           //or TX)
+          //TODO: we should make sure that this is legit here: 
+          // if now-aSfdCapture > frameLen-sfdAdjust, then we missed
+          // the deadline. 
+          if (now - aSfdCapture > frameLen - sfdAdjust){
+            post logSynchMiss();
+          }
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
 //          //every subsequent transmission: should be based on the
 //          //  previous one.
+          if (now - (call FastAlarm.getAlarm()) > frameLen){
+            post logRetxMiss();
+          }
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
         }
@@ -294,8 +311,8 @@ module CXLinkP {
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
-      P1OUT &= ~BIT2;
       call DelayedSend.startSend();
+      P1OUT &= ~BIT2;
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
@@ -536,17 +553,11 @@ module CXLinkP {
   task void handleReception(){
     uint8_t localState;
     atomic{
-      uint32_t fastRef1 = call FastAlarm.getNow();
-      uint32_t slowRef = call LocalTime.get();
-      uint32_t fastRef2 = call FastAlarm.getNow();
-      uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - aSfdCapture - sfdAdjust;
-      uint32_t slowTicks = fastToSlow(fastTicks);
+
       
       call CXLinkPacket.setLen(rxMsg, rxLen);
       metadata(rxMsg)->rxHopCount = header(rxMsg)->hopCount;
-      metadata(rxMsg)->time32k = slowRef 
-        - slowTicks 
-        - (frameLen*(metadata(rxMsg)->rxHopCount-1));
+      metadata(rxMsg)->timeFast = aSfdCapture - sfdAdjust;
       localState = state;
       call Rf1aPhysicalMetadata.store(phy(rxMsg));
       //mark as failed CRC, ugh
@@ -585,6 +596,17 @@ module CXLinkP {
           logCRCs(
             header(rxMsg)->source, 
             header(rxMsg)->sn);
+          atomic{
+            uint32_t fastRef1 = call FastAlarm.getNow();
+            uint32_t slowRef = call LocalTime.get();
+            uint32_t fastRef2 = call FastAlarm.getNow();
+            uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - metadata(rxMsg)->timeFast;
+            uint32_t slowTicks = fastToSlow(fastTicks);
+            //This is incorrect: frameLen here is in fast ticks.
+            metadata(rxMsg)->time32k = slowRef 
+              - slowTicks 
+              - fastToSlow((frameLen*(metadata(rxMsg)->rxHopCount-1)));
+          }
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));
