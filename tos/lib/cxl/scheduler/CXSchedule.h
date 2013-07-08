@@ -16,12 +16,28 @@
 //  IDLE ->RX time and the IDLE->TX time are equal (88 uS). 3 ticks is
 //  91 uS, so we can miss by a lot and still hit it.
 #ifndef RX_SLACK
-#define RX_SLACK 3UL
+#define RX_SLACK 5UL
 #endif
 
-//The timeout for a normal frame-aligned transmission is 2x RX_SLACK.
-//We need to convert this to fast ticks, though.
-#define DATA_TIMEOUT (RX_SLACK * 2UL * FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW
+
+//Could be off by one 32K tick
+#define ASYNCHRONY_32K 198UL
+//looks like around 100 uS between the tx strobe and the carrier sense
+//  detection at the forwarder.
+#define CS_PROPAGATION 650UL
+
+//delay between the sched-layer frame timer.fired event and the link
+//layer fastalarm.fired event. 
+//TODO: This should be nowhere near this high, even if you take into
+//account encoding time + transition from idle to FSTXON.
+#define SCHED_TX_DELAY 3120UL
+
+//Put it all together and convert to fast ticks
+// - the slack itself
+// - clock asynchrony
+// - carrier sense prop time
+// - delay between sender frame timer/actual tx start
+#define DATA_TIMEOUT (ASYNCHRONY_32K + CS_PROPAGATION + SCHED_TX_DELAY + ((RX_SLACK * 2UL* FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW))
 
 #define CTS_TIMEOUT (FRAMELEN_FAST_SHORT*CX_MAX_DEPTH)
 
