@@ -26,4 +26,7 @@ configuration CXRouterC {
 
   components CXWakeupC;
   CXRouterP.LppControl -> CXWakeupC;
+
+  components CXAMAddressC;
+  CXRouterP.ActiveMessageAddress -> CXAMAddressC;
 }

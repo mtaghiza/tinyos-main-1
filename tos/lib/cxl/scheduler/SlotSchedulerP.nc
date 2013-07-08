@@ -108,6 +108,7 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
 
+  void handleCTS(message_t* msg);
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
   error_t send(message_t* msg, uint8_t len, uint8_t ttl);
@@ -145,6 +146,35 @@ module SlotSchedulerP {
 
   task void sendStatus();
 
+  // The behavior at the end of a CTS transmission is the same whether
+  // we sent it or another node: set up the frame timer. If you are
+  // the slot owner, set up a status message to send. Otherwise, wait
+  // for a status message to arrive.
+
+  void handleCTS(message_t* msg){
+    //If we are going to be sending data, then we need to send a
+    //status back (for forwarder selection)
+    if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
+      //synchronize sends to CTS timestamp
+      cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
+        timestamp(msg), 
+        FRAME_LENGTH, call FrameTimer.getNow());
+      call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
+      master = call CXLinkPacket.source(msg);
+      state = S_STATUS_PREP;
+      post sendStatus();
+    }else{
+      cdbg(SCHED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
+        timestamp(msg), RX_SLACK, 
+        timestamp(msg) - RX_SLACK,
+        FRAME_LENGTH, 
+        call FrameTimer.getNow());
+      //synchronize receives to CTS timestamp - slack
+      state = S_STATUS_WAIT_READY;
+      call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+    }
+  }
+
   event message_t* SubReceive.receive(message_t* msg, void* pl,
       uint8_t len){
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
@@ -159,27 +189,7 @@ module SlotSchedulerP {
           //Set the slot/frame timing based on the master's CTS message.
           framesLeft = (SLOT_LENGTH / FRAME_LENGTH) - 1;
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
-          //If we are going to be sending data, then we need to send a
-          //status back (for forwarder selection)
-          if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
-            //synchronize sends to CTS timestamp
-            cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
-              timestamp(msg), 
-              FRAME_LENGTH, call FrameTimer.getNow());
-            call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
-            master = call CXLinkPacket.source(msg);
-            state = S_STATUS_PREP;
-            post sendStatus();
-          }else{
-            cdbg(SCHED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
-              timestamp(msg), RX_SLACK, 
-              timestamp(msg) - RX_SLACK,
-              FRAME_LENGTH, 
-              call FrameTimer.getNow());
-            //synchronize receives to CTS timestamp - slack
-            state = S_STATUS_WAIT_READY;
-            call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
-          }
+          handleCTS(msg);
         } else {
           cerror(SCHED, "Unexpected state %x for rx(cts)\r\n", 
             state);
@@ -478,18 +488,13 @@ module SlotSchedulerP {
       pendingMsg = NULL;
       signal Send.sendDone(msg, error);
     } else if (state == S_CTS_SENDING){
+      framesLeft = (SLOT_LENGTH/FRAME_LENGTH) - 1;
+      call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
+
+      handleCTS(ctsMsg);
       call Pool.put(ctsMsg);
       ctsMsg = NULL;
-      //master starts frame duty cycle based on CTS transmission
-      cdbg(SCHED, "m FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
-        timestamp(msg), RX_SLACK, 
-        timestamp(msg) - RX_SLACK,
-        FRAME_LENGTH, call FrameTimer.getNow());
-      call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
-      call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
-      framesLeft = (SLOT_LENGTH/FRAME_LENGTH) - 1;
-      //start waiting for the status packet to come back.
-      state = S_STATUS_WAIT_READY;
+
     } else if (state == S_SLOT_END_SENDING){
       call Pool.put(eosMsg);
       state = S_SLOT_END;

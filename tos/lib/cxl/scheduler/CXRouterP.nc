@@ -7,6 +7,7 @@ module CXRouterP {
 
   uses interface LppControl;
   uses interface Neighborhood;
+  uses interface ActiveMessageAddress;
 } implementation {
 
   /**
@@ -19,10 +20,6 @@ module CXRouterP {
    *  - update isActive accordingly
    **/
 
-  //TODO: how to push to nodes?
-  //      - nodes treat CTS src == dest as "this is flood from master"
-  //      - status is data-pending (or, could skip status wait)
-  //      - send whatever you got
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
   uint8_t contactIndex;
   uint8_t toContact;
@@ -31,8 +28,11 @@ module CXRouterP {
     error_t error = call LppControl.wakeup();
     if (error == SUCCESS){
       memset(contactList, sizeof(contactList), 0xFF);
+      //put ourselves in as the first contact: each download will
+      //start off with packets from us.
+      contactList[0].nodeId = call ActiveMessageAddress.amAddress();
       contactIndex = 0;
-      toContact = 0;
+      toContact = 1;
     }
     return error;
   }
@@ -57,10 +57,10 @@ module CXRouterP {
       nx_am_addr_t* neighbors = call Neighborhood.getNeighborhood();
       uint8_t i;
       for (i = 0; i < numNeighbors; i++){
-        contactList[i].nodeId = neighbors[i];
-        contactList[i].contacted = FALSE;
+        contactList[i + 1].nodeId = neighbors[i];
+        contactList[i + 1].contacted = FALSE;
       }
-      toContact = numNeighbors;
+      toContact += numNeighbors;
     }
     return (toContact > 0);
   }
@@ -128,6 +128,8 @@ module CXRouterP {
       contactList[contactIndex].dataPending);
     return msg;
   }
+
+  async event void ActiveMessageAddress.changed(){}
   
   event void LppControl.fellAsleep(){}
   event void LppControl.wokenUp(){}
