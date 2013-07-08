@@ -117,7 +117,7 @@ module SlotSchedulerP {
       call Neighborhood.clear();
       cinfo(SCHED, "Sched wakeup for %lu\r\n", call
       SlotController.wakeupLen());
-      signalEnd = TRUE;
+      signalEnd = FALSE;
       missedCTS = 0;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
