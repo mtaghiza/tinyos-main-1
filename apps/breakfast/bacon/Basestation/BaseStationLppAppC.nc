@@ -75,12 +75,14 @@
  * @date August 10 2005
  */
 
-configuration BaseStationAppC {
+configuration BaseStationLppAppC {
 }
 implementation {
   components SerialStartC;
   components PrintfC;
-  components MainC, BaseStationP, LedsC, NoLedsC;
+  components MainC; 
+  components BaseStationLppP as BaseStationP;
+  components LedsC, NoLedsC;
   components ActiveMessageC as Radio, SerialActiveMessageC as Serial;
 
   

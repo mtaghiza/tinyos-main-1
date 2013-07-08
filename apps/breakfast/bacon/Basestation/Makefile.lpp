@@ -1,4 +1,4 @@
-COMPONENT=BaseStationAppC
+COMPONENT=BaseStationLppAppC
 
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
@@ -35,6 +35,7 @@ CFLAGS += -DDL_LPP=DL_INFO
 CFLAGS += -DDL_LINK=DL_WARN
 
 CFLAGS +=-DCC430_PIN_DEBUG=1
+CFLAGS +=-DCX_LPP_BASIC=1
 
 
 MIGDIR = mig

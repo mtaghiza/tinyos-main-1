@@ -58,7 +58,7 @@
 #include "Serial.h"
 #include "CXMac.h"
 
-module BaseStationP @safe() {
+module BaseStationLppP @safe() {
   uses {
     interface Boot;
     interface SplitControl as SerialControl;
