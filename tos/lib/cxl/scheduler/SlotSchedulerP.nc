@@ -130,7 +130,13 @@ module SlotSchedulerP {
 
   bool shouldForward(am_addr_t src, am_addr_t dest, uint8_t bw){
     am_addr_t self = call ActiveMessageAddress.amAddress();
-
+    //When the source is the master of the network,
+    //there is no bidirectional routing info. At any rate, it's
+    //probably likely that the router will send messages to a variety
+    //of nodes. 
+    if (src == master){
+      return TRUE;
+    }
     if (call RoutingTable.getDistance(src, self) + call RoutingTable.getDistance(self, dest) 
         <= call RoutingTable.getDistance(src, dest) + bw){
       return TRUE;
@@ -152,6 +158,7 @@ module SlotSchedulerP {
   // for a status message to arrive.
 
   void handleCTS(message_t* msg){
+    master = call CXLinkPacket.source(msg);
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
@@ -160,7 +167,6 @@ module SlotSchedulerP {
         timestamp(msg), 
         FRAME_LENGTH, call FrameTimer.getNow());
       call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
-      master = call CXLinkPacket.source(msg);
       state = S_STATUS_PREP;
       post sendStatus();
     }else{
