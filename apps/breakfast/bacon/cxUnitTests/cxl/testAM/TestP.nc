@@ -42,6 +42,8 @@ module TestP{
     printf(" T: toggle continuous transmission\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
+    printf("=====\r\n");
+    printf("Pool: %u\r\n", call Pool.size());
   }
 
 
