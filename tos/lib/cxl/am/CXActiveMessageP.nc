@@ -45,7 +45,6 @@ module CXActiveMessageP {
 
   uses interface Packet;
   uses interface AMPacket;
-  uses interface CXLinkPacket;
 
   uses interface Send as SubSend;
   uses interface Receive as SubReceive;

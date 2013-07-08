@@ -78,13 +78,28 @@ implementation {
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
 
-  components CXMacC;
-  AM.SubSend -> CXMacC.Send;
-  AM.SubReceive -> CXMacC.Receive;
+  #ifndef CX_LPP_BASIC
+  #define CX_LPP_BASIC 0
+  #endif
+  
+  #if CX_LPP_BASIC == 1
+  #warning "Using basic (non-dc'ed) LPP"
+  components CXMacC as Mac;
+  #else
+  #warning "Using dc'ed LPP"
+  
+    #if CX_ROUTER == 1
+    components CXRouterC as Mac;
+    #else
+    components CXLeafC as Mac;
+    #endif
+  #endif
+  
+  AM.SubSend -> Mac.Send;
+  AM.SubReceive -> Mac.Receive;
+  SplitControl = Mac.SplitControl;
 
-  SplitControl = CXMacC.SplitControl;
-
-  CXMacC.Pool = Pool;
+  Mac.Pool = Pool;
 }
 
 /* 
