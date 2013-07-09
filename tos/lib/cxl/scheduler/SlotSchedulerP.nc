@@ -467,9 +467,9 @@ module SlotSchedulerP {
     pendingTX = FALSE;
     if (state == S_STATUS_SENDING){
       if (msg == statusMsg){
+        cx_status_t* pl = call Packet.getPayload(msg,
+          sizeof(cx_status_t));
         if (error == SUCCESS){
-          cx_status_t* pl = call Packet.getPayload(msg,
-            sizeof(cx_status_t));
           if (pl -> dataPending && pendingMsg != NULL){
             state = S_DATA_READY;
           }else{
@@ -479,7 +479,7 @@ module SlotSchedulerP {
             state = S_UNUSED_SLOT;
           }
         }
-        call Pool.put(statusMsg);
+        call Pool.put(call SlotController.receiveStatus(statusMsg, pl));
         statusMsg = NULL;
       } else {
         cerror(SCHED, "Unexpected sendDone, status msg %p got %p\r\n",
@@ -502,7 +502,10 @@ module SlotSchedulerP {
       ctsMsg = NULL;
 
     } else if (state == S_SLOT_END_SENDING){
-      call Pool.put(eosMsg);
+      cx_eos_t* pl = call Packet.getPayload(msg,
+        sizeof(cx_eos_t));
+      call Pool.put(call SlotController.receiveEOS(eosMsg, pl));
+      eosMsg = NULL;
       state = S_SLOT_END;
     } else {
       cerror(SCHED, "Unexpected send done state %x\r\n", state);
