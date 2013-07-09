@@ -3,6 +3,7 @@ autoPush/*.pyc
 autoPush/db/*.pyc
 autoPush/listeners/*.pyc
 autoPush/messages/*.pyc
+autoPush/decoders/*.pyc
 lpp/*.pyc
 cx/*.pyc
 cx/messages/*.pyc
