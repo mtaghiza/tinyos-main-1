@@ -5,6 +5,7 @@ configuration CXLeafC {
   provides interface Receive;
 
   uses interface Pool<message_t>;
+  provides interface CTS;
 } implementation {
   components SlotSchedulerC;
   Send = SlotSchedulerC;
@@ -13,4 +14,9 @@ configuration CXLeafC {
   Packet = SlotSchedulerC;
 
   SlotSchedulerC.Pool = Pool;
+  
+  components CXLeafP;
+  SlotSchedulerC.SlotController -> CXLeafP;
+
+  CTS = CXLeafP;
 }

@@ -7,6 +7,7 @@ configuration CXRouterC {
   provides interface CXDownload;
 
   uses interface Pool<message_t>;
+  provides interface CTS;
 } implementation {
   components SlotSchedulerC;
   components CXRouterP;
@@ -29,4 +30,6 @@ configuration CXRouterC {
 
   components CXAMAddressC;
   CXRouterP.ActiveMessageAddress -> CXAMAddressC;
+
+  CTS = CXRouterP;
 }

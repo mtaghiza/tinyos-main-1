@@ -51,6 +51,10 @@ configuration CXActiveMessageC {
   provides interface Packet;
   provides interface AMPacket;
   provides interface PacketAcknowledgements as Acks;
+  
+  //TODO: this will be parameterized when we have multi-network
+  //support
+  provides interface CTS;
 
   uses interface Pool<message_t>;
 }
@@ -94,7 +98,8 @@ implementation {
     components CXLeafC as Mac;
     #endif
   #endif
-  
+ 
+  CTS = Mac.CTS;
   AM.SubSend -> Mac.Send;
   AM.SubReceive -> Mac.Receive;
   SplitControl = Mac.SplitControl;

@@ -25,6 +25,8 @@ module SlotSchedulerP {
   uses interface Pool<message_t>;
   uses interface ActiveMessageAddress;
   uses interface RoutingTable;
+
+  provides interface CTS;
 } implementation {
 
   enum {
@@ -94,9 +96,6 @@ module SlotSchedulerP {
 
   bool pendingRX = FALSE;
   bool pendingTX = FALSE;
-  //To identify cases where we can safely cancel a pending
-  //transmission
-  bool dataCommitted = FALSE;
   
   //deal with fencepost issues w.r.t signalling end of last
   //slot/beginning of next slot.
@@ -162,21 +161,22 @@ module SlotSchedulerP {
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
+      state = S_STATUS_PREP;
+      call SlotController.receiveCTS();
       //synchronize sends to CTS timestamp
       cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 
         FRAME_LENGTH, call FrameTimer.getNow());
       call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
-      state = S_STATUS_PREP;
       post sendStatus();
     }else{
+      state = S_STATUS_WAIT_READY;
       cdbg(SCHED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
         timestamp(msg), RX_SLACK, 
         timestamp(msg) - RX_SLACK,
         FRAME_LENGTH, 
         call FrameTimer.getNow());
       //synchronize receives to CTS timestamp - slack
-      state = S_STATUS_WAIT_READY;
       call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
     }
   }
@@ -257,7 +257,6 @@ module SlotSchedulerP {
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
-      dataCommitted = TRUE;
       state = S_STATUS_READY;
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.
@@ -312,7 +311,7 @@ module SlotSchedulerP {
                 sizeof(cx_eos_t));
               call Packet.clear(eosMsg);
               call CXMacPacket.setMacType(eosMsg, CXM_EOS);
-              pl -> dataPending = (pendingMsg != NULL);
+              pl -> dataPending = (pendingMsg == NULL)?FALSE:TRUE;
               call CXLinkPacket.setDestination(eosMsg, master);
             }
           }
@@ -422,27 +421,38 @@ module SlotSchedulerP {
     if (pendingMsg != NULL){
       return EBUSY;
     } else {
-      pendingMsg = msg;
-      pendingLen = len;
-      if (state == S_IDLE){
-        cdbg(SCHED_CHECKED, "fl %u ct %u d(%u, %u) %u bw %u:",
-          framesLeft, clearTime(msg),
-          call CXLinkPacket.source(msg),
-          call CXLinkPacket.destination(msg),
-          call RoutingTable.getDistance( 
+      printf("SS.s %x\r\n", state);
+      if (state == S_STATUS_PREP || state == S_IDLE){ 
+        pendingMsg = msg;
+        pendingLen = len;
+        if (state == S_IDLE){
+          cdbg(SCHED_CHECKED, "fl %u ct %u d(%u, %u) %u bw %u:",
+            framesLeft, clearTime(msg),
             call CXLinkPacket.source(msg),
-            call CXLinkPacket.destination(msg)),
-          call SlotController.bw());
-        //need to leave 1 frame for EOS message
-        if (framesLeft <= clearTime(msg) + 1){
-          cdbg(SCHED, "end\r\n");
-          state = S_SLOT_END_PREP;
-        }else{
-          cdbg(SCHED, "continue\r\n");
-          state = S_DATA_READY;
+            call CXLinkPacket.destination(msg),
+            call RoutingTable.getDistance( 
+              call CXLinkPacket.source(msg),
+              call CXLinkPacket.destination(msg)),
+            call SlotController.bw());
+          //need to leave 1 frame for EOS message
+          if (framesLeft <= clearTime(msg) + 1){
+            pendingMsg = NULL;
+            cdbg(SCHED, "end\r\n");
+            state = S_SLOT_END_PREP;
+            //Not enough space to send: so, clear it out and tell
+            //upper layer to retry.
+            return ERETRY;
+          }else{
+            cdbg(SCHED, "continue\r\n");
+            state = S_DATA_READY;
+          }
         }
+        return SUCCESS;
+      }else {
+        //We don't yet have clearance to send, tell upper layer to
+        //try again some time.
+        return ERETRY;
       }
-      return SUCCESS;
     }
   }
 
@@ -600,7 +610,6 @@ module SlotSchedulerP {
   //check for it.
   event void SlotTimer.fired(){
     P1OUT ^= BIT2;
-    dataCommitted = FALSE;
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
     if (signalEnd){
       call SlotController.endSlot();
@@ -657,37 +666,6 @@ module SlotSchedulerP {
   event void LppControl.fellAsleep(){
     state = S_UNSYNCHED;
   }
-  
-  default command am_addr_t SlotController.activeNode(){
-    return AM_BROADCAST_ADDR;
-  }
-
-  default command bool SlotController.isMaster(){
-    return FALSE;
-  }
-  default command bool SlotController.isActive(){
-    return FALSE;
-  }
-  default command uint8_t SlotController.bw(){
-    return CX_DEFAULT_BW;
-  }
-  default command uint8_t SlotController.maxDepth(){
-    return CX_MAX_DEPTH;
-  }
-  default command uint32_t SlotController.wakeupLen(){
-    return CX_WAKEUP_LEN;
-  }
-
-  default command message_t* SlotController.receiveEOS(
-      message_t* msg, cx_eos_t* pl){
-    return msg;
-  }
-  default command message_t* SlotController.receiveStatus(
-      message_t* msg, cx_status_t *pl){
-    return msg;
-  }
-  default command void SlotController.endSlot(){
-  }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){
     return call Packet.getPayload(msg, len);
@@ -697,12 +675,17 @@ module SlotSchedulerP {
   }
 
   command error_t Send.cancel(message_t* msg){
-    if (pendingMsg == msg && ! dataCommitted){
-      pendingMsg = NULL;
-      return SUCCESS;
-    } else {
-      return FAIL;
-    }
+    //The only times that we can have a cancelable message now are:
+    // 
+    //1. between (a) getting a CTS and providing a packet
+    //   to send and (b) preparing the corresponding status message
+    //   indicating that there is a packet to transmit
+    //2. Between sending a packet in a stream and that packet actually
+    //   being sent (1 frame-length, max)
+    //
+    //Since it's so constrained, and since the AM queuing layer
+    //provides cancellation support, we don't allow it here.
+    return FAIL;
   }
 
   async event void ActiveMessageAddress.changed(){ }

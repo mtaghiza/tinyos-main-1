@@ -13,6 +13,7 @@ configuration ActiveMessageC{
   provides interface PacketAcknowledgements as Acks;
 
   provides interface Pool<message_t>;
+  provides interface CTS;
 
 } implementation {
   components CXActiveMessageC as AM;
@@ -24,6 +25,7 @@ configuration ActiveMessageC{
   Packet = AM.Packet;
   AMPacket = AM.AMPacket;
   Acks = AM.Acks;
+  CTS = AM.CTS;
   
   #ifndef AM_POOL_SIZE 
   #define AM_POOL_SIZE 4

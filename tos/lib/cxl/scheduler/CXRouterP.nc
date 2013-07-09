@@ -8,6 +8,7 @@ module CXRouterP {
   uses interface LppControl;
   uses interface Neighborhood;
   uses interface ActiveMessageAddress;
+  provides interface CTS;
 } implementation {
 
   /**
@@ -135,9 +136,14 @@ module CXRouterP {
     return msg;
   }
 
+  command void SlotController.receiveCTS(){
+    signal CTS.ctsReceived();
+  }
+
   async event void ActiveMessageAddress.changed(){}
   
   event void LppControl.fellAsleep(){}
   event void LppControl.wokenUp(){}
+
   
 }
