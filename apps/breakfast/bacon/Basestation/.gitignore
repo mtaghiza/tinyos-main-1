@@ -4,3 +4,6 @@ autoPush/db/*.pyc
 autoPush/listeners/*.pyc
 autoPush/messages/*.pyc
 lpp/*.pyc
+cx/*.pyc
+cx/messages/*.pyc
+cx/listeners/*.pyc
