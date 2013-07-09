@@ -38,11 +38,16 @@ module CXRouterP {
   }
 
   task void downloadFinished(){
+    cinfo(ROUTER, "Download finished\r\n");
     signal CXDownload.downloadFinished();
   }
 
   command void SlotController.endSlot(){
     if (toContact > 0){
+      cinfo(ROUTER, "Done with %u: c %x p %x\r\n",
+        contactList[contactIndex].nodeId,
+        contactList[contactIndex].contacted,
+        contactList[contactIndex].dataPending);
       contactIndex++;
       toContact --;
     }
