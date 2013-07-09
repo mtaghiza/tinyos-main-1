@@ -45,7 +45,7 @@
 generic module AMQueueImplP(int numClients) @safe() {
     provides interface Send[uint8_t client];
     uses{
-        interface AMSend[am_id_t id];
+        interface AMSend;
         interface AMPacket;
         interface Packet;
     }
@@ -105,13 +105,12 @@ implementation {
     
         if (current >= numClients) { // queue empty
             error_t err;
-            am_id_t amId = call AMPacket.type(msg);
             am_addr_t dest = call AMPacket.destination(msg);
       
             dbg("AMQueue", "%s: request to send from %hhu (%p): queue empty\n", __FUNCTION__, clientId, msg);
             current = clientId;
             
-            err = call AMSend.send[amId](dest, msg, len);
+            err = call AMSend.send(dest, msg, len);
             cdbg(AM, "Send: %x\r\n", err);
             //We treat ERETRY as a succes: the message will remain in
             //the queue until we get a CTS at some point. Then, it
@@ -157,7 +156,7 @@ implementation {
         }
         if(current == clientId) {
             am_id_t amId = call AMPacket.type(msg);
-            error_t err = call AMSend.cancel[amId](msg);
+            error_t err = call AMSend.cancel(msg);
             return err;
         }
         else {
@@ -183,10 +182,9 @@ implementation {
         if (current < numClients) { // queue not empty
             error_t nextErr;
             message_t* nextMsg = queue[current].msg;
-            am_id_t nextId = call AMPacket.type(nextMsg);
             am_addr_t nextDest = call AMPacket.destination(nextMsg);
             uint8_t len = call Packet.payloadLength(nextMsg);
-            nextErr = call AMSend.send[nextId](nextDest, nextMsg, len);
+            nextErr = call AMSend.send(nextDest, nextMsg, len);
             cdbg(AM, "TTS %x\r\n", nextErr);
             if(nextErr != SUCCESS && nextErr != ERETRY) {
                 post errorTask();
@@ -203,7 +201,7 @@ implementation {
       tryToSend();
     }
   
-    event void AMSend.sendDone[am_id_t id](message_t* msg, error_t err) {
+    event void AMSend.sendDone(message_t* msg, error_t err) {
       // Bug fix from John Regehr: if the underlying radio mixes things
       // up, we don't want to read memory incorrectly. This can occur
       // on the mica2.
@@ -227,17 +225,14 @@ implementation {
     }
     
     command uint8_t Send.maxPayloadLength[uint8_t id]() {
-        return call AMSend.maxPayloadLength[0]();
+        return call AMSend.maxPayloadLength();
     }
 
     command void* Send.getPayload[uint8_t id](message_t* m, uint8_t len) {
-      return call AMSend.getPayload[0](m, len);
+      return call AMSend.getPayload(m, len);
     }
 
     default event void Send.sendDone[uint8_t id](message_t* msg, error_t err) {
         // Do nothing
-    }
-    default command error_t AMSend.send[uint8_t id](am_addr_t am_id, message_t* msg, uint8_t len) {
-        return FAIL;
     }
 }

@@ -38,7 +38,7 @@
  */
  #include "CXAM.h"
 module CXActiveMessageP {
-  provides interface AMSend[am_id_t id];
+  provides interface AMSend[uint8_t ns];
   provides interface Receive[am_id_t id];
   provides interface Receive as Snoop[am_id_t id];
   provides interface PacketAcknowledgements as Acks;
@@ -63,38 +63,42 @@ implementation {
     return FALSE;
   }
   
+  uint8_t activeNS;
 
-  command error_t AMSend.send[am_id_t id](am_addr_t addr,
+  command error_t AMSend.send[uint8_t ns](am_addr_t addr,
                                           message_t* msg,
                                           uint8_t len)
   {
+    error_t error;
     // Account for layer header in payload length
     uint8_t layerLen = len + sizeof(cx_am_header_t);
     call AMPacket.setSource(msg, call AMPacket.address());
-    call AMPacket.setDestination(msg, addr);
-    call AMPacket.setType(msg, id);
     
     call Packet.setPayloadLength(msg, len);
-    return call SubSend.send(msg, layerLen);
+    error = call SubSend.send(msg, layerLen);
+    if (error == SUCCESS){
+      activeNS = ns;
+    }
+    return error;
   }
 
-  command uint8_t AMSend.maxPayloadLength[am_id_t id]()
+  command uint8_t AMSend.maxPayloadLength[uint8_t ns]()
   {
     return call Packet.maxPayloadLength();
   }
 
-  command void* AMSend.getPayload[am_id_t id](message_t* m, uint8_t len)
+  command void* AMSend.getPayload[uint8_t ns](message_t* m, uint8_t len)
   {
     return call Packet.getPayload(m, len);
   }
 
-  command error_t AMSend.cancel[am_id_t id](message_t* msg)
+  command error_t AMSend.cancel[uint8_t ns](message_t* msg)
   {
     return call SubSend.cancel(msg);
   }
   
   event void SubSend.sendDone(message_t* msg, error_t error){
-    signal AMSend.sendDone[call AMPacket.type(msg)](msg, error);
+    signal AMSend.sendDone[activeNS](msg, error);
   }
   
   message_t* receive(message_t* msg, void* payload_, uint8_t len){
@@ -116,7 +120,7 @@ implementation {
 
   default event message_t* Receive.receive[am_id_t id](message_t* msg, void* payload, uint8_t len) { return msg; }
   default event message_t* Snoop.receive[am_id_t id](message_t* msg, void* payload, uint8_t len) { return msg; }
-  default event void AMSend.sendDone[am_id_t amId](message_t* msg, error_t error) { }
+  default event void AMSend.sendDone[uint8_t ns](message_t* msg, error_t error) { }
 }
 
 /* 

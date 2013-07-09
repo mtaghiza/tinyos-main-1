@@ -4,7 +4,7 @@
   #endif
 configuration ActiveMessageC{
   provides interface SplitControl;
-  provides interface AMSend[uint8_t client];
+  provides interface AMSend[uint8_t ns];
   provides interface Receive[am_id_t id];
   provides interface Receive as Snoop[am_id_t id];
 
@@ -13,7 +13,7 @@ configuration ActiveMessageC{
   provides interface PacketAcknowledgements as Acks;
 
   provides interface Pool<message_t>;
-  provides interface CTS;
+  provides interface CTS[uint8_t segment];
 
 } implementation {
   components CXActiveMessageC as AM;

@@ -43,18 +43,17 @@
  *
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
 
+#include "multiNetwork.h"
 configuration CXActiveMessageC {
   provides interface SplitControl;
-  provides interface AMSend[am_id_t id];
+  provides interface AMSend[uint8_t ns];
   provides interface Receive[am_id_t id];
   provides interface Receive as Snoop[am_id_t id];
   provides interface Packet;
   provides interface AMPacket;
   provides interface PacketAcknowledgements as Acks;
   
-  //TODO: this will be parameterized when we have multi-network
-  //support
-  provides interface CTS;
+  provides interface CTS[uint8_t segment];
 
   uses interface Pool<message_t>;
 }
@@ -91,15 +90,18 @@ implementation {
   components CXMacC as Mac;
   #else
   #warning "Using dc'ed LPP"
-  
+    
+    //TODO: these should expand to cover all of the relevant network
+    //segments for the role.
     #if CX_ROUTER == 1
     components CXRouterC as Mac;
+    CTS[NS_SUBNETWORK] = Mac.CTS;
     #else
     components CXLeafC as Mac;
+    CTS[NS_SUBNETWORK] = Mac.CTS;
     #endif
   #endif
  
-  CTS = Mac.CTS;
   AM.SubSend -> Mac.Send;
   AM.SubReceive -> Mac.Receive;
   SplitControl = Mac.SplitControl;
