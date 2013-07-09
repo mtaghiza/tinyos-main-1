@@ -75,6 +75,7 @@ module CXRouterP {
     uint8_t i;
     uint8_t k;
     contactList[contactIndex].contacted = TRUE;
+    cdbg(ROUTER, "rs %u\r\n", contactList[contactIndex].nodeId);
     for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
       if (pl->neighbors[i] != AM_BROADCAST_ADDR){
         bool found = FALSE;
@@ -123,7 +124,7 @@ module CXRouterP {
   command message_t* SlotController.receiveEOS(message_t* msg,
       cx_eos_t* pl){
     contactList[contactIndex].dataPending = pl->dataPending;
-    cdbg(SCHED_CHECKED, "node %u pending %u\r\n",
+    cdbg(ROUTER, "node %u pending %u\r\n",
       contactList[contactIndex].nodeId,
       contactList[contactIndex].dataPending);
     return msg;
