@@ -6,7 +6,12 @@ CFLAGS += -DTEST_DESTINATION=$(TEST_DESTINATION)
 PACKET_GEN_RATE ?= 0UL
 CFLAGS += -DPACKET_GEN_RATE=$(PACKET_GEN_RATE)
 
-CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/Ping
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/RebootCounter
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/settingsStorage
+CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
+
+CFLAGS += -I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/cxl/debug
 CFLAGS += -I$(TOSDIR)/lib/cxl/am
 CFLAGS += -I$(TOSDIR)/lib/cxl/mac
@@ -16,6 +21,7 @@ CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
 CFLAGS += -I$(TOSDIR)/lib/cx/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
+
 
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK

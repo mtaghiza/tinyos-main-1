@@ -27,6 +27,8 @@ configuration TestAppC {
   TestP.Packet -> AMSenderC;
 
   TestP.Pool -> ActiveMessageC.Pool;
+  components PingC;
+  PingC.Pool -> ActiveMessageC.Pool;
 
   #if CX_ROUTER == 1
   components CXRouterC;
