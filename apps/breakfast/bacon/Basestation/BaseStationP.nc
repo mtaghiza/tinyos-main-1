@@ -306,6 +306,7 @@ implementation
       
       cx_download_t* pl = payload;
       downloadError = call CXDownload.startDownload();
+      post ackDownload();
       return msg;
     } else {
       message_t *ret = msg;
