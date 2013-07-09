@@ -290,13 +290,22 @@ implementation
     call CXDownloadFinishedSend.send(0, ctrlMsg,
       sizeof(cx_download_finished_t));
   }
+  
+  error_t downloadError;
+  task void ackDownload(){
+    ctrl_ack_t* pl = call CtrlAckSend.getPayload(ctrlMsg,
+      sizeof(ctrl_ack_t));
+    pl -> error = downloadError;
+    call CtrlAckSend.send(0, ctrlMsg, sizeof(ctrl_ack_t));
+  }
 
   event message_t *UartReceive.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
     if (id == AM_CX_DOWNLOAD){
+      
       cx_download_t* pl = payload;
-      call CXDownload.startDownload();
+      downloadError = call CXDownload.startDownload();
       return msg;
     } else {
       message_t *ret = msg;
