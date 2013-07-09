@@ -30,6 +30,12 @@ lib/cxl/mac/CXMac.h: AM_WAKEUP = 0xC6
 lib/cxl/mac/CXMac.h: AM_SLEEP = 0xC7
 lib/cxl/mac/CXMac.h: AM_CTS = 0xC8
 
+CX basestation control 
+0xD0 - 0xD1 in use, 0xD3 - 0xDF reserved
+---------------
+bacon/Basestation/basestation.h: AM_CX_DOWNLOAD=0xD0
+bacon/Basestation/basestation.h: AM_CX_DOWNLOAD_FINISHED=0xD1
+bacon/Basestation/basestation.h: AM_CTRL_ACK=0xD2
 
 Metadata: 0x80 - 0xB1 in use, 0xB2-0xBF reserved
 --------
