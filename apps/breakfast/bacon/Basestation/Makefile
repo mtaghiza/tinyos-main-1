@@ -34,46 +34,71 @@ CFLAGS += -DAM_ID_FROM_FLASH=0
 
 ENABLE_PRINTF ?= 1
 CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
-CFLAGS += -DDL_LPP=DL_INFO
+CFLAGS += -DDL_LPP=DL_WARN
 CFLAGS += -DDL_LINK=DL_WARN
+CFLAGS += -DDL_SCHED=DL_WARN
+CFLAGS += -DDL_ROUTER=DL_INFO
 
 CFLAGS +=-DCC430_PIN_DEBUG=1
+STORAGEDIR = $(TOSDIR)/platforms/bacon/chips/stm25p
 
+#TESTING ONLY
+LPP_DEFAULT_PROBE_INTERVAL?=1024UL
+CFLAGS += -DLPP_DEFAULT_PROBE_INTERVAL=$(LPP_DEFAULT_PROBE_INTERVAL)
 
-MIGDIR = mig
+CX_MAX_DEPTH?=5
+CFLAGS += -DCX_MAX_DEPTH=$(CX_MAX_DEPTH)
+
 #LPP control messages
-MIGCLASSES = $(MIGDIR)/CxLppCts.py $(MIGDIR)/CxLppSleep.py $(MIGDIR)/CxLppWakeup.py $(MIGDIR)/CxDownload.py $(MIGDIR)/CtrlAck.py $(MIGDIR)/CxDownloadFinished.py 
+LPPMIGDIR = lpp
+MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/CxLppWakeup.py 
+
+CXMIGDIR = cx/messages
+MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py 
+
+APMIGDIR = autoPush/messages
+MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py $(APMIGDIR)/LogRecordDataMsg.py
+
+PINGMIGDIR = $(APMIGDIR)
+MIGCLASSES += $(PINGMIGDIR)/PingMsg.py $(PINGMIGDIR)/PongMsg.py 
+
+PRINTFMIGDIR = $(APMIGDIR)
+MIGCLASSES += $(PRINTFMIGDIR)/PrintfMsg.py
+
 #printf
 CFLAGS += -DNEW_PRINTF_SEMANTICS
-MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
-MIGCLASSES += $(MIGDIR)/TestPayload.py 
-MIGCLASSES += $(MIGDIR)/PingMsg.py $(MIGDIR)/PongMsg.py 
 
-$(MIGDIR): 
-	mkdir -p $(MIGDIR)
+$(LPPMIGDIR):
+	mkdir -p $(LPPMIGDIR)
 
-$(MIGDIR)/CtrlAck.py: $(MIGDIR) 
-	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
-
-$(MIGDIR)/CxDownloadFinished.py: $(MIGDIR) 
-	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
-
-$(MIGDIR)/CxDownload.py: $(MIGDIR) 
-	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
-
-$(MIGDIR)/%.py: $(MIGDIR) 
+$(LPPMIGDIR)/%.py: $(LPPMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/mac/CXMac.h $@ $(CFLAGS) 
 
-$(MIGDIR)/PingMsg.py: $(MIGDIR) 
+$(CXMIGDIR):
+	mkdir -p $(CXMIGDIR)
+
+$(CXMIGDIR)/%.py: $(CXMIGDIR)
+	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
+
+$(PINGMIGDIR):
+	mkdir -p $(PINGMIGDIR)
+
+$(PINGMIGDIR)/%.py: $(PINGMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
 
-$(MIGDIR)/PongMsg.py: $(MIGDIR) 
-	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
+$(APMIGDIR):
+	mkdir -p $(APMIGDIR)
 
-$(MIGDIR)/TestPayload.py: $(MIGDIR) 
-	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/cxUnitTests/cxl/testAM/test.h $@ $(CFLAGS) 
+$(APMIGDIR)/CxRecordRequestMsg.py: $(APMIGDIR)
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/autoPush/RecordRequest.h $@ $(CFLAGS)
 
-$(MIGDIR)/PrintfMsg.py: $(MIGDIR) $(TOSDIR)/lib/printf/printf.h
+$(APMIGDIR)/LogRecordDataMsg.py: $(APMIGDIR) 
+	genMig.sh $(PLATFORM) $(STORAGEDIR)/RecordStorage.h $@ $(CFLAGS)
+
+$(PRINTFMIGDIR):
+	mkdir -p $(PINGMIGDIR)
+
+$(PRINTFMIGDIR)/PrintfMsg.py: 
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
 
 migClasses: $(MIGCLASSES)
