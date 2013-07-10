@@ -1,4 +1,5 @@
-configuration CXRouterC {
+configuration CXBaseStationC {
+
   provides interface SplitControl;
   provides interface Send;
   provides interface Packet;
@@ -12,7 +13,6 @@ configuration CXRouterC {
   components SlotSchedulerC;
 
   components CXMasterP;
-  components CXSlaveP;
 
   CXDownload = CXMasterP;
 
@@ -25,9 +25,8 @@ configuration CXRouterC {
 
   SlotSchedulerC.Pool = Pool;
 
-  SlotSchedulerC.SlotController[NS_GLOBAL] -> CXSlaveP;
-  SlotSchedulerC.SlotController[NS_SUBNETWORK] -> CXMasterP;
-  SlotSchedulerC.SlotController[NS_ROUTER] -> CXSlaveP;
+  SlotSchedulerC.SlotController[NS_GLOBAL] -> CXMasterP;
+  SlotSchedulerC.SlotController[NS_ROUTER] -> CXMasterP;
 
   components CXWakeupC;
   CXMasterP.LppControl -> CXWakeupC;
@@ -35,8 +34,7 @@ configuration CXRouterC {
   components CXAMAddressC;
   CXMasterP.ActiveMessageAddress -> CXAMAddressC;
 
-  CTS[NS_GLOBAL] = CXSlaveP.CTS[NS_GLOBAL];
-  CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_SUBNETWORK];
-  CTS[NS_ROUTER] = CXSlaveP.CTS[NS_ROUTER];
+  CTS[NS_GLOBAL] = CXMasterP.CTS[NS_GLOBAL];
+  CTS[NS_ROUTER] = CXMasterP.CTS[NS_ROUTER];
 
 }

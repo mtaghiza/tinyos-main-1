@@ -1,4 +1,4 @@
-module CXLeafP {
+module CXSlaveP {
   provides interface SlotController;
   provides interface CTS[uint8_t ns];
 } implementation {

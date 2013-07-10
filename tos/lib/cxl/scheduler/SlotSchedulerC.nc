@@ -7,7 +7,7 @@ configuration SlotSchedulerC{
 
   uses interface Pool<message_t>;
 
-  uses interface SlotController;
+  uses interface SlotController[uint8_t ns];
 
   provides interface Neighborhood;
 } implementation {

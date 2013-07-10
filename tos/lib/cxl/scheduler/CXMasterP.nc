@@ -1,7 +1,7 @@
 
  #include "CXRouter.h"
  #include "CXRouterDebug.h"
-module CXRouterP {
+module CXMasterP {
   provides interface SlotController;
   provides interface CXDownload;
 

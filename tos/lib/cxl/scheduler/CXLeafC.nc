@@ -15,8 +15,9 @@ configuration CXLeafC {
 
   SlotSchedulerC.Pool = Pool;
   
-  components CXLeafP;
-  SlotSchedulerC.SlotController -> CXLeafP;
+  components CXSlaveP;
+  SlotSchedulerC.SlotController[NS_GLOBAL] -> CXSlaveP;
+  SlotSchedulerC.SlotController[NS_SUBNETWORK] -> CXSlaveP;
 
-  CTS = CXLeafP;
+  CTS = CXSlaveP;
 }

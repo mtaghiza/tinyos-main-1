@@ -90,10 +90,14 @@ implementation {
   components CXMacC as Mac;
   #else
   #warning "Using dc'ed LPP"
-    
-    #if CX_ROUTER == 1
+    #if CX_BASESTATION == 1
+    #warning "BASESTATION"
+    components CXBaseStationC as Mac;
+    #elif CX_ROUTER == 1
+    #warning "ROUTER"
     components CXRouterC as Mac;
     #else
+    #warning "LEAF"
     components CXLeafC as Mac;
     #endif
   #endif
