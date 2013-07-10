@@ -4,7 +4,7 @@ configuration CXRouterC {
   provides interface Packet;
   provides interface Receive;
 
-  provides interface CXDownload;
+  provides interface CXDownload[uint8_t ns];
 
   uses interface Pool<message_t>;
   provides interface CTS[uint8_t ns];
@@ -14,7 +14,7 @@ configuration CXRouterC {
   components CXMasterP;
   components CXSlaveP;
 
-  CXDownload = CXMasterP;
+  CXDownload[NS_SUBNETWORK] = CXMasterP;
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
 
