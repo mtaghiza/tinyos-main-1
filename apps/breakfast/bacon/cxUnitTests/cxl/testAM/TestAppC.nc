@@ -12,10 +12,14 @@ configuration TestAppC {
 
   TestP.SplitControl -> ActiveMessageC;
 
-  components new AMSenderC(AM_TEST_PAYLOAD);
+  components new GlobalAMSenderC(AM_TEST_PAYLOAD);
+  components new SubNetworkAMSenderC(AM_TEST_PAYLOAD);
+  components new RouterAMSenderC(AM_TEST_PAYLOAD);
   components new AMReceiverC(AM_TEST_PAYLOAD);
   TestP.Receive -> AMReceiverC;
-  TestP.AMSend -> AMSenderC;
+  TestP.GlobalAMSend -> GlobalAMSenderC;
+  TestP.SubNetworkAMSend -> SubNetworkAMSenderC;
+  TestP.RouterAMSend -> RouterAMSenderC;
 
   TestP.Leds -> LedsC;
 
@@ -24,7 +28,7 @@ configuration TestAppC {
 
   TestP.UartStream -> PlatformSerialC;
   TestP.SerialControl -> PlatformSerialC;
-  TestP.Packet -> AMSenderC;
+  TestP.Packet -> GlobalAMSenderC;
 
   TestP.Pool -> ActiveMessageC.Pool;
   components PingC;

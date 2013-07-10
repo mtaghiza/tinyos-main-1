@@ -4,7 +4,9 @@ module TestP{
   uses interface StdControl as SerialControl;
 
   uses interface SplitControl;
-  uses interface AMSend;
+  uses interface AMSend as GlobalAMSend;
+  uses interface AMSend as SubNetworkAMSend;
+  uses interface AMSend as RouterAMSend;
   uses interface Packet;
   uses interface CXLinkPacket;
   uses interface Receive;
@@ -18,6 +20,8 @@ module TestP{
 
   message_t* txMsg;
   message_t* rxMsg;
+
+  norace uint8_t txSegment;
 
   bool started = FALSE;
   bool continuousSend;
@@ -36,9 +40,11 @@ module TestP{
     printf("-----\r\n");
     printf(" q: reset\r\n");
     #if CX_ROUTER == 1
-    printf(" d: download\r\n");
+    printf(" 0,1,2: download from network segment 0 (global) 1 (subnet) or 2 (router)\r\n");
     #endif
-    printf(" t: transmit packet\r\n");
+    printf(" g: transmit packet on global segment\r\n");
+    printf(" s: transmit packet on subnetwork segment\r\n");
+    printf(" r: transmit packet on router segment\r\n");
     printf(" T: toggle continuous transmission\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
@@ -90,8 +96,21 @@ module TestP{
       error_t err;
       txMsg = call Pool.get();
       call Packet.clear(txMsg);
-      err = call AMSend.send(TEST_DESTINATION, 
-        txMsg, call Packet.maxPayloadLength());
+      switch (txSegment){
+        case NS_GLOBAL:
+          err = call GlobalAMSend.send(TEST_DESTINATION, 
+            txMsg, call Packet.maxPayloadLength());
+          break;
+        case NS_SUBNETWORK:
+          err = call SubNetworkAMSend.send(TEST_DESTINATION, 
+            txMsg, call Packet.maxPayloadLength());
+          break;
+        case NS_ROUTER:
+          err = call RouterAMSend.send(TEST_DESTINATION, 
+            txMsg, call Packet.maxPayloadLength());
+          break;
+          
+      }
       printf("APP TX %x\r\n", err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
@@ -109,7 +128,7 @@ module TestP{
     started = FALSE;
   }
 
-  event void AMSend.sendDone(message_t* msg, error_t error){
+  void doSendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
     printf("APP TXD %x\r\n", error);
     if (msg == txMsg){
@@ -121,6 +140,21 @@ module TestP{
     if (continuousSend){
       post sendPacket();
     }
+  }
+
+  event void GlobalAMSend.sendDone(message_t* msg, error_t error){
+    printf("GS.SD\r\n");
+    doSendDone(msg, error);   
+  }
+
+  event void SubNetworkAMSend.sendDone(message_t* msg, error_t error){
+    printf("SNS.SD\r\n");
+    doSendDone(msg, error);   
+  }
+
+  event void RouterAMSend.sendDone(message_t* msg, error_t error){
+    printf("RS.SD\r\n");
+    doSendDone(msg, error);   
   }
 
   task void handleRX(){
@@ -158,8 +192,10 @@ module TestP{
   }
   
   #if CX_ROUTER == 1
+  norace uint8_t downloadSegment;
+
   task void download(){
-    printf("Download %x\r\n", call CXDownload.startDownload());
+    printf("Download %x\r\n", call CXDownload.startDownload(downloadSegment));
   }
   event void CXDownload.downloadFinished(){
     printf("Download finished\r\n");
@@ -172,7 +208,16 @@ module TestP{
        case 'q':
          WDTCTL = 0;
          break;
-       case 't':
+       case 'g':
+         txSegment = NS_GLOBAL;
+         post sendPacket();
+         break;
+       case 's':
+         txSegment = NS_SUBNETWORK;
+         post sendPacket();
+         break;
+       case 'r':
+         txSegment = NS_ROUTER;
          post sendPacket();
          break;
        case 'T':
@@ -180,9 +225,13 @@ module TestP{
          post sendPacket();
          break;
        #if CX_ROUTER == 1
-       case 'd':
+       case '0':
+       case '1':
+       case '2':
+         downloadSegment = byte-'0';
          post download();
          break;
+
        #endif
        case '?':
          post usage();
