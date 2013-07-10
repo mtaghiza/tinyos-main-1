@@ -138,6 +138,12 @@ module CXWakeupP {
           scheduleIndex = nextProbe(scheduleIndex);
           if (scheduleIndex < NUM_SEGMENTS){
             post sendProbe();
+          }else {
+            //no probes this round
+            call Pool.put(probe);
+            probe = NULL;
+            call ProbeTimer.startOneShot(randomize(probeInterval));
+            state = S_IDLE;
           }
         }else{
           cerror(LPP, "No probe left\r\n");
