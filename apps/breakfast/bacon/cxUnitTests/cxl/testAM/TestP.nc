@@ -210,7 +210,7 @@ module TestP{
   #if CX_BASESTATION == 1
   task void downloadGlobal(){
     printf("Global Download %x\r\n", 
-      call GlobalCXDownload.startDownload(NS_GLOBAL));
+      call GlobalCXDownload.startDownload());
   }
   event void GlobalCXDownload.downloadFinished(){
     printf("Global Download finished\r\n");
@@ -218,7 +218,7 @@ module TestP{
 
   task void downloadRouter(){
     printf("Router Download %x\r\n", 
-      call RouterCXDownload.startDownload(NS_ROUTER));
+      call RouterCXDownload.startDownload());
   }
   event void RouterCXDownload.downloadFinished(){
     printf("Router Download finished\r\n");
@@ -228,7 +228,7 @@ module TestP{
   #if CX_ROUTER == 1
   task void downloadSubNetwork(){
     printf("SubNetwork Download %x\r\n", 
-      call SubNetworkCXDownload.startDownload(NS_SUBNETWORK));
+      call SubNetworkCXDownload.startDownload());
   }
   event void SubNetworkCXDownload.downloadFinished(){
     printf("SubNetwork Download finished\r\n");
