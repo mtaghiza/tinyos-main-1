@@ -23,7 +23,9 @@ module TestP{
   uses interface Leds;
 } implementation {
 
-  message_t* txMsg;
+  message_t* globalMsg;
+  message_t* subNetworkMsg;
+  message_t* routerMsg;
   message_t* rxMsg;
 
   norace uint8_t txSegment;
@@ -104,35 +106,43 @@ module TestP{
   }
 
   task void sendPacket(){
-    if (txMsg){
-      printf("still sending\r\n");
-    }else{
-      cx_link_header_t* header;
-      test_payload_t* pl;
-      error_t err;
-      txMsg = call Pool.get();
-      call Packet.clear(txMsg);
-      switch (txSegment){
-        case NS_GLOBAL:
-          err = call GlobalAMSend.send(TEST_DESTINATION, 
-            txMsg, call Packet.maxPayloadLength());
-          break;
-        case NS_SUBNETWORK:
-          err = call SubNetworkAMSend.send(TEST_DESTINATION, 
-            txMsg, call Packet.maxPayloadLength());
-          break;
-        case NS_ROUTER:
-          err = call RouterAMSend.send(TEST_DESTINATION, 
-            txMsg, call Packet.maxPayloadLength());
-          break;
-          
-      }
-      printf("APP TX %x\r\n", err);
-      if (err != SUCCESS){
-        call Pool.put(txMsg);
-        txMsg = NULL;
-      }
+    cx_link_header_t* header;
+    test_payload_t* pl;
+    error_t err;
+    switch (txSegment){
+      case NS_GLOBAL:
+        globalMsg = call Pool.get();
+        call Packet.clear(globalMsg);
+        err = call GlobalAMSend.send(TEST_DESTINATION, 
+          globalMsg, call Packet.maxPayloadLength());
+        if (err != SUCCESS){
+          call Pool.put(globalMsg);
+          globalMsg = NULL;
+        }
+        break;
+      case NS_SUBNETWORK:
+        subNetworkMsg = call Pool.get();
+        call Packet.clear(subNetworkMsg);
+        err = call SubNetworkAMSend.send(TEST_DESTINATION, 
+          subNetworkMsg, call Packet.maxPayloadLength());
+        if (err != SUCCESS){
+          call Pool.put(subNetworkMsg);
+          subNetworkMsg = NULL;
+        }
+        break;
+      case NS_ROUTER:
+        routerMsg = call Pool.get();
+        call Packet.clear(routerMsg);
+        err = call RouterAMSend.send(TEST_DESTINATION, 
+          routerMsg, call Packet.maxPayloadLength());
+        if (err != SUCCESS){
+          call Pool.put(routerMsg);
+          routerMsg = NULL;
+        }
+        break;
+        
     }
+    printf("APP TX %x\r\n", err);
   }
 
   event void SplitControl.startDone(error_t error){ 
@@ -147,12 +157,6 @@ module TestP{
   void doSendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
     printf("APP TXD %x\r\n", error);
-    if (msg == txMsg){
-      call Pool.put(txMsg);
-      txMsg = NULL;
-    } else{
-      printf("mystery packet: %p\r\n", msg);
-    }
     if (continuousSend){
       post sendPacket();
     }
@@ -161,16 +165,22 @@ module TestP{
   event void GlobalAMSend.sendDone(message_t* msg, error_t error){
     printf("GS.SD\r\n");
     doSendDone(msg, error);   
+    call Pool.put(globalMsg);
+    globalMsg = NULL;
   }
 
   event void SubNetworkAMSend.sendDone(message_t* msg, error_t error){
     printf("SNS.SD\r\n");
     doSendDone(msg, error);   
+    call Pool.put(subNetworkMsg);
+    subNetworkMsg = NULL;
   }
 
   event void RouterAMSend.sendDone(message_t* msg, error_t error){
     printf("RS.SD\r\n");
     doSendDone(msg, error);   
+    call Pool.put(routerMsg);
+    routerMsg = NULL;
   }
 
   task void handleRX(){
