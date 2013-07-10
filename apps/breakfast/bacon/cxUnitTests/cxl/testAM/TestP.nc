@@ -12,7 +12,7 @@ module TestP{
   uses interface Receive;
   uses interface Pool<message_t>;
   
-  #if CX_ROUTER == 1
+  #if CX_ROUTER == 1 || CX_BASESTATION == 1
   uses interface CXDownload;
   #endif
   uses interface Leds;
@@ -34,12 +34,17 @@ module TestP{
 
 
   task void usage(){
-    printf("USAGE (node %x %s)\r\n", 
-      TOS_NODE_ID, 
-      (CX_ROUTER==1)?"ROUTER":"LEAF");
+    #if CX_BASESTATION == 1
+    printf("BASESTATION USAGE (node %x)\r\n", TOS_NODE_ID); 
+    #elif CX_ROUTER == 1
+    printf("ROUTER USAGE (node %x)\r\n", TOS_NODE_ID); 
+    #else
+    printf("LEAF USAGE (node %x)\r\n", TOS_NODE_ID); 
+    #endif
+
     printf("-----\r\n");
     printf(" q: reset\r\n");
-    #if CX_ROUTER == 1
+    #if CX_ROUTER == 1 || CX_BASESTATION == 1
     printf(" 0,1,2: download from network segment 0 (global) 1 (subnet) or 2 (router)\r\n");
     #endif
     printf(" g: transmit packet on global segment\r\n");
@@ -191,7 +196,7 @@ module TestP{
     }
   }
   
-  #if CX_ROUTER == 1
+  #if CX_ROUTER == 1 || CX_BASESTATION == 1
   norace uint8_t downloadSegment;
 
   task void download(){
@@ -224,7 +229,7 @@ module TestP{
          post toggleContinuous();
          post sendPacket();
          break;
-       #if CX_ROUTER == 1
+       #if CX_ROUTER == 1 || CX_BASESTATION == 1
        case '0':
        case '1':
        case '2':

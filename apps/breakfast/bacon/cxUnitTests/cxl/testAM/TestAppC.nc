@@ -34,7 +34,11 @@ configuration TestAppC {
   components PingC;
   PingC.Pool -> ActiveMessageC.Pool;
 
-  #if CX_ROUTER == 1
+  #if CX_BASESTATION == 1
+  components CXBaseStationC;
+  TestP.CXDownload -> CXBaseStationC.CXDownload;
+
+  #elif CX_ROUTER == 1
   components CXRouterC;
   TestP.CXDownload -> CXRouterC.CXDownload;
   #endif
