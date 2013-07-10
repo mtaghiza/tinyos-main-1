@@ -53,4 +53,7 @@ configuration CXWakeupC {
 
   LppProbeSniffer = CXWakeupP.LppProbeSniffer;
 
+  components CXProbeScheduleC;
+  CXWakeupP.Get -> CXProbeScheduleC;
+
 }

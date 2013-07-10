@@ -1,6 +1,7 @@
 
  #include "CXMac.h"
  #include "CXLppDebug.h"
+ #include "multiNetwork.h"
 module CXWakeupP {
   provides interface LppControl;
 
@@ -32,7 +33,14 @@ module CXWakeupP {
   uses interface StateDump;
 
   provides interface LppProbeSniffer;
+
+  uses interface Get<probe_schedule_t*>;
 } implementation {
+
+  uint8_t activeNS;
+  uint8_t curChannel;
+  uint8_t probeCount;
+  uint8_t scheduleIndex;
   
   enum {
     S_OFF = 0,
@@ -53,9 +61,54 @@ module CXWakeupP {
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
 
+  probe_schedule_t* sched(){
+    return call Get.get();
+  }
+
+  uint8_t activeChannel(){
+    return sched()->channel[activeNS];
+  }
+
+  error_t setChannel(uint8_t channel){
+    error_t error = call SubCXLink.setChannel(channel);
+    if (error == SUCCESS){
+      curChannel = channel;
+    }
+    return error;
+  }
+
   uint32_t randomize(uint32_t mean){
     uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
     return ret;
+  }
+
+  task void sendProbe(){
+    error_t error;
+    activeNS = scheduleIndex;
+    cdbg(LPP, "probe to %u @ %u\r\n", activeNS, probeCount);
+    call Packet.clear(probe);
+    call CXMacPacket.setMacType(probe, CXM_PROBE);
+    (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
+    (call CXLinkPacket.getLinkHeader(probe))->destination =
+      AM_BROADCAST_ADDR;
+    call CXLinkPacket.setAllowRetx(probe, FALSE);
+    call Packet.setPayloadLength(probe, 0);
+    if (curChannel != activeChannel()){
+      setChannel(activeChannel());
+    }
+    error = call SubSend.send(probe, 
+      call LinkPacket.payloadLength(probe));
+    cdbg(LPP, "MS p\r\n");
+    if (SUCCESS != error){
+      cerror(LPP, "pt.f ss %x\r\n", error);
+      call Pool.put(probe);
+      probe = NULL;
+      state = S_IDLE;
+      call ProbeTimer.startOneShot(randomize(probeInterval));
+    }else{
+      sending = TRUE;
+      call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2);
+    }
   }
 
   event void ProbeTimer.fired(){
@@ -64,30 +117,14 @@ module CXWakeupP {
         //in the middle of a sniff: try probing again later.
         call ProbeTimer.startOneShot(randomize(probeInterval));
       } else {
+        probeCount++;
+        scheduleIndex = 0;
         state = S_CHECK;
         probe = call Pool.get();
         if (probe){
-          error_t error;
-          call Packet.clear(probe);
-          call CXMacPacket.setMacType(probe, CXM_PROBE);
-          (call CXLinkPacket.getLinkHeader(probe))->ttl = 2;
-          (call CXLinkPacket.getLinkHeader(probe))->destination =
-            AM_BROADCAST_ADDR;
-          call CXLinkPacket.setAllowRetx(probe, FALSE);
-          call Packet.setPayloadLength(probe, 0);
-          error = call SubSend.send(probe, 
-            call LinkPacket.payloadLength(probe));
-          cdbg(LPP, "MS p\r\n");
-          if (SUCCESS != error){
-            cerror(LPP, "pt.f ss %x\r\n", error);
-            call Pool.put(probe);
-            probe = NULL;
-            state = S_IDLE;
-            call ProbeTimer.startOneShot(randomize(probeInterval));
-          }else{
-            sending = TRUE;
-            call TimeoutCheck.startOneShot(FRAMELEN_SLOW*2*2);
-          }
+          post sendProbe();
+        }else{
+          cerror(LPP, "No probe left\r\n");
         }
       }
     }
@@ -129,20 +166,42 @@ module CXWakeupP {
     }
   }
 
+
   event void SubCXLink.rxDone(){
     call TimeoutCheck.stop();
 
-    //Still in S_CHECK? we didn't hear our probe come back. go to
-    //  sleep.
+    //Still in S_CHECK? we didn't hear our probe come back. 
+    //See if there are more probes to be sent right now, otherwise go
+    //back to sleep.
     if (state == S_CHECK){
-      error_t error = call SubCXLink.sleep();
-      if (error != SUCCESS){
-        cerror(LPP, "LPP rxd s %x\r\n", error);
+      bool doneChecking = TRUE;
+      cdbg(LPP, "rxd %u\r\n", scheduleIndex);
+      scheduleIndex ++;
+      while (doneChecking && scheduleIndex < NUM_SEGMENTS){
+        uint8_t invFreq;
+        invFreq = sched() -> invFrequency[scheduleIndex];
+        if (invFreq && (probeCount % invFreq) == 0){
+          cdbg(LPP, "match %u\r\n", scheduleIndex);
+          doneChecking = FALSE;
+          break;
+        }
+        scheduleIndex ++;
       }
-      call Pool.put(probe);
-      probe = NULL;
-      call ProbeTimer.startOneShot(randomize(probeInterval));
-      state = S_IDLE;
+
+      if (doneChecking){
+        error_t error = call SubCXLink.sleep();
+        cdbg(LPP, "done %u\r\n", scheduleIndex);
+        if (error != SUCCESS){
+          cerror(LPP, "LPP rxd s %x\r\n", error);
+        }
+        call Pool.put(probe);
+        probe = NULL;
+        call ProbeTimer.startOneShot(randomize(probeInterval));
+        state = S_IDLE;
+      }else{
+        cdbg(LPP, "post %u\r\n", scheduleIndex);
+        post sendProbe();
+      }
     } else if (state == S_AWAKE){
       if (firstWakeup){
         firstWakeup = FALSE;
@@ -158,6 +217,7 @@ module CXWakeupP {
       //(e.g. to sniff for traffic), then this can/should happen.
     }
   }
+
 
   command error_t CXLink.rx(uint32_t timeout, bool retx){
     if (state == S_OFF){
@@ -175,6 +235,9 @@ module CXWakeupP {
     } else if (state == S_CHECK){
       return ERETRY;
     }else if (state == S_AWAKE){
+      if (curChannel != activeChannel()){ 
+        setChannel(activeChannel());
+      }
       return call SubCXLink.rx(timeout, retx);
     }else{
       cerror(LPP, "Unexpected state %x at rx\r\n", state); 
@@ -208,7 +271,7 @@ module CXWakeupP {
           call Pool.put(probe);
           probe = NULL;
           cinfo(LPP, "WAKE\r\n");
-          signal LppControl.wokenUp();
+          signal LppControl.wokenUp(activeNS);
           return msg;
         }else{
           //nope: it's from another node. record it for topology/time
@@ -229,7 +292,7 @@ module CXWakeupP {
           probe); 
         state = S_AWAKE;
         firstWakeup = TRUE;
-        signal LppControl.wokenUp();
+        signal LppControl.wokenUp(activeNS);
         cinfo(LPP, "WAKE\r\n");
         if (probe !=NULL){
           call Pool.put(probe);
@@ -259,7 +322,7 @@ module CXWakeupP {
   task void signalWokenUp(){
     state = S_AWAKE;
     cinfo(LPP, "WAKE\r\n");
-    signal LppControl.wokenUp();
+    signal LppControl.wokenUp(activeNS);
   }
 
   /**
@@ -268,11 +331,12 @@ module CXWakeupP {
    * the layer above figure out how long it should sit around doing
    * ACKs to help out. 
    */
-  command error_t LppControl.wakeup(){
+  command error_t LppControl.wakeup(uint8_t ns){
     switch (state){
       case S_OFF:
         return EOFF;
       case S_IDLE:
+        activeNS = ns;
         post signalWokenUp();
         return SUCCESS;
       case S_CHECK:
@@ -382,15 +446,16 @@ module CXWakeupP {
     signal SplitControl.stopDone(error);
   }
 
+
   command error_t CXLink.setChannel(uint8_t channel){
-    return call SubCXLink.setChannel(channel);
+    return setChannel(channel);
   }
 
   command error_t CXLink.sleep(){
     return call SubCXLink.sleep();
   }
 
-  default event void LppControl.wokenUp(){
+  default event void LppControl.wokenUp(uint8_t ns){
   }
   default event void LppControl.fellAsleep(){
   }

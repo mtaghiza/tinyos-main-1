@@ -2,6 +2,7 @@
 #define CX_MAC_H
 
 #include "CXLink.h"
+#include "multiNetwork.h"
 
 #define CXM_DATA 0
 #define CXM_PROBE 1
@@ -10,6 +11,11 @@
 #define CXM_RTS 4
 #define CXM_STATUS 5
 #define CXM_EOS 6
+
+typedef struct probe_schedule {
+   uint8_t channel[NUM_SEGMENTS];
+   uint8_t invFrequency[NUM_SEGMENTS];
+} probe_schedule_t;
 
 typedef nx_struct cx_mac_header{
   nx_uint8_t macType;

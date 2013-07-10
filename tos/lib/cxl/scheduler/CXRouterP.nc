@@ -25,8 +25,8 @@ module CXRouterP {
   uint8_t contactIndex;
   uint8_t toContact;
 
-  command error_t CXDownload.startDownload(){
-    error_t error = call LppControl.wakeup();
+  command error_t CXDownload.startDownload(uint8_t ns){
+    error_t error = call LppControl.wakeup(ns);
     if (error == SUCCESS){
       memset(contactList, sizeof(contactList), 0xFF);
       //put ourselves in as the first contact: each download will

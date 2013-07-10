@@ -11,6 +11,7 @@ enum {
   NS_GLOBAL=0,
   NS_SUBNETWORK=1,
   NS_ROUTER=2,
+  NUM_SEGMENTS=3
 };
 
 #endif

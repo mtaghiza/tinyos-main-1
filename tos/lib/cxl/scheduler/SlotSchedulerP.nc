@@ -112,7 +112,7 @@ module SlotSchedulerP {
   error_t rx(uint32_t timeout, bool retx);
   error_t send(message_t* msg, uint8_t len, uint8_t ttl);
 
-  event void LppControl.wokenUp(){
+  event void LppControl.wokenUp(uint8_t ns){
     if (state == S_UNSYNCHED){
       call Neighborhood.clear();
       cinfo(SCHED, "Sched wakeup for %lu\r\n", call
