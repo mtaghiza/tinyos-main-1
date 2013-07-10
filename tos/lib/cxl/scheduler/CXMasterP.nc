@@ -27,8 +27,8 @@ module CXMasterP {
   uint8_t activeNS = 0xFF;
 
   command error_t CXDownload.startDownload[uint8_t ns](){
-    if (activeNS == 0xFF){
-      return EALREADY;
+    if (activeNS != 0xFF){
+      return EBUSY;
     }else{
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
