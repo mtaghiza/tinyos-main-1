@@ -117,8 +117,9 @@ module SlotSchedulerP {
     if (state == S_UNSYNCHED){
       activeNS = ns;
       call Neighborhood.clear();
-      cinfo(SCHED, "Sched wakeup for %lu\r\n", 
-        call SlotController.wakeupLen[activeNS]());
+      cinfo(SCHED, "Sched wakeup for %lu on %u\r\n", 
+        call SlotController.wakeupLen[activeNS](), 
+        activeNS);
       signalEnd = FALSE;
       missedCTS = 0;
       state = S_WAKEUP;
