@@ -3,7 +3,7 @@
  #include "CXRouterDebug.h"
 module CXMasterP {
   provides interface SlotController;
-  provides interface CXDownload;
+  provides interface CXDownload[uint8_t ns];
 
   uses interface LppControl;
   uses interface Neighborhood;
@@ -24,23 +24,30 @@ module CXMasterP {
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
   uint8_t contactIndex;
   uint8_t toContact;
+  uint8_t activeNS = 0xFF;
 
-  command error_t CXDownload.startDownload(uint8_t ns){
-    error_t error = call LppControl.wakeup(ns);
-    if (error == SUCCESS){
-      memset(contactList, sizeof(contactList), 0xFF);
-      //put ourselves in as the first contact: each download will
-      //start off with packets from us.
-      contactList[0].nodeId = call ActiveMessageAddress.amAddress();
-      contactIndex = 0;
-      toContact = 1;
+  command error_t CXDownload.startDownload[uint8_t ns](){
+    if (activeNS == 0xFF){
+      return EALREADY;
+    }else{
+      error_t error = call LppControl.wakeup(ns);
+      if (error == SUCCESS){
+        memset(contactList, sizeof(contactList), 0xFF);
+        //put ourselves in as the first contact: each download will
+        //start off with packets from us.
+        contactList[0].nodeId = call ActiveMessageAddress.amAddress();
+        contactIndex = 0;
+        toContact = 1;
+        activeNS = ns;
+      }
+      return error;
     }
-    return error;
   }
 
   task void downloadFinished(){
     cinfo(ROUTER, "Download finished\r\n");
-    signal CXDownload.downloadFinished();
+    signal CXDownload.downloadFinished[activeNS]();
+    activeNS = 0xFF;
   }
 
   command void SlotController.endSlot(){
@@ -146,6 +153,8 @@ module CXMasterP {
   event void LppControl.wokenUp(uint8_t ns){}
 
   default event void CTS.ctsReceived[uint8_t ns](){}
+  default event void CXDownload.downloadFinished[uint8_t ns](){}
+
 
   
 }

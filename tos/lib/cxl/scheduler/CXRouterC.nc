@@ -14,7 +14,7 @@ configuration CXRouterC {
   components CXMasterP;
   components CXSlaveP;
 
-  CXDownload[NS_SUBNETWORK] = CXMasterP;
+  CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
 

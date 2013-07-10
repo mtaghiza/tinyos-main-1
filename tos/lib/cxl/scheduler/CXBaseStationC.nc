@@ -14,8 +14,8 @@ configuration CXBaseStationC {
 
   components CXMasterP;
 
-  CXDownload[NS_GLOBAL] = CXMasterP;
-  CXDownload[NS_ROUTER] = CXMasterP;
+  CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
+  CXDownload[NS_ROUTER] = CXMasterP.CXDownload[NS_ROUTER];
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
 

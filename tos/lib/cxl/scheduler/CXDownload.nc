@@ -1,4 +1,4 @@
 interface CXDownload {
-  command error_t startDownload(uint8_t ns);
+  command error_t startDownload();
   event void downloadFinished();
 } 
