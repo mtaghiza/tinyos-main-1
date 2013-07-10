@@ -12,8 +12,13 @@ module TestP{
   uses interface Receive;
   uses interface Pool<message_t>;
   
-  #if CX_ROUTER == 1 || CX_BASESTATION == 1
-  uses interface CXDownload;
+  #if CX_BASESTATION == 1
+  uses interface CXDownload as GlobalCXDownload;
+  uses interface CXDownload as RouterCXDownload;
+  #endif
+
+  #if CX_ROUTER == 1
+  uses interface CXDownload as SubNetworkCXDownload;
   #endif
   uses interface Leds;
 } implementation {
@@ -44,15 +49,21 @@ module TestP{
 
     printf("-----\r\n");
     printf(" q: reset\r\n");
-    #if CX_ROUTER == 1 || CX_BASESTATION == 1
-    printf(" 0,1,2: download from network segment 0 (global) 1 (subnet) or 2 (router)\r\n");
-    #endif
+
     printf(" g: transmit packet on global segment\r\n");
+    #if CX_BASESTATION == 1
+    printf(" G: download from global segment\r\n");
+    #endif
     printf(" s: transmit packet on subnetwork segment\r\n");
+    #if CX_ROUTER == 1 
+    printf(" S: download from subnetwork segment\r\n");
     printf(" r: transmit packet on router segment\r\n");
+    #endif
+    #if CX_BASESTATION == 1
+    printf(" R: download from router segment\r\n");
+    #endif
     printf(" T: toggle continuous transmission\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
-    printf(" S: toggle start/stop\r\n");
     printf("=====\r\n");
     printf("Pool: %u\r\n", call Pool.size());
   }
@@ -196,14 +207,31 @@ module TestP{
     }
   }
   
-  #if CX_ROUTER == 1 || CX_BASESTATION == 1
-  norace uint8_t downloadSegment;
-
-  task void download(){
-    printf("Download %x\r\n", call CXDownload.startDownload(downloadSegment));
+  #if CX_BASESTATION == 1
+  task void downloadGlobal(){
+    printf("Global Download %x\r\n", 
+      call GlobalCXDownload.startDownload(NS_GLOBAL));
   }
-  event void CXDownload.downloadFinished(){
-    printf("Download finished\r\n");
+  event void GlobalCXDownload.downloadFinished(){
+    printf("Global Download finished\r\n");
+  }
+
+  task void downloadRouter(){
+    printf("Router Download %x\r\n", 
+      call RouterCXDownload.startDownload(NS_ROUTER));
+  }
+  event void RouterCXDownload.downloadFinished(){
+    printf("Router Download finished\r\n");
+  }
+  #endif
+
+  #if CX_ROUTER == 1
+  task void downloadSubNetwork(){
+    printf("SubNetwork Download %x\r\n", 
+      call SubNetworkCXDownload.startDownload(NS_SUBNETWORK));
+  }
+  event void SubNetworkCXDownload.downloadFinished(){
+    printf("SubNetwork Download finished\r\n");
   }
   #endif
 
@@ -217,27 +245,39 @@ module TestP{
          txSegment = NS_GLOBAL;
          post sendPacket();
          break;
+
+       #if CX_BASESTATION == 1
+       case 'G':
+         post downloadGlobal();
+         break;
+       #endif
+
        case 's':
          txSegment = NS_SUBNETWORK;
          post sendPacket();
          break;
+
+       #if CX_ROUTER == 1
+       case 'S':
+         post downloadSubNetwork();
+         break;
+       #endif
+
        case 'r':
          txSegment = NS_ROUTER;
          post sendPacket();
          break;
+
+       #if CX_BASESTATION == 1
+       case 'R':
+         post downloadRouter();
+         break;
+       #endif
+
        case 'T':
          post toggleContinuous();
          post sendPacket();
          break;
-       #if CX_ROUTER == 1 || CX_BASESTATION == 1
-       case '0':
-       case '1':
-       case '2':
-         downloadSegment = byte-'0';
-         post download();
-         break;
-
-       #endif
        case '?':
          post usage();
          break;

@@ -36,10 +36,11 @@ configuration TestAppC {
 
   #if CX_BASESTATION == 1
   components CXBaseStationC;
-  TestP.CXDownload -> CXBaseStationC.CXDownload;
+  TestP.GlobalCXDownload -> CXBaseStationC.CXDownload[NS_GLOBAL];
+  TestP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];
 
   #elif CX_ROUTER == 1
   components CXRouterC;
-  TestP.CXDownload -> CXRouterC.CXDownload;
+  TestP.SubNetworkCXDownload -> CXRouterC.CXDownload[NS_SUBNETWORK];
   #endif
 }
