@@ -5,7 +5,7 @@ configuration CXLeafC {
   provides interface Receive;
 
   uses interface Pool<message_t>;
-  provides interface CTS;
+  provides interface CTS[uint8_t ns];
 } implementation {
   components SlotSchedulerC;
   Send = SlotSchedulerC;

@@ -8,7 +8,7 @@ module CXRouterP {
   uses interface LppControl;
   uses interface Neighborhood;
   uses interface ActiveMessageAddress;
-  provides interface CTS;
+  provides interface CTS[uint8_t ns];
 } implementation {
 
   /**
@@ -124,7 +124,7 @@ module CXRouterP {
   }
 
   command uint32_t SlotController.wakeupLen(){
-    return CX_WAKEUP_LEN;
+    return CX_WAKEUP_LEN*4;
   }
 
   command message_t* SlotController.receiveEOS(message_t* msg,
@@ -136,14 +136,16 @@ module CXRouterP {
     return msg;
   }
 
-  command void SlotController.receiveCTS(){
-    signal CTS.ctsReceived();
+  command void SlotController.receiveCTS(uint8_t ns){
+    signal CTS.ctsReceived[ns]();
   }
 
   async event void ActiveMessageAddress.changed(){}
   
   event void LppControl.fellAsleep(){}
   event void LppControl.wokenUp(uint8_t ns){}
+
+  default event void CTS.ctsReceived[uint8_t ns](){}
 
   
 }

@@ -1,6 +1,6 @@
 module CXLeafP {
   provides interface SlotController;
-  provides interface CTS;
+  provides interface CTS[uint8_t ns];
 } implementation {
 
   command am_addr_t SlotController.activeNode(){
@@ -19,7 +19,7 @@ module CXLeafP {
     return CX_MAX_DEPTH;
   }
   command uint32_t SlotController.wakeupLen(){
-    return CX_WAKEUP_LEN;
+    return CX_WAKEUP_LEN*4;
   }
   command message_t* SlotController.receiveEOS(
       message_t* msg, cx_eos_t* pl){
@@ -31,7 +31,10 @@ module CXLeafP {
   }
   command void SlotController.endSlot(){
   }
-  command void SlotController.receiveCTS(){
-    signal CTS.ctsReceived();
+  command void SlotController.receiveCTS(uint8_t ns){
+    signal CTS.ctsReceived[ns]();
+  }
+
+  default event void CTS.ctsReceived[uint8_t ns](){
   }
 }

@@ -8,7 +8,7 @@ interface SlotController {
   command uint8_t maxDepth();
   command message_t* receiveEOS(message_t* msg, cx_eos_t* pl);
   command message_t* receiveStatus(message_t* msg, cx_status_t* pl);
-  command void receiveCTS();
+  command void receiveCTS(uint8_t activeNS);
   command void endSlot();
   command uint32_t wakeupLen();
 }

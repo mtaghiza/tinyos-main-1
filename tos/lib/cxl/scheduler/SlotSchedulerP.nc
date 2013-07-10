@@ -111,9 +111,11 @@ module SlotSchedulerP {
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
   error_t send(message_t* msg, uint8_t len, uint8_t ttl);
-
+  
+  uint8_t activeNS;
   event void LppControl.wokenUp(uint8_t ns){
     if (state == S_UNSYNCHED){
+      activeNS = ns;
       call Neighborhood.clear();
       cinfo(SCHED, "Sched wakeup for %lu\r\n", call
       SlotController.wakeupLen());
@@ -162,7 +164,7 @@ module SlotSchedulerP {
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
       state = S_STATUS_PREP;
-      call SlotController.receiveCTS();
+      call SlotController.receiveCTS(activeNS);
       //synchronize sends to CTS timestamp
       cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 

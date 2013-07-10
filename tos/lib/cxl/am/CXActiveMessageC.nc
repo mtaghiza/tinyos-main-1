@@ -91,16 +91,13 @@ implementation {
   #else
   #warning "Using dc'ed LPP"
     
-    //TODO: these should expand to cover all of the relevant network
-    //segments for the role.
     #if CX_ROUTER == 1
     components CXRouterC as Mac;
-    CTS[NS_SUBNETWORK] = Mac.CTS;
     #else
     components CXLeafC as Mac;
-    CTS[NS_SUBNETWORK] = Mac.CTS;
     #endif
   #endif
+  CTS = Mac.CTS;
  
   AM.SubSend -> Mac.Send;
   AM.SubReceive -> Mac.Receive;
