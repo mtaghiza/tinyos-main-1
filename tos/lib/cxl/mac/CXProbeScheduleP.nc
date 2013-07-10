@@ -6,7 +6,7 @@ module CXProbeScheduleP {
 } implementation {
   probe_schedule_t sched = { 
     .channel={0, 32, 64},
-    .invFrequency={1, 2, 4}
+    .invFrequency={4, 2, 1}
   };
 
   event void Boot.booted(){

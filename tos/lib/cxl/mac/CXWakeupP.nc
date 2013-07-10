@@ -82,6 +82,19 @@ module CXWakeupP {
     return ret;
   }
 
+  uint8_t nextProbe(uint8_t startIndex){
+    uint8_t i;
+    for (i = startIndex; i < NUM_SEGMENTS; i++){
+      uint8_t invFreq;
+      invFreq = sched() -> invFrequency[i];
+      if (invFreq && (probeCount % invFreq) == 0){
+        cdbg(LPP, "match %u\r\n", i);
+        break;
+      }
+    }
+    return i;
+  }
+
   task void sendProbe(){
     error_t error;
     activeNS = scheduleIndex;
@@ -122,7 +135,10 @@ module CXWakeupP {
         state = S_CHECK;
         probe = call Pool.get();
         if (probe){
-          post sendProbe();
+          scheduleIndex = nextProbe(scheduleIndex);
+          if (scheduleIndex < NUM_SEGMENTS){
+            post sendProbe();
+          }
         }else{
           cerror(LPP, "No probe left\r\n");
         }
@@ -165,7 +181,7 @@ module CXWakeupP {
       signal Send.sendDone(msg, error);
     }
   }
-
+  
 
   event void SubCXLink.rxDone(){
     call TimeoutCheck.stop();
@@ -174,21 +190,14 @@ module CXWakeupP {
     //See if there are more probes to be sent right now, otherwise go
     //back to sleep.
     if (state == S_CHECK){
-      bool doneChecking = TRUE;
       cdbg(LPP, "rxd %u\r\n", scheduleIndex);
-      scheduleIndex ++;
-      while (doneChecking && scheduleIndex < NUM_SEGMENTS){
-        uint8_t invFreq;
-        invFreq = sched() -> invFrequency[scheduleIndex];
-        if (invFreq && (probeCount % invFreq) == 0){
-          cdbg(LPP, "match %u\r\n", scheduleIndex);
-          doneChecking = FALSE;
-          break;
-        }
-        scheduleIndex ++;
-      }
+      scheduleIndex++;
+      scheduleIndex = nextProbe(scheduleIndex);
 
-      if (doneChecking){
+      if (scheduleIndex < NUM_SEGMENTS){
+        cdbg(LPP, "post %u\r\n", scheduleIndex);
+        post sendProbe();
+      }else{
         error_t error = call SubCXLink.sleep();
         cdbg(LPP, "done %u\r\n", scheduleIndex);
         if (error != SUCCESS){
@@ -198,9 +207,6 @@ module CXWakeupP {
         probe = NULL;
         call ProbeTimer.startOneShot(randomize(probeInterval));
         state = S_IDLE;
-      }else{
-        cdbg(LPP, "post %u\r\n", scheduleIndex);
-        post sendProbe();
       }
     } else if (state == S_AWAKE){
       if (firstWakeup){
