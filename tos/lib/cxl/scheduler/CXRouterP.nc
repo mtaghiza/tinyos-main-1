@@ -143,7 +143,7 @@ module CXRouterP {
   async event void ActiveMessageAddress.changed(){}
   
   event void LppControl.fellAsleep(){}
-  event void LppControl.wokenUp(){}
+  event void LppControl.wokenUp(uint8_t ns){}
 
   
 }
