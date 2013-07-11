@@ -1,10 +1,12 @@
 
  #include "AM.h"
+ #include "router.h"
 module RouterP{
   uses interface Boot;
   uses interface SplitControl;
   provides interface Get<am_addr_t>;
   uses interface Receive as ReceiveData;
+  uses interface AMPacket;
 
   uses interface Pool<message_t>;
   uses interface LogWrite;
@@ -27,9 +29,19 @@ module RouterP{
   message_t* toAppend;
   void* toAppendPl;
   uint8_t toAppendLen;
+  
+  //TODO: replace with pool/queue
+  tunneled_msg_t tunneled_internal;
+  tunneled_msg_t* tunneled = &tunneled_internal;
 
   task void append(){
-    call LogWrite.append(toAppendPl, toAppendLen);
+    tunneled->recordType = RECORD_TYPE_TUNNELED;
+    tunneled->src = call AMPacket.source(toAppend);
+    tunneled->amId = call AMPacket.type(toAppend);
+    //ugh
+    memcpy(tunneled->data, toAppendPl, toAppendLen);
+    call LogWrite.append(tunneled, 
+      sizeof(tunneled_msg_t));
   }
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, bool recordsLost, error_t error){

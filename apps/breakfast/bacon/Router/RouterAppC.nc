@@ -1,9 +1,14 @@
  #include "StorageVolumes.h"
  #include "message.h"
- #define printf(...) 
- #define printfflush(...) 
+ #include "CXDebug.h"
+ #include "router.h"
 configuration RouterAppC{
 } implementation {
+  #if ENABLE_PRINTF == 1
+  components SerialPrintfC;
+  components SerialStartC;
+  #endif
+
   components WatchDogC;
   #ifndef NO_STACKGUARD
   components StackGuardMilliC;
@@ -12,22 +17,20 @@ configuration RouterAppC{
   components MainC;
   components RouterP;
 
-//  components PrintfC;
-//  components SerialStartC;
 
   components new PoolC(message_t, 4);
 
-  components new AutoPushC(VOLUME_RECORD, TRUE);
-  components new AMSenderC(AM_LOG_RECORD_DATA_MSG);
+  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
+  components new RouterAMSenderC(AM_TUNNELED_MSG);
 
-  AutoPushC.Pool -> PoolC;
-  AutoPushC.AMSend -> AMSenderC;
+  RecordPushRequestC.Pool -> PoolC;
+  RecordPushRequestC.AMSend -> RouterAMSenderC;
 
 
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
 
-  AutoPushC.Get -> RouterP.Get;
+  RecordPushRequestC.Get -> RouterP.Get;
 
   components ActiveMessageC;
   RouterP.SplitControl -> ActiveMessageC;
@@ -35,6 +38,7 @@ configuration RouterAppC{
 
   components new AMReceiverC(AM_LOG_RECORD_DATA_MSG);
   RouterP.ReceiveData -> AMReceiverC;
+  RouterP.AMPacket -> AMReceiverC;
 
   components new LogStorageC(VOLUME_RECORD, TRUE);
   RouterP.LogWrite -> LogStorageC;

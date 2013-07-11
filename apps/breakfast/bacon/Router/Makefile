@@ -1,13 +1,46 @@
 COMPONENT=RouterAppC
 
+CFLAGS += -DCX_BASESTATION=0
 CFLAGS += -DCX_ROUTER=1
 
-CFLAGS+=-DSINGLE_RECORD_READ=1
+CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+CFLAGS += -I$(TOSDIR)/lib/priorityQueue
 
-CFLAGS += -I../sdCard
-CFLAGS += -I../sdCard/stm25p
+CFLAGS += -I$(TOSDIR)/lib/cxl/link
+CFLAGS += -I$(TOSDIR)/lib/cxl/packet
+CFLAGS += -I$(TOSDIR)/lib/cxl/mac
+CFLAGS += -I$(TOSDIR)/lib/cxl/am
+CFLAGS += -I$(TOSDIR)/lib/cxl/debug
+CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
+CFLAGS += -I$(TOSDIR)/lib/cx/routing
+CFLAGS += -I$(TOSDIR)/lib/cx/debug
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
+
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+
+PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
+CFLAGS+=-DXT2_SMCLK
+
+
+#NB: length field is 8 bits: so if we are using FEC, we need to make
+# sure that the total packet length is less than this.
+#CFLAGS+= -DTOSH_DATA_LENGTH=109
+#CFLAGS+= -DMAX_RECORD_PACKET_LEN=80
+CFLAGS+= -DRF1A_FEC_ENABLED=1
+CFLAGS+= -DPATABLE0_SETTING=0x8D
+
+CX_MAX_DEPTH?=5
+CFLAGS+=-DCX_MAX_DEPTH=$(CX_MAX_DEPTH)
+
+####non-cx settings
+DEFAULT_SAMPLE_INTERVAL?=61440UL
+CFLAGS += -DDEFAULT_SAMPLE_INTERVAL=$(DEFAULT_SAMPLE_INTERVAL)
+
+CFLAGS+=-DSINGLE_RECORD_READ=1
+CFLAGS += -I../BaconSampler
 CFLAGS += -I../settingsStorage
 CFLAGS += -I../RebootCounter
+CFLAGS += -I../Ping
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
 CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/Metadata
@@ -16,43 +49,14 @@ CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
 CFLAGS += -I../../util/stackGuard
 CFLAGS += -I../../util
 
-CFLAGS+=-DRF1A_FEC_ENABLED=1
-CFLAGS += -DPATABLE0_SETTING=0x8D
-CFLAGS += -DTOSH_DATA_LENGTH=109
-CFLAGS += -DCX_SELF_RETX=1
+#TODO: hook up to sd card storage
 
-#Debug levels
+ENABLE_PRINTF ?= 0
+CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
+CFLAGS += -DRAW_SERIAL_PRINTF=0
+CFLAGS += -DDL_LPP=DL_ERROR
 CFLAGS += -DDL_LINK=DL_ERROR
-CFLAGS += -DDL_LINKQUEUE=DL_ERROR
-CFLAGS += -DDL_NETWORK=DL_ERROR
-CFLAGS += -DDL_SCHED=DL_ERROR
-CFLAGS += -DDL_SKEW=DL_ERROR
-CFLAGS += -DDL_SKEW_APPLY=DL_ERROR
-CFLAGS += -DDL_TRANSPORT=DL_ERROR
-CFLAGS += -DDL_AM=DL_ERROR
-CFLAGS += -DDL_test=DL_ERROR
-CFLAGS += -DDL_RADIOSTATS=DL_ERROR
 
-CFLAGS += -I$(TOSDIR)/lib/priorityQueue
-CFLAGS += -I$(TOSDIR)/lib/cx
-CFLAGS += -I$(TOSDIR)/lib/cx/scheduler
-CFLAGS += -I$(TOSDIR)/lib/cx/network
-CFLAGS += -I$(TOSDIR)/lib/cx/transport
-CFLAGS += -I$(TOSDIR)/lib/cx/link
-CFLAGS += -I$(TOSDIR)/lib/cx/physical
-CFLAGS += -I$(TOSDIR)/lib/cx/packet
-CFLAGS += -I$(TOSDIR)/lib/cx/am
-CFLAGS += -I$(TOSDIR)/lib/cx/routing
-CFLAGS += -I$(TOSDIR)/lib/cx/debug
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
-CFLAGS += -I$(TOSROOT)/apps/breakfast/util
-CFLAGS += -I$(TOSROOT)/apps/breakfast/util/stackGuard
-CFLAGS += -I$(TOSROOT)/apps/breakfast/util/globalID
-CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
-
-#16mhz mclk, 32 mhz dco
-PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
-
-CFLAGS+=-DXT2_SMCLK
+CFLAGS += -DCX_LPP_BASIC=0
 
 include $(MAKERULES)
