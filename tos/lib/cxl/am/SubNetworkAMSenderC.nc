@@ -1,3 +1,5 @@
+
+ #include "multiNetwork.h"
 generic configuration SubNetworkAMSenderC(am_id_t AMId){
   provides {
     interface AMSend;
