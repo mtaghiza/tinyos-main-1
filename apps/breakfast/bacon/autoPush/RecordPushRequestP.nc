@@ -1,6 +1,7 @@
-#include "RecordRequest.h"
-#include "RecordStorage.h"
-#include "AutoPush.h"
+
+ #include "RecordRequest.h"
+ #include "RecordStorage.h"
+ #include "AutoPush.h"
 
 generic module RecordPushRequestP() {
   provides interface Init as SoftwareInit;
