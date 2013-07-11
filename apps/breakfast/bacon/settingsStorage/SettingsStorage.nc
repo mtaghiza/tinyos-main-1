@@ -10,8 +10,7 @@ interface SettingsStorage {
    *          if the key was found and its size was correct (contents
    *          copied to val).
    */
-  //TODO: val should be void*.
-  command error_t get(uint8_t key, uint8_t* val, uint8_t len);
+  command error_t get(uint8_t key, void* val, uint8_t len);
 
   /**
    *  Set the value of a stored setting (key, value) pair. Will
@@ -22,7 +21,7 @@ interface SettingsStorage {
    *  @return SUCCESS if the value could be written/updated. ESIZE if
    *          there is not enough space left to store this value.
    */
-  command error_t set(uint8_t key, uint8_t* val, uint8_t len);
+  command error_t set(uint8_t key, void* val, uint8_t len);
 
   /**
    *  Remove a (key, value) pair from the settings storage.

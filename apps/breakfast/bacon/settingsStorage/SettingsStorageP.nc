@@ -8,10 +8,15 @@ module SettingsStorageP {
   //TODO: un-hardcode this. Should be based on some platform
   //TLVStorage len constant.
   uint8_t tlvs[128];
+  bool loaded = FALSE;
 
-  command error_t SettingsStorage.get(uint8_t key, uint8_t* val, uint8_t len){
+  command error_t SettingsStorage.get(uint8_t key, void* val, uint8_t len){
     tlv_entry_t* entry;
-    error_t ret = call TLVStorage.loadTLVStorage(tlvs);
+    error_t ret = SUCCESS;
+    if (! loaded){
+      ret = call TLVStorage.loadTLVStorage(tlvs);
+      loaded = TRUE;
+    }
     if (ret == SUCCESS){
       uint8_t tlvi = call TLVUtils.findEntry(key, 0, &entry, tlvs);
       if (tlvi){
@@ -29,9 +34,13 @@ module SettingsStorageP {
     }
   }
 
-  command error_t SettingsStorage.set(uint8_t key, uint8_t* val, uint8_t len){
+  command error_t SettingsStorage.set(uint8_t key, void* val, uint8_t len){
     tlv_entry_t* entry;
-    error_t ret = call TLVStorage.loadTLVStorage(tlvs);
+    error_t ret = SUCCESS;
+    if (!loaded){
+      ret = call TLVStorage.loadTLVStorage(tlvs);
+      loaded = TRUE;
+    }
     if (ret == SUCCESS){
       uint8_t tlvi = call TLVUtils.findEntry(key, 0, &entry, tlvs);
       if (tlvi){
@@ -52,7 +61,15 @@ module SettingsStorageP {
           return ESIZE;
         }
       }
-      return call TLVStorage.persistTLVStorage(tlvs);
+      ret = call TLVStorage.persistTLVStorage(tlvs);
+      if (ret == SUCCESS){
+        loaded = FALSE;
+        ret = call TLVStorage.loadTLVStorage(tlvs);
+        if (ret == SUCCESS){
+          loaded = TRUE;
+        }
+      } 
+      return ret;
     }else{
       return ret;
     }
