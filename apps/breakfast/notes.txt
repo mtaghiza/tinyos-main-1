@@ -109,6 +109,7 @@ tos/platforms/bacon/chips/stm25p/RecordStorage.h: AM_LOG_RECORD_DATA_MSG = 0xE0
 CX collection control: 0xF0 - 0xF7
 ------
 bacon/autoPush/RecordRequest.h: AM_CX_RECORD_REQUEST_MSG = 0xF0
+bacon/router/router.h: AM_TUNNELED_MSG 0x15
 
 Ping: 0xF8-0xF9
 ------
@@ -125,6 +126,7 @@ ToastSampler.h: RECORD_TYPE_TOAST_CONNECTED 0x11
 ToastSampler.h: RECORD_TYPE_SAMPLE 0x12
 ToastSampler.h: RECORD_TYPE_SAMPLE_LONG 0x13
 BaconSampler.h: RECORD_TYPE_BACON_SAMPLE 0x14
+router.h: RECORD_TYPE_TUNNELED 0x15
 
 TLV Tags
 =========
