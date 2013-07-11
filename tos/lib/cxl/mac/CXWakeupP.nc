@@ -60,13 +60,14 @@ module CXWakeupP {
   bool forceRx = FALSE;
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
-
-  probe_schedule_t* sched(){
-    return call Get.get();
+  
+  probe_schedule_t* sched;
+  void refreshSched(){
+    sched = call Get.get();
   }
 
   uint8_t activeChannel(){
-    return sched()->channel[activeNS];
+    return sched->channel[activeNS];
   }
 
   error_t setChannel(uint8_t channel){
@@ -86,7 +87,7 @@ module CXWakeupP {
     uint8_t i;
     for (i = startIndex; i < NUM_SEGMENTS; i++){
       uint8_t invFreq;
-      invFreq = sched() -> invFrequency[i];
+      invFreq = sched -> invFrequency[i];
       if (invFreq && (probeCount % invFreq) == 0){
         cdbg(LPP, "match %u\r\n", i);
         break;
@@ -132,6 +133,7 @@ module CXWakeupP {
       } else {
         probeCount++;
         scheduleIndex = 0;
+        refreshSched();
         state = S_CHECK;
         probe = call Pool.get();
         if (probe){
