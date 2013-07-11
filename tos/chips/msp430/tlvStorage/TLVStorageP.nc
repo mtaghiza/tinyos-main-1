@@ -73,8 +73,11 @@ generic module TLVStorageP(uint16_t tlv_start,
 //      debugTLV(tlvs);
       memset(tlvs, 0xff, tlv_len);
       e.version = 0;
+      //to account for the 2-byte checksum and the 2 header bytes on
+      //the TAG_EMPTY
       ba[TLV_CHECKSUM_LENGTH] = TAG_EMPTY;
-      ba[TLV_CHECKSUM_LENGTH+1] = 60;
+      ba[TLV_CHECKSUM_LENGTH+1] = tlv_len - 2 - 2; 
+
       call TLVUtils.addEntry(TAG_VERSION, 2, (tlv_entry_t*)&e, tlvs,0);
       //TODO: better return code? 
       return SUCCESS;
