@@ -269,7 +269,6 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
-    P1OUT ^= BIT2;
     framesLeft --;
     if (pendingRX || pendingTX){
       cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
@@ -612,7 +611,6 @@ module SlotSchedulerP {
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
-    P1OUT ^= BIT2;
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
     if (signalEnd){
       call SlotController.endSlot[activeNS]();
