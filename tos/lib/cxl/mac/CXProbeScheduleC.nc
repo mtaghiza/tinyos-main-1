@@ -6,7 +6,7 @@ configuration CXProbeScheduleC {
   components CXProbeScheduleP;
   Get = CXProbeScheduleP;
 
-  components MainC;
-  CXProbeScheduleP.Boot -> MainC;
+  components SettingsStorageC;
+  CXProbeScheduleP.SettingsStorage -> SettingsStorageC;
 
 }

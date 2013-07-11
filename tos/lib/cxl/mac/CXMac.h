@@ -12,6 +12,8 @@
 #define CXM_STATUS 5
 #define CXM_EOS 6
 
+#define SS_KEY_PROBE_SCHEDULE 0x15
+
 typedef struct probe_schedule {
    uint8_t channel[NUM_SEGMENTS];
    uint8_t invFrequency[NUM_SEGMENTS];
