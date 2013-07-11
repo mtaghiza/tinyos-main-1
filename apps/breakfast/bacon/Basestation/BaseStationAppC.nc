@@ -91,12 +91,15 @@ implementation {
   BaseStationP.RadioControl -> Radio;
   BaseStationP.SerialControl -> Serial;
   
-  BaseStationP.UartSend -> Serial;
+  components SerialMultiSenderC;
+  BaseStationP.UartSend -> SerialMultiSenderC;
   BaseStationP.UartReceive -> Serial.Receive;
   BaseStationP.UartPacket -> Serial;
   BaseStationP.UartAMPacket -> Serial;
   
-  BaseStationP.RadioSend -> Radio;
+  components RouterMultiSenderC, GlobalMultiSenderC;
+  BaseStationP.GlobalSend -> GlobalMultiSenderC;
+  BaseStationP.RouterSend -> RouterMultiSenderC;
   BaseStationP.RadioReceive -> Radio.Receive;
   BaseStationP.RadioSnoop -> Radio.Snoop;
   BaseStationP.RadioPacket -> Radio;
@@ -105,8 +108,9 @@ implementation {
   BaseStationP.Leds -> LedsC;
   BaseStationP.CXLeds -> NoLedsC;
 
-  components CXRouterC;
-  BaseStationP.CXDownload -> CXRouterC;
+  components CXBaseStationC;
+  BaseStationP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];
+  BaseStationP.GlobalCXDownload -> CXBaseStationC.CXDownload[NS_GLOBAL];
 
   components new SerialAMSenderC(AM_CTRL_ACK) as CtrlAckSend;
   BaseStationP.CtrlAckSend -> CtrlAckSend;

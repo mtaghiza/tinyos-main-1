@@ -57,6 +57,7 @@
 #include "AM.h"
 #include "Serial.h"
 #include "basestation.h"
+#include "multiNetwork.h"
 
 module BaseStationP @safe() {
   uses {
@@ -69,7 +70,8 @@ module BaseStationP @safe() {
     interface Packet as UartPacket;
     interface AMPacket as UartAMPacket;
     
-    interface AMSend as RadioSend[am_id_t id];
+    interface AMSend as GlobalSend[am_id_t id];
+    interface AMSend as RouterSend[am_id_t id];
     interface Receive as RadioReceive[am_id_t id];
     interface Receive as RadioSnoop[am_id_t id];
     interface Packet as RadioPacket;
@@ -82,7 +84,8 @@ module BaseStationP @safe() {
   uses interface AMSend as CXDownloadFinishedSend;
 
   uses interface Leds as CXLeds;
-  uses interface CXDownload;
+  uses interface CXDownload as RouterCXDownload;
+  uses interface CXDownload as GlobalCXDownload;
 
   uses interface CXLinkPacket;
 }
@@ -107,6 +110,8 @@ implementation
   message_t  * ONE_NOK radioQueue[RADIO_QUEUE_LEN];
   uint8_t    radioIn, radioOut;
   bool       radioBusy, radioFull;
+
+  uint8_t activeNS;
 
   task void uartSendTask();
   task void radioSendTask();
@@ -286,9 +291,20 @@ implementation
     post uartSendTask();
   }
 
-  event void CXDownload.downloadFinished(){
+  event void RouterCXDownload.downloadFinished(){
+    cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
+    pl -> networkSegment = NS_ROUTER;
     call CXDownloadFinishedSend.send(0, ctrlMsg,
       sizeof(cx_download_finished_t));
+    activeNS = 0xFF;
+  }
+
+  event void GlobalCXDownload.downloadFinished(){
+    cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
+    pl -> networkSegment = NS_GLOBAL;
+    call CXDownloadFinishedSend.send(0, ctrlMsg,
+      sizeof(cx_download_finished_t));
+    activeNS = 0xFF;
   }
   
   error_t downloadError;
@@ -305,7 +321,21 @@ implementation
     if (id == AM_CX_DOWNLOAD){
       
       cx_download_t* pl = payload;
-      downloadError = call CXDownload.startDownload();
+      switch (pl->networkSegment){
+        case NS_GLOBAL:
+          downloadError = call GlobalCXDownload.startDownload();
+          break;
+        case NS_ROUTER:
+          downloadError = call RouterCXDownload.startDownload();
+          break;
+        default:
+          printf("!Error: download requested for bad segment %u\r\n",
+            pl->networkSegment);
+          printfflush();
+      }
+      if (downloadError == SUCCESS){
+        activeNS = pl -> networkSegment;
+      }
       post ackDownload();
       return msg;
     } else {
@@ -347,6 +377,7 @@ implementation
     am_id_t id;
     am_addr_t addr,source;
     message_t* msg;
+    error_t error;
     
     atomic
       if (radioIn == radioOut && !radioFull)
@@ -372,15 +403,35 @@ implementation
     //move payload into correct position
     memmove( call RadioPacket.getPayload(msg, len), 
       aux, len);
-    if (call RadioSend.send[id](addr, msg, len) == SUCCESS){
+    
+    switch (activeNS){
+      case NS_ROUTER:
+        error = call RouterSend.send[id](addr, msg, len);
+        break;
+      case NS_GLOBAL:
+        error = call GlobalSend.send[id](addr, msg, len);
+        break;
+      default:
+        error = FAIL;
+    }
+    if (error == SUCCESS){
       call Leds.led0Toggle();
-    }else {
+    } else {
+      //I suppose we should probably retry under some circumstances,
+      //but it's hard to see how we could do that safely.
       //restore payload to original (uart) position.
-      memmove( call UartPacket.getPayload(msg, len), 
-        aux, len);
-      call UartAMPacket.setDestination(msg, addr);
-      call UartAMPacket.setSource(msg, source);
-      failBlink();
+//      memmove( call UartPacket.getPayload(msg, len), 
+//        aux, len);
+//      call UartAMPacket.setDestination(msg, addr);
+//      call UartAMPacket.setSource(msg, source);
+//      failBlink();
+	if (msg == radioQueue[radioOut])
+	  {
+	    if (++radioOut >= RADIO_QUEUE_LEN)
+	      radioOut = 0;
+	    if (radioFull)
+	      radioFull = FALSE;
+	  }
       post radioSendTask();
     }
   }
@@ -392,7 +443,7 @@ implementation
   event void CXDownloadFinishedSend.sendDone(message_t* msg, error_t error){
   }
 
-  event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+  void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     if (error != SUCCESS)
       failBlink();
     else
@@ -411,4 +462,13 @@ implementation
       call CtrlAckSend.send(0, ctrlMsg, sizeof(ctrl_ack_t));
     }
   }
+
+  event void GlobalSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    radioSendDone(id, msg, error);
+  }
+
+  event void RouterSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    radioSendDone(id, msg, error);
+  }
+
 }  

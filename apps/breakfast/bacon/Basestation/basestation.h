@@ -2,11 +2,11 @@
 #define BASESTATION_H
 
 typedef nx_struct cx_download {
-  nx_uint8_t channel;
+  nx_uint8_t networkSegment;
 } cx_download_t;
 
 typedef nx_struct cx_download_finished {
-  nx_uint8_t channel;
+  nx_uint8_t networkSegment;
 } cx_download_finished_t;
 
 typedef nx_struct ctrl_ack {

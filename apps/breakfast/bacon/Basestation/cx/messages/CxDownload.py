@@ -31,7 +31,7 @@ class CxDownload(tinyos.message.Message.Message):
     def __str__(self):
         s = "Message <CxDownload> \n"
         try:
-            s += "  [channel=0x%x]\n" % (self.get_channel())
+            s += "  [networkSegment=0x%x]\n" % (self.get_networkSegment())
         except:
             pass
         return s
@@ -39,57 +39,57 @@ class CxDownload(tinyos.message.Message.Message):
     # Message-type-specific access methods appear below.
 
     #
-    # Accessor methods for field: channel
+    # Accessor methods for field: networkSegment
     #   Field type: short
     #   Offset (bits): 0
     #   Size (bits): 8
     #
 
     #
-    # Return whether the field 'channel' is signed (False).
+    # Return whether the field 'networkSegment' is signed (False).
     #
-    def isSigned_channel(self):
+    def isSigned_networkSegment(self):
         return False
     
     #
-    # Return whether the field 'channel' is an array (False).
+    # Return whether the field 'networkSegment' is an array (False).
     #
-    def isArray_channel(self):
+    def isArray_networkSegment(self):
         return False
     
     #
-    # Return the offset (in bytes) of the field 'channel'
+    # Return the offset (in bytes) of the field 'networkSegment'
     #
-    def offset_channel(self):
+    def offset_networkSegment(self):
         return (0 / 8)
     
     #
-    # Return the offset (in bits) of the field 'channel'
+    # Return the offset (in bits) of the field 'networkSegment'
     #
-    def offsetBits_channel(self):
+    def offsetBits_networkSegment(self):
         return 0
     
     #
-    # Return the value (as a short) of the field 'channel'
+    # Return the value (as a short) of the field 'networkSegment'
     #
-    def get_channel(self):
-        return self.getUIntElement(self.offsetBits_channel(), 8, 1)
+    def get_networkSegment(self):
+        return self.getUIntElement(self.offsetBits_networkSegment(), 8, 1)
     
     #
-    # Set the value of the field 'channel'
+    # Set the value of the field 'networkSegment'
     #
-    def set_channel(self, value):
-        self.setUIntElement(self.offsetBits_channel(), 8, value, 1)
+    def set_networkSegment(self, value):
+        self.setUIntElement(self.offsetBits_networkSegment(), 8, value, 1)
     
     #
-    # Return the size, in bytes, of the field 'channel'
+    # Return the size, in bytes, of the field 'networkSegment'
     #
-    def size_channel(self):
+    def size_networkSegment(self):
         return (8 / 8)
     
     #
-    # Return the size, in bits, of the field 'channel'
+    # Return the size, in bits, of the field 'networkSegment'
     #
-    def sizeBits_channel(self):
+    def sizeBits_networkSegment(self):
         return 8
     
