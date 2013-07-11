@@ -57,7 +57,6 @@ def download(packetSource, bsId):
         downloadMsg = CxDownload.CxDownload()
 
         #TODO: read channel from...?
-        downloadMsg.set_channel(0)
         d.send(downloadMsg, bsId)
 
         ping = PingMsg.PingMsg()

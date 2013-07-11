@@ -11,9 +11,6 @@ from cx.messages.CtrlAck import CtrlAck
 from cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedListener
 from cx.messages.CxDownloadFinished import CxDownloadFinished
 
-#TODO: add blocking behavior to send: register listener for ctrlAck,
-# block the send command on this.
-
 class MultipleSourceException(Exception):
     pass
 
@@ -26,10 +23,17 @@ class CXMoteIF(MoteIF):
         self.finishedCV = Condition()
         self.addListener(CxDownloadFinishedListener(self.finishedCV),
           CxDownloadFinished)
-        #TODO: less arbitrary
+        #TODO: less arbitrary. In fact, we should probably be waiting
+        # until we get a downloadFinished. Might be helpful to add 
+        # downloadOngoing / haltDownload packets?
         self.sendTimeout = 30
         self.retryLimit = 0
         self.source = None
+
+    #TODO: addListener should also:
+    # * create a TunneledListener if one does not already exist
+    # * add an entry in TunneledListener to unpack/convert/re-enqueue
+    #   tunneled packets
 
     def addSource(self, s, isPrimary=True):
         '''There should be one primary source (e.g. serial connection
