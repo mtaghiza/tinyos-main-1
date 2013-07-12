@@ -62,9 +62,6 @@ MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDow
 APMIGDIR = autoPush/messages
 MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py $(APMIGDIR)/LogRecordDataMsg.py
 
-ROUTERMIGDIR = $(CXMIGDIR)
-MIGCLASSES += $(ROUTERMIGDIR)/TunneledMsg.py
-
 PINGMIGDIR = $(APMIGDIR)
 MIGCLASSES += $(PINGMIGDIR)/PingMsg.py $(PINGMIGDIR)/PongMsg.py 
 
@@ -106,12 +103,6 @@ $(PRINTFMIGDIR):
 
 $(PRINTFMIGDIR)/PrintfMsg.py: 
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
-
-$(ROUTERMIGDIR):
-	mkdir -p $(ROUTERMIGDIR)
-
-$(ROUTERMIGDIR)/TunneledMsg.py: $(ROUTERMIGDIR)
-	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Router/router.h $@ $(CFLAGS)
 
 migClasses: $(MIGCLASSES)
 
