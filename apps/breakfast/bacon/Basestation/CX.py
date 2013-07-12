@@ -16,6 +16,7 @@ from autoPush.messages import PingMsg
 from autoPush.db import Database
 
 from autoPush.decoders import BaconSample
+from cx.decoders import Tunneled
 
 from cx.messages import CxDownload
 from cx.CXMoteIF import CXMoteIF
@@ -48,6 +49,9 @@ def download(packetSource, bsId, networkSegment=NS_GLOBAL):
     db = Database.Database()
     d = Dispatcher(packetSource, bsId, db)
     db.addDecoder(BaconSample.BaconSample)
+    #man that is ugghly to hook 
+    t = db.addDecoder(Tunneled.Tunneled)
+    t.receiveQueue = d.mif.receiveQueue
     pingId = 0
 
     try:

@@ -8,3 +8,4 @@ lpp/*.pyc
 cx/*.pyc
 cx/messages/*.pyc
 cx/listeners/*.pyc
+cx/decoders/*.pyc
