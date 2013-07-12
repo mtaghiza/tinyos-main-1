@@ -21,12 +21,13 @@
 //#define FRAMELEN_FAST_SHORT (84500UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL
-#define FRAMELEN_FAST_SHORT 19700UL
+#define FRAMELEN_FAST_SHORT (19700UL + 5000UL)
 #endif
 
 //TODO: these should be based on sizeof's/whether FEC is in use.
-//Short packet: up to 2 bytes payload.
-#define SHORT_PACKET 12
+//Short packet: up to 2 bytes payload (mac header + 1 byte padding).
+//extended by 6 bytes for probe timestamp
+#define SHORT_PACKET 18
 //Long packet: at least 64 bytes, when encoded (also: 2 byte crc)
 #define LONG_PACKET 30
 
