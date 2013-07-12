@@ -10,6 +10,9 @@ CFLAGS += -I$(TOSDIR)/lib/cxl/packet
 CFLAGS += -I$(TOSDIR)/lib/cxl/mac
 CFLAGS += -I$(TOSDIR)/lib/cxl/am
 CFLAGS += -I$(TOSDIR)/lib/cxl/debug
+CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
+CFLAGS += -I$(TOSDIR)/lib/cx/routing
+CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
 CFLAGS += -I$(TOSROOT)/apps/breakfast/util
@@ -58,10 +61,11 @@ CFLAGS += -I../../util
 ENABLE_PRINTF ?= 1
 CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
 CFLAGS += -DRAW_SERIAL_PRINTF=1
-CFLAGS += -DDL_LPP=DL_INFO
-CFLAGS += -DDL_LINK=DL_WARN
+CFLAGS += -DDL_LPP=DL_ERROR
+CFLAGS += -DDL_LINK=DL_ERROR
+CFLAGS += -DPHOENIX_LOGGING=1
 
-CFLAGS += -DCX_LPP_BASIC=1
+CFLAGS += -DCX_LPP_BASIC=0
 
 include $(MAKERULES)
 

@@ -269,12 +269,28 @@ module CXWakeupP {
       return FAIL;
     }
   }
+  
+  uint32_t slowToFast(uint32_t slow){
+    return (slow*FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW;
+  }
 
-  command error_t LppProbeSniffer.sniff(uint32_t timeout){
+  command error_t LppProbeSniffer.sniff(uint8_t ns){
     if (state == S_IDLE){
-      error_t error = call SubCXLink.rx(timeout, FALSE);
-      if (SUCCESS == error && state != S_AWAKE){
-        forceRx = TRUE;
+      uint32_t probeIntervalFast;
+      error_t error;
+      activeNS = ns;
+      if (curChannel != activeChannel()){
+        setChannel(activeChannel());
+      }
+      probeIntervalFast = slowToFast((sched->invFrequency[ns]*probeInterval));
+      if (probeIntervalFast == 0){
+        return EINVAL;
+      }else{
+        error = call SubCXLink.rx(probeIntervalFast, FALSE);
+        if (SUCCESS == error){
+          forceRx = TRUE;
+        }
+        return error;
       }
     }else {
       return ERETRY;
