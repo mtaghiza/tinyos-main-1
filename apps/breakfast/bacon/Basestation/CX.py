@@ -32,9 +32,6 @@ class Dispatcher(object):
           LogRecordDataMsg.LogRecordDataMsg)
         self.mif.addListener(PongListener.PongListener(), 
           PongMsg.PongMsg)
-        #ugh: not guaranteed that the serial connection is fully
-        # opened by this point
-        time.sleep(1)
 
     def stop(self):
         self.mif.finishAll()
