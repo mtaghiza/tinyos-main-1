@@ -39,7 +39,11 @@ class Dispatcher(object):
     def send(self, m, dest=0):
         self.mif.send(dest, m)
 
-def download(packetSource, bsId):
+NS_GLOBAL=0
+NS_SUBNETWORK=1
+NS_ROUTER=2
+
+def download(packetSource, bsId, networkSegment=NS_GLOBAL):
     print packetSource
     db = Database.Database()
     d = Dispatcher(packetSource, bsId, db)
@@ -52,8 +56,8 @@ def download(packetSource, bsId):
         request_list = db.findMissing()
 
         downloadMsg = CxDownload.CxDownload()
+        downloadMsg.set_networkSegment(networkSegment)
 
-        #TODO: read channel from...?
         d.send(downloadMsg, bsId)
 
         ping = PingMsg.PingMsg()
@@ -78,9 +82,13 @@ def download(packetSource, bsId):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage:", sys.argv[0], "packetSource(e.g.  serial@/dev/ttyUSB0:115200) bsId" 
+        print "Usage:", sys.argv[0], "packetSource(e.g.  serial@/dev/ttyUSB0:115200) bsId [networkSegment]" 
+        print "  [networkSegment=0] : 0=global 1=subnetwork 2=router"
         sys.exit()
 
     packetSource = sys.argv[1]
     bsId = int(sys.argv[2])
-    download(packetSource, bsId)
+    networkSegment = NS_GLOBAL
+    if len(sys.argv) > 3:
+        networkSegment = int(sys.argv[3])
+    download(packetSource, bsId, networkSegment)
