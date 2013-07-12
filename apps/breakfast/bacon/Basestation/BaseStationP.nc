@@ -97,8 +97,8 @@ implementation
   message_t* ctrlMsg = &ctrlMsg_internal;
 
   enum {
-    UART_QUEUE_LEN = 3,
-    RADIO_QUEUE_LEN = 3,
+    UART_QUEUE_LEN = 2,
+    RADIO_QUEUE_LEN = 2,
   };
 
   message_t  uartQueueBufs[UART_QUEUE_LEN];
