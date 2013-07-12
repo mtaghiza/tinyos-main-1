@@ -423,7 +423,6 @@ module SlotSchedulerP {
     if (pendingMsg != NULL){
       return EBUSY;
     } else {
-      printf("SS.s %x\r\n", state);
       if (state == S_STATUS_PREP || state == S_IDLE){ 
         pendingMsg = msg;
         pendingLen = len;

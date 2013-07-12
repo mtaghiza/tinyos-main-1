@@ -60,6 +60,12 @@ module CXWakeupP {
   bool forceRx = FALSE;
   uint32_t probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
   message_t* probe;
+
+  //used to handle the situation where a wakeup is requested while
+  // we're probing/checking for wakeup.
+  bool manualWakeupPending = FALSE;
+  uint8_t manualWakeupNS;
+  
   
   probe_schedule_t* sched;
   void refreshSched(){
@@ -215,6 +221,12 @@ module CXWakeupP {
         probe = NULL;
         call ProbeTimer.startOneShot(randomize(probeInterval));
         state = S_IDLE;
+        //if wakeup was requested while we were probing, 
+        // and we are fixing to sleep, trigger the manual wakeup now.
+        if (manualWakeupPending){
+          manualWakeupPending = FALSE;
+          call LppControl.wakeup(manualWakeupNS);
+        }
       }
     } else if (state == S_AWAKE){
       if (firstWakeup){
@@ -354,7 +366,13 @@ module CXWakeupP {
         post signalWokenUp();
         return SUCCESS;
       case S_CHECK:
-        return EALREADY;
+        if (manualWakeupPending){
+          return EALREADY;
+        }else{
+          manualWakeupPending = TRUE;
+          manualWakeupNS = ns;
+          return SUCCESS;
+        }
       case S_AWAKE:
         return EALREADY;
       default:
