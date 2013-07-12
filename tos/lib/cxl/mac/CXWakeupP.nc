@@ -35,6 +35,7 @@ module CXWakeupP {
   provides interface LppProbeSniffer;
 
   uses interface Get<probe_schedule_t*>;
+  uses interface Get<uint16_t> as RebootCounter;
 } implementation {
 
   uint8_t activeNS;
@@ -104,6 +105,8 @@ module CXWakeupP {
 
   task void sendProbe(){
     error_t error;
+    cx_lpp_probe_t* pl = call Packet.getPayload(probe,
+      sizeof(cx_lpp_probe_t));
     activeNS = scheduleIndex;
     cdbg(LPP, "probe to %u @ %u\r\n", activeNS, probeCount);
     call Packet.clear(probe);
@@ -112,7 +115,9 @@ module CXWakeupP {
     (call CXLinkPacket.getLinkHeader(probe))->destination =
       AM_BROADCAST_ADDR;
     call CXLinkPacket.setAllowRetx(probe, FALSE);
-    call Packet.setPayloadLength(probe, 0);
+    call Packet.setPayloadLength(probe, sizeof(cx_lpp_probe_t));
+    pl -> rc = call RebootCounter.get();
+    pl -> tMilli = call ProbeTimer.getNow();
     if (curChannel != activeChannel()){
       setChannel(activeChannel());
     }
@@ -235,8 +240,10 @@ module CXWakeupP {
         signal CXLink.rxDone();
       }
     }else if (forceRx){
+      //through sniffin'
       forceRx = FALSE;
-      signal CXLink.rxDone();
+      //any more meaningful error code?
+      signal LppProbeSniffer.sniffDone(SUCCESS);
     } else {
       cerror(LPP, "Unexpected RXDone %x\r\n", state);
       //if we let upper layer request RX without doing a real wakeup
@@ -249,15 +256,7 @@ module CXWakeupP {
     if (state == S_OFF){
       return EOFF;
     } else if (state == S_IDLE){
-      if (retx == TRUE){
-        return EINVAL;
-      } else{
-        error_t error = call SubCXLink.rx(timeout, retx);
-        if (SUCCESS == error && state != S_AWAKE){
-          forceRx = TRUE;
-        }
-        return error;
-      }
+      return EOFF;
     } else if (state == S_CHECK){
       return ERETRY;
     }else if (state == S_AWAKE){
@@ -268,6 +267,17 @@ module CXWakeupP {
     }else{
       cerror(LPP, "Unexpected state %x at rx\r\n", state); 
       return FAIL;
+    }
+  }
+
+  command error_t LppProbeSniffer.sniff(uint32_t timeout){
+    if (state == S_IDLE){
+      error_t error = call SubCXLink.rx(timeout, FALSE);
+      if (SUCCESS == error && state != S_AWAKE){
+        forceRx = TRUE;
+      }
+    }else {
+      return ERETRY;
     }
   }
 
@@ -302,8 +312,7 @@ module CXWakeupP {
         }else{
           //nope: it's from another node. record it for topology/time
           //synch.
-          signal LppProbeSniffer.sniffProbe(call CXLinkPacket.source(msg));
-          return msg;
+          return signal LppProbeSniffer.sniffProbe(msg);
         }
     } else {
       //if state is check and we hear an ongoing non-probe transmission, 
@@ -492,5 +501,7 @@ module CXWakeupP {
   default event void LppControl.fellAsleep(){
   }
 
-  default event void LppProbeSniffer.sniffProbe(am_addr_t src){}
+  default event message_t* LppProbeSniffer.sniffProbe(message_t* msg){
+    return msg;
+  }
 }

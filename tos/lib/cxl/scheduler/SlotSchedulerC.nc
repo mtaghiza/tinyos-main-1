@@ -38,6 +38,9 @@ configuration SlotSchedulerC{
   SlotSchedulerP.Neighborhood -> NeighborhoodC;
   Neighborhood = NeighborhoodC;
   NeighborhoodC.LppProbeSniffer -> CXWakeupC;
+  //points to body of mac
+  NeighborhoodC.Packet -> CXWakeupC.Packet;
+  NeighborhoodC.CXLinkPacket -> CXWakeupC.CXLinkPacket;
 
   Packet = CXWakeupC.Packet;
 

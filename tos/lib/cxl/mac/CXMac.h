@@ -23,6 +23,11 @@ typedef nx_struct cx_mac_header{
   nx_uint8_t macType;
 } cx_mac_header_t;
 
+typedef nx_struct cx_lpp_probe {
+  nx_uint16_t rc;
+  nx_uint32_t tMilli;
+} cx_lpp_probe_t;
+
 #ifndef LPP_DEFAULT_PROBE_INTERVAL
 #define LPP_DEFAULT_PROBE_INTERVAL 5120UL
 #endif

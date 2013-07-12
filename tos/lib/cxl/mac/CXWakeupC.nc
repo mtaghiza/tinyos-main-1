@@ -56,4 +56,7 @@ configuration CXWakeupC {
   components CXProbeScheduleC;
   CXWakeupP.Get -> CXProbeScheduleC;
 
+  components RebootCounterC;
+  CXWakeupP.RebootCounter -> RebootCounterC;
+
 }
