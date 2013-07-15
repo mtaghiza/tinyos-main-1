@@ -38,21 +38,6 @@ class DatabaseInit(object):
     dbName = None
 
     # Table creation strings
-    RAW_TABLE_SQL = '''CREATE TABLE raw_table
-                       (node_id INTEGER,
-                        base_time REAL,
-                        sensor_id INTEGER, 
-                        node_time INTEGER, 
-                        sample_raw INTEGER);'''
-                        
-    META_TABLE_SQL = '''CREATE TABLE meta_table
-                        (node_id INTEGER,
-                         base_time REAL,
-                         sensor_id INTEGER,
-                         node_time INTEGER,
-                         toast_id INTEGER,
-                         calibrate text);'''
-                         
     FLASH_TABLE_SQL = '''CREATE TABLE cookie_table
                          (node_id INTEGER NOT NULL,
                           base_time REAL,
@@ -62,12 +47,6 @@ class DatabaseInit(object):
                           retry INTEGER DEFAULT 0,
                           PRIMARY KEY (node_id, cookie));'''
 
-    TIME_TABLE_SQL = '''CREATE TABLE time_table
-                        (node_id INTEGER,
-                         base_time REAL,
-                         node_time INTEGER,
-                         neighbor_id INTEGER);'''
-
     BACON_SAMPLE_SQL = '''CREATE TABLE bacon_sample
                         (node_id INTEGER,
                          cookie INTEGER,
@@ -75,42 +54,48 @@ class DatabaseInit(object):
                          base_time INTEGER,
                          battery INTEGER,
                          light INTEGER,
-                         thermistor INTEGER);'''
+                         thermistor INTEGER,
+                         PRIMARY KEY (node_id, cookie));'''
 
     TOAST_SAMPLE_SQL = '''CREATE TABLE toast_sample
                         (node_id INTEGER,
                          cookie INTEGER,
                          reboot_counter INTEGER,
                          base_time INTEGER,
-                         toast_id INTEGER);'''
+                         toast_id TEXT,
+                         PRIMARY KEY (node_id, cookie));'''
 
     SENSOR_SAMPLE_SQL= '''CREATE TABLE sensor_sample
                         (node_id INTEGER,
                          cookie INTEGER,
                          channel_number INTEGER,
-                         sample INTEGER);'''
+                         sample INTEGER,
+                         PRIMARY KEY (node_id, cookie, channel_number));'''
 
     TOAST_CONNECTION_SQL= '''CREATE TABLE toast_connection
                            (node_id INTEGER,
                             cookie INTEGER,
                             reboot_counter INTEGER,
                             time INTEGER,
-                            toast_id INTEGER,
-                            tlv BLOB);'''
+                            toast_id TEXT,
+                            tlv BLOB,
+                            PRIMARY KEY (node_id, cookie));'''
 
     SENSOR_CONNECTION_SQL='''CREATE TABLE sensor_connection
                            (node_id INTEGER,
                             cookie INTEGER,
                             channel_number INTEGER,
                             sensor_type INTEGER,
-                            sensor_id INTEGER);'''
+                            sensor_id INTEGER,
+                            PRIMARY KEY (node_id, cookie, channel_number));'''
 
     TOAST_DISCONNECTION_SQL='''CREATE TABLE toast_disconnection
                              (node_id INTEGER,
                               cookie INTEGER,
                               reboot_counter INTEGER,
                               time INTEGER,
-                              toast_id INTEGER);'''
+                              toast_id TEXT,
+                              PRIMARY KEY (node_id, cookie));'''
 
 
     # class finds suitable filename for DB and creates tables if needed
