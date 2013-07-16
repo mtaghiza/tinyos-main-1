@@ -54,7 +54,7 @@ class MenuFrame(Frame):
         self.comVar.set(self.DEFAULT_STRING)
         self.comOption = OptionMenu(self, self.comVar, [self.DEFAULT_STRING])
         self.comOption.config(state=DISABLED)
-        self.comOption.config(width=20)
+        self.comOption.config(width=25)
         self.comOption.grid(column=1,row=1)
         
         # connect button. disabled when no device detected and when already connected
@@ -81,10 +81,10 @@ class MenuFrame(Frame):
         self.s1Frame.grid(column=6, row=1)
         
         # program buttons
-        self.toasterButton = Button(self, text="Program Toaster", bg="gray", state=DISABLED, command=self.programToaster)
+        self.toasterButton = Button(self, text="Program Labeler", bg="gray", state=DISABLED, command=self.programToaster)
         self.toasterButton.grid(column=7, row=1)
 
-        self.leafButton = Button(self, text="Program Leaf", bg="gray", state=DISABLED, command=self.programLeaf)
+        self.leafButton = Button(self, text="Program Node", bg="gray", state=DISABLED, command=self.programLeaf)
         self.leafButton.grid(column=8, row=1)
         
         self.routerButton = Button(self, text="Program Router", bg="gray", state=DISABLED, command=self.programRouter)
@@ -104,6 +104,13 @@ class MenuFrame(Frame):
         self.progressBar = ttk.Progressbar(self, orient='horizontal', variable=self.progressVar, length=100, mode='determinate')
         self.progressBar.grid(column=12, row=1)
 
+#        # space
+#        self.s3Frame = Frame(self, width=10)
+#        self.s3Frame.grid_propagate(False)
+#        self.s3Frame.grid(column=13, row=1)
+#
+#        self.updateButton = Button(self, text="Update", bg="gray", state=DISABLED, width=10, command=self.programBasestation)
+#        self.updateButton.grid(column=14, row=1)
         
         # detect devices. this function calls itself every second.
         self.deviceDetection()
@@ -285,7 +292,7 @@ class MenuFrame(Frame):
             self.handler.notbusy()
 
             if self.programmingStatus:
-                tkMessageBox.showinfo("Toaster", "Programming done", parent=self.parent)
+                tkMessageBox.showinfo("Labeler", "Programming done", parent=self.parent)
             else:
                 tkMessageBox.showerror("Error", "Programming failed", parent=self.parent)
 
@@ -300,7 +307,7 @@ class MenuFrame(Frame):
         except:
             tkMessageBox.showerror("Error", "CSV export failed", parent=self.parent)
         else:
-            tkMessageBox.showinfo("Toaster", "CSV export done", parent=self.parent)
+            tkMessageBox.showinfo("Labeler", "CSV export done", parent=self.parent)
 
 if __name__ == '__main__':
     root = Tk()

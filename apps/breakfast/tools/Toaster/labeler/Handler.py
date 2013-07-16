@@ -51,7 +51,7 @@ class Handler(object):
             self.notbusy()
         
         if self.autoToastDone:
-            print "auto toast done"
+            print "auto programming done"
             self.autoToastDone = False
             self.menuFrame.connect()
         
@@ -206,7 +206,7 @@ class Handler(object):
             self.toast.readVersion()
         except TagNotFoundError:
             try:
-                print "New Toast"
+                print "New Multiplexer detected"
                 self.toast.writeVersion(0)
                 self.powerCycle()
                 self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
@@ -227,22 +227,22 @@ class Handler(object):
     def resetToast(self):
         try:
             self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
-        except TagNotFoundError:
+        except:
             pass
         
         try:
             self.toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
-        except TagNotFoundError:
+        except:
             pass
             
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
-        except TagNotFoundError:
+        except:
             pass
             
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_CUSTOM)
-        except TagNotFoundError:
+        except:
             pass
             
         self.powerCycle()

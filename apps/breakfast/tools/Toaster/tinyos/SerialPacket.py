@@ -4,7 +4,7 @@
 # message type.
 #
 
-import Message
+import tinyos.message.Message as Message
 
 # The default size of this message type in bytes.
 DEFAULT_MESSAGE_SIZE = 7

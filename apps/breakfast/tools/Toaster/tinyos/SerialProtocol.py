@@ -38,7 +38,7 @@ from IO import IODone
 from Serial import Serial
 
 import Queue
-import toaster.Dispatcher 
+import labeler.Dispatcher 
 
 SYNC_BYTE = Serial.HDLC_FLAG_BYTE
 ESCAPE_BYTE = Serial.HDLC_CTLESC_BYTE 

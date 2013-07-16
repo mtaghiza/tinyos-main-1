@@ -214,7 +214,7 @@ class GraphFrame(Frame):
                 self.sampleButton.config(state=NORMAL, text="Stop sampling", cursor="hand2")
                 self.handler.startSampling(self.sensors)
             else:
-                tkMessageBox.showinfo("Toaster", "No sensors to sample", parent=self.parent)
+                tkMessageBox.showinfo("Labeler", "No sensors to sample", parent=self.parent)
 
     def sampleSignal(self, sampling):
         #self.sampling = sampling

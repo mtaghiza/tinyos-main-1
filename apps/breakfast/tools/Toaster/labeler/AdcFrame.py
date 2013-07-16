@@ -16,9 +16,9 @@ class AdcFrame(Frame):
         self.pack()
 
     def initUI(self):
-        self.adcBaconLabel = Label(self, text="Bacon Factory ADC Constants:")
+        self.adcBaconLabel = Label(self, text="Node Factory ADC Constants:")
         self.adcBaconLabel.grid(column=1, row=2, sticky=E)
-        self.adcToastLabel = Label(self, text="Toast Factory ADC Constants:")
+        self.adcToastLabel = Label(self, text="Multiplex Factory ADC Constants:")
         self.adcToastLabel.grid(column=1, row=3, sticky=E)
 
         self.adc0BaconLabel = Label(self, text="Gain", width=10)

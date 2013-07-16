@@ -30,25 +30,35 @@
 #
 import re
 import socket
+import sys
 
 from PacketSource import *
-from Platform import *
-from SFProtocol import *
-from SocketIO import *
+#from Platform import *
+from SerialProtocol import *
+if sys.platform != 'cygwin':
+    from SerialIO import *
 
-class SFSource(PacketSource):
-    def __init__(self, dispatcher, args):
+class SerialSource(PacketSource):
+    def __init__(self, dispatcher, args, signalError=lambda:None):
         PacketSource.__init__(self, dispatcher)
 
         m = re.match(r'(.*):(.*)', args)
         if m == None:
             raise PacketSourceException("bad arguments")
 
-        (host, port) = m.groups()
-        port = int(port)
+        (device, name) = m.groups()
+        if re.match(r'^\d+$', name):
+            baud = int(name)
+            #self.factory = default_factory()
+        else:
+            try:
+                baud = baud_from_name(name)
+                #self.factory = factory_from_name(name)
+            except:
+                raise PacketSourceException("bad source: %s" % name)
 
-        self.io = SocketIO(host, port)
-        self.prot = SFProtocol(self.io, self.io)
+        self.io = SerialIO(device, baud)
+        self.prot = SerialProtocol(self.io, self.io, signalError)
 
     def cancel(self):
         self.done = True
@@ -67,3 +77,4 @@ class SFSource(PacketSource):
 
     def writePacket(self, packet):
         self.prot.writePacket(packet)
+

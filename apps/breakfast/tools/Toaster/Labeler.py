@@ -2,12 +2,12 @@
 
 from Tkinter import *
 
-from toaster.MenuFrame import MenuFrame
-from toaster.BaconFrame import BaconFrame
-from toaster.ToastFrame import ToastFrame
-from toaster.Handler import Handler
-from toaster.GraphFrame import GraphFrame
-from toaster.AdcFrame import AdcFrame
+from labeler.MenuFrame import MenuFrame
+from labeler.BaconFrame import BaconFrame
+from labeler.ToastFrame import ToastFrame
+from labeler.Handler import Handler
+from labeler.GraphFrame import GraphFrame
+from labeler.AdcFrame import AdcFrame
 
 from SimPy.SimPlot import * 
 
@@ -25,9 +25,10 @@ root = simplot.root
 handler = Handler(root)    
 
 root.geometry("1280x630")
-root.title("Toaster")
+root.title("Labeler")
 root.bind_class("Entry","<Control-a>", selectall)
 root.bind("<Alt-F4>", quit)
+root.bind('<Control-c>', quit)
 root.protocol("WM_DELETE_WINDOW", quit)
 root.resizable(0,0)
 
@@ -59,6 +60,7 @@ handler.addAdcFrame(adcFrame)
 #menuFrame = Frame(root, width=1024, height=30, bd=1, relief=SUNKEN)
 #menuFrame.grid(column=1, row=4, columnspan=2)
 
-
-root.mainloop()
-
+try:
+    root.mainloop()
+except KeyboardInterrupt:
+    pass

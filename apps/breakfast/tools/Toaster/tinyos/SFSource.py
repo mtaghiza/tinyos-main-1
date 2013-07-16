@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006
+# Copyright (c) 2005-2006
 #      The President and Fellows of Harvard College.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,60 +30,40 @@
 #
 import re
 import socket
-import sys
-import traceback
 
-DEBUG = False
+from PacketSource import *
+#from Platform import *
+from SFProtocol import *
+from SocketIO import *
 
-PLATFORMS = {"mica": ("avrmote", 1, 19200),
-             "mica2dot": ("avrmote", 1, 19200),
-             "mica2": ("avrmote", 1, 57600),
-             "telos": ("telos", 2, 57600),
-             "tmote": ("telos", 2, 57600),
-             "micaz": ("avrmote", 3, 57600),
-             "eyes": ("eyes", 4, 19200)}
+class SFSource(PacketSource):
+    def __init__(self, dispatcher, args):
+        PacketSource.__init__(self, dispatcher)
 
-ID_AVRMOTE = 1
-ID_TELOS = 2
-ID_MICAZ = 3
-ID_EYES = 4
+        m = re.match(r'(.*):(.*)', args)
+        if m == None:
+            raise PacketSourceException("bad arguments")
 
-DEFAULT_BAUD = 19200
+        (host, port) = m.groups()
+        port = int(port)
 
-class UnknownPlatform(Exception):
-    pass
+        self.io = SocketIO(host, port)
+        self.prot = SFProtocol(self.io, self.io)
 
-def baud_from_name(name):
-    try:
-        return PLATFORMS[name][2]
-    except:
-        raise UnknownPlatform()
+    def cancel(self):
+        self.done = True
+        self.io.cancel()
 
-def default_factory():
-    return factory_from_platform("avrmote")
+    def open(self):
+        self.io.open()
+        self.prot.open()
+        PacketSource.open(self)
 
-def factory_from_name(name):
-    try:
-        return factory_from_platform(PLATFORMS[name][0])
-    except:
-        raise UnknownPlatform()
+    def close(self):
+        self.io.close()
 
-def factory_from_id(i):
-    if i == ID_AVRMOTE:
-        return factory_from_platform("avrmote")
-    elif i == ID_TELOS:
-        return factory_from_platform("telos")
-    elif i == ID_MICAZ:
-        return factory_from_platform("avrmote")
-    else:
-        raise UnknownPlatform()
+    def readPacket(self):
+        return self.prot.readPacket()
 
-def factory_from_platform(platform):
-    try:
-        mod = __import__("tinyos.packet.%s" % platform)
-        return mod.packet.__dict__[platform].TOS_Msg
-    except Exception, x:
-        if DEBUG:
-            print >>sys.stderr, x
-            print >>sys.stderr, traceback.print_tb(sys.exc_info()[2])
-        raise UnknownPlatform()
+    def writePacket(self, packet):
+        self.prot.writePacket(packet)

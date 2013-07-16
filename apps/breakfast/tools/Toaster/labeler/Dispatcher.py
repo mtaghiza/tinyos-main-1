@@ -4,7 +4,7 @@ import sys, time, thread
 
 import Queue
 
-from tos.MoteIF import MoteIF
+from tinyos.MoteIF import MoteIF
 #from tinyos.message import *
 #from tinyos.message.Message import *
 #from tinyos.message.SerialPacket import *
