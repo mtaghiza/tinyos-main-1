@@ -43,4 +43,11 @@ configuration RouterAppC{
   components new LogStorageC(VOLUME_RECORD, TRUE);
   RouterP.LogWrite -> LogStorageC;
   RouterP.Pool -> PoolC;
+
+  components CXRouterC;
+  components SettingsStorageC;
+  components new TimerMilliC();
+  RouterP.CXDownload -> CXRouterC.CXDownload[NS_SUBNETWORK];
+  RouterP.SettingsStorage -> SettingsStorageC;
+  RouterP.Timer -> TimerMilliC;
 }

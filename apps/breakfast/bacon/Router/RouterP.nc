@@ -10,7 +10,12 @@ module RouterP{
 
   uses interface Pool<message_t>;
   uses interface LogWrite;
+
+  uses interface Timer<TMilli>;
+  uses interface SettingsStorage;
+  uses interface CXDownload;
 } implementation {
+  uint32_t downloadInterval = DEFAULT_DOWNLOAD_INTERVAL;
 
   event void Boot.booted(){
     call SplitControl.start();
@@ -19,8 +24,26 @@ module RouterP{
   command am_addr_t Get.get(){
     return AM_BROADCAST_ADDR;
   }
+  
+  task void downloadNext(){
+    call SettingsStorage.get(SS_KEY_DOWNLOAD_INTERVAL,
+      &downloadInterval, sizeof(downloadInterval));   
+    call Timer.startOneShot(downloadInterval);
+  }
 
   event void SplitControl.startDone(error_t error){
+    post downloadNext();
+  }
+
+  event void Timer.fired(){
+    error_t error = call CXDownload.startDownload();
+    if (error != SUCCESS){
+      call Timer.startOneShot(DOWNLOAD_RETRY_INTERVAL);
+    }
+  }
+
+  event void CXDownload.downloadFinished(){
+    post downloadNext();
   }
 
   event void SplitControl.stopDone(error_t error){
