@@ -84,6 +84,7 @@ implementation {
   components BaseStationP;
   components LedsC, NoLedsC;
   components ActiveMessageC as Radio, SerialActiveMessageC as Serial;
+  components StackGuardMilliC;
 
   
   MainC.Boot <- BaseStationP;
@@ -108,9 +109,13 @@ implementation {
   BaseStationP.Leds -> LedsC;
   BaseStationP.CXLeds -> NoLedsC;
 
+  components new PoolC(message_t, 2);
+  BaseStationP.Pool -> PoolC;
+
   components CXBaseStationC;
   BaseStationP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];
   BaseStationP.GlobalCXDownload -> CXBaseStationC.CXDownload[NS_GLOBAL];
+  BaseStationP.StatusReceive -> CXBaseStationC.StatusReceive;
 
   components new SerialAMSenderC(AM_CTRL_ACK) as CtrlAckSend;
   BaseStationP.CtrlAckSend -> CtrlAckSend;
@@ -118,7 +123,12 @@ implementation {
   components new SerialAMSenderC(AM_CX_DOWNLOAD_FINISHED) 
     as CXDownloadFinishedSend;
   BaseStationP.CXDownloadFinishedSend -> CXDownloadFinishedSend;
+
+  components new SerialAMSenderC(AM_STATUS_TIME_REF) 
+    as StatusTimeRefSend;
+  BaseStationP.StatusTimeRefSend -> StatusTimeRefSend;
   
   components CXLinkPacketC;
   BaseStationP.CXLinkPacket -> CXLinkPacketC;
+
 }

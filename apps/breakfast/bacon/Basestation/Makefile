@@ -15,6 +15,12 @@ CFLAGS += -I$(TOSDIR)/lib/cx/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/RebootCounter
+CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
+
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util/stackGuard
+
+
 PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
 CFLAGS+=-DXT2_SMCLK
 
@@ -57,7 +63,7 @@ LPPMIGDIR = lpp
 MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/CxLppWakeup.py 
 
 CXMIGDIR = cx/messages
-MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py 
+MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
 
 APMIGDIR = autoPush/messages
 MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py $(APMIGDIR)/LogRecordDataMsg.py

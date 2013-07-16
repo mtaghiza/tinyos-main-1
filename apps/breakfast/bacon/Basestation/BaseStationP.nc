@@ -58,6 +58,7 @@
 #include "Serial.h"
 #include "basestation.h"
 #include "multiNetwork.h"
+#include "CXMac.h"
 
 module BaseStationP @safe() {
   uses {
@@ -88,13 +89,19 @@ module BaseStationP @safe() {
   uses interface CXDownload as GlobalCXDownload;
 
   uses interface CXLinkPacket;
+  
+  //For simple timestamping
+  uses interface Receive as StatusReceive;
+  uses interface AMSend as StatusTimeRefSend;
+  uses interface Pool<message_t>;
 }
 
 implementation
 {
   uint8_t aux[TOSH_DATA_LENGTH];
-  message_t ctrlMsg_internal;
-  message_t* ctrlMsg = &ctrlMsg_internal;
+  message_t* ctrlMsg; 
+  message_t* ackMsg; 
+
 
   enum {
     UART_QUEUE_LEN = 2,
@@ -291,28 +298,37 @@ implementation
     post uartSendTask();
   }
 
-  event void RouterCXDownload.downloadFinished(){
-    cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
-    pl -> networkSegment = NS_ROUTER;
-    call CXDownloadFinishedSend.send(0, ctrlMsg,
-      sizeof(cx_download_finished_t));
+  void reportFinished(uint8_t segment){
+    ctrlMsg = call Pool.get();
+    if (ctrlMsg){
+      cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
+      pl -> networkSegment = segment;
+      call CXDownloadFinishedSend.send(0, ctrlMsg,
+        sizeof(cx_download_finished_t));
+    }else{
+      printf("No messages in pool!\r\n");
+      printfflush();
+    }
     activeNS = 0xFF;
   }
 
+  event void RouterCXDownload.downloadFinished(){
+    reportFinished(NS_ROUTER);
+  }
+
   event void GlobalCXDownload.downloadFinished(){
-    cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
-    pl -> networkSegment = NS_GLOBAL;
-    call CXDownloadFinishedSend.send(0, ctrlMsg,
-      sizeof(cx_download_finished_t));
-    activeNS = 0xFF;
+    reportFinished(NS_GLOBAL);
   }
   
   error_t downloadError;
   task void ackDownload(){
-    ctrl_ack_t* pl = call CtrlAckSend.getPayload(ctrlMsg,
-      sizeof(ctrl_ack_t));
-    pl -> error = downloadError;
-    call CtrlAckSend.send(0, ctrlMsg, sizeof(ctrl_ack_t));
+    ackMsg = call Pool.get();
+    if (ackMsg){
+      ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
+        sizeof(ctrl_ack_t));
+      pl -> error = downloadError;
+      call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
+    }
   }
 
   event message_t *UartReceive.receive[am_id_t id](message_t *msg,
@@ -437,10 +453,14 @@ implementation
   }
 
   event void CtrlAckSend.sendDone(message_t* msg, error_t error){
+    call Pool.put(ackMsg);
+    ackMsg = NULL;
     post radioSendTask();
   }
 
   event void CXDownloadFinishedSend.sendDone(message_t* msg, error_t error){
+    call Pool.put(ctrlMsg);
+    ctrlMsg = NULL;
   }
 
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
@@ -455,11 +475,12 @@ implementation
 	    if (radioFull)
 	      radioFull = FALSE;
 	  }
-    {
-      ctrl_ack_t* pl = call CtrlAckSend.getPayload(ctrlMsg,
+    ackMsg = call Pool.get();
+    if (ackMsg) {
+      ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
         sizeof(ctrl_ack_t));
       pl -> error = error;
-      call CtrlAckSend.send(0, ctrlMsg, sizeof(ctrl_ack_t));
+      call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
     }
   }
 
@@ -469,6 +490,46 @@ implementation
 
   event void RouterSend.sendDone[am_id_t id](message_t* msg, error_t error) {
     radioSendDone(id, msg, error);
+  }
+
+  message_t* statusMsg;
+  cx_status_t* statusPl;
+
+  task void logStatus(){
+    am_addr_t node = call RadioAMPacket.source(statusMsg);
+    uint16_t rc = statusPl->wakeupRC;
+    uint32_t ts = statusPl->wakeupTS;
+    status_time_ref_t* pl = call
+    StatusTimeRefSend.getPayload(statusMsg,
+      sizeof(status_time_ref_t));
+
+    call UartPacket.clear(statusMsg);
+    pl -> node = node;
+    pl -> rc = rc;
+    pl -> ts = ts;
+    if (SUCCESS != call StatusTimeRefSend.send(0, statusMsg, sizeof(status_time_ref_t))){
+      call Pool.put(statusMsg);
+      statusMsg = NULL;
+    }
+  }
+
+  event message_t* StatusReceive.receive(message_t* msg, void* pl,
+      uint8_t len){
+    message_t* ret = call Pool.get();
+    if (ret){
+      statusMsg = msg;
+      statusPl = pl;
+      post logStatus();
+      return ret;
+    } else {
+      return msg;
+    }
+  }
+  
+  event void StatusTimeRefSend.sendDone(message_t* msg, 
+      error_t error){
+    call Pool.put(statusMsg);
+    statusMsg = NULL;
   }
 
 }  
