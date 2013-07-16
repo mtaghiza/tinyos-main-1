@@ -27,6 +27,8 @@ module SlotSchedulerP {
   uses interface RoutingTable;
 
   provides interface CTS;
+
+  uses interface Get<uint16_t> as RebootCounter;
 } implementation {
 
   enum {
@@ -257,6 +259,8 @@ module SlotSchedulerP {
       pl -> bw = call SlotController.bw[activeNS]();
       pl -> distance = call RoutingTable.getDistance(master, 
         call ActiveMessageAddress.amAddress());
+      pl -> wakeupRC = call RebootCounter.get();
+      pl -> wakeupTS = wakeupStart;
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);

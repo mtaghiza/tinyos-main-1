@@ -9,6 +9,7 @@ module CXMasterP {
   uses interface Neighborhood;
   uses interface ActiveMessageAddress;
   provides interface CTS[uint8_t ns];
+  provides interface Receive;
 } implementation {
 
   /**
@@ -113,6 +114,11 @@ module CXMasterP {
         }
       }
     }
+    return signal Receive.receive(msg, pl, sizeof(cx_status_t));
+  }
+
+  default event message_t* Receive.receive(message_t* msg, void* pl,
+      uint8_t len){
     return msg;
   }
 

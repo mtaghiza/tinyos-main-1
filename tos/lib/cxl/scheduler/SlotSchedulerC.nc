@@ -50,4 +50,7 @@ configuration SlotSchedulerC{
   components CXRoutingTableC;
   SlotSchedulerP.RoutingTable -> CXRoutingTableC;
 
+  components RebootCounterC;
+  SlotSchedulerP.RebootCounter -> RebootCounterC;
+
 }

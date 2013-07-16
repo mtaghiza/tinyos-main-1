@@ -9,6 +9,8 @@ configuration CXBaseStationC {
 
   uses interface Pool<message_t>;
   provides interface CTS[uint8_t ns];
+
+  provides interface Receive as StatusReceive;
 } implementation {
   components SlotSchedulerC;
 
@@ -37,5 +39,7 @@ configuration CXBaseStationC {
 
   CTS[NS_GLOBAL] = CXMasterP.CTS[NS_GLOBAL];
   CTS[NS_ROUTER] = CXMasterP.CTS[NS_ROUTER];
+
+  StatusReceive = CXMasterP.Receive;
 
 }
