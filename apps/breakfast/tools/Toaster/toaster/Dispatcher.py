@@ -78,7 +78,7 @@ class Dispatcher(object):
         if Dispatcher.users == 1:
             Dispatcher.mif.finishAll()
             Dispatcher.mif = None
-            print "finished"
+            print "All serial listeners closed"
             
         Dispatcher.users = Dispatcher.users - 1 
 

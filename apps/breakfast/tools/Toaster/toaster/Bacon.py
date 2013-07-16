@@ -222,9 +222,9 @@ if __name__ == '__main__':
 
     #print bacon.readVersion()
     #print bacon.readIV()
-    print bacon.readAdcC()
+    #print bacon.readAdcC()
     
-    #print bacon.readTLV()
+    print bacon.readTLV()
     
     #print bacon.deleteTLVEntry(Bacon.TAG_GLOBAL_ID), Bacon.TAG_GLOBAL_ID
     #print bacon.addTLVEntry(Bacon.TAG_GLOBAL_ID, [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08])

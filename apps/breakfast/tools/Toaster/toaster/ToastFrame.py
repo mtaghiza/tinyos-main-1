@@ -1,20 +1,26 @@
 
 import Tkinter
+import tkMessageBox
 from Tkinter import *
-
 from BreakfastError import *
 from Toast import Toast
 
 
 class ToastFrame(Frame):
+    
+    EMPTY_ASSIGNMENTS = [[None,None,None,None,None,None,None,None],[None,None,None,None,None,None,None,None]]
 
     def __init__(self, parent, handler, **args):
         Frame.__init__(self, parent, **args)
         
+        self.parent = parent
         self.handler = handler
         
-        self.assignments = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+        #self.assignments = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
+        self.assignments = self.EMPTY_ASSIGNMENTS
         self.sampling = False
+        
+        self.barcodeSet = True
         
         self.initUI()
         self.disableUI()
@@ -35,11 +41,11 @@ class ToastFrame(Frame):
         self.newLabel = Label(self, text="New Value")
         self.newLabel.grid(column=4, row=1, columnspan=2)
     
-        self.barcodeLabel = Label(self, text="Toast ID:", width=11, anchor=E)
+        self.barcodeLabel = Label(self, text="Multiplex ID:", width=11, anchor=E)
         self.barcodeLabel.grid(column=1, row=2)
 
         self.barcodeVar = StringVar()
-        self.barcodeVar.set("<not available>")
+        self.barcodeVar.set("Not available")
         self.barcodeVarLabel = Label(self, textvar=self.barcodeVar, width=18)
         self.barcodeVarLabel.grid(column=2, row=2, columnspan=2)
 
@@ -52,7 +58,7 @@ class ToastFrame(Frame):
         self.dcoLabel.grid(column=1, row=3)
 
         self.dcoVar = StringVar()
-        self.dcoVar.set("<not available>")        
+        self.dcoVar.set("Not available")        
         self.dcoVarLabel = Label(self, textvar=self.dcoVar, width=18)
         self.dcoVarLabel.grid(column=2, row=3, columnspan=2)        
 
@@ -161,7 +167,7 @@ class ToastFrame(Frame):
 
 
         self.resetButton = Button(self, text="Reset", command=self.reset, width=6)
-        self.resetButton.grid(column=4, row=14)
+        self.resetButton.grid(column=2, row=14)
  
         #self.sampleButton = Button(self, text="Sample", command=self.sample)
         #self.sampleButton.grid(column=4, row=10) 
@@ -250,9 +256,9 @@ class ToastFrame(Frame):
         try:
             self.handler.connectToast()
         except:
-            self.dcoVar.set("<no device detected>")
-            self.assignmentVar.set("<no device detected>")
-            self.barcodeVar.set("<no device detected>")
+            self.dcoVar.set("No device detected")
+            self.assignmentVar.set("No device detected")
+            self.barcodeVar.set("No device detected")
 
             # disable ToastFrame and GraphFrame UI, keep reconnect button on
             self.disableUI()
@@ -272,6 +278,8 @@ class ToastFrame(Frame):
 
     def reset(self):
         self.handler.busy()
+        if self.barcodeSet:
+            self.handler.databaseRemoveSensors()
         self.handler.resetToast()
         self.reconnect()
 
@@ -285,7 +293,7 @@ class ToastFrame(Frame):
         else:            
             self.sensors = []
             for i in range(0,8):
-                if self.assignments[0][i]:
+                if self.assignments[0][i] is not None:
                     self.sensors.append(i)
             
             if self.sensors:
@@ -302,7 +310,7 @@ class ToastFrame(Frame):
         except TagNotFoundError:
             self.dcoVar.set("Update DCO")
         except:
-            self.dcoVar.set("<DCO error>")
+            self.dcoVar.set("DCO error")
         else:
             self.dcoVar.set(dcoStr)
     
@@ -311,34 +319,42 @@ class ToastFrame(Frame):
         try:
             barcodeStr = self.handler.getToastBarcode()
         except TagNotFoundError:
-            self.barcodeVar.set("<no assignemnts set>")
+            self.barcodeVar.set("No assignemnts set")
             self.barcodeVarLabel.config(fg="black")
             self.newBarcodeEntry.focus_set()
+            self.barcodeSet = False
         except Exception:
-            self.barcodeVar.set("<read error>")
+            self.barcodeVar.set("Read error")
             self.barcodeVarLabel.config(fg="red")
         else:
             self.barcodeVar.set(barcodeStr)
             self.barcodeVarLabel.config(fg="black")
+            self.barcodeSet = True
 
     def updateBarcodeKey(self, event):
         self.updateBarcode()
         self.sensor0newIDEntry.focus()
 
     def updateBarcode(self):
+        
+        if self.barcodeSet:
+            if not tkMessageBox.askokcancel("Warning", "Barcode already set. Do you wish to overwrite?", parent=self.parent):
+                self.newBarcodeVar.set("")
+                return
+            
         self.handler.busy()
         try:
             self.handler.setToastBarcode(self.newBarcodeVar.get())
         except ValueError:
-            self.barcodeVar.set("<barcode not an integer>")
+            self.barcodeVar.set("Barcode not an integer")
             self.barcodeVarLabel.config(fg="red")
         except:
-            self.barcodeVar.set("<update failed>")
+            self.barcodeVar.set("Update failed")
             self.barcodeVarLabel.config(fg="red")
         else:    
-            self.redrawBarcode()
+            self.handler.databaseToast()
             self.newBarcodeVar.set("")
-            self.handler.insertToast()
+            self.redrawBarcode()
         self.handler.notbusy()
 
 
@@ -346,13 +362,14 @@ class ToastFrame(Frame):
 
         try:
             self.assignments = self.handler.getAssignments()
+            print self.assignments
         except TagNotFoundError:
-            self.assignmentVar.set("<no assignemnts set>")
-            self.assignments = Toast.EMPTY_ASSIGNMENTS
+            self.assignmentVar.set("No assignemnts set")
+            self.assignments = self.EMPTY_ASSIGNMENTS
         except Exception:
-            self.assignmentVar.set("<read error>")
+            self.assignmentVar.set("Read error")
             self.assignmentVarLabel.config(fg="red")
-            self.assignments = Toast.EMPTY_ASSIGNMENTS
+            self.assignments = self.EMPTY_ASSIGNMENTS
         else:
             self.assignmentVar.set("")
             self.assignmentVarLabel.config(fg="black")
@@ -365,7 +382,12 @@ class ToastFrame(Frame):
                 else:
                     tmpStr = "N/A"
                     tmpType = "N/A"
-
+                    
+                    # reset fields in assignment array
+                    # 0 means 'reset channel on toast' while None means 'ignore field'
+                    self.assignments[0][i] = None
+                    self.assignments[1][i] = None
+                
                 eval("self.sensor%dIDVar.set(tmpStr)" % (i))
                 eval("self.sensor%dTypeVar.set(tmpType)" % (i))
 
@@ -374,6 +396,12 @@ class ToastFrame(Frame):
         self.updateAssignments()
 
     def updateAssignments(self):
+        
+        if not self.barcodeSet:    
+            self.assignmentVar.set("Toast ID must be set")
+            self.assignmentVarLabel.config(fg="red")
+            return
+        
         self.assignmentVar.set("")
         change = False
         duplicate = {}
@@ -388,9 +416,15 @@ class ToastFrame(Frame):
                 try:
                     tmp = int(self.code, 16)
                     newID = tmp & 0xFFFF
-                    newType = (tmp >> 16) & 0xFF                                        
+                    newType = (tmp >> 16) & 0xFF
+                    
+                    # sensor/type with non zero values are real assignments
+                    # sensor/type with both zero values are channel resets
+                    # sensor/type with either zero values are invalid
+                    if bool(newID) ^ bool(newType):
+                        raise
                 except:
-                    self.assignmentVar.set("<invalid input>")
+                    self.assignmentVar.set("Invalid input")
                     self.assignmentVarLabel.config(fg="red")
                     return
                 
@@ -405,7 +439,7 @@ class ToastFrame(Frame):
             if newID and newType:
                 print (str(newID)+str(newType))
                 if (str(newID)+str(newType)) in duplicate:
-                    self.assignmentVar.set("<invalid input>")
+                    self.assignmentVar.set("Duplicate entry")
                     self.assignmentVarLabel.config(fg="red")
                     return
                 else:
@@ -416,6 +450,7 @@ class ToastFrame(Frame):
             self.handler.busy()
             print self.assignments
             try:
+                # write to toast TLV area
                 self.handler.setAssignments(self.assignments)
             except OutOfSpaceError:
                 self.assignmentVar.set("Out of memory")
@@ -425,7 +460,9 @@ class ToastFrame(Frame):
                 for i in range(0,8):
                     eval("self.sensor%dnewIDVar.set('')" % i)
                 self.redrawAssignments()
-                self.handler.insertSensors()
+                
+                # insert into database
+                self.handler.databaseSensors()
             self.handler.notbusy()
             
 

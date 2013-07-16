@@ -26,10 +26,13 @@ class Database(object):
         
         self.insert.insertToast(toast)
 
-    def insertSensors(self, sensors):
+    def attachSensors(self, sensors):
         print sensors
         
-        self.insert.insertSensors(sensors)
+        self.insert.attachSensors(sensors)
+
+    def detachSensors(self, toast):
+        self.insert.detachSensors(toast)
 
     def exportCSV(self):
         self.export.exportCSV()

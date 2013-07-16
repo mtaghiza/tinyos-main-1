@@ -39,9 +39,9 @@ class DatabaseInit(object):
 
     # Table creation strings
     BACON_TABLE_SQL = '''CREATE TABLE bacon_table
-                           (bacon_id TEXT, 
-                            time INTEGER,
-                            manufacture_id TEXT,
+                           (bacon_id TEXT NOT NULL, 
+                            time REAL NOT NULL,
+                            manufacture_id TEXT NOT NULL,
                             gain INTEGER,
                             offset INTEGER,
                             c15t30 INTEGER,
@@ -53,11 +53,11 @@ class DatabaseInit(object):
                             c15vref INTEGER,
                             c20vref INTEGER,
                             c25vref INTEGER,
-                            CHECK(bacon_id <> '' and manufacture_id <> ''));'''
+                            CHECK(bacon_id <> "" and manufacture_id <> ""));'''
 
     TOAST_TABLE_SQL = '''CREATE TABLE toast_table
-                           (toast_id TEXT,
-                            time INTEGER,
+                           (toast_id TEXT NOT NULL,
+                            time REAL NOT NULL,
                             gain INTEGER,
                             offset INTEGER,
                             c15t30 INTEGER,
@@ -66,15 +66,16 @@ class DatabaseInit(object):
                             c25t85 INTEGER,
                             c15vref INTEGER,
                             c25vref INTEGER,
-                            CHECK(toast_id <> ''));'''
+                            CHECK(toast_id <> ""));'''
 
     SENSOR_TABLE_SQL = '''CREATE TABLE sensor_table
-                           (sensor_id INTEGER,
-                            type INTEGER,
-                            time INTEGER,
-                            toast_id TEXT,                            
-                            channel INTEGER,
-                            CHECK(sensor_id <> 0 and type <> 0 and toast_id <> ''));'''
+                           (sensor_id INTEGER NOT NULL,
+                            type INTEGER NOT NULL,
+                            time REAL NOT NULL,
+                            detached REAL,
+                            toast_id TEXT NOT NULL,
+                            channel INTEGER NOT NULL,
+                            CHECK(sensor_id <> 0 and toast_id <> ""));'''
 
 
     # class finds suitable filename for DB and creates tables if needed

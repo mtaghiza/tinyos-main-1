@@ -43,6 +43,7 @@ import SFSource
 import SerialSource
 
 import Queue
+from Queue import Empty
 from threading import Thread
 
 DEBUG = False
@@ -117,7 +118,7 @@ class MoteIF:
         while self.running:
             try:
                 msgTuple = self.receiveQueue.get(True, 0.25)
-            except Queue.Empty:
+            except Empty:
                 msgTuple = None
             except:
                 pass

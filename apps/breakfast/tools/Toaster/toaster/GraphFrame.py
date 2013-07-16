@@ -1,5 +1,6 @@
 
 import Tkinter
+import tkMessageBox
 from Tkinter import *
 from BreakfastError import *
 
@@ -12,6 +13,7 @@ class GraphFrame(Frame):
     def __init__(self, parent, handler, simplot, **args):
         Frame.__init__(self, parent, **args)
         
+        self.parent = parent
         self.handler = handler
         self.simplot = simplot
         self.allPoints = []
@@ -211,6 +213,8 @@ class GraphFrame(Frame):
                 #self.disableUI()
                 self.sampleButton.config(state=NORMAL, text="Stop sampling", cursor="hand2")
                 self.handler.startSampling(self.sensors)
+            else:
+                tkMessageBox.showinfo("Toaster", "No sensors to sample", parent=self.parent)
 
     def sampleSignal(self, sampling):
         #self.sampling = sampling

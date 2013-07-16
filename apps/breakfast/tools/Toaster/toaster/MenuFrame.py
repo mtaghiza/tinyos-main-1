@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import Tkinter
+import tkMessageBox
 from Tkinter import *
 from serial.tools.list_ports import *
 #from ttk import *
@@ -12,7 +13,7 @@ class MenuFrame(Frame):
     BASESTATION_SIZE = 3326
     ROUTER_SIZE = 3326
     LEAF_SIZE = 3326
-    TOASTER_SIZE = 19864
+    TOASTER_SIZE = 20136
 
     comDict = {}
     DEFAULT_STRING = "<no device detected>"
@@ -20,12 +21,16 @@ class MenuFrame(Frame):
     def __init__(self, parent, handler, **args):
         Frame.__init__(self, parent, **args)
         
+        # parent frame - for centering pop-up boxes
+        self.parent = parent
+        
+        # handler for UI actions
         self.handler = handler
-
-        # 
+        
+        # connection status
         self.connected = False
         
-        # 
+        # variable to track programming status 
         self.programVar = BooleanVar()
         self.programVar.trace("w", self.programDone)
         
@@ -232,8 +237,8 @@ class MenuFrame(Frame):
         self.progressVar.set(0)
         self.programming = True
         self.programSize = self.TOASTER_SIZE
-        self.programProgress()
         self.handler.program(self.toaster_file, self.comDict[self.comVar.get()], self.programDone)
+        self.programProgress()
     
     def programLeaf(self):
         self.handler.busy()
@@ -242,8 +247,8 @@ class MenuFrame(Frame):
         self.progressVar.set(0)
         self.programming = True
         self.programSize = self.LEAF_SIZE
-        self.programProgress()
         self.handler.program(self.leaf_file, self.comDict[self.comVar.get()], self.programDone)
+        self.programProgress()
 
     def programRouter(self):
         self.handler.busy()
@@ -252,8 +257,8 @@ class MenuFrame(Frame):
         self.progressVar.set(0)
         self.programming = True
         self.programSize = self.ROUTER_SIZE
-        self.programProgress()
         self.handler.program(self.router_file, self.comDict[self.comVar.get()], self.programDone)
+        self.programProgress()
 
     def programBasestation(self):
         self.handler.busy()
@@ -262,8 +267,8 @@ class MenuFrame(Frame):
         self.progressVar.set(0)
         self.programming = True
         self.programSize = self.BASESTATION_SIZE
-        self.programProgress()
         self.handler.program(self.basestation_file, self.comDict[self.comVar.get()], self.programDone)
+        self.programProgress()
 
     def programProgress(self):
         progress = self.handler.programProgress() * 100.0 / self.programSize
@@ -274,16 +279,28 @@ class MenuFrame(Frame):
         if self.programming:
             self.progressBar.after(200, self.programProgress)
         else:
-            self.progressVar.set(0)
+            # reset progress bar
+            self.progressVar.set(0)                        
+            self.enableUI()
+            self.handler.notbusy()
+
+            if self.programmingStatus:
+                tkMessageBox.showinfo("Toaster", "Programming done", parent=self.parent)
+            else:
+                tkMessageBox.showerror("Error", "Programming failed", parent=self.parent)
 
     def programDone(self, status):
         self.programming = False
-        self.enableUI()
-        self.handler.notbusy()
-        print status
+        self.programmingStatus = status
+
 
     def exportCSV(self):
-        self.handler.exportCSV()
+        try:
+            self.handler.exportCSV()
+        except:
+            tkMessageBox.showerror("Error", "CSV export failed", parent=self.parent)
+        else:
+            tkMessageBox.showinfo("Toaster", "CSV export done", parent=self.parent)
 
 if __name__ == '__main__':
     root = Tk()

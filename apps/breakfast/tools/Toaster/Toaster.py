@@ -14,7 +14,7 @@ from SimPy.SimPlot import *
 def selectall(event):
     event.widget.select_range(0, END)
 
-def quit():
+def quit(key=None):
     handler.menuFrame.disconnect()
     root.quit()
 
@@ -27,7 +27,9 @@ handler = Handler(root)
 root.geometry("1280x630")
 root.title("Toaster")
 root.bind_class("Entry","<Control-a>", selectall)
+root.bind("<Alt-F4>", quit)
 root.protocol("WM_DELETE_WINDOW", quit)
+root.resizable(0,0)
 
 menuFrame = MenuFrame(root, handler, width=1280, height=40, bd=1, relief=SUNKEN)
 menuFrame.grid_propagate(False)

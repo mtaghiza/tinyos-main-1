@@ -35,8 +35,6 @@ class Toast(object):
     TAG_TOAST_ASSIGNMENTS = 0x05    # Toast sensor assignments
     TAG_ADC12_1 = 0x08              # Toast ADC Calibration constants
 
-    EMPTY_ASSIGNMENTS = [[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]]
-    
     busPower = None
 
     def __init__(self, motestring='serial@/dev/ttyUSB0:115200'):
@@ -279,6 +277,15 @@ class Toast(object):
         msg = WriteToastAssignmentsCmdMsg.WriteToastAssignmentsCmdMsg()
 
         [newIds, newTypes] = assignments
+
+        # substitute None with 0 
+        for i, n in enumerate(newIds):
+            if n is None:
+                newIds[i] = 0
+
+        for i, n in enumerate(newTypes):
+            if n is None:
+                newTypes[i] = 0
 
         # check size consistency
         if ((len(newIds) != msg.numElements_assignments_sensorId(0)) 

@@ -1,7 +1,7 @@
 import time
 import Tkinter
+import tkMessageBox
 from Tkinter import *
-
 from BreakfastError import *
 
 class BaconFrame(Frame):
@@ -9,7 +9,9 @@ class BaconFrame(Frame):
     def __init__(self, parent, handler, **args):
         Frame.__init__(self, parent, **args)
         
+        self.parent = parent
         self.handler = handler
+        self.barcodeSet = True
 
         self.initUI()
         self.disableUI()
@@ -28,11 +30,11 @@ class BaconFrame(Frame):
         self.newLabel.grid(column=3, row=1, columnspan=2)
         
         # row 2
-        self.barcodeLabel = Label(self, text="Bacon ID:", width=11, anchor=E)
+        self.barcodeLabel = Label(self, text="Node ID:", width=11, anchor=E)
         self.barcodeLabel.grid(column=1, row=2)
         
         self.barcodeVar = StringVar()
-        self.barcodeVar.set("<not available>")
+        self.barcodeVar.set("Not available")
         
         self.barcodeVarLabel = Label(self, textvariable=self.barcodeVar, width=18)
         self.barcodeVarLabel.grid(column=2, row=2)
@@ -47,7 +49,7 @@ class BaconFrame(Frame):
         self.mfrLabel.grid(column=1, row=3, sticky=E)
         
         self.mfrVar = StringVar()
-        self.mfrVar.set("<not available>")
+        self.mfrVar.set("Not available")
         self.mfrVarLabel = Label(self, textvariable=self.mfrVar, width=18)
         self.mfrVarLabel.grid(column=2, row=3)
         
@@ -82,12 +84,12 @@ class BaconFrame(Frame):
 
     def connectSignal(self, connected):
         if connected:
-            mfrStr = "<not available>"
+            mfrStr = "Not available"
             
             try:
                 mfrStr = self.handler.getMfrID()
             except Exception:
-                self.mfrVar.set("<connection error>")
+                self.mfrVar.set("Connection error")
                 self.handler.programToaster()
             else:
                 self.enableUI()
@@ -100,9 +102,8 @@ class BaconFrame(Frame):
 
     def reconnect(self):
         self.handler.busy()
-        self.handler.publicDisconnect()
-        time.sleep(1)
-        self.handler.publicConnect()
+        self.redrawBarcode()
+        self.handler.notbusy()
 
     def sampleSignal(self, sampling):
         if sampling:
@@ -114,31 +115,39 @@ class BaconFrame(Frame):
         self.updateBarcode()
 
     def updateBarcode(self):
+        
+        if self.barcodeSet:
+            if not tkMessageBox.askokcancel("Warning", "Barcode already set. Do you wish to overwrite?", parent=self.parent):
+                self.newBarcodeVar.set("")
+                return
+            
         self.handler.busy()
         try:
             self.handler.setBaconBarcode(self.newBarcodeVar.get())
         except ValueError:
-            self.barcodeVar.set("<barcode not an integer>")
+            self.barcodeVar.set("Barcode not an integer")
             self.barcodeVarLabel.config(fg="red")
         except:
-            self.barcodeVar.set("<update failed>")
+            self.barcodeVar.set("Update failed")
             self.barcodeVarLabel.config(fg="red")
         else:    
-            self.redrawBarcode()
+            self.handler.databaseBacon()
             self.newBarcodeVar.set("")
-            self.handler.insertBacon()
+            self.redrawBarcode()
         self.handler.notbusy()
     
     def redrawBarcode(self):
         try:
             barcodeStr = self.handler.getBaconBarcode()
         except TagNotFoundError:
-            self.barcodeVar.set("<barcode not set>")
+            self.barcodeVar.set("Barcode not set")
             self.barcodeEntry.focus_set()
+            self.barcodeSet = False
         except:
-            self.barcodeVar.set("<connection error>")
+            self.barcodeVar.set("Connection error")
             self.barcodeVarLabel.config(fg="red")
         else:
             self.barcodeVar.set(barcodeStr)
             self.barcodeVarLabel.config(fg="black")
+            self.barcodeSet = True
     
