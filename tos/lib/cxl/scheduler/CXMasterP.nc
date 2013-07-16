@@ -38,7 +38,6 @@ module CXMasterP {
         contactList[0].nodeId = call ActiveMessageAddress.amAddress();
         contactIndex = 0;
         toContact = 1;
-        activeNS = ns;
       }
       return error;
     }
@@ -47,7 +46,6 @@ module CXMasterP {
   task void downloadFinished(){
     cinfo(ROUTER, "Download finished\r\n");
     signal CXDownload.downloadFinished[activeNS]();
-    activeNS = 0xFF;
   }
 
   command void SlotController.endSlot(){
@@ -149,8 +147,13 @@ module CXMasterP {
 
   async event void ActiveMessageAddress.changed(){}
   
-  event void LppControl.fellAsleep(){}
-  event void LppControl.wokenUp(uint8_t ns){}
+  event void LppControl.fellAsleep(){
+    activeNS = 0xFF;
+  }
+
+  event void LppControl.wokenUp(uint8_t ns){
+    activeNS = ns;
+  }
 
   default event void CTS.ctsReceived[uint8_t ns](){}
   default event void CXDownload.downloadFinished[uint8_t ns](){}
