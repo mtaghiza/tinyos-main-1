@@ -1,0 +1,63 @@
+COMPONENT=LeafAppC
+
+CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+
+CFLAGS += -I$(TOSDIR)/lib/cxl/link
+CFLAGS += -I$(TOSDIR)/lib/cxl/packet
+CFLAGS += -I$(TOSDIR)/lib/cxl/mac
+CFLAGS += -I$(TOSDIR)/lib/cxl/am
+CFLAGS += -I$(TOSDIR)/lib/cxl/debug
+CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
+CFLAGS += -I$(TOSDIR)/lib/cx/routing
+CFLAGS += -I$(TOSDIR)/lib/cx/debug
+CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
+
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+
+PFLAGS+=-DMSP430XV2_DCO_CONFIG=MSP430XV2_DCO_32MHz_RSEL6
+CFLAGS+=-DXT2_SMCLK
+
+
+#NB: length field is 8 bits: so if we are using FEC, we need to make
+# sure that the total packet length is less than this.
+#CFLAGS+= -DTOSH_DATA_LENGTH=109
+#CFLAGS+= -DMAX_RECORD_PACKET_LEN=80
+CFLAGS+= -DRF1A_FEC_ENABLED=1
+CFLAGS+= -DPATABLE0_SETTING=0x2D
+CFLAGS+= -DRF1A_AUTOCAL=0
+CFLAGS+=-DCC430_PIN_DEBUG=1
+
+CX_MAX_DEPTH?=5
+CFLAGS+=-DCX_MAX_DEPTH=$(CX_MAX_DEPTH)
+
+CFLAGS+=-DSINGLE_RECORD_READ=1
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/settingsStorage
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/RebootCounter
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/util/globalID
+CFLAGS+=-I$(TOSROOT)/apps/breakfast/bacon/autoPush
+CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util/stackGuard
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+
+ENABLE_PRINTF ?= 1
+CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
+CFLAGS += -DRAW_SERIAL_PRINTF=1
+CFLAGS += -DDL_LPP=DL_ERROR
+CFLAGS += -DDL_LINK=DL_ERROR
+CFLAGS += -DDL_PHOENIX=DL_DEBUG
+CFLAGS += -DPHOENIX_LOGGING=1
+
+CFLAGS += -DCX_LPP_BASIC=0
+
+PROBE_INTERVAL?=5120UL
+CFLAGS += -DLPP_DEFAULT_PROBE_INTERVAL=$(PROBE_INTERVAL)
+
+SAMPLE_INTERVAL?=20480UL
+CFLAGS += -DDEFAULT_PHOENIX_SAMPLE_INTERVAL=$(SAMPLE_INTERVAL)
+
+TARGET_REFS?=2UL
+CFLAGS += -DDEFAULT_PHOENIX_TARGET_REFS=$(TARGET_REFS)
+
+include $(MAKERULES)
+
