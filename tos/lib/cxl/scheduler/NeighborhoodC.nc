@@ -11,12 +11,14 @@ configuration NeighborhoodC {
   components new TimerMilliC();
   components SettingsStorageC;
   components RebootCounterC;
+  components MainC;
 
   PhoenixNeighborhoodP.Timer -> TimerMilliC;
   PhoenixNeighborhoodP.SettingsStorage -> SettingsStorageC;
   PhoenixNeighborhoodP.CXLinkPacket = CXLinkPacket;
   PhoenixNeighborhoodP.Packet = Packet;
   PhoenixNeighborhoodP.RebootCounter -> RebootCounterC;
+  PhoenixNeighborhoodP.Boot -> MainC;
   
   LppProbeSniffer = PhoenixNeighborhoodP.SubLppProbeSniffer;
   NeighborhoodP.LppProbeSniffer -> PhoenixNeighborhoodP.LppProbeSniffer;

@@ -270,19 +270,24 @@ module CXWakeupP {
     }
   }
   
-  uint32_t slowToFast(uint32_t slow){
-    return (slow*FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW;
+  uint32_t milliToFast(uint32_t milli){
+    return 32UL*((milli*FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW);
   }
 
   command error_t LppProbeSniffer.sniff(uint8_t ns){
+    printf("cxw.sniff\r\n");
     if (state == S_IDLE){
       uint32_t probeIntervalFast;
       error_t error;
+      uint32_t probeIntervalMilli;
       activeNS = ns;
       if (curChannel != activeChannel()){
         setChannel(activeChannel());
       }
-      probeIntervalFast = slowToFast((sched->invFrequency[ns]*probeInterval));
+      probeIntervalMilli = (sched->invFrequency[ns]*probeInterval);
+      probeIntervalFast = milliToFast(probeIntervalMilli);
+      printf("pi %lu pim %lu if %u %lu\r\n", 
+        probeInterval, probeIntervalMilli, sched->invFrequency[ns], probeIntervalFast);
       if (probeIntervalFast == 0){
         return EINVAL;
       }else{

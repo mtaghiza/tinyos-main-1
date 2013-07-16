@@ -14,6 +14,7 @@ module CXLinkP {
   uses interface Msp430XV2ClockControl;
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface LocalTime<T32khz>; 
+  uses interface LocalTime<TMilli> as LocalTimeMilli; 
 
   provides interface Receive;
   provides interface Send;
@@ -109,11 +110,13 @@ module CXLinkP {
       uint32_t fastRef1 = call FastAlarm.getNow();
       uint32_t slowRef = call LocalTime.get();
       uint32_t fastRef2 = call FastAlarm.getNow();
+      uint32_t milliRef = call LocalTimeMilli.get();
       uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - metadata(msg)->timeFast;
       uint32_t slowTicks = fastToSlow(fastTicks);
-      metadata(msg)->time32k = slowRef 
-        - slowTicks 
-        - fastToSlow((frameLen*(metadata(msg)->rxHopCount-1)));
+      slowTicks += fastToSlow((frameLen*(metadata(msg)->rxHopCount-1)));
+      metadata(msg)->time32k = slowRef - slowTicks;
+      metadata(msg)->timeMilli = milliRef - (slowTicks >> 5);
+
     }
   }
   

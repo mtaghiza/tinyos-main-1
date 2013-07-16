@@ -61,6 +61,7 @@ typedef nx_struct cx_link_header {
 typedef struct cx_link_metadata {
   uint8_t rxHopCount;
   uint32_t time32k;
+  uint32_t timeMilli;
   uint32_t timeFast;
   bool retx;
   nx_uint32_t* tsLoc;
