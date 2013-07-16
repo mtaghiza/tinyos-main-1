@@ -109,8 +109,8 @@ implementation {
   BaseStationP.Leds -> LedsC;
   BaseStationP.CXLeds -> NoLedsC;
 
-  components new PoolC(message_t, 2);
-  BaseStationP.Pool -> PoolC;
+//  components new PoolC(message_t, 3);
+  BaseStationP.Pool -> Radio.Pool;
 
   components CXBaseStationC;
   BaseStationP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];

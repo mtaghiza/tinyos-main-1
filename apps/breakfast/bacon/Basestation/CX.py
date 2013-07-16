@@ -21,6 +21,9 @@ from cx.decoders import Tunneled
 from cx.messages import CxDownload
 from cx.CXMoteIF import CXMoteIF
 
+from cx.messages import StatusTimeRef
+from cx.listeners import StatusTimeRefListener
+
 class Dispatcher(object):
     def __init__(self, motestring, bsId, db):
         #hook up to mote
@@ -33,6 +36,8 @@ class Dispatcher(object):
           LogRecordDataMsg.LogRecordDataMsg)
         self.mif.addListener(PongListener.PongListener(), 
           PongMsg.PongMsg)
+        self.mif.addListener(StatusTimeRefListener.StatusTimeRefListener(),
+          StatusTimeRef.StatusTimeRef)
 
     def stop(self):
         self.mif.finishAll()
@@ -64,11 +69,11 @@ def download(packetSource, bsId, networkSegment=NS_GLOBAL):
 
         d.send(downloadMsg, bsId)
 
-        ping = PingMsg.PingMsg()
-        ping.set_pingId(pingId)
-        localTime = time.time()
-        print "pinging"
-        d.send(ping, 1)
+#         ping = PingMsg.PingMsg()
+#         ping.set_pingId(pingId)
+#         localTime = time.time()
+#         print "pinging"
+#         d.send(ping, 1)
         
         #TODO: we should send repair requests out first (since
         #  controller gets to go first)
