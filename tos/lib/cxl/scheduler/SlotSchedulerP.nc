@@ -21,6 +21,8 @@ module SlotSchedulerP {
 
   uses interface Timer<T32khz> as SlotTimer;
   uses interface Timer<T32khz> as FrameTimer;
+  uses interface LocalTime<TMilli>;
+
 
   uses interface Pool<message_t>;
   uses interface ActiveMessageAddress;
@@ -104,6 +106,7 @@ module SlotSchedulerP {
   bool signalEnd;
 
   uint32_t wakeupStart;
+  uint32_t wakeupStartMilli;
   uint8_t framesLeft;
   uint8_t framesWaited;
   am_addr_t master;
@@ -126,6 +129,7 @@ module SlotSchedulerP {
       missedCTS = 0;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
+      wakeupStartMilli = call LocalTime.get();
       post nextRX();
     }else{
       cerror(SCHED, "Unexpected state for wake up %x\r\n", state);
@@ -260,7 +264,7 @@ module SlotSchedulerP {
       pl -> distance = call RoutingTable.getDistance(master, 
         call ActiveMessageAddress.amAddress());
       pl -> wakeupRC = call RebootCounter.get();
-      pl -> wakeupTS = wakeupStart;
+      pl -> wakeupTS = wakeupStartMilli;
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);

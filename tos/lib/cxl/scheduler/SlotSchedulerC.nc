@@ -16,8 +16,10 @@ configuration SlotSchedulerC{
 
   components new Timer32khzC() as SlotTimer;
   components new Timer32khzC() as FrameTimer;
+  components LocalTimeMilliC;
   SlotSchedulerP.SlotTimer -> SlotTimer;
   SlotSchedulerP.FrameTimer -> FrameTimer;
+  SlotSchedulerP.LocalTime -> LocalTimeMilliC;
 
   Send = SlotSchedulerP.Send;
   Receive = SlotSchedulerP.Receive;
