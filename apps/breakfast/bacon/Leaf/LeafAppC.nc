@@ -36,14 +36,31 @@ configuration LeafAppC{
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
 
-  components PingC;
-  PingC.Pool -> PoolC;
+//  components PingC;
+//  PingC.Pool -> PoolC;
 
   //TODO: should be from scheduler
   RecordPushRequestC.Get -> LeafP.Get;
   
+  #ifndef ENABLE_TOAST_SAMPLER
+  #define ENABLE_TOAST_SAMPLER 1
+  #endif
+
+  #if ENABLE_TOAST_SAMPLER == 1
   components new ToastSamplerC(VOLUME_RECORD, TRUE);
+  #else
+  #warning Disabled Toast sampler!
+  #endif
+
+  #ifndef ENABLE_BACON_SAMPLER
+  #define ENABLE_BACON_SAMPLER 1
+  #endif
+
+  #if ENABLE_BACON_SAMPLER == 1
   components new BaconSamplerC(VOLUME_RECORD, TRUE);
+  #else
+  #warning Disable Bacon sampler!
+  #endif
 
   components ActiveMessageC;
   LeafP.SplitControl -> ActiveMessageC;
