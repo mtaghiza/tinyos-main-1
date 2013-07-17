@@ -15,8 +15,11 @@
 #define SS_KEY_PROBE_SCHEDULE 0x15
 
 typedef struct probe_schedule {
+   uint32_t probeInterval;
    uint8_t channel[NUM_SEGMENTS];
    uint8_t invFrequency[NUM_SEGMENTS];
+   uint8_t bw[NUM_SEGMENTS];
+   uint8_t maxDepth[NUM_SEGMENTS];
 } probe_schedule_t;
 
 typedef nx_struct cx_mac_header{

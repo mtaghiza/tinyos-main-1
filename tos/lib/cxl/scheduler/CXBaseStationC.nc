@@ -13,8 +13,10 @@ configuration CXBaseStationC {
   provides interface Receive as StatusReceive;
 } implementation {
   components SlotSchedulerC;
+  components CXProbeScheduleC;
 
   components CXMasterP;
+  CXMasterP.Get -> CXProbeScheduleC;
 
   CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
   CXDownload[NS_ROUTER] = CXMasterP.CXDownload[NS_ROUTER];

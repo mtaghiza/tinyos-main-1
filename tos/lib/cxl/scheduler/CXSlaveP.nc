@@ -1,6 +1,7 @@
 module CXSlaveP {
   provides interface SlotController;
   provides interface CTS[uint8_t ns];
+  uses interface Get<probe_schedule_t*>;
 } implementation {
 
   command am_addr_t SlotController.activeNode(){
@@ -12,14 +13,17 @@ module CXSlaveP {
   command bool SlotController.isActive(){
     return FALSE;
   }
-  command uint8_t SlotController.bw(){
-    return CX_DEFAULT_BW;
+  command uint8_t SlotController.bw(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return sched->bw[ns];
   }
-  command uint8_t SlotController.maxDepth(){
-    return CX_MAX_DEPTH;
+  command uint8_t SlotController.maxDepth(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return sched->maxDepth[ns];
   }
-  command uint32_t SlotController.wakeupLen(){
-    return CX_WAKEUP_LEN*4;
+  command uint32_t SlotController.wakeupLen(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
   }
   command message_t* SlotController.receiveEOS(
       message_t* msg, cx_eos_t* pl){

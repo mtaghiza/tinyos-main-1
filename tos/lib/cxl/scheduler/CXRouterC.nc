@@ -35,6 +35,10 @@ configuration CXRouterC {
   components CXAMAddressC;
   CXMasterP.ActiveMessageAddress -> CXAMAddressC;
 
+  components CXProbeScheduleC;
+  CXMasterP.Get -> CXProbeScheduleC;
+  CXSlaveP.Get -> CXProbeScheduleC;
+
   CTS[NS_GLOBAL] = CXSlaveP.CTS[NS_GLOBAL];
   CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_SUBNETWORK];
   CTS[NS_ROUTER] = CXSlaveP.CTS[NS_ROUTER];

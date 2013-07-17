@@ -10,6 +10,8 @@ module CXMasterP {
   uses interface ActiveMessageAddress;
   provides interface CTS[uint8_t ns];
   provides interface Receive;
+
+  uses interface Get<probe_schedule_t*>;
 } implementation {
 
   /**
@@ -25,10 +27,10 @@ module CXMasterP {
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
   uint8_t contactIndex;
   uint8_t toContact;
-  uint8_t activeNS = 0xFF;
+  uint8_t activeNS = NS_INVALID;
 
   command error_t CXDownload.startDownload[uint8_t ns](){
-    if (activeNS != 0xFF){
+    if (activeNS != NS_INVALID){
       return EBUSY;
     }else{
       error_t error = call LppControl.wakeup(ns);
@@ -126,16 +128,19 @@ module CXMasterP {
     return TRUE;
   }
 
-  command uint8_t SlotController.bw(){
-    return CX_DEFAULT_BW;
+  command uint8_t SlotController.bw(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return sched->bw[ns];
   }
 
-  command uint8_t SlotController.maxDepth(){
-    return CX_MAX_DEPTH;
+  command uint8_t SlotController.maxDepth(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return sched->maxDepth[ns];
   }
 
-  command uint32_t SlotController.wakeupLen(){
-    return CX_WAKEUP_LEN*4;
+  command uint32_t SlotController.wakeupLen(uint8_t ns){
+    probe_schedule_t* sched = call Get.get();
+    return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
   }
 
   command message_t* SlotController.receiveEOS(message_t* msg,
@@ -154,7 +159,7 @@ module CXMasterP {
   async event void ActiveMessageAddress.changed(){}
   
   event void LppControl.fellAsleep(){
-    activeNS = 0xFF;
+    activeNS = NS_INVALID;
   }
 
   event void LppControl.wokenUp(uint8_t ns){

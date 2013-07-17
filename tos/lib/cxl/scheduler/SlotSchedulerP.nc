@@ -123,7 +123,7 @@ module SlotSchedulerP {
       activeNS = ns;
       call Neighborhood.clear();
       cinfo(SCHED, "Sched wakeup for %lu on %u\r\n", 
-        call SlotController.wakeupLen[activeNS](), 
+        call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS);
       signalEnd = FALSE;
       missedCTS = 0;
@@ -260,7 +260,7 @@ module SlotSchedulerP {
 
       //future: adjust bw depending on how much uncertainty we
       //observe.
-      pl -> bw = call SlotController.bw[activeNS]();
+      pl -> bw = call SlotController.bw[activeNS](activeNS);
       pl -> distance = call RoutingTable.getDistance(master, 
         call ActiveMessageAddress.amAddress());
       pl -> wakeupRC = call RebootCounter.get();
@@ -329,7 +329,7 @@ module SlotSchedulerP {
         case S_SLOT_END_READY:
           {
             error_t error = send(eosMsg, sizeof(cx_eos_t), 
-              call SlotController.maxDepth[activeNS]());
+              call SlotController.maxDepth[activeNS](activeNS));
             if (error == SUCCESS){
               cdbg(SCHED, "SES\r\n");
               state = S_SLOT_END_SENDING;
@@ -351,7 +351,7 @@ module SlotSchedulerP {
         case S_STATUS_READY:
           {
             error_t error = send(statusMsg, sizeof(cx_status_t), 
-              call SlotController.maxDepth[activeNS]());
+              call SlotController.maxDepth[activeNS](activeNS));
             if (error == SUCCESS){
               state = S_STATUS_SENDING;
             }else{
@@ -362,7 +362,8 @@ module SlotSchedulerP {
 
         case S_STATUS_WAIT:
           framesWaited ++;
-          if (framesWaited > call SlotController.maxDepth[activeNS]()){
+          if (framesWaited > call
+          SlotController.maxDepth[activeNS](activeNS)){
             error_t error = call CXLink.sleep();
             if (error == SUCCESS){
               call FrameTimer.stop();
@@ -395,7 +396,7 @@ module SlotSchedulerP {
               call RoutingTable.getDistance(
                 call ActiveMessageAddress.amAddress(), 
                 call CXLinkPacket.destination(pendingMsg))
-                + call SlotController.bw[activeNS]()
+                + call SlotController.bw[activeNS](activeNS)
               );
             if (error == SUCCESS){
               state = S_DATA_SENDING;
@@ -424,7 +425,7 @@ module SlotSchedulerP {
     return call RoutingTable.getDistance(
       call CXLinkPacket.source(msg),
       call CXLinkPacket.destination(msg)) 
-      + call SlotController.bw[activeNS]();
+      + call SlotController.bw[activeNS](activeNS);
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
@@ -442,7 +443,7 @@ module SlotSchedulerP {
             call RoutingTable.getDistance( 
               call CXLinkPacket.source(msg),
               call CXLinkPacket.destination(msg)),
-            call SlotController.bw[activeNS]());
+            call SlotController.bw[activeNS](activeNS));
           //need to leave 1 frame for EOS message
           if (framesLeft <= clearTime(msg) + 1){
             pendingMsg = NULL;
@@ -552,7 +553,7 @@ module SlotSchedulerP {
 
   bool wakeupTimeoutStillGoing(uint32_t t){
     return (t - wakeupStart) 
-      < call SlotController.wakeupLen[activeNS]();
+      < call SlotController.wakeupLen[activeNS](activeNS);
   }
   
   uint32_t slowToFast(uint32_t slowTicks){
@@ -568,12 +569,12 @@ module SlotSchedulerP {
         // - allow rest of network to wake up
         // - add 1 slow frame for the first CTS to go down
         uint32_t remainingTime = slowToFast(
-            call SlotController.wakeupLen[activeNS]() - (t - wakeupStart) + FRAMELEN_SLOW);
+            call SlotController.wakeupLen[activeNS](activeNS) - (t - wakeupStart) + FRAMELEN_SLOW);
         error_t error;
         cdbg(SCHED_CHECKED, "rx for %lu / %lu (%lu)\r\n", 
           remainingTime, 
-          call SlotController.wakeupLen[activeNS](),
-          slowToFast(call SlotController.wakeupLen[activeNS]()));
+          call SlotController.wakeupLen[activeNS](activeNS),
+          slowToFast(call SlotController.wakeupLen[activeNS](activeNS)));
         error = rx(remainingTime, TRUE);
         if (error != SUCCESS){
           cwarn(SCHED, "wakeup re-rx: %x\r\n", error);
@@ -643,7 +644,7 @@ module SlotSchedulerP {
             call CXLinkPacket.setDestination(ctsMsg, activeNode);
             //header only
             error = send(ctsMsg, 0,
-              call SlotController.maxDepth[activeNS]());
+              call SlotController.maxDepth[activeNS](activeNS));
             if (error == SUCCESS){
               state = S_CTS_SENDING;
             }else{
@@ -708,10 +709,10 @@ module SlotSchedulerP {
   default command bool SlotController.isActive[uint8_t ns](){
     return FALSE;
   }
-  default command uint8_t SlotController.bw[uint8_t ns](){
+  default command uint8_t SlotController.bw[uint8_t ns](uint8_t ns1){
     return 0;
   }
-  default command uint8_t SlotController.maxDepth[uint8_t ns](){
+  default command uint8_t SlotController.maxDepth[uint8_t ns](uint8_t ns1){
     return 0;
   }
   default command message_t* SlotController.receiveEOS[uint8_t ns](message_t* msg,
@@ -724,7 +725,7 @@ module SlotSchedulerP {
   }
   default command void SlotController.receiveCTS[uint8_t ns](uint8_t ans){}
   default command void SlotController.endSlot[uint8_t ns](){}
-  default command uint32_t SlotController.wakeupLen[uint8_t ns](){
+  default command uint32_t SlotController.wakeupLen[uint8_t ns](uint8_t ns1){
     return 0;
   }
 

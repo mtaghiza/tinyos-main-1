@@ -19,5 +19,8 @@ configuration CXLeafC {
   SlotSchedulerC.SlotController[NS_GLOBAL] -> CXSlaveP;
   SlotSchedulerC.SlotController[NS_SUBNETWORK] -> CXSlaveP;
 
+  components CXProbeScheduleC;
+  CXSlaveP.Get -> CXProbeScheduleC;
+
   CTS = CXSlaveP;
 }

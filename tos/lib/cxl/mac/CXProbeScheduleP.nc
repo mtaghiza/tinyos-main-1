@@ -8,20 +8,29 @@ module CXProbeScheduleP {
   #if CX_BASESTATION == 1
   //basestation uses global/router only
   probe_schedule_t sched = { 
+    .probeInterval=LPP_DEFAULT_PROBE_INTERVAL,
     .channel={0, 32, 64},
-    .invFrequency={4, 0, 1}
+    .invFrequency={4, 0, 1},
+    .bw={2, 2, 2},
+    .maxDepth={8,5,5}
   };
   #elif CX_ROUTER == 1
   //router uses all segments
   probe_schedule_t sched = { 
+    .probeInterval=LPP_DEFAULT_PROBE_INTERVAL,
     .channel={0, 32, 64},
-    .invFrequency={4, 1, 1}
+    .invFrequency={4, 1, 1},
+    .bw={2, 2, 2},
+    .maxDepth={8,5,5}
   };
   #else
   //leaf uses  global/subnetwork only
   probe_schedule_t sched = { 
+    .probeInterval=LPP_DEFAULT_PROBE_INTERVAL,
     .channel={0, 32, 64},
-    .invFrequency={4, 1, 0}
+    .invFrequency={4, 1, 0},
+    .bw={2, 2, 2},
+    .maxDepth={8,5,5}
   };
   #endif
 

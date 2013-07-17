@@ -67,10 +67,10 @@ module CXWakeupP {
   bool manualWakeupPending = FALSE;
   uint8_t manualWakeupNS;
   
-  
   probe_schedule_t* sched;
   void refreshSched(){
     sched = call Get.get();
+    probeInterval = sched->probeInterval;
   }
 
   uint8_t activeChannel(){
