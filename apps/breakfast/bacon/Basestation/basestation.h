@@ -2,6 +2,13 @@
 #define BASESTATION_H
 
 #include "AM.h"
+#include "message.h"
+
+typedef struct queue_entry {
+  message_t* msg;
+  void* pl;
+  uint8_t len;
+} queue_entry_t;
 
 typedef nx_struct cx_download {
   nx_uint8_t networkSegment;

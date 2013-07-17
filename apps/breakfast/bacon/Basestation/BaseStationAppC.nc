@@ -1,79 +1,3 @@
-// $Id: BaseStationC.nc,v 1.7 2010-06-29 22:07:13 scipio Exp $
-
-/*									tab:4
- * Copyright (c) 2000-2003 The Regents of the University  of California.  
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the
- *   distribution.
- * - Neither the name of the University of California nor the names of
- *   its contributors may be used to endorse or promote products derived
- *   from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
- * THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Copyright (c) 2002-2003 Intel Corporation
- * All rights reserved.
- *
- * This file is distributed under the terms in the attached INTEL-LICENSE     
- * file. If you do not find these files, copies can be found by writing to
- * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
- * 94704.  Attention:  Intel License Inquiry.
- */
-
-/**
- * The TinyOS 2.x base station that forwards packets between the UART
- * and radio.It replaces the GenericBase of TinyOS 1.0 and the
- * TOSBase of TinyOS 1.1.
- *
- * <p>On the serial link, BaseStation sends and receives simple active
- * messages (not particular radio packets): on the radio link, it
- * sends radio active messages, whose format depends on the network
- * stack being used. BaseStation will copy its compiled-in group ID to
- * messages moving from the serial link to the radio, and will filter
- * out incoming radio messages that do not contain that group ID.</p>
- *
- * <p>BaseStation includes queues in both directions, with a guarantee
- * that once a message enters a queue, it will eventually leave on the
- * other interface. The queues allow the BaseStation to handle load
- * spikes.</p>
- *
- * <p>BaseStation acknowledges a message arriving over the serial link
- * only if that message was successfully enqueued for delivery to the
- * radio link.</p>
- *
- * <p>The LEDS are programmed to toggle as follows:</p>
- * <ul>
- * <li><b>RED Toggle:</b>: Message bridged from serial to radio</li>
- * <li><b>GREEN Toggle:</b> Message bridged from radio to serial</li>
- * <li><b>YELLOW/BLUE Toggle:</b> Dropped message due to queue overflow in either direction</li>
- * </ul>
- *
- * @author Phil Buonadonna
- * @author Gilman Tolle
- * @author David Gay
- * @author Philip Levis
- * @date August 10 2005
- */
  #include "basestation.h"
 configuration BaseStationAppC {
 }
@@ -83,39 +7,53 @@ implementation {
   components MainC; 
   components BaseStationP;
   components LedsC, NoLedsC;
-  components ActiveMessageC as Radio, SerialActiveMessageC as Serial;
+  components ActiveMessageC as RadioAM; 
+  components SerialActiveMessageC as SerialAM;
+
   components StackGuardMilliC;
 
   
-  MainC.Boot <- BaseStationP;
+  BaseStationP.Boot -> MainC.Boot;
 
-  BaseStationP.RadioControl -> Radio;
-  BaseStationP.SerialControl -> Serial;
-  
+  BaseStationP.RadioControl -> RadioAM.SplitControl;
+  BaseStationP.SerialControl -> SerialAM.SplitControl;
+
   components SerialMultiSenderC;
-  BaseStationP.UartSend -> SerialMultiSenderC;
-  BaseStationP.UartReceive -> Serial.Receive;
-  BaseStationP.UartPacket -> Serial;
-  BaseStationP.UartAMPacket -> Serial;
+  BaseStationP.SerialSend -> SerialMultiSenderC.AMSend;
+  BaseStationP.SerialSnoop -> SerialAM.Snoop;
+  BaseStationP.SerialPacket -> SerialAM.Packet;
+  BaseStationP.SerialAMPacket -> SerialAM.AMPacket;
   
   components RouterMultiSenderC, GlobalMultiSenderC;
   BaseStationP.GlobalSend -> GlobalMultiSenderC;
   BaseStationP.RouterSend -> RouterMultiSenderC;
-  BaseStationP.RadioReceive -> Radio.Receive;
-  BaseStationP.RadioSnoop -> Radio.Snoop;
-  BaseStationP.RadioPacket -> Radio;
-  BaseStationP.RadioAMPacket -> Radio;
+  BaseStationP.RadioReceive -> RadioAM.Receive;
+  BaseStationP.RadioSnoop -> RadioAM.Snoop;
+  BaseStationP.RadioPacket -> RadioAM;
+  BaseStationP.RadioAMPacket -> RadioAM;
   
   BaseStationP.Leds -> LedsC;
-  BaseStationP.CXLeds -> NoLedsC;
 
-//  components new PoolC(message_t, 3);
-  BaseStationP.Pool -> Radio.Pool;
+  components new QueueC(queue_entry_t, 4) as RadioRXQueue;
+  components new QueueC(queue_entry_t, 4) as SerialRXQueue;
+  components new QueueC(queue_entry_t, 4) as RadioTXQueue;
+  components new QueueC(queue_entry_t, 4) as SerialTXQueue;
+
+  BaseStationP.Pool -> RadioAM.Pool;
+
+  BaseStationP.RadioRXQueue -> RadioRXQueue;
+  BaseStationP.SerialRXQueue -> SerialRXQueue;
+  BaseStationP.RadioTXQueue -> RadioTXQueue;
+  BaseStationP.SerialTXQueue -> SerialTXQueue;
 
   components CXBaseStationC;
   BaseStationP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];
   BaseStationP.GlobalCXDownload -> CXBaseStationC.CXDownload[NS_GLOBAL];
   BaseStationP.StatusReceive -> CXBaseStationC.StatusReceive;
+
+  components new SerialAMReceiverC(AM_CX_DOWNLOAD) 
+    as CXDownloadReceive;
+  BaseStationP.CXDownloadReceive -> CXDownloadReceive;
 
   components new SerialAMSenderC(AM_CTRL_ACK) as CtrlAckSend;
   BaseStationP.CtrlAckSend -> CtrlAckSend;
@@ -127,12 +65,22 @@ implementation {
   components new SerialAMSenderC(AM_STATUS_TIME_REF) 
     as StatusTimeRefSend;
   BaseStationP.StatusTimeRefSend -> StatusTimeRefSend;
-  
+
+  components BareSettingsStorageConfiguratorC;
+  BareSettingsStorageConfiguratorC.Pool -> RadioAM.Pool;
+  components new SerialAMReceiverC(AM_SET_SETTINGS_STORAGE_MSG) 
+    as SetReceive;
+  components new SerialAMReceiverC(AM_CLEAR_SETTINGS_STORAGE_MSG) 
+    as ClearReceive;
+  components new SerialAMReceiverC(AM_GET_SETTINGS_STORAGE_CMD_MSG) as GetReceive;
+  components new SerialAMSenderC(AM_GET_SETTINGS_STORAGE_RESPONSE_MSG) as GetSend;
+  BareSettingsStorageConfiguratorC.SetReceive -> SetReceive;
+  BareSettingsStorageConfiguratorC.GetReceive -> GetReceive;
+  BareSettingsStorageConfiguratorC.GetSend -> GetSend;
+  BareSettingsStorageConfiguratorC.AMPacket -> GetSend.AMPacket;
+  BareSettingsStorageConfiguratorC.ClearReceive -> ClearReceive;
+
   components CXLinkPacketC;
   BaseStationP.CXLinkPacket -> CXLinkPacketC;
-
-  components CXAMAddressC;
-  BaseStationP.ActiveMessageAddress -> CXAMAddressC;
-
 
 }
