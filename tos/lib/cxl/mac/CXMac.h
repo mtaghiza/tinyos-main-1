@@ -14,8 +14,12 @@
 
 #define SS_KEY_PROBE_SCHEDULE 0x15
 
+//N.B. nesC doesn't handle initialization of multi-byte nx_* fields in
+//structs correctly. Arrays of single-byte elements can safely be left
+//"native". In the initialization of these guys, probeInterval will be
+//left uninitialized (and set during software init)
 typedef struct probe_schedule {
-   uint32_t probeInterval;
+   nx_uint32_t probeInterval;
    uint8_t channel[NUM_SEGMENTS];
    uint8_t invFrequency[NUM_SEGMENTS];
    uint8_t bw[NUM_SEGMENTS];
