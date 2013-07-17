@@ -46,11 +46,13 @@ configuration SerialActiveMessageC {
     interface SplitControl;
     interface AMSend[am_id_t id];
     interface Receive[am_id_t id];
+    interface Receive as Snoop[am_id_t id];
     interface Packet;
     interface AMPacket;
     interface PacketAcknowledgements;
   }
   uses interface Leds;
+  uses interface ActiveMessageAddress;
 }
 implementation {
   components new SerialActiveMessageP() as AM, SerialDispatcherC;
@@ -61,10 +63,12 @@ implementation {
   SplitControl = SerialDispatcherC;
   
   AMSend = AM;
-  Receive = AM;
+  Receive = AM.Receive;
+  Snoop = AM.Snoop;
   Packet = AM;
   AMPacket = AM;
   PacketAcknowledgements = AM;
+  AM = ActiveMessageAddress;
   
   AM.SubSend -> SerialDispatcherC.Send[TOS_SERIAL_ACTIVE_MESSAGE_ID];
   AM.SubReceive -> SerialDispatcherC.Receive[TOS_SERIAL_ACTIVE_MESSAGE_ID];

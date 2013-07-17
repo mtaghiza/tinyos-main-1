@@ -46,6 +46,7 @@ generic module SerialActiveMessageP () {
   provides {
     interface AMSend[am_id_t id];
     interface Receive[am_id_t id];
+    interface Receive as Snoop[am_id_t id];
     interface AMPacket;
     interface Packet;
     interface PacketAcknowledgements;
@@ -54,6 +55,7 @@ generic module SerialActiveMessageP () {
     interface Send as SubSend;
     interface Receive as SubReceive;
   }
+  uses interface ActiveMessageAddress;
 }
 implementation {
 
@@ -111,7 +113,11 @@ implementation {
  }
  
  event message_t* SubReceive.receive(message_t* msg, void* payload, uint8_t len) {
-    return signal Receive.receive[call AMPacket.type(msg)](msg, msg->data, len);
+    if (call AMPacket.isForMe(msg)){
+      return signal Receive.receive[call AMPacket.type(msg)](msg, msg->data, len);
+    } else {
+      return signal Snoop.receive[call AMPacket.type(msg)](msg, msg->data, len);
+    }
   }
 
   command void Packet.clear(message_t* msg) {
@@ -166,7 +172,15 @@ implementation {
   }
   
   command bool AMPacket.isForMe(message_t* amsg) {
+    #if SERIAL_ADDRESS_FILTERING == 1
+    return (call AMPacket.destination(amsg) == call ActiveMessageAddress.amAddress());
+    #else
     return TRUE;
+    #endif
+  }
+
+  default async command am_addr_t ActiveMessageAddress.amAddress(){
+    return 0;
   }
 
   command am_id_t AMPacket.type(message_t* amsg) {
@@ -200,6 +214,11 @@ implementation {
     return TOS_AM_GROUP;
   }
 
+  default event message_t* Snoop.receive[am_id_t id](message_t* msg, void* pl, uint8_t len){
+    return msg;
+  }
+
+  async event void ActiveMessageAddress.changed(){ }
  
   async command bool PacketAcknowledgements.wasAcked(message_t* msg) {
     return FALSE;
