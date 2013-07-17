@@ -131,4 +131,8 @@ implementation {
   components CXLinkPacketC;
   BaseStationP.CXLinkPacket -> CXLinkPacketC;
 
+  components CXAMAddressC;
+  BaseStationP.ActiveMessageAddress -> CXAMAddressC;
+
+
 }

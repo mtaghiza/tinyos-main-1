@@ -59,6 +59,7 @@
 #include "basestation.h"
 #include "multiNetwork.h"
 #include "CXMac.h"
+#include "SettingsStorage.h"
 
 module BaseStationP @safe() {
   uses {
@@ -94,6 +95,8 @@ module BaseStationP @safe() {
   uses interface Receive as StatusReceive;
   uses interface AMSend as StatusTimeRefSend;
   uses interface Pool<message_t>;
+
+  uses interface ActiveMessageAddress;
 }
 
 implementation
@@ -354,6 +357,9 @@ implementation
       }
       post ackDownload();
       return msg;
+    } else if (id == AM_SET_SETTINGS_STORAGE_MSG && call UartAMPacket.destination(msg) == call ActiveMessageAddress.amAddress()){
+      //TODO: handle locally
+      return msg; 
     } else {
       message_t *ret = msg;
       bool reflectToken = FALSE;
@@ -531,5 +537,7 @@ implementation
     call Pool.put(statusMsg);
     statusMsg = NULL;
   }
+
+  async event void ActiveMessageAddress.changed(){}
 
 }  

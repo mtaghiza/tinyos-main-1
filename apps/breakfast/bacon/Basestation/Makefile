@@ -68,6 +68,9 @@ MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/Cx
 CXMIGDIR = cx/messages
 MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
 
+SSMIGDIR = $(CXMIGDIR)
+MIGCLASSES += $(SSMIGDIR)/SetSettingsStorageMsg.py
+
 APMIGDIR = autoPush/messages
 MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py $(APMIGDIR)/LogRecordDataMsg.py
 
@@ -112,6 +115,9 @@ $(PRINTFMIGDIR):
 
 $(PRINTFMIGDIR)/PrintfMsg.py: 
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
+
+$(SSMIGDIR)/SetSettingsStorageMsg.py: $(SSMIGDIR)
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/settingsStorage/SettingsStorage.h $@ $(CFLAGS)
 
 migClasses: $(MIGCLASSES)
 
