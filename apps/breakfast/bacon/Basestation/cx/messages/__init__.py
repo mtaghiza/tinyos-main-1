@@ -1,1 +1,1 @@
-__all__ = ['StatusTimeRef', 'CtrlAck', 'CxDownloadFinished', 'CxDownload']
+__all__ = ['SetProbeSchedule', 'SetSettingsStorageMsg', 'StatusTimeRef', 'CtrlAck', 'CxDownloadFinished', 'CxDownload']

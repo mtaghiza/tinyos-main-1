@@ -20,6 +20,7 @@ from cx.decoders import Tunneled
 
 from cx.messages import CxDownload
 from cx.CXMoteIF import CXMoteIF
+from cx.messages import SetProbeSchedule
 
 from cx.messages import StatusTimeRef
 from cx.listeners import StatusTimeRefListener
@@ -42,8 +43,8 @@ class Dispatcher(object):
     def stop(self):
         self.mif.finishAll()
 
-    def send(self, m, dest=0):
-        self.mif.send(dest, m)
+    def send(self, m, dest=0, requireAck=True):
+        self.mif.send(dest, m, requireAck)
 
 NS_GLOBAL=0
 NS_SUBNETWORK=1
@@ -89,6 +90,18 @@ def download(packetSource, bsId, networkSegment=NS_GLOBAL):
         print "Cleaning up"
         d.stop()
 
+def testProbeSchedule(packetSource, bsId, probeInterval):
+    db = Database.Database()
+    d = Dispatcher(packetSource, bsId, db)
+    setProbeScheduleMsg = SetProbeSchedule.SetProbeSchedule(
+      probeInterval, 
+      [0, 32, 64],
+      [4, 0, 1],
+      [2, 2, 2],
+      [8, 5, 5])
+    d.send(setProbeScheduleMsg, bsId, False)
+    time.sleep(5)
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print "Usage:", sys.argv[0], "packetSource(e.g.  serial@/dev/ttyUSB0:115200) bsId [networkSegment]" 
@@ -101,3 +114,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 3:
         networkSegment = int(sys.argv[3])
     download(packetSource, bsId, networkSegment)
+#     probeInterval = int(sys.argv[3])
+#     testProbeSchedule(packetSource, bsId, probeInterval)

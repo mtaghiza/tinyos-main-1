@@ -50,7 +50,7 @@ class CXMoteIF(MoteIF):
                 self.source = s
             return s
 
-    def send(self, addr, msg, source=None):
+    def send(self, addr, msg, ackRequired=True, source=None):
         if not source:
             source = self.source
         error = 1
@@ -59,6 +59,8 @@ class CXMoteIF(MoteIF):
         while error and retries <= self.retryLimit:
             print "send #", retries
             self.sendMsg(source, addr, msg.get_amType(), 0, msg)
+            if not ackRequired:
+                return
             try:
                 m = self.ackQueue.get(True, self.sendTimeout)
                 print "ack:", m
