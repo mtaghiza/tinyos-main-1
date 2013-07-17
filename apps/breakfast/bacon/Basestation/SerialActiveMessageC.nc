@@ -46,6 +46,7 @@ configuration SerialActiveMessageC {
     interface SplitControl;
     interface AMSend;
     interface Receive[am_id_t id];
+    interface Receive as Snoop[am_id_t id];
     interface Packet;
     interface AMPacket;
     interface PacketAcknowledgements;
@@ -61,7 +62,8 @@ implementation {
   SplitControl = SerialDispatcherC;
   
   AMSend = AM;
-  Receive = AM;
+  Receive = AM.Receive;
+  Snoop = AM.Snoop;
   Packet = AM;
   AMPacket = AM;
   PacketAcknowledgements = AM;
