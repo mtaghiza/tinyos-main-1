@@ -112,6 +112,8 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
 
+  bool triedToSend = FALSE;
+
   void handleCTS(message_t* msg);
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
@@ -321,7 +323,9 @@ module SlotSchedulerP {
                 sizeof(cx_eos_t));
               call Packet.clear(eosMsg);
               call CXMacPacket.setMacType(eosMsg, CXM_EOS);
-              pl -> dataPending = (pendingMsg == NULL)?FALSE:TRUE;
+              pl -> dataPending = (triedToSend || (pendingMsg != NULL));
+              triedToSend = FALSE;
+//              printf("dp %x\r\n", pl->dataPending);
               call CXLinkPacket.setDestination(eosMsg, master);
             }
           }
@@ -446,8 +450,10 @@ module SlotSchedulerP {
             call SlotController.bw[activeNS](activeNS));
           //need to leave 1 frame for EOS message
           if (framesLeft <= clearTime(msg) + 1){
+//            printf("c\r\n");
             pendingMsg = NULL;
             cdbg(SCHED, "end\r\n");
+            triedToSend = TRUE;
             state = S_SLOT_END_PREP;
             //Not enough space to send: so, clear it out and tell
             //upper layer to retry.
@@ -459,6 +465,7 @@ module SlotSchedulerP {
         }
         return SUCCESS;
       }else {
+//        printf("h\r\n");
         //We don't yet have clearance to send, tell upper layer to
         //try again some time.
         return ERETRY;
