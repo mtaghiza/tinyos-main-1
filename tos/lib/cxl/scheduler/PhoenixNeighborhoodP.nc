@@ -13,8 +13,14 @@ module PhoenixNeighborhoodP {
   uses interface CXLinkPacket;
   uses interface Packet;
   uses interface Get<uint16_t> as RebootCounter;
+  uses interface Random;
 } implementation {
   phoenix_reference_t ref;
+
+  uint32_t randomize(uint32_t mean){
+    uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
+    return ret;
+  }
 
   void setNext(){
     uint32_t sampleInterval = DEFAULT_PHOENIX_SAMPLE_INTERVAL;
@@ -23,13 +29,14 @@ module PhoenixNeighborhoodP {
     cdbg(PHOENIX, "set next: %lu default %lu\r\n",
       sampleInterval, DEFAULT_PHOENIX_SAMPLE_INTERVAL);
 
-    //TODO: might be worth randomizing this, at least on the testbed.
-    call Timer.startOneShot(sampleInterval);
+    call Timer.startOneShot(randomize(sampleInterval));
   }
 
   event void Boot.booted(){
     ref.recordType = RECORD_TYPE_PHOENIX;
     setNext();
+    //First measurement: shortly after booting
+    call Timer.startOneShot(randomize(10240UL));
   }
   
   uint8_t refsCollected;

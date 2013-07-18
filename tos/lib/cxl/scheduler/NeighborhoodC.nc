@@ -11,6 +11,7 @@ configuration NeighborhoodC {
   components new TimerMilliC();
   components SettingsStorageC;
   components RebootCounterC;
+  components RandomC;
 
   PhoenixNeighborhoodP.Timer -> TimerMilliC;
   PhoenixNeighborhoodP.SettingsStorage -> SettingsStorageC;
@@ -18,6 +19,7 @@ configuration NeighborhoodC {
   PhoenixNeighborhoodP.Packet = Packet;
   PhoenixNeighborhoodP.RebootCounter -> RebootCounterC;
   PhoenixNeighborhoodP.Boot -> MainC;
+  PhoenixNeighborhoodP.Random -> RandomC;
   
   LppProbeSniffer = PhoenixNeighborhoodP.SubLppProbeSniffer;
   NeighborhoodP.LppProbeSniffer -> PhoenixNeighborhoodP.LppProbeSniffer;
