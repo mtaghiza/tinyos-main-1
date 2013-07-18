@@ -1,9 +1,15 @@
  #include "basestation.h"
+ #include "CXBasestationDebug.h"
 configuration BaseStationAppC {
 }
 implementation {
+  #ifndef ENABLE_PRINTF
+  #define ENABLE_PRINTF 0
+  #endif
+  #if ENABLE_PRINTF == 1
   components SerialStartC;
   components PrintfC;
+  #endif
   components MainC; 
   components BaseStationP;
   components LedsC, NoLedsC;

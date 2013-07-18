@@ -4,6 +4,7 @@
  #include "basestation.h"
  #include "multiNetwork.h"
  #include "CXMac.h"
+ #include "CXBasestationDebug.h"
 
 module BaseStationP @safe() {
   uses interface Boot;
@@ -92,15 +93,15 @@ implementation
 
   event void RadioControl.startDone(error_t error) {
     if (error != SUCCESS) {
-      printf("RC.sd: %x\r\n", error);
-      printfflush();
+      cdbg(BASESTATION, "RC.sd: %x\r\n", error);
+      cflushdbg(BASESTATION);
     }
   }
 
   event void SerialControl.startDone(error_t error) {
     if (error != SUCCESS) {
-      printf("SC.sd: %x\r\n", error);
-      printfflush();
+      cdbg(BASESTATION, "SC.sd: %x\r\n", error);
+      cflushdbg(BASESTATION);
     }
   }
 
@@ -127,12 +128,12 @@ implementation
   //record metadata, enqueue radio packet
   message_t* radioReceive(message_t *msg, void *payload, uint8_t len) {
     if (call RadioRXQueue.size() >= call RadioRXQueue.maxSize()){
-      printf("Radio full\r\n");
-      printfflush();
+      cdbg(BASESTATION, "Radio full\r\n");
+      cflushdbg(BASESTATION);
       return msg;
     } else if (call Pool.empty()){
-      printf("Pool empty fwdR\r\n");
-      printfflush();
+      cerror(BASESTATION, "Pool empty fwdR\r\n");
+      cflusherror(BASESTATION);
       return msg;
     }else{
       queue_entry_t qe;
@@ -141,7 +142,7 @@ implementation
       qe.len = len;
       call RadioRXQueue.enqueue(qe);
       post prepareSerial();
-      printf("G fwdR\r\n");
+      cdbg(BASESTATION, "G fwdR\r\n");
       return call Pool.get();
     }
   }
@@ -186,7 +187,7 @@ implementation
       if (error == SUCCESS){
         serialSending = TRUE;
       }else{
-        printf("SerialTX: %x\r\n", error);
+        cdbg(BASESTATION, "SerialTX: %x\r\n", error);
         call SerialTXQueue.enqueue(qe);
       }
     }
@@ -194,7 +195,8 @@ implementation
   
   //send next outgoing serial packet 
   event void SerialSend.sendDone[am_id_t id](message_t* msg, error_t error) {
-    printf("P fwdR\r\n");
+    serialSending = FALSE;
+    cdbg(BASESTATION, "P fwdR\r\n");
     call Pool.put(msg);
     post txSerial();
   }
@@ -207,12 +209,12 @@ implementation
 						   void *payload,
 						   uint8_t len) {
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
-      printf("Serial full\r\n");
-      printfflush();
+      cdbg(BASESTATION, "Serial full\r\n");
+      cflushdbg(BASESTATION);
       return msg;
     } else if (call Pool.empty()){
-      printf("Pool empty fwdS\r\n");
-      printfflush();
+      cerror(BASESTATION, "Pool empty fwdS\r\n");
+      cflusherror(BASESTATION);
       return msg;
     } else{
       queue_entry_t qe;
@@ -221,7 +223,7 @@ implementation
       qe.len = len;
       call SerialRXQueue.enqueue(qe);
       post prepareRadio();
-      printf("G fwdS\r\n");
+      cdbg(BASESTATION, "G fwdS\r\n");
       return call Pool.get();
     }
   }
@@ -273,7 +275,7 @@ implementation
       if (error == SUCCESS){
         radioSending = TRUE;
       }else{
-        printf("RadioTX: %x\r\n", error);
+        cdbg(BASESTATION, "RadioTX: %x\r\n", error);
         call RadioTXQueue.enqueue(qe);
       }
     }
@@ -291,9 +293,9 @@ implementation
 
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     message_t* ackMsg;
-    printf("P fwdS\r\n");
+    cdbg(BASESTATION, "P fwdS\r\n");
     call Pool.put(msg);
-    printf("G ackR\r\n");
+    cdbg(BASESTATION, "G ackR\r\n");
     ackMsg = call Pool.get();
     if (ackMsg != NULL) {
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
@@ -302,10 +304,10 @@ implementation
       pl -> error = error;
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
       if (error != SUCCESS){
-        printf("Couldn't send radio TX ack %x\r\n",
+        cdbg(BASESTATION, "Couldn't send radio TX ack %x\r\n",
           error);
-        printfflush();
-        printf("P ackR!\r\n");
+        cflushdbg(BASESTATION);
+        cdbg(BASESTATION, "P ackR!\r\n");
         call Pool.put(ackMsg);
         ackMsg = NULL;
       }
@@ -313,7 +315,7 @@ implementation
   }
 
   event void CtrlAckSend.sendDone(message_t* msg, error_t error){
-    printf("P ackRD\r\n");
+    cdbg(BASESTATION, "P ackRD\r\n");
     call Pool.put(msg);
     post txRadio();
   }
@@ -334,11 +336,11 @@ implementation
       downloadPl = pl;
       downloadMsg = msg;
       post startDownload();
-      printf("G cxd\r\n");
+      cdbg(BASESTATION, "G cxd\r\n");
       return call Pool.get();
     }else{
-      printf("DownloadRX: pool empty\r\n");
-      printfflush();
+      cerror(BASESTATION, "DownloadRX: pool empty\r\n");
+      cflusherror(BASESTATION);
     }
     return msg;
   }
@@ -348,14 +350,14 @@ implementation
     if (downloadError == SUCCESS){
       activeNS = downloadPl->networkSegment;
     }
-    printf("P cxd\r\n");
+    cdbg(BASESTATION, "P cxd\r\n");
     call Pool.put(downloadMsg);
     post ackDownload();
   }
 
   task void ackDownload(){
     message_t* ackMsg;
-    printf("G ackD\r\n");
+    cdbg(BASESTATION, "G ackD\r\n");
     ackMsg = call Pool.get();
     if (ackMsg != NULL){
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
@@ -365,9 +367,9 @@ implementation
       pl -> error = downloadError;
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
       if (error != SUCCESS){
-        printf("Couldn't ack download %x\r\n", error);
-        printfflush();
-        printf("P ackD!\r\n");
+        cdbg(BASESTATION, "Couldn't ack download %x\r\n", error);
+        cflushdbg(BASESTATION);
+        cdbg(BASESTATION, "P ackD!\r\n");
         call Pool.put(ackMsg);
       }
     }
@@ -381,7 +383,7 @@ implementation
 
   void reportFinished(uint8_t segment){
     message_t* ctrlMsg;
-    printf("G rf\r\n");
+    cdbg(BASESTATION, "G rf\r\n");
     ctrlMsg = call Pool.get();
     if (ctrlMsg != NULL){
       cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
@@ -391,21 +393,21 @@ implementation
       error = call CXDownloadFinishedSend.send(0, ctrlMsg,
         sizeof(cx_download_finished_t));
       if (error != SUCCESS){
-        printf("P rf!\r\n");
+        cdbg(BASESTATION, "P rf!\r\n");
         call Pool.put(ctrlMsg);
       }else{
-        printf("DownloadFinishedSend.send %x\r\n", error);
-        printfflush();
+        cdbg(BASESTATION, "DownloadFinishedSend.send %x\r\n", error);
+        cflushdbg(BASESTATION);
       }
     }else{
-      printf("reportFinished: pool empty\r\n");
-      printfflush();
+      cerror(BASESTATION, "reportFinished: pool empty\r\n");
+      cflusherror(BASESTATION);
     }
     activeNS = NS_INVALID;
   }
 
   event void CXDownloadFinishedSend.sendDone(message_t* msg, error_t error){
-    printf("P rf\r\n");
+    cdbg(BASESTATION, "P rf\r\n");
     call Pool.put(msg);
   }
 
@@ -414,7 +416,7 @@ implementation
   event message_t* StatusReceive.receive(message_t* msg, void* pl,
       uint8_t len){
     message_t* ret;
-    printf("G sr\r\n");
+    cdbg(BASESTATION, "G sr\r\n");
     ret = call Pool.get();
     if (ret != NULL){
       statusMsg = msg;
@@ -422,8 +424,8 @@ implementation
       post logStatus();
       return ret;
     } else {
-      printf("Status rx: pool empty\r\n");
-      printfflush();
+      cerror(BASESTATION, "Status rx: pool empty\r\n");
+      cflusherror(BASESTATION);
       return msg;
     }
   }
@@ -441,7 +443,7 @@ implementation
     pl -> rc = rc;
     pl -> ts = ts;
     if (SUCCESS != call StatusTimeRefSend.send(0, statusMsg, sizeof(status_time_ref_t))){
-      printf("P sr!\r\n");
+      cdbg(BASESTATION, "P sr!\r\n");
       call Pool.put(statusMsg);
       statusMsg = NULL;
     }
@@ -450,7 +452,7 @@ implementation
   
   event void StatusTimeRefSend.sendDone(message_t* msg, 
       error_t error){
-    printf("P sr\r\n");
+    cdbg(BASESTATION, "P sr\r\n");
     call Pool.put(statusMsg);
     statusMsg = NULL;
   }
