@@ -89,7 +89,33 @@ class DatabaseInit(object):
                               reboot_counter INTEGER,
                               time INTEGER,
                               toast_id TEXT,
-                              PRIMARY KEY (node_id, cookie))'''}
+                              PRIMARY KEY (node_id, cookie))''',
+              'phoenix_reference': '''CREATE TABLE phoenix_reference
+                             (node1 INTEGER,
+                              cookie INTEGER,
+                              rc1 INTEGER,
+                              ts1 INTEGER,
+                              node2 INTEGER,
+                              rc2 INTEGER,
+                              ts2 INTEGER,
+                              PRIMARY KEY (node1, cookie))''',
+              'base_reference': '''CREATE TABLE base_reference
+                             (node1 INTEGER,
+                              rc1 INTEGER,
+                              ts1 INTEGER,
+                              unixTS REAL)''',
+              'bacon_id': ''' CREATE TABLE bacon_id 
+                             (node_id INTEGER,
+                              cookie INTEGER,
+                              barcode_id TEXT,
+                              PRIMARY KEY (node_id, cookie))''',
+              'bacon_settings': ''' CREATE TABLE bacon_settings
+                             (node_id INTEGER,
+                              cookie INTEGER,
+                              rc INTEGER,
+                              offset INTEGER,
+                              data BLOB,
+                              PRIMARY KEY (node_id, cookie))''' }
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):
@@ -116,8 +142,8 @@ class DatabaseInit(object):
  
                 # only set name if no exceptions thrown
                 self.dbName = dbFile
-            except sqlite3.Error:
-                sys.stderr.write("Error reading file: " + dbFile + "\n")
+            except sqlite3.Error as e:
+                sys.stderr.write("Error reading file: " + dbFile + str(e)+ "\n")
                 continue
             finally:
                 cursor.close()
