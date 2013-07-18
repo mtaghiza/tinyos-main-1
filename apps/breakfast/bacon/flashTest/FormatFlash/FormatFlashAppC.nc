@@ -17,4 +17,7 @@ implementation
   FormatFlashP.LogWrite -> LogStorageC;
   FormatFlashP.UartCtl -> PlatformSerialC;
   FormatFlashP.UartStream -> PlatformSerialC;
+
+  components new TimerMilliC();
+  FormatFlashP.Timer -> TimerMilliC;
 }

@@ -9,18 +9,24 @@ module FormatFlashP
     interface Leds;
     interface StdControl as UartCtl;
     interface UartStream;
+    interface Timer<TMilli>;
   }
 }
 
 implementation
 {
   task void formatTask();
+
+  event void Timer.fired(){
+    post formatTask();
+  }
+
   event void Boot.booted()
   {
     printf("Format Flash Test\n\r");
     call UartCtl.start();
     if (AUTOMATIC){
-      post formatTask();
+      call Timer.startOneShot(1024);
     }else{
       printf("USAGE\r\n");
       printf("=====\r\n");
