@@ -40,8 +40,7 @@ module BaseStationP @safe() {
   uses interface AMSend as CtrlAckSend;
   uses interface AMSend as CXDownloadFinishedSend;
 
-  uses interface CXDownload as RouterCXDownload;
-  uses interface CXDownload as GlobalCXDownload;
+  uses interface CXDownload[uint8_t ns];
 
   //For simple timestamping: separate from forwarding structures.
   uses interface Receive as StatusReceive;
@@ -335,17 +334,7 @@ implementation
   }
   
   task void startDownload(){
-    switch (downloadPl -> networkSegment){
-      case NS_GLOBAL:
-        downloadError = call GlobalCXDownload.startDownload();
-        break;
-      case NS_ROUTER:
-        downloadError = call RouterCXDownload.startDownload();
-        break;
-      default:
-        downloadError = EINVAL;
-        break;
-    }
+    downloadError = call CXDownload.startDownload[downloadPl->networkSegment]();
     if (downloadError == SUCCESS){
       activeNS = downloadPl->networkSegment;
     }
@@ -372,12 +361,8 @@ implementation
   
   void reportFinished(uint8_t segment);
 
-  event void RouterCXDownload.downloadFinished(){
+  event void CXDownload.downloadFinished[uint8_t ns](){
     reportFinished(NS_ROUTER);
-  }
-
-  event void GlobalCXDownload.downloadFinished(){
-    reportFinished(NS_GLOBAL);
   }
 
   void reportFinished(uint8_t segment){
@@ -448,6 +433,8 @@ implementation
     statusMsg = NULL;
   }
 
-  
+  default command error_t CXDownload.startDownload[uint8_t ns](){
+    return EINVAL;
+  }
 
 }  

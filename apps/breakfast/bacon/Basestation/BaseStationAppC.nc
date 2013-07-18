@@ -47,8 +47,7 @@ implementation {
   BaseStationP.SerialTXQueue -> SerialTXQueue;
 
   components CXBaseStationC;
-  BaseStationP.RouterCXDownload -> CXBaseStationC.CXDownload[NS_ROUTER];
-  BaseStationP.GlobalCXDownload -> CXBaseStationC.CXDownload[NS_GLOBAL];
+  BaseStationP.CXDownload -> CXBaseStationC.CXDownload;
   BaseStationP.StatusReceive -> CXBaseStationC.StatusReceive;
 
   components new SerialAMReceiverC(AM_CX_DOWNLOAD) 
