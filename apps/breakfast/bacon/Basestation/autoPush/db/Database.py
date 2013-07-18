@@ -43,7 +43,7 @@ class Database(object):
             ##self.oldCookieVal = cookieVal
             ##self.oldLenVal = lenVal
         else: 
-            print "No decoder for ", recordType
+            print "No decoder for 0x%x"%recordType
 
     def findMissing(self):
         
