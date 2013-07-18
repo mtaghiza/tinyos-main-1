@@ -131,7 +131,7 @@ implementation
       printfflush();
       return msg;
     } else if (call Pool.empty()){
-      printf("Pool empty\r\n");
+      printf("Pool empty fwdR\r\n");
       return msg;
     }else{
       queue_entry_t qe;
@@ -208,7 +208,7 @@ implementation
       printfflush();
       return msg;
     } else if (call Pool.empty()){
-      printf("Pool empty\r\n");
+      printf("Pool empty fwdS\r\n");
       printfflush();
       return msg;
     } else{
