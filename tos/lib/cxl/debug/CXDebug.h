@@ -69,5 +69,11 @@
 #define cerror(channel, fmt, ...) cdbg_cond(DL_ERROR, channel, "!" fmt, ##__VA_ARGS__)
 #define cerrorclr(channel, fmt, ...) cdbg_cond(DL_ERROR, channel, fmt, ##__VA_ARGS__)
 
+#define cflush_cond(level, channel) if ( DL_ ## channel <= level && DL_GLOBAL <= level){printfflush();}
+#define cflushdbg(channel) cflush_cond(DL_DEBUG, channel)
+#define cflushinfo(channel) cflush_cond(DL_INFO, channel)
+#define cflushwarn(channel) cflush_cond(DL_WARN, channel)
+#define cflusherror(channel) cflush_cond(DL_ERROR, channel)
+
 
 #endif
