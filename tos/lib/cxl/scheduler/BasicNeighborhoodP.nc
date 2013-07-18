@@ -10,10 +10,8 @@ module BasicNeighborhoodP {
   uint8_t numNeighbors;
 
   command error_t Init.init(){
-    uint8_t i;
-    for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
-      neighbors[i] = AM_BROADCAST_ADDR;
-    }
+    call Neighborhood.clear();
+    return SUCCESS;
   }
 
   event message_t* LppProbeSniffer.sniffProbe(message_t* msg){
@@ -36,12 +34,19 @@ module BasicNeighborhoodP {
   }
 
   command void Neighborhood.clear(){
+    uint8_t i;
     numNeighbors = 0;
     neighborIndex = 0;
+    for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
+      neighbors[i] = AM_BROADCAST_ADDR;
+    }
   }
 
-  command void Neighborhood.copyNeighborhood(void* dest){
-    memcpy(dest, neighbors, sizeof(neighbors));
+  command void Neighborhood.copyNeighborhood(nx_am_addr_t* dest){
+    uint8_t i;
+    for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
+      dest[i] = neighbors[i];
+    }
   }
 
   command nx_am_addr_t* Neighborhood.getNeighborhood(){

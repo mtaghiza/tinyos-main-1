@@ -3,7 +3,6 @@ configuration NeighborhoodC {
   uses interface CXLinkPacket;
   uses interface Packet;
   provides interface Neighborhood;
-  provides interface Init;
 } implementation {
   components BasicNeighborhoodP as NeighborhoodP;
   #if PHOENIX_LOGGING == 1
@@ -29,5 +28,6 @@ configuration NeighborhoodC {
   CXLinkPacket = NeighborhoodP;
   Packet = NeighborhoodP;
   Neighborhood = NeighborhoodP;
-  Init = NeighborhoodP;
+  components MainC;
+  MainC.SoftwareInit -> NeighborhoodP.Init;
 }

@@ -13,7 +13,7 @@ typedef struct contact_entry{
 #define SS_KEY_MAX_DOWNLOAD_ROUNDS 0x19
 
 #ifndef DEFAULT_MAX_DOWNLOAD_ROUNDS
-#define DEFAULT_MAX_DOWNLOAD_ROUNDS 2
+#define DEFAULT_MAX_DOWNLOAD_ROUNDS 10
 #endif
 
 #endif

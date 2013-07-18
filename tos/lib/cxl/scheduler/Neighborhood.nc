@@ -1,5 +1,5 @@
 interface Neighborhood{
-  command void copyNeighborhood(void* dest);
+  command void copyNeighborhood(nx_am_addr_t* dest);
   command nx_am_addr_t* getNeighborhood();
   command uint8_t numNeighbors();
   command void clear();

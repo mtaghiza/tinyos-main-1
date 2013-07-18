@@ -67,6 +67,7 @@ module CXMasterP {
   }
 
   command bool SlotController.isActive(){
+//    printf("ia %u %u/%u -> ", numRounds, contactIndex, totalNodes);
     //Loop through contact list (wrapping contactIndex at totalNodes) until you either:
     // - hit a node with pending data
     // - complete the maxRounds-th loop of the entire list
@@ -77,6 +78,7 @@ module CXMasterP {
         numRounds++;
       }
     }
+//    printf("%u %u\r\n", numRounds, contactIndex);
     //If the above loop did not put you over the maxRounds limit, then
     // we're pointing at a node with pending data. go go go
     if (numRounds < maxRounds){
@@ -92,6 +94,7 @@ module CXMasterP {
   //Since the above isActive loop leaves us pointing at a node with
   //  pending data, just return the node at contactIndex.
   command am_addr_t SlotController.activeNode(){
+//    printf("an %x\r\n", contactList[contactIndex].nodeId);
     return contactList[contactIndex].nodeId;
   }
   
@@ -106,10 +109,12 @@ module CXMasterP {
     uint8_t i;
     uint8_t k;
     contactList[contactIndex].dataPending = pl->dataPending;
+//    printf("pl %p\r\n", pl->neighbors);
     cdbg(ROUTER, "rs %u %u\r\n", 
       contactList[contactIndex].nodeId,
       contactList[contactIndex].dataPending);
     for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
+//      printf("? %p %x\r\n", &(pl->neighbors[i]), pl->neighbors[i]);
       if (pl->neighbors[i] != AM_BROADCAST_ADDR){
         bool found = FALSE;
         for (k = 0; k < totalNodes && !found; k++){
@@ -121,9 +126,10 @@ module CXMasterP {
           if (totalNodes < CX_MAX_SUBNETWORK_SIZE){
             contactList[totalNodes].nodeId = pl->neighbors[i];
             contactList[totalNodes].dataPending = TRUE;
-            cdbg(ROUTER, "Add %x at %u\r\n",
-              pl->neighbors[i], 
-              totalNodes);
+//            printf( "A %x %u->%u\r\n",
+//              pl->neighbors[i], 
+//              i,
+//              totalNodes);
             totalNodes ++;
           }else {
             cwarn(ROUTER, 
@@ -142,19 +148,21 @@ module CXMasterP {
   command message_t* SlotController.receiveEOS(message_t* msg,
       cx_eos_t* pl){
     contactList[contactIndex].dataPending = pl->dataPending;
-    cdbg(ROUTER, "node %u pending %u\r\n",
-      contactList[contactIndex].nodeId,
-      contactList[contactIndex].dataPending);
+//    printf( "node %u pending %u\r\n",
+//      contactList[contactIndex].nodeId,
+//      contactList[contactIndex].dataPending);
     return msg;
   }
   
   //At the end of a slot, increment contactIndex, wrap if needed.
   command void SlotController.endSlot(){
+//    printf("es %u/%u ->", contactIndex, totalNodes);
     contactIndex++;
     if (contactIndex >= totalNodes){
       contactIndex = contactIndex % totalNodes;
       numRounds++;
     }
+//    printf("%u\r\n", contactIndex);
   }
 
   default event message_t* Receive.receive(message_t* msg, void* pl,
