@@ -19,6 +19,7 @@ configuration CXBaseStationC {
   CXMasterP.Get -> CXProbeScheduleC;
 
   CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
+  CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
   CXDownload[NS_ROUTER] = CXMasterP.CXDownload[NS_ROUTER];
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
@@ -31,6 +32,7 @@ configuration CXBaseStationC {
   SlotSchedulerC.Pool = Pool;
 
   SlotSchedulerC.SlotController[NS_GLOBAL] -> CXMasterP;
+  SlotSchedulerC.SlotController[NS_SUBNETWORK] -> CXMasterP;
   SlotSchedulerC.SlotController[NS_ROUTER] -> CXMasterP;
 
   components CXWakeupC;
@@ -40,6 +42,7 @@ configuration CXBaseStationC {
   CXMasterP.ActiveMessageAddress -> CXAMAddressC;
 
   CTS[NS_GLOBAL] = CXMasterP.CTS[NS_GLOBAL];
+  CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_GLOBAL];
   CTS[NS_ROUTER] = CXMasterP.CTS[NS_ROUTER];
 
   StatusReceive = CXMasterP.Receive;

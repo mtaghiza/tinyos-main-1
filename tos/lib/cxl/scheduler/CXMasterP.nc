@@ -30,9 +30,14 @@ module CXMasterP {
   uint8_t activeNS = NS_INVALID;
 
   command error_t CXDownload.startDownload[uint8_t ns](){
+    if (ns != NS_ROUTER && ns != NS_SUBNETWORK && ns != NS_GLOBAL){
+      return EINVAL;
+    }
     if (activeNS != NS_INVALID){
       return EBUSY;
-    }else{
+    }else if ((call Get.get())->invFrequency[ns] == 0){
+      return EINVAL;
+    } else {
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
         memset(contactList, sizeof(contactList), 0xFF);
