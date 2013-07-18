@@ -55,6 +55,10 @@ configuration SerialActiveMessageC {
   uses interface ActiveMessageAddress;
 }
 implementation {
+  #ifndef SERIAL_ADDRESS_FILTERING
+  #define SERIAL_ADDRESS_FILTERING 0
+  #endif
+
   components new SerialActiveMessageP() as AM, SerialDispatcherC;
   components SerialPacketInfoActiveMessageP as Info, MainC;
 
@@ -74,4 +78,9 @@ implementation {
   AM.SubReceive -> SerialDispatcherC.Receive[TOS_SERIAL_ACTIVE_MESSAGE_ID];
   
   SerialDispatcherC.SerialPacketInfo[TOS_SERIAL_ACTIVE_MESSAGE_ID] -> Info;
+  
+  #if SERIAL_ADDRESS_FILTERING == 1
+  components CXAMAddressC;
+  AM.ActiveMessageAddress -> CXAMAddressC;
+  #endif
 }
