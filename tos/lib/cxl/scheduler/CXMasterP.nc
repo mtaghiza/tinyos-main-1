@@ -11,7 +11,8 @@ module CXMasterP {
   provides interface CTS[uint8_t ns];
   provides interface Receive;
 
-  uses interface Get<probe_schedule_t*>;
+  uses interface Get<probe_schedule_t*> as GetProbeSchedule;
+  provides interface Get<am_addr_t> as GetRoot[uint8_t ns];
 } implementation {
 
   /**
@@ -29,13 +30,21 @@ module CXMasterP {
   uint8_t toContact;
   uint8_t activeNS = NS_INVALID;
 
+  am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 
+                                     AM_BROADCAST_ADDR, 
+                                     AM_BROADCAST_ADDR};
+
+  command am_addr_t GetRoot.get[uint8_t ns](){
+    return masters[ns];
+  }
+
   command error_t CXDownload.startDownload[uint8_t ns](){
     if (ns != NS_ROUTER && ns != NS_SUBNETWORK && ns != NS_GLOBAL){
       return EINVAL;
     }
     if (activeNS != NS_INVALID){
       return EBUSY;
-    }else if ((call Get.get())->invFrequency[ns] == 0){
+    }else if ((call GetProbeSchedule.get())->invFrequency[ns] == 0){
       return EINVAL;
     } else {
       error_t error = call LppControl.wakeup(ns);
@@ -134,17 +143,17 @@ module CXMasterP {
   }
 
   command uint8_t SlotController.bw(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return sched->bw[ns];
   }
 
   command uint8_t SlotController.maxDepth(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return sched->maxDepth[ns];
   }
 
   command uint32_t SlotController.wakeupLen(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
   }
 
@@ -157,7 +166,8 @@ module CXMasterP {
     return msg;
   }
 
-  command void SlotController.receiveCTS(uint8_t ns){
+  command void SlotController.receiveCTS(am_addr_t master, uint8_t ns){
+    masters[ns] = master;
     signal CTS.ctsReceived[ns]();
   }
 

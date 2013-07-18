@@ -171,7 +171,7 @@ module SlotSchedulerP {
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
       state = S_STATUS_PREP;
-      call SlotController.receiveCTS[activeNS](activeNS);
+      call SlotController.receiveCTS[activeNS](master, activeNS);
       //synchronize sends to CTS timestamp
       cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 
@@ -723,7 +723,7 @@ module SlotSchedulerP {
   msg, cx_status_t* pl){
     return msg;
   }
-  default command void SlotController.receiveCTS[uint8_t ns](uint8_t ans){}
+  default command void SlotController.receiveCTS[uint8_t ns](am_addr_t m, uint8_t ans){}
   default command void SlotController.endSlot[uint8_t ns](){}
   default command uint32_t SlotController.wakeupLen[uint8_t ns](uint8_t ns1){
     return 0;

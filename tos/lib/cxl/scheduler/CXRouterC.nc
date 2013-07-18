@@ -8,6 +8,7 @@ configuration CXRouterC {
 
   uses interface Pool<message_t>;
   provides interface CTS[uint8_t ns];
+  provides interface Get<am_addr_t>[uint8_t ns];
 } implementation {
   components SlotSchedulerC;
 
@@ -36,11 +37,15 @@ configuration CXRouterC {
   CXMasterP.ActiveMessageAddress -> CXAMAddressC;
 
   components CXProbeScheduleC;
-  CXMasterP.Get -> CXProbeScheduleC;
-  CXSlaveP.Get -> CXProbeScheduleC;
+  CXMasterP.GetProbeSchedule -> CXProbeScheduleC;
+  CXSlaveP.GetProbeSchedule -> CXProbeScheduleC;
 
   CTS[NS_GLOBAL] = CXSlaveP.CTS[NS_GLOBAL];
   CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_SUBNETWORK];
   CTS[NS_ROUTER] = CXSlaveP.CTS[NS_ROUTER];
+
+  Get[NS_GLOBAL] = CXSlaveP.GetRoot[NS_GLOBAL];
+  Get[NS_SUBNETWORK] = CXMasterP.GetRoot[NS_SUBNETWORK];
+  Get[NS_ROUTER] = CXSlaveP.GetRoot[NS_ROUTER];
 
 }

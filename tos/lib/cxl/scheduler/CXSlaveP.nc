@@ -1,8 +1,16 @@
 module CXSlaveP {
   provides interface SlotController;
   provides interface CTS[uint8_t ns];
-  uses interface Get<probe_schedule_t*>;
+  uses interface Get<probe_schedule_t*> as GetProbeSchedule;
+  provides interface Get<am_addr_t> as GetRoot[uint8_t ns];
 } implementation {
+  am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 
+                                     AM_BROADCAST_ADDR, 
+                                     AM_BROADCAST_ADDR};
+
+  command am_addr_t GetRoot.get[uint8_t ns](){
+    return masters[ns];
+  }
 
   command am_addr_t SlotController.activeNode(){
     return AM_BROADCAST_ADDR;
@@ -14,15 +22,15 @@ module CXSlaveP {
     return FALSE;
   }
   command uint8_t SlotController.bw(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return sched->bw[ns];
   }
   command uint8_t SlotController.maxDepth(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return sched->maxDepth[ns];
   }
   command uint32_t SlotController.wakeupLen(uint8_t ns){
-    probe_schedule_t* sched = call Get.get();
+    probe_schedule_t* sched = call GetProbeSchedule.get();
     return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
   }
   command message_t* SlotController.receiveEOS(
@@ -35,7 +43,9 @@ module CXSlaveP {
   }
   command void SlotController.endSlot(){
   }
-  command void SlotController.receiveCTS(uint8_t ns){
+  command void SlotController.receiveCTS(am_addr_t master, 
+      uint8_t ns){
+    masters[ns] = master;
     signal CTS.ctsReceived[ns]();
   }
 

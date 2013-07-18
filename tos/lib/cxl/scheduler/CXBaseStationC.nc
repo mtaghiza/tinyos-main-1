@@ -11,12 +11,13 @@ configuration CXBaseStationC {
   provides interface CTS[uint8_t ns];
 
   provides interface Receive as StatusReceive;
+  provides interface Get<am_addr_t>[uint8_t ns];
 } implementation {
   components SlotSchedulerC;
   components CXProbeScheduleC;
 
   components CXMasterP;
-  CXMasterP.Get -> CXProbeScheduleC;
+  CXMasterP.GetProbeSchedule -> CXProbeScheduleC;
 
   CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
   CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
@@ -46,5 +47,6 @@ configuration CXBaseStationC {
   CTS[NS_ROUTER] = CXMasterP.CTS[NS_ROUTER];
 
   StatusReceive = CXMasterP.Receive;
+  Get = CXMasterP.GetRoot;
 
 }

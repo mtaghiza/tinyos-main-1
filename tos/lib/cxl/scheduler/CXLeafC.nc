@@ -6,6 +6,9 @@ configuration CXLeafC {
 
   uses interface Pool<message_t>;
   provides interface CTS[uint8_t ns];
+  
+  //This gives out the most-recently-observed root of each network.
+  provides interface Get<am_addr_t>[uint8_t ns];
 } implementation {
   components SlotSchedulerC;
   Send = SlotSchedulerC;
@@ -19,8 +22,10 @@ configuration CXLeafC {
   SlotSchedulerC.SlotController[NS_GLOBAL] -> CXSlaveP;
   SlotSchedulerC.SlotController[NS_SUBNETWORK] -> CXSlaveP;
 
+  Get = CXSlaveP.GetRoot;
+
   components CXProbeScheduleC;
-  CXSlaveP.Get -> CXProbeScheduleC;
+  CXSlaveP.GetProbeSchedule -> CXProbeScheduleC;
 
   CTS = CXSlaveP;
 }
