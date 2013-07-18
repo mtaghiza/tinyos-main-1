@@ -383,6 +383,7 @@ implementation
 
   void reportFinished(uint8_t segment){
     message_t* ctrlMsg;
+    printfflush();
     cdbg(BASESTATION, "G rf\r\n");
     ctrlMsg = call Pool.get();
     if (ctrlMsg != NULL){
