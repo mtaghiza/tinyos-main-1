@@ -8,3 +8,7 @@ SS_KEY_PROBE_SCHEDULE=0x15 #(probe_schedule_t) (CXMac.h)
 SS_KEY_PHOENIX_SAMPLE_INTERVAL=0x16 #(uint32_t) (phoenix.h)
 SS_KEY_PHOENIX_TARGET_REFS=0x17 #(uint32_t) (phoenix.h)
 SS_KEY_DOWNLOAD_INTERVAL=0x18   #(uint32_t) (router.h)
+
+NS_GLOBAL=0
+NS_SUBNETWORK=1
+NS_ROUTER=2

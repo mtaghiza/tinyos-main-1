@@ -2,6 +2,7 @@
 from tinyos.message.MoteIF import MoteIF
 import Queue 
 import time
+import ast
 
 from threading import Condition
 
@@ -10,12 +11,13 @@ from cx.messages.CtrlAck import CtrlAck
 
 from cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedListener
 from cx.messages.CxDownloadFinished import CxDownloadFinished
+from cx.messages import SetProbeSchedule
 
 class MultipleSourceException(Exception):
     pass
 
 class CXMoteIF(MoteIF):
-    def __init__(self):
+    def __init__(self, bsId):
         MoteIF.__init__(self)
         self.ackQueue = Queue.Queue()
         self.addListener(CtrlAckListener(self.ackQueue),
@@ -29,6 +31,48 @@ class CXMoteIF(MoteIF):
         self.sendTimeout = 30
         self.retryLimit = 0
         self.source = None
+        self.bsId = bsId
+
+    def configureBasestation(self, configFile):
+        #sensible defaults
+        bsConfig = {
+          'probeInterval': 1024,
+          'globalChannel': 0,
+          'subNetworkChannel': 32,
+          'routerChannel': 64,
+          'globalInvFrequency': 4,
+          'subNetworkInvFrequency': 0,
+          'routerInvFrequency': 1,
+          'globalBW': 2,
+          'subNetworkBW': 2,
+          'routerBW': 2,
+          'globalMaxDepth':8,
+          'subNetworkMaxDepth':5,
+          'routerMaxDepth': 5 }
+        if configFile:
+            #evaluate each key:=value pair and stick it into config
+            with open(configFile, 'r') as f:
+                for line in f:
+                    if not line.startswith('#'):
+                        r = line.split(':=')
+                        bsConfig[r[0]] = ast.literal_eval(r[1])
+        #set up probe schedule appropriately
+        setProbeScheduleMsg = SetProbeSchedule.SetProbeSchedule(
+          bsConfig['probeInterval'],
+          [ bsConfig['globalChannel'], 
+            bsConfig['subNetworkChannel'], 
+            bsConfig['routerChannel']],
+          [ bsConfig['globalInvFrequency'], 
+            bsConfig['subNetworkInvFrequency'], 
+            bsConfig['routerInvFrequency']],
+          [ bsConfig['globalBW'], 
+            bsConfig['subNetworkBW'], 
+            bsConfig['routerBW']],
+          [ bsConfig['globalMaxDepth'], 
+            bsConfig['subNetworkMaxDepth'], 
+            bsConfig['routerMaxDepth']])
+        self.send(setProbeScheduleMsg, self.bsId, FALSE)
+        time.sleep(1)
 
     #TODO: addListener should also:
     # * create a TunneledListener if one does not already exist
