@@ -4,13 +4,13 @@ configuration NeighborhoodC {
   uses interface Packet;
   provides interface Neighborhood;
 } implementation {
+  components MainC;
   components BasicNeighborhoodP as NeighborhoodP;
   #if PHOENIX_LOGGING == 1
   components PhoenixNeighborhoodP;
   components new TimerMilliC();
   components SettingsStorageC;
   components RebootCounterC;
-  components MainC;
 
   PhoenixNeighborhoodP.Timer -> TimerMilliC;
   PhoenixNeighborhoodP.SettingsStorage -> SettingsStorageC;
@@ -28,6 +28,5 @@ configuration NeighborhoodC {
   CXLinkPacket = NeighborhoodP;
   Packet = NeighborhoodP;
   Neighborhood = NeighborhoodP;
-  components MainC;
   MainC.SoftwareInit -> NeighborhoodP.Init;
 }
