@@ -36,18 +36,15 @@ class DatabaseInit(object):
 
     # final name for db in use
     dbName = None
-
-    # Table creation strings
-    FLASH_TABLE_SQL = '''CREATE TABLE cookie_table
+    tables = {'cookie_table': '''CREATE TABLE cookie_table
                          (node_id INTEGER NOT NULL,
                           base_time REAL,
                           cookie INTEGER NOT NULL,
                           nextCookie INTEGER,
                           length INTEGER,
                           retry INTEGER DEFAULT 0,
-                          PRIMARY KEY (node_id, cookie));'''
-
-    BACON_SAMPLE_SQL = '''CREATE TABLE bacon_sample
+                          PRIMARY KEY (node_id, cookie))''',
+              'bacon_sample': '''CREATE TABLE bacon_sample
                         (node_id INTEGER,
                          cookie INTEGER,
                          reboot_counter INTEGER,
@@ -55,82 +52,70 @@ class DatabaseInit(object):
                          battery INTEGER,
                          light INTEGER,
                          thermistor INTEGER,
-                         PRIMARY KEY (node_id, cookie));'''
-
-    TOAST_SAMPLE_SQL = '''CREATE TABLE toast_sample
+                         PRIMARY KEY (node_id, cookie))''',
+              'toast_sample': '''CREATE TABLE toast_sample
                         (node_id INTEGER,
                          cookie INTEGER,
                          reboot_counter INTEGER,
                          base_time INTEGER,
                          toast_id TEXT,
-                         PRIMARY KEY (node_id, cookie));'''
-
-    SENSOR_SAMPLE_SQL= '''CREATE TABLE sensor_sample
+                         PRIMARY KEY (node_id, cookie))''',
+              'sensor_sample': '''CREATE TABLE sensor_sample
                         (node_id INTEGER,
                          cookie INTEGER,
                          channel_number INTEGER,
                          sample INTEGER,
-                         PRIMARY KEY (node_id, cookie, channel_number));'''
-
-    TOAST_CONNECTION_SQL= '''CREATE TABLE toast_connection
+                         PRIMARY KEY (node_id, cookie,
+                         channel_number))''',
+              'toast_connection': '''CREATE TABLE toast_connection
                            (node_id INTEGER,
                             cookie INTEGER,
                             reboot_counter INTEGER,
                             time INTEGER,
                             toast_id TEXT,
                             tlv BLOB,
-                            PRIMARY KEY (node_id, cookie));'''
-
-    SENSOR_CONNECTION_SQL='''CREATE TABLE sensor_connection
+                            PRIMARY KEY (node_id, cookie))''',
+              'sensor_connection': '''CREATE TABLE sensor_connection
                            (node_id INTEGER,
                             cookie INTEGER,
                             channel_number INTEGER,
                             sensor_type INTEGER,
                             sensor_id INTEGER,
-                            PRIMARY KEY (node_id, cookie, channel_number));'''
-
-    TOAST_DISCONNECTION_SQL='''CREATE TABLE toast_disconnection
+                            PRIMARY KEY (node_id, cookie,
+                            channel_number))''',
+              'toast_disconnection': '''CREATE TABLE toast_disconnection
                              (node_id INTEGER,
                               cookie INTEGER,
                               reboot_counter INTEGER,
                               time INTEGER,
                               toast_id TEXT,
-                              PRIMARY KEY (node_id, cookie));'''
-
+                              PRIMARY KEY (node_id, cookie))'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):
-
         # retry multiple filenames by incrementing counter in filename
         # a filename is accepted if either tables exists in it or 
         # tables can be created
         for fileCounter in range(0, DatabaseInit.FILE_RETRIES):
             dbFile = rootName + str(fileCounter) + '.sqlite'
-
             try:
                 connection = sqlite3.connect(dbFile)
-
                 cursor = connection.cursor()
-                cursor.execute('''SELECT name FROM sqlite_master WHERE name LIKE '%_table';''')
-
-                if len(cursor.fetchall()) != DatabaseInit.NO_OF_TABLES:
-                    sys.stderr.write("Tables do not exist, create tables\n")
-
-                    cursor.execute(DatabaseInit.RAW_TABLE_SQL);
-                    cursor.execute(DatabaseInit.META_TABLE_SQL);
-                    cursor.execute(DatabaseInit.FLASH_TABLE_SQL);
-                    cursor.execute(DatabaseInit.TIME_TABLE_SQL);
-                    cursor.execute(DatabaseInit.BACON_SAMPLE_SQL);
-                    cursor.execute(DatabaseInit.TOAST_SAMPLE_SQL);
-                    cursor.execute(DatabaseInit.SENSOR_SAMPLE_SQL);
-                    cursor.execute(DatabaseInit.TOAST_CONNECTION_SQL);
-                    cursor.execute(DatabaseInit.SENSOR_CONNECTION_SQL);
-                    cursor.execute(DatabaseInit.TOAST_DISCONNECTION_SQL);
-                    connection.commit();
+                cursor.execute('''SELECT name, sql FROM sqlite_master WHERE type == 'table' ''')
+                foundTables = dict(cursor.fetchall())
+                for table in DatabaseInit.tables:
+                    if table not in foundTables:
+                        print "%s missing"%table
+                        cursor.execute(DatabaseInit.tables[table])
+                    else:
+                        if foundTables[table] != DatabaseInit.tables[table]:
+                            print "%s Found %s, expected %s"%(table, foundTables[table], DatabaseInit.tables[table])
+                        else:
+                            print "%s OK"%table
+                connection.commit();
  
                 # only set name if no exceptions thrown
                 self.dbName = dbFile
-
             except sqlite3.Error:
                 sys.stderr.write("Error reading file: " + dbFile + "\n")
                 continue
@@ -138,11 +123,8 @@ class DatabaseInit(object):
                 cursor.close()
                 connection.close()
             break
-            
         if self.dbName is None:
             raise IOError
-
-        print "DatabaseInit()", threading.current_thread().name
 
     def getName(self):
         return self.dbName
