@@ -39,8 +39,8 @@ configuration LeafAppC{
 //  components PingC;
 //  PingC.Pool -> PoolC;
 
-  //TODO: should be from scheduler
-  RecordPushRequestC.Get -> LeafP.Get;
+  components CXLeafC;
+  RecordPushRequestC.Get -> CXLeafC.Get[NS_SUBNETWORK];
   
   #ifndef ENABLE_TOAST_SAMPLER
   #define ENABLE_TOAST_SAMPLER 1

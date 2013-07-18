@@ -30,7 +30,7 @@ configuration RouterAppC{
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
 
-  RecordPushRequestC.Get -> RouterP.Get;
+  RecordPushRequestC.Get -> CXRouterC.Get[NS_ROUTER];
 
   components ActiveMessageC;
   RouterP.SplitControl -> ActiveMessageC;

@@ -4,7 +4,6 @@
 module RouterP{
   uses interface Boot;
   uses interface SplitControl;
-  provides interface Get<am_addr_t>;
   uses interface Receive as ReceiveData;
   uses interface AMPacket;
 
@@ -21,10 +20,6 @@ module RouterP{
     call SplitControl.start();
   }
 
-  command am_addr_t Get.get(){
-    return AM_BROADCAST_ADDR;
-  }
-  
   task void downloadNext(){
     call SettingsStorage.get(SS_KEY_DOWNLOAD_INTERVAL,
       &downloadInterval, sizeof(downloadInterval));   

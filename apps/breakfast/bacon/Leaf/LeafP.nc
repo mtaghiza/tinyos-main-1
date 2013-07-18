@@ -3,7 +3,6 @@
 module LeafP{
   uses interface Boot;
   uses interface SplitControl;
-  provides interface Get<am_addr_t>;
 } implementation {
 
   event void Boot.booted(){
@@ -21,10 +20,6 @@ module LeafP{
       P2DIR |= BIT4;
     }
     #endif
-  }
-
-  command am_addr_t Get.get(){
-    return AM_BROADCAST_ADDR;
   }
 
   event void SplitControl.startDone(error_t error){
