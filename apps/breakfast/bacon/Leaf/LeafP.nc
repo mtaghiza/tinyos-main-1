@@ -7,9 +7,12 @@ module LeafP{
 
   event void Boot.booted(){
     call SplitControl.start();
-    #ifdef CC430_PIN_DEBUG
+    #ifndef CC430_PIN_DEBUG
+    #define CC430_PIN_DEBUG 0
+    #endif
+    #if CC430_PIN_DEBUG == 1
     atomic{
-      //map SFD to 1.2
+      //map SFD to 2.4
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P2MAP4 = PM_RFGDO0;
