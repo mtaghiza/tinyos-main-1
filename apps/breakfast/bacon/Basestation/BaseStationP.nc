@@ -132,6 +132,7 @@ implementation
       return msg;
     } else if (call Pool.empty()){
       printf("Pool empty fwdR\r\n");
+      printfflush();
       return msg;
     }else{
       queue_entry_t qe;
@@ -140,6 +141,7 @@ implementation
       qe.len = len;
       call RadioRXQueue.enqueue(qe);
       post prepareSerial();
+      printf("G fwdR\r\n");
       return call Pool.get();
     }
   }
@@ -192,6 +194,7 @@ implementation
   
   //send next outgoing serial packet 
   event void SerialSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    printf("P fwdR\r\n");
     call Pool.put(msg);
     post txSerial();
   }
@@ -218,6 +221,7 @@ implementation
       qe.len = len;
       call SerialRXQueue.enqueue(qe);
       post prepareRadio();
+      printf("G fwdS\r\n");
       return call Pool.get();
     }
   }
@@ -287,7 +291,9 @@ implementation
 
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     message_t* ackMsg;
+    printf("P fwdS\r\n");
     call Pool.put(msg);
+    printf("G ackR\r\n");
     ackMsg = call Pool.get();
     if (ackMsg != NULL) {
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
@@ -299,6 +305,7 @@ implementation
         printf("Couldn't send radio TX ack %x\r\n",
           error);
         printfflush();
+        printf("P ackR!\r\n");
         call Pool.put(ackMsg);
         ackMsg = NULL;
       }
@@ -306,6 +313,7 @@ implementation
   }
 
   event void CtrlAckSend.sendDone(message_t* msg, error_t error){
+    printf("P ackRD\r\n");
     call Pool.put(msg);
     post txRadio();
   }
@@ -326,9 +334,11 @@ implementation
       downloadPl = pl;
       downloadMsg = msg;
       post startDownload();
+      printf("G cxd\r\n");
       return call Pool.get();
     }else{
       printf("DownloadRX: pool empty\r\n");
+      printfflush();
     }
     return msg;
   }
@@ -338,12 +348,15 @@ implementation
     if (downloadError == SUCCESS){
       activeNS = downloadPl->networkSegment;
     }
+    printf("P cxd\r\n");
     call Pool.put(downloadMsg);
     post ackDownload();
   }
 
   task void ackDownload(){
-    message_t* ackMsg = call Pool.get();
+    message_t* ackMsg;
+    printf("G ackD\r\n");
+    ackMsg = call Pool.get();
     if (ackMsg != NULL){
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
         sizeof(ctrl_ack_t));
@@ -354,6 +367,7 @@ implementation
       if (error != SUCCESS){
         printf("Couldn't ack download %x\r\n", error);
         printfflush();
+        printf("P ackD!\r\n");
         call Pool.put(ackMsg);
       }
     }
@@ -366,7 +380,9 @@ implementation
   }
 
   void reportFinished(uint8_t segment){
-    message_t* ctrlMsg = call Pool.get();
+    message_t* ctrlMsg;
+    printf("G rf\r\n");
+    ctrlMsg = call Pool.get();
     if (ctrlMsg != NULL){
       cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
       error_t error;
@@ -375,6 +391,7 @@ implementation
       error = call CXDownloadFinishedSend.send(0, ctrlMsg,
         sizeof(cx_download_finished_t));
       if (error != SUCCESS){
+        printf("P rf!\r\n");
         call Pool.put(ctrlMsg);
       }else{
         printf("DownloadFinishedSend.send %x\r\n", error);
@@ -388,6 +405,7 @@ implementation
   }
 
   event void CXDownloadFinishedSend.sendDone(message_t* msg, error_t error){
+    printf("P rf\r\n");
     call Pool.put(msg);
   }
 
@@ -395,7 +413,9 @@ implementation
 
   event message_t* StatusReceive.receive(message_t* msg, void* pl,
       uint8_t len){
-    message_t* ret = call Pool.get();
+    message_t* ret;
+    printf("G sr\r\n");
+    ret = call Pool.get();
     if (ret != NULL){
       statusMsg = msg;
       statusPl = pl;
@@ -421,6 +441,7 @@ implementation
     pl -> rc = rc;
     pl -> ts = ts;
     if (SUCCESS != call StatusTimeRefSend.send(0, statusMsg, sizeof(status_time_ref_t))){
+      printf("P sr!\r\n");
       call Pool.put(statusMsg);
       statusMsg = NULL;
     }
@@ -429,6 +450,7 @@ implementation
   
   event void StatusTimeRefSend.sendDone(message_t* msg, 
       error_t error){
+    printf("P sr\r\n");
     call Pool.put(statusMsg);
     statusMsg = NULL;
   }
