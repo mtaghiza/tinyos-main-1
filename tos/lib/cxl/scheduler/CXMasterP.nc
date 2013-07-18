@@ -13,6 +13,8 @@ module CXMasterP {
 
   uses interface Get<probe_schedule_t*> as GetProbeSchedule;
   provides interface Get<am_addr_t> as GetRoot[uint8_t ns];
+
+  uses interface SettingsStorage;
 } implementation {
 
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
@@ -20,7 +22,7 @@ module CXMasterP {
   uint8_t numRounds;
   uint8_t totalNodes;
   uint8_t activeNS = NS_INVALID;
-  uint8_t maxRounds;
+  uint8_t maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
 
   am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 
                                      AM_BROADCAST_ADDR, 
@@ -41,8 +43,8 @@ module CXMasterP {
     } else {
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
-        //TODO: read maxRounds from settingsStorage
-        maxRounds = 2;
+        call SettingsStorage.get(SS_KEY_MAX_DOWNLOAD_ROUNDS,
+          &maxRounds, sizeof(maxRounds));
         //Initialization
         // - Put self in contact list, set totalNodes to 1 (just self)
         // - set self DP to true

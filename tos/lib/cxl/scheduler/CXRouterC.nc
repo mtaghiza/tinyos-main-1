@@ -47,5 +47,7 @@ configuration CXRouterC {
   Get[NS_GLOBAL] = CXSlaveP.GetRoot[NS_GLOBAL];
   Get[NS_SUBNETWORK] = CXMasterP.GetRoot[NS_SUBNETWORK];
   Get[NS_ROUTER] = CXSlaveP.GetRoot[NS_ROUTER];
-
+  
+  components SettingsStorageC;
+  CXMasterP.SettingsStorage -> SettingsStorageC;
 }

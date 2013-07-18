@@ -49,4 +49,6 @@ configuration CXBaseStationC {
   StatusReceive = CXMasterP.Receive;
   Get = CXMasterP.GetRoot;
 
+  components SettingsStorageC;
+  CXMasterP.SettingsStorage -> SettingsStorageC;
 }

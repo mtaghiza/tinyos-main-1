@@ -10,4 +10,10 @@ typedef struct contact_entry{
 #define CX_MAX_SUBNETWORK_SIZE 60
 #endif
 
+#define SS_KEY_MAX_DOWNLOAD_ROUNDS 0x19
+
+#ifndef DEFAULT_MAX_DOWNLOAD_ROUNDS
+#define DEFAULT_MAX_DOWNLOAD_ROUNDS 2
+#endif
+
 #endif
