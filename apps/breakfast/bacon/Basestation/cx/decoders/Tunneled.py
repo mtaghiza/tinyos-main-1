@@ -5,7 +5,6 @@ from tinyos.message.Message import Message
 
 class Tunneled(Decoder.Decoder):
     def __init__(self, *args):
-        print "tunneled.__init__", self
         Decoder.Decoder.__init__(self, *args)
         self.receiveQueue = None
         
