@@ -24,7 +24,7 @@ from cx.CXMoteIF import CXMoteIF
 from cx.messages import StatusTimeRef
 from cx.listeners import StatusTimeRefListener
 
-import cx.constants
+from cx import constants
 
 class Dispatcher(object):
     def __init__(self, motestring, bsId, db, configFile):
@@ -46,7 +46,7 @@ class Dispatcher(object):
         self.mif.finishAll()
 
     def send(self, m, dest=0, requireAck=True):
-        self.mif.send(dest, m, requireAck)
+        return self.mif.send(dest, m, requireAck)
 
 def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=None):
     print packetSource
@@ -66,18 +66,14 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         downloadMsg = CxDownload.CxDownload()
         downloadMsg.set_networkSegment(networkSegment)
 
-        d.send(downloadMsg, bsId)
-
-#         ping = PingMsg.PingMsg()
-#         ping.set_pingId(pingId)
-#         localTime = time.time()
-#         print "pinging"
-#         d.send(ping, 1)
-        
-        #TODO: we should send repair requests out first (since
-        #  controller gets to go first)
-
-        d.mif.downloadWait()
+        error = d.send(downloadMsg, bsId)
+        if error:
+            print "Download failed: %x"%error
+            pass
+        else: 
+            #TODO: we should send repair requests out first (since
+            #  controller gets to go first)
+            d.mif.downloadWait()
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:
@@ -97,6 +93,9 @@ if __name__ == '__main__':
     packetSource = sys.argv[1]
     bsId = int(sys.argv[2])
     networkSegment = constants.NS_GLOBAL
+    configFile = None
     if len(sys.argv) > 3:
         networkSegment = int(sys.argv[3])
-    download(packetSource, bsId, networkSegment)
+    if len(sys.argv) > 4:
+        configFile = sys.argv[4]
+    download(packetSource, bsId, networkSegment, configFile)

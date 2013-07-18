@@ -71,7 +71,7 @@ class CXMoteIF(MoteIF):
           [ bsConfig['globalMaxDepth'], 
             bsConfig['subNetworkMaxDepth'], 
             bsConfig['routerMaxDepth']])
-        self.send(setProbeScheduleMsg, self.bsId, FALSE)
+        self.send(self.bsId, setProbeScheduleMsg, False)
         time.sleep(1)
 
     #TODO: addListener should also:
@@ -99,23 +99,24 @@ class CXMoteIF(MoteIF):
             source = self.source
         error = 1
         retries = 0
-        print "Sending"
+        print "Sending", msg, "to", addr
         while error and retries <= self.retryLimit:
-            print "send #", retries
             self.sendMsg(source, addr, msg.get_amType(), 0, msg)
             if not ackRequired:
-                return
+                print "(no ack required)"
+                return 0
             try:
                 m = self.ackQueue.get(True, self.sendTimeout)
                 print "ack:", m
                 if m:
                     error = m.get_error()
             except Queue.Empty:
-                print "no ack"
+                print "no ack received"
                 #no response before timeout
                 pass
             finally:
                 retries += 1
+        return error
 
     def downloadWait(self):
         print "Waiting for download to finish"
