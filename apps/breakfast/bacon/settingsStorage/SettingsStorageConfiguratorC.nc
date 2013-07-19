@@ -1,6 +1,6 @@
 
-#include "SettingsStorage.h"
-#include "message.h"
+  #include "SettingsStorage.h"
+  #include "message.h"
 
 configuration SettingsStorageConfiguratorC {
   uses interface Pool<message_t>;

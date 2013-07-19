@@ -19,8 +19,8 @@ configuration LeafAppC{
   #if PHOENIX_LOGGING == 1
   //yeesh this is ugly
   components PhoenixNeighborhoodP;
-  components new LogStorageC(VOLUME_RECORD, TRUE);
-  PhoenixNeighborhoodP.LogWrite -> LogStorageC;
+  components new LogStorageC(VOLUME_RECORD, TRUE) as PhoenixLS;
+  PhoenixNeighborhoodP.LogWrite -> PhoenixLS;
   #endif
 
   components new PoolC(message_t, 4);
@@ -38,6 +38,10 @@ configuration LeafAppC{
 
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
+
+  components SettingsStorageC;
+  components new LogStorageC(VOLUME_RECORD, TRUE) as SettingsLS;
+  SettingsStorageC.LogWrite -> SettingsLS;
 
 //  components PingC;
 //  PingC.Pool -> PoolC;

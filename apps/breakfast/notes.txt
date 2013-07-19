@@ -128,6 +128,7 @@ ToastSampler.h: RECORD_TYPE_SAMPLE_LONG 0x13
 BaconSampler.h: RECORD_TYPE_BACON_SAMPLE 0x14
 router.h: RECORD_TYPE_TUNNELED 0x15
 phoenix.h: RECORD_TYPE_PHOENIX 0x16
+SettingsStorage.h: RECORD_TYPE_SETTINGS 0x17
 
 TLV Tags
 =========

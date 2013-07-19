@@ -46,4 +46,14 @@ enum {
   AM_CLEAR_SETTINGS_STORAGE_MSG = 0xC3,
 };
 
+#define RECORD_TYPE_SETTINGS 0x17
+#define SETTINGS_CHUNK_SIZE 64
+typedef struct settings_record {
+  uint8_t recordType;
+  uint16_t rebootCounter;
+  uint32_t ts;
+  uint8_t offset;
+  uint8_t data[SETTINGS_CHUNK_SIZE];
+} __attribute__((packed)) settings_record_t;
+
 #endif

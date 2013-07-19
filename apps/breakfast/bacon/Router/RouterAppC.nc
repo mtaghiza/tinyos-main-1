@@ -32,6 +32,9 @@ configuration RouterAppC{
 
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
+  components SettingsStorageC;
+  components new LogStorageC(VOLUME_RECORD, TRUE) as SettingsLS;
+  SettingsStorageC.LogWrite -> SettingsLS;
 
   RecordPushRequestC.Get -> CXRouterC.Get[NS_ROUTER];
 
@@ -48,7 +51,6 @@ configuration RouterAppC{
   RouterP.Pool -> PoolC;
 
   components CXRouterC;
-  components SettingsStorageC;
   components new TimerMilliC();
   RouterP.CXDownload -> CXRouterC.CXDownload[NS_SUBNETWORK];
   RouterP.SettingsStorage -> SettingsStorageC;
