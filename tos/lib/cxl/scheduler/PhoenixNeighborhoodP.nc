@@ -89,18 +89,25 @@ module PhoenixNeighborhoodP {
 //  }
 
   event message_t* SubLppProbeSniffer.sniffProbe(message_t* msg){
+    cx_lpp_probe_t* pl = call Packet.getPayload(msg,
+      sizeof(cx_lpp_probe_t));
     refsCollected++;
-    cdbg(PHOENIX, "probe from %x\r\n", call CXLinkPacket.source(msg) );
+    cdbg(PHOENIX, "probe %p from %x @(%u, %lu): (%u, %lu)\r\n", 
+      msg, call CXLinkPacket.source(msg),
+      call RebootCounter.get(),
+      (call CXLinkPacket.getLinkMetadata(msg))->timeMilli,
+      pl->rc,
+      pl->tMilli);
     if (! appending && call CXLinkPacket.source(msg) != lastSrc){
-      cx_lpp_probe_t* pl = call Packet.getPayload(msg,
-        sizeof(cx_lpp_probe_t));
       lastSrc = call CXLinkPacket.source(msg);
+      ref.rc1 = call RebootCounter.get();
+      ref.localTime1 = (call CXLinkPacket.getLinkMetadata(msg))->timeMilli;
       ref.node2 = lastSrc;
       ref.rc2 = pl->rc;
       ref.localTime2 = pl->tMilli;
-      ref.rc1 = call RebootCounter.get();
-      ref.localTime1 = (call CXLinkPacket.getLinkMetadata(msg))->timeMilli;
       post logReference();
+    }else {
+      cdbg(PHOENIX, "ignore\r\n");
     }
     return signal LppProbeSniffer.sniffProbe(msg);
   }
