@@ -15,6 +15,8 @@ generic module RecordPushRequestP() {
 
   uses interface Pool<message_t>;
   uses interface Get<am_addr_t>;
+  uses interface Packet;
+  uses interface CXLinkPacket;
 } implementation {
 
   enum {
@@ -35,7 +37,8 @@ generic module RecordPushRequestP() {
 
   uint8_t* bufferEnd = NULL;
   uint8_t* bufferStart = NULL;
-
+  
+  uint16_t recordsLeft = 0;
   uint16_t recordsRead = 0;
   uint8_t totalLen = 0;
 
@@ -136,6 +139,7 @@ generic module RecordPushRequestP() {
 
   event void LogNotify.sendRequested(uint16_t left)
   {
+    recordsLeft = left;
     if (!pushInQueue)
     {
       pushInQueue = TRUE;
@@ -174,6 +178,7 @@ generic module RecordPushRequestP() {
 
     if (msg != NULL)
     {
+      call Packet.clear(msg);
       missingLength = length;
       recordsRead = 0;
       totalLen = 0;
@@ -269,7 +274,8 @@ generic module RecordPushRequestP() {
     recordMsgPtr->nextCookie = call LogRead.currentOffset();
 
     state = S_SENDING;
-
+    
+    (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (recordsLeft > recordsRead);
     // use fixed packet size or variable packet size
 //    call AMSend.send(call Get.get(), msg, (uint8_t*)recordPtr - bufferStart);
     error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));

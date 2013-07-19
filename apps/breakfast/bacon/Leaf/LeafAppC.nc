@@ -16,21 +16,24 @@ configuration LeafAppC{
   components MainC;
   components LeafP;
 
-
-  components new PoolC(message_t, 4);
-
-  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
-
   #if PHOENIX_LOGGING == 1
   //yeesh this is ugly
   components PhoenixNeighborhoodP;
   components new LogStorageC(VOLUME_RECORD, TRUE);
   PhoenixNeighborhoodP.LogWrite -> LogStorageC;
   #endif
+
+  components new PoolC(message_t, 4);
+
+  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
+
   components new AMSenderC(AM_LOG_RECORD_DATA_MSG);
   components new AMReceiverC(AM_CX_RECORD_REQUEST_MSG);
+  components CXLinkPacketC;
   RecordPushRequestC.Pool -> PoolC;
   RecordPushRequestC.AMSend -> AMSenderC;
+  RecordPushRequestC.Packet -> AMSenderC;
+  RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
   RecordPushRequestC.Receive -> AMReceiverC;
 
   components SettingsStorageConfiguratorC;

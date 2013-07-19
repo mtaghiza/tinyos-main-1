@@ -65,6 +65,7 @@ typedef struct cx_link_metadata {
   uint32_t timeFast;
   bool retx;
   nx_uint32_t* tsLoc;
+  bool dataPending;
 } cx_link_metadata_t;
 
 

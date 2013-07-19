@@ -94,6 +94,7 @@ module SlotSchedulerP {
 
   message_t* pendingMsg;
   uint8_t pendingLen;
+  bool explicitDataPending;
   message_t* statusMsg;
   message_t* ctsMsg;
   message_t* eosMsg;
@@ -112,7 +113,6 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
 
-  bool triedToSend = FALSE;
 
   void handleCTS(message_t* msg);
   task void nextRX();
@@ -173,6 +173,7 @@ module SlotSchedulerP {
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
       state = S_STATUS_PREP;
+      explicitDataPending = FALSE;
       call SlotController.receiveCTS[activeNS](master, activeNS);
       //synchronize sends to CTS timestamp
       cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
@@ -323,8 +324,8 @@ module SlotSchedulerP {
                 sizeof(cx_eos_t));
               call Packet.clear(eosMsg);
               call CXMacPacket.setMacType(eosMsg, CXM_EOS);
-              pl -> dataPending = (triedToSend || (pendingMsg != NULL));
-              triedToSend = FALSE;
+              pl -> dataPending = (explicitDataPending || (pendingMsg != NULL));
+              explicitDataPending = FALSE;
 //              printf("dp %x\r\n", pl->dataPending);
               call CXLinkPacket.setDestination(eosMsg, master);
             }
@@ -453,7 +454,7 @@ module SlotSchedulerP {
 //            printf("c\r\n");
             pendingMsg = NULL;
             cdbg(SCHED, "end\r\n");
-            triedToSend = TRUE;
+            explicitDataPending = TRUE;
             state = S_SLOT_END_PREP;
             //Not enough space to send: so, clear it out and tell
             //upper layer to retry.
@@ -518,6 +519,7 @@ module SlotSchedulerP {
       }else{
         state = S_IDLE;
       }
+      explicitDataPending = (call CXLinkPacket.getLinkMetadata(pendingMsg))->dataPending;
       pendingMsg = NULL;
       signal Send.sendDone(msg, error);
     } else if (state == S_CTS_SENDING){

@@ -5,6 +5,8 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
   uses interface Get<am_addr_t>;
   uses interface Pool<message_t>;
   uses interface AMSend;
+  uses interface Packet;
+  uses interface CXLinkPacket;
   uses interface Receive;
 } implementation {
   components new LogStorageC(VOLUME_ID, circular);
@@ -28,6 +30,8 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
   
   //For reading/pushing data
   RecordPushRequestP.AMSend = AMSend;
+  RecordPushRequestP.Packet = Packet;
+  RecordPushRequestP.CXLinkPacket = CXLinkPacket;
   RecordPushRequestP.LogRead -> LogStorageC;
   RecordPushRequestP.Get = Get;
   RecordPushRequestP.Pool = Pool;

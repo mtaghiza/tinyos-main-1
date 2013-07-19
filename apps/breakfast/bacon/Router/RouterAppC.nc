@@ -22,9 +22,12 @@ configuration RouterAppC{
 
   components new RecordPushRequestC(VOLUME_RECORD, TRUE);
   components new RouterAMSenderC(AM_TUNNELED_MSG);
+  components CXLinkPacketC;
 
   RecordPushRequestC.Pool -> PoolC;
   RecordPushRequestC.AMSend -> RouterAMSenderC;
+  RecordPushRequestC.Packet -> RouterAMSenderC;
+  RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
 
 
   components SettingsStorageConfiguratorC;
