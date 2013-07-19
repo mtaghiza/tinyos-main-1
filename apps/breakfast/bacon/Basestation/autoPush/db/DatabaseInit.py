@@ -113,6 +113,7 @@ class DatabaseInit(object):
                              (node_id INTEGER,
                               cookie INTEGER,
                               rc INTEGER,
+                              ts INTEGER,
                               offset INTEGER,
                               data BLOB,
                               PRIMARY KEY (node_id, cookie))''' }

@@ -16,6 +16,7 @@ from autoPush.messages import PingMsg
 from autoPush.db import Database
 
 from autoPush.decoders import BaconSample
+from autoPush.decoders import BaconSettings
 from autoPush.decoders import Phoenix
 from cx.decoders import Tunneled
 
@@ -55,6 +56,7 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     d = Dispatcher(packetSource, bsId, db, configFile)
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(Phoenix.Phoenix)
+    db.addDecoder(BaconSettings.BaconSettings)
     #man that is ugghly to hook 
     t = db.addDecoder(Tunneled.Tunneled)
     t.receiveQueue = d.mif.receiveQueue
