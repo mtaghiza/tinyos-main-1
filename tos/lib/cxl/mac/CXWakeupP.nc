@@ -275,7 +275,6 @@ module CXWakeupP {
   }
 
   command error_t LppProbeSniffer.sniff(uint8_t ns){
-    printf("cxw.sniff\r\n");
     if (state == S_IDLE){
       uint32_t probeIntervalFast;
       error_t error;
@@ -286,8 +285,6 @@ module CXWakeupP {
       }
       probeIntervalMilli = (sched->invFrequency[ns]*probeInterval);
       probeIntervalFast = milliToFast(probeIntervalMilli);
-      printf("pi %lu pim %lu if %u %lu\r\n", 
-        probeInterval, probeIntervalMilli, sched->invFrequency[ns], probeIntervalFast);
       if (probeIntervalFast == 0){
         return EINVAL;
       }else{
