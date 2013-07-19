@@ -66,7 +66,7 @@ typedef struct cx_link_metadata {
   bool retx;
   nx_uint32_t* tsLoc;
   bool dataPending;
-} cx_link_metadata_t;
+} __attribute__((packed)) cx_link_metadata_t;
 
 
 //This flag determines whether nodes re-synch to their own SFD on
