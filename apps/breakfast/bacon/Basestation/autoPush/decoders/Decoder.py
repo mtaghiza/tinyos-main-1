@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+def toHexArrayStr(data):
+   return "[" + ', '.join([hex(v) for v in data])+ "]" 
 
 class Decoder(object):
     def __init__(self, dbName):
@@ -10,7 +12,7 @@ class Decoder(object):
         if self.connected == True:
             #self.cursor.close()
             self.connection.close()
-    
+
     @classmethod
     def decode(self, arr, reverseByteOrder=True):
         if reverseByteOrder:

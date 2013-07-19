@@ -26,6 +26,6 @@ typedef struct phoenix_reference {
   uint16_t rc2;
   uint32_t localTime1;
   uint32_t localTime2;
-} phoenix_reference_t;
+} __attribute__((packed)) phoenix_reference_t;
 
 #endif

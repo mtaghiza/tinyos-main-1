@@ -22,6 +22,6 @@ class BaconSample(Decoder.Decoder):
              (node_id, cookie, reboot_counter, base_time, battery, light, thermistor) 
              VALUES (?, ?, ?, ?, ?, ?, ?)'''
         t = self.unpack(source, cookie, data)
-        print "Decoded", data, "to", t
+        print "Decoded Bacon Sample", Decoder.toHexArrayStr(data), "to", Decoder.toHexArrayStr(t)
         self.connection.execute(q, t)
         self.connection.commit()
