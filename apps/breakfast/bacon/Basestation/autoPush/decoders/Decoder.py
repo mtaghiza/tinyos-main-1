@@ -2,6 +2,18 @@
 def toHexArrayStr(data):
    return "[" + ', '.join([hex(v) for v in data])+ "]" 
 
+def tlvIterator(data):
+    #skip CRC
+    i = 2
+    while i < len(data):
+        #format:
+        # tag, len, [b x len]
+        tag = ord(data[i])
+        l = ord(data[i+1])
+        d = data[i+2:i+2+l]
+        yield (tag, l, d)
+        i += l+2
+
 class Decoder(object):
     def __init__(self, dbName):
         self.dbName = dbName
