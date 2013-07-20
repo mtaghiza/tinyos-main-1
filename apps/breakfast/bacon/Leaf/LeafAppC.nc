@@ -15,12 +15,17 @@ configuration LeafAppC{
 
   components MainC;
   components LeafP;
+  #ifndef PHOENIX_LOGGING
+  #define PHOENIX_LOGGING 1
+  #endif
 
   #if PHOENIX_LOGGING == 1
   //yeesh this is ugly
   components PhoenixNeighborhoodP;
   components new LogStorageC(VOLUME_RECORD, TRUE) as PhoenixLS;
   PhoenixNeighborhoodP.LogWrite -> PhoenixLS;
+  #else
+  #warning Phoenix disabled!
   #endif
 
   components new PoolC(message_t, 4);
