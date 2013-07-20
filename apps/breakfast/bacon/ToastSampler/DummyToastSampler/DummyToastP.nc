@@ -67,12 +67,16 @@ module DummyToastP {
     sensor_assignment_t assignments[8];
   } dummy_tlv_entry_t;
   
-  dummy_tlv_entry_t tlve;
   event void Boot.booted(){
     uint8_t i;
-    memset(dummyTLV, 0, SLAVE_TLV_LEN);
+    dummy_tlv_entry_t tlve;
+    global_id_entry_t gid;
+    //fill tlv with 0xff, then set up an initial TAG_EMPTY to cover
+    //the entire storage area.
+    memset(dummyTLV, 0xff, SLAVE_TLV_LEN);
     dummyTLV[2] = TAG_EMPTY;
-    dummyTLV[3] = 50;
+    dummyTLV[3] = 60;
+    //put in some toast assignments
     for (i=0; i < 8; i++){
       tlve.assignments[i].sensorType = i+1;
       tlve.assignments[i].sensorId = TOS_NODE_ID;
@@ -81,9 +85,17 @@ module DummyToastP {
     tlve.len = 8*sizeof(sensor_assignment_t);
     call TLVUtils.addEntry(tlve.tag,
       tlve.len,
-      (tlv_entry_t*)&tlve,
+      (tlv_entry_t*)(&tlve),
       dummyTLV,
       0);
+    //stick a global id in there, too.
+    gid.header.tag = TAG_GLOBAL_ID;
+    gid.header.len = GLOBAL_ID_LEN;
+    for (i = 0 ; i < GLOBAL_ID_LEN; i++){
+      gid.id[i] = i;
+    }
+    call TLVUtils.addEntry(gid.header.tag, 
+      gid.header.len, (&gid.header), dummyTLV, 0);
   }
 
   task void loadedTask(){
@@ -126,6 +138,7 @@ module DummyToastP {
       r->samples[i].sampleTime = 10*i;
       r->samples[i].sample = 2*i;
     }
+    r->samples[8].inputChannel = INPUT_CHANNEL_NONE;
     signal I2CADCReaderMaster.sampleDone(SUCCESS,
       sa, m, m, r);
   }
