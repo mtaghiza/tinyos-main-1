@@ -35,13 +35,31 @@ configuration LeafAppC{
   RecordPushRequestC.Packet -> AMSenderC;
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
   RecordPushRequestC.Receive -> AMReceiverC;
+  #ifndef ENABLE_SETTINGS_CONFIG
+  #define ENABLE_SETTINGS_CONFIG 1
+  #endif
 
+  #if ENABLE_SETTINGS_CONFIG == 1
   components SettingsStorageConfiguratorC;
   SettingsStorageConfiguratorC.Pool -> PoolC;
-
+  #else
+  #warning SettingsStorageConfigurator disabled!
+  #endif
+  
   components SettingsStorageC;
+
+  #ifndef ENABLE_SETTINGS_LOGGING
+  #define ENABLE_SETTINGS_LOGGING 1
+  #endif
+
+  #if ENABLE_SETTINGS_LOGGING == 1
   components new LogStorageC(VOLUME_RECORD, TRUE) as SettingsLS;
   SettingsStorageC.LogWrite -> SettingsLS;
+  #else
+  #warning Disabled settings logging!
+  components new DummyLogWriteC();
+  SettingsStorageC.LogWrite -> DummyLogWriteC;
+  #endif
 
 //  components PingC;
 //  PingC.Pool -> PoolC;
