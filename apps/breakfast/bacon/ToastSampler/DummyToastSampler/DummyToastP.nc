@@ -36,13 +36,17 @@ module DummyToastP {
     signal I2CDiscoverer.discoveryDone(SUCCESS);
   }
   
+
+  uint8_t dummyTLV[SLAVE_TLV_LEN];
+
   discoverer_register_union_t d;
   task void discoveredTask(){
     uint8_t i;
-    for (i=0; i < GLOBAL_ID_LEN-1; i++){
-      d.val.globalAddr[i] = 0x00;
+    global_id_entry_t* gid;
+    call TLVUtils.findEntry(TAG_GLOBAL_ID, 0, (tlv_entry_t**)(&gid), dummyTLV);
+    for (i=0; i < GLOBAL_ID_LEN; i++){
+      d.val.globalAddr[i] = gid->id[i];
     }
-    d.val.globalAddr[GLOBAL_ID_LEN-1] = TOS_NODE_ID;
     signal I2CDiscoverer.discovered(&d); 
     post discoveryDoneTask();
   }
@@ -58,8 +62,6 @@ module DummyToastP {
   command void* I2CTLVStorageMaster.getPayload(i2c_message_t* msg){
     return (void*)msg;
   }
-
-  uint8_t dummyTLV[SLAVE_TLV_LEN];
   
   typedef struct dummy_tlv_entry{
     uint8_t tag;
