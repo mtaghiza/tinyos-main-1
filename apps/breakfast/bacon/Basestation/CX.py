@@ -19,6 +19,7 @@ from autoPush.decoders import BaconSample
 from autoPush.decoders import ToastSample
 from autoPush.decoders import BaconSettings
 from autoPush.decoders import ToastConnection
+from autoPush.decoders import ToastDisconnection
 from autoPush.decoders import Phoenix
 from cx.decoders import Tunneled
 
@@ -42,8 +43,6 @@ class Dispatcher(object):
           LogRecordDataMsg.LogRecordDataMsg)
         self.mif.addListener(PongListener.PongListener(), 
           PongMsg.PongMsg)
-        self.mif.addListener(StatusTimeRefListener.StatusTimeRefListener(),
-          StatusTimeRef.StatusTimeRef)
         self.mif.configureBasestation(configFile)
 
     def stop(self):
@@ -59,6 +58,7 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
+    db.addDecoder(ToastDisconnection.ToastDisconnection)
     db.addDecoder(Phoenix.Phoenix)
     db.addDecoder(BaconSettings.BaconSettings)
     #man that is ugghly to hook 
@@ -66,12 +66,17 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     t.receiveQueue = d.mif.receiveQueue
     pingId = 0
 
+    refListener = StatusTimeRefListener.StatusTimeRefListener()
+    d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
+
     try:
         print "Wakeup start", time.time()
 
         request_list = db.findMissing()
-
+        
+        t0 = time.time() 
         downloadMsg = CxDownload.CxDownload()
+        refListener.downloadStart = (time.time() + t0)/2
         downloadMsg.set_networkSegment(networkSegment)
 
         error = d.send(downloadMsg, bsId)

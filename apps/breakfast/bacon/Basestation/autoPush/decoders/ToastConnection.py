@@ -26,8 +26,10 @@ class ToastConnection(Decoder.Decoder):
            (?,       ?,      ?,  ?,  ?)'''
 
         (source, cookie, rc, ts, tlv) = self.unpack(source, cookie, data)
+        print "Toast Connection raw:", [hex(c) for c in data]
+        print "Toast Connection unpacked:", source, cookie, rc, ts, [hex(ord(c)) for c in tlv]
         for (tag, length, value) in Decoder.tlvIterator(tlv):
-            print "next tag", tag
+            print "next (t,l,v)", tag, length, [hex(ord(c)) for c in value]
             if tag == 0x05:
                 i = 0
                 channel = 0
