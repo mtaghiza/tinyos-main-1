@@ -27,9 +27,9 @@ class ToastSample(Decoder.Decoder):
         q1='''INSERT OR IGNORE INTO sensor_sample 
              (node_id, cookie, channel_number, sample) VALUES 
              (?,       ?,      ?,              ?)'''
-        (rc, ts, samplerId, samples) = self.unpack(data)
-        #TODO: sampler ID here is a binary  string
-        self.connection.execute(q0, (source, cookie, rc, ts, samplerId))
+        (rc, ts, samplerIdBin, samples) = self.unpack(data)
+        samplerIdText = Decoder.toHexStr(samplerIdBin)
+        self.connection.execute(q0, (source, cookie, rc, ts, samplerIdText))
         for (channel, sample) in enumerate(samples):
             self.connection.execute(q1, (source, cookie, channel, sample))
         self.connection.commit()

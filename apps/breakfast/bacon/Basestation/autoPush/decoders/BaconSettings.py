@@ -38,11 +38,11 @@ class BaconSettings(Decoder.Decoder):
                 tlv = reduce(lambda l,r: l[0]+r[0], chunks)
                 for (tag, length, value) in Decoder.tlvIterator(tlv):
                     if tag == 0x04:
-                        baconID = buffer(value)
+                        baconIDText = Decoder.toHexStr(buffer(value))
                         self.connection.execute('''INSERT OR IGNORE INTO bacon_id
                           (node_id, cookie, barcode_id) values
                           (?      , ?     , ?)''', 
-                          (node_id, cookie, baconID))
+                          (node_id, cookie, baconIDText))
 
         self.connection.commit()
         self.connection.close()

@@ -39,7 +39,8 @@ class ToastConnection(Decoder.Decoder):
                     i += 3
                     channel += 1
             if tag == 0x04:
-                toastId = value
-                self.connection.execute(q, (source, cookie, rc, ts, toastId, tlv))
+                toastIdBin = value
+                toastIdText = Decoder.toHexStr(toastIdBin)
+                self.connection.execute(q, (source, cookie, rc, ts, toastIdText, tlv))
 
         self.connection.commit()

@@ -2,6 +2,14 @@
 def toHexArrayStr(data):
    return "[" + ', '.join([hex(v) for v in data])+ "]" 
 
+def toHexStr(dataBin, reverseByteOrder = True):
+    if reverseByteOrder:
+        arr = reversed(dataBin)
+    else:
+        arr = dataBin
+    return '0x'+''.join(['%02x'%ord(c) for c in arr])
+        
+
 def tlvIterator(data):
     #skip CRC
     i = 2
