@@ -66,7 +66,7 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     t.receiveQueue = d.mif.receiveQueue
     pingId = 0
 
-    refListener = StatusTimeRefListener.StatusTimeRefListener()
+    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
 
     try:
