@@ -20,7 +20,7 @@ typedef struct toast_disconnection_record_t{
   uint16_t rebootCounter;
   uint32_t time;
   uint8_t globalAddr[GLOBAL_ID_LEN];
-} toast_disconnection_record_t;
+} __attribute__((packed)) toast_disconnection_record_t;
 
 typedef struct toast_connection_record_t{
   uint8_t recordType;
