@@ -16,7 +16,9 @@ from autoPush.messages import PingMsg
 from autoPush.db import Database
 
 from autoPush.decoders import BaconSample
+from autoPush.decoders import ToastSample
 from autoPush.decoders import BaconSettings
+from autoPush.decoders import ToastConnection
 from autoPush.decoders import Phoenix
 from cx.decoders import Tunneled
 
@@ -55,6 +57,8 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     db = Database.Database()
     d = Dispatcher(packetSource, bsId, db, configFile)
     db.addDecoder(BaconSample.BaconSample)
+    db.addDecoder(ToastSample.ToastSample)
+    db.addDecoder(ToastConnection.ToastConnection)
     db.addDecoder(Phoenix.Phoenix)
     db.addDecoder(BaconSettings.BaconSettings)
     #man that is ugghly to hook 

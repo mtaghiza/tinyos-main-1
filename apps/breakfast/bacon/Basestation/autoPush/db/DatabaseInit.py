@@ -44,6 +44,11 @@ class DatabaseInit(object):
                           length INTEGER,
                           retry INTEGER DEFAULT 0,
                           PRIMARY KEY (node_id, cookie))''',
+              'log_record': '''CREATE TABLE log_record
+                        (node_id INTEGER,
+                         cookie INTEGER,
+                         data BLOB,
+                         PRIMARY KEY (node_id, cookie))''',
               'bacon_sample': '''CREATE TABLE bacon_sample
                         (node_id INTEGER,
                          cookie INTEGER,
