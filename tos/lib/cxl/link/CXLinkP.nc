@@ -377,7 +377,13 @@ module CXLinkP {
     uint8_t localState;
     atomic localState = state;
     if (localState == S_IDLE || localState == S_SLEEP){
-      error_t error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
+      error_t error;
+      bool microStarted = FALSE;
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        microStarted = TRUE;
+        call Msp430XV2ClockControl.startMicroTimer();
+      }
+      error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
       call Packet.clear(rxMsg);
@@ -387,9 +393,6 @@ module CXLinkP {
       call CXLinkPacket.setAllowRetx(rxMsg, allowForward);
   
       if (SUCCESS == error){
-        if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-          call Msp430XV2ClockControl.startMicroTimer();
-        }
         atomic{
           call FastAlarm.start(timeout);
           call SynchCapture.captureRisingEdge();
@@ -407,6 +410,10 @@ module CXLinkP {
               crcHist[i] = 0;
             }
           }
+        }
+      } else{
+        if (microStarted){
+          call Msp430XV2ClockControl.stopMicroTimer();
         }
       }
       return error;
