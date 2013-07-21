@@ -1,6 +1,5 @@
-/* DO NOT MODIFY
- * This file cloned from Msp430UsciSpiB0C.nc for A0 */
-/* Copyright (c) 2009-2010 People Power Co.
+/*
+ * Copyright (c) 2009-2010 People Power Co.
  * All rights reserved.
  *
  * This open source code was developed with funding from People Power Company
@@ -30,36 +29,57 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE
- *
  */
 
 #include "msp430usci.h"
 
 /**
- * Generic configuration for a client that shares USCI_A0 in SPI mode.
- */
-generic configuration Msp430UsciSpiA0C() {
+ * Core configuration for any USCI module present on an MSP430
+ * chip.
+ *
+ * There should be exactly one instance of this configuration for each
+ * USCI module; e.g., USCI_A0 or USCI_B3.  Each instance provides
+ * access to the USCI registers for its module, and maintains the
+ * resource management information required to determine which of the
+ * module's modes is currently active.
+ *
+ * @author Peter A. Bigot <pab@peoplepowerco.com> */
+generic configuration HplMsp430UsciC(
+  /** Offset of UCmxCTLW0_ register for m=module_type and x=module_instance */
+  unsigned int UCmxCTLW0_,
+  /** Name of resource used to arbitrate modes of this USCI instance */
+  char RESOURCE_NAME[]
+) @safe() {
   provides {
-    interface Resource;
-    interface SpiPacket;
-    interface SpiByte;
-    interface Msp430UsciError;
+    interface HplMsp430Usci as Usci;
+    interface HplMsp430UsciInterrupts as Interrupts[ uint8_t mode ];
+    interface Resource[uint8_t client];
+    interface ResourceRequested[uint8_t client];
+    interface ResourceDefaultOwner;
+    interface ArbiterInfo;
   }
-  uses interface Msp430PortMappingConfigure;
-
+  uses {
+    interface HplMsp430UsciInterrupts as RawInterrupts;
+    interface ResourceConfigure[uint8_t client];
+  }
 } implementation {
   enum {
-    CLIENT_ID = unique(MSP430_USCI_A0_RESOURCE),
+    USCI_ID = unique(MSP430_USCI_RESOURCE),
   };
 
-  components Msp430UsciA0P as UsciC;
-  Resource = UsciC.Resource[CLIENT_ID];
+  components new HplMsp430UsciP(USCI_ID, UCmxCTLW0_) as HplUsciP;
+  Usci = HplUsciP;
+  RawInterrupts = HplUsciP;
+  Interrupts = HplUsciP;
 
-  components Msp430UsciSpiA0P as SpiC;
-  SpiPacket = SpiC.SpiPacket[CLIENT_ID];
-  SpiByte = SpiC.SpiByte;
-  Msp430UsciError = SpiC.Msp430UsciError;
-  Msp430PortMappingConfigure = SpiC.Msp430PortMappingConfigure[CLIENT_ID];
-
-  UsciC.ResourceConfigure[CLIENT_ID] -> SpiC.ResourceConfigure[CLIENT_ID];
+  components new FcfsArbiterC( RESOURCE_NAME ) as ArbiterC;
+  Resource = ArbiterC;
+  ResourceRequested = ArbiterC;
+  ResourceConfigure = ArbiterC;
+  ResourceDefaultOwner = ArbiterC;
+  ArbiterInfo = ArbiterC;
+  HplUsciP.ArbiterInfo -> ArbiterC;
+  
+  components LedsC;
+  HplUsciP.Leds -> LedsC;
 }

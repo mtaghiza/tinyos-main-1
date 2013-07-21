@@ -1,9 +1,5 @@
-/* DO NOT MODIFY
- * This file cloned from Msp430UsciSpiB0C.nc for A0 */
 /* Copyright (c) 2009-2010 People Power Co.
  * All rights reserved.
- *
- * This open source code was developed with funding from People Power Company
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,30 +32,30 @@
 #include "msp430usci.h"
 
 /**
- * Generic configuration for a client that shares USCI_A0 in SPI mode.
+ * Connect the appropriate pins for USCI support on a CC430.
+ * Additionally, expose an Init interface so that we have a
+ * well-defined place to do port-mapping
+ *
+ * @author Peter A. Bigot <pab@peoplepowerco.com>
+ * @author Doug Carlson <carlson@cs.jhu.edu>
  */
-generic configuration Msp430UsciSpiA0C() {
-  provides {
-    interface Resource;
-    interface SpiPacket;
-    interface SpiByte;
-    interface Msp430UsciError;
-  }
-  uses interface Msp430PortMappingConfigure;
 
+configuration PlatformUsciInitC {
+  provides interface Init;
 } implementation {
-  enum {
-    CLIENT_ID = unique(MSP430_USCI_A0_RESOURCE),
-  };
+  #warning Using no-uart PlatformUsciInitC
+  components PlatformUsciInitP;
+  Init = PlatformUsciInitP;
 
-  components Msp430UsciA0P as UsciC;
-  Resource = UsciC.Resource[CLIENT_ID];
+  components HplMsp430GeneralIOC as GIO;
 
-  components Msp430UsciSpiA0P as SpiC;
-  SpiPacket = SpiC.SpiPacket[CLIENT_ID];
-  SpiByte = SpiC.SpiByte;
-  Msp430UsciError = SpiC.Msp430UsciError;
-  Msp430PortMappingConfigure = SpiC.Msp430PortMappingConfigure[CLIENT_ID];
+  components Msp430UsciSpiA0P as SpiA0C;
+  //never fear, we port-map the A0 module in stm25p/noUart
+  SpiA0C.SIMO -> GIO.Port13;
+  SpiA0C.SOMI -> GIO.Port12;
+  SpiA0C.CLK -> GIO.Port14;
 
-  UsciC.ResourceConfigure[CLIENT_ID] -> SpiC.ResourceConfigure[CLIENT_ID];
+  components Msp430UsciI2CB0P as I2CB0C;
+  I2CB0C.SDA -> GIO.Port26;
+  I2CB0C.SCL -> GIO.Port27;
 }

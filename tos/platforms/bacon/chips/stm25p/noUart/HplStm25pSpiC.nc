@@ -1,9 +1,6 @@
-/* DO NOT MODIFY
- * This file cloned from Msp430UsciSpiB0C.nc for A0 */
-/* Copyright (c) 2009-2010 People Power Co.
+/*
+ * Copyright (c) 2005-2006 Arch Rock Corporation
  * All rights reserved.
- *
- * This open source code was developed with funding from People Power Company
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -14,7 +11,7 @@
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the
  *   distribution.
- * - Neither the name of the People Power Corporation nor the names of
+ * - Neither the name of the Arch Rock Corporation nor the names of
  *   its contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
  *
@@ -22,7 +19,7 @@
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * PEOPLE POWER CO. OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * ARCHED ROCK OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -30,36 +27,33 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE
- *
  */
-
-#include "msp430usci.h"
 
 /**
- * Generic configuration for a client that shares USCI_A0 in SPI mode.
+ * HPL implementation of the Spi bus for a ST M25P chip connected to a
+ * TI MSP430.
+ *
+ * @author Jonathan Hui <jhui@archrock.com>
+ * @version $Revision$ $Date$
  */
-generic configuration Msp430UsciSpiA0C() {
-  provides {
-    interface Resource;
-    interface SpiPacket;
-    interface SpiByte;
-    interface Msp430UsciError;
-  }
-  uses interface Msp430PortMappingConfigure;
 
-} implementation {
-  enum {
-    CLIENT_ID = unique(MSP430_USCI_A0_RESOURCE),
-  };
+configuration HplStm25pSpiC {
 
-  components Msp430UsciA0P as UsciC;
-  Resource = UsciC.Resource[CLIENT_ID];
+  provides interface Resource;
+  provides interface SpiByte;
+  provides interface SpiPacket;
 
-  components Msp430UsciSpiA0P as SpiC;
-  SpiPacket = SpiC.SpiPacket[CLIENT_ID];
-  SpiByte = SpiC.SpiByte;
-  Msp430UsciError = SpiC.Msp430UsciError;
-  Msp430PortMappingConfigure = SpiC.Msp430PortMappingConfigure[CLIENT_ID];
+}
 
-  UsciC.ResourceConfigure[CLIENT_ID] -> SpiC.ResourceConfigure[CLIENT_ID];
+implementation {
+  #warning UART disabled, assigning SPI to A0
+
+  components new Msp430UsciSpiA0C() as SpiC;
+  Resource = SpiC;
+  SpiByte = SpiC;
+  SpiPacket = SpiC;
+
+  components BaconSpiA0PortMappingP;
+  SpiC.Msp430PortMappingConfigure -> BaconSpiA0PortMappingP;
+
 }
