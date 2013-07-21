@@ -72,7 +72,8 @@ generic configuration HplMsp430UsciC(
   RawInterrupts = HplUsciP;
   Interrupts = HplUsciP;
 
-  components new FcfsArbiterC( RESOURCE_NAME ) as ArbiterC;
+//  components new FcfsArbiterC( RESOURCE_NAME ) as ArbiterC;
+  components new DummyArbiterC() as ArbiterC;
   Resource = ArbiterC;
   ResourceRequested = ArbiterC;
   ResourceConfigure = ArbiterC;

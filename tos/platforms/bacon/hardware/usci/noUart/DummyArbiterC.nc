@@ -6,11 +6,14 @@ generic configuration DummyArbiterC() {
   uses interface ResourceConfigure[uint8_t clientId];
 
 } implementation {
-  components new NoArbiterC();
-  Resource[0] = NoArbiterC.Resource;
-  ResourceConfigure[0] = NoArbiterC.ResourceConfigure;
-  //TODO: ResourceDefaultOwner?
-  //TODO: ResourceRequested: never signal
-  //TODO: ArbiterInfo
+  components new DummyArbiterP(1) as Arbiter;
+  Resource = Arbiter;
+  ResourceRequested = Arbiter;
+  ResourceDefaultOwner = Arbiter;
+  ArbiterInfo = Arbiter;
+  ResourceConfigure = Arbiter;
+    
+//  components new DummyResourceQueueC() as Queue;
+//  Arbiter.Queue -> Queue.FcfsQueue;
 
 }
