@@ -102,6 +102,19 @@ msp430_usci_config_t msp430_usci_spi_default_config = {
   mctl : 0                      /* Always 0 in SPI mode */
 };
 
+
+#ifdef XT2_SMCLK
+//the flags are defined relative to the byte register, so we need to
+//  shift the ones from ctl0 8.
+msp430_usci_config_t msp430_usci_i2c_default_config = {
+  ctl0: UCSYNC | UCMODE_3 | UCMM,
+  ctl1: UCSSEL_2,
+  br1:  0x00,
+  br0:  0x08 << 2,
+  mctl: 0x00,
+  i2coa: 'a',
+};
+#else 
 //the flags are defined relative to the byte register, so we need to
 //  shift the ones from ctl0 8.
 msp430_usci_config_t msp430_usci_i2c_default_config = {
@@ -112,6 +125,7 @@ msp430_usci_config_t msp430_usci_i2c_default_config = {
   mctl: 0x00,
   i2coa: 'a',
 };
+#endif
 
 enum {
   /** Bit set in Msp430UsciError.condition parameter when a framing

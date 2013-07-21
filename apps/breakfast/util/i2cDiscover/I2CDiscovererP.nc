@@ -352,6 +352,16 @@ generic module I2CDiscovererP(){
     }
   }
 
+#ifdef XT2_SMCLK
+  const msp430_usci_config_t _config = {
+    ctl0: UCSYNC|UCMODE_3|UCMM,
+    ctl1: UCSSEL_2,
+    br0:  0x08 << 2,
+    br1:  0x00,
+    mctl: 0x00,
+    i2coa: I2C_INVALID_MASTER,
+  };
+#else
   const msp430_usci_config_t _config = {
     ctl0: UCSYNC|UCMODE_3|UCMM,
     ctl1: UCSSEL_2,
@@ -360,6 +370,7 @@ generic module I2CDiscovererP(){
     mctl: 0x00,
     i2coa: I2C_INVALID_MASTER,
   };
+#endif
 
   async command const msp430_usci_config_t* Msp430UsciConfigure.getConfiguration(){
     return &_config;
