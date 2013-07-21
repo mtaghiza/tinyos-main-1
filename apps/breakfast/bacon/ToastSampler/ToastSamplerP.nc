@@ -64,11 +64,13 @@ module ToastSamplerP{
     sampleRec.recordType = RECORD_TYPE_SAMPLE;
     disconnection.rebootCounter = sampleRec.rebootCounter;
     connection.rebootCounter = sampleRec.rebootCounter;
+    printf("booted: %lu\r\n", sampleInterval);
     call Timer.startOneShot(sampleInterval);
   }
 
   event void Timer.fired(){
     uint8_t i;
+    printf("fired\r\n");
     call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
@@ -114,6 +116,7 @@ module ToastSamplerP{
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t k;
+    printf("Found\r\n");
     //check if this was previously-attached
     if( find(discovery->val.globalAddr, &k) ){
       toastState[k] = PRESENT;
@@ -149,6 +152,7 @@ module ToastSamplerP{
   task void recordDisconnection();
 
   event void I2CDiscoverer.discoveryDone(error_t error){
+    printf("Discovery done\r\n");
     mdSynchIndex = 0;
     synchingMetadata = TRUE;
     post nextMdSynch();
@@ -172,6 +176,8 @@ module ToastSamplerP{
           printf("couldn't read");
           mdSynchIndex ++;
           post nextMdSynch();
+        }else{
+          printf("reading\r\n");
         }
 
       } else if (toastState[mdSynchIndex] == UNKNOWN){
@@ -204,7 +210,7 @@ module ToastSamplerP{
     tlv_entry_t* entry;
     void* tlvs = call I2CTLVStorageMaster.getPayload(msg_);
     error_t err;
-
+    printf("loaded\r\n");
     if (error == SUCCESS){
       //set up connection record header
       connection.recordType = RECORD_TYPE_TOAST_CONNECTED;
@@ -219,12 +225,14 @@ module ToastSamplerP{
           0,
           &entry,
           tlvs)){
+        printf("no sensors.\r\n");
         //no sensors attached.
         sensorMaps[mdSynchIndex] = 0x00;
       } else{
         uint8_t i;
         sensor_assignment_t* assignments =
           (sensor_assignment_t*)&entry->data.b;
+        printf("sensors found\r\n");
         sensorMaps[mdSynchIndex] = 0x00;
         //mark connected sensor channels in RAM
         for (i = 0; i < 8; i++){
@@ -233,7 +241,6 @@ module ToastSamplerP{
           }
         }
       }
-
       err = call LogWrite.append(&connection, sizeof(connection));
       if( SUCCESS != err){
         printf("append failed\n");

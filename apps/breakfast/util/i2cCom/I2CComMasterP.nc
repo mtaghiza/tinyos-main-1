@@ -86,7 +86,7 @@ module I2CComMasterP{
   task void signalSendDone(){
     uint8_t toSignal = curClient;
     release();
-    signal I2CComMaster.sendDone[curClient](signalError, msg);
+    signal I2CComMaster.sendDone[toSignal](signalError, msg);
   }
 
   void release(){
@@ -147,7 +147,7 @@ module I2CComMasterP{
   task void signalReceiveDone(){
     uint8_t toSignal = curClient;
     release();
-    signal I2CComMaster.receiveDone[curClient](signalError, msg);
+    signal I2CComMaster.receiveDone[toSignal](signalError, msg);
   }
 
   async event void I2CPacket.readDone(error_t error, uint16_t addr,
@@ -157,7 +157,8 @@ module I2CComMasterP{
     post signalReceiveDone();
   }
 
-  default event void I2CComMaster.sendDone[uint8_t client](error_t error, i2c_message_t* msg_){}
+  default event void I2CComMaster.sendDone[uint8_t client](error_t error, i2c_message_t* msg_){
+  }
   default event void I2CComMaster.receiveDone[uint8_t client](error_t error, i2c_message_t* msg_){}
 
 }
