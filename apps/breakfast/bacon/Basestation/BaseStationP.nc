@@ -127,6 +127,9 @@ implementation
 
   //record metadata, enqueue radio packet
   message_t* radioReceive(message_t *msg, void *payload, uint8_t len) {
+    cinfo(BASESTATION, "RRX %x %u\r\n", 
+      call CXLinkPacket.source(msg), 
+      call CXLinkPacket.getSn(msg));
     if (call RadioRXQueue.size() >= call RadioRXQueue.maxSize()){
       cdbg(BASESTATION, "Radio full\r\n");
       cflushdbg(BASESTATION);
