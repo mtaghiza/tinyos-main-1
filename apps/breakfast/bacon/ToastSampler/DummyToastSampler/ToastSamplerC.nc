@@ -30,6 +30,9 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   components SettingsStorageC;
   ToastSamplerP.SettingsStorage -> SettingsStorageC;
 
+  components CXAMAddressC;
+  DummyToastP.ActiveMessageAddress -> CXAMAddressC;
+
   components RebootCounterC;
 
   components LocalTime32khzC;

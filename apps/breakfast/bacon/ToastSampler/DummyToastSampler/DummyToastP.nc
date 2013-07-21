@@ -13,6 +13,7 @@ module DummyToastP {
 
   uses interface LocalTime<T32khz>;
   uses interface Boot;
+  uses interface ActiveMessageAddress;
 } implementation {
   task void startDoneTask(){ 
     signal SplitControl.startDone(SUCCESS);
@@ -81,7 +82,7 @@ module DummyToastP {
     //put in some toast assignments
     for (i=0; i < 8; i++){
       tlve.assignments[i].sensorType = i+1;
-      tlve.assignments[i].sensorId = TOS_NODE_ID;
+      tlve.assignments[i].sensorId = call ActiveMessageAddress.amAddress();
     }
     tlve.tag = TAG_TOAST_ASSIGNMENTS;
     tlve.len = 8*sizeof(sensor_assignment_t);
@@ -96,6 +97,7 @@ module DummyToastP {
     for (i = 0 ; i < GLOBAL_ID_LEN; i++){
       gid.id[i] = i;
     }
+    gid.id[0] = TOS_NODE_ID;
     call TLVUtils.addEntry(gid.header.tag, 
       gid.header.len, (&gid.header), dummyTLV, 0);
   }
@@ -166,5 +168,7 @@ module DummyToastP {
     post synchDoneTask();
     return SUCCESS;
   }
+
+  async event void ActiveMessageAddress.changed(){}
 
 }
