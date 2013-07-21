@@ -1,7 +1,7 @@
 COMPONENT=LeafAppC
 
 CFLAGS += -DCX_BASESTATION=0
-CFLAGS += -DAM_ID_FROM_FLASH=0
+CFLAGS += -DAM_ID_FROM_FLASH=1
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 CFLAGS += -I$(TOSDIR)/lib/priorityQueue

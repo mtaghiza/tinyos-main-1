@@ -21,6 +21,11 @@ module LeafP{
       //set as output/function
       P2SEL |= BIT4;
       P2DIR |= BIT4;
+      
+      //clear p1.1, use as gpio
+      P1SEL &= ~BIT1;
+      P1DIR |=  BIT1;
+      P1OUT &= ~BIT1;
     }
     #endif
   }
