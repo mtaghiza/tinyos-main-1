@@ -71,6 +71,10 @@ implementation {
     as StatusTimeRefSend;
   BaseStationP.StatusTimeRefSend -> StatusTimeRefSend;
 
+  components new DummyLogWriteC();
+  components SettingsStorageC;
+  SettingsStorageC.LogWrite -> DummyLogWriteC;
+
   components BareSettingsStorageConfiguratorC;
   BareSettingsStorageConfiguratorC.Pool -> RadioAM.Pool;
   components new SerialAMReceiverC(AM_SET_SETTINGS_STORAGE_MSG) 
