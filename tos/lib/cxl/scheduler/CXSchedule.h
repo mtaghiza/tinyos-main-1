@@ -30,7 +30,7 @@
 //layer fastalarm.fired event. 
 //TODO: This should be nowhere near this high, even if you take into
 //account encoding time + transition from idle to FSTXON.
-#define SCHED_TX_DELAY 3120UL
+#define SCHED_TX_DELAY 6000UL
 
 //Put it all together and convert to fast ticks
 // - the slack itself
