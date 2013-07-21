@@ -2,7 +2,7 @@
  #include "StorageVolumes.h"
  #include "RecordStorage.h"
  #include "message.h"
- #include "printf.h"
+ #include "stdio.h"
 // #define printf(...)
 configuration TestAppC{
 } implementation {
@@ -12,7 +12,7 @@ configuration TestAppC{
 
   components WatchDogC;
 
-  components PrintfC;
+  components SerialPrintfC;
   components SerialStartC;
 
   components Msp430XV2ClockC;
@@ -22,14 +22,18 @@ configuration TestAppC{
 
   components new PoolC(message_t, 2);
 
-  components SerialActiveMessageC;
-  components new SerialAMSenderC(AM_LOG_RECORD_DATA_MSG) as AMSenderC;
+  components new LogStorageC(VOLUME_RECORD, TRUE);
+  components SettingsStorageC;
+  SettingsStorageC.LogWrite -> LogStorageC;
 
-  TestP.SplitControl -> SerialActiveMessageC;
+//  components SerialActiveMessageC;
+//  components new SerialAMSenderC(AM_LOG_RECORD_DATA_MSG) as AMSenderC;
+//
+//  TestP.SplitControl -> SerialActiveMessageC;
 
-  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
-  RecordPushRequestC.AMSend -> AMSenderC;
-  RecordPushRequestC.Pool -> PoolC;
-  RecordPushRequestC.Get -> TestP.Get;
+//  components new RecordPushRequestC(VOLUME_RECORD, TRUE);
+//  RecordPushRequestC.AMSend -> AMSenderC;
+//  RecordPushRequestC.Pool -> PoolC;
+//  RecordPushRequestC.Get -> TestP.Get;
 
 }
