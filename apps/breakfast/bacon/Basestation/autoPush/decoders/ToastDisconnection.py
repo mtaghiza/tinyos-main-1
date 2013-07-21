@@ -22,6 +22,7 @@ class ToastDisconnection(Decoder.Decoder):
            (node_id, cookie, reboot_counter, time, toast_id) values 
            (?,       ?,      ?,              ?,    ?)'''
 
-        (source, cookie, rc, ts, toastId) = self.unpack(source, cookie, data)
-        self.connection.execute(q, (source, cookie, rc, ts, toastId))
+        (source, cookie, rc, ts, toastIdBin) = self.unpack(source, cookie, data)
+        toastIdText = Decoder.toHexStr(toastIdBin)
+        self.connection.execute(q, (source, cookie, rc, ts, toastIdText))
         self.connection.commit()
