@@ -24,4 +24,6 @@ i2c_message_t* swapBuffer(i2c_message_t* a, i2c_message_t** b){
   *b = a;
   return tmp;
 }
+
+#define UQ_I2C_COM_MASTER "I2CComMaster.client"
 #endif

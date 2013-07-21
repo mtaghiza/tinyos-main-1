@@ -8,9 +8,9 @@ configuration I2CTLVStorageMasterC{
   components I2CTLVStorageMasterP;
   components new TLVUtilsC(SLAVE_TLV_LEN);
   
-  components new I2CComMasterC(I2C_COM_CLIENT_ID_TLV_STORAGE);
+  components new I2CComMasterClientC(I2C_COM_CLIENT_ID_TLV_STORAGE);
 
-  I2CTLVStorageMasterP.I2CComMaster -> I2CComMasterC;
+  I2CTLVStorageMasterP.I2CComMaster -> I2CComMasterClientC;
   I2CTLVStorageMasterP.TLVUtils -> TLVUtilsC;
 
   I2CTLVStorageMaster = I2CTLVStorageMasterP;
