@@ -154,7 +154,7 @@ generic module RecordPushRequestP() {
   {
     // when flash is idle, check if there are any unprocessed push
     // or recovery requests queued up. 
-    // push operations have higher priority than recovery requests  
+    // recovery operations have higher priority than push
     if (state == S_IDLE) {
       if (requestInQueue) {
         if (readFirst(requestCookie, requestLength) == SUCCESS){
