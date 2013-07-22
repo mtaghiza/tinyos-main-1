@@ -13,7 +13,7 @@ module BaconSamplerHighP {
 
   uses interface SettingsStorage;
 } implementation {
-  uint32_t sampleInterval = 1024;
+  nx_uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
   bacon_sample_t sampleRec = {
     .recordType = RECORD_TYPE_BACON_SAMPLE,
     .rebootCounter = 0,

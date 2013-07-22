@@ -22,7 +22,6 @@ module BaconSamplerLowP{
   DEFINE_UNION_CAST(adc12memctl2int,uint8_t,adc12memctl_t)
   DEFINE_UNION_CAST(int2adc12memctl,adc12memctl_t,uint8_t)
 
-  uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
   enum {
     BATTERY = 0,
     LIGHT = 1,
@@ -38,7 +37,9 @@ module BaconSamplerLowP{
   };
 
   event void Boot.booted(){
-    call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
+    nx_uint32_t sampleInterval;
+    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
+     call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
@@ -48,6 +49,8 @@ module BaconSamplerLowP{
   
   task void readBattery();
   event void Timer.fired(){
+    nx_uint32_t sampleInterval;
+    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
     sampleRec.baseTime = call Timer.getNow();
     call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));

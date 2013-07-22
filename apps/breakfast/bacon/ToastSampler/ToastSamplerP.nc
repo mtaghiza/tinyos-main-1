@@ -51,11 +51,13 @@ module ToastSamplerP{
   toast_connection_record_t connection;
   bool synchingMetadata = FALSE;
   
-  uint32_t sampleInterval = DEFAULT_SAMPLE_INTERVAL;
   uint32_t toastBase;
+  uint8_t failCount = 0;
 
 
   event void Boot.booted(){
+    nx_uint32_t sampleInterval;
+    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
     call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
@@ -68,9 +70,11 @@ module ToastSamplerP{
     call Timer.startOneShot(sampleInterval);
   }
 
+
   event void Timer.fired(){
+    nx_uint32_t sampleInterval;
     uint8_t i;
-    printf("fired\r\n");
+    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
     call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
       (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
@@ -80,6 +84,14 @@ module ToastSamplerP{
         toastState[i] = (toastState[i] == PRESENT)? UNKNOWN : FREE;
       }
       call SplitControl.start();
+    }else{
+      failCount ++;
+      if (failCount > MAX_TOAST_FAILS){
+        printf("Toast fail count exceeded, resetting\r\n");
+        atomic{
+          WDTCTL = 0;
+        }
+      }
     }
   }
 

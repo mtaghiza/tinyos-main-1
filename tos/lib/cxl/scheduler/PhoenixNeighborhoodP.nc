@@ -23,12 +23,12 @@ module PhoenixNeighborhoodP {
   }
 
   void setNext(){
-    uint32_t sampleInterval = DEFAULT_PHOENIX_SAMPLE_INTERVAL;
+    nx_uint32_t sampleInterval;
+    sampleInterval = DEFAULT_PHOENIX_SAMPLE_INTERVAL;
     call SettingsStorage.get(SS_KEY_PHOENIX_SAMPLE_INTERVAL, 
       &sampleInterval, sizeof(sampleInterval));
     cdbg(PHOENIX, "set next: %lu default %lu\r\n",
       sampleInterval, DEFAULT_PHOENIX_SAMPLE_INTERVAL);
-
     call Timer.startOneShot(randomize(sampleInterval));
   }
 
@@ -41,7 +41,7 @@ module PhoenixNeighborhoodP {
   
   uint8_t refsCollected;
   uint8_t totalChecks;
-  uint8_t targetRefs = DEFAULT_PHOENIX_TARGET_REFS;
+  nx_uint8_t targetRefs;
   am_addr_t lastSrc;
 
   task void sniffAgain(){
@@ -56,6 +56,7 @@ module PhoenixNeighborhoodP {
 
   event void Timer.fired(){
     cdbg(PHOENIX, "phoenix start\r\n");
+    targetRefs = DEFAULT_PHOENIX_TARGET_REFS;
     refsCollected = 0;
     totalChecks = 0;
     lastSrc = AM_BROADCAST_ADDR;

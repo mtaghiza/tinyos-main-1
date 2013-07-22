@@ -14,20 +14,21 @@ module RouterP{
   uses interface SettingsStorage;
   uses interface CXDownload;
 } implementation {
-  uint32_t downloadInterval = DEFAULT_DOWNLOAD_INTERVAL;
 
   event void Boot.booted(){
     call SplitControl.start();
   }
 
   task void downloadNext(){
+    nx_uint32_t downloadInterval;
+    downloadInterval = DEFAULT_DOWNLOAD_INTERVAL;
     call SettingsStorage.get(SS_KEY_DOWNLOAD_INTERVAL,
       &downloadInterval, sizeof(downloadInterval));   
     call Timer.startOneShot(downloadInterval);
   }
 
   event void SplitControl.startDone(error_t error){
-    post downloadNext();
+     post downloadNext();
   }
 
   event void Timer.fired(){
