@@ -12,6 +12,7 @@ from autoPush.messages import LogRecordDataMsg
 from autoPush.listeners import PongListener
 from autoPush.messages import PongMsg
 from autoPush.messages import PingMsg
+from autoPush.messages import CxRecordRequestMsg
 
 from autoPush.db import Database
 
@@ -80,6 +81,24 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         downloadMsg.set_networkSegment(networkSegment)
 
         error = d.send(downloadMsg, bsId)
+        
+        request_list = db.findMissing()
+        print "Recovery requests: ", request_list
+        MAX_PACKET_PAYLOAD = 100
+        for request in request_list:
+            msg = CxRecordRequestMsg.CxRecordRequestMsg()
+            msg.set_node_id(request['node_id'])
+            msg.set_cookie(request['nextCookie'])
+            
+            if request['missing'] < MAX_PACKET_PAYLOAD:
+                msg.set_length(request['missing'])
+            else:
+                msg.set_length(MAX_PACKET_PAYLOAD)
+            print "requesting %u at %u from %u"%(msg.get_length(),
+              msg.get_cookie(), msg.get_node_id())
+            error = d.send(msg, msg.get_node_id())
+            print "Request status: %x"%error
+
         if error:
             print "Download failed: %x"%error
             pass
