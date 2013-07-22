@@ -37,6 +37,7 @@ class BaconSettings(Decoder.Decoder):
             if (len(chunks) == 2):
                 tlv = reduce(lambda l,r: l[0]+r[0], chunks)
                 for (tag, length, value) in Decoder.tlvIterator(tlv):
+                    print "next (t,l,v)", hex(tag), length, ' '.join([hex(ord(c)) for c in value])
                     if tag == 0x04:
                         baconIDText = Decoder.toHexStr(buffer(value))
                         self.connection.execute('''INSERT OR IGNORE INTO bacon_id

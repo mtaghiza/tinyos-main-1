@@ -29,12 +29,12 @@ class ToastConnection(Decoder.Decoder):
         print "Toast Connection raw:", [hex(c) for c in data]
         print "Toast Connection unpacked:", source, cookie, rc, ts, [hex(ord(c)) for c in tlv]
         for (tag, length, value) in Decoder.tlvIterator(tlv):
-            print "next (t,l,v)", tag, length, [hex(ord(c)) for c in value]
+            print "next (t,l,v)", hex(tag), length, ' '.join([hex(ord(c)) for c in value])
             if tag == 0x05:
                 i = 0
                 channel = 0
                 while i < length:
-                    (sensorType, sensorId) = struct.unpack('<BH', value[i:i+3])
+                    (sensorType, sensorId) = struct.unpack('>BH', value[i:i+3])
                     self.connection.execute(q1, (source, cookie, channel, sensorType, sensorId))
                     i += 3
                     channel += 1

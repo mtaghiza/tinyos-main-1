@@ -1,1 +1,14 @@
-__all__ = ['SetProbeSchedule', 'SetSettingsStorageMsg', 'StatusTimeRef', 'CtrlAck', 'CxDownloadFinished', 'CxDownload']
+__all__ = [ 'CtrlAck',
+'CxDownloadFinished',
+'CxDownload',
+'StatusTimeRef',
+'SetSettingsStorageMsg',
+'SetLowPushThreshold',
+'SetHighPushThreshold',
+'SetToastSampleInterval',
+'SetBaconSampleInterval',
+'SetProbeSchedule',
+'SetPhoenixSampleInterval',
+'SetPhoenixTargetRefs',
+'SetDownloadInterval',
+'SetMaxDownloadRounds']
