@@ -30,9 +30,10 @@ implementation {
   BaseStationP.SerialPacket -> SerialAM.Packet;
   BaseStationP.SerialAMPacket -> SerialAM.AMPacket;
   
-  components RouterMultiSenderC, GlobalMultiSenderC;
+  components RouterMultiSenderC, GlobalMultiSenderC, SubNetworkMultiSenderC;
   BaseStationP.GlobalSend -> GlobalMultiSenderC;
   BaseStationP.RouterSend -> RouterMultiSenderC;
+  BaseStationP.SubNetworkSend -> SubNetworkMultiSenderC;
   BaseStationP.RadioReceive -> RadioAM.Receive;
   BaseStationP.RadioSnoop -> RadioAM.Snoop;
   BaseStationP.RadioPacket -> RadioAM;

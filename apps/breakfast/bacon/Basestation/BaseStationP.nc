@@ -30,6 +30,7 @@ module BaseStationP @safe() {
 
   uses interface AMSend as GlobalSend[am_id_t id];
   uses interface AMSend as RouterSend[am_id_t id];
+  uses interface AMSend as SubNetworkSend[am_id_t id];
   uses interface Packet as RadioPacket;
   uses interface AMPacket as RadioAMPacket;
   uses interface CXLinkPacket;
@@ -211,6 +212,7 @@ implementation
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
+    cinfo(BASESTATION, "snoop for %x\r\n", call SerialAMPacket.source(msg));
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
       cdbg(BASESTATION, "Serial full\r\n");
       cflushdbg(BASESTATION);
@@ -226,6 +228,7 @@ implementation
       qe.len = len;
       call SerialRXQueue.enqueue(qe);
       post prepareRadio();
+      cinfo(BASESTATION, "enqueue\r\n");
       cdbg(BASESTATION, "G fwdS\r\n");
       return call Pool.get();
     }
@@ -257,6 +260,10 @@ implementation
         qe.len);
       call RadioTXQueue.enqueue(qe);
       post txRadio();
+    }else{
+      if (call SerialTXQueue.size() >= call SerialTXQueue.maxSize()){
+        cwarn(BASESTATION, "TX queue full, hold\r\n");
+      }
     }
   }
 
@@ -272,13 +279,16 @@ implementation
         case NS_GLOBAL:
           error = call GlobalSend.send[call RadioAMPacket.type(qe.msg)](call RadioAMPacket.destination(qe.msg), qe.msg, qe.len);
           break;
+        case NS_SUBNETWORK:
+          error = call SubNetworkSend.send[call RadioAMPacket.type(qe.msg)](call RadioAMPacket.destination(qe.msg), qe.msg, qe.len);
+          break;
         default:
           error = FAIL;
       } 
       if (error == SUCCESS){
         radioSending = TRUE;
       }else{
-        cdbg(BASESTATION, "RadioTX: %x\r\n", error);
+        cerror(BASESTATION, "RadioTX: %x\r\n", error);
         call RadioTXQueue.enqueue(qe);
       }
     }
@@ -294,8 +304,13 @@ implementation
     radioSendDone(id, msg, error);
   }
 
+  event void SubNetworkSend.sendDone[am_id_t id](message_t* msg, error_t error) {
+    radioSendDone(id, msg, error);
+  }
+
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     message_t* ackMsg;
+    radioSending = FALSE;
     cdbg(BASESTATION, "P fwdS\r\n");
     call Pool.put(msg);
     cdbg(BASESTATION, "G ackR\r\n");
@@ -307,13 +322,15 @@ implementation
       pl -> error = error;
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
       if (error != SUCCESS){
-        cdbg(BASESTATION, "Couldn't send radio TX ack %x\r\n",
+        cerror(BASESTATION, "Couldn't send radio TX ack %x\r\n",
           error);
         cflushdbg(BASESTATION);
         cdbg(BASESTATION, "P ackR!\r\n");
         call Pool.put(ackMsg);
         ackMsg = NULL;
       }
+    }else{
+      cerror(BASESTATION, "no ack pool\r\n");
     }
   }
 
