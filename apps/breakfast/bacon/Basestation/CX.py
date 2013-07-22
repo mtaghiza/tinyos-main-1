@@ -32,6 +32,8 @@ from cx.listeners import StatusTimeRefListener
 
 from cx import constants
 
+from cx.messages import SetBaconSampleInterval
+
 class Dispatcher(object):
     def __init__(self, motestring, bsId, db, configFile):
         #hook up to mote
@@ -81,6 +83,12 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         downloadMsg.set_networkSegment(networkSegment)
 
         error = d.send(downloadMsg, bsId)
+
+#         #TESTING 
+#         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(60*1024)
+#         #send it via broadcast
+#         error = d.send(setBSI, 0xFFFF)
+#         #END TESTING
 
         request_list = db.findMissing()
         print "Recovery requests: ", request_list
