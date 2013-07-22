@@ -43,7 +43,7 @@ configuration CXBaseStationC {
   CXMasterP.ActiveMessageAddress -> CXAMAddressC;
 
   CTS[NS_GLOBAL] = CXMasterP.CTS[NS_GLOBAL];
-  CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_GLOBAL];
+  CTS[NS_SUBNETWORK] = CXMasterP.CTS[NS_SUBNETWORK];
   CTS[NS_ROUTER] = CXMasterP.CTS[NS_ROUTER];
 
   StatusReceive = CXMasterP.Receive;
