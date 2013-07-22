@@ -212,7 +212,6 @@ implementation
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
-    cinfo(BASESTATION, "snoop for %x\r\n", call SerialAMPacket.source(msg));
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
       cdbg(BASESTATION, "Serial full\r\n");
       cflushdbg(BASESTATION);
@@ -228,7 +227,6 @@ implementation
       qe.len = len;
       call SerialRXQueue.enqueue(qe);
       post prepareRadio();
-      cinfo(BASESTATION, "enqueue\r\n");
       cdbg(BASESTATION, "G fwdS\r\n");
       return call Pool.get();
     }
