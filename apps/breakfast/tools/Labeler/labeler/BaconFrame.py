@@ -127,6 +127,9 @@ class BaconFrame(Frame):
         except ValueError:
             self.barcodeVar.set("Barcode not an integer")
             self.barcodeVarLabel.config(fg="red")
+        except TypeError:
+            self.barcodeVar.set("Barcode incorrect type")
+            self.barcodeVarLabel.config(fg="red")        
         except:
             self.barcodeVar.set("Update failed")
             self.barcodeVarLabel.config(fg="red")

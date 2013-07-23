@@ -204,8 +204,9 @@ class GraphFrame(Frame):
         else:            
             self.sensors = []
             for i in range(0,8):
-                if self.handler.toastFrame.assignments[0][i]:
-                    self.sensors.append(i)
+                # removed step to only sample channels with sensors assigned
+                #if self.handler.toastFrame.assignments[0][i]:
+                self.sensors.append(i)
             
             if self.sensors:
                 self.sampling = True

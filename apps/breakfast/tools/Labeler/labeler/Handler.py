@@ -173,6 +173,9 @@ class Handler(object):
         for i in range(0,8):
             output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
             
+        if output[7] != 0x04: # magic number
+            raise TypeError
+            
         self.bacon.writeBarcode(output)
         
         # update successful, store in handler
@@ -208,8 +211,20 @@ class Handler(object):
             try:
                 print "New Multiplexer detected"
                 self.toast.writeVersion(0)
+            except:
+                pass
+            
+            try:
                 self.powerCycle()
+            except:
+                pass
+                
+            try:
                 self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
+            except:
+                pass
+                
+            try:
                 adc = self.toast.readAdcConstants()
                 self.toast.writeAdcConstants(adc)
             except:
@@ -228,28 +243,34 @@ class Handler(object):
         try:
             self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
         except:
+            print "Delete assignments failed"
             pass
         
         try:
             self.toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
         except:
+            print "Delete ID failed"
             pass
             
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
         except:
+            print "Delete DCO failed"
             pass
             
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_CUSTOM)
         except:
+            print "Delete custom DCO failed"
             pass
             
         self.powerCycle()
         
-        adc = self.toast.readAdcConstants()
-        self.toast.writeAdcConstants(adc)
-
+        try:
+            adc = self.toast.readAdcConstants()
+            self.toast.writeAdcConstants(adc)
+        except:
+            pass
 
 
     def getToastBarcode(self):
@@ -268,6 +289,9 @@ class Handler(object):
         output = []
         for i in range(0,8):
             output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
+            
+        if output[7] != 0x05: # magic number
+            raise TypeError
             
         self.toast.writeBarcode(output)
         

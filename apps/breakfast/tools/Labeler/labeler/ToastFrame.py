@@ -319,7 +319,7 @@ class ToastFrame(Frame):
         try:
             barcodeStr = self.handler.getToastBarcode()
         except TagNotFoundError:
-            self.barcodeVar.set("No assignemnts set")
+            self.barcodeVar.set("No barcode set")
             self.barcodeVarLabel.config(fg="black")
             self.newBarcodeEntry.focus_set()
             self.barcodeSet = False
@@ -348,6 +348,9 @@ class ToastFrame(Frame):
         except ValueError:
             self.barcodeVar.set("Barcode not an integer")
             self.barcodeVarLabel.config(fg="red")
+        except TypeError:
+            self.barcodeVar.set("Barcode incorrect type")
+            self.barcodeVarLabel.config(fg="red")        
         except:
             self.barcodeVar.set("Update failed")
             self.barcodeVarLabel.config(fg="red")
