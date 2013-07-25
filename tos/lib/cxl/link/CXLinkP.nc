@@ -543,7 +543,7 @@ module CXLinkP {
       }
       return (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
-      cwarn(LINK, "CRCF\r\n");
+      cinfo(LINK, "CRCF\r\n");
       return FALSE;
     }
   }
