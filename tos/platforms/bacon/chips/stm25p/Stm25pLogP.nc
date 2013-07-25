@@ -171,8 +171,8 @@ implementation {
   
   command error_t Write.append[ uint8_t id ]( void* buf, storage_len_t len ) {
     stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
-    uint16_t bytes_left = (uint16_t)(*write_addr) % BLOCK_SIZE;
-    bytes_left = BLOCK_SIZE - bytes_left;
+    uint16_t bytes_written = (uint16_t)(*write_addr) % BLOCK_SIZE;
+    uint16_t bytes_left = BLOCK_SIZE - bytes_written;
     
     // don't allow appends larger than maximum record size
     if ( len > MAX_RECORD_SIZE ){
@@ -323,7 +323,6 @@ implementation {
     error_t error;
 
     uint8_t m_len = m_log_state[ client ].m_len;
-
     // if on block boundary
     //at block boundary: advance read_addr to first record start
     if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
@@ -445,6 +444,18 @@ implementation {
               &m_header, 
               sizeof( m_header ) );
           } else {
+            if (cur_block != new_block){
+              printf("!block-span record @%lu\r\n",
+                calcAddr( id, *write_addr ));
+              //TODO: this should skip to block AFTER new_block: 
+              // the header of new_block may have been clobbered by
+              // the block-spanning write
+              //N.B. We also need to recover from this when 
+//              *write_addr =  (new_block+1) << BLOCK_SIZE_LOG2;
+//              m_rw_state = S_SEARCH_BLOCKS;
+//              call Sector.read[id](calcAddr(id, *write_addr),
+//                (uint8_t*)&m_addr, sizeof(m_addr));
+            }
           // found last record
             signal ClientResource.granted[ id ]();
           }
@@ -459,6 +470,11 @@ implementation {
           //advances read_addr to next record start 
           // (+=header len + header val)
           log_info->read_addr += sizeof( m_header ) + m_header;
+          //TODO: check for block-spanning record here.
+          //if one is detected, then what do we do? either leave cookie at
+          //last_read_addr or skip it ahead to the start of the next
+          //block. not sure which is safer.
+
           // if not yet at cookie, keep searching
           if ( log_info->read_addr < m_log_state[ id ].cookie ) {
             call Sector.read[ id ]( 
@@ -499,6 +515,8 @@ implementation {
             log_info->read_addr += BLOCK_SIZE;
             log_info->read_addr &= ~BLOCK_MASK;
           } else {
+            //TODO: check for block-spanning record here. I guess
+            //  leave state as S_HEADER and skip next block?
             //remaining = remaining in this record
             log_info->read_addr += sizeof( m_header );
             log_info->remaining = m_header;
