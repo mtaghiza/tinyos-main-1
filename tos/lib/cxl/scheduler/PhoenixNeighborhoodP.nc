@@ -16,6 +16,7 @@ module PhoenixNeighborhoodP {
   uses interface Random;
 } implementation {
   phoenix_reference_t ref;
+  bool sniffing = FALSE;
 
   uint32_t randomize(uint32_t mean){
     uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
@@ -24,12 +25,14 @@ module PhoenixNeighborhoodP {
 
   void setNext(){
     nx_uint32_t sampleInterval;
+    uint32_t nextInterval;
     sampleInterval = DEFAULT_PHOENIX_SAMPLE_INTERVAL;
     call SettingsStorage.get(SS_KEY_PHOENIX_SAMPLE_INTERVAL, 
       &sampleInterval, sizeof(sampleInterval));
     cdbg(PHOENIX, "set next: %lu default %lu\r\n",
       sampleInterval, DEFAULT_PHOENIX_SAMPLE_INTERVAL);
-    call Timer.startOneShot(randomize(sampleInterval));
+    nextInterval = randomize(sampleInterval);
+    call Timer.startOneShot(nextInterval);
   }
 
   event void Boot.booted(){
@@ -48,6 +51,7 @@ module PhoenixNeighborhoodP {
     error_t error = call SubLppProbeSniffer.sniff(NS_SUBNETWORK);
     cdbg(PHOENIX, "sniff: %x\r\n", error);
     if (error == SUCCESS){
+      sniffing = TRUE;
       //cool. wait until we get a sniffDone.
     } else {
       setNext();
@@ -90,25 +94,27 @@ module PhoenixNeighborhoodP {
 //  }
 
   event message_t* SubLppProbeSniffer.sniffProbe(message_t* msg){
-    cx_lpp_probe_t* pl = call Packet.getPayload(msg,
-      sizeof(cx_lpp_probe_t));
-    refsCollected++;
-    cdbg(PHOENIX, "probe %p from %x @(%u, %lu): (%u, %lu)\r\n", 
-      msg, call CXLinkPacket.source(msg),
-      call RebootCounter.get(),
-      (call CXLinkPacket.getLinkMetadata(msg))->timeMilli,
-      pl->rc,
-      pl->tMilli);
-    if (! appending && call CXLinkPacket.source(msg) != lastSrc){
-      lastSrc = call CXLinkPacket.source(msg);
-      ref.rc1 = call RebootCounter.get();
-      ref.localTime1 = (call CXLinkPacket.getLinkMetadata(msg))->timeMilli;
-      ref.node2 = lastSrc;
-      ref.rc2 = pl->rc;
-      ref.localTime2 = pl->tMilli;
-      post logReference();
-    }else {
-      cdbg(PHOENIX, "ignore\r\n");
+    if (sniffing){
+      cx_lpp_probe_t* pl = call Packet.getPayload(msg,
+        sizeof(cx_lpp_probe_t));
+      refsCollected++;
+      cdbg(PHOENIX, "probe %p from %x @(%u, %lu): (%u, %lu)\r\n", 
+        msg, call CXLinkPacket.source(msg),
+        call RebootCounter.get(),
+        (call CXLinkPacket.getLinkMetadata(msg))->timeMilli,
+        pl->rc,
+        pl->tMilli);
+      if (! appending && call CXLinkPacket.source(msg) != lastSrc){
+        lastSrc = call CXLinkPacket.source(msg);
+        ref.rc1 = call RebootCounter.get();
+        ref.localTime1 = (call CXLinkPacket.getLinkMetadata(msg))->timeMilli;
+        ref.node2 = lastSrc;
+        ref.rc2 = pl->rc;
+        ref.localTime2 = pl->tMilli;
+        post logReference();
+      }else {
+        cdbg(PHOENIX, "ignore\r\n");
+      }
     }
     return signal LppProbeSniffer.sniffProbe(msg);
   }
@@ -124,6 +130,7 @@ module PhoenixNeighborhoodP {
     if (refsCollected < targetRefs && totalChecks < targetRefs + MAX_WASTED_SNIFFS){
       post sniffAgain();
     }else{
+      sniffing = FALSE;
       setNext();
     }
   }
