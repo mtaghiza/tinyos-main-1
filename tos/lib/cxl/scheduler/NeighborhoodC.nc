@@ -6,12 +6,13 @@ configuration NeighborhoodC {
 } implementation {
   components MainC;
   components BasicNeighborhoodP as NeighborhoodP;
+  components RandomC;
+  NeighborhoodP.Random -> RandomC;
   #if PHOENIX_LOGGING == 1
   components PhoenixNeighborhoodP;
   components new TimerMilliC();
   components SettingsStorageC;
   components RebootCounterC;
-  components RandomC;
 
   PhoenixNeighborhoodP.Timer -> TimerMilliC;
   PhoenixNeighborhoodP.SettingsStorage -> SettingsStorageC;

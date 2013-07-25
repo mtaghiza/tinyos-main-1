@@ -2,6 +2,7 @@ module BasicNeighborhoodP {
   uses interface LppProbeSniffer;
   uses interface CXLinkPacket;
   uses interface Packet;
+  uses interface Random;
   provides interface Neighborhood;
   provides interface Init;
 } implementation {
@@ -22,8 +23,14 @@ module BasicNeighborhoodP {
         return msg;
       }
     }
-    neighbors[neighborIndex] = src;
-    neighborIndex = (neighborIndex + 1) % CX_NEIGHBORHOOD_SIZE;
+    //add them to the neighborhood if we are still filling it OR with
+    //50% chance of evicting a previous resident
+    if (numNeighbors < CX_NEIGHBORHOOD_SIZE 
+        || (call Random.rand32() & BIT1)){
+      neighbors[neighborIndex] = src;
+      neighborIndex = (neighborIndex + 1) % CX_NEIGHBORHOOD_SIZE;
+    }
+//    printf("n %u\r\n", src);
     if (numNeighbors < CX_NEIGHBORHOOD_SIZE){
       numNeighbors ++;
     }
