@@ -110,6 +110,7 @@ implementation {
     S_SEARCH_SEEK = 2,
     S_HEADER = 3,
     S_DATA = 4,
+    S_CHECK_BLOCK_WI = 5,
   } stm25p_log_rw_state_t;
 
   stm25p_log_rw_state_t m_rw_state;
@@ -385,6 +386,12 @@ implementation {
     error = call Sector.read[ client ]( calcAddr( client, read_addr ), buf, len );
   }
   
+  void checkBlockForWriteInit(uint8_t id, stm25p_addr_t addr){
+    m_rw_state = S_CHECK_BLOCK_WI;
+    call Sector.read[id]( calcAddr(id, addr), (uint8_t*)&m_addr,
+      sizeof(m_addr));
+  }
+  
   event void Sector.readDone[ uint8_t id ]( stm25p_addr_t addr, uint8_t* buf,
                                   stm25p_len_t len, error_t error ) {
  
@@ -437,25 +444,22 @@ implementation {
           uint16_t cur_block = *write_addr >> BLOCK_SIZE_LOG2;
           uint16_t new_block = ( *write_addr + sizeof( m_header ) + m_header ) >> BLOCK_SIZE_LOG2;
           // if header is valid and is on same block, move to next record
-          if ( m_header != INVALID_HEADER && cur_block == new_block ) {
+          if (cur_block != new_block){
+            //this should not happen, and probably indicates some
+            //corruption of an earlier record (incorrect len field
+            //most likely) that broke record alignment. 
+            // If it does, then we just skip ahead to the next block.
+            *write_addr += BLOCK_SIZE;
+            *write_addr &= ~BLOCK_MASK;
+            checkBlockForWriteInit(id, *write_addr);
+
+          }else if ( m_header != INVALID_HEADER ) {
             *write_addr += sizeof( m_header ) + m_header;
             call Sector.read[ id ]( 
               calcAddr( id, *write_addr ), 
               &m_header, 
               sizeof( m_header ) );
           } else {
-            if (cur_block != new_block){
-              printf("!block-span record @%lu\r\n",
-                calcAddr( id, *write_addr ));
-              //TODO: this should skip to block AFTER new_block: 
-              // the header of new_block may have been clobbered by
-              // the block-spanning write
-              //N.B. We also need to recover from this when 
-//              *write_addr =  (new_block+1) << BLOCK_SIZE_LOG2;
-//              m_rw_state = S_SEARCH_BLOCKS;
-//              call Sector.read[id](calcAddr(id, *write_addr),
-//                (uint8_t*)&m_addr, sizeof(m_addr));
-            }
           // found last record
             signal ClientResource.granted[ id ]();
           }
@@ -510,13 +514,15 @@ implementation {
 
       case S_HEADER:
         {
-          // if header is invalid, move to next block
-          if ( m_header == INVALID_HEADER ) {
+          stm25p_addr_t s_block = log_info->read_addr >> BLOCK_SIZE_LOG2;
+          stm25p_addr_t e_block = (log_info->read_addr+m_header) >> BLOCK_SIZE_LOG2;
+
+          // if header is invalid, or record is block-spanning, move
+          // to next block and continue searching
+          if ( m_header == INVALID_HEADER || m_header == 0 || (s_block != e_block)) {
             log_info->read_addr += BLOCK_SIZE;
             log_info->read_addr &= ~BLOCK_MASK;
           } else {
-            //TODO: check for block-spanning record here. I guess
-            //  leave state as S_HEADER and skip next block?
             //remaining = remaining in this record
             log_info->read_addr += sizeof( m_header );
             log_info->remaining = m_header;
@@ -554,6 +560,19 @@ implementation {
           }
           break;
         }
+      case S_CHECK_BLOCK_WI:
+        {
+          if (m_addr == STM25P_INVALID_ADDRESS){
+            //OK, this is a fine place to set the initial write-addr.
+            signal ClientResource.granted[ id ]();
+          }else{
+            //check the next block.
+            *write_addr += BLOCK_SIZE;
+            *write_addr &= ~BLOCK_MASK;
+            checkBlockForWriteInit(id, *write_addr);
+          }
+          break;
+        }
     }
   }
 
@@ -573,8 +592,9 @@ implementation {
       m_log_state[ client ].m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, *write_addr ), 1 );
     } else {
-      //start of new block? write write_addr
+      //start of new block? write write_addr into block header
       if ( !((uint16_t)*write_addr & BLOCK_MASK) ) {
+        //TODO: add checksum here.
         buf = write_addr;
         len = sizeof( m_addr );
       } else if ( m_rw_state == S_HEADER ) {
