@@ -478,9 +478,6 @@ implementation {
           //stash log_info->read_addr before advancing
           storage_addr_t last_read_addr = log_info->read_addr;
 
-          printf("%lu + %u: %lu, %lu\r\n", log_info->read_addr,
-            m_header, s_block, e_block);
-
           //advances read_addr to next record start 
           // (+=header len + header val)
           log_info->read_addr += sizeof( m_header ) + m_header;
@@ -500,15 +497,12 @@ implementation {
             // at or passed cookie, stop        
             if (SINGLE_RECORD_READ){
               if (e_block != s_block){
-                printf("passed block-span %lu\r\n",
-                  log_info->read_addr);
                 //We passed it, but only because of a block-spanning
-                //record. ok to stop here.               
+                //record. ok to stop here, we'll correct for the block
+                //header below.
               } else if ( log_info->read_addr > m_log_state[ id ].cookie ) {
                 //backtrack to start of record. remaining=0 means "this
                 //pointing at a header"
-                printf("passed: backtrack\r\n");
-
                 log_info->remaining = 0;
                 log_info->read_addr = last_read_addr;
               }
@@ -516,14 +510,10 @@ implementation {
               //if we are now pointing at a block header, advance
               //it to the next record header to disambiguate
               if ( (log_info->read_addr & BLOCK_MASK) < sizeof(m_addr)){
-                printf("at block header %lu (%lx) & %x + %u = %lx\r\n",
-                  log_info->read_addr, log_info->read_addr, BLOCK_MASK, sizeof(m_addr),
-                  (log_info->read_addr & ~BLOCK_MASK) + sizeof(m_addr));
                 log_info->read_addr =
                   (log_info->read_addr & ~BLOCK_MASK) + sizeof(m_addr);
               }else{
-                printf("nailed it\r\n");
-                
+                //already pointing at a record header
               }
             } else{
               log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
