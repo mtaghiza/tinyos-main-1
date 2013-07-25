@@ -121,6 +121,8 @@ class DatabaseInit(object):
                               ts INTEGER,
                               offset INTEGER,
                               data BLOB,
+                              bacon_interval INTEGER,
+                              toast_interval INTEGER,
                               PRIMARY KEY (node_id, cookie))''' }
 
     # class finds suitable filename for DB and creates tables if needed
