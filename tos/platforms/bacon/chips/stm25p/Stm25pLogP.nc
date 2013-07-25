@@ -271,9 +271,11 @@ implementation {
               (storage_cookie_t)(writeSector-numSectors)
               <<STM25P_SECTOR_SIZE_LOG2;
           }
+          //TODO: stash read_addr
           m_log_info[ id ].read_addr = m_log_state[ id ].cookie & ~BLOCK_MASK;
           m_log_info[ id ].remaining = 0;
           m_rw_state = S_SEARCH_SEEK;
+          //TODO: validate block header.
           if (SINGLE_RECORD_READ){
             //advance to first record header on this block
             m_log_info[id].read_addr += sizeof(m_addr);
@@ -406,6 +408,8 @@ implementation {
       case S_SEARCH_BLOCKS: 
         {
           uint16_t block = addr >> BLOCK_SIZE_LOG2;
+          //TODO: verify checksum (increment addr by block size and
+          //    skip it if it's bad) 
           // record potential starting and ending addresses
           if ( m_addr != STM25P_INVALID_ADDRESS ) {
             if ( m_addr < log_info->read_addr ){
@@ -468,16 +472,23 @@ implementation {
   
       case S_SEARCH_SEEK:
         {
+          stm25p_addr_t s_block = log_info->read_addr >> BLOCK_SIZE_LOG2;
+          stm25p_addr_t e_block = (log_info->read_addr+m_header) >> BLOCK_SIZE_LOG2;
           // searching for last log record to read
           //stash log_info->read_addr before advancing
           storage_addr_t last_read_addr = log_info->read_addr;
+
+          printf("%lu + %u: %lu, %lu\r\n", log_info->read_addr,
+            m_header, s_block, e_block);
+
           //advances read_addr to next record start 
           // (+=header len + header val)
           log_info->read_addr += sizeof( m_header ) + m_header;
-          //TODO: check for block-spanning record here.
-          //if one is detected, then what do we do? either leave cookie at
-          //last_read_addr or skip it ahead to the start of the next
-          //block. not sure which is safer.
+          //record spans a block: step to start of next.
+          if (e_block != s_block){
+            log_info->read_addr += BLOCK_SIZE;
+            log_info->read_addr &= ~BLOCK_MASK;
+          }
 
           // if not yet at cookie, keep searching
           if ( log_info->read_addr < m_log_state[ id ].cookie ) {
@@ -488,20 +499,31 @@ implementation {
           } else {
             // at or passed cookie, stop        
             if (SINGLE_RECORD_READ){
-              //backtrack to start of record. remaining=0 means "this
-              //pointing at a header"
-              if ( log_info->read_addr > m_log_state[ id ].cookie ) {
+              if (e_block != s_block){
+                printf("passed block-span %lu\r\n",
+                  log_info->read_addr);
+                //We passed it, but only because of a block-spanning
+                //record. ok to stop here.               
+              } else if ( log_info->read_addr > m_log_state[ id ].cookie ) {
+                //backtrack to start of record. remaining=0 means "this
+                //pointing at a header"
+                printf("passed: backtrack\r\n");
 
                 log_info->remaining = 0;
                 log_info->read_addr = last_read_addr;
+              }
+
+              //if we are now pointing at a block header, advance
+              //it to the next record header to disambiguate
+              if ( (log_info->read_addr & BLOCK_MASK) < sizeof(m_addr)){
+                printf("at block header %lu (%lx) & %x + %u = %lx\r\n",
+                  log_info->read_addr, log_info->read_addr, BLOCK_MASK, sizeof(m_addr),
+                  (log_info->read_addr & ~BLOCK_MASK) + sizeof(m_addr));
+                log_info->read_addr =
+                  (log_info->read_addr & ~BLOCK_MASK) + sizeof(m_addr);
               }else{
-                //cool. we hit it exactly.
-                //if we are now pointing at a block header, advance
-                //it to the next record header to disambiguate
-                if ( (log_info->read_addr & BLOCK_MASK) < sizeof(m_addr)){
-                  log_info->read_addr =
-                    (log_info->read_addr & BLOCK_MASK) + sizeof(m_addr);
-                }
+                printf("nailed it\r\n");
+                
               }
             } else{
               log_info->remaining = log_info->read_addr - m_log_state[ id ].cookie;
