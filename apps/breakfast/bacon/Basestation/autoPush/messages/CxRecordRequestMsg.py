@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 7
+DEFAULT_MESSAGE_SIZE = 8
 
 # The Active Message type associated with this message.
 AM_TYPE = 240
 
 class CxRecordRequestMsg(tinyos.message.Message.Message):
-    # Create a new CxRecordRequestMsg of size 7.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=7):
+    # Create a new CxRecordRequestMsg of size 8.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=8):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -158,9 +158,9 @@ class CxRecordRequestMsg(tinyos.message.Message.Message):
     
     #
     # Accessor methods for field: length
-    #   Field type: short
+    #   Field type: int
     #   Offset (bits): 48
-    #   Size (bits): 8
+    #   Size (bits): 16
     #
 
     #
@@ -188,26 +188,26 @@ class CxRecordRequestMsg(tinyos.message.Message.Message):
         return 48
     
     #
-    # Return the value (as a short) of the field 'length'
+    # Return the value (as a int) of the field 'length'
     #
     def get_length(self):
-        return self.getUIntElement(self.offsetBits_length(), 8, 1)
+        return self.getUIntElement(self.offsetBits_length(), 16, 1)
     
     #
     # Set the value of the field 'length'
     #
     def set_length(self, value):
-        self.setUIntElement(self.offsetBits_length(), 8, value, 1)
+        self.setUIntElement(self.offsetBits_length(), 16, value, 1)
     
     #
     # Return the size, in bytes, of the field 'length'
     #
     def size_length(self):
-        return (8 / 8)
+        return (16 / 8)
     
     #
     # Return the size, in bits, of the field 'length'
     #
     def sizeBits_length(self):
-        return 8
+        return 16
     

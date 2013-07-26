@@ -33,6 +33,7 @@ from cx.listeners import StatusTimeRefListener
 from cx import constants
 
 from cx.messages import SetBaconSampleInterval
+from cx.messages import SetToastSampleInterval
 
 class Dispatcher(object):
     def __init__(self, motestring, bsId, db, configFile):
@@ -85,23 +86,25 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         error = d.send(downloadMsg, bsId)
 
 #         #TESTING 
-#         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(60*1024)
+#         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(2*60*1024)
 #         #send it via broadcast
 #         error = d.send(setBSI, 0xFFFF)
+#         setTSI = SetToastSampleInterval.SetToastSampleInterval(60*1024)
+#         error = d.send(setTSI, 0xFFFF)
 #         #END TESTING
-
+        
         request_list = db.findMissing()
         print "Recovery requests: ", request_list
-        MAX_PACKET_PAYLOAD = 100
+#         MAX_PACKET_PAYLOAD = 100
         for request in request_list:
             msg = CxRecordRequestMsg.CxRecordRequestMsg()
             msg.set_node_id(request['node_id'])
             msg.set_cookie(request['nextCookie'])
-            
-            if request['missing'] < MAX_PACKET_PAYLOAD:
-                msg.set_length(request['missing'])
-            else:
-                msg.set_length(MAX_PACKET_PAYLOAD)
+            msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
+#             if request['missing'] < MAX_PACKET_PAYLOAD:
+#                 msg.set_length(request['missing'])
+#             else:
+#                 msg.set_length(MAX_PACKET_PAYLOAD)
             print "requesting %u at %u from %u"%(msg.get_length(),
               msg.get_cookie(), msg.get_node_id())
             error = d.send(msg, msg.get_node_id())

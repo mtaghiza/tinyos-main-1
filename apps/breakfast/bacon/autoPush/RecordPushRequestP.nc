@@ -42,7 +42,7 @@ generic module RecordPushRequestP() {
   uint16_t recordsRead = 0;
   uint8_t totalLen = 0;
 
-  uint8_t missingLength = 0;
+  storage_len_t missingLength = 0;
 
   task void readNext();
   void send();
@@ -55,10 +55,11 @@ generic module RecordPushRequestP() {
   };
   uint8_t control = C_NONE;
 
-  error_t readFirst(storage_cookie_t cookie, uint8_t length);
+  error_t readFirst(storage_cookie_t cookie, uint16_t length);
 
   bool requestInQueue = FALSE;
-  uint8_t requestLength;
+  uint16_t requestLength;
+  storage_len_t readLength;
   storage_cookie_t requestCookie;
 
   bool pushInQueue = FALSE;
@@ -127,7 +128,7 @@ generic module RecordPushRequestP() {
 
       requestLength = recordRequestPtr->length;
       requestCookie = recordRequestPtr->cookie;
-
+//      printf("reqLen: %u\r\n", requestLength);
       requestInQueue = TRUE;
 
       post processTask();
@@ -172,10 +173,10 @@ generic module RecordPushRequestP() {
     }
   }
 
-  error_t readFirst(storage_cookie_t cookie, uint8_t length)
+  error_t readFirst(storage_cookie_t cookie, uint16_t length)
   {
     msg = call Pool.get();
-
+//    printf("rf %u\r\n", length);
     if (msg != NULL)
     {
       call Packet.clear(msg);
@@ -213,7 +214,9 @@ generic module RecordPushRequestP() {
     // read requested bytes up to the available buffer
 
     storage_len_t bufferLeft = bufferEnd - (uint8_t*)recordPtr->data;
-    storage_len_t readLength = (bufferLeft > missingLength) ? missingLength : bufferLeft;
+    readLength = (bufferLeft > missingLength) ? missingLength : bufferLeft;
+//    printf("bl %lu ml %lu rl %lu\r\n", 
+//      bufferLeft, missingLength, readLength);
     
     //write cookie of current record to buffer.
     recordPtr->cookie = call LogRead.currentOffset();
@@ -254,8 +257,22 @@ generic module RecordPushRequestP() {
         send();
       }
 
-    } else 
-    {
+    } else {
+      //ESIZE: ran out of space in buffer. So, don't clear missingLength. other
+      //errors indicate something actually went wrong.
+      if (error != ESIZE){
+        //a real error occurred
+//        printf("rd %x len %lu clear ml\r\n", error, len);
+        missingLength = 0;
+      }else if (readLength == missingLength){
+//        printf("rl==ml == %lu\r\n", readLength);
+        //this was the last requested chunk of data: so, there is not
+        //enough left in the req to merit another read.
+        missingLength =0;
+      }else{
+        //there is more data to be read, so leave missingLength as-is
+      }
+      
       //no more data or error occured, send what we got
       send();
     } 
@@ -306,7 +323,15 @@ generic module RecordPushRequestP() {
                     break;
 
       case C_REQUEST:
-                    requestInQueue = FALSE;
+                    if (missingLength == 0){
+//                      printf("done\r\n");
+                      requestInQueue = FALSE;
+                    }else{
+//                      printf("moar data %lu\r\n", missingLength);
+                      requestLength = missingLength;
+                      requestCookie = call LogRead.currentOffset();
+                      //still more data outstanding
+                    }
                     break;
       default:
                     break;
