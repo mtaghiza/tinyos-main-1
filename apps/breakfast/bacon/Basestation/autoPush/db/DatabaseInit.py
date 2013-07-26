@@ -109,11 +109,11 @@ class DatabaseInit(object):
                               rc1 INTEGER,
                               ts1 INTEGER,
                               unixTS REAL)''',
-              'bacon_id': '''CREATE TABLE bacon_id 
-                             (node_id INTEGER,
-                              cookie INTEGER,
-                              barcode_id TEXT,
-                              PRIMARY KEY (node_id, cookie))''',
+#               'bacon_id': '''CREATE TABLE bacon_id 
+#                              (node_id INTEGER,
+#                               cookie INTEGER,
+#                               barcode_id TEXT,
+#                               PRIMARY KEY (node_id, cookie))''',
               'bacon_settings': '''CREATE TABLE bacon_settings
                              (node_id INTEGER,
                               cookie INTEGER,
@@ -121,6 +121,7 @@ class DatabaseInit(object):
                               ts INTEGER,
                               offset INTEGER,
                               data BLOB,
+                              barcode_id TEXT,
                               bacon_interval INTEGER,
                               toast_interval INTEGER,
                               PRIMARY KEY (node_id, cookie))''' }

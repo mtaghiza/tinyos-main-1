@@ -2,6 +2,7 @@
 from autoPush.decoders import Decoder
 import sqlite3
 import struct
+import cx.constants
 
 class BaconSettings(Decoder.Decoder):
     @classmethod 
@@ -19,12 +20,15 @@ class BaconSettings(Decoder.Decoder):
         if not self.connected:
             self.connection = sqlite3.connect(self.dbName)
         q ='''INSERT OR IGNORE INTO bacon_settings 
-           (node_id, cookie, rc, ts, offset, data) values 
-           (?,       ?,      ?,  ?,  ?,      ?)'''
+           (node_id, cookie, rc, ts, offset, data, barcode_id, bacon_interval, toast_interval) values 
+           (?,       ?,      ?,  ?,  ?,      ?,    '',         ?,              ?)'''
         t = self.unpack(source, cookie, data)
-        (node_id, cookie, rc, ts, offset, tlv) = t
+        (node_id, cookie, rc, ts, offset, tlv ) = t
         print "Decoded Bacon Settings"
-        self.connection.execute(q, t)
+        self.connection.execute(q, 
+          (node_id, cookie, rc, ts, offset, tlv, 
+           cx.constants.DEFAULT_SAMPLE_INTERVAL,
+           cx.constants.DEFAULT_SAMPLE_INTERVAL))
         #if this is the second half, join em up
         if offset == 64:
             pass
@@ -34,26 +38,28 @@ class BaconSettings(Decoder.Decoder):
             ORDER BY offset''', 
             (node_id, rc, ts)).fetchall()
             print chunks
-            baconIDText =""
-            baconSampleInterval = cx.constants.DEFAULT_SAMPLE_INTERVAL
-            toastSampleInterval = cx.constants.DEFAULT_SAMPLE_INTERVAL
             if (len(chunks) == 2):
                 tlv = reduce(lambda l,r: l[0]+r[0], chunks)
                 for (tag, length, value) in Decoder.tlvIterator(tlv):
                     print "next (t,l,v)", hex(tag), length, ' '.join([hex(ord(c)) for c in value])
                     if tag == cx.constants.SS_KEY_GLOBAL_ID:
                         baconIDText = Decoder.toHexStr(buffer(value))
+                        self.connection.execute('''UPDATE
+                        bacon_settings SET barcode_id = ? WHERE
+                        node_id=? and rc = ? and ts=?''',
+                          (baconIDText, node_id, rc, ts))
                     if tag == cx.constants.SS_KEY_BACON_SAMPLE_INTERVAL:
-                        baconSampleInterval = struct.unpack('<L', value)
+                        (baconSampleInterval,) = struct.unpack('>L', value)
+                        self.connection.execute('''UPDATE bacon_settings
+                        SET bacon_interval = ? 
+                        WHERE node_id=? and rc=? and ts=?''',
+                        (baconSampleInterval, node_id, rc, ts))
                     if tag == cx.constants.SS_KEY_TOAST_SAMPLE_INTERVAL:
-                        toastSampleInterval = struct.unpack('<L', value)
-
-            #
-            if baconIDText:
-                self.connection.execute('''INSERT OR IGNORE INTO bacon_id
-                  (node_id, cookie, barcode_id, bacon_interval, toast_interval) values
-                  (?      , ?     , ?, ?, ?)''', 
-                  (node_id, cookie, baconIDText, baconSampleInterval, toastSampleInterval))
+                        (toastSampleInterval,) = struct.unpack('>L', value)
+                        self.connection.execute('''UPDATE bacon_settings
+                        SET toast_interval = ? 
+                        WHERE node_id=? and rc=? and ts=?''',
+                        (toastSampleInterval, node_id, rc, ts))
 
         self.connection.commit()
         self.connection.close()
