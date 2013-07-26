@@ -49,4 +49,5 @@ enum {
 //XT1 is populated
 #define XT1_AVAILABLE
 
+#include "bacon_mem.h"
 #endif //_H_hardware_h
