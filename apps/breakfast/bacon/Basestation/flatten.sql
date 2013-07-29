@@ -74,4 +74,27 @@ JOIN bacon_settings bse
   bs1.node_id
 ;
 
---TODO: apply fits from phoenix tables
+---- apply fits and convert to volts.
+
+DROP TABLE IF EXISTS bacon_sample_final;
+CREATE TABLE bacon_sample_final AS
+SELECT bsf.barcode_id, bsf.node_id, bsf.cookie,  
+  (base_time*beta + alpha) as ts, 
+  2.0*(battery/4096.0)*2.5 as batteryVoltage,
+  (light/4096.0)*2.5 as lightVoltage,
+  (thermistor/4096.0)*2.5 as thermistorVoltage
+FROM bacon_sample_flat bsf
+JOIN fits 
+  ON fits.node1=bsf.node_id AND fits.rc1=bsf.reboot_counter
+     AND fits.node2 is NULL and fits.rc2 is NULL;
+
+DROP TABLE IF EXISTS sensor_sample_final;
+CREATE TABLE sensor_sample_final AS
+SELECT ssf.sensor_type, ssf.sensor_id, 
+  (base_time*beta + alpha) as ts,
+  (sample/4096.0)*2.5 as voltage
+FROM sensor_sample_flat ssf
+JOIN fits 
+  ON fits.node1=ssf.node_id AND fits.rc1=ssf.reboot_counter
+     AND fits.node2 is NULL AND fits.rc2 is NULL;
+
