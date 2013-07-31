@@ -37,4 +37,8 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   ToastSamplerP.SettingsStorage -> SettingsStorageC;
 
   components RebootCounterC;
+
+//  //DEBUG
+//  components new LogPrintfC(VOLUME_ID, circular);
+//  ToastSamplerP.LogPrintf -> LogPrintfC;
 }

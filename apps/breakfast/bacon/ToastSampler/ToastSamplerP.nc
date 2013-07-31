@@ -4,6 +4,7 @@
  #include "GlobalID.h"
  #include "metadata.h"
  #include "RebootCounter.h"
+// #include <stdio.h>
 module ToastSamplerP{
   uses interface Boot;
   uses interface LogWrite;
@@ -21,6 +22,8 @@ module ToastSamplerP{
   uses interface I2CSynchMaster;
 
   uses interface SettingsStorage;
+
+//  uses interface LogPrintf;
 } implementation {
 
   enum{
@@ -58,8 +61,8 @@ module ToastSamplerP{
   event void Boot.booted(){
     nx_uint32_t sampleInterval;
     sampleInterval = DEFAULT_SAMPLE_INTERVAL;
-    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
-      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+//    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
@@ -67,6 +70,11 @@ module ToastSamplerP{
     disconnection.rebootCounter = sampleRec.rebootCounter;
     connection.rebootCounter = sampleRec.rebootCounter;
     printf("booted: %lu\r\n", sampleInterval);
+//    {
+//      char buf[20];
+//      uint8_t len= sprintf(buf, "booted: %lu\r\n", sampleInterval);
+//      call LogPrintf.log((uint8_t*)buf, len);
+//    }
     call Timer.startOneShot(sampleInterval);
   }
 
@@ -75,8 +83,8 @@ module ToastSamplerP{
     nx_uint32_t sampleInterval;
     uint8_t i;
     sampleInterval = DEFAULT_SAMPLE_INTERVAL;
-    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
-      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+//    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
     if (!busy){
       busy = TRUE;
@@ -128,7 +136,6 @@ module ToastSamplerP{
   
   event discoverer_register_union_t* I2CDiscoverer.discovered(discoverer_register_union_t* discovery){
     uint8_t k;
-    printf("Found\r\n");
     //check if this was previously-attached
     if( find(discovery->val.globalAddr, &k) ){
       toastState[k] = PRESENT;
@@ -164,7 +171,6 @@ module ToastSamplerP{
   task void recordDisconnection();
 
   event void I2CDiscoverer.discoveryDone(error_t error){
-    printf("Discovery done\r\n");
     mdSynchIndex = 0;
     synchingMetadata = TRUE;
     post nextMdSynch();
@@ -189,7 +195,6 @@ module ToastSamplerP{
           mdSynchIndex ++;
           post nextMdSynch();
         }else{
-          printf("reading\r\n");
         }
 
       } else if (toastState[mdSynchIndex] == UNKNOWN){
@@ -222,7 +227,6 @@ module ToastSamplerP{
     tlv_entry_t* entry;
     void* tlvs = call I2CTLVStorageMaster.getPayload(msg_);
     error_t err;
-    printf("loaded\r\n");
     if (error == SUCCESS){
       //set up connection record header
       connection.recordType = RECORD_TYPE_TOAST_CONNECTED;
@@ -237,14 +241,12 @@ module ToastSamplerP{
           0,
           &entry,
           tlvs)){
-        printf("no sensors.\r\n");
         //no sensors attached.
         sensorMaps[mdSynchIndex] = 0x00;
       } else{
         uint8_t i;
         sensor_assignment_t* assignments =
           (sensor_assignment_t*)&entry->data.b;
-        printf("sensors found\r\n");
         sensorMaps[mdSynchIndex] = 0x00;
         //mark connected sensor channels in RAM
         for (i = 0; i < 8; i++){
@@ -311,6 +313,7 @@ module ToastSamplerP{
     }
   }
 
+
   event void I2CSynchMaster.synchDone(error_t error, 
       uint16_t slaveAddr, 
       synch_tuple_t tuple){
@@ -339,7 +342,7 @@ module ToastSamplerP{
       if ( (0x01 << i) & sensorMaps[toastSampleIndex]){
         //TODO: read these from settings storage? Toast flash?
         //delay MS is the most important factor (warm-up time)
-        uint32_t delayMS = 0;
+        uint32_t delayMS = 5;
         uint16_t samplePeriod = 0;
         uint8_t sref = 1;
         uint8_t ref2_5v = TRUE;
@@ -353,7 +356,8 @@ module ToastSamplerP{
 
         cmd->cfg[cmdIndex].delayMS = delayMS;
         cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
-        cmd->cfg[cmdIndex].config.inch = i;
+        //cmd->cfg[cmdIndex].config.inch = i;
+        cmd->cfg[cmdIndex].config.inch = 0x0b;
         cmd->cfg[cmdIndex].config.sref = sref;
         cmd->cfg[cmdIndex].config.ref2_5v = ref2_5v;
         cmd->cfg[cmdIndex].config.adc12ssel = adc12ssel;
@@ -398,6 +402,7 @@ module ToastSamplerP{
         numSamples++;
       }
     }
+
     //convert sum of deltas from 32K to milliseconds
     sampleTimeAcc >>= 5;
     //divide sum of deltas by numSamples to get mean delta (ms)
