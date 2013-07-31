@@ -22,6 +22,7 @@ from autoPush.decoders import BaconSettings
 from autoPush.decoders import ToastConnection
 from autoPush.decoders import ToastDisconnection
 from autoPush.decoders import Phoenix
+from autoPush.decoders import LogPrintf
 from cx.decoders import Tunneled
 
 from cx.messages import CxDownload
@@ -65,6 +66,7 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     db.addDecoder(ToastDisconnection.ToastDisconnection)
     db.addDecoder(Phoenix.Phoenix)
     db.addDecoder(BaconSettings.BaconSettings)
+    db.addDecoder(LogPrintf.LogPrintf)
     #man that is ugghly to hook 
     t = db.addDecoder(Tunneled.Tunneled)
     t.receiveQueue = d.mif.receiveQueue
@@ -76,7 +78,6 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     try:
         print "Wakeup start", time.time()
 
-        request_list = db.findMissing()
         
         t0 = time.time() 
         downloadMsg = CxDownload.CxDownload()
@@ -93,7 +94,8 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
 #         error = d.send(setTSI, 0xFFFF)
 #         #END TESTING
         
-        request_list = db.findMissing()
+#         request_list = db.findMissing()
+        request_list = []
         print "Recovery requests: ", request_list
 #         MAX_PACKET_PAYLOAD = 100
         for request in request_list:
