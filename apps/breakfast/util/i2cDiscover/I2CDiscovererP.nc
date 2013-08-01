@@ -356,7 +356,7 @@ generic module I2CDiscovererP(){
   const msp430_usci_config_t _config = {
     ctl0: UCSYNC|UCMODE_3|UCMM,
     ctl1: UCSSEL_2,
-    br0:  0x08 << 2,
+    br0:  65,
     br1:  0x00,
     mctl: 0x00,
     i2coa: I2C_INVALID_MASTER,
@@ -365,7 +365,7 @@ generic module I2CDiscovererP(){
   const msp430_usci_config_t _config = {
     ctl0: UCSYNC|UCMODE_3|UCMM,
     ctl1: UCSSEL_2,
-    br0:  0x08,
+    br0:  10,
     br1:  0x00,
     mctl: 0x00,
     i2coa: I2C_INVALID_MASTER,

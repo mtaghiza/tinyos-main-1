@@ -92,6 +92,17 @@ typedef struct msp430_usci_config_t {
   };
 #endif
 
+#ifdef XT2_SMCLK
+msp430_usci_config_t msp430_usci_spi_default_config = {
+  /* Inactive high MSB-first 8-bit 3-pin master driven by SMCLK */
+  ctl0 : (UCCKPL + UCMSB + UCMST + UCSYNC) ,
+  ctl1 : UCSSEL__SMCLK,
+  /* 8x Prescale */
+  br1 : 0,
+  br0 : 8,
+  mctl : 0                      /* Always 0 in SPI mode */
+};
+#else
 msp430_usci_config_t msp430_usci_spi_default_config = {
   /* Inactive high MSB-first 8-bit 3-pin master driven by SMCLK */
   ctl0 : (UCCKPL + UCMSB + UCMST + UCSYNC) ,
@@ -101,27 +112,30 @@ msp430_usci_config_t msp430_usci_spi_default_config = {
   br0 : 1,
   mctl : 0                      /* Always 0 in SPI mode */
 };
+#endif
 
 
 #ifdef XT2_SMCLK
+//SMCLK@6.5e6 Hz, divide by 65 to get 100K
 //the flags are defined relative to the byte register, so we need to
 //  shift the ones from ctl0 8.
 msp430_usci_config_t msp430_usci_i2c_default_config = {
   ctl0: UCSYNC | UCMODE_3 | UCMM,
   ctl1: UCSSEL_2,
   br1:  0x00,
-  br0:  0x08 << 2,
+  br0:  65,
   mctl: 0x00,
   i2coa: 'a',
 };
 #else 
+//SMCLK@1e6 Hz, divide by 10 to get 100K
 //the flags are defined relative to the byte register, so we need to
 //  shift the ones from ctl0 8.
 msp430_usci_config_t msp430_usci_i2c_default_config = {
   ctl0: UCSYNC | UCMODE_3 | UCMM,
   ctl1: UCSSEL_2,
   br1:  0x00,
-  br0:  0x08,
+  br0:  10,
   mctl: 0x00,
   i2coa: 'a',
 };
