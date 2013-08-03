@@ -8,6 +8,8 @@ from Tkinter import *
 from tools.labeler.BreakfastError import *
 from tools.SimPy.SimPlot import * 
 
+HEIGHT = 480
+
 class GraphFrame(Frame):
 
     def __init__(self, parent, handler, simplot, **args):
@@ -35,7 +37,7 @@ class GraphFrame(Frame):
     def initUI(self):
         self.initGraph()
         
-        self.sFrame = Frame(self, width=230, height=500)
+        self.sFrame = Frame(self, width=230, height=HEIGHT)
         self.meanLabel = Label(self.sFrame, text="Mean", width=5, padx=5)
         self.meanLabel.grid(column=2, row=0)
         self.stdLabel = Label(self.sFrame, text="Std", width=4)
@@ -164,8 +166,8 @@ class GraphFrame(Frame):
         
         bgcolor = self.cget('bg')
         
-        self.gFrame = Frame(self, width=650, height=500)
-        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, 500, xtitle="Sensor", ytitle="ADC", background=bgcolor)  
+        self.gFrame = Frame(self, width=650, height=HEIGHT)
+        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, HEIGHT, xtitle="Sensor", ytitle="ADC", background=bgcolor)  
         self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
         self.obj = self.simplot.makeGraphObjects([self.sym])
         self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
@@ -176,7 +178,7 @@ class GraphFrame(Frame):
 
     def resetGraph(self):
         oldGraph = self.graph
-        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, 500, xtitle="Sensor", ytitle="ADC")  
+        self.graph = self.simplot.makeGraphBase(self.gFrame, 650, HEIGHT, xtitle="Sensor", ytitle="ADC")  
         self.graph.grid(column=1, row=1)
         oldGraph.grid_forget()
     
@@ -243,7 +245,7 @@ class GraphFrame(Frame):
             self.graph.after(1000, self.update)
 
     def drawPoints(self):    
-        #self.graph = self.simplot.makeGraphBase(self, 500, 300, xtitle="Sensor", ytitle="ADC")  
+        #self.graph = self.simplot.makeGraphBase(self, HEIGHT, 300, xtitle="Sensor", ytitle="ADC")  
         #self.resetGraph()
         self.graph.clear()
         self.symbols = self.simplot.makeSymbols(self.allPoints, marker="dot", size=1, fillcolor="red")
