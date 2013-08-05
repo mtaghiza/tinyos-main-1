@@ -130,6 +130,7 @@ router.h: RECORD_TYPE_TUNNELED 0x15
 phoenix.h: RECORD_TYPE_PHOENIX 0x16
 SettingsStorage.h: RECORD_TYPE_SETTINGS 0x17
 LogPrintf.h: RECORD_TYPE_LOG_PRINTF 0x18
+networkMembership.h: RECORD_TYPE_NETWORK_MEMBERSHIP 0x19
 
 TLV Tags
 =========

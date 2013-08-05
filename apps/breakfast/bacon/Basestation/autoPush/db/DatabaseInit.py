@@ -139,7 +139,21 @@ class DatabaseInit(object):
                               global_md INTEGER,
                               subnetwork_md INTEGER,
                               router_md INTEGER,
-                              PRIMARY KEY (node_id, cookie))''' }
+                              PRIMARY KEY (node_id, cookie))''',
+              'active_period': '''CREATE TABLE active_period
+                                    (master_id INTEGER,
+                                     cookie INTEGER,
+                                     rc INTEGER,
+                                     ts INTEGER,
+                                     network_segment INTEGER,
+                                     channel INTEGER,
+                                     PRIMARY KEY (master_id, cookie))''',
+              'network_membership': '''CREATE TABLE network_membership
+                                         (master_id INTEGER,
+                                          cookie INTEGER,
+                                          slave_id INTEGER,
+                                          distance INTEGER,
+                                          PRIMARY KEY (master_id, cookie, slave_id))'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):
