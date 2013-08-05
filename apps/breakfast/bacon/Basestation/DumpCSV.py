@@ -129,21 +129,24 @@ def dump(dbName, baseDir, sep=','):
     #baseDir/internal.csv
     if not os.path.isdir(baseDir):
         os.mkdir(baseDir)
-    internalCols= ["bacon_id", "unixTS", "isoTS", "batteryVoltage",
+    internalCols= ["bacon_id", "unixTS", "isoTS", "date", "time", "batteryVoltage",
       "lightVoltage", "thermistorVoltage"]
     externalCols= ["sensor_type", "bacon_id", "toast_id", 
-      "sensor_channel", "sensor_id", "unixTS", "isoTS", "voltage"]
+      "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage"]
     c = sqlite3.connect(dbName)
     with open(os.path.join(baseDir, 'internal.csv'), 'w') as f:
         with c:
-            q= ''' SELECT barcode_id, ts, datetime(ts, 'unixepoch',
-            'localtime'), batteryVoltage, lightVoltage, thermistorVoltage
+            q= ''' SELECT barcode_id, ts, 
+              datetime(ts, 'unixepoch', 'localtime'), 
+              date(ts, 'unixepoch', 'localtime'), 
+              time(ts, 'unixepoch', 'localtime'), 
+              batteryVoltage, lightVoltage, thermistorVoltage
             FROM bacon_sample_final ORDER BY barcode_id, ts'''
             f.write(sep.join(internalCols) +'\n')
-            for (bacon_id, unixTS, isoTS, bv, lv, tv) in c.execute(q).fetchall():
+            for (bacon_id, unixTS, isoTS, date, time, bv, lv, tv) in c.execute(q).fetchall():
                 #f.write(sep.join([str(col) for col in row]) + '\n')
                 f.write(sep.join([bacon_id, "%.2f"%unixTS, isoTS,
-                "%.4f"%bv, "%.4f"%lv, "%.4f"%tv])+"\n")
+                date, time, "%.4f"%bv, "%.4f"%lv, "%.4f"%tv])+"\n")
 
     #baseDir/<sensorType>.csv
     with c:
@@ -151,14 +154,18 @@ def dump(dbName, baseDir, sep=','):
             with open(os.path.join(baseDir, 'sensorType_'+str(st)+'.csv'), 'w') as f:
                 f.write(sep.join(externalCols)+'\n')
                 q= '''SELECT sensor_type, bacon_id, toast_id,
-                channel_number, sensor_id, ts, datetime(ts,
-                'unixepoch', 'localtime') as isoTS, voltage
+                channel_number+1, sensor_id, ts, 
+                datetime(ts, 'unixepoch', 'localtime') as isoTS, 
+                date(ts, 'unixepoch', 'localtime'), 
+                time(ts, 'unixepoch', 'localtime'), 
+                voltage
                 FROM sensor_sample_final WHERE sensor_type=? ORDER BY
                 bacon_id, toast_id, sensor_id, ts'''
                 for (sensor_type, bacon_id, toast_id, sensor_channel, 
-                  sensor_id, unixTS, isoTS, voltage) in c.execute(q, (st,)).fetchall():
+                  sensor_id, unixTS, isoTS, date, time, voltage) in c.execute(q, (st,)).fetchall():
                     f.write(sep.join([str(sensor_type), bacon_id,
-                    toast_id, str(sensor_channel), str(sensor_id), "%.2f"%unixTS, isoTS, "%.4f"%voltage])+'\n')
+                    toast_id, str(sensor_channel), str(sensor_id), 
+                    "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage])+'\n')
 
 if __name__ == '__main__':
     dbName = 'database0.sqlite'
