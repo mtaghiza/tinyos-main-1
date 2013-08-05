@@ -101,6 +101,14 @@ configuration LeafAppC{
   #else
   #warning Disable Bacon sampler!
   #endif
+  
+  #ifndef REBOOT_INTERVAL
+  #define REBOOT_INTERVAL 0
+  #endif
+  #if REBOOT_INTERVAL != 0
+  #warning Automatic reboot enabled.
+  components RebooterC;
+  #endif
 
   components ActiveMessageC;
   LeafP.SplitControl -> ActiveMessageC;
