@@ -14,4 +14,12 @@ typedef struct bacon_sample_t {
 
 #define RECORD_TYPE_BACON_SAMPLE 0x14
 
+#ifndef CONFIGURABLE_BACON_SAMPLE_INTERVAL
+#define CONFIGURABLE_BACON_SAMPLE_INTERVAL 1
+#endif
+
+#if CONFIGURABLE_BACON_SAMPLE_INTERVAL != 1
+#warning Non-configurable bacon sample interval.
+#endif
+
 #endif

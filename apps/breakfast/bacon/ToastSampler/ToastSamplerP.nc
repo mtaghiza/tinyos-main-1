@@ -61,15 +61,17 @@ module ToastSamplerP{
   event void Boot.booted(){
     nx_uint32_t sampleInterval;
     sampleInterval = DEFAULT_SAMPLE_INTERVAL;
-//    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
-//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    #if CONFIGURABLE_TOAST_SAMPLE_INTERVAL == 1
+      call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+        (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    #endif
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
     sampleRec.recordType = RECORD_TYPE_SAMPLE;
     disconnection.rebootCounter = sampleRec.rebootCounter;
     connection.rebootCounter = sampleRec.rebootCounter;
-    printf("booted: %lu\r\n", sampleInterval);
+//    printf("booted: %lu\r\n", sampleInterval);
 //    {
 //      char buf[20];
 //      uint8_t len= sprintf(buf, "booted: %lu\r\n", sampleInterval);
@@ -83,8 +85,10 @@ module ToastSamplerP{
     nx_uint32_t sampleInterval;
     uint8_t i;
     sampleInterval = DEFAULT_SAMPLE_INTERVAL;
-//    call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
-//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    #if CONFIGURABLE_TOAST_SAMPLE_INTERVAL == 1
+      call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+        (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+    #endif
     call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
     if (!busy){
       busy = TRUE;
@@ -356,8 +360,9 @@ module ToastSamplerP{
 
         cmd->cfg[cmdIndex].delayMS = delayMS;
         cmd->cfg[cmdIndex].samplePeriod = samplePeriod;
-        //cmd->cfg[cmdIndex].config.inch = i;
-        cmd->cfg[cmdIndex].config.inch = 0x0b;
+        cmd->cfg[cmdIndex].config.inch = i;
+        //The following line reads 1/2 supply voltage
+        //cmd->cfg[cmdIndex].config.inch = 0x0b;
         cmd->cfg[cmdIndex].config.sref = sref;
         cmd->cfg[cmdIndex].config.ref2_5v = ref2_5v;
         cmd->cfg[cmdIndex].config.adc12ssel = adc12ssel;

@@ -59,6 +59,14 @@ typedef struct long_sample_record_t{
 #define DEFAULT_SAMPLE_INTERVAL (30UL*1024UL)
 #endif
 
+#ifndef CONFIGURABLE_TOAST_SAMPLE_INTERVAL
+#define CONFIGURABLE_TOAST_SAMPLE_INTERVAL 1
+#endif
+
+#if CONFIGURABLE_TOAST_SAMPLE_INTERVAL != 1
+#warning Non-configurable toast sample interval.
+#endif
+
 #define SS_KEY_TOAST_SAMPLE_INTERVAL 0x12
 
 #endif
