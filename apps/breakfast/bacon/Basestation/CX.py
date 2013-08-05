@@ -94,8 +94,8 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
 #         error = d.send(setTSI, 0xFFFF)
 #         #END TESTING
         
-#         request_list = db.findMissing()
-        request_list = []
+        request_list = db.findMissing()
+#         request_list = []
         print "Recovery requests: ", request_list
 #         MAX_PACKET_PAYLOAD = 100
         for request in request_list:
