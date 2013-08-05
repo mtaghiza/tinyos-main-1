@@ -8,5 +8,5 @@ class SetMaxDownloadRounds(SetSettingsStorageMsg.SetSettingsStorageMsg):
         self.set_key(cx.constants.SS_KEY_MAX_DOWNLOAD_ROUNDS)
         self.set_len(1)
         self.setUIntElement(self.offsetBits_val(0), 8,
-        maxDownloadRounds, 1)
+          maxDownloadRounds, 1)
 

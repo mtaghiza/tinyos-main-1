@@ -12,6 +12,7 @@ from cx.messages.CtrlAck import CtrlAck
 from cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedListener
 from cx.messages.CxDownloadFinished import CxDownloadFinished
 from cx.messages import SetProbeSchedule
+from cx.messages import SetMaxDownloadRounds
 
 class MultipleSourceException(Exception):
     pass
@@ -48,7 +49,8 @@ class CXMoteIF(MoteIF):
           'routerBW': 2,
           'globalMaxDepth':8,
           'subNetworkMaxDepth':5,
-          'routerMaxDepth': 5 }
+          'routerMaxDepth': 5,
+          'maxDownloadRounds':10}
         if configFile:
             #evaluate each key:=value pair and stick it into config
             with open(configFile, 'r') as f:
@@ -72,6 +74,13 @@ class CXMoteIF(MoteIF):
             bsConfig['subNetworkMaxDepth'], 
             bsConfig['routerMaxDepth']])
         self.send(self.bsId, setProbeScheduleMsg, False)
+        time.sleep(1)
+
+        setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
+          bsConfig['maxDownloadRounds']
+          )
+        self.send(self.bsId, setMaxDownloadRoundsMsg, False)
+
         time.sleep(1)
 
     #TODO: addListener should also:
