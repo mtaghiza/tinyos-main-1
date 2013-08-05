@@ -34,9 +34,9 @@ class CXMoteIF(MoteIF):
         self.source = None
         self.bsId = bsId
 
-    def configureBasestation(self, configFile):
+    def configureMoteRadio(self, moteId, configFile):
         #sensible defaults
-        bsConfig = {
+        radioConfig = {
           'probeInterval': 1024,
           'globalChannel': 0,
           'subNetworkChannel': 32,
@@ -57,29 +57,38 @@ class CXMoteIF(MoteIF):
                 for line in f:
                     if not line.startswith('#'):
                         r = line.split(':=')
-                        bsConfig[r[0]] = ast.literal_eval(r[1])
+                        radioConfig[r[0]] = ast.literal_eval(r[1])
         #set up probe schedule appropriately
         setProbeScheduleMsg = SetProbeSchedule.SetProbeSchedule(
-          bsConfig['probeInterval'],
-          [ bsConfig['globalChannel'], 
-            bsConfig['subNetworkChannel'], 
-            bsConfig['routerChannel']],
-          [ bsConfig['globalInvFrequency'], 
-            bsConfig['subNetworkInvFrequency'], 
-            bsConfig['routerInvFrequency']],
-          [ bsConfig['globalBW'], 
-            bsConfig['subNetworkBW'], 
-            bsConfig['routerBW']],
-          [ bsConfig['globalMaxDepth'], 
-            bsConfig['subNetworkMaxDepth'], 
-            bsConfig['routerMaxDepth']])
-        self.send(self.bsId, setProbeScheduleMsg, False)
-        time.sleep(1)
+          radioConfig['probeInterval'],
+          [ radioConfig['globalChannel'], 
+            radioConfig['subNetworkChannel'], 
+            radioConfig['routerChannel']],
+          [ radioConfig['globalInvFrequency'], 
+            radioConfig['subNetworkInvFrequency'], 
+            radioConfig['routerInvFrequency']],
+          [ radioConfig['globalBW'], 
+            radioConfig['subNetworkBW'], 
+            radioConfig['routerBW']],
+          [ radioConfig['globalMaxDepth'], 
+            radioConfig['subNetworkMaxDepth'], 
+            radioConfig['routerMaxDepth']])
+        ackExpected = ( moteId != self.bsId)
+        self.send(moteId, setProbeScheduleMsg, ackExpected)
 
+    def configureMaxDownloadRounds(self, moteId, configFile):
+        radioConfig = { 'maxDownloadRounds':10}
+        if configFile:
+            #evaluate each key:=value pair and stick it into config
+            with open(configFile, 'r') as f:
+                for line in f:
+                    if not line.startswith('#'):
+                        r = line.split(':=')
+                        radioConfig[r[0]] = ast.literal_eval(r[1])
         setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
-          bsConfig['maxDownloadRounds']
+          radioConfig['maxDownloadRounds']
           )
-        self.send(self.bsId, setMaxDownloadRoundsMsg, False)
+        self.send(moteId, setMaxDownloadRoundsMsg, False)
 
         time.sleep(1)
 

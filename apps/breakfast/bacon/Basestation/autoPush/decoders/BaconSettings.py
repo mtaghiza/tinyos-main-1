@@ -37,7 +37,7 @@ class BaconSettings(Decoder.Decoder):
             WHERE node_id = ? and rc=? and ts=? 
             ORDER BY offset''', 
             (node_id, rc, ts)).fetchall()
-            print chunks
+#             print chunks
             if (len(chunks) == 2):
                 tlv = reduce(lambda l,r: l[0]+r[0], chunks)
                 for (tag, length, value) in Decoder.tlvIterator(tlv):
@@ -60,6 +60,53 @@ class BaconSettings(Decoder.Decoder):
                         SET toast_interval = ? 
                         WHERE node_id=? and rc=? and ts=?''',
                         (toastSampleInterval, node_id, rc, ts))
+                    if tag == cx.constants.SS_KEY_LOW_PUSH_THRESHOLD:
+                        (lpt,) = struct.unpack('>B', value)
+                        self.connection.execute(
+                          '''UPDATE bacon_settings 
+                          SET low_push_threshold=?
+                          WHERE node_id=? and rc=? and ts=?''',
+                          (lpt, node_id, rc, ts))
+                    if tag == cx.constants.SS_KEY_HIGH_PUSH_THRESHOLD:
+                        (hpt,) = struct.unpack('>B', value)
+                        self.connection.execute(
+                          '''UPDATE bacon_settings 
+                          SET high_push_threshold=?
+                          WHERE node_id=? and rc=? and ts=?''',
+                          (hpt, node_id, rc, ts))
+                    if tag == cx.constants.SS_KEY_PROBE_SCHEDULE:
+                        (probeInterval, 
+                         globalChannel, subnetChannel, routerChannel, 
+                         globalIf, subnetIf, routerIf,
+                         globalBW, subnetBW, routerBW, 
+                         globalMD, subnetMD, routerMD) = struct.unpack('>LBBBBBBBBBBBB', value)
+                        self.connection.execute(
+                          '''UPDATE bacon_settings 
+                          SET probe_interval =?, 
+                          global_channel=?, subnetwork_channel=?, router_channel=?,
+                          global_inv_freq=?, subnetwork_inv_freq=?, router_inv_freq=?,
+                          global_bw=?, subnetwork_bw=?, router_bw=?,
+                          global_md=?, subnetwork_md=?, router_md=?
+                          WHERE node_id=? and rc=? and ts=?''',
+                          (probeInterval,
+                          globalChannel, subnetChannel, routerChannel,
+                          globalIf, subnetIf, routerIf,
+                          globalBW, subnetBW, routerBW,
+                          globalMD, subnetMD, routerMD, 
+                          node_id, rc, ts))
+                    if tag == cx.constants.SS_KEY_DOWNLOAD_INTERVAL:
+                        (downloadInterval,) = struct.unpack('>L', value)
+                        self.connection.execute(
+                          '''UPDATE bacon_settings 
+                          SET download_interval=?''',
+                          (downloadInterval, node_id, rc, ts))
+                    if tag == cx.constants.SS_KEY_MAX_DOWNLOAD_ROUNDS:
+                        (maxDownloadRounds,) = struct.unpack('>B', value)
+                        self.connection.execute(
+                          '''UPDATE bacon_settings 
+                          SET max_download_rounds=?''',
+                          (maxDownloadRounds, node_id, rc, ts))
+
 
         self.connection.commit()
         self.connection.close()

@@ -48,7 +48,10 @@ class Dispatcher(object):
           LogRecordDataMsg.LogRecordDataMsg)
         self.mif.addListener(PongListener.PongListener(), 
           PongMsg.PongMsg)
-        self.mif.configureBasestation(configFile)
+        self.mif.configureMoteRadio(bsId, configFile)
+        time.sleep(1)
+        self.mif.configureMaxDownloadRounds(bsId, configFile)
+
 
     def stop(self):
         self.mif.finishAll()
@@ -85,7 +88,6 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         downloadMsg.set_networkSegment(networkSegment)
 
         error = d.send(downloadMsg, bsId)
-
 #         #TESTING 
 #         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(2*60*1024)
 #         #send it via broadcast
@@ -111,6 +113,8 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
               msg.get_cookie(), msg.get_node_id())
             error = d.send(msg, msg.get_node_id())
             print "Request status: %x"%error
+            if error:
+                break
 
         if error:
             print "Download failed: %x"%error

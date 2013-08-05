@@ -124,6 +124,21 @@ class DatabaseInit(object):
                               barcode_id TEXT,
                               bacon_interval INTEGER,
                               toast_interval INTEGER,
+                              low_push_threshold INTEGER,
+                              high_push_threshold INTEGER,
+                              probe_interval INTEGER,
+                              global_channel INTEGER,
+                              subnetwork_channel INTEGER,
+                              router_channel INTEGER,
+                              global_inv_freq INTEGER,
+                              subnetwork_inv_freq INTEGER,
+                              router_inv_freq INTEGER,
+                              global_bw INTEGER,
+                              subnetwork_bw INTEGER,
+                              router_bw INTEGER,
+                              global_md INTEGER,
+                              subnetwork_md INTEGER,
+                              router_md INTEGER,
                               PRIMARY KEY (node_id, cookie))''' }
 
     # class finds suitable filename for DB and creates tables if needed
