@@ -9,7 +9,7 @@ Usage:
 
 1. Plug programmer board into PC via USB cable
 2. Press cable down firmly onto programming contacts on Toast board
-   (J2)
+   (J12)
 3. Run this command:
    ./programAll.sh
 
