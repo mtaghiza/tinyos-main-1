@@ -11,6 +11,7 @@ configuration LeafAppC{
   components WatchDogC;
   #ifndef NO_STACKGUARD
   components StackGuardMilliC;
+//  components StackGuardMilliUartC;
   #endif
 
   components MainC;
@@ -108,6 +109,14 @@ configuration LeafAppC{
   #if REBOOT_INTERVAL != 0
   #warning Automatic reboot enabled.
   components RebooterC;
+  #endif
+
+  #ifndef ENABLE_UART_REBOOT
+  #define ENABLE_UART_REBOOT 0
+  #endif
+  #if ENABLE_UART_REBOOT == 1
+  #warning UART reboot enabled.
+  components UartRebooterC;
   #endif
 
   components ActiveMessageC;
