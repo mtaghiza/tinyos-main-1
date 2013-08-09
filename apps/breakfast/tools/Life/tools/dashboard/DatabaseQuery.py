@@ -22,11 +22,18 @@ class DatabaseQuery(object):
         This is complimentary to what is found in the network.settings file.
         """
         
-        query = '''SELECT barcode_id, bacon_interval, toast_interval, MAX(cookie)
-                   FROM bacon_settings
-                   GROUP BY barcode_id
-                   '''
-           
+        #query = '''SELECT barcode_id, bacon_interval, toast_interval, MAX(cookie)
+        #           FROM bacon_settings
+        #           GROUP BY barcode_id
+        #           '''
+        query = '''
+                SELECT bs.node_id, bs.barcode_id, bs.toast_interval, bs.subnetwork_channel, max(ap.cookie)
+                FROM active_period AS ap, bacon_settings AS bs
+                WHERE ap.network_segment = 0 AND ap.node_id = bs.node_id
+                GROUP BY ap.node_id
+                ORDER BY ap.node_id 
+                '''
+        
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
             self.connected == True
@@ -39,17 +46,52 @@ class DatabaseQuery(object):
 
         output = {}
         for row in self.cursor:
-            if len(row) == 4:
+            if len(row) == 5:
                 if row[0] is not None:
                     # row[0]: barcode, row[1]: bacon interval, row[2]: toast interval
-                    output[row[0]] = int(row[2])
+                    output[row[0]] = row[1:4]
         
         return output
+
+    def getRouters(self):
+        """
+        Get list of routers in range of basestation.
+        """
+        
+        query = '''
+                SELECT bs.node_id, bs.barcode_id, bs.subnetwork_channel, max(ap.cookie)
+                FROM active_period AS ap, bacon_settings AS bs
+                WHERE ap.network_segment = 2 AND ap.node_id = bs.node_id
+                GROUP BY ap.node_id
+                ORDER BY ap.node_id
+                '''
+        
+        # sqlite connections can only be used from the same threads they are established from
+        if self.connected == False:
+            self.connected == True
+            # raises sqlite3 exceptions
+            self.connection = sqlite3.connect(self.dbName)
+            self.connection.text_factory = str
+            self.cursor = self.connection.cursor()
+
+        self.cursor.execute(query)
+
+        output = {}
+        for row in self.cursor:
+            if len(row) == 4:
+                if row[0] is not None:
+                    key = row[0]
+                    data = row[1:3]
+                    
+                    output[key] = data
+        
+        return output
+
    
     def getNetwork(self):
         """
         Get the current view of the network, i.e., what Nodes are available, 
-        what Multiplexers do the have attached, and what sensor types are 
+        what Multiplexers do they have attached, and what sensor types are 
         connected to the Multiplexers.
         """
         
@@ -94,6 +136,7 @@ class DatabaseQuery(object):
 
         output = {}
         for row in self.cursor:
+            print row
             if len(row) == 10:
                 if row[0] is not None:
                     key = row[0]

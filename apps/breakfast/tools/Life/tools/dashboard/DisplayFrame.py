@@ -103,6 +103,24 @@ class DisplayFrame(Frame):
         self.frame.grid(column=0, row=0)
     
 
+    def updateRouter(self, router):
+        """ Show Router information
+        """
+        # show UI
+        self.frame.grid_forget()
+        self.frame = Frame(self)
+        
+        label = Label(self.frame, text="Router information")
+        label.grid(column=0, row=0, columnspan=2, sticky=W)
+        
+        label = Label(self.frame, text="Node ID:")
+        label.grid(column=0, row=1, sticky=E)
+
+        label = Label(self.frame, text=router)
+        label.grid(column=1, row=1, sticky=E)
+
+        
+        self.frame.grid(column=0, row=0)
 
     def updateNode(self, node):
         """ Update the sample interval for single node.
