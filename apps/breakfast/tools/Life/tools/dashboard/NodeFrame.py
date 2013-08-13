@@ -20,7 +20,6 @@ class NodeFrame(Frame):
         
         self.tkobjects = {}
         self.sensorTypes = {}
-        self.sites = []
         
         self.sf = SettingsFile(self.SETTINGS)
         self.db = DatabaseQuery(self.DATABASE)
@@ -37,8 +36,8 @@ class NodeFrame(Frame):
     
     def loadSettings(self):
         self.offline = self.sf.read()        
-        self.online = self.db.getSettings()
-        self.plexer = self.db.getNetwork()
+        self.leafs = self.db.getLeafs()
+        self.multiplexers = self.db.getMultiplexers()
         self.routers = self.db.getRouters()
     
     def saveSettings(self):        
@@ -56,19 +55,31 @@ class NodeFrame(Frame):
         # load settings from database and from settings file
         self.loadSettings()
         
+        self.superFrame = Frame(self)
+        self.superFrame.grid(column=0, row=0)
+        self.redrawAllNodes()
         
-        # routers, sort by channel and id
-        # for each channel, draw frame
-        # put routers with same channel in same frame
 
+    def redrawAllNodes(self):
+        siteChannels = {}
+        siteLeafs = {}
+
+        self.superFrame.grid_forget()
+        self.superFrame = Frame(self)
+        self.superFrame.grid(column=0, row=0)
+        
         # draw routers
-        for n, router in enumerate(sorted(self.routers.iterkeys())):
+        for n, router in enumerate(self.routers.iterkeys()):
             #print "nodes: ", n, router
-            frame = Frame(self, bd=2, relief=RIDGE, padx=1, pady=1)
+            frame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
             
-            self.sites.append(router)            
             barcode, channel = self.routers[router]
             
+            # make channel-router map
+            # default is first router on the channel
+            if channel not in siteChannels:
+                siteChannels[channel] = router
+                siteLeafs[channel] = 0
             
             subframe = Frame(frame, bd=1, relief=SUNKEN)
             
@@ -104,30 +115,41 @@ class NodeFrame(Frame):
             self.tkobjects["routerButton_%s" % router] = button
             self.tkobjects["routerOption_%s" % router] = typeOption
             self.tkobjects["routerOptionVar_%s" % router] = typeVar
+        
+        
+        # draw default frame for unassigned leafs
+        frame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
+        button = Button(frame, text="", width=18, relief=FLAT)
+        button.grid(column=0, row=0)
+        button.configure(state=DISABLED)
+        frame.grid(column=0, row=len(self.routers), sticky=N+S+E+W)            
+        self.tkobjects["routerFrame_none"] = frame
+        
+        
+        # draw leaf nodes 
+        for n, barcode in enumerate(sorted(self.leafs.iterkeys())):
+            interval, channel = self.leafs[barcode]
             
-        
-        # nodes, sort by channel and id
-        # for each node, put node in frame with same channel
-        # if no frame, put in default frame
-        
-        
-        # draw nodes that are already online
-        for n, nodeid in enumerate(sorted(self.online.iterkeys())):
-            
-#            # if settings exist on file (offline) prioritize them instead
-#            if nodeid in self.offline:
-#                if self.online[nodeid] != self.offline[nodeid]:
-#                    self.online[nodeid] = self.offline[nodeid]
-#                    self.changedVar.set(True)
-#                
-            barcode, interval, channel = self.online[nodeid]
+            # TODO - see if node already belongs to a site
+            # 
+            # if barcode in self.membership:
+            # site = self.membership[barcode]    
             site = "1"
             
-            #frame = Frame(self, bd=1, relief=SUNKEN)
+            # if node not in membership table 
+            # assign node to first router with same channel
+            if channel in siteChannels:            
+                site = siteChannels[channel]
+                n = siteLeafs[channel]
+                siteLeafs[channel] = n + 1
+            else:
+                site = "none"
+            
+            #frame = Frame(self.superFrame, bd=1, relief=SUNKEN)
             frame = self.tkobjects["routerFrame_%s" % site]
             
             subframe = Frame(frame, bd=1, relief=SUNKEN)
-            button_text = "%s\nSampling: %s" % (barcode, channel)            
+            button_text = "%s\nSampling: %s" % (barcode, interval)            
             button = Button(subframe, text=button_text, width=18, justify=LEFT, command=lambda barcode=barcode: self.selectNode(barcode))
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
@@ -144,20 +166,21 @@ class NodeFrame(Frame):
             menu.delete(0, "end")
             
             # populate menu
-            for site in self.sites:
-                menu.add_command(label=site, command=Tkinter._setit(typeVar, site)) 
+            for site in self.routers.iterkeys():
+                #menu.add_command(label=site, command=Tkinter._setit(typeVar, site)) 
+                menu.add_command(label=site, command=lambda barcode=barcode, site=site: self.updateLeaf(barcode,site))
        
             subframe.grid(column=1, row=n, sticky=N+S+E+W)
             
-            self.tkobjects["nodeFrame_%s" % nodeid] = subframe
-            self.tkobjects["nodeButton_%s" % nodeid] = button
-            self.tkobjects["nodeOption_%s" % nodeid] = typeOption
-            self.tkobjects["nodeOptionVar_%s" % nodeid] = typeVar
+            self.tkobjects["nodeFrame_%s" % barcode] = subframe
+            self.tkobjects["nodeButton_%s" % barcode] = button
+            self.tkobjects["nodeOption_%s" % barcode] = typeOption
+            self.tkobjects["nodeOptionVar_%s" % barcode] = typeVar
             
             # if node has multiplexer(s) attached, draw multiplexer and sensor types
-            if barcode in self.plexer:
+            if barcode in self.multiplexers:
                 # each node can have multiple multiplexers attached
-                for i, plex in enumerate(self.plexer[barcode]):
+                for i, plex in enumerate(self.multiplexers[barcode]):
                     print "plexs: ", i, plex[0]
                     plexid = plex[0]
                     subframe = Frame(frame, bd=1, relief=SUNKEN)
@@ -179,15 +202,15 @@ class NodeFrame(Frame):
                     subframe.grid(column=i+2, row=n)
             
 #        # draw remaining nodes from settings file
-#        for nodeid in sorted(self.offline.iterkeys()):
-#            #print "nodes: ", nodeid
+#        for barcode in sorted(self.offline.iterkeys()):
+#            #print "nodes: ", barcode
 #            # check if node is in the online set
-#            if nodeid not in self.online:
+#            if barcode not in self.leafs:
 #                n += 1
-#                label = "%s\n%s" % (nodeid, self.offline[nodeid])
-#                button = Button(self, text=label, justify=RIGHT, width=18, command=lambda nodeid=nodeid: self.selectNode(nodeid))
+#                label = "%s\n%s" % (barcode, self.offline[barcode])
+#                button = Button(self.superFrame, text=label, justify=RIGHT, width=18, command=lambda barcode=barcode: self.selectNode(barcode))
 #                button.grid(column=0, row=n, sticky=N+S+E+W)
-#                self.tkobjects["nodeButton_%s" % nodeid] = button
+#                self.tkobjects["nodeButton_%s" % barcode] = button
 #            
         # update menu list of available sensor types
         self.hub.control.updateTypes(self.sensorTypes)
@@ -195,10 +218,10 @@ class NodeFrame(Frame):
 #        # update dictionary with both offline and online nodes 
 #        # the settings file has higher priority than the online settings
 #        # i.e. manual changes in the file has higher priority
-#        for nodeid in self.online:
-#            if nodeid not in self.offline:
-#                print "insert: ", nodeid
-#                self.offline[nodeid] = self.online[nodeid]  
+#        for barcode in self.leafs:
+#            if barcode not in self.offline:
+#                print "insert: ", barcode
+#                self.offline[barcode] = self.leafs[barcode]  
 
     def selectRouter(self, barcode):
         self.hub.display.updateRouter(barcode)
@@ -209,25 +232,13 @@ class NodeFrame(Frame):
     def selectPlex(self, barcode):
         self.hub.display.infoPlex(barcode)
 
-    def binarySeparation(self):
-        channels = range(0,256)
-        n = 256
-        map = { 0:1 }
-        output = [0]
+
+    def updateLeaf(self, barcode, site):
+        typeVar = self.tkobjects["nodeOptionVar_%s" % barcode]
+        typeVar.set(site)
+
+        router, newChannel = self.routers[site]
+        interval, oldChannel = self.leafs[barcode]
+        self.leafs[barcode] = (interval, newChannel)
         
-        while(n >= 1):
-            m = 256 / n
-            
-            for i in range(1,m+1):
-                key = n*i-1
-                
-                if key not in map:
-                    map[key] = 1
-                    output.append(key)
-                
-            n = n/2
-        
-        return output
-
-
-
+        self.redrawAllNodes()
