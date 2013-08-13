@@ -27,7 +27,7 @@ module TestP {
   }
 
   stm25p_addr_t readAddr = 0;
-  stm25p_addr_t limit = 151552UL+(4096UL*8UL);
+  stm25p_addr_t limit = 8388608;
   uint8_t readBuf[256];
 
   task void readAgain(){
