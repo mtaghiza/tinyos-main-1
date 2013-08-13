@@ -103,6 +103,9 @@ implementation {
   stm25p_log_info_t m_log_info[ NUM_LOGS ];
   stm25p_addr_t m_addr;
   uint8_t m_header;
+  stm25p_addr_t m_blockAddr;
+  stm25p_addr_t m_stashedReadAddr;
+  stm25p_addr_t m_nextReadAddr;
 
   typedef enum {
     S_SEARCH_BLOCKS = 0,
@@ -111,6 +114,9 @@ implementation {
     S_HEADER = 3,
     S_DATA = 4,
     S_CHECK_BLOCK_WI = 5,
+    S_SEARCH_SEEK_BLOCK = 6,
+    S_BLOCK_HEADER = 7,
+    S_BLOCK_HEADER_RECOVER = 8,
   } stm25p_log_rw_state_t;
 
   stm25p_log_rw_state_t m_rw_state;
@@ -256,6 +262,7 @@ implementation {
           m_rw_state = (m_log_info[ id ].remaining) ? S_DATA : S_HEADER;
           continueReadOp( id );
           break;
+
         case S_SEEK:
         {
           // make sure the cookie is still within the range of valid data
@@ -271,24 +278,15 @@ implementation {
               (storage_cookie_t)(writeSector-numSectors)
               <<STM25P_SECTOR_SIZE_LOG2;
           }
-          //TODO: stash read_addr
+          m_stashedReadAddr = m_log_info[ id ].read_addr;
           m_log_info[ id ].read_addr = m_log_state[ id ].cookie & ~BLOCK_MASK;
           m_log_info[ id ].remaining = 0;
           m_rw_state = S_SEARCH_SEEK;
-          //TODO: validate block header.
           if (SINGLE_RECORD_READ){
-            //advance to first record header on this block
-            m_log_info[id].read_addr += sizeof(m_addr);
-            //if we aren't there yet, then we need to read the first
-            //record header and proceed from there.
-            if ( m_log_info[ id ].read_addr < m_log_state[ id ].cookie ) {
-              call Sector.read[ id ]( 
-                calcAddr( id, m_log_info[ id ].read_addr ), 
-                &m_header, sizeof( m_header ) );
-            }else{
-              signalDone( id, SUCCESS );
-            }
-
+            //validate block address before we go any further
+            m_rw_state = S_SEARCH_SEEK_BLOCK;
+            call Sector.read[id](calcAddr(id, m_log_info[id].read_addr), 
+              (uint8_t*)&m_blockAddr, sizeof(m_blockAddr));
           } else{
             if ( m_log_info[ id ].read_addr != m_log_state[ id ].cookie ) {
               m_log_info[ id ].read_addr += sizeof( m_addr );
@@ -326,10 +324,19 @@ implementation {
     error_t error;
 
     uint8_t m_len = m_log_state[ client ].m_len;
+    //TODO: is this causing wrap behavior? incrementing read_addr
+    //  before checking for completion?
+    //  What is *write_addr when the log is wrapped? It must be that
+    //  write_addr is ending up at some wonky value.
+
     // if on block boundary
     //at block boundary: advance read_addr to first record start
+
+    //TODO: at block boundary: read block header and verify that it
+    //  matches what we expect.
     if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
-      read_addr += sizeof( m_addr );
+      m_rw_state = S_BLOCK_HEADER;
+//      read_addr += sizeof( m_addr );
     }
 
     // check if all done
@@ -378,10 +385,17 @@ implementation {
           }
         }
       }
-    }else{
+    }else if (m_rw_state == S_HEADER){
       //S_HEADER behavior if not S_DATA.
       buf = &m_header;
       len = sizeof( m_header );
+    }else if (m_rw_state == S_BLOCK_HEADER){
+      buf = (uint8_t*)&m_blockAddr;
+      len = sizeof(m_blockAddr);
+    }else{
+      printf("'comment2':'ERR: cro %x',\r\n", m_rw_state);
+      signalDone(client, FAIL);
+      return;
     }
     
     m_log_info[ client ].read_addr = read_addr;
@@ -392,6 +406,16 @@ implementation {
     m_rw_state = S_CHECK_BLOCK_WI;
     call Sector.read[id]( calcAddr(id, addr), (uint8_t*)&m_addr,
       sizeof(m_addr));
+  }
+
+  //This verifies that a logical address is consistent with its
+  //  physical address. 
+  //e.g. if we read an addr = 0 anywhere but the 0th block, it's
+  //  invalid. 
+  //  If we get 2147483648 at phy addr 274432, it's invalid.
+  bool validateAddress(uint8_t client, stm25p_addr_t phyAddr, 
+      stm25p_addr_t logicalAddr){
+    return (logicalAddr == STM25P_INVALID_ADDRESS || calcAddr(client, logicalAddr) == phyAddr);
   }
   
   event void Sector.readDone[ uint8_t id ]( stm25p_addr_t addr, uint8_t* buf,
@@ -408,15 +432,19 @@ implementation {
       case S_SEARCH_BLOCKS: 
         {
           uint16_t block = addr >> BLOCK_SIZE_LOG2;
-          //TODO: verify checksum (increment addr by block size and
-          //    skip it if it's bad) 
+          printf("'comment3':'SB p %lu l %lu',\r\n", addr, m_addr);
+          //TODO: verify checksum of addr for added safety
+          // (increment addr by block size and skip it if bad) 
+
           // record potential starting and ending addresses
-          if ( m_addr != STM25P_INVALID_ADDRESS ) {
+          if ( m_addr != STM25P_INVALID_ADDRESS 
+              && validateAddress(id, addr, m_addr)) {
             if ( m_addr < log_info->read_addr ){
               log_info->read_addr = m_addr;
             }
             if ( m_addr > *write_addr ){
               *write_addr = m_addr;
+              printf("'comment4':'wa= %lu',\r\n", m_addr);
             }
           }
           // move on to next log block (check header of block)
@@ -448,7 +476,8 @@ implementation {
           uint16_t cur_block = *write_addr >> BLOCK_SIZE_LOG2;
           uint16_t new_block = ( *write_addr + sizeof( m_header ) + m_header ) >> BLOCK_SIZE_LOG2;
           // if header is valid and is on same block, move to next record
-          if (cur_block != new_block){
+          if (cur_block != new_block && (m_header != INVALID_HEADER)){
+//          if (cur_block != new_block){
             //this should not happen, and probably indicates some
             //corruption of an earlier record (incorrect len field
             //most likely) that broke record alignment. 
@@ -469,7 +498,38 @@ implementation {
           }
         }
         break;
-  
+
+      case S_SEARCH_SEEK_BLOCK:
+        //Verify that not only is address valid (at expected physical
+        //position) but that it also matches the expected logical
+        //address
+        if (validateAddress(id, addr, m_blockAddr) 
+            && (m_blockAddr == log_info->read_addr)){
+          //Cool. let's keep going.
+          m_rw_state = S_SEARCH_SEEK;
+          //advance to first record header on this block
+          log_info->read_addr += sizeof(m_addr);
+          //if we aren't there yet, then we need to read the first
+          //record header and proceed from there.
+          if ( log_info->read_addr < m_log_state[ id ].cookie ) {
+            call Sector.read[ id ]( 
+              calcAddr( id, log_info->read_addr ), 
+              &m_header, sizeof( m_header ) );
+          }else{
+            signalDone( id, SUCCESS );
+          }
+        } else {
+          printf("'comment11':'BAD SEEK got %lu at p %lu looking for %lu',\r\n",
+            m_blockAddr, addr, log_info->read_addr);
+          //indicate that seek broke down. This happens if we try to
+          //seek to an address that is on a bad block. If this occurs,
+          //restore the last read_addr (which was presumably not
+          //invalid)
+          log_info->read_addr = m_stashedReadAddr;
+          signalDone(id, FAIL);
+        }
+        break;
+
       case S_SEARCH_SEEK:
         {
           stm25p_addr_t s_block = log_info->read_addr >> BLOCK_SIZE_LOG2;
@@ -509,6 +569,8 @@ implementation {
 
               //if we are now pointing at a block header, advance
               //it to the next record header to disambiguate
+              //TODO: should validate this block header before
+              // completing
               if ( (log_info->read_addr & BLOCK_MASK) < sizeof(m_addr)){
                 log_info->read_addr =
                   (log_info->read_addr & ~BLOCK_MASK) + sizeof(m_addr);
@@ -520,6 +582,61 @@ implementation {
               log_info->read_addr = m_log_state[ id ].cookie;
             }
             signalDone( id, error );
+          }
+        }
+        break;
+
+      case S_BLOCK_HEADER:
+        //check that this is a valid block header and that it matches
+        //the expected logical address
+        if (validateAddress(id, addr, m_blockAddr) 
+            && (m_blockAddr == log_info->read_addr)){
+          printf("'comment6':'BH %lu OK @ p %lu r %lu',\r\n", 
+            m_blockAddr, addr, log_info->read_addr);
+          log_info->read_addr += sizeof(m_blockAddr);
+          m_rw_state = S_HEADER;
+          continueReadOp(id);
+        }else{
+          //hit a bad block header. Our goal is to see if there is
+          //some good block header having higher value than the
+          //current read address
+          m_rw_state = S_BLOCK_HEADER_RECOVER;
+          m_nextReadAddr = STM25P_INVALID_ADDRESS;
+          printf("'comment5':'BH %lu BAD @ p %lu r %lu',\r\n", 
+            m_blockAddr, addr, log_info->read_addr);
+          call Sector.read[id](0, (uint8_t*)&m_blockAddr, sizeof(m_blockAddr));
+        }
+        break;
+
+      case S_BLOCK_HEADER_RECOVER:
+        {
+          uint16_t block = addr >> BLOCK_SIZE_LOG2;
+          if (m_blockAddr != STM25P_INVALID_ADDRESS 
+              && validateAddress(id, addr, m_blockAddr) 
+              && m_blockAddr > log_info->read_addr 
+              && m_blockAddr < m_nextReadAddr){
+            printf("'comment7':'BHR nra %lu -> %lu @ %lu'\r\n",
+              m_nextReadAddr, m_blockAddr, addr);
+            m_nextReadAddr = m_blockAddr;
+          }
+          if (++block < (call Sector.getNumSectors[ id ]()*BLOCKS_PER_SECTOR)) {
+            addr += BLOCK_SIZE; 
+            call Sector.read[ id ]( addr, 
+              (uint8_t*)&m_blockAddr,
+              sizeof(m_blockAddr));
+          }else{
+            printf("'comment8':'BHR end nra %lu wa %lu',\r\n",
+              m_nextReadAddr, *write_addr);
+            if (m_nextReadAddr > *write_addr){
+              m_nextReadAddr = *write_addr;
+              m_rw_state = S_HEADER;
+              printf("'comment9':'resume header',\r\n");
+            }else{
+              log_info->read_addr = m_nextReadAddr;
+              m_rw_state = S_BLOCK_HEADER;
+              printf("'comment10':'resume block header',\r\n");
+            }
+            continueReadOp(id);
           }
         }
         break;
