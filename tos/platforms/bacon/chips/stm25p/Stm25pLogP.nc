@@ -264,7 +264,6 @@ implementation {
       //  amount of state that has to be tracked.
       *write_addr = 0;
       m_rw_state = S_SEARCH_BLOCKS;
-      printf("start search\r\n");
       call Sector.read[ id ]( 0, (uint8_t*)&m_blockHeader, 
         sizeof( m_blockHeader ) );
     } else {
@@ -422,7 +421,6 @@ implementation {
       buf = (uint8_t*)&m_blockHeader;
       len = sizeof(m_blockHeader);
     }else{
-      printf("'comment2':'ERR: cro %x',\r\n", m_rw_state);
       signalDone(client, FAIL);
       return;
     }
@@ -444,15 +442,12 @@ implementation {
   }
 
   header_status_t validateHeader(block_header_t* header){
-    printf("vh %lu %x: ", header->block_addr, header->checksum);
     if (header -> block_addr == STM25P_INVALID_ADDRESS &&
         header->checksum == INVALID_CHECKSUM){
-      printf("unused\r\n");
       return HS_UNUSED;
     }else {
       block_header_t tmpHeader;
       fillHeader(&tmpHeader, header->block_addr);
-      printf(" %x =%x\r\n", tmpHeader.checksum, 
         (header->checksum == tmpHeader.checksum) ? HS_VALID: HS_INVALID);
       return (header->checksum == tmpHeader.checksum) ? HS_VALID: HS_INVALID;
     }
@@ -474,20 +469,14 @@ implementation {
         {
           uint16_t block = addr >> BLOCK_SIZE_LOG2;
           header_status_t hs = validateHeader(&m_blockHeader);
-          printf("'comment3':'SB p %lu l %lu %x %lu: %x',\r\n", addr,
-            m_blockHeader.block_addr, m_blockHeader.checksum,
-            *write_addr, hs);
 
           // record potential starting and ending addresses
           if ( HS_VALID == hs){
-            printf("valid\r\n");
             if ( m_blockHeader.block_addr < log_info->read_addr ){
               log_info->read_addr = m_blockHeader.block_addr;
-              printf("ra= %lu\r\n", log_info->read_addr);
             }
             if ( m_blockHeader.block_addr > *write_addr ){
               *write_addr = m_blockHeader.block_addr;
-              printf("'comment4':'wa= %lu',\r\n", *write_addr);
             }
           }
           // move on to next log block (check header of block)
@@ -500,13 +489,10 @@ implementation {
             // if log is empty, continue operation
             log_info->read_addr = 0;
             *write_addr = 0;
-            printf("empty log, write_addr %lu\r\n", *write_addr);
             signal ClientResource.granted[ id ]();
           } else {
           // search for last record
             *write_addr += sizeof( m_blockHeader );
-            printf("Done block search: ra %lu wa %lu\r\n",
-              log_info->read_addr, *write_addr);
             m_rw_state = S_SEARCH_RECORDS;
             call Sector.read[ id ]( 
               calcAddr(id, *write_addr), 
@@ -523,28 +509,26 @@ implementation {
           uint16_t new_block = ( *write_addr + sizeof( m_header ) + m_header ) >> BLOCK_SIZE_LOG2;
           // if header is valid and is on same block, move to next record
           if (cur_block != new_block && (m_header != INVALID_HEADER)){
-            printf("block-span found\r\n");
             //this should not happen, and probably indicates some
             //corruption of an earlier record (incorrect len field
             //most likely) that broke record alignment. 
             // If it does, then we just skip ahead to the next block.
-            //N.B. This process searches for an unused block. So, it
+            //NB: This process searches for an unused block. So, it
             //will loop indefinitely if there are no unused blocks
-            //left.
+            //left. This can probably only happen if the log ends in
+            //the last block of a sector and the log has wrapped (so
+            //there are no formatted sectors)
             *write_addr += BLOCK_SIZE;
             *write_addr &= ~BLOCK_MASK;
             checkBlockForWriteInit(id, *write_addr);
 
           }else if ( m_header != INVALID_HEADER ) {
-            printf("record %lu ->", *write_addr);
             *write_addr += sizeof( m_header ) + m_header;
-            printf(" %lu\r\n", *write_addr);
             call Sector.read[ id ]( 
               calcAddr( id, *write_addr ), 
               &m_header, 
               sizeof( m_header ) );
           } else {
-            printf("end of log found wa %lu\r\n", *write_addr);
           // found last record
             signal ClientResource.granted[ id ]();
           }
@@ -571,8 +555,6 @@ implementation {
             signalDone( id, SUCCESS );
           }
         } else {
-          printf("'comment11':'BAD SEEK got %lu at p %lu looking for %lu',\r\n",
-            m_blockHeader.block_addr, addr, log_info->read_addr);
           //indicate that seek broke down. This happens if we try to
           //seek to an address that is on a bad block. If this occurs,
           //restore the last read_addr (which was presumably not
@@ -643,8 +625,6 @@ implementation {
           //the expected logical address
           if ( HS_VALID == hs 
               && (m_blockHeader.block_addr == log_info->read_addr)){
-            printf("'comment6':'BH %lu OK @ p %lu r %lu',\r\n", 
-              m_blockHeader.block_addr, addr, log_info->read_addr);
             log_info->read_addr += sizeof(m_blockHeader);
             m_rw_state = S_HEADER;
             continueReadOp(id);
@@ -654,8 +634,6 @@ implementation {
             //current read address (skipping over the bad section)
             m_rw_state = S_BLOCK_HEADER_RECOVER;
             m_nextReadAddr = STM25P_INVALID_ADDRESS;
-            printf("'comment5':'BH %lu BAD @ p %lu r %lu',\r\n", 
-              m_blockHeader.block_addr, addr, log_info->read_addr);
             //start scanning from block 0.
             call Sector.read[id](0, (uint8_t*)&m_blockHeader,
               sizeof(m_blockHeader));
@@ -670,8 +648,6 @@ implementation {
           if (HS_VALID == hs 
               && m_blockHeader.block_addr > log_info->read_addr 
               && m_blockHeader.block_addr < m_nextReadAddr){
-            printf("'comment7':'BHR nra %lu -> %lu @ %lu'\r\n",
-              m_nextReadAddr, m_blockHeader.block_addr, addr);
             m_nextReadAddr = m_blockHeader.block_addr;
           }
           if (++block < (call Sector.getNumSectors[ id ]()*BLOCKS_PER_SECTOR)) {
@@ -680,16 +656,12 @@ implementation {
               (uint8_t*)&m_blockHeader,
               sizeof(m_blockHeader));
           }else{
-            printf("'comment8':'BHR end nra %lu wa %lu',\r\n",
-              m_nextReadAddr, *write_addr);
             if (m_nextReadAddr > *write_addr){
               m_nextReadAddr = *write_addr;
               m_rw_state = S_HEADER;
-              printf("'comment9':'resume header',\r\n");
             }else{
               log_info->read_addr = m_nextReadAddr;
               m_rw_state = S_BLOCK_HEADER;
-              printf("'comment10':'resume block header',\r\n");
             }
             continueReadOp(id);
           }
@@ -800,16 +772,13 @@ implementation {
     //so if this is interrupted between the record-header being
     //written and the data being written, the data will be lost but
     //the log structure will remain intact.
-    printf("cao %x\r\n", m_rw_state);
 
     if ( (*write_addr & SECTOR_MASK) == 0 ) {
-      printf("erase new sector wa %lu\r\n", *write_addr);
       //if this is the first write to a new sector, erase that sector.
       m_log_state[ client ].m_records_lost = TRUE;
       call Sector.erase[ client ]( calcSector( client, *write_addr ), 1 );
     } else {
       if (m_rw_state == S_VERIFY_BLOCK_HEADER){
-        printf("cao: verify block header at %lu\r\n", *write_addr);
         //read and verify block header before writing new block
         //header.
         call Sector.read[client]( calcAddr(client, *write_addr),
@@ -819,25 +788,17 @@ implementation {
         //checksum) 
         if ( !((uint16_t)*write_addr & BLOCK_MASK) ) {
           fillHeader(&m_blockHeader, *write_addr);
-          printf("write block header: %lu %x\r\n",
-            m_blockHeader.block_addr,
-            m_blockHeader.checksum);
           buf = &m_blockHeader;
           len = sizeof( m_blockHeader );
         } else if ( m_rw_state == S_HEADER ) {
           //need to write header (len)? do so.
           buf = &m_log_state[ client ].len;
-          printf("write record header %u\r\n", 
-            m_log_state[ client ].len);
           len = sizeof( m_log_state[ client ].len );
         } else {
-          printf("write data\r\n");
           //write actual data
           buf = m_log_state[ client ].buf;
           len = m_log_state[ client ].len;
         }
-        printf("writing to %lu (%lu)\r\n", *write_addr,  calcAddr(
-          client, *write_addr ));
         call Sector.write[ client ]( calcAddr( client, *write_addr ), buf, len );
       }
     }
@@ -847,7 +808,6 @@ implementation {
                                    uint8_t num_sectors,
                                    error_t error ) {
     stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
-    printf("erase done wa %lu\r\n", *write_addr);
     if ( m_log_state[ id ].req == S_ERASE ) {
       m_log_info[ id ].read_addr = 0;
       *write_addr = 0;
@@ -857,7 +817,6 @@ implementation {
       // (the log could have cycled around)
       stm25p_addr_t volume_size = 
       STM25P_SECTOR_SIZE * ( call Sector.getNumSectors[ id ]() - 1 );
-      printf("volume size %lu\r\n", volume_size);
       //NB: this will suffer in the event of discontinuities in the
       //log. It is important that block headers be reliable.
       if ( *write_addr > volume_size ) {
@@ -867,9 +826,6 @@ implementation {
         }
         m_addr = *write_addr;
         fillHeader(&m_blockHeader, *write_addr);
-        printf("erased sector, first block header %lu (%lu) %x @ %lu ( %lu)\r\n",
-          m_blockHeader.block_addr, *write_addr, m_blockHeader.checksum,
-          m_addr, calcAddr(id, m_addr));
         m_rw_state = S_HEADER;
         call Sector.write[ id ]( calcAddr( id, m_addr ),
           (uint8_t*)&m_blockHeader, 
@@ -885,9 +841,8 @@ implementation {
     //maybe that's done by Sector?
     stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
     *write_addr += len;
-    printf("write done rws %x\r\n", m_rw_state); 
     if ( m_rw_state == S_HEADER ) {
-      //N.B. this check assumes that block header and record header are
+      //NB: this check assumes that block header and record header are
       //different sizes, which is true. could be made explicit,
       //though.
       if ( len == sizeof( m_header ) ){
