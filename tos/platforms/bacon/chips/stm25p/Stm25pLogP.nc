@@ -273,6 +273,13 @@ implementation {
           uint8_t writeSector =
             ((*write_addr-1)>>STM25P_SECTOR_SIZE_LOG2)+1;
           // if cookie is overwritten, advance to beginning of log
+          //TODO: resolve discontinuous log address issues
+          //Consider seeking to a cookie that is 
+          //  more than 8 MB less than the end of the log (e.g.
+          //  because a corrupted block header threw off the cookies). Since a
+          //  well-behaved log should be gap-free and steadily
+          //  increasing, this should always bring us to the
+          //  beginning.
           if ( (writeSector - readSector) > numSectors ) {
             m_log_state[ id ].cookie = 
               (storage_cookie_t)(writeSector-numSectors)
@@ -324,19 +331,10 @@ implementation {
     error_t error;
 
     uint8_t m_len = m_log_state[ client ].m_len;
-    //TODO: is this causing wrap behavior? incrementing read_addr
-    //  before checking for completion?
-    //  What is *write_addr when the log is wrapped? It must be that
-    //  write_addr is ending up at some wonky value.
 
-    // if on block boundary
-    //at block boundary: advance read_addr to first record start
-
-    //TODO: at block boundary: read block header and verify that it
-    //  matches what we expect.
+    //verify block header before continuing
     if ( !((uint16_t)read_addr & BLOCK_MASK ) ){
       m_rw_state = S_BLOCK_HEADER;
-//      read_addr += sizeof( m_addr );
     }
 
     // check if all done
@@ -682,6 +680,17 @@ implementation {
           
           if (SINGLE_RECORD_READ){
             //single-record read: stop here.
+            //TODO: would be nice to go ahead and validate that we are
+            //pointing to a valid record at this point, otherwise it's
+            //possible for us to give an ambiguous cookie value (e.g.
+            //last valid record spans bytes 0-9, next valid record
+            //spans 20-29. When we signal done here, currentOffset is
+            //10. seeking to 10 will drop us at 20. So, if we are
+            //doing (get current offset -> read )* and (seek->read),
+            //then the same record will occur with two different
+            //cookie values. This probably won't matter much in
+            //practice (rare duplicate data points), but it's worth
+            //noting.
             signalDone(id, error);
           }else{
             m_rw_state = S_HEADER;
