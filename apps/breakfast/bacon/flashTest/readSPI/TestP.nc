@@ -72,7 +72,7 @@ module TestP {
   async event void Stm25pSpi.readDone( stm25p_addr_t addr, uint8_t* buf, 
 			     stm25p_len_t len, error_t error ){
     uint16_t i;
-    printf("%lu :[", readAddr, addr);
+    printf("%lu :[", readAddr);
     for (i =0 ; i < 256; i++){
       printf(" 0x%x,", buf[i]);
     }
