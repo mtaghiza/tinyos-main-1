@@ -46,7 +46,6 @@ module Stm25pLogP {
   uses interface Resource as ClientResource[ uint8_t id ];
   uses interface Get<bool> as Circular[ uint8_t id ];
   provides interface Stm25pVolume as Volume[uint8_t id];
-  uses interface Leds;
   uses interface Crc;
 
   //for informing other code when an append is completed (indicates
@@ -448,7 +447,6 @@ implementation {
     }else {
       block_header_t tmpHeader;
       fillHeader(&tmpHeader, header->block_addr);
-        (header->checksum == tmpHeader.checksum) ? HS_VALID: HS_INVALID);
       return (header->checksum == tmpHeader.checksum) ? HS_VALID: HS_INVALID;
     }
   }

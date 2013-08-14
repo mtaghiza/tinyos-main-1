@@ -57,28 +57,23 @@ implementation {
 
   
   
-  components Stm25pLogP as LogP;
-  LogRead = LogP.Read[ LOG_ID ];
-  LogWrite = LogP.Write[ LOG_ID ];
+  components Stm25pLogC as LogC;
+  LogRead = LogC.Read[ LOG_ID ];
+  LogWrite = LogC.Write[ LOG_ID ];
 
-  components CC430CRCC;
-  LogP.Crc -> CC430CRCC;
   
   components LogNotifyCollectC;
-  LogNotifyCollectC.SubNotify[volume_id] -> LogP.Notify[LOG_ID];
+  LogNotifyCollectC.SubNotify[volume_id] -> LogC.Notify[LOG_ID];
   
   components Stm25pSectorC as SectorC;
-  LogP.ClientResource[ LOG_ID ] -> SectorC.ClientResource[ VOLUME_ID ];
-  LogP.Sector[ LOG_ID ] -> SectorC.Sector[ VOLUME_ID ];
+  LogC.ClientResource[ LOG_ID ] -> SectorC.ClientResource[ VOLUME_ID ];
+  LogC.Sector[ LOG_ID ] -> SectorC.Sector[ VOLUME_ID ];
   
   components new Stm25pBinderP( volume_id ) as BinderP;
   BinderP.Volume -> SectorC.Volume[ VOLUME_ID ];
-  BinderP.Volume -> LogP.Volume[LOG_ID];
+  BinderP.Volume -> LogC.Volume[LOG_ID];
   
   components new Stm25pLogConfigP( circular ) as ConfigP;
-  LogP.Circular[ LOG_ID ] -> ConfigP;
-  
-  components MainC;
-  MainC.SoftwareInit -> LogP;
+  LogC.Circular[ LOG_ID ] -> ConfigP;
   
 }
