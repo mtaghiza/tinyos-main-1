@@ -54,10 +54,15 @@ implementation {
     LOG_ID = unique( "Stm25p.Log" ),
     VOLUME_ID = unique( "Stm25p.Volume" ),
   };
+
+  
   
   components Stm25pLogP as LogP;
   LogRead = LogP.Read[ LOG_ID ];
   LogWrite = LogP.Write[ LOG_ID ];
+
+  components CC430CRCC;
+  LogP.Crc -> CC430CRCC;
   
   components LogNotifyCollectC;
   LogNotifyCollectC.SubNotify[volume_id] -> LogP.Notify[LOG_ID];
