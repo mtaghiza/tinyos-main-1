@@ -7,14 +7,26 @@ module TestP {
   uses interface Resource;
   uses interface Stm25pSpi;
 } implementation {
+  uint8_t writeBuffer[254];
+
   event void Boot.booted() 
   {  
+    uint8_t i;
+    for (i = 0; i < 254; i++){
+      writeBuffer[i] = 0;
+    }
     printf("Test Application\n\r");
     call Resource.request();
   }
 
   norace uint8_t uartByte;
+
+  uint8_t zeroLen;
+  stm25p_addr_t zeroLoc;
+  bool zeroLenPending= FALSE;
+  bool zeroLocPending= FALSE;
   task void uartTask();
+  task void writeTask();
 
   async event void UartStream.receivedByte( uint8_t byte ) 
   {
@@ -47,16 +59,51 @@ module TestP {
             printf("{\r\n");
             break;
 
+        case 'z':
+          zeroLoc=0;
+          zeroLocPending = TRUE;
+          zeroLenPending = FALSE;
+          printf("zeroLoc>");
+          break;
+
+        case 'Z':
+          zeroLen=0;
+          zeroLenPending = TRUE;
+          zeroLocPending = FALSE;
+          printf("zeroLen>");
+          break;
+
+        case 'w':
+          post writeTask();
+          break;
+
         case '\r':
-                  printf("\n\r");
-                  break;
+          printf("\r\n");
+          if (zeroLenPending){
+            zeroLenPending = FALSE;
+          }
+          if (zeroLocPending){
+            zeroLocPending = FALSE;
+          }
+          break;
     
         default:
-                  echo[0] = key;
-                  echo[1] = '\0';
-                  printf("%s", echo);
-                  break;
+          if (zeroLenPending){
+            zeroLen = (zeroLen*10) + key-'0';
+          } else if (zeroLocPending){
+            zeroLoc = (zeroLoc*10) + key-'0';
+          }
+          echo[0] = key;
+          echo[1] = '\0';
+          printf("%s", echo);
+          break;
     }
+  }
+  
+  task void writeTask(){
+    printf("Zeroing out %u at %lu: %x \r\n", 
+      zeroLen, zeroLoc,
+      call Stm25pSpi.pageProgram(zeroLoc, writeBuffer, zeroLen));
   }
 
   event void Resource.granted(){
@@ -89,6 +136,7 @@ module TestP {
   }
   async event void Stm25pSpi.pageProgramDone( stm25p_addr_t addr, uint8_t* buf, 
 				    stm25p_len_t len, error_t error ){
+    printf("PPd %x\r\n", error);
   }
   async event void Stm25pSpi.sectorEraseDone( uint8_t sector, error_t error ){
   }

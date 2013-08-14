@@ -19,6 +19,8 @@ module TestP{
   bool highPending;
   uint16_t lowThresh;
   bool lowPending;
+  uint32_t appendStop;
+  bool appendPending;
  
   enum{
     MAX_RECORD_LEN=0x0F,
@@ -35,7 +37,8 @@ module TestP{
   uint8_t genBuf[254];
 
   uint8_t curRL = 1;
-  
+   
+  task void appendTask();
   event void LogNotify.sendRequested(uint16_t requested){
     printf("sr: %u\r\n", requested);
   }
@@ -69,6 +72,7 @@ module TestP{
     printf("  f: inform log notify that one record was sent\r\n");
     printf("  e: erase log\r\n");
     printf("  a: append to log\r\n");
+    printf("  A[0-9]*\\n: append multiple records until write cookie exceeds supplied value\r\n");
     printf("  r: read\r\n");
     printf("  ?: print current state info\r\n");
     fillRecord(record, curRL);
@@ -108,6 +112,11 @@ module TestP{
 			error_t error){
     printf("append done: %x\r\n", error);
     curRL = (1+curRL)%(MAX_RECORD_LEN);
+    if (call LogWrite.currentOffset() > appendStop){
+      appendPending = FALSE;
+    }else{
+      post appendTask();
+    }
   }
 
   event void LogWrite.eraseDone(error_t error){
@@ -124,8 +133,8 @@ module TestP{
       seekLoc = 0;
       seekPending = FALSE;
     }
-    printf("seeking to: %lu\r\n", sl);
-    call LogRead.seek(sl);
+    printf("seeking to %lu : %x\r\n", 
+      sl, call LogRead.seek(sl));
   }
 
   task void readTask(){
@@ -141,7 +150,8 @@ module TestP{
   }
 
   task void appendTask(){
-    printf("append\r\n");
+    printf("append (%lu left)\r\n", 
+      appendStop - call LogWrite.currentOffset());
     fillRecord(record, curRL);
     call LogWrite.append(record, curRL + sizeof(record->recordType));
   }
@@ -206,7 +216,13 @@ module TestP{
         post eraseTask();
         break;
       case 'a':
+        appendStop = 0;
         post appendTask();
+        break;
+      case 'A':
+        printf("%c>", byte);
+        appendPending = TRUE;
+        appendStop = 0;
         break;
       case 'r':
         post readTask();
@@ -228,6 +244,8 @@ module TestP{
           post lowTask();
         } else if (highPending){
           post highTask();
+        }else if (appendPending){
+          post appendTask();
         }
         break;
       default:
@@ -240,6 +258,8 @@ module TestP{
             lowThresh = (lowThresh*10) + (byte - '0');
           } else if (highPending){
             highThresh = (highThresh*10) + (byte -'0');
+          }else if (appendPending){
+            appendStop = (appendStop*10) + (byte - '0');
           }
         }
         break;
