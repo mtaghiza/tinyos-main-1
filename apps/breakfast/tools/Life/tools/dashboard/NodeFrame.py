@@ -21,7 +21,7 @@ class NodeFrame(Frame):
         self.tkobjects = {}
         self.sensorTypes = {}
         
-        self.sf = SettingsFile(self.SETTINGS)
+        #self.sf = SettingsFile(self.SETTINGS)
         self.db = DatabaseQuery(self.DATABASE)
         
         self.changedVar = BooleanVar()
@@ -35,13 +35,13 @@ class NodeFrame(Frame):
         self.saveSettings()
     
     def loadSettings(self):
-        self.offline = self.sf.read()        
+        #self.offline = self.sf.read()        
         self.leafs = self.db.getLeafs()
         self.multiplexers = self.db.getMultiplexers()
         self.routers = self.db.getRouters()
     
     def saveSettings(self):        
-        self.sf.write(self.offline)
+        #self.sf.write(self.offline)
         self.changedVar.set(False)
 
     def settingsChanged(self, *args):
@@ -218,6 +218,7 @@ class NodeFrame(Frame):
 #            
         # update menu list of available sensor types
         self.hub.control.updateTypes(self.sensorTypes)
+        self.hub.control.updateSites(self.routers)
 #        
 #        # update dictionary with both offline and online nodes 
 #        # the settings file has higher priority than the online settings
