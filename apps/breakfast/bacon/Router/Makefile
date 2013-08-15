@@ -49,7 +49,7 @@ CFLAGS+=-I$(TOSDIR)/chips/msp430/tlvStorage
 CFLAGS += -I../../util/stackGuard
 CFLAGS += -I../../util
 
-#TODO: hook up to sd card storage
+#TODO: hook up to sd card log storage impl
 
 ENABLE_PRINTF ?= 1
 CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
