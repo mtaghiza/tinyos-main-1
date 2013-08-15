@@ -45,6 +45,8 @@ class RecordParser(object):
             
             # panic
             if cookieVal > self.nextCookie:
+                print "I am panicking: %u > %u"%(cookieVal,
+                  self.nextCookie)
                 print cookieBytes
                 print self.data 
                 print self.nextCookie 

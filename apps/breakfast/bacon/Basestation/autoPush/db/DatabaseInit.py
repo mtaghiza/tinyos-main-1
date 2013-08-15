@@ -147,15 +147,14 @@ class DatabaseInit(object):
                                      ts INTEGER,
                                      network_segment INTEGER,
                                      channel INTEGER,
-                                     PRIMARY KEY (master_id, rc, ts))''',
+                                     PRIMARY KEY (master_id, cookie))''',
               'network_membership': '''CREATE TABLE network_membership
                                          (master_id INTEGER,
                                           cookie INTEGER,
-                                          rc INTEGER,
-                                          ts INTEGER,
                                           slave_id INTEGER,
                                           distance INTEGER,
-                                          PRIMARY KEY (master_id, rc, ts, slave_id))'''}
+                                          PRIMARY KEY (master_id,
+                                          cookie, slave_id))'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):

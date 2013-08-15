@@ -23,6 +23,7 @@ from autoPush.decoders import ToastConnection
 from autoPush.decoders import ToastDisconnection
 from autoPush.decoders import Phoenix
 from autoPush.decoders import LogPrintf
+from autoPush.decoders import NetworkMembership
 from cx.decoders import Tunneled
 
 from cx.messages import CxDownload
@@ -70,6 +71,7 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     db.addDecoder(Phoenix.Phoenix)
     db.addDecoder(BaconSettings.BaconSettings)
     db.addDecoder(LogPrintf.LogPrintf)
+    db.addDecoder(NetworkMembership.NetworkMembership)
     #man that is ugghly to hook 
     t = db.addDecoder(Tunneled.Tunneled)
     t.receiveQueue = d.mif.receiveQueue
@@ -101,20 +103,23 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         print "Recovery requests: ", request_list
 #         MAX_PACKET_PAYLOAD = 100
         for request in request_list:
-            msg = CxRecordRequestMsg.CxRecordRequestMsg()
-            msg.set_node_id(request['node_id'])
-            msg.set_cookie(request['nextCookie'])
-            msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
-#             if request['missing'] < MAX_PACKET_PAYLOAD:
-#                 msg.set_length(request['missing'])
-#             else:
-#                 msg.set_length(MAX_PACKET_PAYLOAD)
-            print "requesting %u at %u from %u"%(msg.get_length(),
-              msg.get_cookie(), msg.get_node_id())
-            error = d.send(msg, msg.get_node_id())
-            print "Request status: %x"%error
-            if error:
-                break
+            if request['node_id'] != bsId:
+                msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                msg.set_node_id(request['node_id'])
+                msg.set_cookie(request['nextCookie'])
+                msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
+    #             if request['missing'] < MAX_PACKET_PAYLOAD:
+    #                 msg.set_length(request['missing'])
+    #             else:
+    #                 msg.set_length(MAX_PACKET_PAYLOAD)
+                print "requesting %u at %u from %u"%(msg.get_length(),
+                  msg.get_cookie(), msg.get_node_id())
+                error = d.send(msg, msg.get_node_id())
+                print "Request status: %x"%error
+                if error:
+                    break
+            else:
+                print "Skip BS pseudo-cookie"
 
         if error:
             print "Download failed: %x"%error

@@ -8,6 +8,7 @@
 #endif
 
 typedef nx_struct network_membership{
+  nx_uint8_t recordType;
   nx_am_addr_t masterId;
   nx_uint8_t networkSegment;
   nx_uint8_t channel;

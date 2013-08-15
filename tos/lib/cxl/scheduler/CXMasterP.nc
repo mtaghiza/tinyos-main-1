@@ -69,6 +69,7 @@ module CXMasterP {
         memset(&membership.members, 0xFF, sizeof(membership.members));
         memset(&membership.distances, 0xFF, sizeof(membership.distances));
         membership.masterId = call ActiveMessageAddress.amAddress();
+        membership.recordType = RECORD_TYPE_NETWORK_MEMBERSHIP;
         membership.networkSegment = ns;
         membership.channel = (call GetProbeSchedule.get())->channel[ns];
 //        //RC, TS will be set via receiveStatus

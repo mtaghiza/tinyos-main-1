@@ -1,3 +1,5 @@
+
+ #include "SerialLogStorage.h"
 generic module SerialLogStorageP(){
   provides interface LogWrite;
   uses interface AMSend;
@@ -16,10 +18,10 @@ generic module SerialLogStorageP(){
     if (msg){
       log_record_data_msg_t* pl = call Packet.getPayload(msg,
         sizeof(log_record_data_msg_t));
-      log_record_t* lr = (log_record_t*)(&pl[0]);
+      log_record_t* lr = (log_record_t*)(&pl->data[0]);
       error_t error;
-      //TODO: cookie could be used better here, I should think.
-      lr->cookie = 0;
+
+      lr->cookie = call LogWrite.currentOffset();
       lr->length = len;
       memcpy(lr->data, buf, len);
 
@@ -38,7 +40,15 @@ generic module SerialLogStorageP(){
       return ENOMEM;
     }
   }
-  command storage_cookie_t LogWrite.currentOffset(){ return 0; }
+
+  command storage_cookie_t LogWrite.currentOffset(){ 
+    nx_uint32_t cookie;
+    error_t error; 
+    cookie = 0;
+    error = call SettingsStorage.get(SS_KEY_SERIAL_LOG_STORAGE_COOKIE,
+      &cookie, sizeof(cookie));
+    return cookie; 
+  }
   command error_t LogWrite.erase(){ return FAIL;}
   command error_t LogWrite.sync(){ return FAIL;}
 
