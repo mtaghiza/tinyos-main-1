@@ -59,19 +59,19 @@ module CXMasterP {
         // - point to start of list
         // - clear num rounds counter
         // - initialize the membership report struct
-        memset(contactList, sizeof(contactList), 0xFF);
+        memset(contactList, 0xFF, sizeof(contactList));
         contactList[0].nodeId = call ActiveMessageAddress.amAddress();
         contactList[0].dataPending = TRUE;
         contactIndex = 0;
         totalNodes = 1;
         numRounds = 0;
   
-        memset(&membership.members, sizeof(membership.members), 0xFF);
-        memset(&membership.distances, sizeof(membership.distances), 0xFF);
+        memset(&membership.members, 0xFF, sizeof(membership.members));
+        memset(&membership.distances, 0xFF, sizeof(membership.distances));
         membership.masterId = call ActiveMessageAddress.amAddress();
         membership.networkSegment = ns;
         membership.channel = (call GetProbeSchedule.get())->channel[ns];
-        //RC, TS will be set via receiveStatus
+//        //RC, TS will be set via receiveStatus
         memberIndex = 0;
       }
       return error;
