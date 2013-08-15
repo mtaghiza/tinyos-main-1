@@ -12,18 +12,23 @@ configuration CXBaseStationC {
 
   provides interface Receive as StatusReceive;
   provides interface Get<am_addr_t>[uint8_t ns];
+
+  uses interface LogWrite;
 } implementation {
   components SlotSchedulerC;
   components CXProbeScheduleC;
 
   components CXMasterP;
   CXMasterP.GetProbeSchedule -> CXProbeScheduleC;
+  components CXLinkPacketC;
+  CXMasterP.CXLinkPacket -> CXLinkPacketC;
 
   CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
   CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
   CXDownload[NS_ROUTER] = CXMasterP.CXDownload[NS_ROUTER];
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
+  LogWrite = CXMasterP.LogWrite;
 
   Send = SlotSchedulerC;
   Packet = SlotSchedulerC;

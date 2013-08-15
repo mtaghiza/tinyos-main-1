@@ -55,4 +55,8 @@ configuration RouterAppC{
   RouterP.CXDownload -> CXRouterC.CXDownload[NS_SUBNETWORK];
   RouterP.SettingsStorage -> SettingsStorageC;
   RouterP.Timer -> TimerMilliC;
+
+  components new LogStorageC(VOLUME_RECORD, TRUE) 
+    as NetworkMembershipLS;
+  CXRouterC.LogWrite -> NetworkMembershipLS;
 }

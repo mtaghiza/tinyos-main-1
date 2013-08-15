@@ -9,6 +9,8 @@ configuration CXRouterC {
   uses interface Pool<message_t>;
   provides interface CTS[uint8_t ns];
   provides interface Get<am_addr_t>[uint8_t ns];
+
+  uses interface LogWrite;
 } implementation {
   components SlotSchedulerC;
 
@@ -18,6 +20,10 @@ configuration CXRouterC {
   CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
 
   CXMasterP.Neighborhood -> SlotSchedulerC;
+  LogWrite = CXMasterP.LogWrite;
+
+  components CXLinkPacketC;
+  CXMasterP.CXLinkPacket -> CXLinkPacketC;
 
   Send = SlotSchedulerC;
   Packet = SlotSchedulerC;

@@ -1,11 +1,13 @@
 #ifndef NETWORK_MEMBERSHIP_H
 #define NETWORK_MEMBERSHIP_H
 
+#include "AM.h"
+
 #ifndef MAX_NETWORK_MEMBERS
 #define MAX_NETWORK_MEMBERS 25
 #endif
 
-typedef nx_struct network_membership
+typedef nx_struct network_membership{
   nx_am_addr_t masterId;
   nx_uint8_t networkSegment;
   nx_uint8_t channel;
