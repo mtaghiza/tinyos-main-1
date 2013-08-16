@@ -38,9 +38,6 @@
 #define DL_ERROR 3
 #define DL_NONE  4
 
-#ifndef DL_GLOBAL
-#define DL_GLOBAL DL_DEBUG
-#endif
 
 #ifndef ENABLE_PRINTF
 #define ENABLE_PRINTF 0
@@ -51,9 +48,15 @@
 #endif
 
 #if ENABLE_PRINTF == 0
+#ifndef DL_GLOBAL
+#define DL_GLOBAL DL_NONE
+#endif
 #define printf(...)
 #define printfflush()
 #else
+#ifndef DL_GLOBAL
+#define DL_GLOBAL DL_DEBUG
+#endif
 #if RAW_SERIAL_PRINTF == 1
 #include <stdio.h>
 #else
