@@ -2,5 +2,8 @@ COMPONENT=TestAppC
 
 CFLAGS+=-I$(TOSDIR)/lib/serialprintf
 
+READ_LIMIT ?= 8388608UL
+CFLAGS +=-DREAD_LIMIT=$(READ_LIMIT)
+
 include $(MAKERULES)
 
