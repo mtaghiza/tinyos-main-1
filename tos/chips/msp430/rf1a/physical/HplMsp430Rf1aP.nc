@@ -72,20 +72,19 @@ generic module HplMsp430Rf1aP () @safe() {
   uses interface SetNow<uint8_t> as DefaultLength;
   uses interface SetNow<const uint8_t*> as DefaultBuffer;
 } implementation {
-  //TODO: DEBUG remove
-  #define TRC_LEN 8
-  unsigned int trcr[TRC_LEN];
-  unsigned int trc[TRC_LEN];
-  uint8_t trcCount = 0;
-  task void reportTRC(){
-    atomic{
-      uint8_t i;
-      for (i = 0; i < trcCount; i++){
-        printf(" TRC %u/%u\r\n", trc[i], trcr[i]);
-      }
-      trcCount = 0;
-    }
-  }
+//  #define TRC_LEN 8
+//  unsigned int trcr[TRC_LEN];
+//  unsigned int trc[TRC_LEN];
+//  uint8_t trcCount = 0;
+//  task void reportTRC(){
+//    atomic{
+//      uint8_t i;
+//      for (i = 0; i < trcCount; i++){
+//        printf(" TRC %u/%u\r\n", trc[i], trcr[i]);
+//      }
+//      trcCount = 0;
+//    }
+//  }
 
   error_t startSend();
 
@@ -613,10 +612,10 @@ generic module HplMsp430Rf1aP () @safe() {
   
         /* Is there any data ready?  If not, try again later. */
         //record history of TRC calls
-        trc[trcCount] = count;
+//        trc[trcCount] = count;
         count = call Rf1aTransmitFragment.transmitReadyCount[client](count);
-        trcr[trcCount] = count;
-        trcCount++;
+//        trcr[trcCount] = count;
+//        trcCount++;
         if (0 == count) {
           break;
         }
@@ -737,11 +736,11 @@ generic module HplMsp430Rf1aP () @safe() {
     }
     if (send_done) {
 //      printf("sd\r\n");
-      if(result == ECANCEL){
-        post reportTRC();
-      }else{
-        trcCount = 0;
-      }
+//      if(result == ECANCEL){
+//        post reportTRC();
+//      }else{
+//        trcCount = 0;
+//      }
       signal Rf1aPhysical.sendDone[client](result);
 //      printfflush();
     }else{
@@ -1047,9 +1046,9 @@ generic module HplMsp430Rf1aP () @safe() {
     return startTransmission_(with_cca, targetFSTXON);
   }
 
-  task void reportTXIdle(){
-    printf("!TX->IDLE\r\n");
-  }
+//  task void reportTXIdle(){
+//    printf("!TX->IDLE\r\n");
+//  }
 
   async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
   (rf1a_offmode_t offMode)
@@ -1061,7 +1060,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
-        post reportTXIdle();
+//        post reportTXIdle();
         tx_result = ECANCEL;
         post sendFragment_task();
       } else if (RX_S_listening < rx_state) {
@@ -1449,22 +1448,22 @@ generic module HplMsp430Rf1aP () @safe() {
 ////    printfflush();
 //  }
 
-  uint8_t reportTxBytes;
-  task void reportTXFA(){
-    uint8_t txb;
-    uint8_t txr;
-    uint8_t th;
-    atomic {
-      txb = reportTxBytes;
-      txr = tx_remain;
-      th = call Rf1aIf.readRegister(FIFOTHR);
-    }
-    printf("!TXFA %x %u remain %u th %x\r\n", txb, 0x7F&txb, txr, th);
-  }
-
-  task void reportErrata(){
-    printf("!E\r\n");
-  }
+//  uint8_t reportTxBytes;
+//  task void reportTXFA(){
+//    uint8_t txb;
+//    uint8_t txr;
+//    uint8_t th;
+//    atomic {
+//      txb = reportTxBytes;
+//      txr = tx_remain;
+//      th = call Rf1aIf.readRegister(FIFOTHR);
+//    }
+//    printf("!TXFA %x %u remain %u th %x\r\n", txb, 0x7F&txb, txr, th);
+//  }
+//
+//  task void reportErrata(){
+//    printf("!E\r\n");
+//  }
 
   async event void Rf1aInterrupts.txFifoAvailable[uint8_t client]
   (bool errataApplies)
@@ -1492,8 +1491,8 @@ generic module HplMsp430Rf1aP () @safe() {
       //  written the data into the fifo?
       if (0x3F <= (0x7F & txbytes)) {
         tx_result = ECANCEL;
-        reportTxBytes = txbytes;
-        post reportTXFA();
+//        reportTxBytes = txbytes;
+//        post reportTXFA();
         //n.b. sendFragment_task will check tx_result: when it finds
         //it is ECANCEL, it will reset and flush the TXFIFO.
 //        post reportTxfFail0();
