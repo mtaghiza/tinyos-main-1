@@ -72,7 +72,7 @@ implementation {
   norace uint8_t m_cmd_len;
 
   norace bool m_is_writing = FALSE;
-  norace bool m_computing_crc = FALSE;
+//  norace bool m_computing_crc = FALSE;
 
   norace stm25p_addr_t m_addr;
   norace uint8_t* m_buf;
@@ -153,11 +153,12 @@ implementation {
 
   async command error_t Spi.computeCrc( uint16_t crc, stm25p_addr_t addr,
 					stm25p_len_t len ) {
-    m_computing_crc = TRUE;
-    m_crc = crc;
-    m_addr = m_cur_addr = addr;
-    m_len = m_cur_len = len;
-    return call Spi.read( addr, m_crc_buf, calcReadLen() );
+    return FAIL;
+//    m_computing_crc = TRUE;
+//    m_crc = crc;
+//    m_addr = m_cur_addr = addr;
+//    m_len = m_cur_len = len;
+//    return call Spi.read( addr, m_crc_buf, calcReadLen() );
   }
   
   async command error_t Spi.pageProgram( stm25p_addr_t addr, uint8_t* buf, 
@@ -230,7 +231,7 @@ implementation {
   async event void SpiPacket.sendDone( uint8_t* tx_buf, uint8_t* rx_buf,
 				       uint16_t len, error_t error ) {
 
-    int i;
+//    int i;
 
     switch( m_cmd[ 0 ] ) {
 
@@ -239,16 +240,16 @@ implementation {
           call SpiPacket.send( NULL, m_buf, m_len );
           break;
         }
-        else if ( m_computing_crc ) {
-          for ( i = 0; i < len; i++ )
-            m_crc = crcByte( m_crc, m_crc_buf[ i ] );
-          m_cur_addr += len;
-          m_cur_len -= len;
-          if ( m_cur_len ) {
-            call SpiPacket.send( NULL, m_crc_buf, calcReadLen() );
-            break;
-          }
-        }
+//        else if ( m_computing_crc ) {
+//          for ( i = 0; i < len; i++ )
+//            m_crc = crcByte( m_crc, m_crc_buf[ i ] );
+//          m_cur_addr += len;
+//          m_cur_len -= len;
+//          if ( m_cur_len ) {
+//            call SpiPacket.send( NULL, m_crc_buf, calcReadLen() );
+//            break;
+//          }
+//        }
         call CSN.set(); // P1OUT |= BIT1;
         signalDone( SUCCESS );
         break;
@@ -290,13 +291,13 @@ implementation {
     m_is_writing = FALSE;
     switch( m_cmd[ 0 ] ) {
       case S_READ:
-        if ( m_computing_crc ) {
-          m_computing_crc = FALSE;
-          signal Spi.computeCrcDone( m_crc, m_addr, m_len, error );
-        }
-        else {
+//        if ( m_computing_crc ) {
+//          m_computing_crc = FALSE;
+//          signal Spi.computeCrcDone( m_crc, m_addr, m_len, error );
+//        }
+//        else {
           signal Spi.readDone( m_addr, m_buf, m_len, error );
-        }
+//        }
         break;
       case S_PAGE_PROGRAM:
         signal Spi.pageProgramDone( m_addr, m_buf, m_len, error );
