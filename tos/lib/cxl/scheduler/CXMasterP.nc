@@ -175,6 +175,7 @@ module CXMasterP {
           if (totalNodes < CX_MAX_SUBNETWORK_SIZE){
             contactList[totalNodes].nodeId = pl->neighbors[i];
             contactList[totalNodes].dataPending = TRUE;
+            printf("A %u\r\n", pl->neighbors[i]);
 //            printf( "A %x %u->%u\r\n",
 //              pl->neighbors[i], 
 //              i,

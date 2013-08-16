@@ -174,6 +174,9 @@ implementation {
   
   command bool AMPacket.isForMe(message_t* amsg) {
     #if SERIAL_ADDRESS_FILTERING == 1
+    //NB: broadcast packets are not "forMe": this is kind of ugly but
+    //means that it's easier to say "forward this to all of the nodes
+    //in the network"
     return (call AMPacket.destination(amsg) == call ActiveMessageAddress.amAddress());
     #else
     return TRUE;

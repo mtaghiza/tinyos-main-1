@@ -84,12 +84,11 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         print "Wakeup start", time.time()
 
         
-        t0 = time.time() 
         downloadMsg = CxDownload.CxDownload()
-        refListener.downloadStart = (time.time() + t0)/2
         downloadMsg.set_networkSegment(networkSegment)
-
+        t0 = time.time() 
         error = d.send(downloadMsg, bsId)
+        refListener.downloadStart = (time.time() + t0)/2
 #         #TESTING 
 #         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(2*60*1024)
 #         #send it via broadcast
@@ -138,10 +137,44 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         print "Cleaning up"
         d.stop()
 
+def pushConfig(packetSource, bsId, networkSegment, configFile,
+      newConfigFile, nodeList):
+    db = Database.Database()
+    d = Dispatcher(packetSource, bsId, db, configFile)
+    #we will get status refs in this process
+    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
+    d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
+
+    #Should not be receiving other types of data here.
+    db.addDecoder(NetworkMembership.NetworkMembership)
+    try:
+        downloadMsg = CxDownload.CxDownload()
+        downloadMsg.set_networkSegment(networkSegment)
+        t0 = time.time() 
+        error = d.send(downloadMsg, bsId)
+        refListener.downloadStart = (time.time() + t0)/2
+
+        if error:
+            print "Download failed: %x"%error
+            pass
+        else: 
+            for node in nodeList:
+                d.mif.configureMoteRadio(node, newConfigFile)
+            d.mif.downloadWait()
+
+    except KeyboardInterrupt:
+        pass
+    except EOFError:
+        pass
+    finally:
+        print "Cleaning up"
+        d.stop()
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage:", sys.argv[0], "packetSource(e.g. serial@/dev/ttyUSB0:115200) bsId [networkSegment] [configFile]" 
+        print "Usage:", sys.argv[0], "packetSource(e.g serial@/dev/ttyUSB0:115200) bsId [networkSegment] [configFile] [-p newConfigFile [node]*] " 
         print "  [networkSegment=0] : 0=global 1=subnetwork 2=router"
+        print "  -p: push configFile settings to nodes listed"
         sys.exit()
 
     packetSource = sys.argv[1]
@@ -152,4 +185,13 @@ if __name__ == '__main__':
         networkSegment = int(sys.argv[3])
     if len(sys.argv) > 4:
         configFile = sys.argv[4]
-    download(packetSource, bsId, networkSegment, configFile)
+    if '-p' in sys.argv:
+        pIndex= sys.argv.index('-p')
+        nodeList = [int(s, 16) for s in sys.argv[pIndex+2:] if s.startswith('0x')]
+        nodeList += [int(s) for s in sys.argv[pIndex+2:] if not s.startswith('0x')]
+        newConfigFile = sys.argv[pIndex+1]
+        print "Pushing config %s to %s"%(newConfigFile, nodeList)
+        pushConfig(packetSource, bsId, networkSegment, configFile, newConfigFile, nodeList)
+    else:
+        print "Downloading"
+        download(packetSource, bsId, networkSegment, configFile)

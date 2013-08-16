@@ -5,32 +5,39 @@ module CXProbeScheduleP {
   uses interface SettingsStorage;
   provides interface Init;
 } implementation {
-  //Defaults by role: global at 1/4 rate of router/subnet
-  #if CX_BASESTATION == 1
-  //basestation uses global/router only
   probe_schedule_t sched = { 
-    .channel={0, 32, 64},
-    .invFrequency={4, 0, 1},
+    .channel={GLOBAL_CHANNEL, 32, 64},
+    .invFrequency={1, 1, 0},
     .bw={2, 2, 2},
-    .maxDepth={8,5,5}
+    .maxDepth={2,2,2}
   };
-  #elif CX_ROUTER == 1
-  //router uses all segments
-  probe_schedule_t sched = { 
-    .channel={0, 32, 64},
-    .invFrequency={4, 1, 1},
-    .bw={2, 2, 2},
-    .maxDepth={8,5,5}
-  };
-  #else
-  //leaf uses  global/subnetwork only
-  probe_schedule_t sched = { 
-    .channel={0, 32, 64},
-    .invFrequency={4, 1, 0},
-    .bw={2, 2, 2},
-    .maxDepth={8,5,5}
-  };
-  #endif
+
+//  //Defaults by role: global at 1/4 rate of router/subnet
+//  #if CX_BASESTATION == 1
+//  //basestation uses global/router only
+//  probe_schedule_t sched = { 
+//    .channel={255, 0, 127},
+//    .invFrequency={4, 0, 1},
+//    .bw={2, 2, 2},
+//    .maxDepth={8,5,5}
+//  };
+//  #elif CX_ROUTER == 1
+//  //router uses all segments
+//  probe_schedule_t sched = { 
+//    .channel={255, 0, 127},
+//    .invFrequency={4, 1, 1},
+//    .bw={2, 2, 2},
+//    .maxDepth={8,5,5}
+//  };
+//  #else
+//  //leaf uses  global/subnetwork only
+//  probe_schedule_t sched = { 
+//    .channel={255, 0, 127},
+//    .invFrequency={4, 1, 0},
+//    .bw={2, 2, 2},
+//    .maxDepth={8,5,5}
+//  };
+//  #endif
 
   command error_t Init.init(){
     sched.probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
@@ -38,8 +45,8 @@ module CXProbeScheduleP {
   }
 
   command probe_schedule_t* Get.get(){
-    call SettingsStorage.get(SS_KEY_PROBE_SCHEDULE, 
-      &sched, sizeof(sched));
+//    call SettingsStorage.get(SS_KEY_PROBE_SCHEDULE, 
+//      &sched, sizeof(sched));
     //if this fails, we'll use defaults.
     return &sched;
   }
