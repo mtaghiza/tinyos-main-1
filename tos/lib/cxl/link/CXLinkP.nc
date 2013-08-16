@@ -39,6 +39,7 @@ module CXLinkP {
 
   int aTxResult;
   
+  #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
   enum {
     CRC_HIST_LEN=11,
   };
@@ -46,7 +47,7 @@ module CXLinkP {
   norace uint16_t crcHist[CRC_HIST_LEN];
   norace uint8_t crcIndex;
   norace uint8_t crcFirstPassed;
-
+  
   void logCRCs(am_addr_t src, uint16_t psn){
     if (crcIndex){
       uint8_t i;
@@ -56,6 +57,9 @@ module CXLinkP {
       }
     }
   }
+  #else
+  void logCRCs(am_addr_t src, uint16_t psn){}
+  #endif
 
   enum {
     S_SLEEP = 0,
@@ -80,7 +84,7 @@ module CXLinkP {
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
   }
-  
+  #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   event void StateDump.dumpRequested(){
     uint8_t lState;
     bool faRunning;
@@ -93,6 +97,10 @@ module CXLinkP {
     atomic cerror(LINK, "Link %x rxm %p fwd %p phy %x \r\n",
       lState, rxMsg, fwdMsg, pState); 
   }
+  #else
+  event void StateDump.dumpRequested(){
+  }
+  #endif
 
   cx_link_header_t* header(message_t* msg){
     return (call CXLinkPacket.getLinkHeader(msg));
@@ -166,12 +174,14 @@ module CXLinkP {
     }
   }
 
+  #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   task void logRetxMiss(){
     cerror(LINK, "RMD\r\n");
   }
   task void logSynchMiss(){
     cerror(LINK, "SMD\r\n");
   }
+  #endif
 
   event void DelayedSend.sendReady(){
 //    P1OUT |= BIT2;
@@ -186,18 +196,22 @@ module CXLinkP {
           // the deadline. 
           // Best way to recover would be to pretend that we forwarded
           // it and pick up at the next transmission.
+          #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
           if (now - aSfdCapture > frameLen - sfdAdjust){
             post logSynchMiss();
           }
+          #endif
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
 //          //every subsequent transmission: should be based on the
 //          //  previous one.
+          #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
           if (now - (call FastAlarm.getAlarm()) > frameLen){
             post logRetxMiss();
           }
+          #endif
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
         }
@@ -225,11 +239,14 @@ module CXLinkP {
       sfdAdjust = TX_SFD_ADJUST;
       aTxResult = result;
     }
+
+    #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
     if (crcIndex < CRC_HIST_LEN){
       crcHist[crcIndex] = call LastCRC.getNow();
       txHist[crcIndex] = TRUE;
       crcIndex++;
     }
+    #endif
     post handleSendDone();
   }
 
@@ -401,6 +418,8 @@ module CXLinkP {
           aExtended = FALSE;
           aSynched = FALSE;
           state = S_RX;
+
+          #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
           crcIndex = 0;
           crcFirstPassed = 0xFF;
           {
@@ -410,6 +429,7 @@ module CXLinkP {
               crcHist[i] = 0;
             }
           }
+          #endif
         }
       } else{
         if (microStarted){
@@ -481,11 +501,13 @@ module CXLinkP {
         //initialize to 1: this makes timestamp computation uniform at
         //src/forwarder
         metadata(msg)->rxHopCount = 1;
+        #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
         crcIndex = 0;
+        crcFirstPassed = 0;
+        #endif
         //set to crc-passed initially
         phy(msg)->lqi |= 0x80;
 
-        crcFirstPassed = 0;
         error = subsend(msg);
     
         if (error == SUCCESS){
@@ -556,11 +578,14 @@ module CXLinkP {
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
+
+    #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
     if (crcIndex < CRC_HIST_LEN){
       crcHist[crcIndex] = call LastCRC.getNow();
       txHist[crcIndex] = FALSE;
       crcIndex++;
     }
+    #endif
     post handleReception();
   } 
 
@@ -582,9 +607,13 @@ module CXLinkP {
         cwarn(LINK, "p.rxf %x\r\n", rxResult);
         phy(rxMsg)->lqi &= ~0x80;
       }
+
+      #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
       if (call Rf1aPhysicalMetadata.crcPassed(phy(rxMsg)) && (crcIndex-1) < crcFirstPassed){
         crcFirstPassed = crcIndex-1;
       }
+      #endif
+
     }
 
     if (localState == S_RX){
