@@ -270,6 +270,7 @@ implementation {
       switch( m_log_state[ id ].req ) {
         case S_READ:
           //remaining=0: state is read_header. !=0 : read data
+          //should always be S_HEADER for single-record mode
           m_rw_state = (m_log_info[ id ].remaining) ? S_DATA : S_HEADER;
           continueReadOp( id );
           break;
@@ -837,6 +838,8 @@ implementation {
                                    error_t error ) {
     //unclear how this ensures writes don't span block boundaries.
     //maybe that's done by Sector?
+    //no: this check was previously handled in the Append command, and
+    //now is handled in the Sector.readDone event's S_APPEND case.
     stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
     *write_addr += len;
     if ( m_rw_state == S_HEADER ) {
