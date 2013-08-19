@@ -98,13 +98,15 @@ class BaconSettings(Decoder.Decoder):
                         (downloadInterval,) = struct.unpack('>L', value)
                         self.connection.execute(
                           '''UPDATE bacon_settings 
-                          SET download_interval=?''',
+                          SET download_interval=?
+                          WHERE node_id=? and rc=? and ts=?''',
                           (downloadInterval, node_id, rc, ts))
                     if tag == cx.constants.SS_KEY_MAX_DOWNLOAD_ROUNDS:
                         (maxDownloadRounds,) = struct.unpack('>B', value)
                         self.connection.execute(
                           '''UPDATE bacon_settings 
-                          SET max_download_rounds=?''',
+                          SET max_download_rounds=?
+                          WHERE node_id=? and rc=? and ts=?''',
                           (maxDownloadRounds, node_id, rc, ts))
 
 
