@@ -170,9 +170,39 @@ def pushConfig(packetSource, bsId, networkSegment, configFile,
         print "Cleaning up"
         d.stop()
 
+def ping(packetSource, bsId, networkSegment, configFile):
+    db = Database.Database()
+    d = Dispatcher(packetSource, bsId, db, configFile)
+    #we will get status refs in this process
+    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
+    d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
+
+    #Should not be receiving other types of data here.
+    db.addDecoder(NetworkMembership.NetworkMembership)
+    try:
+        downloadMsg = CxDownload.CxDownload()
+        downloadMsg.set_networkSegment(networkSegment)
+        t0 = time.time() 
+        error = d.send(downloadMsg, bsId)
+        refListener.downloadStart = (time.time() + t0)/2
+
+        if error:
+            print "Ping failed: %x"%error
+            pass
+        else: 
+            d.mif.downloadWait()
+
+    except KeyboardInterrupt:
+        pass
+    except EOFError:
+        pass
+    finally:
+        print "Cleaning up"
+        d.stop()
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage:", sys.argv[0], "packetSource(e.g serial@/dev/ttyUSB0:115200) bsId [networkSegment] [configFile] [-p newConfigFile [node]*] " 
+        print "Usage:", sys.argv[0], "packetSource(e.g serial@/dev/ttyUSB0:115200) bsId [networkSegment] [configFile] [-p newConfigFile [node]*] [--ping]" 
         print "  [networkSegment=0] : 0=global 1=subnetwork 2=router"
         print "  -p: push configFile settings to nodes listed"
         sys.exit()
@@ -192,6 +222,9 @@ if __name__ == '__main__':
         newConfigFile = sys.argv[pIndex+1]
         print "Pushing config %s to %s"%(newConfigFile, nodeList)
         pushConfig(packetSource, bsId, networkSegment, configFile, newConfigFile, nodeList)
+    elif '--ping' in sys.argv:
+        ping(packetSource, bsId, networkSegment, configFile)
     else:
         print "Downloading"
         download(packetSource, bsId, networkSegment, configFile)
+
