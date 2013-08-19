@@ -29,7 +29,7 @@ class NetworkMembership(Decoder.Decoder):
         self.connection.execute(q0, 
           (masterId, cookie, rc, ts, networkSegment, channel))
         for (member, distance) in memberDistances:
-            if distance != 0xFF:
+            if member != 0xFFFF:
                 self.connection.execute(q1,
                   (masterId, cookie, member, distance))
 
