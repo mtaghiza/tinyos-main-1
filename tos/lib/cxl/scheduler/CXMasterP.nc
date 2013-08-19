@@ -34,7 +34,6 @@ module CXMasterP {
                                      AM_BROADCAST_ADDR};
   
   network_membership_t membership;
-  uint8_t memberIndex;
 
   command am_addr_t GetRoot.get[uint8_t ns](){
     return masters[ns];
@@ -72,8 +71,8 @@ module CXMasterP {
         membership.recordType = RECORD_TYPE_NETWORK_MEMBERSHIP;
         membership.networkSegment = ns;
         membership.channel = (call GetProbeSchedule.get())->channel[ns];
+        membership.members[0] = call ActiveMessageAddress.amAddress();
 //        //RC, TS will be set via receiveStatus
-        memberIndex = 0;
       }
       return error;
     }
@@ -141,34 +140,28 @@ module CXMasterP {
     cdbg(ROUTER, "rs %u %u\r\n", 
       contactList[contactIndex].nodeId,
       contactList[contactIndex].dataPending);
-
-    if (memberIndex < MAX_NETWORK_MEMBERS){
-      bool found = FALSE;
-      for (k = 0; k <= memberIndex && !found; k++){
-        if (membership.members[k] == call CXLinkPacket.source(msg)){
-          found = TRUE;
-        }
-      }
-      if (! found){
-        membership.members[memberIndex] = 
-          call CXLinkPacket.source(msg);
-        membership.distances[memberIndex] = 
-          pl->distance;
-        if (membership.members[memberIndex] == 
+    
+    //if we've got this node recorded in network membership, fill in
+    //its distance.
+    for (k = 0; k < totalNodes; k++){
+      if (membership.members[k] == call CXLinkPacket.source(msg)){
+        membership.distances[k] = pl->distance;
+        if (membership.members[k] == 
             call ActiveMessageAddress.amAddress()){
           membership.rc = pl->wakeupRC;
           membership.ts = pl->wakeupTS;
         }
-        memberIndex++;
+        break;
       }
     }
     for (i = 0; i < CX_NEIGHBORHOOD_SIZE; i++){
 //      printf("? %p %x\r\n", &(pl->neighbors[i]), pl->neighbors[i]);
       if (pl->neighbors[i] != AM_BROADCAST_ADDR){
         bool found = FALSE;
-        for (k = 0; k < totalNodes && !found; k++){
+        for (k = 0; k < totalNodes; k++){
           if (contactList[k].nodeId == pl->neighbors[i]){
             found = TRUE;
+            break;
           }
         }
         if (! found){
@@ -180,7 +173,12 @@ module CXMasterP {
 //              pl->neighbors[i], 
 //              i,
 //              totalNodes);
+            //add to network membership. Distance defaults to 0xFF
+            if (totalNodes < MAX_NETWORK_MEMBERS){
+              membership.members[totalNodes] = pl->neighbors[i];
+            }
             totalNodes ++;
+
           }else {
             cwarn(ROUTER, 
               "No space to add %x to contact list\r\n",
