@@ -62,6 +62,6 @@ class RecordListener(object):
         address = msg.getAddr()
         rp = RecordParser(msg)        
         records = rp.getList()
-        print "RPR rx len %u nc %u records %u"%(rp.length, rp.nextCookie, len(records))
+        print "RPR rx from %u len %u nc %u records %u"%(address, rp.length, rp.nextCookie, len(records))
         for rec in records:
             self.db.insertRecord(address, rec)
