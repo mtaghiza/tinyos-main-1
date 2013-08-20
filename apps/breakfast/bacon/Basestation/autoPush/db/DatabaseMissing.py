@@ -37,7 +37,7 @@ class DatabaseMissing(object):
             
             print "closing connection"
 
-    def findMissing(self):
+    def findMissing(self, incrementRetries=True):
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
@@ -56,7 +56,6 @@ class DatabaseMissing(object):
         last_result = None
         missing_list = []
 
-
         # get first entry for each node_id, increment the retry counter
         # and remove old records from the source table
         for res in results:
@@ -67,13 +66,12 @@ class DatabaseMissing(object):
                 hash = {'node_id':res[0], 'cookie':res[1], 'nextCookie':res[2], 'missing':res[3], 'retry':res[4]}
                 missing_list.append(hash)
                 
-                node_id_field = res[0]
-                cookie_field = res[1]
-                retry_field = res[4] + 1
-                
-                new_values = (retry_field, node_id_field, cookie_field)
-                
-                self.connection.execute('UPDATE cookie_table SET retry=? WHERE node_id=? AND cookie=?', new_values)
+                if incrementRetries:
+                    node_id_field = res[0]
+                    cookie_field = res[1]
+                    retry_field = res[4] + 1
+                    new_values = (retry_field, node_id_field, cookie_field)
+                    self.connection.execute('UPDATE cookie_table SET retry=? WHERE node_id=? AND cookie=?', new_values)
 
                 #old_records = (node_id_field, cookie_field)
                 #self.cursor.execute('DELETE FROM cookie_table WHERE node_id=? AND cookie<?', old_records)

@@ -45,9 +45,9 @@ class Database(object):
         else: 
             print "No decoder for 0x%x"%recordType
 
-    def findMissing(self):
+    def findMissing(self, incrementRetries=True):
         
-        return self.missing.findMissing()
+        return self.missing.findMissing(incrementRetries)
         
 
 
