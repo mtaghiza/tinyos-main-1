@@ -64,6 +64,9 @@ implementation
   message_t* statusMsg;
   cx_status_t* statusPl;
 
+  message_t* ackDMsg;
+  message_t* ackRMsg;
+
   uint8_t activeNS;
   bool serialSending;
   bool radioSending;
@@ -88,6 +91,9 @@ implementation
       //disable flash chip
       P2SEL &= ~BIT1;
       P2OUT |=  BIT1;
+      P1SEL &= ~BIT1;
+      P1OUT &= ~BIT1;
+      P1DIR |=  BIT1;
     }
     #endif
   }
@@ -216,19 +222,22 @@ implementation
       cdbg(BASESTATION, "Serial full\r\n");
       cflushdbg(BASESTATION);
       return msg;
-    } else if (call Pool.empty()){
-      cerror(BASESTATION, "Pool empty fwdS\r\n");
-      cflusherror(BASESTATION);
-      return msg;
-    } else{
-      queue_entry_t qe;
-      qe.msg = msg;
-      qe.pl = payload;
-      qe.len = len;
-      call SerialRXQueue.enqueue(qe);
-      post prepareRadio();
-      cdbg(BASESTATION, "G fwdS\r\n");
-      return call Pool.get();
+    } else {
+      message_t* ret = call Pool.get();
+      if (ret == NULL){
+        cerror(BASESTATION, "Pool empty fwdS\r\n");
+        cflusherror(BASESTATION);
+        return msg;
+      } else{
+        queue_entry_t qe;
+        qe.msg = msg;
+        qe.pl = payload;
+        qe.len = len;
+        call SerialRXQueue.enqueue(qe);
+        post prepareRadio();
+        cdbg(BASESTATION, "G fwdS\r\n");
+        return ret;
+      }
     }
   }
 
@@ -316,6 +325,7 @@ implementation
     if (ackMsg != NULL) {
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
         sizeof(ctrl_ack_t));
+      ackRMsg = ackMsg;
       call SerialPacket.clear(ackMsg);
       pl -> error = error;
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
@@ -333,7 +343,13 @@ implementation
   }
 
   event void CtrlAckSend.sendDone(message_t* msg, error_t error){
-    cdbg(BASESTATION, "P ackRD\r\n");
+    if (msg == ackRMsg){
+      cdbg(BASESTATION, "P ackR\r\n");
+      ackRMsg = NULL;
+    }else if (msg == ackDMsg){
+      cdbg(BASESTATION, "P ackD\r\n");
+      ackDMsg = NULL;
+    }
     call Pool.put(msg);
     post txRadio();
   }
@@ -381,6 +397,7 @@ implementation
       ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
         sizeof(ctrl_ack_t));
       error_t error;
+      ackDMsg = ackMsg;
       call SerialPacket.clear(ackMsg);
       pl -> error = downloadError;
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
@@ -415,7 +432,8 @@ implementation
         cdbg(BASESTATION, "P rf!\r\n");
         call Pool.put(ctrlMsg);
       }else{
-        cdbg(BASESTATION, "DownloadFinishedSend.send %x\r\n", error);
+        cdbg(BASESTATION, "DownloadFinishedSend.send %x pool %u min %u\r\n",
+          error, call Pool.size(), call Pool.minFree());
         cflushdbg(BASESTATION);
       }
     }else{
