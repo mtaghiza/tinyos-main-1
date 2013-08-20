@@ -13,11 +13,16 @@ class DisplayFrame(Frame):
         self.currentSite = "All Sites"
         self.currentView = None
         self.nodes = []
+
+        self.simplot = None
+        self.graph = None
         
         #self.initUI()
         self.frame = Frame(self)
         self.frame.grid(column=0, row=0)
     
+    def addSimplot(self, simplot):
+        self.simplot = simplot
     
     #def insertAll(self):
     #    """ Update sample interval for all nodes in network.
@@ -110,6 +115,10 @@ class DisplayFrame(Frame):
             button = Button(self.frame, text="Update", command=self.insertDict)
             button.grid(column=1, row=5)
             
+            for n, node in enumerate(sorted(self.nodes)):
+                label = Label(self.frame, text=node)
+                label.grid(column=0, row=6+n, sticky=E)
+            
             self.frame.grid(column=0, row=0)
     
 
@@ -139,13 +148,13 @@ class DisplayFrame(Frame):
         self.frame.grid(column=0, row=0)
 
 
-    def updateNode(self, node):
-        """ Update the sample interval for single node.
+    def updateNode(self):
+        """ Update the sample interval for one or more leaf nodes.
         """
         
         self.currentView = "node"
-        self.nodes = [ node ]
-        
+        numberOfNodes = len(self.nodes)
+
         # show UI
         self.frame.grid_forget()
         self.frame = Frame(self)
@@ -153,10 +162,10 @@ class DisplayFrame(Frame):
         label = Label(self.frame, text="Update sample interval")
         label.grid(column=0, row=0, columnspan=2, sticky=W)
         
-        label = Label(self.frame, text="Node ID:")
+        label = Label(self.frame, text="Number of nodes selected:")
         label.grid(column=0, row=1, sticky=E)
 
-        label = Label(self.frame, text=node)
+        label = Label(self.frame, text=str(numberOfNodes))
         label.grid(column=1, row=1, sticky=E)
 
         label = Label(self.frame, text="New sample interval:")
@@ -168,9 +177,20 @@ class DisplayFrame(Frame):
         
         button = Button(self.frame, text="Update", command=self.insertDict)
         button.grid(column=1, row=3)
+
+        # show list of all nodes selected
+        if numberOfNodes > 1:        
+            for n, node in enumerate(sorted(self.nodes)):
+                label = Label(self.frame, text=node)
+                label.grid(column=0, row=4+n, sticky=E)
+                
+        # show information about single leaf node
+        elif numberOfNodes == 1:
+            self.initGraph(0, 4+numberOfNodes)
         
         self.frame.grid(column=0, row=0)
 
+    
     
     def insertDict(self):
         """ Update global node dictionary, save it to settings file and update UI
@@ -236,3 +256,21 @@ class DisplayFrame(Frame):
 
 
 
+    def initGraph(self, x, y):
+        if self.graph:
+            self.graph.grid_forget()
+        
+        WIDTH = 200
+        HEIGHT = 200
+        
+        bgcolor = self.cget('bg')
+        
+        self.gFrame = Frame(self, width=WIDTH, height=HEIGHT)
+        self.graph = self.simplot.makeGraphBase(self.gFrame, WIDTH, HEIGHT, xtitle="Sensor", ytitle="ADC", background=bgcolor)  
+        self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
+        self.obj = self.simplot.makeGraphObjects([self.sym])
+        self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
+        self.graph.grid(column=1, row=1)
+
+        self.gFrame.grid_propagate(False)
+        self.gFrame.grid(column=x, row=y)

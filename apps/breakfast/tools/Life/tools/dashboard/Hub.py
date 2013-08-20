@@ -9,6 +9,9 @@ class Hub(object):
         self.control = None
         self.display = None
         self.status = None
+        
+        self.controlKey = False
+        self.shiftKey = False
     
     def addNodeFrame(self, frame):
         self.node = frame

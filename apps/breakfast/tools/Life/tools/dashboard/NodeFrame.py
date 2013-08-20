@@ -250,16 +250,65 @@ class NodeFrame(Frame):
         self.oldSuperFrame = self.superFrame
 
 
+    def selectNode(self, barcode):
+        # don't mix router and multiplexer selections with leaf node selections
+        if self.hub.display.currentView == "router" or self.hub.display.currentView == "plex":
+            self.hub.display.nodes = []
+
+        # control key adds/removes single leaf to/from selection
+        if self.hub.controlKey == True:
+            if barcode in self.hub.display.nodes:
+                self.hub.display.nodes.remove(barcode)
+            else:
+                self.hub.display.nodes.append(barcode)
+                
+        # shift key adds/removes range of leaf nodes to/from selection
+        elif self.hub.shiftKey == True:
+            if barcode in self.hub.display.nodes:
+                # deselect all nodes from the same site
+                # between the one node clicked on 
+                # and the top most selected node
+                for leaf in reversed(sorted(self.hub.display.nodes)):
+                    if leaf > barcode:
+                        self.hub.display.nodes.remove(leaf)
+                    else:
+                        break
+            else:
+                # select all nodes from the same site
+                # between the one node clicked on 
+                # and another selected node
+                # with smaller barcode id
+                for leaf in reversed(sorted(self.membership.keys())):
+                    
+                    if leaf >= barcode:
+                    # leaf has larger id than the one clicked
+                        pass
+                    elif self.membership[leaf] == self.membership[barcode] and leaf not in self.hub.display.nodes:
+                        self.hub.display.nodes.append(leaf)
+                    elif self.membership[leaf] == self.membership[barcode] and leaf in self.hub.display.nodes:
+                    # this is the first leaf with smaller barcode id, 
+                    # from the same site, that has already been selected
+                    # break for loop
+                        break
+                    else:
+                    # leaf is not from same site, skip
+                        pass
+                    
+                # add self
+                self.hub.display.nodes.append(barcode)
+            
+        # default, select single leaf node
+        else:
+            self.hub.display.nodes = [barcode]
+        
+        self.hub.display.updateNode()
+        self.redrawAllNodes()
+
     def selectRouter(self, barcode):
         self.hub.display.nodes = [barcode]
         self.hub.display.updateRouter(barcode)
         self.redrawAllNodes()
     
-    def selectNode(self, barcode):
-        self.hub.display.nodes = [barcode]
-        self.hub.display.updateNode(barcode)
-        self.redrawAllNodes()
-
     def selectPlex(self, barcode):
         self.hub.display.nodes = [barcode]
         self.hub.display.infoPlex(barcode)

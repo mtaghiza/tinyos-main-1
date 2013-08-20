@@ -12,9 +12,9 @@ import tkMessageBox
 #from dashboard.ScrolledList import ScrolledList
 
 from tools.SimPy.SimPlot import SimPlot 
-from tools.dashboard.ScrollFrame import ScrollFrame
+from tools.dashboard.ScrollNodeFrame import ScrollNodeFrame
 from tools.dashboard.ControlFrame import ControlFrame
-from tools.dashboard.DisplayFrame import DisplayFrame
+from tools.dashboard.ScrollDisplayFrame import ScrollDisplayFrame
 from tools.dashboard.Hub import Hub
 
 def selectall(event):
@@ -46,7 +46,17 @@ def yscrollSet(lo, hi):
 def updateCanvas(event):        
     canvas.configure(scrollregion=canvas.bbox("all"))
 
+def controlKeyPressed(key=None):
+    hub.controlKey = True
 
+def controlKeyReleased(key=None):
+    hub.controlKey = False
+
+def shiftKeyPressed(key=None):
+    hub.shiftKey = True
+
+def shiftKeyReleased(key=None):
+    hub.shiftKey = False
 #
 #
 #
@@ -65,6 +75,11 @@ root.bind_class("Entry","<Control-a>", selectall)
 root.bind("<Alt-F4>", quit)
 root.bind('<Control-c>', quit)
 root.protocol("WM_DELETE_WINDOW", quit)
+root.bind('<Control-Button-1>', controlKeyPressed)
+root.bind('<Control-ButtonRelease-1>', controlKeyReleased)
+root.bind('<Shift-Button-1>', shiftKeyPressed)
+root.bind('<Shift-ButtonRelease-1>', shiftKeyReleased)
+
 
 #
 # scroll bars
@@ -102,15 +117,16 @@ topFrame.grid_propagate(False)
 topFrame.grid(column=1, row=1, columnspan=2)
 hub.addControlFrame(topFrame)
 
-scrollFrame = ScrollFrame(rootFrame, hub, width=MAIN-4, height=500, bd=1, relief=SUNKEN)
-scrollFrame.grid_propagate(False)
-scrollFrame.grid(column=1, row=2)
-hub.addNodeFrame(scrollFrame.frame)
-
-displayFrame = DisplayFrame(rootFrame, hub, width=WIDTH-MAIN-4, height=500, bd=1, relief=SUNKEN)
+displayFrame = ScrollDisplayFrame(rootFrame, hub, width=WIDTH-MAIN-4, height=500, bd=1, relief=SUNKEN)
 displayFrame.grid_propagate(False)
 displayFrame.grid(column=2, row=2)
-hub.addDisplayFrame(displayFrame)
+hub.addDisplayFrame(displayFrame.frame)
+displayFrame.frame.addSimplot(simplot)
+
+nodeFrame = ScrollNodeFrame(rootFrame, hub, width=MAIN-4, height=500, bd=1, relief=SUNKEN)
+nodeFrame.grid_propagate(False)
+nodeFrame.grid(column=1, row=2)
+hub.addNodeFrame(nodeFrame.frame)
 
 statusFrame = Frame(rootFrame, width=WIDTH-4, height=40, bd=1, relief=SUNKEN)
 statusFrame.grid_propagate(False)
