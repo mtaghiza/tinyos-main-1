@@ -5,7 +5,10 @@
 class Hub(object):
 
     def __init__(self):
-        pass
+        self.node = None
+        self.control = None
+        self.display = None
+        self.status = None
     
     def addNodeFrame(self, frame):
         self.node = frame

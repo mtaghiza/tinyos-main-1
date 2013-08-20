@@ -67,6 +67,12 @@ class NodeFrame(Frame):
         siteLeafs = {}
         siteRow = {}
         
+        if self.hub.display is None:
+            selection = []
+        else:
+            selection = self.hub.display.nodes
+        
+        print "selection: ", selection
         self.superFrame = Frame(self)
         
         # draw routers
@@ -87,6 +93,8 @@ class NodeFrame(Frame):
             
             barcode_text = "%s\nSite: %s" % (barcode, router)
             button = Button(subframe, text=barcode_text, width=18, justify=LEFT, command=lambda barcode=barcode: self.selectRouter(barcode))
+            if barcode in selection:
+                button.configure(background="green")
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label_text = "Channel:"
@@ -126,6 +134,7 @@ class NodeFrame(Frame):
         button.configure(state=DISABLED)
         frame.grid(column=0, row=len(self.routers), sticky=N+S+E+W)            
         self.tkobjects["routerFrame_none"] = frame
+        siteLeafs["none"] = 0
         
         
         # draw leaf nodes 
@@ -148,6 +157,9 @@ class NodeFrame(Frame):
                 self.membership[leaf] = site
             else:
                 site = "none"
+                rowNumber = siteLeafs[site]
+                siteLeafs[site] = rowNumber + 1
+                self.membership[leaf] = site
             
             #frame = Frame(self.superFrame, bd=1, relief=SUNKEN)
             frame = self.tkobjects["routerFrame_%s" % site]
@@ -155,6 +167,8 @@ class NodeFrame(Frame):
             subframe = Frame(frame, bd=1, relief=SUNKEN)
             button_text = "%s\nSampling: %s" % (leaf, interval)            
             button = Button(subframe, text=button_text, width=18, justify=LEFT, command=lambda leaf=leaf: self.selectNode(leaf))
+            if leaf in selection:
+                button.configure(background="green")
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label = Label(subframe, text="Site:", bd=0, relief=SUNKEN)
@@ -191,6 +205,8 @@ class NodeFrame(Frame):
                     self.tkobjects["plexFrame_%s" % plexid] = frame
                     
                     button = Button(subframe, text=plexid, command=lambda plexid=plexid: self.selectPlex(plexid))
+                    if plexid in selection:
+                        button.configure(background="green")
                     button.configure(width=18, height=2)
                     button.grid(column=0, row=0, columnspan=8, sticky=N+S+E+W)
                     self.tkobjects["plexButton_%s" % plexid] = button
@@ -235,13 +251,19 @@ class NodeFrame(Frame):
 
 
     def selectRouter(self, barcode):
+        self.hub.display.nodes = [barcode]
         self.hub.display.updateRouter(barcode)
+        self.redrawAllNodes()
     
     def selectNode(self, barcode):
+        self.hub.display.nodes = [barcode]
         self.hub.display.updateNode(barcode)
+        self.redrawAllNodes()
 
     def selectPlex(self, barcode):
+        self.hub.display.nodes = [barcode]
         self.hub.display.infoPlex(barcode)
+        self.redrawAllNodes()
 
 
     def updateRouter(self, router, channel):
@@ -269,4 +291,6 @@ class NodeFrame(Frame):
         
         self.membership[leaf] = site
         
+        self.hub.display.redrawAll()
         self.redrawAllNodes()
+

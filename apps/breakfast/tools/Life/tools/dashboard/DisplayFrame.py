@@ -9,42 +9,16 @@ class DisplayFrame(Frame):
         
         self.hub = hub
         
+        self.currentType = "All Types"
+        self.currentSite = "All Sites"
+        self.currentView = None
+        self.nodes = []
+        
         #self.initUI()
         self.frame = Frame(self)
         self.frame.grid(column=0, row=0)
     
     
-    def updateAll(self):    
-        #nodes = str(len(self.hub.node.leafs))
-        
-        self.nodes = self.hub.node.leafs.keys()
-        
-        # show UI
-        self.frame.grid_forget()        
-        self.frame = Frame(self)
-        
-        label = Label(self.frame, text="Update sample interval for all nodes")
-        label.grid(column=0, row=0, columnspan=2, sticky=W)
-        
-        label = Label(self.frame, text="Number of nodes selected:")
-        label.grid(column=0, row=1, sticky=E)
-
-        label = Label(self.frame, text=str(len(self.nodes)))
-        label.grid(column=1, row=1, sticky=E)
-
-        label = Label(self.frame, text="New sample interval:")
-        label.grid(column=0, row=2, sticky=E)
-        
-        self.sampleVar = StringVar()
-        entry = Entry(self.frame, textvariable=self.sampleVar)
-        entry.grid(column=1, row=2)
-        
-        button = Button(self.frame, text="Update", command=self.insertDict)
-        button.grid(column=1, row=3)
-        
-        self.frame.grid(column=0, row=0)
-
-
     #def insertAll(self):
     #    """ Update sample interval for all nodes in network.
     #    """
@@ -60,146 +34,94 @@ class DisplayFrame(Frame):
 
 
 
-    def updateAllType(self, type):
+    def updateType(self, type):
+        """ Update the sample interval for nodes with a specific sensor type attached
+        """        
+        self.currentType = type
+
+    def updateSite(self, site):
         """ Update the sample interval for nodes with a specific sensor type attached
         """
-        
-        # find nodes with specified sensor type
+        self.currentSite = site
+        self.currentView = "multi"
+
+    def updateSelection(self):    
         multiplexers = self.hub.node.multiplexers
+        membership = self.hub.node.membership
         
+        # store final selection in this list
         self.nodes = []
-        
-        # plexer is a {node->list(multiplexer)}-map
-        for node in multiplexers:
-            multiplexerList = multiplexers[node]
+
+        # membership key contains all detected leaf nodes
+        for leaf in membership:
+            # only select node if site is correct or all sites are selected
+            if (self.currentSite == str(membership[leaf])) or (self.currentSite == "All Sites"):
+                
+                # add node to final selection map if all types are selected
+                if self.currentType == "All Types":
+                    self.nodes.append(leaf)
+                else:
+                    # go through list of attached multiplexer boards 
+                    # and see if any attached sensors match the selected type
+                    # plexer is a {node->list(multiplexer)}-map
+                    if leaf in multiplexers:
+                        multiplexerList = multiplexers[leaf]
+                        
+                        # plex is a list of multiplexers
+                        for multiplexer in multiplexerList:
+                            # each multiplexer is a tuble with multiplexer id and 8 sensor type channels
+                            for sensor in multiplexer[1:9]:
+                                print leaf, sensor
+                                if self.currentType == str(sensor):
+                                    self.nodes.append(leaf)
+
+
+    def redrawAll(self):
+    
+        if self.currentView == "multi":
+            self.updateSelection()
+
+            # show UI
+            self.frame.grid_forget()
+            self.frame = Frame(self)
             
-            # plex is a list of multiplexers
-            for multiplexer in multiplexerList:
-                # each multiplexer is a tuble with multiplexer id and 8 sensor type channels
-                for sensor in multiplexer[1:9]:
-                    if sensor == type:
-                        self.nodes.append(node)
-        
-        # show UI
-        self.frame.grid_forget()
-        self.frame = Frame(self)
-        
-        label = Label(self.frame, text="Update sample interval for nodes with sensor type: %s" % type)
-        label.grid(column=0, row=0, columnspan=2, sticky=W)
-        
-        label = Label(self.frame, text="Number of nodes selected:")
-        label.grid(column=0, row=1, sticky=E)
+            label = Label(self.frame, text="Update sample interval for nodes:")
+            label.grid(column=0, row=0, columnspan=2, sticky=W)
 
-        label = Label(self.frame, text=str(len(self.nodes)))
-        label.grid(column=1, row=1, sticky=E)
+            label = Label(self.frame, text="Site: %s" % self.currentSite)
+            label.grid(column=0, row=1, columnspan=2, sticky=W)
+            
+            label = Label(self.frame, text="Type: %s" % self.currentType)
+            label.grid(column=0, row=2, columnspan=2, sticky=W)
+            
+            label = Label(self.frame, text="Number of nodes selected:")
+            label.grid(column=0, row=3, sticky=E)
 
-        label = Label(self.frame, text="New sample interval:")
-        label.grid(column=0, row=2, sticky=E)
-        
-        self.sampleVar = StringVar()
-        entry = Entry(self.frame, textvariable=self.sampleVar)
-        entry.grid(column=1, row=2)
-        
-        button = Button(self.frame, text="Update", command=self.insertDict)
-        button.grid(column=1, row=3)
-        
-        self.frame.grid(column=0, row=0)
+            label = Label(self.frame, text=str(len(self.nodes)))
+            label.grid(column=1, row=3, sticky=E)
+
+            label = Label(self.frame, text="New sample interval:")
+            label.grid(column=0, row=4, sticky=E)
+            
+            self.sampleVar = StringVar()
+            entry = Entry(self.frame, textvariable=self.sampleVar)
+            entry.grid(column=1, row=4)
+            
+            button = Button(self.frame, text="Update", command=self.insertDict)
+            button.grid(column=1, row=5)
+            
+            self.frame.grid(column=0, row=0)
     
 
-
-    def updateSiteSite(self, site):
-        """ Update the sample interval for nodes within a specific site.
-        """
-        
-        self.nodes = []
-        
-        for leaf in self.hub.node.membership:
-            print leaf
-            if self.hub.node.membership[leaf] == site:
-                self.nodes.append(leaf)
-        
-        
-        # show UI
-        self.frame.grid_forget()
-        self.frame = Frame(self)
-        
-        label = Label(self.frame, text="Site: %X" % site)
-        label.grid(column=0, row=0, columnspan=2, sticky=W)
-        
-        label = Label(self.frame, text="Number of nodes selected:")
-        label.grid(column=0, row=1, sticky=E)
-
-        label = Label(self.frame, text=str(len(self.nodes)))
-        label.grid(column=1, row=1, sticky=E)
-
-        label = Label(self.frame, text="New sample interval:")
-        label.grid(column=0, row=2, sticky=E)
-        
-        self.sampleVar = StringVar()
-        entry = Entry(self.frame, textvariable=self.sampleVar)
-        entry.grid(column=1, row=2)
-        
-        button = Button(self.frame, text="Update", command=self.insertDict)
-        button.grid(column=1, row=3)
-        
-        self.frame.grid(column=0, row=0)
-
-
-
-    def updateSiteType(self, site, type):
-        """ Update the sample interval for nodes with a specific sensor type attached in a specific site.
-        """
-        self.nodes = []
-        
-        # find nodes with specified sensor type
-        multiplexers = self.hub.node.multiplexers
-        
-
-        # find leaf nodes in site
-        for leaf in self.hub.node.membership:
-            if self.hub.node.membership[leaf] == site:
-                
-                # plexer is a {node->list(multiplexer)}-map
-                if leaf in multiplexers:
-                    multiplexerList = multiplexers[leaf]
-                    
-                    # plex is a list of multiplexers
-                    for multiplexer in multiplexerList:
-                        # each multiplexer is a tuble with multiplexer id and 8 sensor type channels
-                        for sensor in multiplexer[1:9]:
-                            if sensor == type:
-                                self.nodes.append(leaf)
-        
-        # show UI
-        self.frame.grid_forget()
-        self.frame = Frame(self)
-        
-        label = Label(self.frame, text="Update sample interval for nodes with sensor type: %s" % type)
-        label.grid(column=0, row=0, columnspan=2, sticky=W)
-        
-        label = Label(self.frame, text="Number of nodes selected:")
-        label.grid(column=0, row=1, sticky=E)
-
-        label = Label(self.frame, text=str(len(self.nodes)))
-        label.grid(column=1, row=1, sticky=E)
-
-        label = Label(self.frame, text="New sample interval:")
-        label.grid(column=0, row=2, sticky=E)
-        
-        self.sampleVar = StringVar()
-        entry = Entry(self.frame, textvariable=self.sampleVar)
-        entry.grid(column=1, row=2)
-        
-        button = Button(self.frame, text="Update", command=self.insertDict)
-        button.grid(column=1, row=3)
-        
-        self.frame.grid(column=0, row=0)
 
 
 
     def updateRouter(self, router):
         """ Show Router information
         """
+        
+        self.currentView = "router"
+        
         # show UI
         self.frame.grid_forget()
         self.frame = Frame(self)
@@ -221,6 +143,7 @@ class DisplayFrame(Frame):
         """ Update the sample interval for single node.
         """
         
+        self.currentView = "node"
         self.nodes = [ node ]
         
         # show UI
@@ -252,7 +175,7 @@ class DisplayFrame(Frame):
     def insertDict(self):
         """ Update global node dictionary, save it to settings file and update UI
         """
-        
+        print self.nodes
         try:
             interval = int(self.sampleVar.get())
         except ValueError:
@@ -273,6 +196,7 @@ class DisplayFrame(Frame):
         """ Show information about multiplexer.
         """
         
+        self.currentView = "plex"
         info = self.hub.node.db.getPlex(plex)
         
         
