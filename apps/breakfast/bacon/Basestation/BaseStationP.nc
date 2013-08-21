@@ -432,7 +432,7 @@ implementation
         cdbg(BASESTATION, "P rf!\r\n");
         call Pool.put(ctrlMsg);
       }else{
-        cdbg(BASESTATION, "DownloadFinishedSend.send %x pool %u min %u\r\n",
+        cinfo(BASESTATION, "DownloadFinishedSend.send %x pool %u min %u\r\n",
           error, call Pool.size(), call Pool.minFree());
         cflushdbg(BASESTATION);
       }

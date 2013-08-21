@@ -112,6 +112,9 @@ module SlotSchedulerP {
   uint8_t framesWaited;
   am_addr_t master;
   uint8_t missedCTS;
+ 
+  //TODO: remove debug code
+  uint16_t slotNum;
 
 
   void handleCTS(message_t* msg);
@@ -124,14 +127,16 @@ module SlotSchedulerP {
     if (state == S_UNSYNCHED){
       activeNS = ns;
       call Neighborhood.clear();
-      cinfo(SCHED, "Sched wakeup for %lu on %u\r\n", 
-        call SlotController.wakeupLen[activeNS](activeNS), 
-        activeNS);
       signalEnd = FALSE;
       missedCTS = 0;
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
       wakeupStartMilli = call LocalTime.get();
+      //TODO: remove debug code
+      slotNum = 0;
+      cdbg(SCHED, "Sched wakeup for %lu on %u at %lu\r\n", 
+        call SlotController.wakeupLen[activeNS](activeNS), 
+        activeNS, wakeupStart);
       post nextRX();
     }else{
       cerror(SCHED, "Unexpected state for wake up %x\r\n", state);
@@ -169,21 +174,24 @@ module SlotSchedulerP {
 
   void handleCTS(message_t* msg){
     master = call CXLinkPacket.source(msg);
+    missedCTS = 0;
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
+      cdbg(SCHED, "O %u\r\n", slotNum);
       state = S_STATUS_PREP;
       explicitDataPending = FALSE;
       call SlotController.receiveCTS[activeNS](master, activeNS);
       //synchronize sends to CTS timestamp
-      cdbg(SCHED, "a FT.sp %lu,  %lu @ %lu\r\n",
+      cdbg(SCHED_CHECKED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 
         FRAME_LENGTH, call FrameTimer.getNow());
       call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
       post sendStatus();
     }else{
+      cdbg(SCHED, "e %u %u\r\n", slotNum);
       state = S_STATUS_WAIT_READY;
-      cdbg(SCHED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
+      cdbg(SCHED_CHECKED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
         timestamp(msg), RX_SLACK, 
         timestamp(msg) - RX_SLACK,
         FRAME_LENGTH, 
@@ -198,7 +206,7 @@ module SlotSchedulerP {
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
       call ActiveMessageAddress.amAddress(), 
       call CXLinkPacket.rxHopCount(msg));
-    cdbg(SCHED, "sr.r %x\r\n", call CXMacPacket.getMacType(msg));
+    cdbg(SCHED_CHECKED, "sr.r %x\r\n", call CXMacPacket.getMacType(msg));
     switch (call CXMacPacket.getMacType(msg)){
       case CXM_CTS:
         //if this is the start of a known slot or during the wakeup
@@ -224,9 +232,14 @@ module SlotSchedulerP {
   
           if (status->dataPending && shouldForward(call CXLinkPacket.source(msg), 
               call CXLinkPacket.destination(msg), status->bw)){
+            cdbg(SCHED, "F %u %u\r\n", slotNum, 
+              call CXLinkPacket.source(msg));
             state = S_ACTIVE_SLOT;
           } else {
             error_t error = call CXLink.sleep();
+            cdbg(SCHED, "S %u %u %x\r\n", slotNum, 
+              call CXLinkPacket.source(msg), 
+              status->dataPending);
             call FrameTimer.stop();
             if (error != SUCCESS){
               cerror(SCHED, "no fwd sleep %x\r\n", error);
@@ -282,7 +295,7 @@ module SlotSchedulerP {
   event void FrameTimer.fired(){
     framesLeft --;
     if (pendingRX || pendingTX){
-      cdbg(SCHED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
+      cdbg(SCHED_CHECKED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
@@ -336,7 +349,7 @@ module SlotSchedulerP {
             error_t error = send(eosMsg, sizeof(cx_eos_t), 
               call SlotController.maxDepth[activeNS](activeNS));
             if (error == SUCCESS){
-              cdbg(SCHED, "SES\r\n");
+              cdbg(SCHED_CHECKED, "SES\r\n");
               state = S_SLOT_END_SENDING;
             }else{ 
               cerror(SCHED, "ft.f %x %x fl 1\r\n", state, error);
@@ -351,7 +364,7 @@ module SlotSchedulerP {
       call FrameTimer.stop();
 
     } else {
-      cdbg(SCHED, "FTN %x\r\n", state);
+      cdbg(SCHED_CHECKED, "FTN %x\r\n", state);
       switch (state){
         case S_STATUS_READY:
           {
@@ -453,14 +466,14 @@ module SlotSchedulerP {
           if (framesLeft <= clearTime(msg) + 1){
 //            printf("c\r\n");
             pendingMsg = NULL;
-            cdbg(SCHED, "end\r\n");
+            cdbg(SCHED_CHECKED, "end\r\n");
             explicitDataPending = TRUE;
             state = S_SLOT_END_PREP;
             //Not enough space to send: so, clear it out and tell
             //upper layer to retry.
             return ERETRY;
           }else{
-            cdbg(SCHED, "continue\r\n");
+            cdbg(SCHED_CHECKED, "continue\r\n");
             state = S_DATA_READY;
           }
         }
@@ -569,6 +582,22 @@ module SlotSchedulerP {
     return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
   }
 
+  task void logNeighborhood(){
+    //TODO: remove debug code
+    nx_am_addr_t* neighbors = call Neighborhood.getNeighborhood();
+    uint8_t nn = call Neighborhood.numNeighbors();
+    uint8_t i;
+    cdbg(SCHED, "NS %u %lu\r\n",
+      call RebootCounter.get(),
+      wakeupStart);
+    for (i = 0; i < nn; i++){
+      cdbg(SCHED, "NE %u %lu %u\r\n",
+        call RebootCounter.get(),
+        wakeupStart,
+        neighbors[i]);
+    }
+  }
+
   task void nextRX(){
     cdbg(SCHED_CHECKED, "next RX ");
     if (state == S_WAKEUP){
@@ -600,7 +629,7 @@ module SlotSchedulerP {
       }
     }else if (state == S_SLOT_CHECK){
       missedCTS++;
-      cdbg(SCHED, "No CTS\r\n");
+      cdbg(SCHED, "MC %u %u\r\n", slotNum, missedCTS);
       if (missedCTS < MISSED_CTS_THRESH){
         cdbg(SCHED, "Sleep this slot\r\n");
         call FrameTimer.stop();
@@ -612,6 +641,9 @@ module SlotSchedulerP {
         cdbg(SCHED, "Back to sleep.\r\n");
         call SlotTimer.stop();
         call FrameTimer.stop();
+        //TODO: remove debug
+        call Neighborhood.freeze();
+        post logNeighborhood();
         if (error == SUCCESS){
           state = S_UNSYNCHED;
         }else{
@@ -621,7 +653,7 @@ module SlotSchedulerP {
       }
     }else{
       //ignore next rx (e.g. handled at frametimer.fired)
-      cdbg(SCHED, "nrxi %x\r\n", state);
+      cdbg(SCHED_CHECKED, "nrxi %x\r\n", state);
     }
   }
   
@@ -629,15 +661,18 @@ module SlotSchedulerP {
   //check for it.
   event void SlotTimer.fired(){
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
+    //TODO: remove debug code
+    slotNum ++;
     if (signalEnd){
       call SlotController.endSlot[activeNS]();
       signalEnd = FALSE;
     }
     if (call SlotController.isMaster[activeNS]()){
       if(call SlotController.isActive[activeNS]()){
-        am_addr_t activeNode = call
-        SlotController.activeNode[activeNS]();
-        cdbg(SCHED, "master + active: next %x\r\n", activeNode);
+        am_addr_t activeNode = 
+          call SlotController.activeNode[activeNS]();
+        cdbg(SCHED, "S %u A %u\r\n", slotNum, activeNode);
+        cdbg(SCHED_CHECKED, "master + active: next %x\r\n", activeNode);
         signalEnd = TRUE;
         if (ctsMsg == NULL){
           ctsMsg = call Pool.get();
