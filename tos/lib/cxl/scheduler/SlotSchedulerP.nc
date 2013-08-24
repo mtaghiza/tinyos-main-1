@@ -134,9 +134,10 @@ module SlotSchedulerP {
       wakeupStartMilli = call LocalTime.get();
       //TODO: remove debug code
       slotNum = 0;
-      cdbg(SCHED, "Sched wakeup for %lu on %u at %lu\r\n", 
+      cdbg(SCHED, "Sched wakeup for %lu on %u at %lu ct %lu dt %lu\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
-        activeNS, wakeupStart);
+        activeNS, wakeupStart,
+        CTS_TIMEOUT, DATA_TIMEOUT);
       post nextRX();
     }else{
       cerror(SCHED, "Unexpected state for wake up %x\r\n", state);
@@ -178,7 +179,9 @@ module SlotSchedulerP {
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
-      cdbg(SCHED, "O %u\r\n", slotNum);
+      cdbg(SCHED, "O %u %lu %u\r\n", slotNum, 
+        timestamp(msg), 
+        call CXLinkPacket.rxHopCount(msg));
       state = S_STATUS_PREP;
       explicitDataPending = FALSE;
       call SlotController.receiveCTS[activeNS](master, activeNS);
@@ -189,7 +192,10 @@ module SlotSchedulerP {
       call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
       post sendStatus();
     }else{
-      cdbg(SCHED, "e %u %u\r\n", slotNum);
+      cdbg(SCHED, "e %u %u %lu %u\r\n", slotNum, 
+        (call CXLinkPacket.getLinkHeader(msg))->destination,
+        timestamp(msg), 
+        call CXLinkPacket.rxHopCount(msg));
       state = S_STATUS_WAIT_READY;
       cdbg(SCHED_CHECKED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
         timestamp(msg), RX_SLACK, 
@@ -225,6 +231,9 @@ module SlotSchedulerP {
       case CXM_STATUS:
         {
           cx_status_t* status = (cx_status_t*) (call Packet.getPayload(msg, sizeof(cx_status_t)));
+          //TODO: catch corner case: if we receive a status message
+          //  before we've received any CTS messages, slot timer is
+          //  not set up to fire, so this slot will never end.
           call RoutingTable.addMeasurement(
             call CXLinkPacket.destination(msg),
             call CXLinkPacket.source(msg), 
@@ -237,9 +246,9 @@ module SlotSchedulerP {
             state = S_ACTIVE_SLOT;
           } else {
             error_t error = call CXLink.sleep();
-            cdbg(SCHED, "S %u %u %x\r\n", slotNum, 
+            cdbg(SCHED, "S %u %u %x %lu\r\n", slotNum, 
               call CXLinkPacket.source(msg), 
-              status->dataPending);
+              status->dataPending, timestamp(msg));
             call FrameTimer.stop();
             if (error != SUCCESS){
               cerror(SCHED, "no fwd sleep %x\r\n", error);
@@ -629,16 +638,15 @@ module SlotSchedulerP {
       }
     }else if (state == S_SLOT_CHECK){
       missedCTS++;
-      cdbg(SCHED, "MC %u %u\r\n", slotNum, missedCTS);
       if (missedCTS < MISSED_CTS_THRESH){
-        cdbg(SCHED, "Sleep this slot\r\n");
+        cdbg(SCHED, "MCC %u %u\r\n", slotNum, missedCTS);
         call FrameTimer.stop();
         call CXLink.sleep();
         state = S_UNUSED_SLOT;
       }else {
         //CTS limit exceeded, back to sleep
         error_t error = call LppControl.sleep();
-        cdbg(SCHED, "Back to sleep.\r\n");
+        cdbg(SCHED, "MCD %u %u\r\n", slotNum, missedCTS);
         call SlotTimer.stop();
         call FrameTimer.stop();
         //TODO: remove debug
@@ -666,12 +674,17 @@ module SlotSchedulerP {
     if (signalEnd){
       call SlotController.endSlot[activeNS]();
       signalEnd = FALSE;
+    }else{
+      if (call SlotController.isMaster[activeNS]()){
+        //ugh, correct slot numbering at master
+        slotNum --;
+      }
     }
     if (call SlotController.isMaster[activeNS]()){
       if(call SlotController.isActive[activeNS]()){
         am_addr_t activeNode = 
           call SlotController.activeNode[activeNS]();
-        cdbg(SCHED, "S %u A %u\r\n", slotNum, activeNode);
+        cdbg(SCHED, "SS %u A %u\r\n", slotNum, activeNode);
         cdbg(SCHED_CHECKED, "master + active: next %x\r\n", activeNode);
         signalEnd = TRUE;
         if (ctsMsg == NULL){
@@ -701,6 +714,7 @@ module SlotSchedulerP {
         }
       } else {
         cdbg(SCHED, "End of active\r\n");
+        post logNeighborhood();
         //end of active period: can sleep now.
         call LppControl.sleep();
         call SlotTimer.stop();
