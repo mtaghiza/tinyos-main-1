@@ -64,7 +64,7 @@ typedef nx_struct cx_lpp_probe {
 #endif
 
 #ifndef CX_NEIGHBORHOOD_SIZE
-#define CX_NEIGHBORHOOD_SIZE 8
+#define CX_NEIGHBORHOOD_SIZE 16
 #endif
 
 //Basestation control messages
