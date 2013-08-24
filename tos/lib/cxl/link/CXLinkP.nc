@@ -196,22 +196,20 @@ module CXLinkP {
           // the deadline. 
           // Best way to recover would be to pretend that we forwarded
           // it and pick up at the next transmission.
-          #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
           if (now - aSfdCapture > frameLen - sfdAdjust){
+            call Rf1aPhysical.setPower(MIN_POWER);
             post logSynchMiss();
           }
-          #endif
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
           aSynched = TRUE;
         }else{
 //          //every subsequent transmission: should be based on the
 //          //  previous one.
-          #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
           if (now - (call FastAlarm.getAlarm()) > frameLen){
+            call Rf1aPhysical.setPower(MIN_POWER);
             post logRetxMiss();
           }
-          #endif
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
         }
@@ -235,6 +233,7 @@ module CXLinkP {
   }
 
   async event void Rf1aPhysical.sendDone (int result) { 
+    P1OUT &= ~BIT1;
     atomic{
       sfdAdjust = TX_SFD_ADJUST;
       aTxResult = result;
@@ -255,6 +254,9 @@ module CXLinkP {
     error_t error;
     atomic localState = state;
     atomic error = aTxResult;
+    if (POWER_ADJUST){
+      call Rf1aPhysical.setPower(MIN_POWER);
+    }
     if (error != SUCCESS){
       cwarn(LINK, "TXR %x\r\n", error);
 //      //mark this transmission as having failed CRC so we stop
@@ -338,6 +340,7 @@ module CXLinkP {
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
+      P1OUT |= BIT1;
       call DelayedSend.startSend();
 //      P1OUT &= ~BIT2;
     } else if (state == S_RX){
@@ -345,6 +348,7 @@ module CXLinkP {
         aExtended = TRUE;
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
+        P1OUT &= ~BIT1;
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
         call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
           RF1A_OM_IDLE);
@@ -403,6 +407,7 @@ module CXLinkP {
       error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
+      P1OUT |= BIT1;
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
       //here.
@@ -508,6 +513,7 @@ module CXLinkP {
         //set to crc-passed initially
         phy(msg)->lqi |= 0x80;
 
+        call Rf1aPhysical.setPower(MAX_POWER);
         error = subsend(msg);
     
         if (error == SUCCESS){
@@ -575,6 +581,7 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
+    P1OUT &= ~BIT1;
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
@@ -622,6 +629,7 @@ module CXLinkP {
           state = S_FWD;
           fwdMsg = rxMsg;
         }
+        call Rf1aPhysical.setPower(MAX_POWER);
         subsend(fwdMsg);
       }else{
         call FastAlarm.stop();
@@ -646,11 +654,28 @@ module CXLinkP {
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));
+          signal CXLink.rxDone();
         }else{
+          bool allowForward = (metadata(rxMsg))->retx;
           //CRC failed, wipe it.
           call Packet.clear(rxMsg);
+          //If there was still time left on the clock when we stopped
+          //it, fire it up again.
+          if (call FastAlarm.getNow() < call FastAlarm.getAlarm()){
+            error_t error = call CXLink.rx(
+              call FastAlarm.getAlarm() - call FastAlarm.getNow(), 
+              allowForward);
+            if (error == SUCCESS){
+              printf("RR %lu\r\n",
+                call FastAlarm.getAlarm() - call FastAlarm.getNow());
+              //pass
+            }else{
+              signal CXLink.rxDone();
+            }
+          }else{
+            signal CXLink.rxDone();
+          }
         }
-        signal CXLink.rxDone();
       }
     }else{ 
       //DBG 6

@@ -96,4 +96,22 @@ typedef struct cx_link_metadata {
 #define CX_MAX_DEPTH 10
 #endif
 
+#ifndef POWER_ADJUST
+#define POWER_ADJUST 0
+#endif
+
+#ifndef MAX_POWER
+#ifdef PATABLE0_SETTING
+#define MAX_POWER PATABLE0_SETTING
+#else
+#warning "Defining max power to be 0x8D (0 dBm)"
+#define MAX_POWER 0x8D
+#endif
+#endif
+
+#ifndef MIN_POWER
+//0x03: -30 dBm
+#define MIN_POWER 0x03
+#endif
+
 #endif
