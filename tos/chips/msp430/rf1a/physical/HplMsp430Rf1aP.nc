@@ -1615,6 +1615,15 @@ generic module HplMsp430Rf1aP () @safe() {
     return call Rf1aIf.readRegister(CHANNR);
   }
 
+  async command int Rf1aPhysical.setPower[uint8_t client](uint8_t powerSetting){
+    error_t rv = validateClient(client);
+    if (rv!= SUCCESS){
+      return rv;
+    }
+    call Rf1aIf.writeRegister(PATABLE, powerSetting);
+    return SUCCESS;
+  }
+
   async command int Rf1aPhysical.setChannel[uint8_t client] (uint8_t channel)
   {
     error_t rv = validateClient(client);

@@ -381,6 +381,9 @@ generic module Rf1aFECP () {
   async command int Rf1aPhysical.setChannel (uint8_t channel){
     return call SubRf1aPhysical.setChannel(channel);
   }
+  async command int Rf1aPhysical.setPower (uint8_t power){
+    return call SubRf1aPhysical.setPower(power);
+  }
   async command int Rf1aPhysical.rssi_dBm (){
     return call SubRf1aPhysical.rssi_dBm();
   }

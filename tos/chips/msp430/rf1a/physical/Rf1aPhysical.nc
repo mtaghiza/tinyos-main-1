@@ -323,6 +323,17 @@ interface Rf1aPhysical {
    * @note This does not return an error_t, values are in sync with
    * getChannel. */
   async command int setChannel (uint8_t channel);
+  
+  /**
+   * Write the specified value into index 0 of the PATABLE register.
+   * According to the datasheet:
+   * 0x25 -12 dBm
+   * 0x26 -6 dBm
+   * 0x8D 0 dBm
+   * 0xC3 10 dBm
+   * 0xC0 "max"
+   */
+  async command int setPower (uint8_t powerSetting);
 
   /** Read the RSSI value.
    *
