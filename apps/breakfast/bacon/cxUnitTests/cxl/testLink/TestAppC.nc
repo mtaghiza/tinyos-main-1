@@ -28,4 +28,7 @@ configuration TestAppC {
   TestP.Timer -> TimerMilliC;
   TestP.Rf1aStatus -> CXLinkC;
 
+  components new TimerMilliC() as RetransmitTimer;
+  TestP.RetransmitTimer -> RetransmitTimer;
+
 }

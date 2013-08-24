@@ -11,6 +11,7 @@ module TestP{
   uses interface Receive;
   uses interface Pool<message_t>;
   uses interface Timer<TMilli>;
+  uses interface Timer<TMilli> as RetransmitTimer;
 
   uses interface Leds;
   uses interface Rf1aStatus;
@@ -19,8 +20,9 @@ module TestP{
   message_t* txMsg;
   message_t* rxMsg;
 
-  uint8_t packetLength = 1;
-  uint8_t channel;
+  uint8_t packetLength = PACKET_LENGTH;
+  uint8_t channel = CHANNEL;
+  bool repeat = REPEAT;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -39,6 +41,7 @@ module TestP{
     printf("* Radio Status: %x\r\n", call Rf1aStatus.get());
     printf("* Channel: %u\r\n", channel);
     printf("* packetLength: %u\r\n", packetLength);
+    printf("* repeat: %x\r\n", repeat);
   }
 
   task void usage(){
@@ -50,6 +53,7 @@ module TestP{
     printf(" C: (check) receive with 1 second timeout\r\n");
     printf(" t: transmit packet\r\n");
     printf(" T: transmit packet, no retx\r\n");
+    printf(" x: continuously repeat next requested action.\r\n");
     printf(" c: switch to next channel\r\n");
     printf(" l: toggle between 1-byte payload or max-len payload\r\n");
     printf(" s: sleep\r\n");
@@ -100,9 +104,13 @@ module TestP{
   }
 
   task void receivePacket(){ 
+    error_t error; 
     setChannel();
-    printf("RX: %x\r\n",
-      call CXLink.rx(0xFFFFFFFF, TRUE));
+    error = call CXLink.rx(0xFFFFFFFF, TRUE);
+    if (error != SUCCESS){
+      printf("RX: %x\r\n",
+        error);
+    }
   }
 
   task void receivePacketNoRetx(){ 
@@ -130,12 +138,12 @@ module TestP{
 //      pl = call Packet.getPayload(txMsg, sizeof(test_payload_t));
       pl = call Packet.getPayload(txMsg, 
         call Packet.maxPayloadLength());
-      printf("msg %p header %p pl %p md %p sn %lu\r\n",
-        txMsg,
-        header,
-        pl,
-        call CXLinkPacket.getLinkMetadata(txMsg),
-        header->sn);
+//      printf("msg %p header %p pl %p md %p sn %u\r\n",
+//        txMsg,
+//        header,
+//        pl,
+//        call CXLinkPacket.getLinkMetadata(txMsg),
+//        header->sn);
       header->ttl = 10;
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
@@ -171,10 +179,14 @@ module TestP{
   event void SplitControl.startDone(error_t error){ 
     printf("start done: %x pool: %u\r\n", error, call Pool.size());
     started = (error == SUCCESS);
-    if (TOS_NODE_ID != 0){
+    
+    if (IS_SENDER){
+      post sendPacket();
+    } else {
       post receivePacket();
     }
   }
+
   event void SplitControl.stopDone(error_t error){ 
     printf("stop done: %x pool: %u\r\n", error, call Pool.size());
     started = FALSE;
@@ -182,25 +194,45 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("SD %lu %x %u\r\n", 
+    printf("TX %u %x %u %u %x %x %x %x\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       error,
-      call Packet.payloadLength(msg));
+      TEST_NUM,
+      call Packet.payloadLength(msg),
+      SELF_SFD_SYNCH,
+      POWER_ADJUST,
+      MIN_POWER,
+      MAX_POWER);
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
     } else{
       printf("mystery packet: %p\r\n", msg);
     }
+    if (repeat){
+      if (packetLength < 32){
+        call RetransmitTimer.startOneShot(2*TX_DELAY);
+      }else{
+        call RetransmitTimer.startOneShot(TX_DELAY);
+      }
+    }
+  }
+  event void RetransmitTimer.fired(){
+    post sendPacket();
   }
 
   task void handleRX(){
 //    test_payload_t* pl = call Packet.getPayload(rxMsg,
 //      sizeof(test_payload_t));
-    printf("RX %p %lu %u\r\n",
-      rxMsg, 
+    printf("RX %u %u %u %u %x %x %x %x\r\n",
       (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
-      call Packet.payloadLength(rxMsg));
+      call CXLinkPacket.rxHopCount(rxMsg),
+      TEST_NUM,
+      call Packet.payloadLength(rxMsg),
+      SELF_SFD_SYNCH,
+      POWER_ADJUST,
+      MIN_POWER,
+      MAX_POWER);
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -224,6 +256,9 @@ module TestP{
 
   event void CXLink.rxDone(){
     printf("RXD\r\n");
+    if (repeat){
+      post receivePacket();
+    }
   }
 
   task void toggleStartStop(){
@@ -249,6 +284,11 @@ module TestP{
   task void togglePacketLength(){
     packetLength = (packetLength + 4)%114;
     printf("Packet length %u\r\n", packetLength);
+  }
+
+  task void toggleRepeat(){
+    repeat = !repeat;
+    post getStatus();
   }
 
   async event void UartStream.receivedByte(uint8_t byte){ 
@@ -282,6 +322,9 @@ module TestP{
          break;
        case 'l':
          post togglePacketLength();
+         break;
+       case 'x':
+         post toggleRepeat();
          break;
        case '?':
          post usage();
