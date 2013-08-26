@@ -49,7 +49,7 @@ typedef nx_struct cx_lpp_probe {
 //probe TX and the SFD from its rebroadcast. In practice, we're not
 //going to be able to start listening for the ack immediately, so
 //using a 1.02 ms timeout is pretty conservative.
-#define CHECK_TIMEOUT (6630UL)
+#define CHECK_TIMEOUT (6630UL + (FRAMELEN_FAST_SHORT - 24700UL))
 #define CHECK_TIMEOUT_SLOW (34UL)
 
 //roughly 660 seconds
