@@ -121,12 +121,14 @@ GROUP BY tn, node) dc ON dc.tn= prr.tn and dc.node=prr.node;
 SELECT "Aggregating test results";
 DROP TABLE IF EXISTS agg_sum;
 CREATE TABLE agg_sum AS
-SELECT pl, sfds, pa, flfs, avg(prr) as prr, avg(dc) as dc, avg(sCnt) as sCnt, avg(rCnt) as rCnt
+SELECT pl, sfds, pa, flfs, avg(prr) as prr, avg(dc) as dc, avg(sCnt)
+as sCnt, avg(rCnt) as rCnt, hc as avgMaxHC
 FROM (
   SELECT setups.tn, setups.pl, setups.sfds, setups.pa, setups.flfs,
-  A.prr, coalesce(B.sCnt, 0) as sCnt, coalesce(C.rCnt, 0) as rCnt
+  A.prr, coalesce(B.sCnt, 0) as sCnt, coalesce(C.rCnt, 0) as rCnt, hc,
+  dc
   FROM setups JOIN (
-    SELECT tn, avg(prr) as prr, avg(dc) as dc FROM agg GROUP BY tn
+    SELECT tn, avg(prr) as prr, avg(dc) as dc, max(hopCount) as hc FROM agg GROUP BY tn
   ) A ON a.tn=setups.tn
   left JOIN (
     SELECT tn, count(*) as sCnt 
