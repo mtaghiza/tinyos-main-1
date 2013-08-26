@@ -36,6 +36,7 @@ module CXLinkP {
   uint8_t rxLen;
   message_t* fwdMsg;
   uint16_t sn;
+  uint32_t origTimeout;
 
   int aTxResult;
   
@@ -450,6 +451,7 @@ module CXLinkP {
           aSynched = FALSE;
           synchMiss = FALSE;
           retxMiss = FALSE;
+          origTimeout = timeout;
           state = S_RX;
 
           #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
@@ -687,17 +689,18 @@ module CXLinkP {
           doSignalRXDone();
         }else{
           bool allowForward = (metadata(rxMsg))->retx;
+          uint32_t rxRemaining = call FastAlarm.getAlarm() - call FastAlarm.getNow(); 
           //CRC failed, wipe it.
           call Packet.clear(rxMsg);
           //If there was still time left on the clock when we stopped
           //it, fire it up again.
-          if (call FastAlarm.getNow() < call FastAlarm.getAlarm()){
-            error_t error = call CXLink.rx(
-              call FastAlarm.getAlarm() - call FastAlarm.getNow(), 
+          if (rxRemaining < origTimeout){
+            uint32_t lastTimeout = origTimeout;
+            error_t error = call CXLink.rx(rxRemaining, 
               allowForward);
             if (error == SUCCESS){
-              printf("RR %lu\r\n",
-                call FastAlarm.getAlarm() - call FastAlarm.getNow());
+              printf("RR %lu < %lu\r\n",
+                rxRemaining, lastTimeout);
               //pass
             }else{
               doSignalRXDone();
