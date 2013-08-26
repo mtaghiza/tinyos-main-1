@@ -26,8 +26,8 @@ class DatabaseQuery(object):
                 SELECT bs.node_id, bs.barcode_id, bs.subnetwork_channel, max(ap.cookie)
                 FROM active_period AS ap, bacon_settings AS bs
                 WHERE ap.network_segment = 2 AND ap.node_id = bs.node_id
-                GROUP BY ap.node_id
-                ORDER BY ap.node_id
+                GROUP BY bs.node_id
+                ORDER BY bs.node_id
                 '''
         
         # sqlite connections can only be used from the same threads they are established from
@@ -44,7 +44,7 @@ class DatabaseQuery(object):
         for row in self.cursor:
             if len(row) == 4:
                 if row[0] is not None:
-                    key = row[0]
+                    key = "%04d" % int(row[0])
                     data = row[1:3]
                     
                     output[key] = data
@@ -58,10 +58,6 @@ class DatabaseQuery(object):
         This is complimentary to what is found in the network.settings file.
         """
         
-        #query = '''SELECT barcode_id, bacon_interval, toast_interval, MAX(cookie)
-        #           FROM bacon_settings
-        #           GROUP BY barcode_id
-        #           '''
         query = '''
                 SELECT bs.barcode_id, bs.toast_interval, bs.subnetwork_channel, max(ap.cookie)
                 FROM active_period AS ap, bacon_settings AS bs
@@ -85,7 +81,8 @@ class DatabaseQuery(object):
             if len(row) == 4:
                 if row[0] is not None:
                     # row[0]: barcode, row[1]: bacon interval, row[2]: toast interval
-                    output[row[0]] = row[1:3]
+                    key = row[0]
+                    output[key] = row[1:3]
         
         return output
 
@@ -97,7 +94,8 @@ class DatabaseQuery(object):
         connected to the Multiplexers.
         """
         
-        query = '''SELECT c.bacon_id, c.toast_id
+        query = '''
+                    SELECT c.bacon_id, c.toast_id
                     , MAX(CASE WHEN d.channel_number = 0 THEN d.sensor_type ELSE 0 END) AS channel0
                     , MAX(CASE WHEN d.channel_number = 1 THEN d.sensor_type ELSE 0 END) AS channel1
                     , MAX(CASE WHEN d.channel_number = 2 THEN d.sensor_type ELSE 0 END) AS channel2

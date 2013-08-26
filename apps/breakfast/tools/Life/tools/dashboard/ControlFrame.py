@@ -66,6 +66,13 @@ class ControlFrame(Frame):
 
         self.siteFrame.grid(column=1, row=0)
         
+        #
+        #
+        #
+        self.commitFrame = Frame(self, padx=self.SPACING)
+        self.commitButton = Button(self.commitFrame, text="Commit Changes", command=self.commitChanges)
+        self.commitButton.grid(column=0, row=0)
+        self.commitFrame.grid(column=2, row=0)
         
         #self.refreshButton = Button(self, text="Refresh", command=self.refresh)
         #self.refreshButton.grid(column=2, row=0)
@@ -156,6 +163,8 @@ class ControlFrame(Frame):
         self.hub.node.redrawAllNodes()
 
     
+    def commitChanges(self):
+        print "Commit Changes"
 
 
     def refresh(self):

@@ -15,7 +15,7 @@ class DisplayFrame(Frame):
         self.nodes = []
 
         self.simplot = None
-        self.graph = None
+        self.gFrame = None
         
         #self.initUI()
         self.frame = Frame(self)
@@ -27,8 +27,8 @@ class DisplayFrame(Frame):
     #def insertAll(self):
     #    """ Update sample interval for all nodes in network.
     #    """
-    #    interval = int(self.sampleVar.get())
-    #    self.sampleVar.set("")
+    #    interval = int(self.intervalVar.get())
+    #    self.intervalVar.set("")
     #    
     #    for node in self.hub.node.leafs:
     #        (oldInterval, oldChannel) = self.hub.node.leafs[node]
@@ -86,6 +86,10 @@ class DisplayFrame(Frame):
         if self.currentView == "multi":
             self.updateSelection()
 
+            # disable graph
+            if self.gFrame:
+                self.gFrame.grid_forget()
+
             # show UI
             self.frame.grid_forget()
             self.frame = Frame(self)
@@ -108,8 +112,8 @@ class DisplayFrame(Frame):
             label = Label(self.frame, text="New sample interval:")
             label.grid(column=0, row=4, sticky=E)
             
-            self.sampleVar = StringVar()
-            entry = Entry(self.frame, textvariable=self.sampleVar)
+            self.intervalVar = StringVar()
+            entry = Entry(self.frame, textvariable=self.intervalVar)
             entry.grid(column=1, row=4)
             
             button = Button(self.frame, text="Update", command=self.insertDict)
@@ -121,7 +125,8 @@ class DisplayFrame(Frame):
             
             self.frame.grid(column=0, row=0)
     
-
+        elif self.currentView == "node":
+            self.updateNode()
 
 
 
@@ -144,6 +149,7 @@ class DisplayFrame(Frame):
         label = Label(self.frame, text=router)
         label.grid(column=1, row=1, sticky=E)
 
+        self.initGraph(0, 2)
         
         self.frame.grid(column=0, row=0)
 
@@ -153,40 +159,111 @@ class DisplayFrame(Frame):
         """
         
         self.currentView = "node"
-        numberOfNodes = len(self.nodes)
 
         # show UI
         self.frame.grid_forget()
         self.frame = Frame(self)
         
-        label = Label(self.frame, text="Update sample interval")
-        label.grid(column=0, row=0, columnspan=2, sticky=W)
+        numberOfNodes = len(self.nodes)
         
-        label = Label(self.frame, text="Number of nodes selected:")
-        label.grid(column=0, row=1, sticky=E)
-
-        label = Label(self.frame, text=str(numberOfNodes))
-        label.grid(column=1, row=1, sticky=E)
-
-        label = Label(self.frame, text="New sample interval:")
-        label.grid(column=0, row=2, sticky=E)
-        
-        self.sampleVar = StringVar()
-        entry = Entry(self.frame, textvariable=self.sampleVar)
-        entry.grid(column=1, row=2)
-        
-        button = Button(self.frame, text="Update", command=self.insertDict)
-        button.grid(column=1, row=3)
-
-        # show list of all nodes selected
         if numberOfNodes > 1:        
+            
+            label = Label(self.frame, text="Update sample interval")
+            label.grid(column=0, row=0, columnspan=2, sticky=W)
+            
+            label = Label(self.frame, text="Number of nodes selected:")
+            label.grid(column=0, row=1, sticky=E)
+            
+            label = Label(self.frame, text=str(numberOfNodes))
+            label.grid(column=1, row=1, sticky=E)
+            
+            label = Label(self.frame, text="New sample interval:")
+            label.grid(column=0, row=2, sticky=E)
+            
+            self.intervalVar = StringVar()
+            entry = Entry(self.frame, textvariable=self.intervalVar)
+            entry.grid(column=1, row=2)
+            
+            button = Button(self.frame, text="Update", command=self.insertDict)
+            button.grid(column=1, row=3)
+            
+            # show list of all nodes selected
             for n, node in enumerate(sorted(self.nodes)):
                 label = Label(self.frame, text=node)
                 label.grid(column=0, row=4+n, sticky=E)
                 
-        # show information about single leaf node
+            # disable graph
+            if self.gFrame:
+                self.gFrame.grid_forget()
+            
         elif numberOfNodes == 1:
-            self.initGraph(0, 4+numberOfNodes)
+            
+            node = self.nodes[0]
+            
+            label = Label(self.frame, text="Update sample interval")
+            label.grid(column=0, row=0, columnspan=2, sticky=W)
+            
+            label = Label(self.frame, text="Node selected:")
+            label.grid(column=0, row=1, sticky=E)
+            
+            label = Label(self.frame, text=node)
+            label.grid(column=1, row=1, sticky=E)
+            
+            # header
+            label = Label(self.frame, text="Interval")
+            label.grid(column=1, row=2, sticky=E)
+            
+            label = Label(self.frame, text="Channel")
+            label.grid(column=2, row=2, sticky=E)
+            
+            # when read from network
+            (readInterval, readChannel) = self.hub.node.originalLeafs[node]
+            
+            label = Label(self.frame, text="Current:")
+            label.grid(column=0, row=3, sticky=E)
+            
+            label = Label(self.frame, text=readInterval)
+            label.grid(column=1, row=3, sticky=E)
+
+            label = Label(self.frame, text=readChannel)
+            label.grid(column=2, row=3, sticky=E)
+            
+            # queued for transmission
+            (reqInterval, reqChannel) = self.hub.node.leafs[node]
+            
+            if reqInterval != readInterval:
+                interval = reqInterval
+            else:
+                interval = "None"
+                
+            if reqChannel != readChannel:
+                channel = reqChannel
+            else:
+                channel = "None"
+            
+            label = Label(self.frame, text="Requested:")
+            label.grid(column=0, row=4, sticky=E)
+                        
+            label = Label(self.frame, text=interval)
+            label.grid(column=1, row=4, sticky=E)
+
+            label = Label(self.frame, text=channel)
+            label.grid(column=2, row=4, sticky=E)
+            
+            
+            # new sampling interval
+            label = Label(self.frame, text="New:")
+            label.grid(column=0, row=5, sticky=E)
+            
+            self.intervalVar = StringVar()
+            entry = Entry(self.frame, textvariable=self.intervalVar)
+            entry.grid(column=1, row=5)
+        
+            button = Button(self.frame, text="Update", command=self.insertDict)
+            button.grid(column=1, row=6)
+        
+            # show information about single leaf node
+            self.initGraph(0, 7)
         
         self.frame.grid(column=0, row=0)
 
@@ -196,20 +273,25 @@ class DisplayFrame(Frame):
         """ Update global node dictionary, save it to settings file and update UI
         """
         print self.nodes
+        
         try:
-            interval = int(self.sampleVar.get())
+            interval = int(self.intervalVar.get())
         except ValueError:
             pass
         else:        
             for node in self.nodes:
                 if node in self.hub.node.leafs:
+                    # read old settings
                     (oldInterval, oldChannel) = self.hub.node.leafs[node]
+                    
+                    # store new settings
                     self.hub.node.leafs[node] = (interval, oldChannel)
-            
-            self.hub.node.saveSettings()
+                
+            self.redrawAll()
             self.hub.node.redrawAllNodes()
+            self.hub.node.saveSettings()
         finally:
-            self.sampleVar.set("")
+            self.intervalVar.set("")
 
 
     def infoPlex(self, plex):
@@ -252,13 +334,15 @@ class DisplayFrame(Frame):
         
         idFrame.grid(column=0, row=2, columnspan=2, sticky=W)
         
+        self.initGraph(0, 3)
+        
         self.frame.grid(column=0, row=0)
 
 
 
     def initGraph(self, x, y):
-        if self.graph:
-            self.graph.grid_forget()
+        if self.gFrame:
+            self.gFrame.grid_forget()
         
         WIDTH = 200
         HEIGHT = 200
@@ -266,11 +350,36 @@ class DisplayFrame(Frame):
         bgcolor = self.cget('bg')
         
         self.gFrame = Frame(self, width=WIDTH, height=HEIGHT)
-        self.graph = self.simplot.makeGraphBase(self.gFrame, WIDTH, HEIGHT, xtitle="Sensor", ytitle="ADC", background=bgcolor)  
+        self.graph = self.simplot.makeGraphBase(self.gFrame, WIDTH, HEIGHT, xtitle="title", ytitle="title", background=bgcolor)  
         self.sym = self.simplot.makeSymbols([[0,0]], marker="dot", size=1, fillcolor="red")
         self.obj = self.simplot.makeGraphObjects([self.sym])
-        self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,4096))
+        self.graph.draw(self.obj, xaxis=(0,9), yaxis=(0,9))
         self.graph.grid(column=1, row=1)
 
         self.gFrame.grid_propagate(False)
         self.gFrame.grid(column=x, row=y)
+
+    #def changeRouterChannel(self):
+        #try:
+        #    channel = int(self.intervalVar.get())
+        #except ValueError:
+        #    pass
+        #else:        
+        #    for node in self.nodes:
+        #        # see if changes has already been requested for this node
+        #        if node in self.hub.node.leafs:
+        #            # read old settings
+        #            (oldInterval, oldChannel) = self.hub.node.leafs[node]
+        #            
+        #            # store new settings
+        #            self.hub.node.leafs[node] = (interval, oldChannel)
+        #        
+        #        elif node in self.hub.node.leafs:
+        #            # read old settings
+        #            (oldInterval, oldChannel) = self.hub.node.leafs[node]
+        #            
+        #            # store new settings
+        #            #self.hub.node.leafs[node] = (interval, oldChannel)
+        #            self.hub.node.leafs[node] = (interval, oldChannel)
+
+

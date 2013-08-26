@@ -2,6 +2,8 @@ import Tkinter
 from Tkinter import *
 from math import floor
 
+import copy
+
 from tools.dashboard.DatabaseQuery import DatabaseQuery
 from tools.dashboard.SettingsFile import SettingsFile
 
@@ -30,6 +32,11 @@ class NodeFrame(Frame):
         
         self.channels = [0, 31, 63, 95, 159, 191, 223]
         #self.channels = self.binarySeparation()
+
+        # load settings from database and from settings file
+        self.loadSettings()        
+        self.membership = {}
+        self.requestedLeafs = {}
         
         self.initUI()
         self.saveSettings()
@@ -37,8 +44,12 @@ class NodeFrame(Frame):
     def loadSettings(self):
         #self.offline = self.sf.read()        
         self.leafs = self.db.getLeafs()
-        self.multiplexers = self.db.getMultiplexers()
+        self.originalLeafs = copy.deepcopy(self.leafs)
+
         self.routers = self.db.getRouters()
+        self.originalRouters = copy.deepcopy(self.routers)
+        
+        self.multiplexers = self.db.getMultiplexers()
     
     def saveSettings(self):        
         #self.sf.write(self.offline)
@@ -51,12 +62,6 @@ class NodeFrame(Frame):
             #print "settings changed"
 
     def initUI(self):
-        
-        # load settings from database and from settings file
-        self.loadSettings()
-        
-        self.membership = {}
-        
         self.oldSuperFrame = Frame(self)
         self.oldSuperFrame.grid(column=0, row=0)
         self.redrawAllNodes()
@@ -76,8 +81,8 @@ class NodeFrame(Frame):
         self.superFrame = Frame(self)
         
         # draw routers
-        for rowNumber, router in enumerate(self.routers.iterkeys()):
-            #print "nodes: ", n, router
+        for rowNumber, router in enumerate(sorted(self.routers.iterkeys())):
+            #print rowNumber, router
             
             barcode, channel = self.routers[router]
             
@@ -93,18 +98,27 @@ class NodeFrame(Frame):
             
             barcode_text = "%s\nSite: %s" % (barcode, router)
             button = Button(subframe, text=barcode_text, width=18, justify=LEFT, command=lambda barcode=barcode: self.selectRouter(barcode))
+            
+            # color code button: green=selected, yellow=modified
             if barcode in selection:
-                button.configure(background="green")
+                colorCode = "green"
+            elif self.routers[router] != self.originalRouters[router]:
+                colorCode = "yellow"
+            else:
+                colorCode = self.cget("bg")
+            
+            button.configure(background=colorCode)
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label_text = "Channel:"
             label = Label(subframe, text=label_text)
+            label.configure(background=colorCode)
             label.grid(column=0, row=1, sticky=N+S+E+W)
 
             typeVar = StringVar()        
             typeVar.set(self.DEFAULT_CHANNEL)
             typeOption = OptionMenu(subframe, typeVar, [self.DEFAULT_CHANNEL])
-            typeOption.configure(width=3)
+            typeOption.configure(width=3, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
             typeOption.grid(column=1, row=1, sticky=N+S+E+W)
 
             menu = typeOption["menu"]
@@ -167,24 +181,33 @@ class NodeFrame(Frame):
             subframe = Frame(frame, bd=1, relief=SUNKEN)
             button_text = "%s\nSampling: %s" % (leaf, interval)            
             button = Button(subframe, text=button_text, width=18, justify=LEFT, command=lambda leaf=leaf: self.selectNode(leaf))
+
+            # color code button: green=selected, yellow=modified
             if leaf in selection:
-                button.configure(background="green")
+                colorCode = "green"
+            elif self.leafs[leaf] != self.originalLeafs[leaf]:
+                colorCode = "yellow"
+            else:
+                colorCode = self.cget("bg")
+            
+            button.configure(background=colorCode)            
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label = Label(subframe, text="Site:", bd=0, relief=SUNKEN)
+            label.configure(background=colorCode)            
             label.grid(column=0, row=1, sticky=N+S+E+W)
 
             typeVar = StringVar()        
             typeVar.set(site)
             typeOption = OptionMenu(subframe, typeVar, [site])
-            typeOption.configure(width=3)
+            typeOption.configure(width=3, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
             typeOption.grid(column=1, row=1, sticky=N+S+E+W)
 
             menu = typeOption["menu"]
             menu.delete(0, "end")
             
             # populate menu
-            for site in self.routers.iterkeys():
+            for site in sorted(self.routers.iterkeys()):
                 #menu.add_command(label=site, command=Tkinter._setit(typeVar, site)) 
                 menu.add_command(label=site, command=lambda leaf=leaf, site=site: self.updateLeaf(leaf,site))
        
