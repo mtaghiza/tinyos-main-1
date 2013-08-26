@@ -80,6 +80,8 @@ module CXLinkP {
   int32_t sfdAdjust;
 
 
+  void doSignalRXDone();
+
   uint32_t fastToSlow(uint32_t fastTicks){
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
@@ -157,7 +159,7 @@ module CXLinkP {
       call Msp430XV2ClockControl.stopMicroTimer();
       atomic state = S_SLEEP;
       if (localState == S_RX){
-        signal CXLink.rxDone();
+        doSignalRXDone();
       }
       return err;
     }
@@ -174,6 +176,9 @@ module CXLinkP {
     }
   }
 
+  bool synchMiss = FALSE;
+  bool retxMiss = FALSE;
+
   #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   task void logRetxMiss(){
     cerror(LINK, "RMD\r\n");
@@ -181,7 +186,22 @@ module CXLinkP {
   task void logSynchMiss(){
     cerror(LINK, "SMD\r\n");
   }
+
+  void doSignalRXDone(){
+    if (synchMiss){
+      post logSynchMiss();
+    }
+    if (retxMiss){
+      post logRetxMiss();
+    }
+    signal CXLink.rxDone();
+  }
+  #else 
+  void doSignalRXDone(){
+    signal CXLink.rxDone();
+  }
   #endif
+
 
   event void DelayedSend.sendReady(){
 //    P1OUT |= BIT2;
@@ -191,14 +211,14 @@ module CXLinkP {
         if( SELF_SFD_SYNCH ||  !aSynched ){
           //first synch point: computed based on sfd capture (either RX
           //or TX)
-          //TODO: we should make sure that this is legit here: 
           // if now-aSfdCapture > frameLen-sfdAdjust, then we missed
           // the deadline. 
-          // Best way to recover would be to pretend that we forwarded
-          // it and pick up at the next transmission.
+          // We crank down the TX power to reduce the possibility of
+          // this impacting the rest of the network while keeping the
+          // logic flow intact.
           if (now - aSfdCapture > frameLen - sfdAdjust){
             call Rf1aPhysical.setPower(MIN_POWER);
-            post logSynchMiss();
+            synchMiss = TRUE;
           }
           call FastAlarm.startAt(aSfdCapture,  
             frameLen - sfdAdjust);
@@ -208,7 +228,7 @@ module CXLinkP {
 //          //  previous one.
           if (now - (call FastAlarm.getAlarm()) > frameLen){
             call Rf1aPhysical.setPower(MIN_POWER);
-            post logRetxMiss();
+            retxMiss = TRUE;
           }
           call FastAlarm.startAt(call FastAlarm.getAlarm(),
             frameLen);
@@ -254,7 +274,7 @@ module CXLinkP {
     error_t error;
     atomic localState = state;
     atomic error = aTxResult;
-    if (POWER_ADJUST){
+    if (POWER_ADJUST && frameLen == FRAMELEN_FAST_SHORT){
       call Rf1aPhysical.setPower(MIN_POWER);
     }
     if (error != SUCCESS){
@@ -301,6 +321,12 @@ module CXLinkP {
             header(fwdMsg)->source, 
             header(fwdMsg)->sn);
           applyTimestamp(fwdMsg);
+          if (synchMiss){
+            post logSynchMiss();
+          }
+          if (retxMiss){
+            post logRetxMiss();
+          }
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -323,17 +349,17 @@ module CXLinkP {
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
-          signal CXLink.rxDone();
+          doSignalRXDone();
         }
       }
     }else{
       cwarn(LINK, "Link hsd unexpected state %x\r\n", localState);
     }
   }
-
+  
   
   task void signalRXDone(){
-    signal CXLink.rxDone();
+    doSignalRXDone();
   }
 
   async event void FastAlarm.fired(){
@@ -422,6 +448,8 @@ module CXLinkP {
           aCSDetected = FALSE;
           aExtended = FALSE;
           aSynched = FALSE;
+          synchMiss = FALSE;
+          retxMiss = FALSE;
           state = S_RX;
 
           #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
@@ -522,6 +550,8 @@ module CXLinkP {
             aSynched = FALSE;
             fwdMsg = msg;
             state = S_TX;
+            synchMiss = FALSE;
+            retxMiss = FALSE;
           }
         }else{
           cwarn(LINK, "ss %x\r\n", error);
@@ -654,7 +684,7 @@ module CXLinkP {
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));
-          signal CXLink.rxDone();
+          doSignalRXDone();
         }else{
           bool allowForward = (metadata(rxMsg))->retx;
           //CRC failed, wipe it.
@@ -670,10 +700,10 @@ module CXLinkP {
                 call FastAlarm.getAlarm() - call FastAlarm.getNow());
               //pass
             }else{
-              signal CXLink.rxDone();
+              doSignalRXDone();
             }
           }else{
-            signal CXLink.rxDone();
+            doSignalRXDone();
           }
         }
       }
