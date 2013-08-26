@@ -546,7 +546,9 @@ module SlotSchedulerP {
       signal Send.sendDone(msg, error);
     } else if (state == S_CTS_SENDING){
       framesLeft = (SLOT_LENGTH/FRAME_LENGTH) - 1;
-      call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
+      if (! call SlotTimer.isRunning()){
+        call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
+      }
 
       handleCTS(ctsMsg);
       call Pool.put(ctsMsg);
