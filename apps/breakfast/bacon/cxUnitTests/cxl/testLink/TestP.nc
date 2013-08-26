@@ -194,7 +194,7 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("TX %u %x %u %u %x %x %x %x\r\n", 
+    printf("TX %u %x %u %u %x %x %x %x %lu\r\n", 
       (call CXLinkPacket.getLinkHeader(msg))->sn,
       error,
       TEST_NUM,
@@ -202,7 +202,8 @@ module TestP{
       SELF_SFD_SYNCH,
       POWER_ADJUST,
       MIN_POWER,
-      MAX_POWER);
+      MAX_POWER,
+      FRAMELEN_FAST_SHORT);
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -224,7 +225,7 @@ module TestP{
   task void handleRX(){
 //    test_payload_t* pl = call Packet.getPayload(rxMsg,
 //      sizeof(test_payload_t));
-    printf("RX %u %u %u %u %x %x %x %x\r\n",
+    printf("RX %u %u %u %u %x %x %x %x %lu\r\n",
       (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
       call CXLinkPacket.rxHopCount(rxMsg),
       TEST_NUM,
@@ -232,7 +233,8 @@ module TestP{
       SELF_SFD_SYNCH,
       POWER_ADJUST,
       MIN_POWER,
-      MAX_POWER);
+      MAX_POWER, 
+      FRAMELEN_FAST_SHORT);
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
