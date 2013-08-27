@@ -35,6 +35,10 @@ module CXMasterP {
   
   network_membership_t membership;
 
+  #ifdef SLOT_LIMIT
+  uint8_t slotsLeft;
+  #endif
+
   command am_addr_t GetRoot.get[uint8_t ns](){
     return masters[ns];
   }
@@ -50,6 +54,9 @@ module CXMasterP {
     } else {
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
+        #ifdef SLOT_LIMIT
+        slotsLeft = SLOT_LIMIT;
+        #endif
         call SettingsStorage.get(SS_KEY_MAX_DOWNLOAD_ROUNDS,
           &maxRounds, sizeof(maxRounds));
         //Initialization
@@ -91,9 +98,17 @@ module CXMasterP {
     signal CXDownload.downloadFinished[activeNS]();
     post logMembership();
   }
-
+  
 
   command bool SlotController.isActive(){
+    #ifdef SLOT_LIMIT
+    if (slotsLeft){
+      slotsLeft --;
+    }else{
+      post downloadFinished();
+      return FALSE;
+    }
+    #endif
 //    printf("ia %u %u/%u -> ", numRounds, contactIndex, totalNodes);
     //Loop through contact list (wrapping contactIndex at totalNodes) until you either:
     // - hit a node with pending data
