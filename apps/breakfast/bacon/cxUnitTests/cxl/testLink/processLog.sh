@@ -13,13 +13,13 @@ echo "Processing $log: RX"
 #1             2  3  4   5  6 7  8    9  10   11
 #ts            n  -  sn  hc t pl sfds pa minP maxP
 #1377284263.55 32 RX 336 10 6 1  0    0  3    2d
-pv $log | grep ' RX ' | awk '(NF == 12){print $1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1}' > rx.tmp
+pv $log | grep ' RX ' | awk '/^[0-9]*.[0-9]* [0-9]* RX [0-9]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9a-f]* [0-9a-f]* [0-9]*$/{print $1, $2, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1}' > rx.tmp
 
 echo "Processing $log: TX"
 #1             2  3  4   5 6  7    8  9   10  11
 #ts            n  -  sn  e t  pl sfds pa minP maxP
 #1377284976.97 0  TX 273 0 6  1    0  1  3    2d
-pv $log | grep ' TX ' | awk '(NF == 12){print $1, $2, $4, $6, $7, $8, $9, $10, $11, $12 }' > tx.tmp
+pv $log | grep ' TX ' | awk '/^[0-9]*.[0-9]* [0-9]* TX [0-9]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9]* [0-9a-f]* [0-9a-f]* [0-9]*$/{print $1, $2, $4, $6, $7, $8, $9, $10, $11, $12 }' > tx.tmp
 
 echo "Processing $log: missed deadlines"
 pv $log | grep -e ' TX ' -e 'RMD' -e 'SMD' | awk '/TX/{
@@ -129,6 +129,34 @@ FROM (
   dc
   FROM setups JOIN (
     SELECT tn, avg(prr) as prr, avg(dc) as dc, max(hopCount) as hc FROM agg GROUP BY tn
+  ) A ON a.tn=setups.tn
+  left JOIN (
+    SELECT tn, count(*) as sCnt 
+    FROM md
+    WHERE t = 'S'
+    GROUP BY tn
+  ) B ON A.tn = B.tn
+  left JOIN (
+    SELECT tn, count(*) as rCnt 
+    FROM md
+    WHERE t = 'R'
+    GROUP BY tn
+  ) C ON A.tn = C.tn
+) X
+GROUP BY pl, sfds, pa, flfs ORDER BY prr;
+
+SELECT "Aggregating test results: omit problem nodes";
+DROP TABLE IF EXISTS agg_sum_ok;
+CREATE TABLE agg_sum_ok AS
+SELECT pl, sfds, pa, flfs, avg(prr) as prr, avg(dc) as dc, avg(sCnt)
+as sCnt, avg(rCnt) as rCnt, hc as avgMaxHC
+FROM (
+  SELECT setups.tn, setups.pl, setups.sfds, setups.pa, setups.flfs,
+  A.prr, coalesce(B.sCnt, 0) as sCnt, coalesce(C.rCnt, 0) as rCnt, hc,
+  dc
+  FROM setups JOIN (
+    SELECT tn, avg(prr) as prr, avg(dc) as dc, max(hopCount) as hc FROM agg 
+    WHERE node not in (46, 47) GROUP BY tn
   ) A ON a.tn=setups.tn
   left JOIN (
     SELECT tn, count(*) as sCnt 
