@@ -99,15 +99,15 @@ class NodeFrame(Frame):
             barcode_text = "%s\nSite: %s" % (barcode, router)
             button = Button(subframe, text=barcode_text, width=18, justify=LEFT, command=lambda barcode=barcode: self.selectRouter(barcode))
             
-            # color code button: green=selected, yellow=modified
+            # color code button: grey=selected, yellow=modified
             if barcode in selection:
-                colorCode = "green"
+                colorCode = "grey"
             elif self.routers[router] != self.originalRouters[router]:
                 colorCode = "yellow"
             else:
                 colorCode = self.cget("bg")
             
-            button.configure(background=colorCode)
+            button.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label_text = "Channel:"
@@ -182,15 +182,15 @@ class NodeFrame(Frame):
             button_text = "%s\nSampling: %s" % (leaf, interval)            
             button = Button(subframe, text=button_text, width=18, justify=LEFT, command=lambda leaf=leaf: self.selectNode(leaf))
 
-            # color code button: green=selected, yellow=modified
+            # color code button: grey=selected, yellow=modified
             if leaf in selection:
-                colorCode = "green"
+                colorCode = "grey"
             elif self.leafs[leaf] != self.originalLeafs[leaf]:
                 colorCode = "yellow"
             else:
                 colorCode = self.cget("bg")
             
-            button.configure(background=colorCode)            
+            button.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)            
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
             label = Label(subframe, text="Site:", bd=0, relief=SUNKEN)
@@ -227,10 +227,16 @@ class NodeFrame(Frame):
                     subframe = Frame(frame, bd=1, relief=SUNKEN)
                     self.tkobjects["plexFrame_%s" % plexid] = frame
                     
-                    button = Button(subframe, text=plexid, command=lambda plexid=plexid: self.selectPlex(plexid))
+                    # color code button: grey=selected, yellow=modified
                     if plexid in selection:
-                        button.configure(background="green")
-                    button.configure(width=18, height=2)
+                        colorCode = "grey"
+                    #elif self.leafs[leaf] != self.originalLeafs[leaf]:
+                    #    colorCode = "yellow"
+                    else:
+                        colorCode = self.cget("bg")
+                    
+                    button = Button(subframe, text=plexid, command=lambda plexid=plexid: self.selectPlex(plexid))
+                    button.configure(width=18, height=2, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                     button.grid(column=0, row=0, columnspan=8, sticky=N+S+E+W)
                     self.tkobjects["plexButton_%s" % plexid] = button
                     
@@ -239,6 +245,7 @@ class NodeFrame(Frame):
                         self.sensorTypes[sensor] = 1
                         
                         label = Label(subframe, text=str(sensor), bd=1, relief=SUNKEN)
+                        label.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                         label.grid(column=j, row=1, sticky=N+S+E+W)
                         self.tkobjects["sensLabel_%s_%d" % (plexid, j)] = label
                     

@@ -148,6 +148,18 @@ class DisplayFrame(Frame):
 
         label = Label(self.frame, text=router)
         label.grid(column=1, row=1, sticky=E)
+    
+        # change channel
+        label = Label(self.frame, text="New channel:")
+        label.grid(column=0, row=2, sticky=E)
+        
+        self.channelVar = StringVar()
+        entry = Entry(self.frame, textvariable=self.channelVar)
+        entry.grid(column=1, row=2)
+        
+        button = Button(self.frame, text="Update", command=self.channelDict)
+        button.grid(column=1, row=3)
+
 
         self.initGraph(0, 2)
         
@@ -293,6 +305,10 @@ class DisplayFrame(Frame):
         finally:
             self.intervalVar.set("")
 
+    def channelDict(self):
+        """ Update global router dictionary, save it to settings file and update UI
+        """
+        pass
 
     def infoPlex(self, plex):
         """ Show information about multiplexer.
@@ -326,7 +342,7 @@ class DisplayFrame(Frame):
         line = 1
         for i in range(0,8):
             (type, id) = info[i]
-            if type is not None:
+            if (type is not None) and (type != 0):
                 Label(idFrame, text=str(i+1)).grid(column=0, row=line)
                 Label(idFrame, text=type).grid(column=1, row=line)
                 Label(idFrame, text=id).grid(column=2, row=line)
