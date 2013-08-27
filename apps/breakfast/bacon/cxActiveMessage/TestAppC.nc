@@ -2,6 +2,7 @@
  #include "schedule.h"
  #include "test.h"
  #include "CXTransport.h"
+ #include "stdio.h"
 
 configuration TestAppC{
 } implementation {

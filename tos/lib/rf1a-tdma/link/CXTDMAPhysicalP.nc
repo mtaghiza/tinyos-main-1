@@ -759,7 +759,8 @@ module CXTDMAPhysicalP {
         error = call Rf1aPhysical.setReceiveBuffer(
           (uint8_t*)(rx_msg->header),
           TOSH_DATA_LENGTH + sizeof(message_header_t),
-          TRUE);
+          TRUE,
+          RF1A_OM_IDLE);
         if (error == SUCCESS){
           setAsyncState(S_RX_READY);
           call SynchCapture.captureRisingEdge();
@@ -991,7 +992,8 @@ module CXTDMAPhysicalP {
         //resumeIdleMode above?
         //TODO: verify that the above information is still accurate,
         //  remove the call below if it is no longer needed
-        error = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE);
+        error = call Rf1aPhysical.setReceiveBuffer(0, 0, TRUE,
+          RF1A_OM_IDLE);
         if (error == SUCCESS){
           setAsyncState(S_IDLE);
           postPfs();
