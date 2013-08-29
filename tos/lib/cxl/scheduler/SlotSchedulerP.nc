@@ -31,6 +31,9 @@ module SlotSchedulerP {
   provides interface CTS;
 
   uses interface Get<uint16_t> as RebootCounter;
+
+  uses interface Get<probe_schedule_t*> as ProbeSchedule;
+  uses interface StateDump;
 } implementation {
 
   enum {
@@ -115,12 +118,19 @@ module SlotSchedulerP {
  
   //TODO: remove debug code
   uint16_t slotNum;
+  uint32_t baseCTS;
+  uint32_t ctsStart;
 
 
   void handleCTS(message_t* msg);
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
   error_t send(message_t* msg, uint8_t len, uint8_t ttl);
+
+  uint32_t slowToFast(uint32_t slowTicks){
+    return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
+  }
+
   
   uint8_t activeNS;
   event void LppControl.wokenUp(uint8_t ns){
@@ -134,13 +144,18 @@ module SlotSchedulerP {
       wakeupStartMilli = call LocalTime.get();
       //TODO: remove debug code
       slotNum = 0;
-      cdbg(SCHED, "Sched wakeup for %lu on %u at %lu ct %lu dt %lu\r\n", 
+      cdbg(SCHED, "Sched wakeup for %lu on %u at %lu ct %lu dt %lu fls %lu ffls %lu flfn %lu flfs %lu\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS, wakeupStart,
-        CTS_TIMEOUT, DATA_TIMEOUT);
+        CTS_TIMEOUT, DATA_TIMEOUT, 
+        FRAMELEN_SLOW,
+        slowToFast(FRAMELEN_SLOW), 
+        FRAMELEN_FAST_NORMAL,
+        FRAMELEN_FAST_SHORT);
+      cflushdbg(SCHED);
       post nextRX();
     }else{
-      cerror(SCHED, "Unexpected state for wake up %x\r\n", state);
+      cerror(SCHED, "US0 %x\r\n", state);
     }
   }
 
@@ -176,6 +191,14 @@ module SlotSchedulerP {
   void handleCTS(message_t* msg){
     master = call CXLinkPacket.source(msg);
     missedCTS = 0;
+    if (master ==(call CXLinkPacket.getLinkHeader(msg))->destination){
+      baseCTS = timestamp(msg);
+    }
+    cdbg(SCHED, "C %lu %lu\r\n", ctsStart-baseCTS, timestamp(msg)-baseCTS);
+    if (ctsStart > timestamp(msg)){
+      cdbg(SCHED, "TS\r\n");
+      call StateDump.requestDump();
+    }
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
@@ -223,7 +246,7 @@ module SlotSchedulerP {
           call SlotTimer.startPeriodicAt(timestamp(msg) - RX_SLACK, SLOT_LENGTH);
           handleCTS(msg);
         } else {
-          cerror(SCHED, "Unexpected state %x for rx(cts)\r\n", 
+          cerror(SCHED, "US1 %x\r\n", 
             state);
         }
         return msg;
@@ -231,9 +254,21 @@ module SlotSchedulerP {
       case CXM_STATUS:
         {
           cx_status_t* status = (cx_status_t*) (call Packet.getPayload(msg, sizeof(cx_status_t)));
-          //TODO: catch corner case: if we receive a status message
-          //  before we've received any CTS messages, slot timer is
-          //  not set up to fire, so this slot will never end.
+          if (! call SlotTimer.isRunning()){
+            cdbg(SCHED, "CSBS\r\n");
+            //if we receive a status message
+            //  before we've received any CTS messages, slot timer is
+            //  not set up yet. Our best guess is that it's one frame
+            //  + RX_SLACK before the status message.
+            call SlotTimer.startPeriodicAt(timestamp(msg)-FRAME_LENGTH-RX_SLACK, SLOT_LENGTH);
+
+          }
+          if (! call FrameTimer.isRunning()){
+            cdbg(SCHED, "CSBF\r\n");
+            //likewise, if we didn't start the frame timer (because we
+            //missed the CTS), we kick it off now.
+            call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
+          }
           call RoutingTable.addMeasurement(
             call CXLinkPacket.destination(msg),
             call CXLinkPacket.source(msg), 
@@ -251,7 +286,7 @@ module SlotSchedulerP {
               status->dataPending, timestamp(msg));
             call FrameTimer.stop();
             if (error != SUCCESS){
-              cerror(SCHED, "no fwd sleep %x\r\n", error);
+              cerror(SCHED, "sleep0 %x\r\n", error);
             }
             state = S_UNUSED_SLOT;
           }
@@ -268,7 +303,7 @@ module SlotSchedulerP {
           call Packet.payloadLength(msg));
 
       default:
-        cerror(SCHED, "unexpected CXM %x\r\n", 
+        cerror(SCHED, "UCXM %x\r\n", 
           call CXMacPacket.getMacType(msg));
         return msg;
     }
@@ -297,7 +332,7 @@ module SlotSchedulerP {
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.
     }else{
-      cerror(SCHED, "Status msg not free\r\n");
+      cerror(SCHED, "SMSG\r\n");
     }
   }
 
@@ -323,7 +358,11 @@ module SlotSchedulerP {
           {
             //on last frame: wait around for an
             //  end-of-message/data-pending from the owner
+            //TODO: need to verify that if we miss status and enter
+            //this state, it doesn't screw up the start of the next
+            //slot.
             error_t error = rx(CTS_TIMEOUT, TRUE);
+            cdbg(SCHED, "NSW\r\n");
             if (error != SUCCESS){
               cerror(SCHED, "FT %x: rx %x\r\n", state, error);
             }else {
@@ -338,7 +377,7 @@ module SlotSchedulerP {
           if (eosMsg == NULL){
             eosMsg = call Pool.get();
             if (eosMsg == NULL){
-              cerror(SCHED, "No EOS in pool\r\n");
+              cerror(SCHED, "EOS\r\n");
               state = S_ACTIVE_SLOT;
               return;
             }else{
@@ -367,7 +406,7 @@ module SlotSchedulerP {
           break;
 
         default:
-          cerror(SCHED, "Unexpected state %x with fl 1\r\n", state);
+          cerror(SCHED, "US2 %x fl 1\r\n", state);
           break;
       }
       call FrameTimer.stop();
@@ -396,7 +435,7 @@ module SlotSchedulerP {
               call FrameTimer.stop();
               state = S_UNUSED_SLOT;
             } else {
-              cerror(SCHED, "Status timeout, sleep failed %x\r\n",
+              cerror(SCHED, "STSF %x\r\n",
                 error);
             }
             return;
@@ -532,7 +571,7 @@ module SlotSchedulerP {
         call Pool.put(call SlotController.receiveStatus[activeNS](statusMsg, pl));
         statusMsg = NULL;
       } else {
-        cerror(SCHED, "Unexpected sendDone, status msg %p got %p\r\n",
+        cerror(SCHED, "USD %p got %p\r\n",
           statusMsg, msg);
       }
     }else if (state == S_DATA_SENDING){
@@ -561,7 +600,7 @@ module SlotSchedulerP {
       eosMsg = NULL;
       state = S_SLOT_END;
     } else {
-      cerror(SCHED, "Unexpected send done state %x\r\n", state);
+      cerror(SCHED, "USDS %x\r\n", state);
     }
   }
 
@@ -573,7 +612,7 @@ module SlotSchedulerP {
 
   error_t rx(uint32_t timeout, bool retx){
     if (pendingRX){
-      cerror(SCHED, "RX while pending\r\n");
+      cerror(SCHED, "RXP\r\n");
       return EBUSY;
     } else {
       error_t error = call CXLink.rx(timeout, retx);
@@ -589,10 +628,6 @@ module SlotSchedulerP {
       < call SlotController.wakeupLen[activeNS](activeNS);
   }
   
-  uint32_t slowToFast(uint32_t slowTicks){
-    return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
-  }
-
   task void logNeighborhood(){
     //TODO: remove debug code
     nx_am_addr_t* neighbors = call Neighborhood.getNeighborhood();
@@ -633,22 +668,24 @@ module SlotSchedulerP {
         if (call SlotController.isMaster[activeNS]()){
           signal SlotTimer.fired();
         } else {
-          //TODO: this should be one probe interval
-          rx(RX_TIMEOUT_MAX, TRUE);
+          probe_schedule_t* sched = call ProbeSchedule.get();
+          rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
+            TRUE);
           state = S_SLOT_CHECK;
         }
       }
     }else if (state == S_SLOT_CHECK){
       missedCTS++;
-      if (missedCTS < MISSED_CTS_THRESH){
+      if (missedCTS < MISSED_CTS_THRESH && call SlotTimer.isRunning()){
         cdbg(SCHED, "MCC %u %u\r\n", slotNum, missedCTS);
+        cdbg(SCHED, "MC %lu\r\n", ctsStart-baseCTS);
         call FrameTimer.stop();
         call CXLink.sleep();
         state = S_UNUSED_SLOT;
       }else {
         //CTS limit exceeded, back to sleep
         error_t error = call LppControl.sleep();
-        cdbg(SCHED, "MCD %u %u\r\n", slotNum, missedCTS);
+        cdbg(SCHED, "MCD %u %u %u\r\n", slotNum, missedCTS, call SlotTimer.isRunning());
         call SlotTimer.stop();
         call FrameTimer.stop();
         //TODO: remove debug
@@ -658,7 +695,7 @@ module SlotSchedulerP {
           state = S_UNSYNCHED;
         }else{
           //awjeez awjeez
-          cerror(SCHED, "No CTS, failed to sleep with %x\r\n", error);
+          cerror(SCHED, "FS 0 %x\r\n", error);
         }
       }
     }else{
@@ -686,7 +723,7 @@ module SlotSchedulerP {
       if(call SlotController.isActive[activeNS]()){
         am_addr_t activeNode = 
           call SlotController.activeNode[activeNS]();
-        cdbg(SCHED, "SS %u A %u\r\n", slotNum, activeNode);
+        cdbg(SCHED_CHECKED, "SS %u A %u\r\n", slotNum, activeNode);
         cdbg(SCHED_CHECKED, "master + active: next %x\r\n", activeNode);
         signalEnd = TRUE;
         if (ctsMsg == NULL){
@@ -702,6 +739,7 @@ module SlotSchedulerP {
 //            pl -> addr = activeNode;
             call CXLinkPacket.setDestination(ctsMsg, activeNode);
             //header only
+            ctsStart = call FrameTimer.getNow();
             error = send(ctsMsg, 0,
               call SlotController.maxDepth[activeNS](activeNS));
             if (error == SUCCESS){
@@ -715,7 +753,7 @@ module SlotSchedulerP {
           cerror(SCHED, "CTS msg not available.\r\n");
         }
       } else {
-        cdbg(SCHED, "End of active\r\n");
+        cdbg(SCHED, "EA\r\n");
         post logNeighborhood();
         //end of active period: can sleep now.
         call LppControl.sleep();
@@ -723,7 +761,9 @@ module SlotSchedulerP {
         call FrameTimer.stop();
       }
     } else {
-      error_t error = rx(CTS_TIMEOUT, TRUE);
+      error_t error;
+      ctsStart = call FrameTimer.getNow();
+      error = rx(CTS_TIMEOUT, TRUE);
       if (error == SUCCESS){
         state = S_SLOT_CHECK;
       }else{
@@ -788,5 +828,7 @@ module SlotSchedulerP {
   default command uint32_t SlotController.wakeupLen[uint8_t ns](uint8_t ns1){
     return 0;
   }
+
+  event void StateDump.dumpRequested(){}
 
 }

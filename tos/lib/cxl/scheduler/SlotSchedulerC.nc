@@ -55,4 +55,9 @@ configuration SlotSchedulerC{
   components RebootCounterC;
   SlotSchedulerP.RebootCounter -> RebootCounterC;
 
+  components CXProbeScheduleC;
+  SlotSchedulerP.ProbeSchedule -> CXProbeScheduleC.Get;
+
+  components StateDumpC;
+  SlotSchedulerP.StateDump -> StateDumpC;
 }
