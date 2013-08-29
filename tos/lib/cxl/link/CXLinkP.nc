@@ -88,15 +88,6 @@ module CXLinkP {
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
   }
 
-  uint32_t lastTF;
-  uint32_t lastFL;
-  uint8_t lastHC;
-  uint32_t lastFR1;
-  uint32_t lastSR;
-  uint32_t lastFR2;
-  uint32_t lastFT;
-  uint32_t lastST;
-  uint32_t lastPL;
 
   #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   event void StateDump.dumpRequested(){
@@ -110,16 +101,6 @@ module CXLinkP {
     }
     atomic cerror(LINK, "Link %x rxm %p fwd %p phy %x \r\n",
       lState, rxMsg, fwdMsg, pState); 
-    atomic cerror(LINK, "TS calc: tf %lu fl %lu hc %u fr1 %lu sr %lu fr2 %lu ft %lu st %lu pl %lu\r\n", 
-      lastTF,
-      lastFL,
-      lastHC,
-      lastFR1,
-      lastSR,
-      lastFR2,
-      lastFT,
-      lastST, 
-      lastPL);
   }
   #else
   event void StateDump.dumpRequested(){
@@ -149,15 +130,6 @@ module CXLinkP {
       slowTicks += fastToSlow((flLocal*(metadata(msg)->rxHopCount-1)));
       metadata(msg)->time32k = slowRef - slowTicks;
       metadata(msg)->timeMilli = milliRef - (slowTicks >> 5);
-      lastTF = metadata(msg)->timeFast;
-      lastFL = flLocal;
-      lastHC = metadata(msg)->rxHopCount;
-      lastFR1 = fastRef1;
-      lastSR  = slowRef;
-      lastFR2 = fastRef2;
-      lastFT = fastTicks;
-      lastST = slowTicks;
-      lastPL = call CXLinkPacket.len(msg);
     }
   }
   
