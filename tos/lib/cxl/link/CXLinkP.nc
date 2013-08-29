@@ -87,6 +87,17 @@ module CXLinkP {
     //OK w.r.t overflow as long as fastTicks is 22 bits or less (0.64 seconds)
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
   }
+
+  uint32_t lastTF;
+  uint32_t lastFL;
+  uint8_t lastHC;
+  uint32_t lastFR1;
+  uint32_t lastSR;
+  uint32_t lastFR2;
+  uint32_t lastFT;
+  uint32_t lastST;
+  uint32_t lastPL;
+
   #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   event void StateDump.dumpRequested(){
     uint8_t lState;
@@ -99,6 +110,16 @@ module CXLinkP {
     }
     atomic cerror(LINK, "Link %x rxm %p fwd %p phy %x \r\n",
       lState, rxMsg, fwdMsg, pState); 
+    atomic cerror(LINK, "TS calc: tf %lu fl %lu hc %u fr1 %lu sr %lu fr2 %lu ft %lu st %lu pl %lu\r\n", 
+      lastTF,
+      lastFL,
+      lastHC,
+      lastFR1,
+      lastSR,
+      lastFR2,
+      lastFT,
+      lastST, 
+      lastPL);
   }
   #else
   event void StateDump.dumpRequested(){
@@ -115,7 +136,7 @@ module CXLinkP {
   rf1a_metadata_t* phy(message_t* msg){
     return (call CXLinkPacket.getPhyMetadata(msg));
   }
-
+  
   void applyTimestamp(message_t* msg){
     atomic{
       uint32_t fastRef1 = call FastAlarm.getNow();
@@ -124,10 +145,19 @@ module CXLinkP {
       uint32_t milliRef = call LocalTimeMilli.get();
       uint32_t fastTicks = fastRef1 + ((fastRef2-fastRef1)/2) - metadata(msg)->timeFast;
       uint32_t slowTicks = fastToSlow(fastTicks);
-      slowTicks += fastToSlow((frameLen*(metadata(msg)->rxHopCount-1)));
+      uint32_t flLocal = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
+      slowTicks += fastToSlow((flLocal*(metadata(msg)->rxHopCount-1)));
       metadata(msg)->time32k = slowRef - slowTicks;
       metadata(msg)->timeMilli = milliRef - (slowTicks >> 5);
-
+      lastTF = metadata(msg)->timeFast;
+      lastFL = flLocal;
+      lastHC = metadata(msg)->rxHopCount;
+      lastFR1 = fastRef1;
+      lastSR  = slowRef;
+      lastFR2 = fastRef2;
+      lastFT = fastTicks;
+      lastST = slowTicks;
+      lastPL = call CXLinkPacket.len(msg);
     }
   }
   
@@ -279,9 +309,12 @@ module CXLinkP {
       call Rf1aPhysical.setPower(MIN_POWER);
     }
     if (error != SUCCESS){
-      cwarn(LINK, "TXR %x\r\n", error);
+      cerror(LINK, "TXR %x\r\n", error);
 //      //mark this transmission as having failed CRC so we stop
 //      //forwarding it.
+      //TODO: why is this commented? we should stop forwarding. Or at
+      //  least, we should turn the power down so that we can keep
+      //  timing going as-is
 //      phy(rxMsg)->lqi &= ~0x80;
     }
     
@@ -297,7 +330,10 @@ module CXLinkP {
     if (localState == S_TX || localState == S_FWD){
       if (readyForward(fwdMsg)){
         cdbg(LINK, "LFWD\r\n");
-        subsend(fwdMsg);
+        error = subsend(fwdMsg);
+        if (error != SUCCESS){
+          cerror(LINK, "SS1 %x\r\n", error);
+        }
       } else {
         call FastAlarm.stop();
         cinfo(LINK, "LD %u %u %u %u\r\n",
@@ -322,12 +358,16 @@ module CXLinkP {
             header(fwdMsg)->source, 
             header(fwdMsg)->sn);
           applyTimestamp(fwdMsg);
+
+          #if DL_LINK <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
           if (synchMiss){
             post logSynchMiss();
           }
           if (retxMiss){
             post logRetxMiss();
           }
+          #endif
+
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -556,7 +596,7 @@ module CXLinkP {
             retxMiss = FALSE;
           }
         }else{
-          cwarn(LINK, "ss %x\r\n", error);
+          cerror(LINK, "SS2 %x\r\n", error);
         }
       }
       return error;
@@ -579,9 +619,7 @@ module CXLinkP {
         call SynchCapture.captureRisingEdge();
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
-        if (error == SUCCESS){
-          frameLen = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
-        }
+        frameLen = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
       }else{
         cwarn(LINK, "rp.st %x\r\n", error);
       }
@@ -657,12 +695,16 @@ module CXLinkP {
 
     if (localState == S_RX){
       if (readyForward(rxMsg) ){
+        error_t error;
         atomic{
           state = S_FWD;
           fwdMsg = rxMsg;
         }
         call Rf1aPhysical.setPower(MAX_POWER);
-        subsend(fwdMsg);
+        error = subsend(fwdMsg);
+        if (error != SUCCESS){
+          cerror(LINK, "SS0 %x\r\n", error);
+        }
       }else{
         call FastAlarm.stop();
         atomic {
@@ -695,12 +737,12 @@ module CXLinkP {
           //If there was still time left on the clock when we stopped
           //it, fire it up again.
           if (rxRemaining < origTimeout){
-            uint32_t lastTimeout = origTimeout;
+//            uint32_t lastTimeout = origTimeout;
             error_t error = call CXLink.rx(rxRemaining, 
               allowForward);
             if (error == SUCCESS){
-              printf("RR %lu < %lu\r\n",
-                rxRemaining, lastTimeout);
+//              printf("RR %lu < %lu\r\n",
+//                rxRemaining, lastTimeout);
               //pass
             }else{
               doSignalRXDone();
