@@ -8,3 +8,7 @@ The Excel spreadsheets in /forms can be converted to XML forms by using the onli
 http://opendatakit.org/use/xlsform/
 
 
+The python script in /json can either be used as a command-line-tool to 
+convert json-files into csv files or importes as a module. Note that this 
+script is directly connected to the variable names used in the survey form 
+defined by the Excel sheet above.
