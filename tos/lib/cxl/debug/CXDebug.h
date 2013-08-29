@@ -59,6 +59,7 @@
 #endif
 #if RAW_SERIAL_PRINTF == 1
 #include <stdio.h>
+#define printfflush()
 #else
 #include "printf.h"
 #endif
@@ -71,6 +72,7 @@
 #define cwarnclr(channel, fmt, ...) cdbg_cond(DL_WARN, channel,  fmt, ##__VA_ARGS__)
 #define cerror(channel, fmt, ...) cdbg_cond(DL_ERROR, channel, "!" fmt, ##__VA_ARGS__)
 #define cerrorclr(channel, fmt, ...) cdbg_cond(DL_ERROR, channel, fmt, ##__VA_ARGS__)
+
 
 #define cflush_cond(level, channel) if ( DL_ ## channel <= level && DL_GLOBAL <= level){printfflush();}
 #define cflushdbg(channel) cflush_cond(DL_DEBUG, channel)
