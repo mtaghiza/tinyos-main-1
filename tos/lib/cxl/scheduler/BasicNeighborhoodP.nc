@@ -27,14 +27,26 @@ module BasicNeighborhoodP {
           return msg;
         }
       }
-      //add them to the neighborhood if we are still filling it OR with
-      //50% chance of evicting a previous resident
+      //add them to the neighborhood if we are still filling it 
+      // OR 
+      //use the position in the neighbor table to determine how likely
+      //  we are to evict from it. This is because nodes which are
+      //  woken up early in the process are most at risk for eviction
+      //  (because there are only a few others that know about them
+      //  AND those nodes will be likely to hear lots more probes
+      //  (since they woke up in the beginning of the process when
+      //  there's tons of dudes still probing))
       if (numNeighbors < CX_NEIGHBORHOOD_SIZE ){
         //new
         cdbg(SCHED, "N %u %u\r\n", neighborIndex, src);
         neighbors[neighborIndex] = src;
       }else{
-        if(call Random.rand32() & BIT1){
+        //This ensures that the first probe you hear cannot be
+        //  evicted. This is
+        //  important, because otherwise there is a 50% chance that 
+        //  the base station will drop the first node it hears and
+        //  that node will not be contacted.
+        if((call Random.rand16()%CX_NEIGHBORHOOD_SIZE ) < neighborIndex){
           //evict
           cdbg(SCHED, "E %u %u -> %u\r\n", neighborIndex, neighbors[neighborIndex], src);
           neighbors[neighborIndex] = src;
