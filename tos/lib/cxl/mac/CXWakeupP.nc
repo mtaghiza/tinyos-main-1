@@ -299,6 +299,9 @@ module CXWakeupP {
     }
   }
 
+  am_addr_t lastSrc = AM_BROADCAST_ADDR;
+  uint16_t lastSn;
+
   event message_t* SubReceive.receive(message_t* msg, void* pl, uint8_t len){
     cinfo(LPP, "MRX %u %u %u %x\r\n",
       (call CXLinkPacket.getLinkHeader(msg))->source,
@@ -333,6 +336,8 @@ module CXWakeupP {
           return signal LppProbeSniffer.sniffProbe(msg);
         }
     } else {
+      am_addr_t src = (call CXLinkPacket.getLinkHeader(msg))->source;
+      uint16_t sn = (call CXLinkPacket.getLinkHeader(msg))->sn;
       //if state is check and we hear an ongoing non-probe transmission, 
       // we should wake up and stop waiting to hear our probe come
       // back.
@@ -355,7 +360,19 @@ module CXWakeupP {
       //N.B: if state is S_IDLE, then we still signal this up but we
       //do not wake up. This can be used, for instance, to force the
       //node to listen without waking up the network.
-      return signal Receive.receive(msg, pl, len);
+      //filter duplicates here: generally speaking, the only time we
+      //can get duplicates is when a node misses its send deadline and
+      //sends it a little bit late. depending on how this goes down,
+      //it's possible for a packet to get delayed enough that it gets
+      //sent after the original flood has finished.
+
+      if (lastSrc == src && lastSn == sn){
+        return msg;
+      }else{
+        lastSrc = src;
+        lastSn = sn;
+        return signal Receive.receive(msg, pl, len);
+      }
     }
   }
 
@@ -428,7 +445,7 @@ module CXWakeupP {
           cerror(LPP, "LPP.s s: %x\r\n", error);
           call StateDump.requestDump();
         }
-        call ProbeTimer.startOneShot((2*LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
+        call ProbeTimer.startOneShot((LPP_SLEEP_TIMEOUT)+randomize(probeInterval));
         post signalFellAsleep();
         return SUCCESS;
       }
