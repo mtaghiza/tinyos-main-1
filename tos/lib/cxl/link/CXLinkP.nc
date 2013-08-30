@@ -256,7 +256,7 @@ module CXLinkP {
   }
 
   async event void Rf1aPhysical.sendDone (int result) { 
-    P1OUT &= ~BIT1;
+//    P1OUT &= ~BIT1;
     atomic{
       sfdAdjust = TX_SFD_ADJUST;
       aTxResult = result;
@@ -379,7 +379,7 @@ module CXLinkP {
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
-      P1OUT |= BIT1;
+//      P1OUT |= BIT1;
       call DelayedSend.startSend();
 //      P1OUT &= ~BIT2;
     } else if (state == S_RX){
@@ -387,7 +387,7 @@ module CXLinkP {
         aExtended = TRUE;
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
-        P1OUT &= ~BIT1;
+//        P1OUT &= ~BIT1;
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
         call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
           RF1A_OM_IDLE);
@@ -446,7 +446,7 @@ module CXLinkP {
       error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
-      P1OUT |= BIT1;
+//      P1OUT |= BIT1;
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
       //here.
@@ -623,7 +623,7 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
-    P1OUT &= ~BIT1;
+//    P1OUT &= ~BIT1;
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
