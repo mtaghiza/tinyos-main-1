@@ -158,7 +158,7 @@ module CXMasterP {
     
     //if we've got this node recorded in network membership, fill in
     //its distance.
-    for (k = 0; k < totalNodes; k++){
+    for (k = 0; k < totalNodes && k < MAX_NETWORK_MEMBERS; k++){
       if (membership.members[k] == call CXLinkPacket.source(msg)){
         membership.distances[k] = pl->distance;
         if (membership.members[k] == 
