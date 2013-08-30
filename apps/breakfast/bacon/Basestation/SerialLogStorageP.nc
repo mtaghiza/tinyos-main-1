@@ -18,15 +18,12 @@ generic module SerialLogStorageP(){
         sizeof(log_record_data_msg_t));
       log_record_t* lr = (log_record_t*)(&pl[0]);
       error_t error;
-      
-      //TODO: what should cookie be?
+      //TODO: cookie could be used better here, I should think.
       lr->cookie = 0;
       lr->length = len;
       memcpy(lr->data, buf, len);
 
-      //TODO: length correct?
       pl->length = sizeof(log_record_t) + lr->length;
-    
       pl->nextCookie = lr->cookie + (lr->length + 1);
       call AMPacket.setSource(msg, call ActiveMessageAddress.amAddress());
       error = call AMSend.send(0, msg, sizeof(log_record_data_msg_t));
