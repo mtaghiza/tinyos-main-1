@@ -91,9 +91,12 @@ implementation
       //disable flash chip
       P2SEL &= ~BIT1;
       P2OUT |=  BIT1;
-      P1SEL &= ~BIT1;
-      P1OUT &= ~BIT1;
-      P1DIR |=  BIT1;
+
+
+      P1SEL &= ~(BIT1|BIT2|BIT3|BIT4);
+      P1OUT &= ~(BIT1|BIT2|BIT3|BIT4);
+      P1DIR |=  (BIT1|BIT2|BIT3|BIT4);
+
     }
     #endif
   }
