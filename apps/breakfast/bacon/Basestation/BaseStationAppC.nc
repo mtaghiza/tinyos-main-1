@@ -57,6 +57,10 @@ implementation {
   BaseStationP.CXDownload -> CXBaseStationC.CXDownload;
   BaseStationP.StatusReceive -> CXBaseStationC.StatusReceive;
 
+  components new SerialLogStorageC();
+  CXBaseStationC.LogWrite -> SerialLogStorageC.LogWrite;
+  SerialLogStorageC.Pool -> RadioAM.Pool;
+
   components new SerialAMReceiverC(AM_CX_DOWNLOAD) 
     as CXDownloadReceive;
   BaseStationP.CXDownloadReceive -> CXDownloadReceive;
