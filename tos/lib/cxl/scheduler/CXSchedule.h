@@ -41,6 +41,12 @@
 
 #define CTS_TIMEOUT (FRAMELEN_FAST_SHORT*CX_MAX_DEPTH + ((RX_SLACK * 2UL* FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW))
 
+//EOS_FRAMES: integer for the number of partial full-length frames required by a
+//max-depth fast flood. e.g. if FLFS is 1/5 of a normal frame and
+//max_depth is 11, we need to allow 2.2 frames (roundd up to 3) for the EOS message in
+//order for it to not interfere with the start of the next slot.
+#define EOS_FRAMES ((CTS_TIMEOUT / FRAMELEN_FAST_NORMAL) + 1)
+
 #ifndef CX_DEFAULT_BW
 #define CX_DEFAULT_BW 2
 #endif
@@ -52,5 +58,6 @@
 #ifndef MISSED_CTS_THRESH
 #define MISSED_CTS_THRESH 2
 #endif
+
 
 #endif

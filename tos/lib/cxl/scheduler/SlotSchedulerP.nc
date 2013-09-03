@@ -343,8 +343,7 @@ module SlotSchedulerP {
       //ok. we are still in the process of receiving/forwarding a
       //packet, it appears.
       //pass
-    } else if (framesLeft <= 1){
-      //TODO: framesLeft should be 0 or 1?
+    } else if (framesLeft <= EOS_FRAMES){
       switch(state){
         //We can be in any of these three states when the last frame
         //starts.
@@ -361,6 +360,7 @@ module SlotSchedulerP {
             //TODO: need to verify that if we miss status and enter
             //this state, it doesn't screw up the start of the next
             //slot.
+            //It does, in fact, but only if CTS_TIMEOUT > EOS_FRAMES*FRAMELEN
             error_t error = rx(CTS_TIMEOUT, TRUE);
             cdbg(SCHED, "NSW\r\n");
             if (error != SUCCESS){
@@ -511,7 +511,7 @@ module SlotSchedulerP {
               call CXLinkPacket.destination(msg)),
             call SlotController.bw[activeNS](activeNS));
           //need to leave 1 frame for EOS message
-          if (framesLeft <= clearTime(msg) + 1){
+          if (framesLeft <= clearTime(msg) + EOS_FRAMES){
 //            printf("c\r\n");
             pendingMsg = NULL;
             cdbg(SCHED_CHECKED, "end\r\n");
@@ -719,6 +719,12 @@ module SlotSchedulerP {
         slotNum --;
       }
     }
+
+    //NB we could still be in S_SLOT_END if we miss a status
+    //message, wait for the end-of-slot message, and the time for an
+    //EOS RX to finish spills over the last frame. This shouldn't
+    //happen if EOS_FRAMES is defined correctly (the number of frames
+    //required for a max-depth short-packet flood)
     if (call SlotController.isMaster[activeNS]()){
       if(call SlotController.isActive[activeNS]()){
         am_addr_t activeNode = 
@@ -747,6 +753,7 @@ module SlotSchedulerP {
             }else{
               cerror(SCHED, "Failed to send cts %x\r\n", error);
               call Pool.put(ctsMsg);
+              ctsMsg = NULL;
             }
           }
         } else {
