@@ -123,6 +123,9 @@ module CXWakeupP {
     }
     error = call SubSend.send(probe, 
       call LinkPacket.payloadLength(probe));
+    if ((call CXLinkPacket.getSn(probe) % PROBE_LOG_INTERVAL) == 1){
+      cinfo(LPP_PROBE, "SP %u\r\n", call CXLinkPacket.getSn(probe));
+    }
     cdbg(LPP, "MS p\r\n");
     if (SUCCESS != error){
       cerror(LPP, "pt.f ss %x\r\n", error);
