@@ -128,8 +128,15 @@ module CXLinkP {
       uint32_t slowTicks = fastToSlow(fastTicks);
       uint32_t flLocal = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
       slowTicks += fastToSlow((flLocal*(metadata(msg)->rxHopCount-1)));
-      metadata(msg)->time32k = slowRef - slowTicks;
-      metadata(msg)->timeMilli = milliRef - (slowTicks >> 5);
+      if (metadata(msg)->timeFast != 0){
+        metadata(msg)->time32k = slowRef - slowTicks;
+        metadata(msg)->timeMilli = milliRef - (slowTicks >> 5);
+      }else{
+        //no SFD capture: leave timestamps set to 0.
+        cwarn(LINK, "NTS\r\n");
+        metadata(msg)->time32k = 0;
+        metadata(msg)->timeMilli = 0;
+      }
     }
   }
   
@@ -290,7 +297,7 @@ module CXLinkP {
 //      phy(rxMsg)->lqi &= ~0x80;
     }
     
-    //apply the timestamp.
+    //apply the raw timestamp.
     if (metadata(fwdMsg)->timeFast == 0){
       atomic metadata(fwdMsg)->timeFast = aSfdCapture - sfdAdjust;
 //        cdbg(SCHED, "TS %lu - %lu - (%lu * (%u - 1)) = %lu \r\n",
@@ -569,6 +576,8 @@ module CXLinkP {
           }
         }else{
           cerror(LINK, "SS2 %x\r\n", error);
+          //Should be OK to just signal this error up and deal with it
+          //at a higher layer.
         }
       }
       return error;
