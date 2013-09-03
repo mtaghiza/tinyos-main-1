@@ -50,7 +50,14 @@ typedef nx_struct cx_lpp_probe {
 //going to be able to start listening for the ack immediately, so
 //using a 1.02 ms timeout is pretty conservative.
 #define CHECK_TIMEOUT (6630UL + (FRAMELEN_FAST_SHORT - 24700UL))
-#define CHECK_TIMEOUT_SLOW (34UL)
+
+//This constant is put in to accommodate RX extensions due to channel
+//activity detection at the link layer.
+#ifndef CHECK_TIMEOUT_PADDING
+#define CHECK_TIMEOUT_PADDING 18
+#endif
+
+#define CHECK_TIMEOUT_SLOW (34UL + CHECK_TIMEOUT_PADDING)
 
 //roughly 660 seconds
 #define RX_TIMEOUT_MAX (0xFFFFFFFF)
