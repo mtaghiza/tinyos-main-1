@@ -6,10 +6,10 @@ module CXProbeScheduleStaticP {
   provides interface Init;
 } implementation {
   probe_schedule_t sched = { 
-    .channel={GLOBAL_CHANNEL, 32, 64},
+    .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
     .invFrequency={1, 1, 1},
     .bw={2, 2, 2},
-    .maxDepth={5,5,5}
+    .maxDepth={8,5,5}
   };
 
 
