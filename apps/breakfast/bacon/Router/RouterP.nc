@@ -37,6 +37,8 @@ module RouterP{
 
   event void Timer.fired(){
     error_t error = call CXDownload.startDownload();
+    cdbg(SCHED, "CXSD %x\r\n", error);
+    //getting 6 here
     if (error == ERETRY){
       //This indicates something else was going on (for instance, we
       //were participating in a routers -> BS download) and should be
@@ -48,6 +50,7 @@ module RouterP{
   }
 
   event void CXDownload.downloadFinished(){
+    cdbg(SCHED, "DF\r\n");
     post downloadNext();
   }
 
