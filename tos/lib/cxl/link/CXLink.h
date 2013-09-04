@@ -21,7 +21,10 @@
 //#define FRAMELEN_FAST_SHORT (84500UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT (90000UL * CX_SCALE_TIME)
 //#define FRAMELEN_FAST_SHORT FRAMELEN_FAST_NORMAL
-#define FRAMELEN_FAST_SHORT (19700UL + 5000UL)
+//#define FRAMELEN_FAST_SHORT (19700UL + 5000UL)
+//Experiments indicate that at this length, we have very few missed tx
+//deadlines at forwarders.
+#define FRAMELEN_FAST_SHORT 37050UL
 #endif
 
 //TODO: these should be based on sizeof's/whether FEC is in use.
