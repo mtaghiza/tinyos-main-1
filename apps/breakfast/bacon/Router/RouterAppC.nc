@@ -78,4 +78,8 @@ configuration RouterAppC{
   components new LogStorageC(VOLUME_RECORD, TRUE) 
     as NetworkMembershipLS;
   CXRouterC.LogWrite -> NetworkMembershipLS;
+
+  components new AMReceiverC(AM_CX_DOWNLOAD) as CXDownloadReceive;
+  RouterP.CXDownloadReceive -> CXDownloadReceive; 
+
 }

@@ -13,6 +13,8 @@ module RouterP{
   uses interface Timer<TMilli>;
   uses interface SettingsStorage;
   uses interface CXDownload;
+  uses interface Receive as CXDownloadReceive;
+
 } implementation {
 
   event void Boot.booted(){
@@ -88,5 +90,11 @@ module RouterP{
       //still handling last packet
       return msg;
     }
+  }
+
+  event message_t* CXDownloadReceive.receive(message_t* msg, 
+      void* pl, uint8_t len){
+    cdbg(SCHED, "CXDR\r\n");
+    return msg;
   }
 }
