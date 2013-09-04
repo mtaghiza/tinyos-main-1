@@ -24,6 +24,6 @@ enum {
 //This is how long the router will wait before trying to download
 //again if it gets an EBUSY (e.g. because it was already active doing
 //a router download).
-#define DOWNLOAD_RETRY_INTERVAL (60UL*60UL*1024UL)
+#define DOWNLOAD_RETRY_INTERVAL (10UL*1024UL)
 
 #endif

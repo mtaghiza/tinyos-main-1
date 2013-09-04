@@ -1,6 +1,8 @@
 
  #include "AM.h"
  #include "router.h"
+ #include "CXRouter.h"
+ #include "multiNetwork.h"
 module RouterP{
   uses interface Boot;
   uses interface SplitControl;
@@ -35,8 +37,13 @@ module RouterP{
 
   event void Timer.fired(){
     error_t error = call CXDownload.startDownload();
-    if (error != SUCCESS){
+    if (error == ERETRY){
+      //This indicates something else was going on (for instance, we
+      //were participating in a routers -> BS download) and should be
+      //OK to try again momentarily.
       call Timer.startOneShot(DOWNLOAD_RETRY_INTERVAL);
+    }else{
+      post downloadNext();
     }
   }
 
@@ -94,7 +101,11 @@ module RouterP{
 
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
-    cdbg(SCHED, "CXDR\r\n");
+    cx_download_t* dpl = (cx_download_t*)pl;
+    cdbg(SCHED, "CXDR %u\r\n", dpl->networkSegment);
+    if (dpl->networkSegment == NS_SUBNETWORK){
+      signal Timer.fired();
+    }
     return msg;
   }
 }
