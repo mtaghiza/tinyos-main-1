@@ -316,7 +316,7 @@ generic module RecordPushRequestP() {
                     pushCookie = call LogRead.currentOffset();
                     call LogNotify.reportSent(recordsRead);
                     if (recordsRead == 0){
-                      printf("none read, force flush\r\n");
+//                      printf("none read, force flush\r\n");
                       call LogNotify.forceFlushed();
                     }
                     pushInQueue = FALSE;

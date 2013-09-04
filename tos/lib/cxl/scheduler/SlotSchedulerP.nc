@@ -787,7 +787,7 @@ module SlotSchedulerP {
       if (error == SUCCESS){
         state = S_SLOT_CHECK;
       }else{
-        cerror(SCHED, "Failed to listen for CTS %x\r\n", error);
+        cerror(SCHED, "CTSLF %x\r\n", error);
         state = S_UNUSED_SLOT;
       }
     }

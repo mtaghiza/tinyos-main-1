@@ -908,7 +908,7 @@ generic module HplMsp430Rf1aP () @safe() {
       if ((RF1A_S_RX == (RF1A_S_MASK & call Rf1aIf.strobe(RF_SNOP)))
           && (TX_S_inactive == tx_state) // safety check: do not trash active transmissions
           && (0 < call Rf1aIf.readRegister(TXBYTES))) {
-        printf("ERROR: RX mode but %d TXBYTES queued, tx state %d\r\n", call Rf1aIf.readRegister(TXBYTES), tx_state);
+        printf("RXMTXB %d %d\r\n", call Rf1aIf.readRegister(TXBYTES), tx_state);
         resetAndFlushTxFifo_();
       }
 
