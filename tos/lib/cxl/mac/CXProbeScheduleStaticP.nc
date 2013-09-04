@@ -13,9 +13,11 @@ module CXProbeScheduleStaticP {
     .maxDepth={8,5,5}
   };
   #elif CX_ROUTER == 1
+  //argh, I wish that invFrequency could be 0 for Subnetwork channel,
+  //but that breaks the wakeup len logic.
   probe_schedule_t sched = { 
     .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
-    .invFrequency={1, 0, 1},
+    .invFrequency={1, 1, 1},
     .bw={2, 2, 2},
     .maxDepth={8,5,5}
   };
