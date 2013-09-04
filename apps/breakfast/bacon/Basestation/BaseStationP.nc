@@ -4,6 +4,7 @@
  #include "basestation.h"
  #include "multiNetwork.h"
  #include "CXMac.h"
+ #include "CXRouter.h"
  #include "CXBasestationDebug.h"
 
 module BaseStationP @safe() {

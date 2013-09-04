@@ -1,6 +1,14 @@
 #ifndef CX_ROUTER_H
 #define CX_ROUTER_H
 
+typedef nx_struct cx_download {
+  nx_uint8_t networkSegment;
+} cx_download_t;
+
+enum{
+  AM_CX_DOWNLOAD=0xD0,
+};
+
 typedef struct contact_entry{
   am_addr_t nodeId;
   bool dataPending;

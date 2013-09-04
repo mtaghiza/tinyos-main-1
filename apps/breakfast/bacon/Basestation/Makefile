@@ -95,7 +95,7 @@ LPPMIGDIR = lpp
 MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/CxLppWakeup.py 
 
 CXMIGDIR = cx/messages
-MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
+MIGCLASSES += $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
 
 SSMIGDIR = $(CXMIGDIR)
 MIGCLASSES += $(SSMIGDIR)/SetSettingsStorageMsg.py
@@ -122,6 +122,9 @@ $(LPPMIGDIR)/%.py: $(LPPMIGDIR)
 
 $(CXMIGDIR):
 	mkdir -p $(CXMIGDIR)
+
+$(CXMIGDIR)/CxDownload.py: $(CXMIGDIR)
+	genMig.sh $(PLATFORM) CXRouter.h $@ $(CFLAGS) 
 
 $(CXMIGDIR)/%.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
