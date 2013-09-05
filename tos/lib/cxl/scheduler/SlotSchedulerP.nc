@@ -300,6 +300,7 @@ module SlotSchedulerP {
         }
 
       case CXM_EOS:
+        cdbg(SCHED, "RE\r\n");
         return call SlotController.receiveEOS[activeNS](msg, 
           call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
@@ -368,7 +369,7 @@ module SlotSchedulerP {
             //slot.
             //It does, in fact, but only if CTS_TIMEOUT > EOS_FRAMES*FRAMELEN
             error_t error = rx(CTS_TIMEOUT, TRUE);
-            cdbg(SCHED, "NSW\r\n");
+//            cdbg(SCHED, "NSW\r\n");
             if (error != SUCCESS){
               cerror(SCHED, "FT %x: rx %x\r\n", state, error);
             }else {
