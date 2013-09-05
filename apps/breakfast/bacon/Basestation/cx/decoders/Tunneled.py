@@ -12,14 +12,6 @@ class Tunneled(Decoder.Decoder):
     def recordType(cls):
         return 0x15
 
-    def unpack(self, source, cookie, data):
-        rc = self.decode(data[0:2])
-        baseTime = self.decode(data[2:6])
-        battery = self.decode(data[6:8])
-        light = self.decode(data[8:10])
-        thermistor = self.decode(data[10:12])
-        return (source, cookie, rc, baseTime, battery, light, thermistor)
-
     def insert(self, source, cookie, data):
         tunneledSrc = self.decode(data[0:2])
         am_type = self.decode(data[2:4])
