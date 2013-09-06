@@ -97,4 +97,7 @@ implementation {
   components CXLinkPacketC;
   BaseStationP.CXLinkPacket -> CXLinkPacketC;
 
+  components new TimerMilliC();
+  BaseStationP.FlushTimer -> TimerMilliC;
+
 }

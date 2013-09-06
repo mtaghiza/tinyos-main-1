@@ -57,6 +57,8 @@ module BaseStationP @safe() {
   uses interface Queue<queue_entry_t> as SerialRXQueue;
   uses interface Queue<queue_entry_t> as RadioTXQueue;
   uses interface Queue<queue_entry_t> as SerialTXQueue;
+
+  uses interface Timer<TMilli> as FlushTimer;
 }
 
 implementation
@@ -76,6 +78,7 @@ implementation
     uint8_t i;
     call RadioControl.start();
     call SerialControl.start();
+    call FlushTimer.startPeriodic(1024);
     
     #ifdef CC430_PIN_DEBUG
     atomic{
@@ -500,6 +503,15 @@ implementation
 
   default command error_t CXDownload.startDownload[uint8_t ns](){
     return EINVAL;
+  }
+  
+  uint8_t ftCount;
+  event void FlushTimer.fired(){
+    if ((ftCount % 64) == 0){
+      cdbg(BASESTATION, "(keepalive)\r\n");
+    }
+    ftCount ++;
+    printfflush();
   }
 
 }  
