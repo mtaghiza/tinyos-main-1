@@ -16,18 +16,25 @@ configuration RouterAppC{
 
   components MainC;
   components RouterP;
+  components ActiveMessageC;
 
+  
+  #ifndef ENABLE_AUTOPUSH
+  #define ENABLE_AUTOPUSH 1
+  #endif
 
-  components new PoolC(message_t, 4);
-
+  #if ENABLE_AUTOPUSH == 1
   components new RecordPushRequestC(VOLUME_RECORD, TRUE);
   components new RouterAMSenderC(AM_LOG_RECORD_DATA_MSG);
   components CXLinkPacketC;
 
-  RecordPushRequestC.Pool -> PoolC;
+  RecordPushRequestC.Pool -> ActiveMessageC;
   RecordPushRequestC.AMSend -> RouterAMSenderC;
   RecordPushRequestC.Packet -> RouterAMSenderC;
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
+  #else
+  #warning "Disable autopush"
+  #endif
 
   #ifndef ENABLE_SETTINGS_CONFIG
   #define ENABLE_SETTINGS_CONFIG 1
@@ -35,7 +42,7 @@ configuration RouterAppC{
 
   #if ENABLE_SETTINGS_CONFIG == 1
   components SettingsStorageConfiguratorC;
-  SettingsStorageConfiguratorC.Pool -> PoolC;
+  SettingsStorageConfiguratorC.Pool -> ActiveMessageC;
   #else
   #warning SettingsStorageConfigurator disabled!
   #endif
@@ -54,10 +61,11 @@ configuration RouterAppC{
   components new DummyLogWriteC();
   SettingsStorageC.LogWrite -> DummyLogWriteC;
   #endif
-
+  
+  #if ENABLE_AUTOPUSH == 1
   RecordPushRequestC.Get -> CXRouterC.Get[NS_ROUTER];
+  #endif
 
-  components ActiveMessageC;
   RouterP.SplitControl -> ActiveMessageC;
   RouterP.Boot -> MainC;
 
@@ -67,7 +75,7 @@ configuration RouterAppC{
 
   components new LogStorageC(VOLUME_RECORD, TRUE);
   RouterP.LogWrite -> LogStorageC;
-  RouterP.Pool -> PoolC;
+  RouterP.Pool -> ActiveMessageC;
 
   components CXRouterC;
   components new TimerMilliC();
