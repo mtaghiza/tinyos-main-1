@@ -127,6 +127,9 @@ module SlotSchedulerP {
   #warning logging CTS timing!
   uint32_t baseCTS;
   uint32_t ctsStart;
+  uint32_t rxStart;
+  uint32_t rxEnd;
+  bool didReceive;
   #else
   #endif
 
@@ -238,6 +241,9 @@ module SlotSchedulerP {
 
   event message_t* SubReceive.receive(message_t* msg, void* pl,
       uint8_t len){
+    #if LOG_CTS_TIME == 1
+    didReceive = TRUE;
+    #endif
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
       call ActiveMessageAddress.amAddress(), 
       call CXLinkPacket.rxHopCount(msg));
@@ -609,15 +615,30 @@ module SlotSchedulerP {
     } else {
       cerror(SCHED, "USDS %x\r\n", state);
     }
+    #if LOG_CTS_TIME == 1
+    cdbg(SCHED, "LTX %lu",
+      timestamp(msg) - baseCTS);
+    #endif
   }
 
 
   event void CXLink.rxDone(){
     pendingRX = FALSE;
+    #if LOG_CTS_TIME == 1
+    rxEnd = call FrameTimer.getNow();
+    cdbg(SCHED, "LRX %lu %lu %x\r\n", 
+      rxStart - baseCTS, 
+      rxEnd - baseCTS, 
+      didReceive);
+    #endif
     post nextRX();
   }
 
   error_t rx(uint32_t timeout, bool retx){
+    #if LOG_CTS_TIME == 1
+    didReceive = FALSE;
+    rxStart = call FrameTimer.getNow();
+    #endif
     if (pendingRX){
       cerror(SCHED, "RXP\r\n");
       return EBUSY;
@@ -655,8 +676,9 @@ module SlotSchedulerP {
     cdbg(SCHED_CHECKED, "next RX ");
     if (state == S_WAKEUP){
       uint32_t t = call SlotTimer.getNow();
+      bool stillWaking = wakeupTimeoutStillGoing(t);
       cdbg(SCHED_CHECKED, "wakeup\r\n");
-      if (wakeupTimeoutStillGoing(t)){
+      if (stillWaking){
         // - allow rest of network to wake up
         // - add 1 slow frame for the first CTS to go down
         uint32_t remainingTime = slowToFast(
@@ -669,16 +691,32 @@ module SlotSchedulerP {
         error = rx(remainingTime, TRUE);
         if (error != SUCCESS){
           cwarn(SCHED, "WURR %x\r\n", error);
+          stillWaking = FALSE;
         }
-      } else {
+      } 
+      if (! stillWaking){
         cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster[activeNS]()){
           signal SlotTimer.fired();
         } else {
           probe_schedule_t* sched = call ProbeSchedule.get();
-          rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
+          error_t error = rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
             TRUE);
-          state = S_SLOT_CHECK;
+          if (error != SUCCESS){
+            cerror(SCHED, "SRXF %x\r\n", error);
+            post logNeighborhood();
+            error = call LppControl.sleep();
+            call SlotTimer.stop();
+            call FrameTimer.stop();
+            if (error == SUCCESS){
+              state = S_UNSYNCHED;
+            }else{
+              //awjeez awjeez
+              cerror(SCHED, "FS 1 %x\r\n", error);
+            }
+          }else{
+            state = S_SLOT_CHECK;
+          }
         }
       }
     }else if (state == S_SLOT_CHECK){
@@ -755,7 +793,7 @@ module SlotSchedulerP {
 //            pl -> addr = activeNode;
             call CXLinkPacket.setDestination(ctsMsg, activeNode);
             //header only
-            #if LOG_CTS_TIMING == 1
+            #if LOG_CTS_TIME == 1
             ctsStart = call FrameTimer.getNow();
             #endif
             error = send(ctsMsg, 0,
@@ -781,7 +819,7 @@ module SlotSchedulerP {
       }
     } else {
       error_t error;
-      #if LOG_CTS_TIMING == 1
+      #if LOG_CTS_TIME == 1
       ctsStart = call FrameTimer.getNow();
       #endif
       error = rx(CTS_TIMEOUT, TRUE);
