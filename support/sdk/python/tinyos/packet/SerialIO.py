@@ -33,29 +33,42 @@ import serial
 from IO import *
 
 class SerialIO(IO):
-	def __init__(self, device, baud):
-		IO.__init__(self)
-		
-		self.device = device
-		self.baud = baud
-	
-	def open(self):
-		self.serial = serial.Serial(port=self.device,
-	                                baudrate=self.baud)
-	
-	def close(self):
-		self.serial.close()
-	
-	def read(self, count):
-		while self.serial.inWaiting() < count:
-			if self.isDone():
-				raise IODone()
-		
-		return self.serial.read(count)
-	
-	def write(self, data):
-		return self.serial.write(data)
-	
-	def flush(self):
-		self.serial.flushOutput()
+    def __init__(self, device, baud):
+        IO.__init__(self)
+        
+        self.device = device
+        self.baud = baud
+    
+    def open(self):
+        self.serial = serial.Serial(port=self.device,
+                                    baudrate=self.baud)
+        self.serial.flushInput()
+        self.serial.flushOutput()
+        self.serial.close()
+        self.serial = serial.Serial(port=self.device,
+                                    baudrate=self.baud)
+
+    
+    def close(self):
+        self.serial.close()
+    
+    def read(self, count):
+        while self.serial.inWaiting() < count:
+            if self.isDone():
+                raise IODone()
+        
+        return self.serial.read(count)
+    
+    def write(self, data):
+        return self.serial.write(data)
+    
+    def flush(self):
+        print >>sys.stderr, "Flushing the serial port",
+#         self.serial.flushInput()
+#         endtime = time.time() + 1
+#         while time.time() < endtime:
+#             self._s.read()
+#             sys.stdout.write(".")
+#         sys.stdout.write("\n")
+#         self.serial.flushOutput()
 
