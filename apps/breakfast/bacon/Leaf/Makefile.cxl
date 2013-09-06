@@ -13,6 +13,7 @@ CFLAGS += -DDEFAULT_PHOENIX_SAMPLE_INTERVAL=$(DEFAULT_PHOENIX_SAMPLE_INTERVAL)
 
 CFLAGS += -DCX_BASESTATION=0
 
+CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noShare
 CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noUart
 CFLAGS += -I$(TOSDIR)/platforms/bacon/chips/stm25p/noUart
 
