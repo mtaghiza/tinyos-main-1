@@ -200,6 +200,16 @@ def ping(packetSource, bsId, networkSegment, configFile):
         print "Cleaning up"
         d.stop()
 
+def sleep(packetSource, bsId, networkSegment, configFile, sleepDuration):
+    print "Sleeping for %f" % sleepDuration
+    db = Database.Database()
+    d = Dispatcher(packetSource, bsId, db, configFile)
+    try:
+        time.sleep(sleepDuration)
+    finally:
+        print "Cleaning up"
+        d.stop()
+
 def triggerRouterDownload(packetSource, bsId, networkSegment, configFile):
     db = Database.Database()
     d = Dispatcher(packetSource, bsId, db, configFile)
@@ -225,7 +235,10 @@ def triggerRouterDownload(packetSource, bsId, networkSegment, configFile):
             time.sleep(1)
             error = d.send(downloadMsg, 0xFFFF)
             print "Router download command: ",error
-            d.mif.downloadWait()
+            if error:
+                print "Router download failed"
+            else:
+                d.mif.downloadWait()
 
     except KeyboardInterrupt:
         pass
@@ -250,6 +263,7 @@ if __name__ == '__main__':
         networkSegment = int(sys.argv[3])
     if len(sys.argv) > 4:
         configFile = sys.argv[4]
+
     if '-p' in sys.argv:
         pIndex= sys.argv.index('-p')
         nodeList = [int(s, 16) for s in sys.argv[pIndex+2:] if s.startswith('0x')]
@@ -261,7 +275,10 @@ if __name__ == '__main__':
         ping(packetSource, bsId, networkSegment, configFile)
     elif '--routerDownload' in sys.argv:
         triggerRouterDownload(packetSource, bsId, networkSegment, configFile)
-    else:
-        print "Downloading"
+    elif '--download' in sys.argv:
         download(packetSource, bsId, networkSegment, configFile)
+
+    if '--sleep' in sys.argv:
+        sleepDuration = float(sys.argv[sys.argv.index('--sleep')+1])
+        sleep(packetSource, bsId, networkSegment, configFile, sleepDuration)
 
