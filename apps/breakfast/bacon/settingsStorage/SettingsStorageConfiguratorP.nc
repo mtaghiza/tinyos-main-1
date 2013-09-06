@@ -1,16 +1,18 @@
 
-#include "SettingsStorage.h"
+ #include "SettingsStorage.h"
 module SettingsStorageConfiguratorP{
   uses interface SettingsStorage;
 
   uses interface Receive as SetReceive;
 
-  uses interface Receive as GetReceive;
-  uses interface AMSend as GetSend;
-
   uses interface AMPacket;
 
+  #if ENABLE_SETTINGS_CONFIG_FULL == 1
+  uses interface Receive as GetReceive;
+  uses interface AMSend as GetSend;
   uses interface Receive as ClearReceive;
+  #else
+  #endif
 
   uses interface Pool<message_t>;
 } implementation {
@@ -53,6 +55,7 @@ module SettingsStorageConfiguratorP{
     pl = NULL;
   }
   
+  #if ENABLE_SETTINGS_CONFIG_FULL == 1
   task void getTask();
   event message_t* GetReceive.receive(message_t* msg, void* payload,
       uint8_t len){
@@ -104,6 +107,8 @@ module SettingsStorageConfiguratorP{
     rmsg = NULL;
     pl = NULL;
   }
+  #else
 
+  #endif
 
 }
