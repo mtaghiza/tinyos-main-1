@@ -1,40 +1,22 @@
 #!/bin/bash
 
-./burnRole.sh map.p0 Router\
-  MAX_POWER=0x8D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=16\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
-./burnRole.sh map.p0 Leaf -f Makefile.dummycxl \
-  MAX_POWER=0x2D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=16\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
+set -x
 
-./burnRole.sh map.p1 Router\
-  MAX_POWER=0x8D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=32\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
-./burnRole.sh map.p1 Leaf -f Makefile.dummycxl \
-  MAX_POWER=0x2D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=32\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
-
-./burnRole.sh map.p2 Router\
-  MAX_POWER=0x8D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=48\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
-./burnRole.sh map.p2 Leaf -f Makefile.dummycxl \
-  MAX_POWER=0x2D\
-  GLOBAL_CHANNEL=0\
-  SUBNETWORK_CHANNEL=48\
-  ROUTER_CHANNEL=64\
-  ENABLE_AUTOPUSH=1 
+routerPower=0xC3
+leafPower=0x2D
+for map in map.p0 map.p1 map.p2 map.p3
+do
+  snc=$(grep SNC $map | cut -d ' ' -f 2)
+  ./burnRole.sh $map Router\
+    MAX_POWER=$routerPower\
+    GLOBAL_CHANNEL=0\
+    SUBNETWORK_CHANNEL=$snc\
+    ROUTER_CHANNEL=64\
+    ENABLE_AUTOPUSH=1  || exit 1
+  ./burnRole.sh $map Leaf -f Makefile.dummycxl \
+    MAX_POWER=$leafPower\
+    GLOBAL_CHANNEL=0\
+    SUBNETWORK_CHANNEL=$snc\
+    ROUTER_CHANNEL=64\
+    ENABLE_AUTOPUSH=1 || exit 1
+done  
