@@ -15,5 +15,4 @@ generic configuration DummyArbiterC() {
     
 //  components new DummyResourceQueueC() as Queue;
 //  Arbiter.Queue -> Queue.FcfsQueue;
-
 }

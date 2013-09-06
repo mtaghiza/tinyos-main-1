@@ -1,3 +1,4 @@
+
 generic module DummyArbiterP(uint8_t default_owner_id){
   provides {
     interface Resource[uint8_t id];
@@ -34,6 +35,7 @@ generic module DummyArbiterP(uint8_t default_owner_id){
   async command error_t Resource.immediateRequest[uint8_t id]() {
     if (owner == NO_RES){
       owner = id;
+      call ResourceConfigure.configure[owner]();
       return SUCCESS;
     }else{
       return FAIL;

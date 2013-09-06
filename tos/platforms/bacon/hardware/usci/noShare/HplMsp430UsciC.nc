@@ -33,6 +33,7 @@
 
 #include "msp430usci.h"
 
+#warning non-shared HplMsp430UsciC instance
 /**
  * Core configuration for any USCI module present on an MSP430
  * chip.
@@ -73,6 +74,7 @@ generic configuration HplMsp430UsciC(
   Interrupts = HplUsciP;
 
 //  components new FcfsArbiterC( RESOURCE_NAME ) as ArbiterC;
+//  components new DummyFcfsArbiterC(RESOURCE_NAME) as ArbiterC;
   components new DummyArbiterC() as ArbiterC;
   Resource = ArbiterC;
   ResourceRequested = ArbiterC;
