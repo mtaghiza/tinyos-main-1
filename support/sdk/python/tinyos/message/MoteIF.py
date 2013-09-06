@@ -44,6 +44,7 @@ import tinyos.packet.SFSource
 try:
     import tinyos.packet.SerialSource
 except:
+    print >> sys.stderr, "SerialSource not imported"
     tinyos.packet.SerialSource = None
 
 import Queue
