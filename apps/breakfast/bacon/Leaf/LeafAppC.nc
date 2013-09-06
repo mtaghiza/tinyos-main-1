@@ -17,6 +17,7 @@ configuration LeafAppC{
   components MainC;
   components LeafP;
   components CXLeafC;
+  components ActiveMessageC;
 
   #ifndef PHOENIX_LOGGING
   #define PHOENIX_LOGGING 1
@@ -31,7 +32,6 @@ configuration LeafAppC{
   #warning Phoenix disabled!
   #endif
 
-  components new PoolC(message_t, 4);
 
   #ifndef ENABLE_AUTOPUSH
   #define ENABLE_AUTOPUSH 1
@@ -43,7 +43,7 @@ configuration LeafAppC{
   components new AMSenderC(AM_LOG_RECORD_DATA_MSG);
   components new AMReceiverC(AM_CX_RECORD_REQUEST_MSG);
   components CXLinkPacketC;
-  RecordPushRequestC.Pool -> PoolC;
+  RecordPushRequestC.Pool -> ActiveMessageC;
   RecordPushRequestC.AMSend -> AMSenderC;
   RecordPushRequestC.Packet -> AMSenderC;
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
@@ -59,7 +59,7 @@ configuration LeafAppC{
 
   #if ENABLE_SETTINGS_CONFIG == 1
   components SettingsStorageConfiguratorC;
-  SettingsStorageConfiguratorC.Pool -> PoolC;
+  SettingsStorageConfiguratorC.Pool -> ActiveMessageC;
   #else
   #warning SettingsStorageConfigurator disabled!
   #endif
@@ -119,7 +119,6 @@ configuration LeafAppC{
   components UartRebooterC;
   #endif
 
-  components ActiveMessageC;
   LeafP.SplitControl -> ActiveMessageC;
   LeafP.Boot -> MainC;
 
