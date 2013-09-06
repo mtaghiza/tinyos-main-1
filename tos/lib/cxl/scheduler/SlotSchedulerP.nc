@@ -124,7 +124,7 @@ module SlotSchedulerP {
   #endif
 
   #if LOG_CTS_TIME == 1
-  #warn logging CTS timing!
+  #warning logging CTS timing!
   uint32_t baseCTS;
   uint32_t ctsStart;
   #else
