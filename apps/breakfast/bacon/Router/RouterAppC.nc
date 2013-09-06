@@ -87,6 +87,20 @@ configuration RouterAppC{
     as NetworkMembershipLS;
   CXRouterC.LogWrite -> NetworkMembershipLS;
 
+  #ifndef PHOENIX_LOGGING
+  #define PHOENIX_LOGGING 1
+  #endif
+
+  #if PHOENIX_LOGGING == 1
+  //yeesh this is ugly
+  components PhoenixNeighborhoodP;
+  components new LogStorageC(VOLUME_RECORD, TRUE) as PhoenixLS;
+  PhoenixNeighborhoodP.LogWrite -> PhoenixLS;
+  #else
+  #warning Phoenix disabled!
+  #endif
+
+
   components new AMReceiverC(AM_CX_DOWNLOAD) as CXDownloadReceive;
   RouterP.CXDownloadReceive -> CXDownloadReceive; 
 
