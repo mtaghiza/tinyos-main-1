@@ -16,7 +16,7 @@
 //  IDLE ->RX time and the IDLE->TX time are equal (88 uS). 3 ticks is
 //  91 uS, so we can miss by a lot and still hit it.
 #ifndef RX_SLACK
-#define RX_SLACK 5UL
+#define RX_SLACK 10UL
 #endif
 
 
