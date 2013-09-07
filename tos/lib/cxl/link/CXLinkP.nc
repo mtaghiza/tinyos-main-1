@@ -257,6 +257,16 @@ module CXLinkP {
 //          *(metadata(fwdMsg)->tsLoc) = (call LocalTime.get() + TS_CORRECTION );
 //        }
         //first transmission: ok to trigger alarm immediately
+        //TODO: if we are introducing scheduled sending here, then we
+        //would check the metadata for the presence of a tx time and
+        //set fastAlarm appropriately.
+//        fastBase0 = fasttime.now
+//        slowBase = localTime.now
+//        fastBase1 = fasttime.now
+//        ds = target-slowBase
+//        df = (ds*flfn)/flfs
+//        call fastalarm.startAt(fb0/2+fb1/2, df)
+
         post startImmediately();
       }
     }
