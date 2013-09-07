@@ -123,13 +123,15 @@ module SlotSchedulerP {
   #define LOG_CTS_TIME 0
   #endif
 
+  uint32_t baseCTS;
+  uint32_t rxStart;
+  uint32_t rxTime;
+  uint32_t lastTimer;
+  uint32_t lastFired;
+  uint32_t rxEnd;
   #if LOG_CTS_TIME == 1
   #warning logging CTS timing!
-  uint32_t baseCTS;
   uint32_t ctsStart;
-  uint32_t rxStart;
-  uint32_t rxEnd;
-  bool didReceive;
   #else
   #endif
 
@@ -159,6 +161,11 @@ module SlotSchedulerP {
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS);
+      baseCTS = 0;
+      cinfo(SCHED, "WU %u %u %lu\r\n", 
+        activeNS, 
+        (call ProbeSchedule.get())->channel[activeNS],
+        DATA_TIMEOUT);
       cflushdbg(SCHED);
       post nextRX();
     }else{
@@ -198,10 +205,13 @@ module SlotSchedulerP {
   void handleCTS(message_t* msg){
     master = call CXLinkPacket.source(msg);
     missedCTS = 0;
-    #if LOG_CTS_TIME == 1
     if (master ==(call CXLinkPacket.getLinkHeader(msg))->destination){
       baseCTS = timestamp(msg);
+    }else if (baseCTS == 0){
+      cwarn(SCHED, "BAD BASE CTS\r\n");
+      baseCTS = timestamp(msg);
     }
+    #if LOG_CTS_TIME == 1
     cdbg(SCHED, "C %lu %lu\r\n", ctsStart-baseCTS, timestamp(msg)-baseCTS);
     if (ctsStart > timestamp(msg)){
       cdbg(SCHED, "TS\r\n");
@@ -211,8 +221,11 @@ module SlotSchedulerP {
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
-      cdbg(SCHED, "O %u %lu %u\r\n", slotNum, 
-        timestamp(msg), 
+      //Cts, Own
+      cinfo(SCHED, "C O %u %u %lu %u\r\n", 
+        slotNum,
+        (call CXLinkPacket.getLinkHeader(msg))->destination,
+        timestamp(msg) - baseCTS, 
         call CXLinkPacket.rxHopCount(msg));
       state = S_STATUS_PREP;
       explicitDataPending = FALSE;
@@ -224,9 +237,11 @@ module SlotSchedulerP {
       call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
       post sendStatus();
     }else{
-      cdbg(SCHED, "e %u %u %lu %u\r\n", slotNum, 
+      //Cts, Else
+      cinfo(SCHED, "C E %u %u %lu %u\r\n", 
+        slotNum, 
         (call CXLinkPacket.getLinkHeader(msg))->destination,
-        timestamp(msg), 
+        timestamp(msg) - baseCTS, 
         call CXLinkPacket.rxHopCount(msg));
       state = S_STATUS_WAIT_READY;
       cdbg(SCHED_CHECKED, "f FT.sp %lu - %lu = %lu,  %lu @ %lu\r\n",
@@ -241,9 +256,7 @@ module SlotSchedulerP {
 
   event message_t* SubReceive.receive(message_t* msg, void* pl,
       uint8_t len){
-    #if LOG_CTS_TIME == 1
-    didReceive = TRUE;
-    #endif
+    rxTime = timestamp(msg);
     call RoutingTable.addMeasurement(call CXLinkPacket.source(msg), 
       call ActiveMessageAddress.amAddress(), 
       call CXLinkPacket.rxHopCount(msg));
@@ -288,14 +301,20 @@ module SlotSchedulerP {
   
           if (status->dataPending && shouldForward(call CXLinkPacket.source(msg), 
               call CXLinkPacket.destination(msg), status->bw)){
-            cdbg(SCHED, "F %u %u\r\n", slotNum, 
-              call CXLinkPacket.source(msg));
+            cinfo(SCHED, "S F %u %u %u %u\r\n", 
+              slotNum, 
+              call CXLinkPacket.source(msg),
+              call CXLinkPacket.getSn(msg),
+              call CXLinkPacket.rxHopCount(msg));
             state = S_ACTIVE_SLOT;
           } else {
             error_t error = call CXLink.sleep();
-            cdbg(SCHED, "S %u %u %x %lu\r\n", slotNum, 
+            cinfo(SCHED, "S S %u %u %u %x %u\r\n", 
+              slotNum, 
               call CXLinkPacket.source(msg), 
-              status->dataPending, timestamp(msg));
+              call CXLinkPacket.getSn(msg),
+              status->dataPending,
+              call CXLinkPacket.rxHopCount(msg));
             call FrameTimer.stop();
             if (error != SUCCESS){
               cerror(SCHED, "sleep0 %x\r\n", error);
@@ -306,11 +325,19 @@ module SlotSchedulerP {
         }
 
       case CXM_EOS:
-        cdbg(SCHED, "RE\r\n");
+        cinfo(SCHED, "RE %u %u %u\r\n",
+          slotNum,
+          call CXLinkPacket.source(msg),
+          call CXLinkPacket.getSn(msg));
         return call SlotController.receiveEOS[activeNS](msg, 
           call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
       case CXM_DATA:
+        cinfo(SCHED, "RD %u %u %u %u\r\n",
+          slotNum,
+          call CXLinkPacket.source(msg),
+          call CXLinkPacket.getSn(msg),
+          call Packet.payloadLength(msg));
         return signal Receive.receive(msg, 
           call Packet.getPayload(msg, call Packet.payloadLength(msg)), 
           call Packet.payloadLength(msg));
@@ -425,6 +452,8 @@ module SlotSchedulerP {
       call FrameTimer.stop();
 
     } else {
+      lastTimer = call FrameTimer.gett0();
+      lastFired = call FrameTimer.getNow();
       cdbg(SCHED_CHECKED, "FTN %x\r\n", state);
       switch (state){
         case S_STATUS_READY:
@@ -470,6 +499,8 @@ module SlotSchedulerP {
   
         case S_DATA_READY:
           { 
+            //TODO: if delayedSend is available, then slap it on its
+            //ass and send it on its way.
             error_t error = send(pendingMsg, 
               pendingLen,
               call RoutingTable.getDistance(
@@ -536,6 +567,8 @@ module SlotSchedulerP {
           }else{
             cdbg(SCHED_CHECKED, "continue\r\n");
             state = S_DATA_READY;
+            //TODO: should latch in the data here and hit the
+            //  start-send when the frame timer fires.
           }
         }
         return SUCCESS;
@@ -549,6 +582,7 @@ module SlotSchedulerP {
   }
 
   error_t send(message_t* msg, uint8_t len, uint8_t ttl){
+//    cdbg(SCHED, "S %u\r\n", ttl);
     if (pendingTX){
       return EBUSY;
     } else {
@@ -566,6 +600,11 @@ module SlotSchedulerP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    cinfo(SCHED, "LTX %u %lu %u %lu\r\n", 
+      call CXLinkPacket.getSn(msg),
+      timestamp(msg) - baseCTS,
+      call Packet.payloadLength(msg),
+      lastTimer - baseCTS);
     pendingTX = FALSE;
     if (state == S_STATUS_SENDING){
       if (msg == statusMsg){
@@ -615,35 +654,33 @@ module SlotSchedulerP {
     } else {
       cerror(SCHED, "USDS %x\r\n", state);
     }
-    #if LOG_CTS_TIME == 1
-    cdbg(SCHED, "LTX %lu",
-      timestamp(msg) - baseCTS);
-    #endif
+//    #if LOG_CTS_TIME == 1
+//    cdbg(SCHED, "LTX %lu\r\n",
+//      timestamp(msg) - baseCTS);
+//    #endif
   }
 
 
   event void CXLink.rxDone(){
     pendingRX = FALSE;
-    #if LOG_CTS_TIME == 1
     rxEnd = call FrameTimer.getNow();
-    cdbg(SCHED, "LRX %lu %lu %x\r\n", 
+    cinfo(SCHED_RX, "LRX %lu %lu %lu %lu %lu\r\n", 
       rxStart - baseCTS, 
-      rxEnd - baseCTS, 
-      didReceive);
-    #endif
+      rxTime - baseCTS,
+      rxEnd - baseCTS,
+      lastTimer - baseCTS,
+      lastFired - baseCTS);
     post nextRX();
   }
 
   error_t rx(uint32_t timeout, bool retx){
-    #if LOG_CTS_TIME == 1
-    didReceive = FALSE;
-    rxStart = call FrameTimer.getNow();
-    #endif
+    rxTime = baseCTS;
     if (pendingRX){
       cerror(SCHED, "RXP\r\n");
       return EBUSY;
     } else {
       error_t error = call CXLink.rx(timeout, retx);
+      rxStart = call FrameTimer.getNow();
       if (error == SUCCESS){
         pendingRX = TRUE;
       }

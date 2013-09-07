@@ -9,4 +9,8 @@
 #define DL_SCHED_CHECKED DL_WARN
 #endif
 
+#ifndef DL_SCHED_RX
+#define DL_SCHED_RX DL_WARN
+#endif
+
 #endif
