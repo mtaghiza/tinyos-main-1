@@ -1,8 +1,11 @@
 #ifndef CX_ROUTER_H
 #define CX_ROUTER_H
 
+#include "AM.h"
+
 typedef nx_struct cx_download {
   nx_uint8_t networkSegment;
+  nx_uint8_t padding[8];
 } cx_download_t;
 
 enum{

@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 1
+DEFAULT_MESSAGE_SIZE = 9
 
 # The Active Message type associated with this message.
 AM_TYPE = 208
 
 class CxDownload(tinyos.message.Message.Message):
-    # Create a new CxDownload of size 1.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=1):
+    # Create a new CxDownload of size 9.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=9):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -32,6 +32,13 @@ class CxDownload(tinyos.message.Message.Message):
         s = "Message <CxDownload> \n"
         try:
             s += "  [networkSegment=0x%x]\n" % (self.get_networkSegment())
+        except:
+            pass
+        try:
+            s += "  [padding=";
+            for i in range(0, 8):
+                s += "0x%x " % (self.getElement_padding(i) & 0xff)
+            s += "]\n";
         except:
             pass
         return s
@@ -92,4 +99,139 @@ class CxDownload(tinyos.message.Message.Message):
     #
     def sizeBits_networkSegment(self):
         return 8
+    
+    #
+    # Accessor methods for field: padding
+    #   Field type: short[]
+    #   Offset (bits): 8
+    #   Size of each element (bits): 8
+    #
+
+    #
+    # Return whether the field 'padding' is signed (False).
+    #
+    def isSigned_padding(self):
+        return False
+    
+    #
+    # Return whether the field 'padding' is an array (True).
+    #
+    def isArray_padding(self):
+        return True
+    
+    #
+    # Return the offset (in bytes) of the field 'padding'
+    #
+    def offset_padding(self, index1):
+        offset = 8
+        if index1 < 0 or index1 >= 8:
+            raise IndexError
+        offset += 0 + index1 * 8
+        return (offset / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'padding'
+    #
+    def offsetBits_padding(self, index1):
+        offset = 8
+        if index1 < 0 or index1 >= 8:
+            raise IndexError
+        offset += 0 + index1 * 8
+        return offset
+    
+    #
+    # Return the entire array 'padding' as a short[]
+    #
+    def get_padding(self):
+        tmp = [None]*8
+        for index0 in range (0, self.numElements_padding(0)):
+                tmp[index0] = self.getElement_padding(index0)
+        return tmp
+    
+    #
+    # Set the contents of the array 'padding' from the given short[]
+    #
+    def set_padding(self, value):
+        for index0 in range(0, len(value)):
+            self.setElement_padding(index0, value[index0])
+
+    #
+    # Return an element (as a short) of the array 'padding'
+    #
+    def getElement_padding(self, index1):
+        return self.getUIntElement(self.offsetBits_padding(index1), 8, 1)
+    
+    #
+    # Set an element of the array 'padding'
+    #
+    def setElement_padding(self, index1, value):
+        self.setUIntElement(self.offsetBits_padding(index1), 8, value, 1)
+    
+    #
+    # Return the total size, in bytes, of the array 'padding'
+    #
+    def totalSize_padding(self):
+        return (64 / 8)
+    
+    #
+    # Return the total size, in bits, of the array 'padding'
+    #
+    def totalSizeBits_padding(self):
+        return 64
+    
+    #
+    # Return the size, in bytes, of each element of the array 'padding'
+    #
+    def elementSize_padding(self):
+        return (8 / 8)
+    
+    #
+    # Return the size, in bits, of each element of the array 'padding'
+    #
+    def elementSizeBits_padding(self):
+        return 8
+    
+    #
+    # Return the number of dimensions in the array 'padding'
+    #
+    def numDimensions_padding(self):
+        return 1
+    
+    #
+    # Return the number of elements in the array 'padding'
+    #
+    def numElements_padding():
+        return 8
+    
+    #
+    # Return the number of elements in the array 'padding'
+    # for the given dimension.
+    #
+    def numElements_padding(self, dimension):
+        array_dims = [ 8,  ]
+        if dimension < 0 or dimension >= 1:
+            raise IndexException
+        if array_dims[dimension] == 0:
+            raise IndexError
+        return array_dims[dimension]
+    
+    #
+    # Fill in the array 'padding' with a String
+    #
+    def setString_padding(self, s):
+         l = len(s)
+         for i in range(0, l):
+             self.setElement_padding(i, ord(s[i]));
+         self.setElement_padding(l, 0) #null terminate
+    
+    #
+    # Read the array 'padding' as a String
+    #
+    def getString_padding(self):
+        carr = "";
+        for i in range(0, 4000):
+            if self.getElement_padding(i) == chr(0):
+                break
+            carr += self.getElement_padding(i)
+        return carr
     

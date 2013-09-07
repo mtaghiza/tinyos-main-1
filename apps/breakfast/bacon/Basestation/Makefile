@@ -77,7 +77,8 @@ CFLAGS += -DDL_LPP=DL_WARN
 CFLAGS += -DDL_LPP_PROBE=DL_INFO
 CFLAGS += -DPROBE_LOG_INTERVAL=30
 CFLAGS += -DDL_LINK=DL_WARN
-CFLAGS += -DDL_SCHED=DL_DEBUG
+CFLAGS += -DDL_SCHED=DL_INFO
+CFLAGS += -DLOG_CTS_TIME=0
 CFLAGS += -DDL_ROUTER=DL_ERROR
 
 CFLAGS +=-DCC430_PIN_DEBUG=1
@@ -95,7 +96,7 @@ LPPMIGDIR = lpp
 MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/CxLppWakeup.py 
 
 CXMIGDIR = cx/messages
-MIGCLASSES += $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
+MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
 
 SSMIGDIR = $(CXMIGDIR)
 MIGCLASSES += $(SSMIGDIR)/SetSettingsStorageMsg.py
@@ -112,7 +113,7 @@ MIGCLASSES += $(PRINTFMIGDIR)/PrintfMsg.py
 #printf
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 CFLAGS += -DDL_GLOBAL=DL_DEBUG
-CFLAGS += -DDL_BASESTATION=DL_DEBUG
+CFLAGS += -DDL_BASESTATION=DL_INFO
 
 $(LPPMIGDIR):
 	mkdir -p $(LPPMIGDIR)
@@ -124,7 +125,7 @@ $(CXMIGDIR):
 	mkdir -p $(CXMIGDIR)
 
 $(CXMIGDIR)/CxDownload.py: $(CXMIGDIR)
-	genMig.sh $(PLATFORM) CXRouter.h $@ $(CFLAGS) 
+	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/scheduler/CXRouter.h $@ $(CFLAGS) 
 
 $(CXMIGDIR)/%.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
