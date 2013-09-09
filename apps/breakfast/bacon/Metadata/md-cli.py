@@ -8,10 +8,12 @@ from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
 from tinyos.packet.Serial import Serial
 #import tos
-import mig
-from mig import *
+import tools.mig
+from tools.mig import *
 
 import math
+
+import Queue
 
 
 class PrintfLogger(object):
@@ -50,6 +52,13 @@ class ADCLogger(object):
               ((msg.get_sample_sample() * 2.5)/4096.0))
             self.responseCV.notify()
 
+class ScanListener(object):
+    def __init__(self, responseQueue):
+        self.responseQueue = responseQueue
+
+    def receive(self, src, msg):
+        self.responseQueue.put(msg.get_numFound())
+
 
 class Dispatcher:
     def __init__(self, motestring, quiet=False):
@@ -64,10 +73,10 @@ class Dispatcher:
         self.responseLock = Lock()
         self.responseCV = Condition(self.responseLock)
         self.mif.addListener(ADCLogger(self.responseCV), ReadAnalogSensorResponseMsg.ReadAnalogSensorResponseMsg)
-        for messageClass in mig.__all__:
+        for messageClass in tools.mig.__all__:
             if 'Response' in messageClass:
                 self.mif.addListener(GenericLogger(self.quiet), 
-                  getattr(getattr(mig, messageClass), messageClass))
+                  getattr(getattr(tools.mig, messageClass), messageClass))
 
     def stop(self):
         self.mif.finishAll()
@@ -189,31 +198,45 @@ if __name__ == '__main__':
         d = Dispatcher(packetSource, quiet)
             
         try:
-            d.initialize(destination)
-            while limit != 0:
-                if autoType == 'ping':
-                    rm = PingCmdMsg.PingCmdMsg()
-                elif autoType == 'readInternal':
-                    rm = readAnalog(11, 2000, 10)
-                elif autoType == 'readAnalog':
-                    rm = readAnalog(inch, 2000, 10)
-                
-                #acquire response lock, send the request, and then
-                # block until response or timeout 
-                if waitForResponse:
-                    with d.responseCV:
+            if autoType == 'scan':
+                responseQueue = Queue.Queue()
+                d.mif.addListener(ScanListener(responseQueue),
+                  tools.mig.ScanBusResponseMsg.ScanBusResponseMsg)
+                d.initialize(destination)
+                try:
+                    numFound = responseQueue.get(True, 0.5)
+                    if numFound:
+                        print "PASS: %u TOAST BOARDS FOUND"%numFound
+                    else:
+                        print "FAIL: TOAST BOARD NOT DETECTED"
+                except Queue.Empty:
+                    print "RETRY: BACON COMMUNICATION FAILED"
+            else:
+                d.initialize(destination)
+                while limit != 0:
+                    if autoType == 'ping':
+                        rm = PingCmdMsg.PingCmdMsg()
+                    elif autoType == 'readInternal':
+                        rm = readAnalog(11, 2000, 10)
+                    elif autoType == 'readAnalog':
+                        rm = readAnalog(inch, 2000, 10)
+                    
+                    #acquire response lock, send the request, and then
+                    # block until response or timeout 
+                    if waitForResponse:
+                        with d.responseCV:
+                            d.send(rm, destination)
+                            d.responseCV.wait(0.25)
+                    else:
                         d.send(rm, destination)
-                        d.responseCV.wait(0.25)
-                else:
-                    d.send(rm, destination)
-                    time.sleep(0.25)
-
-                limit -= 1
-                if autoType == 'readAnalog':
-                    inch = (inch + 1)%8
-                    #sleep 
-                    if inch == 0:
-                        time.sleep(1.0)
+                        time.sleep(0.25)
+    
+                    limit -= 1
+                    if autoType == 'readAnalog':
+                        inch = (inch + 1)%8
+                        #sleep 
+                        if inch == 0:
+                            time.sleep(1.0)
         except KeyboardInterrupt:
             pass
         finally:
@@ -226,19 +249,19 @@ if __name__ == '__main__':
                 time.sleep(0.25)
                 mcn = raw_input('''Input message class name (q to quit, blank to resend last). 
   Choices: 
-    %s\n?> '''%('\n    '.join(v for v in mig.__all__ if 'Cmd' in v)))
+    %s\n?> '''%('\n    '.join(v for v in tools.mig.__all__ if 'Cmd' in v)))
                 if not last and not mcn:
                     continue
                 if last and not mcn:
                     d.send(last, destination)
                     continue
-                if mcn not in mig.__all__:
-                    for cn in mig.__all__:
+                if mcn not in tools.mig.__all__:
+                    for cn in tools.mig.__all__:
                         if cn.startswith(mcn):
                             mcn = cn
                             break
-                if mcn in mig.__all__:           
-                    m = getattr(getattr(mig, mcn), mcn)()
+                if mcn in tools.mig.__all__:           
+                    m = getattr(getattr(tools.mig, mcn), mcn)()
                     #ugh, these should be exposed with __set__, __get__ so
                     # that it looks like dictionary access
                     for setter in [s for s in dir(m) if s.startswith('set_')]:
