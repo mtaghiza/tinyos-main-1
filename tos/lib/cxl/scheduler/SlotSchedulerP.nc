@@ -168,6 +168,7 @@ module SlotSchedulerP {
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS);
+      call RoutingTable.setDefault((call ProbeSchedule.get())->maxDepth[activeNS]);
       baseCTS = 0;
       cinfo(SCHED, "WU %u %u %lu\r\n", 
         activeNS, 

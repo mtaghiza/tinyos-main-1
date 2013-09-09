@@ -14,6 +14,7 @@ CFLAGS += -I$(TOSDIR)/lib/cxl/mac
 CFLAGS += -I$(TOSDIR)/lib/cxl/link
 CFLAGS += -I$(TOSDIR)/lib/cxl/packet
 CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
+CFLAGS += -I$(TOSDIR)/lib/cxl/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
