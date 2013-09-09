@@ -67,7 +67,7 @@ typedef struct cx_link_metadata {
   uint32_t timeMilli;
   uint32_t timeFast;
   bool retx;
-  nx_uint32_t* tsLoc;
+//  nx_uint32_t* tsLoc;
   bool dataPending;
   uint32_t txTime;
 } __attribute__((packed)) cx_link_metadata_t;

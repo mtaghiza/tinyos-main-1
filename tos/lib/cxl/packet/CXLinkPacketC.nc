@@ -38,11 +38,11 @@ module CXLinkPacketC{
     md(msg)->cx.retx = allowRetx;
   }
 
-  command void CXLinkPacket.setTSLoc(message_t* msg, 
-      nx_uint32_t* tsLoc){
-    md(msg)->cx.tsLoc = tsLoc;
-  }
-  
+//  command void CXLinkPacket.setTSLoc(message_t* msg, 
+//      nx_uint32_t* tsLoc){
+//    md(msg)->cx.tsLoc = tsLoc;
+//  }
+//  
   //These commands deal with the *real* packet length (including
   //padding)
   command void CXLinkPacket.setLen(message_t* msg, uint8_t len){
