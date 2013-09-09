@@ -88,6 +88,12 @@ module CXLinkP {
     return (FRAMELEN_SLOW*fastTicks)/FRAMELEN_FAST_NORMAL;
   }
 
+  uint32_t slowToFast(uint32_t slowTicks){
+    //OK w.r.t overflow as long as slowTicks is less than 21145 (0.64
+    // seconds)
+    return (slowTicks * FRAMELEN_FAST_NORMAL)/FRAMELEN_SLOW;
+  }
+
 
   #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   event void StateDump.dumpRequested(){
@@ -256,18 +262,21 @@ module CXLinkP {
 //        if (metadata(fwdMsg)->tsLoc != NULL){
 //          *(metadata(fwdMsg)->tsLoc) = (call LocalTime.get() + TS_CORRECTION );
 //        }
-        //first transmission: ok to trigger alarm immediately
-        //TODO: if we are introducing scheduled sending here, then we
-        //would check the metadata for the presence of a tx time and
-        //set fastAlarm appropriately.
-//        fastBase0 = fasttime.now
-//        slowBase = localTime.now
-//        fastBase1 = fasttime.now
-//        ds = target-slowBase
-//        df = (ds*flfn)/flfs
-//        call fastalarm.startAt(fb0/2+fb1/2, df)
+        //first transmission: check for the presence of a txTime
+        // in metadata. If it's there, then translate the desired 32k
+        // time into the fast time scale and set the initial tx
+        // accordingly.
+        if (metadata(fwdMsg)->txTime != 0){
+          uint32_t fb0 = call FastAlarm.getNow();
+          uint32_t sb = call LocalTime.get();
+          uint32_t fb1 = call FastAlarm.getNow();
 
-        post startImmediately();
+          uint32_t ds = metadata(fwdMsg)->txTime - sb;
+          uint32_t df = slowToFast(ds);
+          call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
+        }else{
+          post startImmediately();
+        }
       }
     }
   }
