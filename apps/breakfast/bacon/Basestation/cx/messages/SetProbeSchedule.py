@@ -9,7 +9,7 @@ class SetProbeSchedule(SetSettingsStorageMsg.SetSettingsStorageMsg):
         self.set_key(cx.constants.SS_KEY_PROBE_SCHEDULE)
         #wish this wasn't hardcoded, but I don't see a better way to
         # subclass this. 
-        self.set_len(16)
+        self.set_len(28)
         self.setUIntElement(self.offsetBits_val(0), 32, probeInterval, 1)
         self.setUIntElement(self.offsetBits_val(4), 8, channel[0], 1)
         self.setUIntElement(self.offsetBits_val(5), 8, channel[1], 1)
@@ -23,3 +23,9 @@ class SetProbeSchedule(SetSettingsStorageMsg.SetSettingsStorageMsg):
         self.setUIntElement(self.offsetBits_val(13), 8, maxDepth[0], 1)
         self.setUIntElement(self.offsetBits_val(14), 8, maxDepth[1], 1)
         self.setUIntElement(self.offsetBits_val(15), 8, maxDepth[2], 1)
+        self.setUIntElement(self.offsetBits_val(16), 32,
+          probeInterval*invFrequency[0]*maxDepth[0]/32, 1)
+        self.setUIntElement(self.offsetBits_val(20), 32, 
+          probeInterval*invFrequency[1]*maxDepth[1]/32, 1)
+        self.setUIntElement(self.offsetBits_val(24), 32, 
+          probeInterval*invFrequency[2]*maxDepth[2]/32, 1)

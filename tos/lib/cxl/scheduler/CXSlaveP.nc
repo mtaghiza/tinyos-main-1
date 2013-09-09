@@ -30,8 +30,7 @@ module CXSlaveP {
     return sched->maxDepth[ns];
   }
   command uint32_t SlotController.wakeupLen(uint8_t ns){
-    probe_schedule_t* sched = call GetProbeSchedule.get();
-    return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
+    return (call GetProbeSchedule.get())->wakeupLen[ns];
   }
   command message_t* SlotController.receiveEOS(
       message_t* msg, cx_eos_t* pl){

@@ -250,8 +250,7 @@ module CXMasterP {
   }
 
   command uint32_t SlotController.wakeupLen(uint8_t ns){
-    probe_schedule_t* sched = call GetProbeSchedule.get();
-    return ((sched->invFrequency[ns]*(sched->probeInterval)) << 5) * call SlotController.maxDepth(ns);
+    return (call GetProbeSchedule.get())->wakeupLen[ns];
   }
 
 

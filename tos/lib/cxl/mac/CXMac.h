@@ -24,6 +24,7 @@ typedef struct probe_schedule {
    uint8_t invFrequency[NUM_SEGMENTS];
    uint8_t bw[NUM_SEGMENTS];
    uint8_t maxDepth[NUM_SEGMENTS];
+   nx_uint32_t wakeupLen[NUM_SEGMENTS];
 } probe_schedule_t;
 
 typedef nx_struct cx_mac_header{
