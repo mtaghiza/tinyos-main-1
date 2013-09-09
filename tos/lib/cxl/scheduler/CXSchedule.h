@@ -19,6 +19,16 @@
 #define RX_SLACK 10UL
 #endif
 
+//This is the time, in 32k ticks, which the sender uses to load its
+//packet for transmission.
+// Timer fires at frameboundary - TX_SLACK + d0
+// Packet txTime is set to frame-boundary
+// Send is called at frameboundary - TX_SLACK + d0 + d1
+// At frame boundary, TX strobe is sent.
+#ifndef TX_SLACK
+#define TX_SLACK 5UL
+#endif
+
 
 //Could be off by one 32K tick
 #define ASYNCHRONY_32K 198UL

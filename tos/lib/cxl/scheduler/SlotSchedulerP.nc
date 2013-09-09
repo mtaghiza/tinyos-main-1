@@ -139,7 +139,8 @@ module SlotSchedulerP {
   void handleCTS(message_t* msg);
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
-  error_t send(message_t* msg, uint8_t len, uint8_t ttl);
+  error_t send(message_t* msg, uint8_t len, uint8_t ttl, 
+    uint32_t txTime);
 
   uint32_t slowToFast(uint32_t slowTicks){
     return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
@@ -234,7 +235,7 @@ module SlotSchedulerP {
       cdbg(SCHED_CHECKED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 
         FRAME_LENGTH, call FrameTimer.getNow());
-      call FrameTimer.startPeriodicAt(timestamp(msg), FRAME_LENGTH);
+      call FrameTimer.startPeriodicAt(timestamp(msg) - TX_SLACK, FRAME_LENGTH);
       post sendStatus();
     }else{
       //Cts, Else
@@ -435,7 +436,8 @@ module SlotSchedulerP {
         case S_SLOT_END_READY:
           {
             error_t error = send(eosMsg, sizeof(cx_eos_t), 
-              call SlotController.maxDepth[activeNS](activeNS));
+              call SlotController.maxDepth[activeNS](activeNS),
+              call FrameTimer.gett0()+TX_SLACK);
             if (error == SUCCESS){
               cdbg(SCHED_CHECKED, "SES\r\n");
               state = S_SLOT_END_SENDING;
@@ -459,7 +461,8 @@ module SlotSchedulerP {
         case S_STATUS_READY:
           {
             error_t error = send(statusMsg, sizeof(cx_status_t), 
-              call SlotController.maxDepth[activeNS](activeNS));
+              call SlotController.maxDepth[activeNS](activeNS),
+              call FrameTimer.gett0() + TX_SLACK);
             if (error == SUCCESS){
               state = S_STATUS_SENDING;
             }else{
@@ -499,15 +502,13 @@ module SlotSchedulerP {
   
         case S_DATA_READY:
           { 
-            //TODO: if delayedSend is available, then slap it on its
-            //ass and send it on its way.
             error_t error = send(pendingMsg, 
               pendingLen,
               call RoutingTable.getDistance(
                 call ActiveMessageAddress.amAddress(), 
                 call CXLinkPacket.destination(pendingMsg))
-                + call SlotController.bw[activeNS](activeNS)
-              );
+                + call SlotController.bw[activeNS](activeNS),
+                call FrameTimer.gett0() + TX_SLACK);
             if (error == SUCCESS){
               state = S_DATA_SENDING;
             }else{
@@ -567,8 +568,6 @@ module SlotSchedulerP {
           }else{
             cdbg(SCHED_CHECKED, "continue\r\n");
             state = S_DATA_READY;
-            //TODO: should latch in the data here and hit the
-            //  start-send when the frame timer fires.
           }
         }
         return SUCCESS;
@@ -581,12 +580,14 @@ module SlotSchedulerP {
     }
   }
 
-  error_t send(message_t* msg, uint8_t len, uint8_t ttl){
+  error_t send(message_t* msg, uint8_t len, uint8_t ttl, 
+      uint32_t txTime){
 //    cdbg(SCHED, "S %u\r\n", ttl);
     if (pendingTX){
       return EBUSY;
     } else {
       error_t error;
+      (call CXLinkPacket.getLinkMetadata(msg))->txTime = txTime;
       call CXLinkPacket.setTtl(msg, ttl);
       call Packet.setPayloadLength(msg, len);
       error = call SubSend.send(msg, len);
@@ -834,7 +835,8 @@ module SlotSchedulerP {
             ctsStart = call FrameTimer.getNow();
             #endif
             error = send(ctsMsg, 0,
-              call SlotController.maxDepth[activeNS](activeNS));
+              call SlotController.maxDepth[activeNS](activeNS),
+              call SlotTimer.gett0() + TX_SLACK);
             if (error == SUCCESS){
               state = S_CTS_SENDING;
             }else{

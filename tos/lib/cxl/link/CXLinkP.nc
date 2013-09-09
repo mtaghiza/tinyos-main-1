@@ -272,8 +272,15 @@ module CXLinkP {
           uint32_t fb1 = call FastAlarm.getNow();
 
           uint32_t ds = metadata(fwdMsg)->txTime - sb;
-          uint32_t df = slowToFast(ds);
-          call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
+          uint32_t df = 0;
+          //verify overflow-safety (also implicitly checks for cases
+          //where txTime < current time)
+          if (ds < 21145UL){
+            df = slowToFast(ds);
+            call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
+          } else{
+            post startImmediately();
+          }
         }else{
           post startImmediately();
         }
