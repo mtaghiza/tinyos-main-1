@@ -143,11 +143,19 @@ implementation {
   void continueReadOp( uint8_t client );
   void continueAppendOp( uint8_t client );
   void signalDone( uint8_t id, error_t error );
+
+  uint8_t getVolumeId(uint8_t client){
+    #if NUM_VOLUMES == 1
+    return 0;
+    #else
+    return signal Volume.getVolumeId[ client ]();
+    #endif
+  }
   
   command error_t Init.init() {
     int i;
     for ( i = 0; i < NUM_LOGS; i++ ) {
-      stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[i]()];
+      stm25p_addr_t* write_addr = &write_addrs[getVolumeId(i)];
       m_log_info[ i ].read_addr = STM25P_INVALID_ADDRESS;
       *write_addr = 0;
     }
@@ -164,7 +172,7 @@ implementation {
   }
 
   command error_t Read.seek[ uint8_t id ]( storage_addr_t cookie ) {
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
     //do not fail (immediately) if this is the first use of the log
     if ( cookie > *write_addr 
         && !(m_log_info[id].read_addr == STM25P_INVALID_ADDRESS)){
@@ -187,7 +195,7 @@ implementation {
   }
   
   command storage_cookie_t Write.currentOffset[ uint8_t id ]() {
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
     return *write_addr;
   }
   
@@ -252,7 +260,7 @@ implementation {
     // log never used, need to find start and end of log
     if ( m_log_info[ id ].read_addr == STM25P_INVALID_ADDRESS &&
        m_log_state[ id ].req != S_ERASE ) {
-      stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+      stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
       //this could be improved slightly: a newly-initialized log
       //  client should always have to find start of log for read, but
       //  may not have to find end of log (if another client on the
@@ -278,7 +286,7 @@ implementation {
         case S_SEEK:
         {
           // make sure the cookie is still within the range of valid data
-          stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+          stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
           uint8_t numSectors = call Sector.getNumSectors[ id ]();
           uint8_t readSector = 
             (m_log_state[ id ].cookie >> STM25P_SECTOR_SIZE_LOG2);
@@ -326,7 +334,7 @@ implementation {
         break;
       case S_APPEND:
         {
-          stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+          stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
           uint16_t bytes_written = (uint16_t)(*write_addr) % BLOCK_SIZE;
           uint16_t bytes_left = BLOCK_SIZE - bytes_written;
           if ( sizeof( m_header ) + m_log_state[id].len > bytes_left ){
@@ -355,7 +363,7 @@ implementation {
   void continueReadOp( uint8_t client ) {
     
     stm25p_addr_t read_addr = m_log_info[ client ].read_addr;
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[client]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(client)];
     uint8_t* buf;
     uint8_t len;
     error_t error;
@@ -457,7 +465,7 @@ implementation {
                                   stm25p_len_t len, error_t error ) {
  
     stm25p_log_info_t* log_info = &m_log_info[ id ];
-    stm25p_addr_t *write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+    stm25p_addr_t *write_addr = &write_addrs[getVolumeId(id)];
 
     uint8_t m_len = m_log_state[ id ].m_len;
 
@@ -765,7 +773,7 @@ implementation {
 
   void continueAppendOp( uint8_t client ) {
     
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[client]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(client)];
     void* buf;
     uint8_t len;
     //so if this is interrupted between the record-header being
@@ -806,7 +814,7 @@ implementation {
   event void Sector.eraseDone[ uint8_t id ]( uint8_t sector, 
                                    uint8_t num_sectors,
                                    error_t error ) {
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
     if ( m_log_state[ id ].req == S_ERASE ) {
       m_log_info[ id ].read_addr = 0;
       *write_addr = 0;
@@ -840,7 +848,7 @@ implementation {
     //maybe that's done by Sector?
     //no: this check was previously handled in the Append command, and
     //now is handled in the Sector.readDone event's S_APPEND case.
-    stm25p_addr_t* write_addr = &write_addrs[signal Volume.getVolumeId[id]()];
+    stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
     *write_addr += len;
     if ( m_rw_state == S_HEADER ) {
       //NB: this check assumes that block header and record header are
@@ -907,7 +915,7 @@ implementation {
   default command bool Circular.get[ uint8_t id ]() { return FALSE; }
   
   default async event volume_id_t Volume.getVolumeId[uint8_t id](){
-    return 0xFF;
+    return 0;
   }
 
   default event void Notify.notify[uint8_t id](uint8_t val){}

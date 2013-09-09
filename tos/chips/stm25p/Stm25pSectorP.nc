@@ -80,7 +80,6 @@ implementation {
   norace error_t m_error;
   norace uint16_t m_crc;
   
-  void bindVolume();
   void signalDone( error_t error );
   task void signalDone_task();
 
@@ -123,7 +122,11 @@ implementation {
   }
   
   uint8_t getVolumeId( uint8_t client ) {
+    #if NUM_VOLUMES == 1
+    return 0;
+    #else
     return signal Volume.getVolumeId[ client ]();
+    #endif
   }  
   
   event void SpiResource.granted() {
