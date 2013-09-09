@@ -1,12 +1,12 @@
 COMPONENT=MetadataAppC
-MIGDIR = $(TOSROOT)/apps/breakfast/tools/Labeler/mig
+MIGDIR = $(TOSROOT)/apps/breakfast/tools/Life/tools/mig
 
 BAUDRATE?=115200
 CFLAGS+=-DTOS_DEFAULT_BAUDRATE=$(BAUDRATE)
 
 ##couldn't entice Make to run this command...
 #grep 'msg{' ctrl_messages.h | awk '{print $3}' | tr -d '{' | sed -re 's,(_|^)([a-z]),\u\2,g' -e 's,^,$(MIGDIR)/,g' -e 's,$,.py,g'
-MIGCLASSES =
+MIGCLASSES = $(MIGDIR)/ReadIvCmdMsg.py $(MIGDIR)/ReadIvResponseMsg.py $(MIGDIR)/ReadMfrIdCmdMsg.py $(MIGDIR)/ReadMfrIdResponseMsg.py $(MIGDIR)/ReadAdcCCmdMsg.py $(MIGDIR)/ReadAdcCResponseMsg.py $(MIGDIR)/ReadBaconBarcodeIdCmdMsg.py $(MIGDIR)/ReadBaconBarcodeIdResponseMsg.py $(MIGDIR)/WriteBaconBarcodeIdCmdMsg.py $(MIGDIR)/WriteBaconBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastBarcodeIdCmdMsg.py $(MIGDIR)/ReadToastBarcodeIdResponseMsg.py $(MIGDIR)/WriteBaconVersionCmdMsg.py $(MIGDIR)/WriteBaconVersionResponseMsg.py $(MIGDIR)/ReadBaconVersionCmdMsg.py $(MIGDIR)/ReadBaconVersionResponseMsg.py $(MIGDIR)/WriteToastBarcodeIdCmdMsg.py $(MIGDIR)/WriteToastBarcodeIdResponseMsg.py $(MIGDIR)/ReadToastAssignmentsCmdMsg.py $(MIGDIR)/ReadToastAssignmentsResponseMsg.py $(MIGDIR)/WriteToastAssignmentsCmdMsg.py $(MIGDIR)/WriteToastAssignmentsResponseMsg.py $(MIGDIR)/WriteToastVersionCmdMsg.py $(MIGDIR)/WriteToastVersionResponseMsg.py $(MIGDIR)/ReadToastVersionCmdMsg.py $(MIGDIR)/ReadToastVersionResponseMsg.py $(MIGDIR)/ReadAnalogSensorCmdMsg.py $(MIGDIR)/ReadAnalogSensorResponseMsg.py $(MIGDIR)/ScanBusCmdMsg.py $(MIGDIR)/ScanBusResponseMsg.py $(MIGDIR)/PingCmdMsg.py $(MIGDIR)/PingResponseMsg.py $(MIGDIR)/ResetBaconCmdMsg.py $(MIGDIR)/ResetBaconResponseMsg.py $(MIGDIR)/SetBusPowerCmdMsg.py $(MIGDIR)/SetBusPowerResponseMsg.py $(MIGDIR)/ReadBaconTlvCmdMsg.py $(MIGDIR)/ReadBaconTlvResponseMsg.py $(MIGDIR)/ReadToastTlvCmdMsg.py $(MIGDIR)/ReadToastTlvResponseMsg.py $(MIGDIR)/WriteBaconTlvCmdMsg.py $(MIGDIR)/WriteBaconTlvResponseMsg.py $(MIGDIR)/WriteToastTlvCmdMsg.py $(MIGDIR)/WriteToastTlvResponseMsg.py $(MIGDIR)/DeleteBaconTlvEntryCmdMsg.py $(MIGDIR)/DeleteBaconTlvEntryResponseMsg.py $(MIGDIR)/DeleteToastTlvEntryCmdMsg.py $(MIGDIR)/DeleteToastTlvEntryResponseMsg.py $(MIGDIR)/AddBaconTlvEntryCmdMsg.py $(MIGDIR)/AddBaconTlvEntryResponseMsg.py $(MIGDIR)/AddToastTlvEntryCmdMsg.py $(MIGDIR)/AddToastTlvEntryResponseMsg.py $(MIGDIR)/ReadBaconTlvEntryCmdMsg.py $(MIGDIR)/ReadBaconTlvEntryResponseMsg.py $(MIGDIR)/ReadToastTlvEntryCmdMsg.py $(MIGDIR)/ReadToastTlvEntryResponseMsg.py
 MIGCLASSES += $(MIGDIR)/PrintfMsg.py 
 MIGCLASSES += $(MIGDIR)/ReadAdcCCmdMsg.py
 MIGCLASSES += $(MIGDIR)/ReadAdcCResponseMsg.py
