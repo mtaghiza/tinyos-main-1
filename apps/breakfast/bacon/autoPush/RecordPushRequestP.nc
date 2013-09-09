@@ -75,6 +75,7 @@ generic module RecordPushRequestP() {
 
   command error_t SoftwareInit.init()
   {
+    #if ENABLE_CONFIGURABLE_LOG_NOTIFY == 1
     uint16_t highThreshold = DEFAULT_HIGH_PUSH_THRESHOLD;
     uint16_t lowThreshold = DEFAULT_LOW_PUSH_THRESHOLD;
 
@@ -85,6 +86,9 @@ generic module RecordPushRequestP() {
 
     call LogNotify.setHighThreshold(highThreshold);
     call LogNotify.setLowThreshold(lowThreshold);
+    #else
+    #warning "Non-configurable auto-push levels"
+    #endif
 
     call LogWrite.sync();
     
