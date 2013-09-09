@@ -105,7 +105,7 @@ module CXLinkP {
       faRunning = call FastAlarm.isRunning();
       pState = call Rf1aStatus.get();
     }
-    atomic cerror(LINK, "Link %x rxm %p fwd %p phy %x \r\n",
+    atomic cerror(LINK, "LSD %x %p %p %x\r\n",
       lState, rxMsg, fwdMsg, pState); 
   }
   #else
@@ -157,20 +157,20 @@ module CXLinkP {
     }else{
       error_t err = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
       if (err != SUCCESS){
-        cerror(LINK, "LINK.sleep: p.rim %x\r\n", err);
+        cerror(LINK, "L.s0 %x\r\n", err);
       }
       err = call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
         RF1A_OM_IDLE);
       if (err != SUCCESS){
         //DBG 4
         //This fails with an EBUSY
-        cerror(LINK, "LINK.sleep: p.srb0 %x\r\n", err);
+        cerror(LINK, "L.s1 %x\r\n", err);
       }
       err = call Rf1aPhysical.sleep();
       if (err != SUCCESS){
         //DBG 5
         //This fails with an ERETRY
-        cerror(LINK, "LINK.sleep: p.sleep %x\r\n", err);
+        cerror(LINK, "L.s2: %x\r\n", err);
       }
       call Msp430XV2ClockControl.stopMicroTimer();
       atomic state = S_SLEEP;
@@ -793,7 +793,7 @@ module CXLinkP {
       call Msp430XV2ClockControl.stopMicroTimer();
       signal SplitControl.startDone(call Rf1aPhysical.sleep());
     }else {
-      cerror(LINK, "Link no mem @start\r\n");
+      cerror(LINK, "LNM\r\n");
       signal SplitControl.startDone(ENOMEM);
     }
   }

@@ -116,11 +116,16 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
  
-  //TODO: remove debug code
+  #if DL_SCHED <= DL_INFO
   uint16_t slotNum;
+  #endif
 
   #ifndef LOG_CTS_TIME
   #define LOG_CTS_TIME 0
+  #endif
+
+  #ifndef LOG_NEIGHBORHOOD
+  #define LOG_NEIGHBORHOOD 0
   #endif
 
   uint32_t baseCTS;
@@ -157,8 +162,9 @@ module SlotSchedulerP {
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
       wakeupStartMilli = call LocalTime.get();
-      //TODO: remove debug code
+      #if DL_SCHED <= DL_INFO
       slotNum = 0;
+      #endif
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS);
@@ -209,7 +215,7 @@ module SlotSchedulerP {
     if (master ==(call CXLinkPacket.getLinkHeader(msg))->destination){
       baseCTS = timestamp(msg);
     }else if (baseCTS == 0){
-      cwarn(SCHED, "BAD BASE CTS\r\n");
+      cwarn(SCHED, "BBCTS\r\n");
       baseCTS = timestamp(msg);
     }
     #if LOG_CTS_TIME == 1
@@ -398,10 +404,9 @@ module SlotSchedulerP {
           {
             //on last frame: wait around for an
             //  end-of-message/data-pending from the owner
-            //TODO: need to verify that if we miss status and enter
-            //this state, it doesn't screw up the start of the next
-            //slot.
-            //It does, in fact, but only if CTS_TIMEOUT > EOS_FRAMES*FRAMELEN
+            //We compute EOS_FRAMES based on CTS_TIMEOUT, so it
+            //  shouldn't be possible to have an RX here that spills
+            //  over into next cts period.
             error_t error = rx(CTS_TIMEOUT, TRUE);
 //            cdbg(SCHED, "NSW\r\n");
             if (error != SUCCESS){
@@ -694,8 +699,8 @@ module SlotSchedulerP {
       < call SlotController.wakeupLen[activeNS](activeNS);
   }
   
+  #if LOG_NEIGHBORHOOD == 1
   task void logNeighborhood(){
-    //TODO: remove debug code
     nx_am_addr_t* neighbors = call Neighborhood.getNeighborhood();
     uint8_t nn = call Neighborhood.numNeighbors();
     uint8_t i;
@@ -709,6 +714,7 @@ module SlotSchedulerP {
         neighbors[i]);
     }
   }
+  #endif
 
   task void nextRX(){
     cdbg(SCHED_CHECKED, "next RX ");
@@ -742,7 +748,9 @@ module SlotSchedulerP {
             TRUE);
           if (error != SUCCESS){
             cerror(SCHED, "SRXF %x\r\n", error);
+            #if LOG_NEIGHBORHOOD == 1
             post logNeighborhood();
+            #endif
             error = call LppControl.sleep();
             call SlotTimer.stop();
             call FrameTimer.stop();
@@ -774,9 +782,10 @@ module SlotSchedulerP {
         cdbg(SCHED, "MCD %u %u %u\r\n", slotNum, missedCTS, call SlotTimer.isRunning());
         call SlotTimer.stop();
         call FrameTimer.stop();
-        //TODO: remove debug
+        #if LOG_NEIGHBORHOOD == 1
         call Neighborhood.freeze();
         post logNeighborhood();
+        #endif
         if (error == SUCCESS){
           state = S_UNSYNCHED;
         }else{
@@ -794,15 +803,18 @@ module SlotSchedulerP {
   //check for it.
   event void SlotTimer.fired(){
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
-    //TODO: remove debug code
+    #if DL_SCHED <= DL_INFO
     slotNum ++;
+    #endif
     if (signalEnd){
       call SlotController.endSlot[activeNS]();
       signalEnd = FALSE;
     }else{
       if (call SlotController.isMaster[activeNS]()){
         //ugh, correct slot numbering at master
+        #if DL_SCHED <= DL_INFO
         slotNum --;
+        #endif
       }
     }
 
@@ -850,7 +862,9 @@ module SlotSchedulerP {
         }
       } else {
         cdbg(SCHED, "EA\r\n");
+        #if LOG_NEIGHBORHOOD == 1
         post logNeighborhood();
+        #endif
         //end of active period: can sleep now.
         call LppControl.sleep();
         call SlotTimer.stop();
