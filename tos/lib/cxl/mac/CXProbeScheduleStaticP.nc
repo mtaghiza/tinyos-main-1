@@ -5,33 +5,33 @@ module CXProbeScheduleStaticP {
   uses interface SettingsStorage;
   provides interface Init;
 } implementation {
+
   #if CX_BASESTATION == 1
-  probe_schedule_t sched = { 
-    .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
-    .invFrequency={1, 0, 1},
-    .bw={2, 2, 2},
-    .maxDepth={8,5,5}
-  };
+  #define IF_G  1
+  #define IF_SN 0
+  #define IF_R  1
   #elif CX_ROUTER == 1
-  //argh, I wish that invFrequency could be 0 for Subnetwork channel,
-  //but that breaks the wakeup len logic.
-  probe_schedule_t sched = { 
-    .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
-    .invFrequency={1, 1, 1},
-    .bw={2, 2, 2},
-    .maxDepth={8,5,5}
-  };
+  #define IF_G  1
+  #define IF_SN 1
+  #define IF_R  1
   #else
+  #define IF_G  1
+  #define IF_SN 1
+  #define IF_R  0
+  #endif
+
   probe_schedule_t sched = { 
     .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
-    .invFrequency={1, 1, 0},
+    .invFrequency={IF_G, IF_SN, IF_R},
     .bw={2, 2, 2},
-    .maxDepth={8,5,5}
+    .maxDepth={CX_MAX_DEPTH*2, CX_MAX_DEPTH, CX_MAX_DEPTH}
   };
-  #endif
 
   command error_t Init.init(){
     sched.probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
+    sched.wakeupLen[0] = 32*CX_MAX_DEPTH*2 * IF_G * LPP_DEFAULT_PROBE_INTERVAL;
+    sched.wakeupLen[1] = 32*CX_MAX_DEPTH*1 * IF_SN * LPP_DEFAULT_PROBE_INTERVAL;
+    sched.wakeupLen[2] = 32*CX_MAX_DEPTH*1 * IF_R  * LPP_DEFAULT_PROBE_INTERVAL;
     return SUCCESS;
   }
 

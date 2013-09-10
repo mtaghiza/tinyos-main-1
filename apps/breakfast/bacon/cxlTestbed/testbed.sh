@@ -4,7 +4,7 @@ set -x
 
 routerPower=0xC3
 leafPower=0x2D
-enablePrintf=1
+enablePrintf=0
 for map in map.p0 map.p1 map.p2 map.p3
 do
   snc=$(grep SNC $map | cut -d ' ' -f 2)

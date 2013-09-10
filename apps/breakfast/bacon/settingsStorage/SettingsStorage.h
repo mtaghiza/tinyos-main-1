@@ -1,7 +1,7 @@
 #ifndef SETTINGS_STORAGE_H
 #define SETTINGS_STORAGE_H
 
-#define MAX_SETTING_LEN 16
+#define MAX_SETTING_LEN 28
 
 //hack for mig: mig doesn't appear to be picking up typedefs
 //correctly? have to re-write the entire typedef each time

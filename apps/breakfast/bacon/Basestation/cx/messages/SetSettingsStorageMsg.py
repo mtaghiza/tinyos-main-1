@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 19
+DEFAULT_MESSAGE_SIZE = 31
 
 # The Active Message type associated with this message.
 AM_TYPE = 192
 
 class SetSettingsStorageMsg(tinyos.message.Message.Message):
-    # Create a new SetSettingsStorageMsg of size 19.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=19):
+    # Create a new SetSettingsStorageMsg of size 31.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=31):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -44,7 +44,7 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [val=";
-            for i in range(0, 16):
+            for i in range(0, 28):
                 s += "0x%x " % (self.getElement_val(i) & 0xff)
             s += "]\n";
         except:
@@ -242,7 +242,7 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
     #
     def offset_val(self, index1):
         offset = 24
-        if index1 < 0 or index1 >= 16:
+        if index1 < 0 or index1 >= 28:
             raise IndexError
         offset += 0 + index1 * 8
         return (offset / 8)
@@ -252,7 +252,7 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
     #
     def offsetBits_val(self, index1):
         offset = 24
-        if index1 < 0 or index1 >= 16:
+        if index1 < 0 or index1 >= 28:
             raise IndexError
         offset += 0 + index1 * 8
         return offset
@@ -261,7 +261,7 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
     # Return the entire array 'val' as a short[]
     #
     def get_val(self):
-        tmp = [None]*16
+        tmp = [None]*28
         for index0 in range (0, self.numElements_val(0)):
                 tmp[index0] = self.getElement_val(index0)
         return tmp
@@ -289,13 +289,13 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
     # Return the total size, in bytes, of the array 'val'
     #
     def totalSize_val(self):
-        return (128 / 8)
+        return (224 / 8)
     
     #
     # Return the total size, in bits, of the array 'val'
     #
     def totalSizeBits_val(self):
-        return 128
+        return 224
     
     #
     # Return the size, in bytes, of each element of the array 'val'
@@ -319,14 +319,14 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
     # Return the number of elements in the array 'val'
     #
     def numElements_val():
-        return 16
+        return 28
     
     #
     # Return the number of elements in the array 'val'
     # for the given dimension.
     #
     def numElements_val(self, dimension):
-        array_dims = [ 16,  ]
+        array_dims = [ 28,  ]
         if dimension < 0 or dimension >= 1:
             raise IndexException
         if array_dims[dimension] == 0:

@@ -140,7 +140,10 @@ module SlotSchedulerP {
   #else
   #endif
 
-
+  #ifndef WRX_LIMIT
+  #define WRX_LIMIT 100
+  #endif
+  error_t endActive();
   void handleCTS(message_t* msg);
   task void nextRX();
   error_t rx(uint32_t timeout, bool retx);
@@ -153,6 +156,7 @@ module SlotSchedulerP {
 
   
   uint8_t activeNS;
+  uint8_t wrxCount;
   event void LppControl.wokenUp(uint8_t ns){
     if (state == S_UNSYNCHED){
       activeNS = ns;
@@ -170,11 +174,13 @@ module SlotSchedulerP {
         activeNS);
       call RoutingTable.setDefault((call ProbeSchedule.get())->maxDepth[activeNS]);
       baseCTS = 0;
-      cinfo(SCHED, "WU %u %u %lu\r\n", 
+      cinfo(SCHED, "WU %u %u %lu %lu\r\n", 
         activeNS, 
         (call ProbeSchedule.get())->channel[activeNS],
-        DATA_TIMEOUT);
+        DATA_TIMEOUT,
+        call SlotController.wakeupLen[activeNS](activeNS));
       cflushdbg(SCHED);
+      wrxCount = 0;
       post nextRX();
     }else{
       cerror(SCHED, "US0 %x\r\n", state);
@@ -645,7 +651,7 @@ module SlotSchedulerP {
     } else if (state == S_CTS_SENDING){
       framesLeft = (SLOT_LENGTH/FRAME_LENGTH) - 1;
       if (! call SlotTimer.isRunning()){
-        call SlotTimer.startPeriodicAt(timestamp(msg), SLOT_LENGTH);
+        call SlotTimer.startPeriodicAt(timestamp(msg)-TX_SLACK, SLOT_LENGTH);
       }
 
       handleCTS(ctsMsg);
@@ -717,7 +723,9 @@ module SlotSchedulerP {
   }
   #endif
 
+
   task void nextRX(){
+    wrxCount ++;
     cdbg(SCHED_CHECKED, "next RX ");
     if (state == S_WAKEUP){
       uint32_t t = call SlotTimer.getNow();
@@ -733,10 +741,20 @@ module SlotSchedulerP {
           remainingTime, 
           call SlotController.wakeupLen[activeNS](activeNS),
           slowToFast(call SlotController.wakeupLen[activeNS](activeNS)));
+        //Got an EBUSY here: this came from CXLinkP, where we were in
+        //  state S_TX (perhaps sending a probe?)
+        //Since we are no longer stillWaking, we start things up by
+        //sending a CTS (which also fails because we're busy), and so
+        //on.
         error = rx(remainingTime, TRUE);
         if (error != SUCCESS){
           cwarn(SCHED, "WURR %x\r\n", error);
-          stillWaking = FALSE;
+          if (wrxCount < WRX_LIMIT){
+            post nextRX();
+            return;
+          }else{
+          }
+//          stillWaking = FALSE;
         }
       } 
       if (! stillWaking){
@@ -749,15 +767,8 @@ module SlotSchedulerP {
             TRUE);
           if (error != SUCCESS){
             cerror(SCHED, "SRXF %x\r\n", error);
-            #if LOG_NEIGHBORHOOD == 1
-            post logNeighborhood();
-            #endif
-            error = call LppControl.sleep();
-            call SlotTimer.stop();
-            call FrameTimer.stop();
-            if (error == SUCCESS){
-              state = S_UNSYNCHED;
-            }else{
+            error = endActive();
+            if (error != SUCCESS){
               //awjeez awjeez
               cerror(SCHED, "FS 1 %x\r\n", error);
             }
@@ -779,17 +790,9 @@ module SlotSchedulerP {
         state = S_UNUSED_SLOT;
       }else {
         //CTS limit exceeded, back to sleep
-        error_t error = call LppControl.sleep();
+        error_t error = endActive();
         cdbg(SCHED, "MCD %u %u %u\r\n", slotNum, missedCTS, call SlotTimer.isRunning());
-        call SlotTimer.stop();
-        call FrameTimer.stop();
-        #if LOG_NEIGHBORHOOD == 1
-        call Neighborhood.freeze();
-        post logNeighborhood();
-        #endif
-        if (error == SUCCESS){
-          state = S_UNSYNCHED;
-        }else{
+        if(error != SUCCESS){
           //awjeez awjeez
           cerror(SCHED, "FS 0 %x\r\n", error);
         }
@@ -798,6 +801,18 @@ module SlotSchedulerP {
       //ignore next rx (e.g. handled at frametimer.fired)
       cdbg(SCHED_CHECKED, "nrxi %x\r\n", state);
     }
+  }
+
+  error_t endActive() {
+    error_t error = call LppControl.sleep();
+    call SlotTimer.stop();
+    call FrameTimer.stop();
+    #if LOG_NEIGHBORHOOD == 1
+    call Neighborhood.freeze();
+    post logNeighborhood();
+    #endif
+    state = S_UNSYNCHED;
+    return error;
   }
   
   //when slot timer fires, master will send CTS, and slave will try to
@@ -862,14 +877,8 @@ module SlotSchedulerP {
           cerror(SCHED, "CTSB\r\n");
         }
       } else {
-        cdbg(SCHED, "EA\r\n");
-        #if LOG_NEIGHBORHOOD == 1
-        post logNeighborhood();
-        #endif
-        //end of active period: can sleep now.
-        call LppControl.sleep();
-        call SlotTimer.stop();
-        call FrameTimer.stop();
+        error_t error = endActive();
+        cdbg(SCHED, "EA %x\r\n", error);
       }
     } else {
       error_t error;
@@ -939,6 +948,7 @@ module SlotSchedulerP {
   default command void SlotController.receiveCTS[uint8_t ns](am_addr_t m, uint8_t ans){}
   default command void SlotController.endSlot[uint8_t ns](){}
   default command uint32_t SlotController.wakeupLen[uint8_t ns](uint8_t ns1){
+    cerror(SCHED, "Unwired WUL\r\n");
     return 0;
   }
 
