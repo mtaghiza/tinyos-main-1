@@ -45,18 +45,18 @@ implementation
   #define PORTxSEL (*TCAST(volatile TYPE_PORT_SEL* ONE, port_sel_addr))
   #define PORTxREN (*TCAST(volatile TYPE_PORT_REN* ONE, port_ren_addr))
 
-  async command void IO.set() { atomic PORTx |= (0x01 << pin); }
-  async command void IO.clr() { atomic PORTx &= ~(0x01 << pin); }
-  async command void IO.toggle() { atomic PORTx ^= (0x01 << pin); }
+  async command void IO.set() { PORTx |= (0x01 << pin); }
+  async command void IO.clr() { PORTx &= ~(0x01 << pin); }
+  async command void IO.toggle() { PORTx ^= (0x01 << pin); }
   async command uint8_t IO.getRaw() { return PORTxIN & (0x01 << pin); }
   async command bool IO.get() { return (call IO.getRaw() != 0); }
-  async command void IO.makeInput() { atomic PORTxDIR &= ~(0x01 << pin); }
+  async command void IO.makeInput() { PORTxDIR &= ~(0x01 << pin); }
   async command bool IO.isInput() { return (PORTxDIR & (0x01 << pin)) == 0; }
-  async command void IO.makeOutput() { atomic PORTxDIR |= (0x01 << pin); }
+  async command void IO.makeOutput() { PORTxDIR |= (0x01 << pin); }
   async command bool IO.isOutput() { return (PORTxDIR & (0x01 << pin)) != 0; }
-  async command void IO.selectModuleFunc() { atomic PORTxSEL |= (0x01 << pin); }
+  async command void IO.selectModuleFunc() { PORTxSEL |= (0x01 << pin); }
   async command bool IO.isModuleFunc() { return (PORTxSEL & (0x01<<pin)) != 0; }
-  async command void IO.selectIOFunc() { atomic PORTxSEL &= ~(0x01 << pin); }
+  async command void IO.selectIOFunc() {  PORTxSEL &= ~(0x01 << pin); }
   async command bool IO.isIOFunc() { return (PORTxSEL & (0x01<<pin)) == 0; }
 
   async command error_t IO.setResistor(uint8_t mode) {
