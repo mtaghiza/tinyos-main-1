@@ -631,7 +631,7 @@ module SlotSchedulerP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
-    cinfo(SCHED, "LTX %u %lu %u %lu \r\n", 
+    cinfo(SCHED_RX, "LTX %u %lu %u %lu \r\n", 
       call CXLinkPacket.getSn(msg),
       timestamp(msg) - baseCTS,
       call Packet.payloadLength(msg),

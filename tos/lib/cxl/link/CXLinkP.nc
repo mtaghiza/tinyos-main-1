@@ -387,7 +387,7 @@ module CXLinkP {
             post logRetxMiss();
           }
           #endif
-          cinfo(SCHED, "T %lu %x\r\n", dfLog, dfMissed);
+//          cinfo(SCHED, "T %lu %x\r\n", dfLog, dfMissed);
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
