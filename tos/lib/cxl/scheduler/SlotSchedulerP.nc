@@ -753,6 +753,7 @@ module SlotSchedulerP {
             post nextRX();
             return;
           }else{
+            endActive();
           }
 //          stillWaking = FALSE;
         }
