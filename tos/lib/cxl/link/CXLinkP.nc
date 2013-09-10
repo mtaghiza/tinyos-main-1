@@ -277,8 +277,14 @@ module CXLinkP {
           //where txTime < current time)
           if (ds < 21145UL){
             df = slowToFast(ds);
+//            cdbg(SCHED, "T %lu @ %lu %lu\r\n",
+//              metadata(fwdMsg)->txTime, 
+//              sb,
+//              df);
             call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
           } else{
+            cwarn(SCHED, "SI %lu - %lu = %lu\r\n", metadata(fwdMsg)->txTime, sb, metadata(fwdMsg)->txTime - sb);
+//            cwarn(SCHED, "SI\r\n");
             post startImmediately();
           }
         }else{

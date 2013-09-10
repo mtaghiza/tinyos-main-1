@@ -82,7 +82,7 @@ implementation
     
     #ifdef CC430_PIN_DEBUG
     atomic{
-      //map SFD to 1.2
+      //map SFD to 2.4
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P2MAP4 = PM_RFGDO0;
