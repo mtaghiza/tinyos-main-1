@@ -101,6 +101,7 @@ generic module Msp430UsciSpiP () @safe() {
    * CC430 errata UCS6. */
   void unconfigure_ (uint8_t client)
   {
+    //138 B ROM
     while (UCBUSY & (call Usci.getStat())) {
       ;/* busy-wait */
     }
@@ -108,6 +109,9 @@ generic module Msp430UsciSpiP () @safe() {
     call Usci.setIe(call Usci.getIe() & ~ (UCTXIE | UCRXIE));
     call Usci.enterResetMode_();
     call Msp430PortMappingConfigure.unconfigure[client]();
+    //33284 -> 33210: 74 bytes
+    //N.B. It looks like these still aren't being completely inlined,
+    //so there should be another 18 or so bytes of ROM wasted here
     call SIMO.makeOutput();
     call SIMO.selectIOFunc();
     call SOMI.makeOutput();
@@ -132,6 +136,7 @@ generic module Msp430UsciSpiP () @safe() {
 
     /* Do basic configuration, leaving USCI in reset mode.  Configure
      * the SPI pins, enable the USCI, and turn on the interrupts. */
+    //184 B of ROM
     call Usci.configure(config, TRUE);
     call Msp430PortMappingConfigure.configure[client]();
     call SIMO.makeOutput();
