@@ -41,25 +41,27 @@ configuration Rf1aC {
   
   provides {
     interface HplMsp430Rf1aIf;
-    interface Resource[uint8_t client];
-    interface ResourceRequested[uint8_t client];
-    interface ArbiterInfo;
-    interface Rf1aPhysical[uint8_t client];
+//    interface Resource[uint8_t client];
+//    interface ResourceRequested[uint8_t client];
+//    interface ArbiterInfo;
+    interface SplitControl;
+    interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
-    interface DelayedSend[uint8_t client];
+    interface DelayedSend;
   }
   uses {
-    interface Rf1aTransmitFragment[uint8_t client];
-    interface Rf1aConfigure[uint8_t client];
+    interface Rf1aTransmitFragment;
+    interface Rf1aConfigure;
   }
 } implementation {
 
-  components new HplMsp430Rf1aC(RF1AIFCTL0_, UQ_RF1A_CLIENT) as HplRf1aC;
+  components new HplMsp430Rf1aC(RF1AIFCTL0_) as HplRf1aC;
   HplMsp430Rf1aIf = HplRf1aC;
-  Resource = HplRf1aC;
-  ResourceRequested = HplRf1aC;
-  ArbiterInfo = HplRf1aC;
+  SplitControl = HplRf1aC;
+//  Resource = HplRf1aC;
+//  ResourceRequested = HplRf1aC;
+//  ArbiterInfo = HplRf1aC;
   Rf1aPhysical = HplRf1aC;
   Rf1aPhysicalMetadata = HplRf1aC;
   Rf1aTransmitFragment = HplRf1aC;

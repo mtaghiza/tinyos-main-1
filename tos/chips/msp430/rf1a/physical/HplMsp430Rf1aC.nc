@@ -41,24 +41,26 @@
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
 generic configuration HplMsp430Rf1aC (
   /** Offset of RF1AxIFCTL0_ register for x=module_instance */
-  unsigned int RF1AxIFCTL0_,
-  /** Name of resource used to arbitrate modes of this USCI instance */
-  char CLIENT_RESOURCE[]
+  unsigned int RF1AxIFCTL0_
+//  ,
+//  /** Name of resource used to arbitrate modes of this USCI instance */
+//  char CLIENT_RESOURCE[]
 ) @safe() {
   provides {
     interface HplMsp430Rf1aIf;
-    interface Resource[uint8_t client];
-    interface ResourceRequested[uint8_t client];
-    interface ArbiterInfo;
-    interface Rf1aPhysical[uint8_t client];
+    interface SplitControl;
+//    interface Resource[uint8_t client];
+//    interface ResourceRequested[uint8_t client];
+//    interface ArbiterInfo;
+    interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
   }
   uses {
-    interface Rf1aConfigure[uint8_t client];
-    interface Rf1aTransmitFragment[uint8_t client];
+    interface Rf1aConfigure;
+    interface Rf1aTransmitFragment;
   }
-  provides interface DelayedSend[uint8_t client];
+  provides interface DelayedSend;
 } implementation {
   enum {
     /** Identifier for this RF1A module, unique across chip */
@@ -67,30 +69,31 @@ generic configuration HplMsp430Rf1aC (
 
   components new HplMsp430Rf1aIfP(RF1A_ID, RF1AxIFCTL0_) as HplRf1aIfP;
   HplMsp430Rf1aIf = HplRf1aIfP;
-
-  components new SimpleFcfsArbiterC(CLIENT_RESOURCE) as ArbiterC;
-  Resource = ArbiterC;
-  ResourceRequested = ArbiterC;
-  ArbiterInfo = ArbiterC;
+//  //TODO: replace with dummy arbiter
+//  components new SimpleFcfsArbiterC(CLIENT_RESOURCE) as ArbiterC;
+//  Resource = ArbiterC;
+//  ResourceRequested = ArbiterC;
+//  ArbiterInfo = ArbiterC;
   
-  components new HplMsp430Rf1aP() as HplRf1aP;
+  components HplMsp430Rf1aP as HplRf1aP;
+  SplitControl = HplRf1aP.SplitControl;
   components new DefaultRf1aTransmitFragmentC();
   HplRf1aP.DefaultRf1aTransmitFragment -> DefaultRf1aTransmitFragmentC;
   HplRf1aP.DefaultLength -> DefaultRf1aTransmitFragmentC;
   HplRf1aP.DefaultBuffer -> DefaultRf1aTransmitFragmentC;
   HplRf1aP.Rf1aIf -> HplRf1aIfP;
-  ArbiterC.ResourceConfigure -> HplRf1aP;
-  HplRf1aP.ArbiterInfo -> ArbiterC;
+//  ArbiterC.ResourceConfigure -> HplRf1aP;
+//  HplRf1aP.ArbiterInfo -> ArbiterC;
   Rf1aConfigure = HplRf1aP;
   Rf1aPhysical = HplRf1aP;
   Rf1aPhysicalMetadata = HplRf1aP;
-  Rf1aTransmitFragment = HplRf1aP;
+  Rf1aTransmitFragment = HplRf1aP.Rf1aTransmitFragment;
   Rf1aStatus = HplRf1aP;
   DelayedSend = HplRf1aP;
 
   components HplMsp430Rf1aInterruptP;
   HplRf1aP.Rf1aInterrupts -> HplMsp430Rf1aInterruptP;
-  HplMsp430Rf1aInterruptP.ArbiterInfo -> ArbiterC;
+//  HplMsp430Rf1aInterruptP.ArbiterInfo -> ArbiterC;
 
   components LedsC;
   HplRf1aP.Leds -> LedsC;

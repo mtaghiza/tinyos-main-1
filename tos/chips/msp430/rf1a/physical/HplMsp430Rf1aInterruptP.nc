@@ -42,10 +42,10 @@
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
 module HplMsp430Rf1aInterruptP {
   provides {
-    interface Rf1aInterrupts[uint8_t client];
+    interface Rf1aInterrupts;
   }
   uses {
-    interface ArbiterInfo;
+//    interface ArbiterInfo;
     interface Leds;
   }
 } implementation {
@@ -77,12 +77,12 @@ module HplMsp430Rf1aInterruptP {
 
   TOSH_SIGNAL(CC1101_VECTOR) {
     uint16_t coreInterrupt = RF1AIV;
-    uint8_t client = call ArbiterInfo.userId();
+//    uint8_t client = call ArbiterInfo.userId();
 
-    /* If the module isn't in use, there's nobody to signal. */
-    if (! call ArbiterInfo.inUse()) {
-      return;
-    }
+//    /* If the module isn't in use, there's nobody to signal. */
+//    if (! call ArbiterInfo.inUse()) {
+//      return;
+//    }
 
     /* Full wake-up on return.
      * @todo Really only certain situations require a wakeup.  Provide a
@@ -95,10 +95,10 @@ module HplMsp430Rf1aInterruptP {
 
       switch (coreInterrupt) {
         default:
-          signal Rf1aInterrupts.coreInterrupt[client](coreInterrupt);
+          signal Rf1aInterrupts.coreInterrupt(coreInterrupt);
           break;
         case RF1AIV_RFIFG4:
-          signal Rf1aInterrupts.rxFifoAvailable[client]();
+          signal Rf1aInterrupts.rxFifoAvailable();
           break;
         case RF1AIV_RFIFG5:
           {
@@ -111,37 +111,37 @@ module HplMsp430Rf1aInterruptP {
 //              es = RF1AIES;
 ////              post reportErrata();
 //            }
-            signal Rf1aInterrupts.txFifoAvailable[client](!valid);
+            signal Rf1aInterrupts.txFifoAvailable(!valid);
           }
           break;
         case RF1AIV_RFIFG7:
-          signal Rf1aInterrupts.rxOverflow[client]();
+          signal Rf1aInterrupts.rxOverflow();
           break;
         case RF1AIV_RFIFG8:
-          signal Rf1aInterrupts.txUnderflow[client]();
+          signal Rf1aInterrupts.txUnderflow();
           break;
         case RF1AIV_RFIFG9:
-          signal Rf1aInterrupts.syncWordEvent[client]();
+          signal Rf1aInterrupts.syncWordEvent();
           break;
         case RF1AIV_RFIFG12:
-          signal Rf1aInterrupts.clearChannel[client]();
+          signal Rf1aInterrupts.clearChannel();
           break;
         case RF1AIV_RFIFG13:
-          signal Rf1aInterrupts.carrierSense[client]();
+          signal Rf1aInterrupts.carrierSense();
           break;
       }
     }
   }
 
-  default async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] () { }
-  default async event void Rf1aInterrupts.txFifoAvailable[uint8_t
-  client] (bool errataApplies) { }
-  default async event void Rf1aInterrupts.rxOverflow[uint8_t client] () { }
-  default async event void Rf1aInterrupts.txUnderflow[uint8_t client] () { }
-  default async event void Rf1aInterrupts.syncWordEvent[uint8_t client] () { }
-  default async event void Rf1aInterrupts.clearChannel[uint8_t client] () { }
-  default async event void Rf1aInterrupts.carrierSense[uint8_t client] () { }
-  default async event void Rf1aInterrupts.coreInterrupt[uint8_t client] (uint16_t iv) { }
+//  default async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.txFifoAvailable[uint8_t
+//  client] (bool errataApplies) { }
+//  default async event void Rf1aInterrupts.rxOverflow[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.txUnderflow[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.syncWordEvent[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.clearChannel[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.carrierSense[uint8_t client] () { }
+//  default async event void Rf1aInterrupts.coreInterrupt[uint8_t client] (uint16_t iv) { }
 }
 
 /* 

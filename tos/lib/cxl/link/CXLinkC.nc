@@ -16,9 +16,9 @@ configuration CXLinkC {
   CXLink = CXLinkP.CXLink;
   CXLinkP.Pool = Pool;
 
-  components new Rf1aPhysicalC();
+  components Rf1aPhysicalC;
   CXLinkP.Rf1aPhysical -> Rf1aPhysicalC;
-  CXLinkP.Resource -> Rf1aPhysicalC;
+  CXLinkP.SubSplitControl -> Rf1aPhysicalC;
   CXLinkP.DelayedSend -> Rf1aPhysicalC;
   CXLinkP.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
 

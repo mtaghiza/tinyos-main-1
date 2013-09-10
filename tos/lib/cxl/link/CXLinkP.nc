@@ -1,10 +1,11 @@
 
  #include "CXLink.h"
  #include "CXLinkDebug.h"
+ #include "CXScheduleDebug.h"
 
 module CXLinkP {
   provides interface SplitControl;
-  uses interface Resource;
+  uses interface SplitControl as SubSplitControl;
 
   uses interface Rf1aPhysical;
   uses interface DelayedSend;
@@ -37,6 +38,10 @@ module CXLinkP {
   message_t* fwdMsg;
   uint16_t sn;
   uint32_t origTimeout;
+  bool started = FALSE;
+
+  uint32_t dfLog;
+  bool dfMissed;
 
   int aTxResult;
   
@@ -273,16 +278,20 @@ module CXLinkP {
 
           uint32_t ds = metadata(fwdMsg)->txTime - sb;
           uint32_t df = 0;
+
+
           //verify overflow-safety (also implicitly checks for cases
           //where txTime < current time)
           if (ds < 21145UL){
             df = slowToFast(ds);
+            dfLog = df;
 //            cdbg(SCHED, "T %lu @ %lu %lu\r\n",
 //              metadata(fwdMsg)->txTime, 
 //              sb,
 //              df);
             call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
           } else{
+            dfMissed = TRUE;
             cwarn(SCHED, "SI %lu - %lu = %lu\r\n", metadata(fwdMsg)->txTime, sb, metadata(fwdMsg)->txTime - sb);
 //            cwarn(SCHED, "SI\r\n");
             post startImmediately();
@@ -378,7 +387,7 @@ module CXLinkP {
             post logRetxMiss();
           }
           #endif
-
+          cinfo(SCHED, "T %lu %x\r\n", dfLog, dfMissed);
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -527,6 +536,7 @@ module CXLinkP {
       return EBUSY;
     }
   }
+
   
   /**
    * Set up the radio to transmit the provided packet immediately.
@@ -534,6 +544,8 @@ module CXLinkP {
   command error_t Send.send(message_t* msg, uint8_t len){
     uint8_t localState;
     atomic localState = state;
+    dfLog = 0;
+    dfMissed = FALSE;
     if (localState == S_TX || localState == S_FWD){
       cwarn(LINK, "LS.S: %x\r\n", localState);
       return localState == S_TX? EBUSY: ERETRY;
@@ -617,7 +629,7 @@ module CXLinkP {
   }
   
   error_t subsend(message_t* msg){
-    if(call Resource.isOwner()){
+    if(started){
       error_t error;
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
         call Msp430XV2ClockControl.startMicroTimer();
@@ -786,38 +798,45 @@ module CXLinkP {
   //------------
   // "Easy stuff"
   command error_t SplitControl.start(){
-    if (call Resource.isOwner()){
+    if (started){
       return EALREADY;
     }else{
-      return call Resource.request();
+      return call SubSplitControl.start();
     }
   }
 
-  event void Resource.granted(){
-    rxMsg = call Pool.get();
-    if (rxMsg){
-      call Msp430XV2ClockControl.stopMicroTimer();
-      signal SplitControl.startDone(call Rf1aPhysical.sleep());
-    }else {
-      cerror(LINK, "LNM\r\n");
-      signal SplitControl.startDone(ENOMEM);
+  event void SubSplitControl.startDone(error_t error){
+    if (error == SUCCESS){
+      rxMsg = call Pool.get();
+      started = TRUE;
+      if (rxMsg){
+        call Msp430XV2ClockControl.stopMicroTimer();
+        signal SplitControl.startDone(call Rf1aPhysical.sleep());
+      }else {
+        cerror(LINK, "LNM\r\n");
+        signal SplitControl.startDone(ENOMEM);
+      }
+    }else{
+      signal SplitControl.startDone(error);
     }
-  }
-
-  task void signalStopDone(){
-    signal SplitControl.stopDone(SUCCESS);
   }
 
   command error_t SplitControl.stop(){
-    if (! call Resource.isOwner()){
+    if (! started){
       return EALREADY;
     }else{
       call Rf1aPhysical.sleep();
-      post signalStopDone();
       call Pool.put(rxMsg);
       rxMsg = NULL;
-      return call Resource.release();
+      return call SubSplitControl.stop();
     }
+  }
+
+  event void SubSplitControl.stopDone(error_t error){
+    if (error == SUCCESS){
+      started = FALSE;
+    }
+    signal SplitControl.stopDone(error);
   }
 
   command void* Send.getPayload(message_t* msg, uint8_t len){

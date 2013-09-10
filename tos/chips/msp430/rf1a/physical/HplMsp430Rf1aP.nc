@@ -52,22 +52,23 @@
  * it is IDLE; if a receive buffer is available it is RX.  The
  * CCA_MODE and TX-if-CCA features are enabled, but can be bypassed if
  * necessary through judicious use of the Rf1aPhysical methods.  */
-generic module HplMsp430Rf1aP () @safe() {
+module HplMsp430Rf1aP {
   provides {
-    interface ResourceConfigure[uint8_t client];
-    interface Rf1aPhysical[uint8_t client];
+//    interface ResourceConfigure[uint8_t client];
+    interface SplitControl;
+    interface Rf1aPhysical;
     interface Rf1aStatus;
     interface Rf1aPhysicalMetadata;
   }
   uses {
-    interface ArbiterInfo;
+//    interface ArbiterInfo;
     interface HplMsp430Rf1aIf as Rf1aIf;
-    interface Rf1aConfigure[uint8_t client];
-    interface Rf1aTransmitFragment[uint8_t client];
-    interface Rf1aInterrupts[uint8_t client];
+    interface Rf1aConfigure;
+    interface Rf1aTransmitFragment;
+    interface Rf1aInterrupts;
     interface Leds;
   }
-  provides interface DelayedSend[uint8_t client];
+  provides interface DelayedSend;
   uses interface Rf1aTransmitFragment as DefaultRf1aTransmitFragment;
   uses interface SetNow<uint8_t> as DefaultLength;
   uses interface SetNow<const uint8_t*> as DefaultBuffer;
@@ -298,17 +299,19 @@ generic module HplMsp430Rf1aP () @safe() {
    * left. */
   uint8_t tx_cached_fifothr;
 
-  error_t validateClient(uint8_t client){
-    /* Radio must be assigned */
-    if (! call ArbiterInfo.inUse()) {
-      return EOFF;
-    }
-    /* This must be the right client */
-    if (client != call ArbiterInfo.userId()) {
-      return EBUSY;
-    }
-    return SUCCESS;
-  }
+  bool started = FALSE;
+
+//  error_t validateClient(uint8_t client){
+//    /* Radio must be assigned */
+//    if (! call ArbiterInfo.inUse()) {
+//      return EOFF;
+//    }
+//    /* This must be the right client */
+//    if (client != call ArbiterInfo.userId()) {
+//      return EBUSY;
+//    }
+//    return SUCCESS;
+//  }
 
   /** Place the radio back into whatever state it belongs in when not
    * actively transmitting or receiving.  This is either RX or IDLE.
@@ -357,7 +360,7 @@ generic module HplMsp430Rf1aP () @safe() {
   /** Configure the radio for a specific client.  This includes
    * client-specific registers and the overrides necessary to ensure
    * the physical-layer assumptions are maintained. */
-  void configure_ (const rf1a_config_t* config, uint8_t client)
+  void configure_ (const rf1a_config_t* config)
   {
     atomic {
       const uint8_t* cp = (const uint8_t*)config;
@@ -390,7 +393,7 @@ generic module HplMsp430Rf1aP () @safe() {
       //  fetch cached calibration
       if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
 
-        call Rf1aPhysical.setChannel[client](config->channr);
+        call Rf1aPhysical.setChannel(config->channr);
       }
 
       /* Again regardless of configuration, the control flow in this
@@ -412,7 +415,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  async command void Rf1aPhysical.readConfiguration[uint8_t client] (rf1a_config_t* config)
+  async command void Rf1aPhysical.readConfiguration (rf1a_config_t* config)
   {
     /* NB: We intentionally ignore the client here. */
     memset(config, 0, sizeof(config));
@@ -432,48 +435,80 @@ generic module HplMsp430Rf1aP () @safe() {
       call Rf1aIf.resetRadioCore();
     }
   }
-
-  async command void Rf1aPhysical.reconfigure[uint8_t client](){
+  
+  void configure();
+  void unconfigure();
+  async command void Rf1aPhysical.reconfigure(){
     
-    call ResourceConfigure.unconfigure[client]();
-    call ResourceConfigure.configure[client]();
+    unconfigure();
+    configure();
   }
 
-  default async command const rf1a_config_t*
-  Rf1aConfigure.getConfiguration[uint8_t client] ()
+  default async command const rf1a_config_t* Rf1aConfigure.getConfiguration ()
   {
     return &rf1a_default_config;
   }
 
-  default async command void Rf1aConfigure.setFSCAL[uint8_t client](uint8_t channel, rf1a_fscal_t fscal){
+  default async command void Rf1aConfigure.setFSCAL(uint8_t channel, rf1a_fscal_t fscal){
   }
 
-  default async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL[uint8_t client](uint8_t channel){
+  default async command const rf1a_fscal_t* Rf1aConfigure.getFSCAL(uint8_t channel){
     return NULL;
   }
 
-  default async command void Rf1aConfigure.preConfigure[ uint8_t client ] () { }
-  default async command void Rf1aConfigure.postConfigure[ uint8_t client ] () { }
-  default async command void Rf1aConfigure.preUnconfigure[ uint8_t client ] () { }
-  default async command void Rf1aConfigure.postUnconfigure[ uint8_t client ] () { }
+  default async command void Rf1aConfigure.preConfigure () { }
+  default async command void Rf1aConfigure.postConfigure() { }
+  default async command void Rf1aConfigure.preUnconfigure() { }
+  default async command void Rf1aConfigure.postUnconfigure() { }
+  
 
-  async command void ResourceConfigure.configure[uint8_t client] ()
+  void configure()
   {
-    const rf1a_config_t* cp = call Rf1aConfigure.getConfiguration[client]();
+    const rf1a_config_t* cp = call Rf1aConfigure.getConfiguration();
     if (0 == cp) {
       cp = &rf1a_default_config;
     }
-    call Rf1aConfigure.preConfigure[client]();
-    configure_(cp, client);
-    call Rf1aConfigure.postConfigure[client]();
+    call Rf1aConfigure.preConfigure();
+    configure_(cp);
+    call Rf1aConfigure.postConfigure();
   }
 
-  async command void ResourceConfigure.unconfigure[uint8_t client] ()
+  task void configureTask(){
+    configure();
+    started = TRUE;
+    signal SplitControl.startDone(SUCCESS);
+  }
+
+  command error_t SplitControl.start(){
+    if (!started){
+      post configureTask();
+      return SUCCESS;
+    }else{
+      return EALREADY;
+    }
+  }
+
+  void unconfigure()
   {
-    call Rf1aConfigure.preUnconfigure[client]();
+    call Rf1aConfigure.preUnconfigure();
     unconfigure_();
-    call Rf1aConfigure.postUnconfigure[client]();
-    signal Rf1aPhysical.released[client]();
+    call Rf1aConfigure.postUnconfigure();
+    signal Rf1aPhysical.released();
+  }
+
+  task void unconfigureTask(){
+    unconfigure();
+    started = FALSE;
+    signal SplitControl.stopDone(SUCCESS);
+  }
+
+  command error_t SplitControl.stop(){
+    if (started){
+      post unconfigureTask();
+      return SUCCESS;
+    } else {
+      return EALREADY;
+    }
   }
   
   // Forward declaration
@@ -564,7 +599,7 @@ generic module HplMsp430Rf1aP () @safe() {
    * into the transmission fifo. */
   void sendFragment_ ()
   {
-    uint8_t client = call ArbiterInfo.userId();
+//    uint8_t client = call ArbiterInfo.userId();
     int result = SUCCESS;
     bool need_to_write_length = FALSE;
     bool wrote_data = FALSE;
@@ -613,7 +648,7 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Is there any data ready?  If not, try again later. */
         //record history of TRC calls
 //        trc[trcCount] = count;
-        count = call Rf1aTransmitFragment.transmitReadyCount[client](count);
+        count = call Rf1aTransmitFragment.transmitReadyCount(count);
 //        trcr[trcCount] = count;
 //        trcCount++;
         if (0 == count) {
@@ -623,7 +658,7 @@ generic module HplMsp430Rf1aP () @safe() {
         /* Get the data to be written.  If the callee returns a null
          * pointer, the transmission is canceled; otherwise, stuff it
          * into the transmit buffer. */
-        data = call Rf1aTransmitFragment.transmitData[client](count);
+        data = call Rf1aTransmitFragment.transmitData(count);
         if (0 == data) {
           cancelTransmit_();
           break;
@@ -646,7 +681,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //        }
         if(tx_state == TX_S_preparing){
           tx_state = TX_S_loaded;
-          signal DelayedSend.sendReady[client]();
+          signal DelayedSend.sendReady();
         }
         wrote_data = TRUE;
         
@@ -741,7 +776,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      }else{
 //        trcCount = 0;
 //      }
-      signal Rf1aPhysical.sendDone[client](result);
+      signal Rf1aPhysical.sendDone(result);
 //      printfflush();
     }else{
 //      printf("~sd\r\n");
@@ -848,15 +883,15 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  command error_t Rf1aPhysical.send[uint8_t client] (uint8_t* buffer, 
+  command error_t Rf1aPhysical.send (uint8_t* buffer, 
       unsigned int length, 
       rf1a_offmode_t txOffMode)
   {
     uint8_t rc;
-    error_t vcrv = validateClient(client);
-    if (vcrv!= SUCCESS){
-      return vcrv;
-    }
+//    error_t vcrv = validateClient(client);
+//    if (vcrv!= SUCCESS){
+//      return vcrv;
+//    }
     if (0 == length){
       return EINVAL;
     }
@@ -970,7 +1005,7 @@ generic module HplMsp430Rf1aP () @safe() {
     return SUCCESS;
   }
 
-  default event void DelayedSend.sendReady[uint8_t client](){
+  default event void DelayedSend.sendReady(){
 //    printf("dds.sr\r\n");
     atomic{
       if (tx_state == TX_S_preparing){
@@ -983,7 +1018,7 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  async command error_t DelayedSend.startSend[uint8_t client](){
+  async command error_t DelayedSend.startSend(){
 //    printf("ds.ss\r\n");
     return startSend();
   }
@@ -1034,15 +1069,15 @@ generic module HplMsp430Rf1aP () @safe() {
     }
   }
 
-  default async event void Rf1aPhysical.sendDone[uint8_t client] (int result) { }
+  default async event void Rf1aPhysical.sendDone (int result) { }
 
-  async command error_t Rf1aPhysical.startTransmission[uint8_t client]
+  async command error_t Rf1aPhysical.startTransmission
   (bool with_cca, bool targetFSTXON)
   {
-    error_t rv = validateClient(client);
-    if (SUCCESS != rv){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (SUCCESS != rv){
+//      return rv;
+//    }
     return startTransmission_(with_cca, targetFSTXON);
   }
 
@@ -1050,13 +1085,13 @@ generic module HplMsp430Rf1aP () @safe() {
 //    printf("!TX->IDLE\r\n");
 //  }
 
-  async command error_t Rf1aPhysical.resumeIdleMode[uint8_t client]
+  async command error_t Rf1aPhysical.resumeIdleMode
   (rf1a_offmode_t offMode)
   {
-    error_t rv = validateClient(client);
-    if (SUCCESS != rv){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (SUCCESS != rv){
+//      return rv;
+//    }
 
     atomic {
       if (TX_S_inactive != tx_state) { // NB: Not transmitIsInactive
@@ -1073,12 +1108,12 @@ generic module HplMsp430Rf1aP () @safe() {
     return SUCCESS;
   }
 
-  async command error_t Rf1aPhysical.startReception[uint8_t client] ()
+  async command error_t Rf1aPhysical.startReception ()
   {
-    error_t rv = validateClient(client);
-    if (SUCCESS != rv ){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (SUCCESS != rv ){
+//      return rv;
+//    }
     atomic {
       if (0 != rx_pos) {
         return EALREADY;
@@ -1088,12 +1123,12 @@ generic module HplMsp430Rf1aP () @safe() {
     return SUCCESS;
   }
 
-  async command error_t Rf1aPhysical.sleep[uint8_t client] ()
+  async command error_t Rf1aPhysical.sleep ()
   {
-    error_t rv = validateClient(client);
-    if (SUCCESS != rv ){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (SUCCESS != rv ){
+//      return rv;
+//    }
     
     atomic {
       uint8_t rc;
@@ -1160,7 +1195,7 @@ generic module HplMsp430Rf1aP () @safe() {
   void receiveData_ ()
   {
     unsigned int avail;
-    uint8_t client = call ArbiterInfo.userId();
+//    uint8_t client = call ArbiterInfo.userId();
     bool need_post = TRUE;
     bool signal_start = FALSE;
     bool signal_filled = FALSE;
@@ -1342,23 +1377,23 @@ generic module HplMsp430Rf1aP () @safe() {
      * message, and finally that we need another receive buffer (if
      * any of these events happen to occur at the same time). */
     if (signal_start) {
-      signal Rf1aPhysical.receiveStarted[client](expected);
+      signal Rf1aPhysical.receiveStarted(expected);
     }
     if (signal_complete) {
-      signal Rf1aPhysical.receiveDone[client](start, received, result);
+      signal Rf1aPhysical.receiveDone(start, received, result);
     }
     if (signal_filled) {
-      signal Rf1aPhysical.receiveBufferFilled[client](start, received);
+      signal Rf1aPhysical.receiveBufferFilled(start, received);
     }
   }
       
-  async command error_t Rf1aPhysical.setReceiveBuffer[uint8_t client] (uint8_t* buffer,
+  async command error_t Rf1aPhysical.setReceiveBuffer(uint8_t* buffer,
     unsigned int length, bool single_use, rf1a_offmode_t offMode)
   {
-    error_t rv = validateClient(client);
-    if (rv!= SUCCESS){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (rv!= SUCCESS){
+//      return rv;
+//    }
     
     /* Buffer and length must be realistic; if either bogus, clear them both
      * and disable reception. */
@@ -1404,7 +1439,7 @@ generic module HplMsp430Rf1aP () @safe() {
   
   
 
-  default async command unsigned int Rf1aTransmitFragment.transmitReadyCount[uint8_t client] (unsigned int count)
+  default async command unsigned int Rf1aTransmitFragment.transmitReadyCount(unsigned int count)
   {
     unsigned int ret = call DefaultRf1aTransmitFragment.transmitReadyCount(count);
 //    trc[(trcFirst+trcCount) % TRC_LEN] = ret;
@@ -1414,12 +1449,12 @@ generic module HplMsp430Rf1aP () @safe() {
     return ret;
   }
 
-  default async command const uint8_t* Rf1aTransmitFragment.transmitData[uint8_t client] (unsigned int count)
+  default async command const uint8_t* Rf1aTransmitFragment.transmitData(unsigned int count)
   {
     return call DefaultRf1aTransmitFragment.transmitData(count);
   }
 
-  async event void Rf1aInterrupts.rxFifoAvailable[uint8_t client] ()
+  async event void Rf1aInterrupts.rxFifoAvailable()
   {
     if (RX_S_inactive < rx_state) {
       /* If we have data, and the state doesn't reflect that we're
@@ -1465,8 +1500,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //    printf("!E\r\n");
 //  }
 
-  async event void Rf1aInterrupts.txFifoAvailable[uint8_t client]
-  (bool errataApplies)
+  async event void Rf1aInterrupts.txFifoAvailable  (bool errataApplies)
   {
     if (errataApplies){
 //      post reportErrata();
@@ -1505,7 +1539,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //      printf("?txf\r\n");
     }
   }
-  async event void Rf1aInterrupts.rxOverflow[uint8_t client] ()
+  async event void Rf1aInterrupts.rxOverflow()
   {
     atomic {
       rx_result = ECANCEL;
@@ -1515,7 +1549,7 @@ generic module HplMsp430Rf1aP () @safe() {
 //  task void reportTxUnderflow(){
 //    printf("UF\r\n");
 //  }
-  async event void Rf1aInterrupts.txUnderflow[uint8_t client] ()
+  async event void Rf1aInterrupts.txUnderflow()
   {
 //    post reportTxUnderflow();
     atomic {
@@ -1523,39 +1557,25 @@ generic module HplMsp430Rf1aP () @safe() {
       post sendFragment_task();
     }
   }
-  async event void Rf1aInterrupts.syncWordEvent[uint8_t client] ()
+  async event void Rf1aInterrupts.syncWordEvent ()
   {
-    signal Rf1aPhysical.frameStarted[call ArbiterInfo.userId()]();
+    signal Rf1aPhysical.frameStarted();
   }
 
-  async event void Rf1aInterrupts.clearChannel[uint8_t client] ()
+  async event void Rf1aInterrupts.clearChannel()
   {
-    signal Rf1aPhysical.clearChannel[call ArbiterInfo.userId()]();
+    signal Rf1aPhysical.clearChannel();
   }
 
-  async event void Rf1aInterrupts.carrierSense[uint8_t client] ()
+  async event void Rf1aInterrupts.carrierSense()
   {
-    signal Rf1aPhysical.carrierSense[call ArbiterInfo.userId()]();
+    signal Rf1aPhysical.carrierSense();
   }
 
-  async event void Rf1aInterrupts.coreInterrupt[uint8_t client] (uint16_t iv)
+  async event void Rf1aInterrupts.coreInterrupt (uint16_t iv)
   {
   }
       
-  default async event void Rf1aPhysical.receiveStarted[uint8_t client] (unsigned int length) { }
-
-  default async event void Rf1aPhysical.receiveDone[uint8_t client] (uint8_t* buffer,
-                                                                     unsigned int count,
-                                                                     int result) { }
-
-  default async event void Rf1aPhysical.receiveBufferFilled[uint8_t client] (uint8_t* buffer,
-                                                                             unsigned int count) { }
-
-  default async event void Rf1aPhysical.frameStarted[uint8_t client] () { }
-  default async event void Rf1aPhysical.clearChannel[uint8_t client] () { }
-  default async event void Rf1aPhysical.carrierSense[uint8_t client] () { }
-  
-  default async event void Rf1aPhysical.released[uint8_t client] () { }
   
   async command rf1a_status_e Rf1aStatus.get ()
   {
@@ -1566,12 +1586,12 @@ generic module HplMsp430Rf1aP () @safe() {
     return (rf1a_status_e)(RF1A_S_MASK & rc);
   }
   
-  int setCca(uint8_t client, bool enabled){
+  int setCca(bool enabled){
     uint8_t mcsm1;
-    error_t rv = validateClient(client);
-    if (rv!= SUCCESS){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (rv!= SUCCESS){
+//      return rv;
+//    }
 
     atomic {
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);
@@ -1594,42 +1614,42 @@ generic module HplMsp430Rf1aP () @safe() {
     return SUCCESS;
   }
 
-  async command int Rf1aPhysical.disableCca[uint8_t client] ()
+  async command int Rf1aPhysical.disableCca()
   {
-    return setCca(client, FALSE);
+    return setCca(FALSE);
   }
 
-  async command int Rf1aPhysical.enableCca[uint8_t client] ()
+  async command int Rf1aPhysical.enableCca()
   {
-    return setCca(client, TRUE);
+    return setCca(TRUE);
   }
 
 
 
-  async command int Rf1aPhysical.getChannel[uint8_t client] ()
+  async command int Rf1aPhysical.getChannel()
   {
-    error_t rv = validateClient(client);
-    if (rv!= SUCCESS){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (rv!= SUCCESS){
+//      return rv;
+//    }
     return call Rf1aIf.readRegister(CHANNR);
   }
 
-  async command int Rf1aPhysical.setPower[uint8_t client](uint8_t powerSetting){
-    error_t rv = validateClient(client);
-    if (rv!= SUCCESS){
-      return rv;
-    }
+  async command int Rf1aPhysical.setPower(uint8_t powerSetting){
+//    error_t rv = validateClient(client);
+//    if (rv!= SUCCESS){
+//      return rv;
+//    }
     call Rf1aIf.writeRegister(PATABLE, powerSetting);
     return SUCCESS;
   }
 
-  async command int Rf1aPhysical.setChannel[uint8_t client] (uint8_t channel)
+  async command int Rf1aPhysical.setChannel (uint8_t channel)
   {
-    error_t rv = validateClient(client);
-    if (rv!= SUCCESS){
-      return rv;
-    }
+//    error_t rv = validateClient(client);
+//    if (rv!= SUCCESS){
+//      return rv;
+//    }
 
     atomic {
       bool radio_online;
@@ -1660,7 +1680,7 @@ generic module HplMsp430Rf1aP () @safe() {
 
       // - if manual calibration
       if ( 0x00 == (call Rf1aIf.readRegister(MCSM0) & (0x3 << 4))){
-        const rf1a_fscal_t* fscal = call Rf1aConfigure.getFSCAL[client](channel);
+        const rf1a_fscal_t* fscal = call Rf1aConfigure.getFSCAL(channel);
 
         //settings cached, so we can skip the calibration step.
         if (fscal != NULL){
@@ -1699,7 +1719,7 @@ generic module HplMsp430Rf1aP () @safe() {
           newCal.fscal2 = call Rf1aIf.readRegister(FSCAL2);
           newCal.fscal3 = call Rf1aIf.readRegister(FSCAL3);
           newCal.channr = channel;
-          call Rf1aConfigure.setFSCAL[client](channel, newCal);
+          call Rf1aConfigure.setFSCAL(channel, newCal);
         }
       }
       if (radio_online) {
@@ -1725,13 +1745,13 @@ generic module HplMsp430Rf1aP () @safe() {
     return (rssi_dec / 2) - RSSI_offset;
   }
 
-  async command int Rf1aPhysical.rssi_dBm[uint8_t client] ()
+  async command int Rf1aPhysical.rssi_dBm ()
   {
     int rv;
-    error_t vcrv = validateClient(client);
-    if (vcrv != SUCCESS){
-      return vcrv;
-    }
+//    error_t vcrv = validateClient(client);
+//    if (vcrv != SUCCESS){
+//      return vcrv;
+//    }
 
     atomic {
       uint8_t rc = call Rf1aIf.strobe(RF_SNOP);

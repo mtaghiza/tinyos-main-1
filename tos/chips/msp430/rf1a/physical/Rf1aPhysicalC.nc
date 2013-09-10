@@ -39,10 +39,11 @@
  * available.
  *
  * @author Peter A. Bigot <pab@peoplepowerco.com> */
-generic configuration Rf1aPhysicalC () {
+configuration Rf1aPhysicalC {
   provides {
     interface HplMsp430Rf1aIf;
-    interface Resource;
+    interface SplitControl;
+//    interface Resource;
     interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Rf1aStatus;
@@ -56,17 +57,18 @@ generic configuration Rf1aPhysicalC () {
   provides interface GetNow<uint16_t> as LastCRC;
   #endif
 } implementation {
-  enum {
-    /** Unique parameter used for this client */
-    CLIENT = unique(UQ_RF1A_CLIENT),
-  };
+//  enum {
+//    /** Unique parameter used for this client */
+//    CLIENT = unique(UQ_RF1A_CLIENT),
+//  };
   
   components Rf1aC;
   HplMsp430Rf1aIf = Rf1aC;
-  Resource = Rf1aC.Resource[CLIENT];
-  Rf1aConfigure = Rf1aC.Rf1aConfigure[CLIENT];
+  SplitControl = Rf1aC.SplitControl;
+//  Resource = Rf1aC.Resource[CLIENT];
+  Rf1aConfigure = Rf1aC.Rf1aConfigure;
   Rf1aStatus = Rf1aC;
-  DelayedSend = Rf1aC.DelayedSend[CLIENT];
+  DelayedSend = Rf1aC.DelayedSend;
 
   #if RF1A_FEC_ENABLED == 1
   components new Rf1aFECC();
@@ -76,13 +78,13 @@ generic configuration Rf1aPhysicalC () {
 
   LastCRC = Rf1aFECC;
   
-  Rf1aFECC.SubRf1aPhysical -> Rf1aC.Rf1aPhysical[CLIENT];
+  Rf1aFECC.SubRf1aPhysical -> Rf1aC.Rf1aPhysical;
   Rf1aFECC.SubRf1aPhysicalMetadata -> Rf1aC.Rf1aPhysicalMetadata;
-  Rf1aC.Rf1aTransmitFragment[CLIENT] -> Rf1aFECC.SubRf1aTransmitFragment;
+  Rf1aC.Rf1aTransmitFragment -> Rf1aFECC.SubRf1aTransmitFragment;
 
   #else
-  Rf1aPhysical = Rf1aC.Rf1aPhysical[CLIENT];
-  Rf1aTransmitFragment = Rf1aC.Rf1aTransmitFragment[CLIENT];
+  Rf1aPhysical = Rf1aC.Rf1aPhysical;
+  Rf1aTransmitFragment = Rf1aC.Rf1aTransmitFragment;
   Rf1aPhysicalMetadata = Rf1aC;
   #endif
 
