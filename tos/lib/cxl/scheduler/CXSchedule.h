@@ -26,7 +26,7 @@
 // Send is called at frameboundary - TX_SLACK + d0 + d1
 // At frame boundary, TX strobe is sent.
 #ifndef TX_SLACK
-#define TX_SLACK 5UL
+#define TX_SLACK 30UL
 #endif
 
 

@@ -116,9 +116,7 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
  
-  #if DL_SCHED <= DL_INFO
   uint16_t slotNum;
-  #endif
 
   #ifndef LOG_CTS_TIME
   #define LOG_CTS_TIME 0
@@ -235,6 +233,10 @@ module SlotSchedulerP {
     //If we are going to be sending data, then we need to send a
     //status back (for forwarder selection)
     if ( (call CXLinkPacket.getLinkHeader(msg))->destination == call ActiveMessageAddress.amAddress()){
+      //TODO: this should either be computed based on times (which is
+      //a little fuzzy) or it should be determined based on the
+      //required propagation time of a short-packet flood.
+      uint8_t framesElapsed = 5;
       //Cts, Own
       cinfo(SCHED, "C O %u %u %lu %u\r\n", 
         slotNum,
@@ -248,9 +250,13 @@ module SlotSchedulerP {
       cdbg(SCHED_CHECKED, "a FT.sp %lu,  %lu @ %lu\r\n",
         timestamp(msg), 
         FRAME_LENGTH, call FrameTimer.getNow());
-      call FrameTimer.startPeriodicAt(timestamp(msg) - TX_SLACK, FRAME_LENGTH);
+      call FrameTimer.startOneShotAt(timestamp(msg) - TX_SLACK,
+        FRAME_LENGTH * framesElapsed);
+//      call FrameTimer.startPeriodicAt(timestamp(msg) - TX_SLACK, FRAME_LENGTH);
       post sendStatus();
     }else{
+      //TODO: see above
+      uint8_t framesElapsed = 5;
       //Cts, Else
       cinfo(SCHED, "C E %u %u %lu %u\r\n", 
         slotNum, 
@@ -264,7 +270,9 @@ module SlotSchedulerP {
         FRAME_LENGTH, 
         call FrameTimer.getNow());
       //synchronize receives to CTS timestamp - slack
-      call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
+      call FrameTimer.startOneShotAt(timestamp(msg) - RX_SLACK,
+        FRAME_LENGTH * framesElapsed);
+//      call FrameTimer.startPeriodicAt( timestamp(msg) - RX_SLACK, FRAME_LENGTH);
     }
   }
 
@@ -391,7 +399,16 @@ module SlotSchedulerP {
   }
 
   event void FrameTimer.fired(){
+    uint32_t targetAlarm;
+    if (! call FrameTimer.isRunning()){
+      targetAlarm = call FrameTimer.gett0() + call FrameTimer.getdt();
+      call FrameTimer.startPeriodicAt(call FrameTimer.gett0(),
+        FRAME_LENGTH);
+    }else{
+      targetAlarm = call FrameTimer.gett0();
+    }
     framesLeft --;
+    atomic P1OUT ^= BIT1;
     if (pendingRX || pendingTX){
       cdbg(SCHED_CHECKED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
@@ -474,7 +491,8 @@ module SlotSchedulerP {
           {
             error_t error = send(statusMsg, sizeof(cx_status_t), 
               call SlotController.maxDepth[activeNS](activeNS),
-              call FrameTimer.gett0() + TX_SLACK);
+              targetAlarm + TX_SLACK);
+//            cwarn(SCHED, "SS %lu %lu\r\n", lastTimer, lastFired); 
             if (error == SUCCESS){
               state = S_STATUS_SENDING;
             }else{
@@ -613,11 +631,11 @@ module SlotSchedulerP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
-    cinfo(SCHED, "LTX %u %lu %u %lu\r\n", 
+    cinfo(SCHED, "LTX %u %lu %u %lu \r\n", 
       call CXLinkPacket.getSn(msg),
       timestamp(msg) - baseCTS,
       call Packet.payloadLength(msg),
-      lastTimer - baseCTS);
+      lastFired - baseCTS);
     pendingTX = FALSE;
     if (state == S_STATUS_SENDING){
       if (msg == statusMsg){
@@ -761,7 +779,8 @@ module SlotSchedulerP {
       if (! stillWaking){
         cdbg(SCHED_CHECKED, "Done waking\r\n");
         if (call SlotController.isMaster[activeNS]()){
-          signal SlotTimer.fired();
+          call SlotTimer.startOneShot(0);
+//          signal SlotTimer.fired();
         } else {
           probe_schedule_t* sched = call ProbeSchedule.get();
           error_t error = rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
@@ -819,6 +838,7 @@ module SlotSchedulerP {
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
+    atomic P1OUT ^= BIT1;
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
     #if DL_SCHED <= DL_INFO
     slotNum ++;
@@ -866,6 +886,10 @@ module SlotSchedulerP {
             error = send(ctsMsg, 0,
               call SlotController.maxDepth[activeNS](activeNS),
               call SlotTimer.gett0() + TX_SLACK);
+//            cinfo(SCHED, "ST.F %lu %lu %lu\r\n", 
+//              call SlotTimer.getNow(),
+//              call SlotTimer.gett0(),
+//              call SlotTimer.getdt());
             if (error == SUCCESS){
               state = S_CTS_SENDING;
             }else{
