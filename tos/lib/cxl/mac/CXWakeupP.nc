@@ -227,13 +227,15 @@ module CXWakeupP {
         }
         call Pool.put(probe);
         probe = NULL;
-        call ProbeTimer.startOneShot(randomize(probeInterval));
         state = S_IDLE;
+
         //if wakeup was requested while we were probing, 
         // and we are fixing to sleep, trigger the manual wakeup now.
         if (manualWakeupPending){
           manualWakeupPending = FALSE;
           call LppControl.wakeup(manualWakeupNS);
+        }else{
+          call ProbeTimer.startOneShot(randomize(probeInterval));
         }
       }
     } else if (state == S_AWAKE){
