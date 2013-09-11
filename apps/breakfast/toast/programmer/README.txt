@@ -5,6 +5,8 @@ Tested/verified on Ubuntu linux 10/11.
 
 Requires Python 2.6 or 2.7.
 
+INSTALLING TOAST FIRMWARE
+==================
 Usage:
 
 1. Plug programmer board into PC via USB cable
@@ -93,3 +95,45 @@ RI         NC
 GND        9
 DSR        NC
 DCD        NC
+
+
+
+
+TESTING TOAST I2C CONNECTION
+=====================
+
+SETUP
+ - Attach a USB adapter and BACON mote to the PC performing the test.
+ - Note that the USB adapter plugs into the micro-USB socket on the
+   *edge* of the BACON mote.
+
+TESTING
+  - Attach a Mini-TOAST to the micro-USB socket in the *center* of the
+    BACON mote
+  - Run the test command
+    - If the USB adapter + BACON is the only USB-serial device
+      attached to the PC, no extra arguments are needed
+      ./md.sh
+    - If there is more than one USB-serial device attached to the PC,
+      you must also provide the device to use, for example
+      ./md.sh /dev/ttyUSB0 
+  - Examine the results:
+    - Passing results:
+      $ ./md.sh 
+      Assume default settings
+      serial@/dev/ttyUSB0:115200
+      #Assigned 40 to 0 0 0 0 0 0 0 0 
+      PASS: 1 TOAST BOARDS FOUND
+
+    - Failure results:
+      $ ./md.sh 
+      Assume default settings
+      serial@/dev/ttyUSB0:115200
+      FAIL: TOAST BOARD NOT DETECTED
+    
+    - Re-check BACON/USB connection
+      $ ./md.sh 
+      Assume default settings
+      serial@/dev/ttyUSB0:115200
+      RETRY: BACON COMMUNICATION FAILED
+  
