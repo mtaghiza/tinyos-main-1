@@ -172,7 +172,7 @@ module SlotSchedulerP {
         activeNS);
       call RoutingTable.setDefault((call ProbeSchedule.get())->maxDepth[activeNS]);
       baseCTS = 0;
-      cinfo(SCHED, "WU %u %u %lu %lu\r\n", 
+      cwarn(SCHED, "WU %u %u %lu %lu\r\n", 
         activeNS, 
         (call ProbeSchedule.get())->channel[activeNS],
         DATA_TIMEOUT,
@@ -187,6 +187,15 @@ module SlotSchedulerP {
 
   bool shouldForward(am_addr_t src, am_addr_t dest, uint8_t bw){
     am_addr_t self = call ActiveMessageAddress.amAddress();
+    uint8_t si = call RoutingTable.getDistance(src, self);
+    uint8_t id = call RoutingTable.getDistance(self, dest);
+    uint8_t sd = call RoutingTable.getDistance(src, dest);
+    
+//    //replace unknown distances with 0.
+//    si = (si == call RoutingTable.getDefault())? 0 : si;
+//    id = (id == call RoutingTable.getDefault())? 0 : id;
+//    sd = (sd == call RoutingTable.getDefault())? 0 : sd;
+
     //When the source is the master of the network,
     //there is no bidirectional routing info. At any rate, it's
     //probably likely that the router will send messages to a variety
@@ -194,13 +203,10 @@ module SlotSchedulerP {
     if (src == master){
       return TRUE;
     }
-    if (call RoutingTable.getDistance(src, self) + call RoutingTable.getDistance(self, dest) 
-        <= call RoutingTable.getDistance(src, dest) + bw){
-      return TRUE;
-    }else{
-      return FALSE;
-    }
-    
+    cinfo(ROUTING, "SF %u %u %u %u %u %u %x\r\n",
+      src, dest,
+      si, id, sd, bw, (si + id <= sd + bw));
+    return (si + id <= sd + bw);    
   }
 
   uint32_t timestamp(message_t* msg){
@@ -355,11 +361,12 @@ module SlotSchedulerP {
           call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
       case CXM_DATA:
-        cinfo(SCHED, "RD %u %u %u %u\r\n",
+        cinfo(SCHED, "RD %u %u %u %u %u\r\n",
           slotNum,
           call CXLinkPacket.source(msg),
           call CXLinkPacket.getSn(msg),
-          call Packet.payloadLength(msg));
+          call Packet.payloadLength(msg),
+          call CXLinkPacket.rxHopCount(msg));
         return signal Receive.receive(msg, 
           call Packet.getPayload(msg, call Packet.payloadLength(msg)), 
           call Packet.payloadLength(msg));
@@ -390,6 +397,7 @@ module SlotSchedulerP {
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
+      cinfo(SCHED, "SR %x\r\n", pl->dataPending);
       state = S_STATUS_READY;
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.

@@ -58,7 +58,7 @@ module RouterP{
 
   event void Timer.fired(){
     error_t error = call CXDownload.startDownload();
-    cdbg(SCHED, "CXSD %x\r\n", error);
+    cinfo(SCHED, "CXSD %x\r\n", error);
     //getting 6 here
     if (error == ERETRY){
       //This indicates something else was going on (for instance, we
@@ -71,7 +71,7 @@ module RouterP{
   }
 
   event void CXDownload.downloadFinished(){
-    cdbg(SCHED, "DF\r\n");
+    cinfo(SCHED, "DF\r\n");
     post downloadNext();
   }
 
@@ -126,7 +126,7 @@ module RouterP{
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
     cx_download_t* dpl = (cx_download_t*)pl;
-    cdbg(SCHED, "CXDR %u\r\n", dpl->networkSegment);
+    cwarn(SCHED, "CXDR %u\r\n", dpl->networkSegment);
     if (dpl->networkSegment == NS_SUBNETWORK){
       signal Timer.fired();
     }
