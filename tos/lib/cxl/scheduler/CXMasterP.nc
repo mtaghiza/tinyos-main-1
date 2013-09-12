@@ -154,9 +154,9 @@ module CXMasterP {
     uint8_t k;
     contactList[contactIndex].dataPending = pl->dataPending;
 //    printf("pl %p\r\n", pl->neighbors);
-    cdbg(ROUTER, "rs %u %u\r\n", 
-      contactList[contactIndex].nodeId,
-      contactList[contactIndex].dataPending);
+//    cdbg(ROUTER, "rs %u %u\r\n", 
+//      contactList[contactIndex].nodeId,
+//      contactList[contactIndex].dataPending);
     
     //if we've got this node recorded in network membership, fill in
     //its distance.
