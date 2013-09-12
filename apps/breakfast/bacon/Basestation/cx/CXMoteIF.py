@@ -140,3 +140,4 @@ class CXMoteIF(MoteIF):
         print "Waiting for download to finish"
         with self.finishedCV:
             self.finishedCV.wait()
+        time.sleep(1)
