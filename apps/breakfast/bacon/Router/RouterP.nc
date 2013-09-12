@@ -58,7 +58,7 @@ module RouterP{
 
   event void Timer.fired(){
     error_t error = call CXDownload.startDownload();
-    cinfo(SCHED, "CXSD %x\r\n", error);
+    cinfo(ROUTER, "CXSD %x\r\n", error);
     //getting 6 here
     if (error == ERETRY){
       //This indicates something else was going on (for instance, we
@@ -71,7 +71,7 @@ module RouterP{
   }
 
   event void CXDownload.downloadFinished(){
-    cinfo(SCHED, "DF\r\n");
+    cinfo(ROUTER, "DF\r\n");
     post downloadNext();
   }
 
@@ -87,18 +87,25 @@ module RouterP{
   tunneled_msg_t* tunneled = &tunneled_internal;
 
   task void append(){
+    error_t error;
     tunneled->recordType = RECORD_TYPE_TUNNELED;
     tunneled->src = call AMPacket.source(toAppend);
     tunneled->amId = call AMPacket.type(toAppend);
     //ugh
     memcpy(tunneled->data, toAppendPl, toAppendLen);
-    call LogWrite.append(tunneled, 
-      sizeof(tunneled_msg_t));
+    error = call LogWrite.append(tunneled, 
+      sizeof(tunneled_msg_t) - MAX_RECORD_PACKET_LEN + toAppendLen);
+    cdbg(ROUTER, "AT %x %u\r\n", error, toAppendLen);
+    if (error != SUCCESS){
+      call Pool.put(toAppend);
+      toAppend = NULL;
+    }
   }
 
   event void LogWrite.appendDone(void* buf, storage_len_t len, bool recordsLost, error_t error){
     call Pool.put(toAppend);
     toAppend = NULL;
+    cdbg(ROUTER, "ATD %x\r\n", error);
   }
 
   event void LogWrite.syncDone(error_t error){}
@@ -109,15 +116,18 @@ module RouterP{
     if (toAppend == NULL){
       message_t* ret = call Pool.get();
       if (ret){
+        cdbg(ROUTER, "RDA\r\n");
         toAppend = msg;
         toAppendPl = pl;
         toAppendLen = len;
         post append();
         return ret;
       }else {
+        cwarn(ROUTER, "RDNM\r\n");
         return msg;
       }
     } else {
+      cwarn(ROUTER, "RDB\r\n");
       //still handling last packet
       return msg;
     }
@@ -126,7 +136,7 @@ module RouterP{
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
     cx_download_t* dpl = (cx_download_t*)pl;
-    cwarn(SCHED, "CXDR %u\r\n", dpl->networkSegment);
+    cinfo(ROUTER, "CXDR %u\r\n", dpl->networkSegment);
     if (dpl->networkSegment == NS_SUBNETWORK){
       signal Timer.fired();
     }
