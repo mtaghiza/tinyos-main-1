@@ -1,6 +1,7 @@
  #include "StorageVolumes.h"
  #include "message.h"
  #include "CXDebug.h"
+ #include "leaf.h"
 configuration LeafAppC{
 } implementation {
   #if ENABLE_PRINTF == 1

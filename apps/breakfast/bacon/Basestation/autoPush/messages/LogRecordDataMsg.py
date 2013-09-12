@@ -35,14 +35,14 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
         except:
             pass
         try:
+            s += "  [nextCookie=0x%x]\n" % (self.get_nextCookie())
+        except:
+            pass
+        try:
             s += "  [data=";
             for i in range(0, 96):
                 s += "0x%x " % (self.getElement_data(i) & 0xff)
             s += "]\n";
-        except:
-            pass
-        try:
-            s += "  [nextCookie=0x%x]\n" % (self.get_nextCookie())
         except:
             pass
         return s
@@ -105,9 +105,64 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
         return 16
     
     #
+    # Accessor methods for field: nextCookie
+    #   Field type: long
+    #   Offset (bits): 16
+    #   Size (bits): 32
+    #
+
+    #
+    # Return whether the field 'nextCookie' is signed (False).
+    #
+    def isSigned_nextCookie(self):
+        return False
+    
+    #
+    # Return whether the field 'nextCookie' is an array (False).
+    #
+    def isArray_nextCookie(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'nextCookie'
+    #
+    def offset_nextCookie(self):
+        return (16 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'nextCookie'
+    #
+    def offsetBits_nextCookie(self):
+        return 16
+    
+    #
+    # Return the value (as a long) of the field 'nextCookie'
+    #
+    def get_nextCookie(self):
+        return self.getUIntElement(self.offsetBits_nextCookie(), 32, 1)
+    
+    #
+    # Set the value of the field 'nextCookie'
+    #
+    def set_nextCookie(self, value):
+        self.setUIntElement(self.offsetBits_nextCookie(), 32, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'nextCookie'
+    #
+    def size_nextCookie(self):
+        return (32 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'nextCookie'
+    #
+    def sizeBits_nextCookie(self):
+        return 32
+    
+    #
     # Accessor methods for field: data
     #   Field type: short[]
-    #   Offset (bits): 16
+    #   Offset (bits): 48
     #   Size of each element (bits): 8
     #
 
@@ -127,7 +182,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'data'
     #
     def offset_data(self, index1):
-        offset = 16
+        offset = 48
         if index1 < 0 or index1 >= 96:
             raise IndexError
         offset += 0 + index1 * 8
@@ -137,7 +192,7 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'data'
     #
     def offsetBits_data(self, index1):
-        offset = 16
+        offset = 48
         if index1 < 0 or index1 >= 96:
             raise IndexError
         offset += 0 + index1 * 8
@@ -147,8 +202,8 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
     # Return the entire array 'data' as a short[]
     #
     def get_data(self):
-        tmp = [None]*96
-        for index0 in range (0, self.numElements_data(0)):
+        tmp = [None]*self.get_length()
+        for index0 in range (0, self.get_length()):
                 tmp[index0] = self.getElement_data(index0)
         return tmp
     
@@ -238,59 +293,4 @@ class LogRecordDataMsg(tinyos.message.Message.Message):
                 break
             carr += self.getElement_data(i)
         return carr
-    
-    #
-    # Accessor methods for field: nextCookie
-    #   Field type: long
-    #   Offset (bits): 784
-    #   Size (bits): 32
-    #
-
-    #
-    # Return whether the field 'nextCookie' is signed (False).
-    #
-    def isSigned_nextCookie(self):
-        return False
-    
-    #
-    # Return whether the field 'nextCookie' is an array (False).
-    #
-    def isArray_nextCookie(self):
-        return False
-    
-    #
-    # Return the offset (in bytes) of the field 'nextCookie'
-    #
-    def offset_nextCookie(self):
-        return (784 / 8)
-    
-    #
-    # Return the offset (in bits) of the field 'nextCookie'
-    #
-    def offsetBits_nextCookie(self):
-        return 784
-    
-    #
-    # Return the value (as a long) of the field 'nextCookie'
-    #
-    def get_nextCookie(self):
-        return self.getUIntElement(self.offsetBits_nextCookie(), 32, 1)
-    
-    #
-    # Set the value of the field 'nextCookie'
-    #
-    def set_nextCookie(self, value):
-        self.setUIntElement(self.offsetBits_nextCookie(), 32, value, 1)
-    
-    #
-    # Return the size, in bytes, of the field 'nextCookie'
-    #
-    def size_nextCookie(self):
-        return (32 / 8)
-    
-    #
-    # Return the size, in bits, of the field 'nextCookie'
-    #
-    def sizeBits_nextCookie(self):
-        return 32
     

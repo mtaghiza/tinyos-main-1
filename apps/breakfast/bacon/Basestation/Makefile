@@ -117,7 +117,8 @@ SSMIGDIR = $(CXMIGDIR)
 MIGCLASSES += $(SSMIGDIR)/SetSettingsStorageMsg.py
 
 APMIGDIR = autoPush/messages
-MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py $(APMIGDIR)/LogRecordDataMsg.py
+MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py 
+#$(APMIGDIR)/LogRecordDataMsg.py
 
 PINGMIGDIR = $(APMIGDIR)
 MIGCLASSES += $(PINGMIGDIR)/PingMsg.py $(PINGMIGDIR)/PongMsg.py 

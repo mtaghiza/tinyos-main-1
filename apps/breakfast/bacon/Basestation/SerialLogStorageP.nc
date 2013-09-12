@@ -28,7 +28,8 @@ generic module SerialLogStorageP(){
       pl->length = sizeof(log_record_t) + lr->length;
       pl->nextCookie = lr->cookie + (lr->length + 1);
       call AMPacket.setSource(msg, call ActiveMessageAddress.amAddress());
-      error = call AMSend.send(0, msg, sizeof(log_record_data_msg_t));
+      error = call AMSend.send(0, msg, sizeof(log_record_data_msg_t) +
+        pl->length);
       if (error != SUCCESS){
         call Pool.put(msg);
       }else{

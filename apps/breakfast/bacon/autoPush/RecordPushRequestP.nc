@@ -180,7 +180,6 @@ generic module RecordPushRequestP() {
   error_t readFirst(storage_cookie_t cookie, uint16_t length)
   {
     msg = call Pool.get();
-//    printf("rf %u\r\n", length);
     if (msg != NULL)
     {
       call Packet.clear(msg);
@@ -195,7 +194,7 @@ generic module RecordPushRequestP() {
       if (recordPtr)
       {
         bufferStart = (uint8_t*)recordPtr; 
-        bufferEnd = bufferStart + sizeof(((log_record_data_msg_t*)recordPtr)->data); 
+        bufferEnd = bufferStart + MAX_RECORD_PACKET_LEN;
 
         if (SUCCESS == call LogRead.seek(cookie)) 
         {
@@ -203,7 +202,9 @@ generic module RecordPushRequestP() {
 
           // SUCCESS, exit function
           return SUCCESS;
-        } 
+        } else {
+        }
+      }else{
       }
     }    
 
@@ -298,14 +299,10 @@ generic module RecordPushRequestP() {
     
     (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (recordsLeft > recordsRead);
     // use fixed packet size or variable packet size
-//    call AMSend.send(call Get.get(), msg, (uint8_t*)recordPtr - bufferStart);
-    error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
-//    printf("RPR.Send: %x %u %lu %u %lu\r\n", 
-//      error,
-//      recordMsgPtr->length, 
-//      recordMsgPtr->nextCookie, 
-//      recordsRead, 
-//      call LocalTime.get());
+    error = call AMSend.send(call Get.get(), 
+      msg,
+      sizeof(log_record_data_msg_t) + recordMsgPtr->length);
+//    error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
   }
 
 
