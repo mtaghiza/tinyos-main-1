@@ -56,6 +56,7 @@ module Stm25pLogP {
 implementation {
 
   stm25p_addr_t write_addrs[NUM_VOLUMES];
+  bool needSeekEnd;
 
   #ifndef SINGLE_RECORD_READ
   #define SINGLE_RECORD_READ 0
@@ -145,11 +146,11 @@ implementation {
   void signalDone( uint8_t id, error_t error );
 
   uint8_t getVolumeId(uint8_t client){
-    #if NUM_VOLUMES == 1
-    return 0;
-    #else
+//    #if NUM_VOLUMES == 1
+//    return 0;
+//    #else
     return signal Volume.getVolumeId[ client ]();
-    #endif
+//    #endif
   }
   
   command error_t Init.init() {
@@ -256,20 +257,11 @@ implementation {
   }
 
   event void ClientResource.granted[ uint8_t id ]() {
-
     // log never used, need to find start and end of log
     if ( m_log_info[ id ].read_addr == STM25P_INVALID_ADDRESS &&
        m_log_state[ id ].req != S_ERASE ) {
       stm25p_addr_t* write_addr = &write_addrs[getVolumeId(id)];
-      //this could be improved slightly: a newly-initialized log
-      //  client should always have to find start of log for read, but
-      //  may not have to find end of log (if another client on the
-      //  same volume has already done that search).
-      //The search logic assumes that write_addr starts at 0, so we
-      //  enforce that here. This will result in some duplicated
-      //  effort, though it makes the logic simpler and reduces the
-      //  amount of state that has to be tracked.
-      *write_addr = 0;
+      needSeekEnd = (*write_addr == 0);
       m_rw_state = S_SEARCH_BLOCKS;
       call Sector.read[ id ]( 0, (uint8_t*)&m_blockHeader, 
         sizeof( m_blockHeader ) );
@@ -482,7 +474,7 @@ implementation {
             if ( m_blockHeader.block_addr < log_info->read_addr ){
               log_info->read_addr = m_blockHeader.block_addr;
             }
-            if ( m_blockHeader.block_addr > *write_addr ){
+            if ( needSeekEnd && m_blockHeader.block_addr > *write_addr ){
               *write_addr = m_blockHeader.block_addr;
             }
           }
@@ -498,13 +490,17 @@ implementation {
             *write_addr = 0;
             signal ClientResource.granted[ id ]();
           } else {
-          // search for last record
-            *write_addr += sizeof( m_blockHeader );
-            m_rw_state = S_SEARCH_RECORDS;
-            call Sector.read[ id ]( 
-              calcAddr(id, *write_addr), 
-              &m_header, 
-              sizeof( m_header ) );
+            if (needSeekEnd){
+              // search for last record
+              *write_addr += sizeof( m_blockHeader );
+              m_rw_state = S_SEARCH_RECORDS;
+              call Sector.read[ id ]( 
+                calcAddr(id, *write_addr), 
+                &m_header, 
+                sizeof( m_header ) );
+            }else{
+              signal ClientResource.granted[id]();
+            }
           }
         }
         break;
