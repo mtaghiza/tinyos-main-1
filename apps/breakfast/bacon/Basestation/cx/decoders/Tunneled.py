@@ -20,25 +20,17 @@ class Tunneled(Decoder.Decoder):
         (tunneledSrc, am_type) = struct.unpack('>HB', data[0:3])
 
         #and here's a fake serial header
-# if True:
-#     if True:
         dest = 0xFFFF
         src = tunneledSrc
-        length = len(data[4:])
+        length = len(data[3:])
         group = 0xFF
-        serialHeader = struct.pack(">HHBBB", 
+        #the leading 0 is because apparently MoteIf.dispatchPacket
+        # throws away the first byte 
+        serialHeader = struct.pack(">BHHBBB", 
+          0,
           dest, src, length, group, am_type);
         packet = serialHeader + data[3:]
-#         serial_pkt = SerialPacket(packet[1:],
-#                                   data_length=len(packet)-1)
-#         print serial_pkt
-#         serial_pkt = SerialPacket(packet,
-#                                   data_length=len(packet)-1)
-#         print serial_pkt
-#         serial_pkt = SerialPacket('x'+packet[1:],
-#                                   data_length=len(packet)-1)
-#         print serial_pkt
         if self.receiveQueue:
-            self.receiveQueue.put((None, 'x'+packet))
+            self.receiveQueue.put((None, packet))
         else:
             print "Warning: Decoded tunneled-packet record but no receiveQueue to handle packet"
