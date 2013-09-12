@@ -39,9 +39,11 @@ module CXLinkP {
   uint16_t sn;
   uint32_t origTimeout;
   bool started = FALSE;
-
+  
+  //TODO: remove debug/timing code
   uint32_t dfLog;
   bool dfMissed;
+  uint32_t rxStart;
 
   int aTxResult;
   
@@ -279,7 +281,6 @@ module CXLinkP {
           uint32_t ds = metadata(fwdMsg)->txTime - sb;
           uint32_t df = 0;
 
-
           //verify overflow-safety (also implicitly checks for cases
           //where txTime < current time)
           if (ds < 21145UL){
@@ -289,10 +290,11 @@ module CXLinkP {
 //              metadata(fwdMsg)->txTime, 
 //              sb,
 //              df);
-            call FastAlarm.startAt(fb0 + (fb1 - fb0)/2, df);
+            call FastAlarm.startAt(fb0 + (fb1-fb0)/2, df);
           } else{
             dfMissed = TRUE;
-            cwarn(SCHED, "SI %lu - %lu = %lu\r\n", metadata(fwdMsg)->txTime, sb, metadata(fwdMsg)->txTime - sb);
+            dfLog = slowToFast( sb - metadata(fwdMsg)->txTime);
+//            cwarn(SCHED, "SI %lu - %lu = %lu\r\n", metadata(fwdMsg)->txTime, sb, metadata(fwdMsg)->txTime - sb);
 //            cwarn(SCHED, "SI\r\n");
             post startImmediately();
           }
@@ -387,7 +389,14 @@ module CXLinkP {
             post logRetxMiss();
           }
           #endif
-//          cinfo(SCHED, "T %lu %x\r\n", dfLog, dfMissed);
+
+          if (metadata(fwdMsg)->txTime){
+            if (dfMissed){
+              cinfo(LINK_TIMING, "T -%lu\r\n", dfLog);
+            }else{
+              cinfo(LINK_TIMING, "T %lu\r\n", dfLog);
+            }
+          }
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
           atomic {
@@ -407,6 +416,10 @@ module CXLinkP {
             header(rxMsg)->source, 
             header(rxMsg)->sn);
           applyTimestamp(rxMsg);
+          if (metadata(rxMsg)->retx){
+            cinfo(LINK_TIMING, "R %lu\r\n", 
+              metadata(rxMsg)->timeFast - rxStart);
+          }
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
@@ -495,6 +508,7 @@ module CXLinkP {
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
 //      P1OUT |= BIT1;
+      rxStart = call FastAlarm.getNow();
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
       //here.
@@ -750,6 +764,10 @@ module CXLinkP {
             header(rxMsg)->source, 
             header(rxMsg)->sn);
           applyTimestamp(rxMsg);
+          if (metadata(rxMsg)->retx){
+            cinfo(LINK_TIMING, "R %lu\r\n", 
+              metadata(rxMsg)->timeFast - rxStart);
+          }
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));

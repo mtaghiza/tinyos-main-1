@@ -6,4 +6,8 @@
 #define DL_LINK DL_ERROR
 #endif
 
+#ifndef DL_LINK_TIMING
+#define DL_LINK_TIMING DL_ERROR
+#endif
+
 #endif
