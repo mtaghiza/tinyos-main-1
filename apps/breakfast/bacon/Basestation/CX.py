@@ -217,6 +217,18 @@ def triggerRouterDownload(packetSource, bsId, networkSegment, configFile):
     refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
 
+    db.addDecoder(BaconSample.BaconSample)
+    db.addDecoder(ToastSample.ToastSample)
+    db.addDecoder(ToastConnection.ToastConnection)
+    db.addDecoder(ToastDisconnection.ToastDisconnection)
+    db.addDecoder(Phoenix.Phoenix)
+    db.addDecoder(BaconSettings.BaconSettings)
+    db.addDecoder(LogPrintf.LogPrintf)
+    db.addDecoder(NetworkMembership.NetworkMembership)
+    #man that is ugghly to hook 
+    t = db.addDecoder(Tunneled.Tunneled)
+    t.receiveQueue = d.mif.receiveQueue
+
     #Should not be receiving other types of data here.
     db.addDecoder(NetworkMembership.NetworkMembership)
     try:
