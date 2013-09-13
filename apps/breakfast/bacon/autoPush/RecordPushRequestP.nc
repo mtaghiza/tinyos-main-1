@@ -2,6 +2,7 @@
  #include "RecordRequest.h"
  #include "RecordStorage.h"
  #include "AutoPush.h"
+ #include "AutoPushDebug.h"
 
 generic module RecordPushRequestP() {
   provides interface Init as SoftwareInit;
@@ -249,7 +250,18 @@ generic module RecordPushRequestP() {
 
       // increment recordPtr to record_n+1
       recordPtr = (log_record_t*)((uint8_t*)recordPtr + (sizeof(log_record_t) + len));
-
+      #if DL_AUTOPUSH <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
+      {
+        if ( * ((uint8_t*)buf) == RECORD_TYPE_TUNNELED){
+          tunneled_msg_t* tmr = (tunneled_msg_t*)buf;
+          if (tmr->amId == AM_LOG_RECORD_DATA_MSG){
+            log_record_data_msg_t* tunneled = (log_record_data_msg_t*) tmr->data;
+            cdbg(AUTOPUSH, "TF %u %lu %u\r\n", 
+              tmr->src, tunneled->nextCookie, tunneled->length);
+          }
+        }
+      }
+      #endif
       // is there room for another record in the buffer?
       if ( ((uint8_t*)recordPtr + sizeof(log_record_t) < bufferEnd)
           && (missingLength > 0))
@@ -302,6 +314,9 @@ generic module RecordPushRequestP() {
     error = call AMSend.send(call Get.get(), 
       msg,
       sizeof(log_record_data_msg_t) + recordMsgPtr->length);
+    cdbg(AUTOPUSH, "APX %lu %u\r\n", 
+      recordMsgPtr->nextCookie,
+      recordMsgPtr->length);
 //    error = call AMSend.send(call Get.get(), msg, sizeof(log_record_data_msg_t));
   }
 
