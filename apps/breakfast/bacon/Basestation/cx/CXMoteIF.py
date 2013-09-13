@@ -92,10 +92,6 @@ class CXMoteIF(MoteIF):
 
         time.sleep(1)
 
-    #TODO: addListener should also:
-    # * create a TunneledListener if one does not already exist
-    # * add an entry in TunneledListener to unpack/convert/re-enqueue
-    #   tunneled packets
 
     def addSource(self, s, isPrimary=True):
         '''There should be one primary source (e.g. serial connection
@@ -140,4 +136,9 @@ class CXMoteIF(MoteIF):
         print "Waiting for download to finish"
         with self.finishedCV:
             self.finishedCV.wait()
-        time.sleep(1)
+
+    def clearRXQueue(self):
+        print "Clearing RX Queue"
+        while not self.receiveQueue.empty():
+            time.sleep(1)
+            print "Still waiting for queue to clear"
