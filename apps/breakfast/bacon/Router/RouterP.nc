@@ -89,6 +89,14 @@ module RouterP{
 
   task void append(){
     error_t error;
+    #if DL_AUTOPUSH <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
+    {
+      am_addr_t src = call AMPacket.source(toAppend);
+      log_record_data_msg_t* dm = (log_record_data_msg_t*)toAppendPl;
+      cdbg(AUTOPUSH, "TR %u %lu %u\r\n",
+        src, dm->nextCookie, dm->length);
+    }
+    #endif
     tunneled->recordType = RECORD_TYPE_TUNNELED;
     tunneled->src = call AMPacket.source(toAppend);
     tunneled->amId = call AMPacket.type(toAppend);
@@ -118,14 +126,6 @@ module RouterP{
       message_t* ret = call Pool.get();
       if (ret){
         cdbg(ROUTER, "RDA\r\n");
-        #if DL_AUTOPUSH <= DL_DEBUG && DL_GLOBAL <= DL_DEBUG
-        {
-          am_addr_t src = call AMPacket.source(toAppend);
-          log_record_data_msg_t* dm = (log_record_data_msg_t*)pl;
-          cdbg(AUTOPUSH, "TR %u %lu %u\r\n",
-            src, dm->nextCookie, dm->length);
-        }
-        #endif
         toAppend = msg;
         toAppendPl = pl;
         toAppendLen = len;

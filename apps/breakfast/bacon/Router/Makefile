@@ -34,6 +34,7 @@ CFLAGS += -I$(TOSDIR)/lib/cxl/scheduler
 CFLAGS += -I$(TOSDIR)/lib/cx/routing
 CFLAGS += -I$(TOSDIR)/lib/cx/debug
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
+CFLAGS += -I.
 
 CFLAGS += -I$(TOSROOT)/apps/breakfast/util
 

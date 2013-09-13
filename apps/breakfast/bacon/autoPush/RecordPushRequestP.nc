@@ -3,6 +3,7 @@
  #include "RecordStorage.h"
  #include "AutoPush.h"
  #include "AutoPushDebug.h"
+ #include "router.h"
 
 generic module RecordPushRequestP() {
   provides interface Init as SoftwareInit;
