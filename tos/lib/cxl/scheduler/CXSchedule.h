@@ -69,5 +69,8 @@
 #define MISSED_CTS_THRESH 2
 #endif
 
+#ifndef ENABLE_FORWARDER_SELECTION
+#define ENABLE_FORWARDER_SELECTION 1
+#endif
 
 #endif

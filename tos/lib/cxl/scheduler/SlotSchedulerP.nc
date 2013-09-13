@@ -186,6 +186,10 @@ module SlotSchedulerP {
   }
 
   bool shouldForward(am_addr_t src, am_addr_t dest, uint8_t bw){
+    #if ENABLE_FORWARDER_SELECTION == 0
+    #warning Forwarder selection disabled!
+    return TRUE;
+    #else
     am_addr_t self = call ActiveMessageAddress.amAddress();
     uint8_t si = call RoutingTable.getDistance(src, self);
     uint8_t id = call RoutingTable.getDistance(self, dest);
@@ -207,6 +211,7 @@ module SlotSchedulerP {
       src, dest,
       si, id, sd, bw, (si + id <= sd + bw));
     return (si + id <= sd + bw);    
+    #endif
   }
 
   uint32_t timestamp(message_t* msg){
