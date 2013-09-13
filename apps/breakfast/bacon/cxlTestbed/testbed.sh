@@ -9,6 +9,7 @@ rxSlack=20UL
 txSlack=100UL
 enableBaconSampler=1
 enableForwarderSelection=0
+#for map in map.p0
 for map in map.p0 map.p1 map.p2 map.p3
 do
   snc=$(grep SNC $map | cut -d ' ' -f 2)
