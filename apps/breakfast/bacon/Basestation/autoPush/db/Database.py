@@ -9,8 +9,8 @@ from DatabaseMissing import DatabaseMissing
 
 class Database(object):
 
-    def __init__(self):
-        init = DatabaseInit('database')
+    def __init__(self, rootName='database'):
+        init = DatabaseInit(rootName)
         self.dbName = init.getName()
 
         self.insert = DatabaseInsert(self.dbName)
