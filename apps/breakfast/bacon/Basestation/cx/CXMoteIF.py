@@ -142,3 +142,4 @@ class CXMoteIF(MoteIF):
         while not self.receiveQueue.empty():
             time.sleep(1)
             print "Still waiting for queue to clear"
+        print "QUEUE CLEARED"
