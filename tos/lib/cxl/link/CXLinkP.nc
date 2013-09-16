@@ -41,15 +41,16 @@ module CXLinkP {
   bool started = FALSE;
   bool sleepPending = FALSE;
   
-  //TODO: remove debug/timing code
+  #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
   uint32_t dfLog;
   bool dfMissed;
   uint32_t rxStart;
-  
-  bool reCapture;
   uint32_t aFeCapture;
   cx_link_stats_t lastStats;
   cx_link_stats_t curStats;
+  #endif
+  
+  bool reCapture;
 
   typedef enum link_status_e {
     R_OFF = 0,
@@ -370,17 +371,15 @@ module CXLinkP {
           //where txTime < current time)
           if (ds < 21145UL){
             df = slowToFast(ds);
+            #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
             dfLog = df;
-//            cdbg(SCHED, "T %lu @ %lu %lu\r\n",
-//              metadata(fwdMsg)->txTime, 
-//              sb,
-//              df);
+            #endif
             call FastAlarm.startAt(fb0 + (fb1-fb0)/2, df);
           } else{
+            #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
             dfMissed = TRUE;
             dfLog = slowToFast( sb - metadata(fwdMsg)->txTime);
-//            cwarn(SCHED, "SI %lu - %lu = %lu\r\n", metadata(fwdMsg)->txTime, sb, metadata(fwdMsg)->txTime - sb);
-//            cwarn(SCHED, "SI\r\n");
+            #endif
             post startImmediately();
           }
         }else{
@@ -403,8 +402,10 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
+    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic radioStateChangeAtTime(R_TX, aSfdCapture - sfdAdjust);
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
+    #endif
     post handleSendDone();
   }
 
@@ -476,7 +477,7 @@ module CXLinkP {
             post logRetxMiss();
           }
           #endif
-
+          #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
           if (metadata(fwdMsg)->txTime){
             if (dfMissed){
               cwarn(LINK_TIMING, "TTM\r\n");
@@ -485,6 +486,7 @@ module CXLinkP {
               cinfo(LINK_TIMING, "T %lu\r\n", dfLog);
             }
           }
+          #endif
           if (sleepPending){
             call CXLink.sleep();
           }
@@ -508,10 +510,12 @@ module CXLinkP {
             header(rxMsg)->source, 
             header(rxMsg)->sn);
           applyTimestamp(rxMsg);
+          #if DL_LINK_TIMING <= DL_INFO && DL_GLOBAL <= DL_INFO
           if (metadata(rxMsg)->retx){
             cinfo(LINK_TIMING, "R %lu\r\n", 
               metadata(rxMsg)->timeFast - rxStart);
           }
+          #endif
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
             call Packet.payloadLength(rxMsg));
@@ -540,9 +544,10 @@ module CXLinkP {
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-
+        #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
         aFeCapture = call FastAlarm.getNow();
         radioStateChange(R_IDLE);
+        #endif
         call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
           RF1A_OM_IDLE);
         state = S_IDLE;
@@ -562,11 +567,15 @@ module CXLinkP {
     if (reCapture){
       //expand to 32 bits
       aSfdCapture = (ft & 0xffff0000) | time;
+      #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
       reCapture = FALSE;
       call SynchCapture.captureFallingEdge();
+      #endif
     }else{
       call SynchCapture.disable();
+      #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
       aFeCapture = (ft & 0xffff0000) | time;
+      #endif
     }
   }
 
@@ -608,7 +617,9 @@ module CXLinkP {
       error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
+      #if DL_LINK_TIMING <= DL_INFO && DL_GLOBAL <= DL_WARN
       rxStart = call FastAlarm.getNow();
+      #endif
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
       //here.
@@ -661,8 +672,11 @@ module CXLinkP {
   command error_t Send.send(message_t* msg, uint8_t len){
     uint8_t localState;
     atomic localState = state;
+
+    #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
     dfLog = 0;
     dfMissed = FALSE;
+    #endif
     if (localState == S_TX || localState == S_FWD){
       cwarn(LINK, "LS.S: %x\r\n", localState);
       return localState == S_TX? EBUSY: ERETRY;
@@ -809,7 +823,9 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
+    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
+    #endif
     post handleReception();
   } 
 
@@ -1004,9 +1020,8 @@ module CXLinkP {
       ret.fstxon = curStats.fstxon - lastStats.fstxon;
       lastStats = curStats;
     }
-    #else
-    return ret;
     #endif
+    return ret;
   }
   
 }
