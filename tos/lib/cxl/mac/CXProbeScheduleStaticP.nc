@@ -23,7 +23,7 @@ module CXProbeScheduleStaticP {
   probe_schedule_t sched = { 
     .channel={GLOBAL_CHANNEL, SUBNETWORK_CHANNEL, ROUTER_CHANNEL},
     .invFrequency={IF_G, IF_SN, IF_R},
-    .bw={2, 2, 2},
+    .bw={STATIC_BW, STATIC_BW, STATIC_BW},
     .maxDepth={CX_MAX_DEPTH*2, CX_MAX_DEPTH, CX_MAX_DEPTH}
   };
 

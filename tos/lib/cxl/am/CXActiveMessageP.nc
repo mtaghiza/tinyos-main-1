@@ -48,8 +48,13 @@ module CXActiveMessageP {
 
   uses interface Send as SubSend;
   uses interface Receive as SubReceive;
+  uses interface Boot;
 }
 implementation {
+
+  event void Boot.booted(){
+    cinfo(STATS, "START %s\r\n", TEST_DESC);
+  }
 
   async command error_t Acks.requestAck( message_t* msg ){
     return FAIL;

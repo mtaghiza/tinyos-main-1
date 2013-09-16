@@ -108,6 +108,8 @@ implementation {
   SplitControl = Mac.SplitControl;
 
   Mac.Pool = Pool;
+  components MainC;
+  AM.Boot -> MainC.Boot;
 }
 
 /* 
