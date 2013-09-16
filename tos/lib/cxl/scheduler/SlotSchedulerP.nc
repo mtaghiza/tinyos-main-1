@@ -2,6 +2,7 @@
  #include "CXScheduleDebug.h"
  #include "CXSchedule.h"
  #include "CXMac.h"
+ #include "CXRoutingDebug.h"
 module SlotSchedulerP {
   provides interface Send;
   provides interface Receive;
