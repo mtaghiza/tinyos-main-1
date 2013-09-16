@@ -10,4 +10,8 @@
 #define DL_LINK_TIMING DL_ERROR
 #endif
 
+#ifndef DL_STATS
+#define DL_STATS DL_WARN
+#endif
+
 #endif

@@ -92,6 +92,15 @@ module SlotSchedulerP {
     S_UNUSED_SLOT = 0xFF,
   };
 
+  enum {
+    ROLE_UNKNOWN = 0,
+    ROLE_OWNER = 1,
+    ROLE_FORWARDER = 2,
+    ROLE_NONFORWARDER =3,
+    ROLE_WAKEUP = 4,
+  };
+  uint8_t slotRole;
+
   uint8_t state = S_UNSYNCHED;
   
 
@@ -117,6 +126,11 @@ module SlotSchedulerP {
   uint8_t missedCTS;
  
   uint16_t slotNum;
+  uint16_t ctsSN;
+  bool ctsReceived;
+
+  void logReception(message_t* msg);
+  void logTransmission(message_t* msg);
 
   #ifndef LOG_CTS_TIME
   #define LOG_CTS_TIME 0
@@ -155,8 +169,11 @@ module SlotSchedulerP {
   
   uint8_t activeNS;
   uint8_t wrxCount;
+
+  uint16_t wakeupNum;
   event void LppControl.wokenUp(uint8_t ns){
     if (state == S_UNSYNCHED){
+      wakeupNum++;
       activeNS = ns;
       call Neighborhood.clear();
       signalEnd = FALSE;
@@ -164,9 +181,7 @@ module SlotSchedulerP {
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
       wakeupStartMilli = call LocalTime.get();
-      #if DL_SCHED <= DL_INFO
       slotNum = 0;
-      #endif
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
         call SlotController.wakeupLen[activeNS](activeNS), 
         activeNS);
@@ -226,6 +241,11 @@ module SlotSchedulerP {
   // for a status message to arrive.
 
   void handleCTS(message_t* msg){
+    cx_lpp_cts_t* pl = call Packet.getPayload(msg,
+      sizeof(cx_lpp_cts_t));
+    slotNum = pl->slotNum;
+    ctsSN = call CXLinkPacket.getSn(msg);
+    ctsReceived = TRUE;
     master = call CXLinkPacket.source(msg);
     missedCTS = 0;
     if (master ==(call CXLinkPacket.getLinkHeader(msg))->destination){
@@ -248,6 +268,7 @@ module SlotSchedulerP {
       //a little fuzzy) or it should be determined based on the
       //required propagation time of a short-packet flood.
       uint8_t framesElapsed = 5;
+      slotRole = ROLE_OWNER;
       //Cts, Own
       cinfo(SCHED, "C O %u %u %lu %u\r\n", 
         slotNum,
@@ -307,6 +328,7 @@ module SlotSchedulerP {
           cerror(SCHED, "US1 %x\r\n", 
             state);
         }
+        logReception(msg);
         return msg;
 
       case CXM_STATUS:
@@ -334,6 +356,7 @@ module SlotSchedulerP {
   
           if (status->dataPending && shouldForward(call CXLinkPacket.source(msg), 
               call CXLinkPacket.destination(msg), status->bw)){
+            slotRole = ROLE_FORWARDER;
             cinfo(SCHED, "S F %u %u %u %u\r\n", 
               slotNum, 
               call CXLinkPacket.source(msg),
@@ -342,6 +365,7 @@ module SlotSchedulerP {
             state = S_ACTIVE_SLOT;
           } else {
             error_t error = call CXLink.sleep();
+            slotRole = ROLE_NONFORWARDER;
             cinfo(SCHED, "S S %u %u %u %x %u\r\n", 
               slotNum, 
               call CXLinkPacket.source(msg), 
@@ -354,6 +378,7 @@ module SlotSchedulerP {
             }
             state = S_UNUSED_SLOT;
           }
+          logReception(msg);
           return call SlotController.receiveStatus[activeNS](msg, status);
         }
 
@@ -362,6 +387,7 @@ module SlotSchedulerP {
           slotNum,
           call CXLinkPacket.source(msg),
           call CXLinkPacket.getSn(msg));
+        logReception(msg);
         return call SlotController.receiveEOS[activeNS](msg, 
           call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
@@ -372,6 +398,7 @@ module SlotSchedulerP {
           call CXLinkPacket.getSn(msg),
           call Packet.payloadLength(msg),
           call CXLinkPacket.rxHopCount(msg));
+        logReception(msg);
         return signal Receive.receive(msg, 
           call Packet.getPayload(msg, call Packet.payloadLength(msg)), 
           call Packet.payloadLength(msg));
@@ -421,7 +448,6 @@ module SlotSchedulerP {
       targetAlarm = call FrameTimer.gett0();
     }
     framesLeft --;
-    atomic P1OUT ^= BIT1;
     if (pendingRX || pendingTX){
       cdbg(SCHED_CHECKED, "FTP %x %x %x\r\n", pendingRX, pendingTX, state);
       //ok. we are still in the process of receiving/forwarding a
@@ -630,6 +656,7 @@ module SlotSchedulerP {
       return EBUSY;
     } else {
       error_t error;
+      logTransmission(msg);
       (call CXLinkPacket.getLinkMetadata(msg))->txTime = txTime;
       call CXLinkPacket.setTtl(msg, ttl);
       call Packet.setPayloadLength(msg, len);
@@ -847,24 +874,55 @@ module SlotSchedulerP {
     state = S_UNSYNCHED;
     return error;
   }
+
+  void logStats(){
+    cx_link_stats_t stats = call CXLink.getStats();
+    //slot stats
+    cinfo(STATS, "SS %u %u %lu %lu %lu %lu %lu %lu %lu %u\r\n",
+      wakeupNum,
+      slotNum,
+      stats.total,
+      stats.off,
+      stats.idle,
+      stats.sleep,
+      stats.rx,
+      stats.tx,
+      stats.fstxon, 
+      slotRole); //e.g. owner, origin, forwarder, slept
+    ctsReceived = FALSE;
+    slotRole = ROLE_UNKNOWN;
+  }
+
+  void logReception(message_t* msg){
+    cinfo(STATS, "R %u %u %u %u %u\r\n",
+      wakeupNum,
+      slotNum,
+      call CXLinkPacket.source(msg),
+      call CXLinkPacket.getSn(msg),
+      call CXLinkPacket.rxHopCount(msg));
+  }
+
+  void logTransmission(message_t* msg){
+    cinfo(STATS, "T %u %u %u %u\r\n",
+      wakeupNum,
+      slotNum, 
+      call CXLinkPacket.getSn(msg),
+      call Packet.payloadLength(msg));
+  }
   
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
   event void SlotTimer.fired(){
-    atomic P1OUT ^= BIT1;
     framesLeft = SLOT_LENGTH/FRAME_LENGTH;
-    #if DL_SCHED <= DL_INFO
+    logStats();
     slotNum ++;
-    #endif
     if (signalEnd){
       call SlotController.endSlot[activeNS]();
       signalEnd = FALSE;
     }else{
       if (call SlotController.isMaster[activeNS]()){
         //ugh, correct slot numbering at master
-        #if DL_SCHED <= DL_INFO
         slotNum --;
-        #endif
       }
     }
 
@@ -886,11 +944,11 @@ module SlotSchedulerP {
             cerror(SCHED, "CTSPE\r\n");
           } else {
             error_t error;
-//            cx_lpp_cts_t* pl = call Packet.getPayload(ctsMsg,
-//              sizeof(cx_lpp_cts_t));
+            cx_lpp_cts_t* pl = call Packet.getPayload(ctsMsg,
+              sizeof(cx_lpp_cts_t));
             call Packet.clear(ctsMsg);
             call CXMacPacket.setMacType(ctsMsg, CXM_CTS);
-//            pl -> addr = activeNode;
+            pl -> slotNum = slotNum;
             call CXLinkPacket.setDestination(ctsMsg, activeNode);
             //header only
             #if LOG_CTS_TIME == 1

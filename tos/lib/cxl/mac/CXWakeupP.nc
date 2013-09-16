@@ -140,6 +140,19 @@ module CXWakeupP {
   }
 
   event void ProbeTimer.fired(){
+    #if DL_PROBE_STATS <= DL_INFO && DL_GLOBAL <= DL_DEBUG
+    {
+      cx_link_stats_t stats = call CXLink.getStats();
+      cinfo(PROBE_STATS, "PS t %lu o %lu i %lu s %lu r %lu t %lu f %lu\r\n",
+        stats.total,
+        stats.off,
+        stats.idle,
+        stats.sleep,
+        stats.rx,
+        stats.tx,
+        stats.fstxon ); 
+    }
+    #endif
     if (state == S_IDLE){
       if (forceRx){
         //in the middle of a sniff: try probing again later.
@@ -250,7 +263,7 @@ module CXWakeupP {
       //any more meaningful error code?
       signal LppProbeSniffer.sniffDone(SUCCESS);
     } else {
-      cerror(LPP, "Unexpected RXDone %x\r\n", state);
+      cerror(LPP, "URXD %x\r\n", state);
       //if we let upper layer request RX without doing a real wakeup
       //(e.g. to sniff for traffic), then this can/should happen.
     }
@@ -270,7 +283,7 @@ module CXWakeupP {
       }
       return call SubCXLink.rx(timeout, retx);
     }else{
-      cerror(LPP, "Unexpected state %x at rx\r\n", state); 
+      cerror(LPP, "LPPUS %x\r\n", state); 
       return FAIL;
     }
   }
@@ -543,5 +556,9 @@ module CXWakeupP {
 
   default event message_t* LppProbeSniffer.sniffProbe(message_t* msg){
     return msg;
+  }
+
+  command cx_link_stats_t CXLink.getStats(){
+    return call SubCXLink.getStats();
   }
 }

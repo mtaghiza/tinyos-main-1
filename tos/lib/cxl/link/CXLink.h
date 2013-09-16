@@ -118,4 +118,14 @@ typedef struct cx_link_metadata {
 #define MIN_POWER 0x03
 #endif
 
+typedef struct cx_link_stats {
+  uint32_t total;
+  uint32_t off;
+  uint32_t idle;
+  uint32_t sleep;
+  uint32_t rx;
+  uint32_t tx;
+  uint32_t fstxon;
+} cx_link_stats_t; 
+
 #endif

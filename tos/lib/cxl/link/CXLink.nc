@@ -1,4 +1,5 @@
-
+ 
+ #include "CXLink.h"
 /**
  * This interface provides high-level access to the
  * physical radio layer. The implementer is responsible for
@@ -48,6 +49,8 @@ interface CXLink {
    * state safety)
    */
   command error_t setChannel(uint8_t channel);
+
+  command cx_link_stats_t getStats();
 
 //Obsoleted: link layer uses shorter forward times for packets with 1
 //byte (e.g. MAC layer control packets). This lets us get most of the

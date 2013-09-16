@@ -45,6 +45,77 @@ module CXLinkP {
   uint32_t dfLog;
   bool dfMissed;
   uint32_t rxStart;
+  
+  bool reCapture;
+  uint32_t aFeCapture;
+  cx_link_stats_t lastStats;
+  cx_link_stats_t curStats;
+
+  typedef enum link_status_e {
+    R_OFF = 0,
+    R_SLEEP = 1,
+    R_IDLE = 2, 
+    R_FSTXON = 3,
+    R_TX = 4,
+    R_RX = 5,
+    R_NUMSTATES = 6
+  } link_status_e;
+
+  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_DEBUG
+  link_status_e curState = R_OFF;
+  uint32_t lastChange;
+
+
+  void radioStateChangeAtTime(uint8_t newState, uint32_t changeTime){
+    atomic{
+      uint32_t elapsed = changeTime - lastChange;
+      cdbg(STATS, "sc %x %x %lu %lu\r\n", 
+        curState, newState,
+        lastChange, changeTime);
+      switch(curState){
+        case R_OFF:
+          curStats.off += elapsed;
+          break;
+        case R_SLEEP:
+          curStats.sleep += elapsed;
+          break;
+        case R_IDLE:
+          curStats.idle += elapsed;
+          break;
+        case R_RX:
+          curStats.rx += elapsed;
+          break;
+        case R_TX:
+          curStats.tx += elapsed;
+          break;
+        case R_FSTXON:
+          curStats.fstxon += elapsed;
+          break;
+        default:
+          cwarn(STATS, "? %x\r\n", curState);
+          break;
+      }
+      curState = newState;
+      lastChange = changeTime;
+    }
+  }
+
+  void radioStateChange(uint8_t newState){
+    radioStateChangeAtTime(newState, call FastAlarm.getNow());
+  }
+
+  void stopMicro(){ }
+  void startMicro(){ }
+  #else
+  void radioStateChange(){}
+  void radioStateChangeAtTime(uint32_t t){}
+  void stopMicro(){
+    call Msp430XV2ClockControl.stopMicroTimer();
+  }
+  void startMicro(){
+    call Msp430XV2ClockControl.startMicroTimer();
+  }
+  #endif
 
   int aTxResult;
   
@@ -160,6 +231,7 @@ module CXLinkP {
   command error_t CXLink.sleep(){
     uint8_t localState;
     atomic localState = state;
+
     if (sleepPending){
       return EALREADY;
     }
@@ -172,6 +244,7 @@ module CXLinkP {
     }else {
       error_t err = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
       sleepPending = FALSE;
+      radioStateChange(R_IDLE);
       if (err != SUCCESS){
         cerror(LINK, "L.s0 %x\r\n", err);
       }
@@ -183,12 +256,13 @@ module CXLinkP {
         cerror(LINK, "L.s1 %x %x\r\n", err, call Rf1aStatus.get());
       }
       err = call Rf1aPhysical.sleep();
+      radioStateChange(R_SLEEP);
       if (err != SUCCESS){
         //DBG 5
         //This fails with an ERETRY
         cerror(LINK, "L.s2: %x %x\r\n", err, call Rf1aStatus.get());
       }
-      call Msp430XV2ClockControl.stopMicroTimer();
+      stopMicro();
       atomic state = S_SLEEP;
       if (localState == S_RX){
         doSignalRXDone();
@@ -237,7 +311,6 @@ module CXLinkP {
 
 
   event void DelayedSend.sendReady(){
-//    P1OUT |= BIT2;
     atomic {
       uint32_t now = call FastAlarm.getNow();
       if (aSfdCapture){
@@ -316,7 +389,6 @@ module CXLinkP {
   }
 
   async event void Rf1aPhysical.sendDone (int result) { 
-//    P1OUT &= ~BIT1;
     atomic{
       sfdAdjust = TX_SFD_ADJUST;
       aTxResult = result;
@@ -329,6 +401,8 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
+    atomic radioStateChangeAtTime(R_TX, aSfdCapture - sfdAdjust);
+    atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     post handleSendDone();
   }
 
@@ -376,8 +450,9 @@ module CXLinkP {
         if (localState == S_TX){
           atomic {
             state = S_IDLE;
-            call Msp430XV2ClockControl.stopMicroTimer();
+            stopMicro();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            radioStateChange(R_IDLE);
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
@@ -415,8 +490,9 @@ module CXLinkP {
         } else {
           atomic {
             state = S_IDLE;
-            call Msp430XV2ClockControl.stopMicroTimer();
+            stopMicro();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            radioStateChange(R_IDLE);
             call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
               RF1A_OM_IDLE);
           }
@@ -454,16 +530,17 @@ module CXLinkP {
     //n.b: using bitwise or rather than logical to prevent
     //  short-circuit evaluation
     if ((state == S_TX) | (state == S_FWD)){
-//      P1OUT |= BIT1;
+      
       call DelayedSend.startSend();
-//      P1OUT &= ~BIT2;
     } else if (state == S_RX){
       if (aCSDetected && !aExtended){
         aExtended = TRUE;
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
-//        P1OUT &= ~BIT1;
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+
+        aFeCapture = call FastAlarm.getNow();
+        radioStateChange(R_IDLE);
         call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
           RF1A_OM_IDLE);
         state = S_IDLE;
@@ -480,9 +557,15 @@ module CXLinkP {
     if (time > (ft & 0x0000ffff)){
       ft  -= 0x00010000;
     }
-    //expand to 32 bits
-    aSfdCapture = (ft & 0xffff0000) | time;
-    call SynchCapture.disable();
+    if (reCapture){
+      //expand to 32 bits
+      aSfdCapture = (ft & 0xffff0000) | time;
+      reCapture = FALSE;
+      call SynchCapture.captureFallingEdge();
+    }else{
+      call SynchCapture.disable();
+      aFeCapture = (ft & 0xffff0000) | time;
+    }
   }
 
   async event void Rf1aPhysical.receiveStarted(unsigned int length) { 
@@ -516,12 +599,13 @@ module CXLinkP {
       bool microStarted = FALSE;
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
         microStarted = TRUE;
-        call Msp430XV2ClockControl.startMicroTimer();
+        startMicro();
       }
+      radioStateChange(R_RX);
+      //TODO: this should set RF1A_OM based on allowForward, right?
       error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
-//      P1OUT |= BIT1;
       rxStart = call FastAlarm.getNow();
       call Packet.clear(rxMsg);
       //mark as crc failed: should happen anyway, but just being safe
@@ -532,7 +616,10 @@ module CXLinkP {
       if (SUCCESS == error){
         atomic{
           call FastAlarm.start(timeout);
-          call SynchCapture.captureRisingEdge();
+          atomic{
+            reCapture = TRUE;
+            call SynchCapture.captureRisingEdge();
+          }
           aSfdCapture = 0;
           aCSDetected = FALSE;
           aExtended = FALSE;
@@ -556,7 +643,7 @@ module CXLinkP {
         }
       } else{
         if (microStarted){
-          call Msp430XV2ClockControl.stopMicroTimer();
+          stopMicro();
         }
       }
       return error;
@@ -605,6 +692,7 @@ module CXLinkP {
       if (localState == S_RX){
         call FastAlarm.stop();
         error = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+        radioStateChange(R_IDLE);
         if (error != SUCCESS){
           cerror(LINK, "s.s.rim %x\r\n", error);
         }else {
@@ -660,16 +748,20 @@ module CXLinkP {
     if(started){
       error_t error;
       if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
-        call Msp430XV2ClockControl.startMicroTimer();
+        startMicro();
       }
 //      //This is debug code for faking multi-hop networks. N.B. you may
 //      // need to set the offmode to IDLE rather than FSTXON
 //      // everywhere that this ability is used. 
 //      call Rf1aPhysical.setChannel(32* (header(msg)->hopCount));
+      radioStateChange(R_FSTXON);
       error = call Rf1aPhysical.startTransmission(FALSE, TRUE);
       if (error == SUCCESS) {
         rf1a_offmode_t om = (header(msg)->ttl)?RF1A_OM_FSTXON:RF1A_OM_IDLE;
-        call SynchCapture.captureRisingEdge();
+        atomic {
+          reCapture = TRUE;
+          call SynchCapture.captureRisingEdge();
+        }
         error = call Rf1aPhysical.send((uint8_t*)msg, 
           call CXLinkPacket.len(msg), om);
         frameLen = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
@@ -704,7 +796,6 @@ module CXLinkP {
   async event void Rf1aPhysical.receiveDone (uint8_t* buffer,
                                              unsigned int count,
                                              int result) {
-//    P1OUT &= ~BIT1;
     sfdAdjust = (count-sizeof(cx_link_header_t) <= SHORT_PACKET)? RX_SFD_ADJUST_FAST : RX_SFD_ADJUST_NORMAL;
     rxLen = count;
     rxResult = result;
@@ -716,6 +807,7 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
+    atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     post handleReception();
   } 
 
@@ -762,8 +854,9 @@ module CXLinkP {
         call FastAlarm.stop();
         atomic {
           state = S_IDLE;
-          call Msp430XV2ClockControl.stopMicroTimer();
+          stopMicro();
           call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+          radioStateChange(R_IDLE);
           call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
             RF1A_OM_IDLE);
         }
@@ -842,8 +935,9 @@ module CXLinkP {
       rxMsg = call Pool.get();
       started = TRUE;
       if (rxMsg){
-        call Msp430XV2ClockControl.stopMicroTimer();
+        stopMicro();
         signal SplitControl.startDone(call Rf1aPhysical.sleep());
+        radioStateChange(R_SLEEP);
       }else {
         cerror(LINK, "LNM\r\n");
         signal SplitControl.startDone(ENOMEM);
@@ -858,6 +952,7 @@ module CXLinkP {
       return EALREADY;
     }else{
       call Rf1aPhysical.sleep();
+      radioStateChange(R_OFF);
       call Pool.put(rxMsg);
       rxMsg = NULL;
       return call SubSplitControl.stop();
@@ -891,5 +986,22 @@ module CXLinkP {
   async event void Rf1aPhysical.released () { }
   
   async event void ActiveMessageAddress.changed(){}
+
+  command cx_link_stats_t CXLink.getStats(){
+    cx_link_stats_t ret;
+    atomic{
+      radioStateChange(curState);
+      curStats.total = call FastAlarm.getNow();
+      ret.total = curStats.total - lastStats.total;
+      ret.off = curStats.off - lastStats.off;
+      ret.idle = curStats.idle - lastStats.idle;
+      ret.sleep = curStats.sleep - lastStats.sleep;
+      ret.rx = curStats.rx - lastStats.rx;
+      ret.tx = curStats.tx - lastStats.tx;
+      ret.fstxon = curStats.fstxon - lastStats.fstxon;
+      lastStats = curStats;
+    }
+    return ret;
+  }
   
 }
