@@ -105,10 +105,12 @@ module CXLinkP {
   }
 
   void stopMicro(){ }
-  void startMicro(){ }
+  void startMicro(){ 
+    call Msp430XV2ClockControl.startMicroTimer();
+  }
   #else
-  void radioStateChange(){}
-  void radioStateChangeAtTime(uint32_t t){}
+  void radioStateChange(uint8_t newState){}
+  void radioStateChangeAtTime(uint8_t newState, uint32_t t){}
   void stopMicro(){
     call Msp430XV2ClockControl.stopMicroTimer();
   }
@@ -989,6 +991,7 @@ module CXLinkP {
 
   command cx_link_stats_t CXLink.getStats(){
     cx_link_stats_t ret;
+    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_DEBUG
     atomic{
       radioStateChange(curState);
       curStats.total = call FastAlarm.getNow();
@@ -1001,7 +1004,9 @@ module CXLinkP {
       ret.fstxon = curStats.fstxon - lastStats.fstxon;
       lastStats = curStats;
     }
+    #else
     return ret;
+    #endif
   }
   
 }

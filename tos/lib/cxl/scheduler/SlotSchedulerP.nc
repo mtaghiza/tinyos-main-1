@@ -875,7 +875,8 @@ module SlotSchedulerP {
     state = S_UNSYNCHED;
     return error;
   }
-
+  
+  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
   void logStats(){
     cx_link_stats_t stats = call CXLink.getStats();
     //slot stats
@@ -910,6 +911,11 @@ module SlotSchedulerP {
       call CXLinkPacket.getSn(msg),
       call Packet.payloadLength(msg));
   }
+  #else
+  void logStats(){}
+  void logTransmission(message_t* msg){}
+  void logReception(message_t* msg){}
+  #endif
   
   //when slot timer fires, master will send CTS, and slave will try to
   //check for it.
