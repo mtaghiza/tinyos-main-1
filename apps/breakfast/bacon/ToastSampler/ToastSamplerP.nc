@@ -18,8 +18,10 @@ module ToastSamplerP{
   uses interface TLVUtils;
 
   uses interface I2CADCReaderMaster;
-
+  
+  #if ENABLE_PRECISION_TIMESTAMP == 1
   uses interface I2CSynchMaster;
+  #endif
 
   uses interface SettingsStorage;
 
@@ -302,6 +304,7 @@ module ToastSamplerP{
       call SplitControl.stop();
       return;
     }else{
+      #if ENABLE_PRECISION_TIMESTAMP == 1
       if (toastState[toastSampleIndex] == PRESENT 
           && sensorMaps[toastSampleIndex]){
         error_t error = call I2CSynchMaster.synch(attached[toastSampleIndex].val.localAddr);
@@ -314,10 +317,13 @@ module ToastSamplerP{
         toastSampleIndex++;
         post nextSynch();
       }
+      #else 
+      post nextSampleSensors();
+      #endif
     }
   }
-
-
+  
+  #if ENABLE_PRECISION_TIMESTAMP == 1
   event void I2CSynchMaster.synchDone(error_t error, 
       uint16_t slaveAddr, 
       synch_tuple_t tuple){
@@ -336,6 +342,7 @@ module ToastSamplerP{
       post nextSynch();
     }
   }
+  #endif
 
   task void nextSampleSensors(){
     adc_reader_pkt_t* cmd = call I2CADCReaderMaster.getSettings(i2c_msg);
@@ -376,9 +383,13 @@ module ToastSamplerP{
     //mark end-of-sequence
     cmd->cfg[cmdIndex].config.inch = INPUT_CHANNEL_NONE;
     
+
     err = call I2CADCReaderMaster.sample(
       attached[toastSampleIndex].val.localAddr, 
       i2c_msg);
+    #if ENABLE_PRECISION_TIMESTAMP == 0
+    sampleRec.baseTime = call Timer.getNow();
+    #endif
     if (err != SUCCESS){
       toastSampleIndex++;
       post nextSynch();
@@ -402,6 +413,11 @@ module ToastSamplerP{
       }else{
         recordLen += sizeof(uint16_t);
         sampleRec.samples[i] = lastSample->samples[i].sample;
+        #if ENABLE_PRECISION_TIMESTAMP == 0
+        if (i ==0){
+          toastBase = lastSample->samples[i].sampleTime;
+        }
+        #endif
         //accumulate sample TS delta from synch point
         sampleTimeAcc += lastSample->samples[i].sampleTime - toastBase;
         numSamples++;
@@ -427,7 +443,6 @@ module ToastSamplerP{
       uint16_t slaveAddr, i2c_message_t* cmdMsg_, 
       i2c_message_t* responseMsg_, 
       adc_response_t* response){
-
     if (error == SUCCESS){
       i2c_message_t* swp = i2c_msg;
       i2c_msg = responseMsg_;

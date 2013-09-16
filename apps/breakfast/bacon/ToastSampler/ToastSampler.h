@@ -69,4 +69,8 @@ typedef struct long_sample_record_t{
 
 #define SS_KEY_TOAST_SAMPLE_INTERVAL 0x12
 
+#ifndef ENABLE_PRECISION_TIMESTAMP
+#define ENABLE_PRECISION_TIMESTAMP 1
+#endif
+
 #endif

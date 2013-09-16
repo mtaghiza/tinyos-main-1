@@ -1,5 +1,7 @@
 generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
 } implementation {
+   
+
   components ToastSamplerP;
   components MainC;
   components new TimerMilliC();
@@ -27,10 +29,14 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   //sampling
   components I2CADCReaderMasterC;
   ToastSamplerP.I2CADCReaderMaster -> I2CADCReaderMasterC;
-  
+
+  #if ENABLE_PRECISION_TIMESTAMP == 1
   //time-synch
   components I2CSynchMasterC;
   ToastSamplerP.I2CSynchMaster -> I2CSynchMasterC;
+  #else 
+  #warning Disable precision-timestamped samples.
+  #endif
 
   //sampling settings
   components SettingsStorageC;

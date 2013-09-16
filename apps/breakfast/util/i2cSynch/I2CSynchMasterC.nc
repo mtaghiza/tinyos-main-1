@@ -1,3 +1,4 @@
+ #include "I2CSynch.h"
 configuration I2CSynchMasterC{
   provides interface I2CSynchMaster;
 } implementation {
