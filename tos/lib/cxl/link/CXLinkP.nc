@@ -39,6 +39,7 @@ module CXLinkP {
   uint16_t sn;
   uint32_t origTimeout;
   bool started = FALSE;
+  bool sleepPending = FALSE;
   
   //TODO: remove debug/timing code
   uint32_t dfLog;
@@ -159,10 +160,18 @@ module CXLinkP {
   command error_t CXLink.sleep(){
     uint8_t localState;
     atomic localState = state;
+    if (sleepPending){
+      return EALREADY;
+    }
     if (localState == S_TX || localState == S_FWD){
-      return EBUSY;
-    }else{
+      sleepPending = TRUE;
+      return SUCCESS;
+    }else if (localState == S_RX){
+      sleepPending = TRUE;
+      return SUCCESS;
+    }else {
       error_t err = call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+      sleepPending = FALSE;
       if (err != SUCCESS){
         cerror(LINK, "L.s0 %x\r\n", err);
       }
@@ -171,13 +180,13 @@ module CXLinkP {
       if (err != SUCCESS){
         //DBG 4
         //This fails with an EBUSY
-        cerror(LINK, "L.s1 %x\r\n", err);
+        cerror(LINK, "L.s1 %x %x\r\n", err, call Rf1aStatus.get());
       }
       err = call Rf1aPhysical.sleep();
       if (err != SUCCESS){
         //DBG 5
         //This fails with an ERETRY
-        cerror(LINK, "L.s2: %x\r\n", err);
+        cerror(LINK, "L.s2: %x %x\r\n", err, call Rf1aStatus.get());
       }
       call Msp430XV2ClockControl.stopMicroTimer();
       atomic state = S_SLEEP;
@@ -209,21 +218,22 @@ module CXLinkP {
   task void logSynchMiss(){
     cerror(LINK, "SMD\r\n");
   }
+  #endif
 
   void doSignalRXDone(){
+    #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
     if (synchMiss){
       post logSynchMiss();
     }
     if (retxMiss){
       post logRetxMiss();
     }
+    #endif
+    if (sleepPending){
+      call CXLink.sleep();
+    }
     signal CXLink.rxDone();
   }
-  #else 
-  void doSignalRXDone(){
-    signal CXLink.rxDone();
-  }
-  #endif
 
 
   event void DelayedSend.sendReady(){
@@ -392,10 +402,14 @@ module CXLinkP {
 
           if (metadata(fwdMsg)->txTime){
             if (dfMissed){
+              cwarn(LINK_TIMING, "TTM\r\n");
               cinfo(LINK_TIMING, "T -%lu\r\n", dfLog);
             }else{
               cinfo(LINK_TIMING, "T %lu\r\n", dfLog);
             }
+          }
+          if (sleepPending){
+            call CXLink.sleep();
           }
           signal Send.sendDone(fwdMsg, SUCCESS);
         } else {
