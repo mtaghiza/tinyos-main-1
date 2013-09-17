@@ -27,10 +27,8 @@ class DatabaseQuery(object):
           (select master_id, cookie, count(*) as cnt FROM network_membership WHERE distance < 255 GROUP BY master_id, cookie) as reachedCount
           ON lastDownload.master_id = reachedCount.master_id AND lastDownload.cookie = reachedCount.cookie
         '''
-        if not self.connected:
-            self.connected = True
-            c = sqlite3.connect(self.dbName)
-            return c.execute(query, (masterId,)).fetchone()
+        c = sqlite3.connect(self.dbName)
+        return c.execute(query, (masterId,)).fetchone()
 
     def getRouters(self):
         """
