@@ -11,7 +11,7 @@ from tools.dashboard.SettingsFile import SettingsFile
 class NodeFrame(Frame):
 
     SETTINGS = "network.settings"
-    DATABASE = "database0.db"
+    DATABASE = "database0.sqlite"
     #DATABASE = "example.db"
     DEFAULT_CHANNEL = "0"
     
@@ -30,7 +30,6 @@ class NodeFrame(Frame):
         self.changedVar.set(False)
         self.changedVar.trace("w", self.settingsChanged)
         
-        self.channels = [0, 31, 63, 95, 159, 191, 223]
         #self.channels = self.binarySeparation()
 
         # load settings from database and from settings file
@@ -128,7 +127,7 @@ class NodeFrame(Frame):
             menu.add_command(label=channel, command=Tkinter._setit(typeVar, channel)) 
             typeVar.set(channel)
             
-            for key in self.channels:
+            for key in self.hub.control.channels:
                 menu.add_command(label=key, command=lambda router=router, key=key: self.updateRouter(router, key))
             
             subframe.grid(column=0, row=0, sticky=N+S+E+W)

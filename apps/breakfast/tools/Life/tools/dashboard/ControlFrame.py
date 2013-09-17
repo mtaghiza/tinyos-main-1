@@ -2,7 +2,9 @@ import Tkinter
 from Tkinter import *
 
 import tools.cx.constants as constants
+import tools.cx.CXController as CXController
 
+from threading import Thread
 
 class ControlFrame(Frame):
 
@@ -15,6 +17,7 @@ class ControlFrame(Frame):
         Frame.__init__(self, parent, **args)
         
         self.hub = hub
+        self.channels = [0, 31, 63, 95, 159, 191, 223]
         
         self.initUI()
 
@@ -118,6 +121,10 @@ class ControlFrame(Frame):
               siteChannels[channel], 
               constants.NS_SUBNETWORK,
               channel)
+        for channel in self.channels:
+            self.addDownloadOption(menu, "Manual Subnetwork",
+              constants.NS_SUBNETWORK, 
+              channel)
 
     def updateSites(self, sites):
         """ Populates drop-down menu with available sites.
@@ -209,9 +216,39 @@ class ControlFrame(Frame):
         self.networkSegment = networkSegment
         self.downloadChannel = target
     
+    def downloadRunner(self):
+        #OK, this is kind of ugly: since the global/router channels
+        # are fixed, and the channel which is actually used will be
+        # read based on the network segment, we don't cause problems
+        # by setting this value. Either it will be used (if we're
+        # doing a single-patch download) or it will be ignored for
+        # globalChannel or routerChannel (depending on the type of
+        # download we are doing).
+        configMap= {'subNetworkChannel':self.downloadChannel}
+        #TODO: pull these settings from somewhere...?
+        CXController.download('serial@/dev/ttyUSB0:115200', 61,
+          self.networkSegment, configMap, 
+          refCallBack=self.refCallBack,
+          finishedCallBack=self.downloadFinished )
+
     def download(self):
         print "Download: %u %u"%(self.networkSegment, self.downloadChannel)
-        #TODO: actually do the download
+        self.downloadButton.config(text="DOWNLOADING", bg="red",
+          state=DISABLED)
+        self.downloadThread = Thread(target=self.downloadRunner,
+          name="downloadThread")
+        self.downloadThread.daemon = True
+        self.downloadThread.start()
+
+    def downloadFinished(self):
+        print "Download finished"
+        self.downloadButton.config(text="Download", bg="gray",
+          state=NORMAL)
+        
+
+    def refCallBack(self, node):
+        #TODO: update progress
+        print "RCB:", node
     
     def commitChanges(self):
         print "Commit Changes"

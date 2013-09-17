@@ -20,3 +20,18 @@ CHANNEL_GLOBAL=128
 CHANNEL_ROUTER=64
 
 MAX_REQUEST_UNIT=2000
+DEFAULT_RADIO_CONFIG = {
+  'probeInterval': 1024,
+  'globalChannel': 128,
+  'subNetworkChannel': 0,
+  'routerChannel': 64,
+  'globalInvFrequency': 4,
+  'subNetworkInvFrequency': 1,
+  'routerInvFrequency': 1,
+  'globalBW': 2,
+  'subNetworkBW': 2,
+  'routerBW': 2,
+  'globalMaxDepth':8,
+  'subNetworkMaxDepth':5,
+  'routerMaxDepth': 5,
+  'maxDownloadRounds':10}

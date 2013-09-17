@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from tinyos.message.MoteIF import MoteIF
+from tools.tinyos.MoteIF import MoteIF
 import Queue 
 import time
 
@@ -11,6 +11,8 @@ from tools.cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedList
 from tools.cx.messages.CxDownloadFinished import CxDownloadFinished
 from tools.cx.messages import SetProbeSchedule
 from tools.cx.messages import SetMaxDownloadRounds
+
+import tools.cx.constants as constants
 
 class MultipleSourceException(Exception):
     pass
@@ -32,22 +34,7 @@ class CXMoteIF(MoteIF):
         self.bsId = bsId
 
     def configureMoteRadio(self, moteId, config):
-        #sensible defaults
-        radioConfig = {
-          'probeInterval': 1024,
-          'globalChannel': 0,
-          'subNetworkChannel': 32,
-          'routerChannel': 64,
-          'globalInvFrequency': 4,
-          'subNetworkInvFrequency': 0,
-          'routerInvFrequency': 1,
-          'globalBW': 2,
-          'subNetworkBW': 2,
-          'routerBW': 2,
-          'globalMaxDepth':8,
-          'subNetworkMaxDepth':5,
-          'routerMaxDepth': 5,
-          'maxDownloadRounds':10}
+        radioConfig = constants.DEFAULT_RADIO_CONFIG.copy()
         radioConfig.update(config)
         #set up probe schedule appropriately
         setProbeScheduleMsg = SetProbeSchedule.SetProbeSchedule(
@@ -68,7 +55,7 @@ class CXMoteIF(MoteIF):
         self.send(moteId, setProbeScheduleMsg, ackExpected)
 
     def configureMaxDownloadRounds(self, moteId, config):
-        radioConfig = { 'maxDownloadRounds':10}
+        radioConfig = constants.DEFAULT_RADIO_CONFIG.copy()
         radioConfig.update(config)
         setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
           radioConfig['maxDownloadRounds']

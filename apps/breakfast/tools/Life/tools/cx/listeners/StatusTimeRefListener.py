@@ -3,9 +3,10 @@ import time
 import sqlite3
 
 class StatusTimeRefListener(object):
-    def __init__(self, dbName):
+    def __init__(self, dbName, refCallBack=None):
         self.downloadStart = None
         self.dbName = dbName
+        self.refCallBack = refCallBack
 
     def receive(self, src, msg):
         print "REF", self.downloadStart, msg.get_node(), msg.get_rc(), msg.get_ts()
@@ -16,4 +17,5 @@ class StatusTimeRefListener(object):
         self.connection.execute(q, 
           (msg.get_node(), msg.get_rc(), msg.get_ts(), self.downloadStart))
         self.connection.commit()
-
+        if self.refCallBack:
+            self.refCallBack(msg.get_node())

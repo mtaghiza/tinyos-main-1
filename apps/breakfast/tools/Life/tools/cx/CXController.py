@@ -3,8 +3,6 @@ import sys
 import time
 import ast
 
-from tinyos.message.MoteIF import MoteIF
-
 from tools.cx.listeners import RecordListener
 from tools.cx.listeners import PrintfListener
 from tools.cx.messages import PrintfMsg
@@ -64,17 +62,22 @@ class Dispatcher(object):
 
 
     def stop(self):
+        print "clearing"
         self.mif.clearRXQueue()
         time.sleep(1)
+        print "cleared"
         self.mif.finishAll()
+        print "finished"
 
     def send(self, m, dest=0, requireAck=True):
         return self.mif.send(dest, m, requireAck)
 
-def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=None):
+def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL,
+        configMap={}, configFile=None, refCallBack=None,
+        finishedCallBack=None):
     print packetSource
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configFile=configFile)
+    d = Dispatcher(packetSource, bsId, db, configMap=configMap, configFile=configFile)
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
@@ -83,12 +86,12 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     db.addDecoder(BaconSettings.BaconSettings)
     db.addDecoder(LogPrintf.LogPrintf)
     db.addDecoder(NetworkMembership.NetworkMembership)
-    #man that is ugghly to hook 
-    t = db.addDecoder(Tunneled.Tunneled)
-    t.receiveQueue = d.mif.receiveQueue
+#     #man that is ugghly to hook 
+#     t = db.addDecoder(Tunneled.Tunneled)
+#     t.receiveQueue = d.mif.receiveQueue
     pingId = 0
 
-    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
+    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName, refCallBack)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
 
     try:
@@ -137,7 +140,9 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
         else: 
             #TODO: we should send repair requests out first (since
             #  controller gets to go first)
+            print "starting download wait"
             d.mif.downloadWait()
+            print "ending download wait"
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:
@@ -147,6 +152,9 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL, configFile=
     finally:
         print "Cleaning up"
         d.stop()
+    print "done for real"
+    if finishedCallBack:
+        finishedCallBack()
 
 def pushConfig(packetSource, bsId, networkSegment, configFile,
       newConfigFile, nodeList):
