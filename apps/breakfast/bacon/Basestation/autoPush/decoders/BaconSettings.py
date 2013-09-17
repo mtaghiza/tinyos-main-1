@@ -79,20 +79,23 @@ class BaconSettings(Decoder.Decoder):
                          globalChannel, subnetChannel, routerChannel, 
                          globalIf, subnetIf, routerIf,
                          globalBW, subnetBW, routerBW, 
-                         globalMD, subnetMD, routerMD) = struct.unpack('>LBBBBBBBBBBBB', value)
+                         globalMD, subnetMD, routerMD,
+                         globalWUL, subnetWUL, routerWUL) = struct.unpack('>LBBBBBBBBBBBBLLL', value)
                         self.connection.execute(
                           '''UPDATE bacon_settings 
                           SET probe_interval =?, 
                           global_channel=?, subnetwork_channel=?, router_channel=?,
                           global_inv_freq=?, subnetwork_inv_freq=?, router_inv_freq=?,
                           global_bw=?, subnetwork_bw=?, router_bw=?,
-                          global_md=?, subnetwork_md=?, router_md=?
+                          global_md=?, subnetwork_md=?, router_md=?,
+                          global_wul=?, subnetwork_wul=?, router_wul=?
                           WHERE node_id=? and rc=? and ts=?''',
                           (probeInterval,
                           globalChannel, subnetChannel, routerChannel,
                           globalIf, subnetIf, routerIf,
                           globalBW, subnetBW, routerBW,
-                          globalMD, subnetMD, routerMD, 
+                          globalMD, subnetMD, routerMD,
+                          globalWUL, subnetWUL, routerWUL,
                           node_id, rc, ts))
                     if tag == cx.constants.SS_KEY_DOWNLOAD_INTERVAL:
                         (downloadInterval,) = struct.unpack('>L', value)

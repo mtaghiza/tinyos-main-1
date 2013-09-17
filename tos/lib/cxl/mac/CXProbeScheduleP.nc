@@ -11,7 +11,7 @@ module CXProbeScheduleP {
   //basestation uses global/router only
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 0, 1},
+    .invFrequency={4, 1, 1},
     .bw={2, 2, 2},
     .maxDepth={8,5,5}
   };
@@ -23,7 +23,7 @@ module CXProbeScheduleP {
   // from router (though router may store refs from leafs)
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 0, 1},
+    .invFrequency={4, 1, 1},
     .bw={2, 2, 2},
     .maxDepth={8,5,5}
   };
@@ -39,6 +39,9 @@ module CXProbeScheduleP {
 
   command error_t Init.init(){
     sched.probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
+    sched.wakeupLen[0] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 8UL;
+    sched.wakeupLen[1] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 5UL;
+    sched.wakeupLen[2] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 5UL;
     return SUCCESS;
   }
 

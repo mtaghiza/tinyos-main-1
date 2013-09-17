@@ -26,9 +26,10 @@ class SetProbeSchedule(SetSettingsStorageMsg.SetSettingsStorageMsg):
         self.setUIntElement(self.offsetBits_val(14), 8, maxDepth[1], 1)
         self.setUIntElement(self.offsetBits_val(15), 8, maxDepth[2], 1)
         #12
-        print "pi %u if %u md %u -> %u"%(probeInterval,
-          invFrequency[0], maxDepth[0], 
-          probeInterval*invFrequency[0]*maxDepth[0]*32)
+        for i in range(3):
+            print "ns %u: pi %u if %u md %u -> %u"%(i, probeInterval,
+              invFrequency[i], maxDepth[i], 
+              probeInterval*invFrequency[i]*maxDepth[i]*32)
         self.setUIntElement(self.offsetBits_val(16), 32,
           probeInterval*invFrequency[0]*maxDepth[0]*32, 1)
         self.setUIntElement(self.offsetBits_val(20), 32, 

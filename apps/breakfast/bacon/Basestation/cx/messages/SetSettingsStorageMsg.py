@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 31
+DEFAULT_MESSAGE_SIZE = 40
 
 # The Active Message type associated with this message.
 AM_TYPE = 192
 
 class SetSettingsStorageMsg(tinyos.message.Message.Message):
     # Create a new SetSettingsStorageMsg of size 31.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=31):
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=DEFAULT_MESSAGE_SIZE):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -44,7 +44,7 @@ class SetSettingsStorageMsg(tinyos.message.Message.Message):
             pass
         try:
             s += "  [val=";
-            for i in range(0, 28):
+            for i in range(0, self.get_len()):
                 s += "0x%x " % (self.getElement_val(i) & 0xff)
             s += "]\n";
         except:

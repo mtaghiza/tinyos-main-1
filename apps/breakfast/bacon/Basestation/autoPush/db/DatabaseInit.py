@@ -139,6 +139,9 @@ class DatabaseInit(object):
                               global_md INTEGER,
                               subnetwork_md INTEGER,
                               router_md INTEGER,
+                              global_wul INTEGER,
+                              subnetwork_wul INTEGER,
+                              router_wul INTEGER,
                               max_download_rounds INTEGER,
                               PRIMARY KEY (node_id, cookie))''',
               'active_period': '''CREATE TABLE active_period

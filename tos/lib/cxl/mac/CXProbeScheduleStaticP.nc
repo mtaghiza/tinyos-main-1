@@ -8,7 +8,8 @@ module CXProbeScheduleStaticP {
 
   #if CX_BASESTATION == 1
   #define IF_G  1
-  #define IF_SN 0
+  //to facilitate single-tier download
+  #define IF_SN 1
   #define IF_R  1
   #elif CX_ROUTER == 1
   #define IF_G  1
