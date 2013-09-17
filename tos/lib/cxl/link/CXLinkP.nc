@@ -889,10 +889,12 @@ module CXLinkP {
             header(rxMsg)->source, 
             header(rxMsg)->sn);
           applyTimestamp(rxMsg);
+          #if DL_LINK_TIMING <= DL_INFO && DL_GLOBAL <= DL_INFO
           if (metadata(rxMsg)->retx){
             cinfo(LINK_TIMING, "R %lu\r\n", 
               metadata(rxMsg)->timeFast - rxStart);
           }
+          #endif
           rxMsg = signal Receive.receive(rxMsg, 
             call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)),
             call Packet.payloadLength(rxMsg));

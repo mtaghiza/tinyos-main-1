@@ -2,8 +2,8 @@
 
 
 enablePrintf=1
-enableBaconSampler=0
-eap=0
+enableBaconSampler=1
+eap=1
 
 rp=0xC3
 lp=0x2D
@@ -79,7 +79,6 @@ do
     TEST_DESC=$testDesc\
     ENABLE_PRINTF=$enablePrintf || exit 1
   
-  exit 0
   testDesc=\\\"${testDescLeaf}_snc_${snc}\\\"
 
   ./burnRole.sh $map Leaf -f Makefile.dummycxl \
