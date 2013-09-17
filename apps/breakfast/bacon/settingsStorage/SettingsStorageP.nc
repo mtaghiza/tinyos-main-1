@@ -119,9 +119,13 @@ module SettingsStorageP {
     if (ret == SUCCESS){
       uint8_t tlvi = call TLVUtils.findEntry(key, 0, &entry, tlvs);
       if (tlvi){
-        //entry is now pointing at either a new spot or an existing one
-        memcpy(&(entry->data), val, len);
-      } else {
+        //entry is now pointing at an existing one: remove it so that
+        //we can insert a new one (required for safety if we are going
+        //to change the size of an entry, for instance)
+        call TLVUtils.deleteEntry(tlvi, tlvs);
+//        memcpy(&(entry->data), val, len);
+      } 
+      {
         //addEntry uses somewhat different semantics: need to
         //give it a pointer to an already-filled-in tlv_entry_t
         //ugh.
@@ -132,7 +136,8 @@ module SettingsStorageP {
         //not found? new entry.
         tlvi = call TLVUtils.addEntry(key, len, &e, tlvs, 0);
         if (! tlvi){
-          //not enough space to add entry.
+          call TLVStorage.loadTLVStorage(tlvs);
+          //not enough space to add entry. Restore previous version.
           return ESIZE;
         }
       }
