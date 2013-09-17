@@ -50,9 +50,13 @@ class SerialIO(IO):
 
     
     def close(self):
+        self.done = True
         self.serial.close()
     
     def read(self, count):
+        if self.isDone():
+            raise IODone()
+
         while self.serial.inWaiting() < count:
             if self.isDone():
                 raise IODone()

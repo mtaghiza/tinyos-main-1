@@ -33,6 +33,7 @@
 #  - Add sequence number
 #  - Handle acknowledgements correctly
 
+import Queue
 from threading import Lock, Condition, Thread
 from IO import IODone
 from Serial import Serial
@@ -58,9 +59,10 @@ def hex(x):
 
 
 class RXThread(Thread):
-    def __init__(self, prot):
+    def __init__(self, prot, signalError):
         Thread.__init__(self)
         self.prot = prot
+        self.signalError = signalError
 
     def run(self):
         while True:
@@ -82,9 +84,7 @@ class RXThread(Thread):
                         self.prot.lastAck = packet
                         self.prot.ackCV.notify()
                 else:
-                    with self.prot.dataCV:
-                        self.prot.lastData = packet
-                        self.prot.dataCV.notify()
+                    self.prot.queue.put(packet)
             #OK, kind of ugly. finishing the SerialSource (ThreadTask)
             # leads (ultimately) to an IODone exception coming up
             # through here. At this point, the thread should complete.
@@ -92,15 +92,19 @@ class RXThread(Thread):
                 with self.prot.ackCV:
                     self.prot.lastAck = None
                     self.prot.ackCV.notify()
-                with self.prot.dataCV:
-                    self.prot.lastData = None
-                    self.prot.dataCV.notify()
-                break
+            except:
+                self.signalError()
+#                 print "SerialProtocol Exception"
+#                 with self.prot.ackCV:
+#                     self.prot.lastAck = None
+#                     self.prot.ackCV.notify()
+#                 self.prot.queue.put(None)
 
 class SerialProtocol:
-    def __init__(self, ins, outs):
+    def __init__(self, ins, outs, signalError):
         self.ins = ins
         self.outs = outs
+        self.signalError = signalError
 
         self.inSync = False
         self.seqNo = 0
@@ -111,22 +115,24 @@ class SerialProtocol:
         self.received[P_ACK] = []
         self.received[P_PACKET_NO_ACK] = []
         rxLock = Lock()
-        self.dataCV = Condition(rxLock)
         self.ackCV = Condition(rxLock)
-        self.lastData = None
         self.lastAck = None
+        self.queue = Queue.Queue()
     
     #also a little ugly: can't start this thread until the
     # serial.Serial object has been opened. This should all be
     # encapsulated in a single constructor.
     def open(self):
-        self.rxThread = RXThread(self)
+        self.rxThread = RXThread(self, self.signalError)
         self.rxThread.start()
         
     def readPacket(self):
-        with self.dataCV:
-            self.dataCV.wait()
-            return self.lastData
+        try:
+            packet = self.queue.get(True, 1)
+        except Queue.Empty:
+            return None
+        else:
+            return packet
 
     def readFramedPacket(self):
         count = 0

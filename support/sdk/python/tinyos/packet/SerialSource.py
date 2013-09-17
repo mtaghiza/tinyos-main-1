@@ -39,7 +39,7 @@ if sys.platform != 'cygwin':
     from SerialIO import *
 
 class SerialSource(PacketSource):
-    def __init__(self, dispatcher, args):
+    def __init__(self, dispatcher, args, signalError):
         PacketSource.__init__(self, dispatcher)
 
         m = re.match(r'(.*):(.*)', args)
@@ -58,7 +58,7 @@ class SerialSource(PacketSource):
                 raise PacketSourceException("bad source: %s" % name)
 
         self.io = SerialIO(device, baud)
-        self.prot = SerialProtocol(self.io, self.io)
+        self.prot = SerialProtocol(self.io, self.io, signalError)
 
     def cancel(self):
         self.done = True

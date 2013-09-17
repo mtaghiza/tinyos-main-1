@@ -34,7 +34,6 @@ import re
 import struct
 import sys
 import traceback
-from tinyos.utils.Watcher import Watcher
 
 from tinyos.packet.Serial import Serial
 from tinyos.message.SerialPacket import SerialPacket
@@ -60,9 +59,9 @@ class MoteIFException(Exception):
 class MoteIF:
     def __init__(self):
         self.listeners = {}
-        self.watcher = Watcher.getInstance()
         self.receiveQueue = Queue.Queue()
         self.running = True
+        self.signalError = lambda:None
 
     def addListener(self, listener, msgClass):
         if listener not in self.listeners:
@@ -73,6 +72,9 @@ class MoteIF:
 
     def removeListener(self, listener):
         del self.listeners[listener]
+
+    def addErrorSignal(self, signalError):
+        self.signalError = signalError
 
     def dispatchPacket(self, source, packet):
         #try:
@@ -156,7 +158,8 @@ class MoteIF:
         if sourceType == "sf":
             source = tinyos.packet.SFSource.SFSource(self, args)
         elif sourceType == "serial" and tinyos.packet.SerialSource != None:
-            source = tinyos.packet.SerialSource.SerialSource(self, args)
+            source = tinyos.packet.SerialSource.SerialSource(self,
+              args, self.signalError)
         else:
             raise MoteIFException("bad source")
         source.start()
