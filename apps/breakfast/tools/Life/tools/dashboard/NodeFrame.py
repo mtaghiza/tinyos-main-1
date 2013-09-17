@@ -11,11 +11,10 @@ from tools.dashboard.SettingsFile import SettingsFile
 class NodeFrame(Frame):
 
     SETTINGS = "network.settings"
-    DATABASE = "database0.sqlite"
     #DATABASE = "example.db"
     DEFAULT_CHANNEL = "0"
     
-    def __init__(self, parent, hub, **args):
+    def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
         
         self.hub = hub
@@ -24,7 +23,7 @@ class NodeFrame(Frame):
         self.sensorTypes = {}
         
         #self.sf = SettingsFile(self.SETTINGS)
-        self.db = DatabaseQuery(self.DATABASE)
+        self.db = DatabaseQuery(dbFile)
         
         self.changedVar = BooleanVar()
         self.changedVar.set(False)

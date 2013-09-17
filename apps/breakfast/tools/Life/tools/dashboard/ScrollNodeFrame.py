@@ -6,11 +6,12 @@ from tools.dashboard.NodeFrame import NodeFrame as ContentFrame
 
 class ScrollNodeFrame(Frame):
 
-    def __init__(self, parent, hub, **args):
+    def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
         
         self.parent = parent
         self.hub = hub
+        self.dbFile = dbFile
         
         self.xscrollOn = False
         self.yscrollOn = False
@@ -33,7 +34,7 @@ class ScrollNodeFrame(Frame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.frame = ContentFrame(self.canvas, self.hub)
+        self.frame = ContentFrame(self.canvas, self.hub, self.dbFile)
         self.frame.rowconfigure(1, weight=1)
         self.frame.columnconfigure(1, weight=1)
         self.canvas.create_window(0, 0, anchor=NW, window=self.frame)

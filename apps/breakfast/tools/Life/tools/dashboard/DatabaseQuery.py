@@ -15,7 +15,22 @@ class DatabaseQuery(object):
             self.connection.close()
             
             print "closing connection" 
-   
+
+    def getLastDownloadResults(self, masterId):
+        query = ''' SELECT lastDownload.master_id, reachedCount.cnt, allCount.cnt
+          FROM 
+          (select master_id, max(cookie) as cookie FROM active_period WHERE master_id = ? GROUP BY master_id) as lastDownload
+          JOIN 
+          (select master_id, cookie, count(*) as cnt FROM network_membership GROUP BY master_id, cookie) as allCount
+          ON lastDownload.master_id = allCount.master_id AND lastDownload.cookie = allCount.cookie
+          JOIN 
+          (select master_id, cookie, count(*) as cnt FROM network_membership WHERE distance < 255 GROUP BY master_id, cookie) as reachedCount
+          ON lastDownload.master_id = reachedCount.master_id AND lastDownload.cookie = reachedCount.cookie
+        '''
+        if not self.connected:
+            self.connected = True
+            c = sqlite3.connect(self.dbName)
+            return c.execute(query, (masterId,)).fetchone()
 
     def getRouters(self):
         """
@@ -25,7 +40,7 @@ class DatabaseQuery(object):
         query = '''
                 SELECT bs.node_id, bs.barcode_id, bs.subnetwork_channel, max(ap.cookie)
                 FROM active_period AS ap, bacon_settings AS bs
-                WHERE ap.network_segment = 2 AND ap.node_id = bs.node_id
+                WHERE ap.network_segment = 2 AND ap.master_id = bs.node_id
                 GROUP BY bs.node_id
                 ORDER BY bs.node_id
                 '''
@@ -61,9 +76,9 @@ class DatabaseQuery(object):
         query = '''
                 SELECT bs.barcode_id, bs.toast_interval, bs.subnetwork_channel, max(ap.cookie)
                 FROM active_period AS ap, bacon_settings AS bs
-                WHERE ap.network_segment = 0 AND ap.node_id = bs.node_id
-                GROUP BY ap.node_id
-                ORDER BY ap.node_id 
+                WHERE ap.network_segment = 0 AND ap.master_id = bs.node_id
+                GROUP BY ap.master_id
+                ORDER BY ap.master_id 
                 '''
         
         # sqlite connections can only be used from the same threads they are established from

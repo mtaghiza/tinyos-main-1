@@ -62,9 +62,9 @@ class Dispatcher(object):
 
 
     def stop(self):
+        time.sleep(1)
         print "clearing"
         self.mif.clearRXQueue()
-        time.sleep(1)
         print "cleared"
         self.mif.finishAll()
         print "finished"

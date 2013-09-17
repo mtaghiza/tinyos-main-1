@@ -3,6 +3,7 @@ from Tkinter import *
 
 import tools.cx.constants as constants
 import tools.cx.CXController as CXController
+from tools.dashboard.DatabaseQuery import DatabaseQuery
 
 from threading import Thread
 
@@ -13,9 +14,10 @@ class ControlFrame(Frame):
     DEFAULT_SITE_STRING = "All Sites"
     SPACING = 10
 
-    def __init__(self, parent, hub, **args):
+    def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
         
+        self.db = DatabaseQuery(dbFile)
         self.hub = hub
         self.channels = [0, 31, 63, 95, 159, 191, 223]
         
@@ -241,14 +243,16 @@ class ControlFrame(Frame):
         self.downloadThread.start()
 
     def downloadFinished(self):
-        print "Download finished"
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
+        #TODO: where does this come from?
+        masterId=61
+        (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
+        self.hub.status.addMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
         
 
     def refCallBack(self, node):
-        #TODO: update progress
-        print "RCB:", node
+        self.hub.status.addMessage("Contacted %u.\n"%(node))
     
     def commitChanges(self):
         print "Commit Changes"
