@@ -56,6 +56,7 @@ class Dispatcher(object):
 
     def stop(self):
         self.mif.clearRXQueue()
+        time.sleep(1)
         self.mif.finishAll()
 
     def send(self, m, dest=0, requireAck=True):

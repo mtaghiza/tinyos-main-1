@@ -4,7 +4,6 @@ import Queue
 import time
 import ast
 
-from threading import Condition
 
 from cx.listeners.CtrlAckListener import CtrlAckListener
 from cx.messages.CtrlAck import CtrlAck
@@ -23,9 +22,8 @@ class CXMoteIF(MoteIF):
         self.ackQueue = Queue.Queue()
         self.addListener(CtrlAckListener(self.ackQueue),
           CtrlAck)
-        self.finishedCV = Condition()
-        self.addListener(CxDownloadFinishedListener(self.finishedCV),
-          CxDownloadFinished)
+        self.finishedListener = CxDownloadFinishedListener()
+        self.addListener(self.finishedListener, CxDownloadFinished)
         #TODO: less arbitrary. In fact, we should probably be waiting
         # until we get a downloadFinished. Might be helpful to add 
         # downloadOngoing / haltDownload packets?
@@ -134,8 +132,9 @@ class CXMoteIF(MoteIF):
 
     def downloadWait(self):
         print "Waiting for download to finish"
-        with self.finishedCV:
-            self.finishedCV.wait()
+        while not self.finishedListener.finished:
+            with self.finishedListener.finishedCV:
+                self.finishedListener.finishedCV.wait()
 
     def clearRXQueue(self):
         print "Clearing RX Queue"
