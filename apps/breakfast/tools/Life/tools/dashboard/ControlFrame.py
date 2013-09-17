@@ -1,10 +1,13 @@
 import Tkinter
 from Tkinter import *
 
+import tools.cx.constants as constants
+
 
 class ControlFrame(Frame):
 
     DEFAULT_TYPE_STRING = "All Types"
+    DEFAULT_DOWNLOAD_STRING = "Routers (c.  %u)"%(constants.CHANNEL_ROUTER)
     DEFAULT_SITE_STRING = "All Sites"
     SPACING = 10
 
@@ -74,9 +77,47 @@ class ControlFrame(Frame):
         self.commitButton.grid(column=0, row=0)
         self.commitFrame.grid(column=2, row=0)
         
+        #
+        self.downloadFrame = Frame(self, padx=self.SPACING)
+        self.downloadLabel = Label(self.downloadFrame,
+          text="Download From:")
+        self.downloadLabel.grid(column=0, row=0)
+
+        self.downloadVar = StringVar()
+        self.downloadVar.set(self.DEFAULT_DOWNLOAD_STRING)
+        self.downloadChannel = constants.CHANNEL_ROUTER
+        self.networkSegment = constants.NS_ROUTER
+        self.downloadOption = OptionMenu(self.downloadFrame,
+          self.downloadVar, [])
+        self.updateDownloadOptions({})
+        self.downloadOption.grid(column=1, row=0)
+
+        self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
+        self.downloadButton.grid(column=2, row=0)
+        self.downloadFrame.grid(column=3, row=0)
         #self.refreshButton = Button(self, text="Refresh", command=self.refresh)
         #self.refreshButton.grid(column=2, row=0)
-
+   
+    def addDownloadOption(self, menu, rootStr, networkSegment, channel):
+        displayVal = "%s (c. %u)"%(rootStr, channel)
+        menu.add_command(label=displayVal,
+          command = lambda target=(displayVal, networkSegment, channel):
+            self.selectDownloadTarget(target))
+        
+    def updateDownloadOptions(self, siteChannels):
+        menu = self.downloadOption["menu"]
+        menu.delete(0, "end")
+        self.addDownloadOption(menu, "Routers", 
+          constants.NS_ROUTER, 
+          constants.CHANNEL_ROUTER)
+        self.addDownloadOption(menu, "Global",
+          constants.NS_GLOBAL, 
+          constants.CHANNEL_GLOBAL)
+        for channel in sorted(siteChannels):
+            self.addDownloadOption(menu, 
+              siteChannels[channel], 
+              constants.NS_SUBNETWORK,
+              channel)
 
     def updateSites(self, sites):
         """ Populates drop-down menu with available sites.
@@ -162,6 +203,15 @@ class ControlFrame(Frame):
         self.hub.display.redrawAll()        
         self.hub.node.redrawAllNodes()
 
+    def selectDownloadTarget(self, t):
+        (displayVal, networkSegment, target) = t
+        self.downloadVar.set(displayVal)
+        self.networkSegment = networkSegment
+        self.downloadChannel = target
+    
+    def download(self):
+        print "Download: %u %u"%(self.networkSegment, self.downloadChannel)
+        #TODO: actually do the download
     
     def commitChanges(self):
         print "Commit Changes"

@@ -265,6 +265,7 @@ class NodeFrame(Frame):
         # update menu list of available sensor types
         self.hub.control.updateTypes(self.sensorTypes)
         self.hub.control.updateSites(self.routers)
+        self.hub.control.updateDownloadOptions(siteChannels)
 #        
 #        # update dictionary with both offline and online nodes 
 #        # the settings file has higher priority than the online settings
