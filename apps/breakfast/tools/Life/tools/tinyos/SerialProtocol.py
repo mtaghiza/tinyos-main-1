@@ -37,7 +37,6 @@ import Queue
 from threading import Lock, Condition, Thread
 from IO import IODone
 
-import tools.labeler.Dispatcher 
 from tools.tinyos.Serial import Serial
 
 
@@ -106,7 +105,6 @@ class RXThread(Thread):
                 break
             except:
                 print "SerialProtocol Exception"
-                #Dispatcher.tos_source.cancel()
                 with self.prot.ackCV:
                     self.prot.lastAck = None
                     self.prot.ackCV.notify()
