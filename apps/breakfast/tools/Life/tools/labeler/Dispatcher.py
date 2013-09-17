@@ -3,7 +3,7 @@
 import sys, time, thread
 import Queue
 
-from tools.tinyos.MoteIF import MoteIF
+from tinyos.message.MoteIF import MoteIF
 #from tinyos.message import *
 #from tinyos.message.Message import *
 #from tinyos.message.SerialPacket import *

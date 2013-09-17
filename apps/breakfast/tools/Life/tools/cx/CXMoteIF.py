@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from tools.tinyos.MoteIF import MoteIF
+from tinyos.message.MoteIF import MoteIF
 import Queue 
 import time
 
