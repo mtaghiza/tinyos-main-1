@@ -2,7 +2,6 @@
 from tinyos.message.MoteIF import MoteIF
 import Queue 
 import time
-import ast
 
 
 from tools.cx.listeners.CtrlAckListener import CtrlAckListener
@@ -32,7 +31,7 @@ class CXMoteIF(MoteIF):
         self.source = None
         self.bsId = bsId
 
-    def configureMoteRadio(self, moteId, configFile):
+    def configureMoteRadio(self, moteId, config):
         #sensible defaults
         radioConfig = {
           'probeInterval': 1024,
@@ -49,13 +48,7 @@ class CXMoteIF(MoteIF):
           'subNetworkMaxDepth':5,
           'routerMaxDepth': 5,
           'maxDownloadRounds':10}
-        if configFile:
-            #evaluate each key:=value pair and stick it into config
-            with open(configFile, 'r') as f:
-                for line in f:
-                    if not line.startswith('#'):
-                        r = line.split(':=')
-                        radioConfig[r[0]] = ast.literal_eval(r[1])
+        radioConfig.update(config)
         #set up probe schedule appropriately
         setProbeScheduleMsg = SetProbeSchedule.SetProbeSchedule(
           radioConfig['probeInterval'],
@@ -74,15 +67,9 @@ class CXMoteIF(MoteIF):
         ackExpected = ( moteId != self.bsId)
         self.send(moteId, setProbeScheduleMsg, ackExpected)
 
-    def configureMaxDownloadRounds(self, moteId, configFile):
+    def configureMaxDownloadRounds(self, moteId, config):
         radioConfig = { 'maxDownloadRounds':10}
-        if configFile:
-            #evaluate each key:=value pair and stick it into config
-            with open(configFile, 'r') as f:
-                for line in f:
-                    if not line.startswith('#'):
-                        r = line.split(':=')
-                        radioConfig[r[0]] = ast.literal_eval(r[1])
+        radioConfig.update(config)
         setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
           radioConfig['maxDownloadRounds']
           )
