@@ -121,19 +121,10 @@ MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/Cx
 
 CXMIGDIR = cx/messages
 MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
-
-SSMIGDIR = $(CXMIGDIR)
-MIGCLASSES += $(SSMIGDIR)/SetSettingsStorageMsg.py
-
-APMIGDIR = autoPush/messages
-MIGCLASSES += $(APMIGDIR)/CxRecordRequestMsg.py 
-#$(APMIGDIR)/LogRecordDataMsg.py
-
-PINGMIGDIR = $(APMIGDIR)
-MIGCLASSES += $(PINGMIGDIR)/PingMsg.py $(PINGMIGDIR)/PongMsg.py 
-
-PRINTFMIGDIR = $(APMIGDIR)
-MIGCLASSES += $(PRINTFMIGDIR)/PrintfMsg.py
+MIGCLASSES += $(CXMIGDIR)/CxRecordRequestMsg.py $(CXMIGDIR)/LogRecordDataMsg.py
+MIGCLASSES += $(CXMIGDIR)/SetSettingsStorageMsg.py
+MIGCLASSES += $(CXMIGDIR)/PingMsg.py $(CXMIGDIR)/PongMsg.py 
+MIGCLASSES += $(CXMIGDIR)/PrintfMsg.py
 
 
 $(LPPMIGDIR):
@@ -149,31 +140,22 @@ $(CXMIGDIR)/CxDownload.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/scheduler/CXRouter.h $@ $(CFLAGS) 
 
 $(CXMIGDIR)/%.py: $(CXMIGDIR)
-	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
-
-$(PINGMIGDIR):
-	mkdir -p $(PINGMIGDIR)
-
-$(PINGMIGDIR)/%.py: $(PINGMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
 
-$(APMIGDIR):
-	mkdir -p $(APMIGDIR)
-
-$(APMIGDIR)/CxRecordRequestMsg.py: $(APMIGDIR)
+$(CXMIGDIR)/CxRecordRequestMsg.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/autoPush/RecordRequest.h $@ $(CFLAGS)
 
-$(APMIGDIR)/LogRecordDataMsg.py: $(APMIGDIR) 
+$(CXMIGDIR)/LogRecordDataMsg.py: $(CXMIGDIR) 
 	genMig.sh $(PLATFORM) $(STORAGEDIR)/RecordStorage.h $@ $(CFLAGS)
 
-$(PRINTFMIGDIR):
-	mkdir -p $(PINGMIGDIR)
-
-$(PRINTFMIGDIR)/PrintfMsg.py: 
+$(CXMIGDIR)/PrintfMsg.py: 
 	mig python -target=$(PLATFORM) $(CFLAGS) -python-classname=PrintfMsg $(TOSDIR)/lib/printf/printf.h printf_msg -o $@
 
-$(SSMIGDIR)/SetSettingsStorageMsg.py: $(SSMIGDIR)
+$(CXMIGDIR)/SetSettingsStorageMsg.py:
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/settingsStorage/SettingsStorage.h $@ $(CFLAGS)
+
+$(CXMIGDIR)/%.py: $(CXMIGDIR)
+	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
 
 migClasses: $(MIGCLASSES)
 
