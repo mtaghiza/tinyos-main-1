@@ -1,5 +1,5 @@
 #!/bin/bash
-#PYTHONPATH=$PYTHONPATH:../../tools/Life/
+PYTHONPATH=$PYTHONPATH:../../tools/Life/
 
 if [ $# -eq 0 ]
 then
