@@ -39,9 +39,10 @@ module CXProbeScheduleP {
 
   command error_t Init.init(){
     sched.probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
-    sched.wakeupLen[0] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 8UL;
-    sched.wakeupLen[1] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 5UL;
-    sched.wakeupLen[2] = LPP_DEFAULT_PROBE_INTERVAL * 4UL * 5UL;
+    //probe interval is in ms, wakeupLen is in 32k
+    sched.wakeupLen[0] = (LPP_DEFAULT_PROBE_INTERVAL * 4UL * 8UL) << 5;
+    sched.wakeupLen[1] = (LPP_DEFAULT_PROBE_INTERVAL * 1UL * 5UL) << 5;
+    sched.wakeupLen[2] = (LPP_DEFAULT_PROBE_INTERVAL * 1UL * 5UL) << 5;
     return SUCCESS;
   }
 
