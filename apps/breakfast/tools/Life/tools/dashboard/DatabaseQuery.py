@@ -9,6 +9,7 @@ class DatabaseQuery(object):
     def __init__(self, dbName):
         self.dbName = dbName
         self.connected = False
+        print "DBQ %s"%(dbName)
         
 
     def __del__(self):
@@ -39,8 +40,8 @@ class DatabaseQuery(object):
         
         query = '''
           SELECT nm.slave_id, 
-            coalesce(bs.barcode_id, 'UNKNOWN'), 
-            coalesce(bs.subnetwork_channel, -1), 
+            coalesce(bs.barcode_id, '(guess) '||nm.slave_id), 
+            coalesce(bs.subnetwork_channel, ?), 
             nm.master_id, 
             ap.network_segment
           FROM last_ap
@@ -50,9 +51,9 @@ class DatabaseQuery(object):
           JOIN network_membership nm 
             ON nm.master_id = last_ap.master_id 
             AND nm.cookie = last_ap.cookie
-          JOIN last_bs 
+          LEFT JOIN last_bs 
             ON nm.slave_id = last_bs.node_id
-          left JOIN bacon_settings bs
+          LEFT JOIN bacon_settings bs
             ON last_bs.node_id = bs.node_id 
             AND last_bs.cookie=bs.cookie
           WHERE ap.network_segment = ?
@@ -66,7 +67,8 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute(query, (constants.NS_ROUTER,))
+        self.cursor.execute(query,
+          (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_ROUTER,))
 
         output = {}
         for row in self.cursor:
@@ -85,9 +87,9 @@ class DatabaseQuery(object):
         """
         
         query ='''SELECT  
-            coalesce(bs.barcode_id, 'UNKNOWN') as barcode_id, 
+            coalesce(bs.barcode_id, '(guess) '||nm.slave_id) as barcode_id, 
             coalesce(bs.toast_interval, 0) as toast_interval, 
-            coalesce(bs.subnetwork_channel, -1) as subnetwork_channel, 
+            coalesce(bs.subnetwork_channel, ?) as subnetwork_channel, 
             coalesce(bs.cookie, 0) as cookie,
             nm.slave_id, nm.master_id, 
             ap.network_segment
@@ -115,7 +117,8 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
-        self.cursor.execute(query, (constants.NS_SUBNETWORK,))
+        self.cursor.execute(query,
+          (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_SUBNETWORK,))
 
         output = {}
         for row in self.cursor:
@@ -226,6 +229,7 @@ if __name__ == '__main__':
     db = DatabaseQuery("database0.sqlite")
     print "Leafs:",db.getLeafs()
     print "Routers:",db.getRouters()
+    print "LDR:",db.getLastDownloadResults(61)
     
 #     network = db.getNetwork()
 # 

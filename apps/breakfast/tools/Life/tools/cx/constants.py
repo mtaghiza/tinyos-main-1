@@ -18,13 +18,14 @@ NS_ROUTER=2
 
 CHANNEL_GLOBAL=128
 CHANNEL_ROUTER=64
+CHANNEL_SUBNETWORK_DEFAULT=0
 
 MAX_REQUEST_UNIT=2000
 DEFAULT_RADIO_CONFIG = {
   'probeInterval': 1024,
-  'globalChannel': 128,
-  'subNetworkChannel': 0,
-  'routerChannel': 64,
+  'globalChannel': CHANNEL_GLOBAL,
+  'subNetworkChannel': CHANNEL_SUBNETWORK_DEFAULT,
+  'routerChannel': CHANNEL_ROUTER,
   'globalInvFrequency': 4,
   'subNetworkInvFrequency': 1,
   'routerInvFrequency': 1,

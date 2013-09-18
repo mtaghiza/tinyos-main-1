@@ -18,6 +18,8 @@ from tools.dashboard.StatusFrame import StatusFrame
 from tools.dashboard.ScrollDisplayFrame import ScrollDisplayFrame
 from tools.dashboard.Hub import Hub
 
+from tools.cx.db.DatabaseInit import DatabaseInit
+
 def selectall(event):
     event.widget.select_range(0, END)
 
@@ -60,7 +62,10 @@ def shiftKeyReleased(key=None):
     hub.shiftKey = False
 
 if __name__ == '__main__':
-    dbFile = 'database0.sqlite'
+#     dbFile = 'database0.sqlite'
+    dbi = DatabaseInit('database')
+    dbFile = dbi.dbName
+    
     #
     #
     #
