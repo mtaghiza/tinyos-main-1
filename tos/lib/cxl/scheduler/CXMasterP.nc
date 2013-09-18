@@ -257,10 +257,6 @@ module CXMasterP {
     return sched->maxDepth[ns];
   }
 
-  command uint32_t SlotController.wakeupLen(uint8_t ns){
-    return (call GetProbeSchedule.get())->wakeupLen[ns];
-  }
-
 
   command void SlotController.receiveCTS(am_addr_t master, uint8_t ns){
     masters[ns] = master;

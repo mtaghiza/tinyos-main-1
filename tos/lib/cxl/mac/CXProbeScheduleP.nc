@@ -23,7 +23,7 @@ module CXProbeScheduleP {
   // from router (though router may store refs from leafs)
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 1, 1},
+    .invFrequency={4, 0, 1},
     .bw={2, 2, 2},
     .maxDepth={8,5,5}
   };

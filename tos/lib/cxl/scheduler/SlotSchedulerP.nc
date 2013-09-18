@@ -166,10 +166,14 @@ module SlotSchedulerP {
   uint32_t slowToFast(uint32_t slowTicks){
     return slowTicks * (FRAMELEN_FAST_NORMAL/FRAMELEN_SLOW);
   }
-
+  
   
   uint8_t activeNS;
   uint8_t wrxCount;
+
+  uint32_t wakeupLen(){
+    return ((call ProbeSchedule.get())->wakeupLen[activeNS]);
+  }
 
   uint16_t wakeupNum;
   event void LppControl.wokenUp(uint8_t ns){
@@ -184,7 +188,7 @@ module SlotSchedulerP {
       wakeupStartMilli = call LocalTime.get();
       slotNum = 0;
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
-        call SlotController.wakeupLen[activeNS](activeNS), 
+        wakeupLen(),
         activeNS);
       call RoutingTable.setDefault((call ProbeSchedule.get())->maxDepth[activeNS]);
       baseCTS = 0;
@@ -192,7 +196,7 @@ module SlotSchedulerP {
         activeNS, 
         (call ProbeSchedule.get())->channel[activeNS],
         DATA_TIMEOUT,
-        call SlotController.wakeupLen[activeNS](activeNS));
+        wakeupLen());
       cflushdbg(SCHED);
       wrxCount = 0;
       post nextRX();
@@ -762,7 +766,7 @@ module SlotSchedulerP {
 
   bool wakeupTimeoutStillGoing(uint32_t t){
     return (t - wakeupStart) 
-      < call SlotController.wakeupLen[activeNS](activeNS);
+      < wakeupLen();
   }
   
   #if LOG_NEIGHBORHOOD == 1
@@ -794,12 +798,11 @@ module SlotSchedulerP {
         // - allow rest of network to wake up
         // - add 1 slow frame for the first CTS to go down
         uint32_t remainingTime = slowToFast(
-            call SlotController.wakeupLen[activeNS](activeNS) - (t - wakeupStart) + FRAMELEN_SLOW);
+          wakeupLen() - (t - wakeupStart) + FRAMELEN_SLOW);
         error_t error;
         cdbg(SCHED_CHECKED, "rx for %lu / %lu (%lu)\r\n", 
-          remainingTime, 
-          call SlotController.wakeupLen[activeNS](activeNS),
-          slowToFast(call SlotController.wakeupLen[activeNS](activeNS)));
+          remainingTime, wakeupLen(), 
+          slowToFast(wakeupLen()));
         //Got an EBUSY here: this came from CXLinkP, where we were in
         //  state S_TX (perhaps sending a probe?)
         //Since we are no longer stillWaking, we start things up by
@@ -1050,10 +1053,6 @@ module SlotSchedulerP {
   }
   default command void SlotController.receiveCTS[uint8_t ns](am_addr_t m, uint8_t ans){}
   default command void SlotController.endSlot[uint8_t ns](){}
-  default command uint32_t SlotController.wakeupLen[uint8_t ns](uint8_t ns1){
-    cerror(SCHED, "Unwired WUL\r\n");
-    return 0;
-  }
 
   event void StateDump.dumpRequested(){}
 
