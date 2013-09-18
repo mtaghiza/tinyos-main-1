@@ -41,6 +41,15 @@ def computeFits(dbName):
             c.execute(q2, (node, rc, alpha, beta, r_sq))
     c.commit()
     c.close()
+    #TODO: compute relative fits
+
+    #TODO: for each absolute fit A (in order by r_sq)
+    #TODO:   for every segment with relative fit (R) to A that does not have
+    #            an absolute fit
+    #TODO:     compute an absolute fit on the basis of A and R for
+    #            this segment. r_sq for this fit should be... sum?
+    #            (this is the distance metric that jay spent so much
+    #            time thinking about)
 
 def rebuildTables(dbName):
     c = sqlite3.connect(dbName)
@@ -51,7 +60,10 @@ def rebuildTables(dbName):
     c.commit()
     c.close()
 
-if __name__ == '__main__':
-    dbName = sys.argv[1]
+def phoenix(dbName):
     rebuildTables(dbName)
     computeFits(dbName)
+
+if __name__ == '__main__':
+    dbName = sys.argv[1]
+    phoenix(dbName)

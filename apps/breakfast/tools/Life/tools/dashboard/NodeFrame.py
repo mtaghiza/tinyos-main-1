@@ -45,7 +45,6 @@ class NodeFrame(Frame):
         self.originalLeafs = copy.deepcopy(self.leafs)
 
         self.routers = self.db.getRouters()
-        print "Routers:", self.db.getRouters()
         self.originalRouters = copy.deepcopy(self.routers)
         
         self.multiplexers = self.db.getMultiplexers()

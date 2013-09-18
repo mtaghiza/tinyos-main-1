@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Phoenix
+import tools.cx.Phoenix as Phoenix
 import sys
 import sqlite3
 import os
@@ -167,13 +167,7 @@ def dump(dbName, baseDir, sep=','):
                     toast_id, str(sensor_channel), str(sensor_id), 
                     "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage])+'\n')
 
-if __name__ == '__main__':
-    dbName = 'database0.sqlite'
-    baseDir = 'data'
-    if len(sys.argv) > 1:
-        dbName = sys.argv[1]
-    if len(sys.argv) > 2:
-        baseDir = sys.argv[2]
+def dumpCSV(dbName='database0.sqlite', baseDir='data'):
     print "Dumping from %s to %s"%(dbName, baseDir)
     print "Generating timestamp tables"
     Phoenix.rebuildTables(dbName)
@@ -183,3 +177,13 @@ if __name__ == '__main__':
     deNormalize(dbName)
     print "dumping to .csv files"
     dump(dbName, baseDir)
+    
+
+if __name__ == '__main__':
+    dbName = 'database0.sqlite'
+    baseDir = 'data'
+    if len(sys.argv) > 1:
+        dbName = sys.argv[1]
+    if len(sys.argv) > 2:
+        baseDir = sys.argv[2]
+    dumpCSV(dbName, baseDir)

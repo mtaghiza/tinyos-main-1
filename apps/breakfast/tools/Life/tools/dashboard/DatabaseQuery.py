@@ -72,7 +72,7 @@ class DatabaseQuery(object):
 
         output = {}
         for row in self.cursor:
-          key = "%04d" % int(row[0])
+          key = "%04x" % int(row[0])
           data = row[1:3]
           
           output[key] = data

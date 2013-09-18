@@ -4,20 +4,28 @@ from Tkinter import *
 import tools.cx.constants as constants
 import tools.cx.CXController as CXController
 from tools.dashboard.DatabaseQuery import DatabaseQuery
+import tools.cx.DumpCSV as DumpCSV
 
 from threading import Thread
+
+
+def getDisplayVal(rootStr, channel):
+    return "%s (c. %u)"%(rootStr, channel)
 
 class ControlFrame(Frame):
 
     DEFAULT_TYPE_STRING = "All Types"
-    DEFAULT_DOWNLOAD_STRING = "Routers (c.  %u)"%(constants.CHANNEL_ROUTER)
+    DEFAULT_DOWNLOAD_STRING = getDisplayVal("Routers",
+      constants.CHANNEL_ROUTER)
     DEFAULT_SITE_STRING = "All Sites"
     SPACING = 10
+    DEFAULT_DATA_DIR = "data"
 
     def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
         
         self.db = DatabaseQuery(dbFile)
+        self.dbFile = dbFile
         self.hub = hub
         self.channels = [0, 31, 63, 95, 159, 191, 223]
         
@@ -89,7 +97,9 @@ class ControlFrame(Frame):
         self.downloadLabel.grid(column=0, row=0)
 
         self.downloadVar = StringVar()
-        self.downloadVar.set(self.DEFAULT_DOWNLOAD_STRING)
+#        self.downloadVar.set(self.DEFAULT_DOWNLOAD_STRING)
+        self.downloadVar.set(getDisplayVal("Manual Subnetwork",
+          constants.CHANNEL_SUBNETWORK_DEFAULT))
         self.downloadChannel = constants.CHANNEL_ROUTER
         self.networkSegment = constants.NS_ROUTER
         self.downloadOption = OptionMenu(self.downloadFrame,
@@ -102,9 +112,11 @@ class ControlFrame(Frame):
         self.downloadFrame.grid(column=3, row=0)
         #self.refreshButton = Button(self, text="Refresh", command=self.refresh)
         #self.refreshButton.grid(column=2, row=0)
+
+        
    
     def addDownloadOption(self, menu, rootStr, networkSegment, channel):
-        displayVal = "%s (c. %u)"%(rootStr, channel)
+        displayVal = getDisplayVal(rootStr, channel)
         menu.add_command(label=displayVal,
           command = lambda target=(displayVal, networkSegment, channel):
             self.selectDownloadTarget(target))
@@ -242,6 +254,8 @@ class ControlFrame(Frame):
         self.downloadThread.daemon = True
         self.downloadThread.start()
 
+        
+
     def downloadFinished(self):
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
@@ -249,7 +263,19 @@ class ControlFrame(Frame):
         masterId=61
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.hub.status.addMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
-        
+        self.hub.node.loadSettings()
+        self.hub.node.redrawAllNodes()
+        self.csvThread = Thread(target=self.csvRunner,
+          name="csvThread")
+        self.csvThread.daemon = True
+        self.csvThread.start()
+
+
+    def csvRunner(self):
+        self.hub.status.addMessage("Processing data to CSV files\n")
+        DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR)
+        self.hub.status.addMessage("CSV files ready (under %s)\n"%
+          self.DEFAULT_DATA_DIR )
 
     def refCallBack(self, node):
         self.hub.status.addMessage("Contacted %u.\n"%(node))
