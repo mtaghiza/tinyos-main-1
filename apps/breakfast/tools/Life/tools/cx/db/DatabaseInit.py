@@ -159,6 +159,15 @@ class DatabaseInit(object):
                                           distance INTEGER,
                                           PRIMARY KEY (master_id,
                                           cookie, slave_id))'''}
+    views = {'last_ap':'''CREATE VIEW last_ap AS
+                          SELECT master_id, network_segment, 
+                            max(cookie) as cookie 
+                          FROM active_period
+                          GROUP BY master_id, network_segment''',
+             'last_bs':'''CREATE VIEW last_bs AS
+                          SELECT bs.node_id, max(cookie) as cookie 
+                          FROM bacon_settings bs 
+                          GROUP BY node_id'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):
@@ -181,7 +190,20 @@ class DatabaseInit(object):
                             print "%s Found %s, expected %s"%(table, foundTables[table], DatabaseInit.tables[table])
                         else:
                             print "%s OK"%table
+                cursor.execute('''SELECT name, sql FROM sqlite_master WHERE type == 'view' ''')
+                foundViews = dict(cursor.fetchall())
+                for view in DatabaseInit.views:
+                    if view not in foundViews:
+                        print "%s missing"%view
+                        cursor.execute(DatabaseInit.views[view])
+                    else:
+                        if foundViews[view] != DatabaseInit.views[view]:
+                            print "%s Found %s, expected %s"%(view, foundViews[view], DatabaseInit.views[view])
+                        else:
+                            print "%s OK"%view
+
                 connection.commit();
+
  
                 # only set name if no exceptions thrown
                 self.dbName = dbFile

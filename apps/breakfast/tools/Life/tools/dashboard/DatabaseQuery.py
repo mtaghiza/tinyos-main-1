@@ -2,6 +2,8 @@
 
 import sqlite3
 
+import tools.cx.constants as constants
+
 class DatabaseQuery(object):
 
     def __init__(self, dbName):
@@ -36,12 +38,25 @@ class DatabaseQuery(object):
         """
         
         query = '''
-                SELECT bs.node_id, bs.barcode_id, bs.subnetwork_channel, max(ap.cookie)
-                FROM active_period AS ap, bacon_settings AS bs
-                WHERE ap.network_segment = 2 AND ap.master_id = bs.node_id
-                GROUP BY bs.node_id
-                ORDER BY bs.node_id
-                '''
+          SELECT nm.slave_id, 
+            coalesce(bs.barcode_id, 'UNKNOWN'), 
+            coalesce(bs.subnetwork_channel, -1), 
+            nm.master_id, 
+            ap.network_segment
+          FROM last_ap
+          JOIN active_period ap 
+            ON last_ap.master_id = ap.master_id 
+            AND last_ap.cookie = ap.cookie
+          JOIN network_membership nm 
+            ON nm.master_id = last_ap.master_id 
+            AND nm.cookie = last_ap.cookie
+          JOIN last_bs 
+            ON nm.slave_id = last_bs.node_id
+          left JOIN bacon_settings bs
+            ON last_bs.node_id = bs.node_id 
+            AND last_bs.cookie=bs.cookie
+          WHERE ap.network_segment = ?
+            AND nm.slave_id != nm.master_id'''
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
@@ -51,16 +66,14 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute(query)
+        self.cursor.execute(query, (constants.NS_ROUTER,))
 
         output = {}
         for row in self.cursor:
-            if len(row) == 4:
-                if row[0] is not None:
-                    key = "%04d" % int(row[0])
-                    data = row[1:3]
-                    
-                    output[key] = data
+          key = "%04d" % int(row[0])
+          data = row[1:3]
+          
+          output[key] = data
         
         return output
 
@@ -71,13 +84,28 @@ class DatabaseQuery(object):
         This is complimentary to what is found in the network.settings file.
         """
         
-        query = '''
-                SELECT bs.barcode_id, bs.toast_interval, bs.subnetwork_channel, max(ap.cookie)
-                FROM active_period AS ap, bacon_settings AS bs
-                WHERE ap.network_segment = 0 AND ap.master_id = bs.node_id
-                GROUP BY ap.master_id
-                ORDER BY ap.master_id 
-                '''
+        query ='''SELECT  
+            coalesce(bs.barcode_id, 'UNKNOWN') as barcode_id, 
+            coalesce(bs.toast_interval, 0) as toast_interval, 
+            coalesce(bs.subnetwork_channel, -1) as subnetwork_channel, 
+            coalesce(bs.cookie, 0) as cookie,
+            nm.slave_id, nm.master_id, 
+            ap.network_segment
+          FROM last_ap
+          JOIN active_period ap 
+            ON last_ap.master_id = ap.master_id 
+            AND last_ap.cookie = ap.cookie
+          JOIN network_membership nm 
+            ON nm.master_id = last_ap.master_id 
+            AND nm.cookie = last_ap.cookie
+          JOIN last_bs 
+            ON nm.slave_id = last_bs.node_id
+          left JOIN bacon_settings bs
+            ON last_bs.node_id = bs.node_id 
+            AND last_bs.cookie=bs.cookie
+          WHERE ap.network_segment = ?
+            AND nm.slave_id != nm.master_id;
+        '''
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
@@ -87,15 +115,12 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
-        self.cursor.execute(query)
+        self.cursor.execute(query, (constants.NS_SUBNETWORK,))
 
         output = {}
         for row in self.cursor:
-            if len(row) == 4:
-                if row[0] is not None:
-                    # row[0]: barcode, row[1]: bacon interval, row[2]: toast interval
-                    key = row[0]
-                    output[key] = row[1:3]
+          key = row[0]
+          output[key] = row[1:3]
         
         return output
 
@@ -198,20 +223,22 @@ class DatabaseQuery(object):
 
 
 if __name__ == '__main__':
-    db = DatabaseQuery("example.db")
+    db = DatabaseQuery("database0.sqlite")
+    print "Leafs:",db.getLeafs()
+    print "Routers:",db.getRouters()
     
-    network = db.getNetwork()
-
-    #for node in network:
-        #print node, network[node]
-        #for plex in network[node]:
-        #    print node, plex
-
-    settings = db.getSettings()
-
-    for i, n in enumerate(sorted(settings.iterkeys())):
-        print i, n
-    
-    #for node in settings:
-    #    print node, settings[node]
-    
+#     network = db.getNetwork()
+# 
+#     #for node in network:
+#         #print node, network[node]
+#         #for plex in network[node]:
+#         #    print node, plex
+# 
+#     settings = db.getSettings()
+# 
+#     for i, n in enumerate(sorted(settings.iterkeys())):
+#         print i, n
+#     
+#     #for node in settings:
+#     #    print node, settings[node]
+#     
