@@ -28,6 +28,7 @@ module CXMasterP {
   uint8_t totalNodes;
   uint8_t activeNS = NS_INVALID;
   uint8_t maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
+  uint8_t maxAttempts = DEFAULT_MAX_ATTEMPTS;
 
   am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 
                                      AM_BROADCAST_ADDR, 
@@ -70,6 +71,7 @@ module CXMasterP {
         memset(contactList, 0xFF, sizeof(contactList));
         contactList[0].nodeId = call ActiveMessageAddress.amAddress();
         contactList[0].dataPending = TRUE;
+        contactList[0].failedAttempts = 0;
         contactIndex = 0;
         totalNodes = 1;
         numRounds = 0;
@@ -115,7 +117,9 @@ module CXMasterP {
     //Loop through contact list (wrapping contactIndex at totalNodes) until you either:
     // - hit a node with pending data
     // - complete the maxRounds-th loop of the entire list
-    while (numRounds < maxRounds && !contactList[contactIndex].dataPending){
+    while (numRounds < maxRounds 
+        && (!contactList[contactIndex].dataPending 
+          || (contactList[contactIndex].failedAttempts >= maxAttempts))){
       contactIndex++;
       if (contactIndex >= totalNodes){
         contactIndex = contactIndex % totalNodes;
@@ -126,6 +130,8 @@ module CXMasterP {
     //If the above loop did not put you over the maxRounds limit, then
     // we're pointing at a node with pending data. go go go
     if (numRounds < maxRounds){
+      //don't worry, we'll decrement this if we get a status back
+      contactList[contactIndex].failedAttempts ++;
       return TRUE;
     }else {
       //If we did exceed the limit, then we're done, and contactIndex
@@ -153,6 +159,7 @@ module CXMasterP {
     uint8_t i;
     uint8_t k;
     contactList[contactIndex].dataPending = pl->dataPending;
+    contactList[contactIndex].failedAttempts--;
 //    printf("pl %p\r\n", pl->neighbors);
 //    cdbg(ROUTER, "rs %u %u\r\n", 
 //      contactList[contactIndex].nodeId,
@@ -185,6 +192,7 @@ module CXMasterP {
           if (totalNodes < CX_MAX_SUBNETWORK_SIZE){
             contactList[totalNodes].nodeId = pl->neighbors[i];
             contactList[totalNodes].dataPending = TRUE;
+            contactList[totalNodes].failedAttempts = 0;
 //            printf( "A %x %u->%u\r\n",
 //              pl->neighbors[i], 
 //              i,
