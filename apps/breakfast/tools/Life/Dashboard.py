@@ -74,8 +74,11 @@ if __name__ == '__main__':
     
     hub = Hub()    
     
-    WIDTH = 1400
-    HEIGHT = 630
+    controlHeight=80
+    centerHeight=500
+    statusHeight=80
+    WIDTH = 1080
+    HEIGHT = controlHeight+centerHeight+statusHeight
     MAIN = WIDTH * 2/3
     
     root.geometry(str(WIDTH) + "x" + str(HEIGHT))
@@ -121,23 +124,28 @@ if __name__ == '__main__':
     #
     # Frames on top of canvas
     #
-    topFrame = ControlFrame(rootFrame, hub, dbFile, width=WIDTH-4, height=40, bd=1, relief=SUNKEN)
+    topFrame = ControlFrame(rootFrame, hub, dbFile, width=WIDTH-4,
+      height=controlHeight, bd=1, relief=SUNKEN)
     topFrame.grid_propagate(False)
     topFrame.grid(column=1, row=1, columnspan=2)
     hub.addControlFrame(topFrame)
     
-    displayFrame = ScrollDisplayFrame(rootFrame, hub, width=WIDTH-MAIN-4, height=500, bd=1, relief=SUNKEN)
+    displayFrame = ScrollDisplayFrame(rootFrame, hub,
+      width=WIDTH-MAIN-4, height=centerHeight, 
+      bd=1, relief=SUNKEN)
     displayFrame.grid_propagate(False)
     displayFrame.grid(column=2, row=2)
     hub.addDisplayFrame(displayFrame.frame)
     displayFrame.frame.addSimplot(simplot)
     
-    nodeFrame = ScrollNodeFrame(rootFrame, hub, dbFile, width=MAIN-4, height=500, bd=1, relief=SUNKEN)
+    nodeFrame = ScrollNodeFrame(rootFrame, hub, dbFile, width=MAIN-4,
+      height=centerHeight, bd=1, relief=SUNKEN)
     nodeFrame.grid_propagate(False)
     nodeFrame.grid(column=1, row=2)
     hub.addNodeFrame(nodeFrame.frame)
     
-    statusFrame = StatusFrame(rootFrame, hub, width=WIDTH-4, height=40, bd=1, relief=SUNKEN)
+    statusFrame = StatusFrame(rootFrame, hub, width=WIDTH-4,
+      height=statusHeight, bd=1, relief=SUNKEN)
     statusFrame.grid_propagate(False)
     statusFrame.grid(column=1, row=3, columnspan=2)
     hub.addStatusFrame(statusFrame)

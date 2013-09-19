@@ -84,17 +84,12 @@ class ControlFrame(Frame):
     
 
     def initUI(self):
-        self.comVar = StringVar()        
-        self.comVar.set(self.DEFAULT_COM_STRING)
-        self.comOption = OptionMenu(self, self.comVar,
-          [self.DEFAULT_COM_STRING])
-        self.comOption.config(width=25)
-        self.comOption.grid(column=0,row=0)
-
+        self.selectionFrame = Frame(self, padx=self.SPACING)
+        self.selectionFrame.grid(column=0, row=0)
         #
         #
         #
-        self.allFrame = Frame(self, padx=self.SPACING)
+        self.allFrame = Frame(self.selectionFrame, padx=self.SPACING)
         
         self.allLabel = Label(self.allFrame, text="All: ")
         self.allLabel.grid(column=0, row=0)
@@ -109,13 +104,13 @@ class ControlFrame(Frame):
         self.allButton = Button(self.allFrame, text="Select", command=self.selectAll)
         self.allButton.grid(column=2, row=0)
         
-        self.allFrame.grid(column=1, row=0)
+        self.allFrame.grid(column=0, row=0)
 
 
         #
         #
         #
-        self.siteFrame = Frame(self, padx=self.SPACING)
+        self.siteFrame = Frame(self.selectionFrame, padx=self.SPACING)
         
         self.siteLabel = Label(self.siteFrame, text="Site: ")
         self.siteLabel.grid(column=0, row=0)
@@ -137,15 +132,15 @@ class ControlFrame(Frame):
         self.siteButton = Button(self.siteFrame, text="Select", command=self.selectSite)
         self.siteButton.grid(column=3, row=0)
 
-        self.siteFrame.grid(column=2, row=0)
+        self.siteFrame.grid(column=0, row=1)
         
         #
         #
         #
-        self.commitFrame = Frame(self, padx=self.SPACING)
+        self.commitFrame = Frame(self.selectionFrame, padx=self.SPACING)
         self.commitButton = Button(self.commitFrame, text="Commit Changes", command=self.commitChanges)
         self.commitButton.grid(column=0, row=0)
-        self.commitFrame.grid(column=3, row=0)
+        self.commitFrame.grid(column=2, row=0)
         
         #
         self.downloadFrame = Frame(self, padx=self.SPACING)
@@ -160,9 +155,18 @@ class ControlFrame(Frame):
         self.selectDownloadTarget(self.DEFAULT_DOWNLOAD_TARGET)
         self.downloadOption.grid(column=1, row=0)
 
+        self.comVar = StringVar()        
+        self.comVar.set(self.DEFAULT_COM_STRING)
+        self.comOption = OptionMenu(self.downloadFrame, self.comVar,
+          [self.DEFAULT_COM_STRING])
+        self.comOption.config(width=25)
+        self.comOption.grid(column=0,row=1)
+
         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
-        self.downloadButton.grid(column=2, row=0)
-        self.downloadFrame.grid(column=4, row=0)
+        self.downloadButton.grid(column=1, row=1)
+
+
+        self.downloadFrame.grid(column=3, row=0)
 
         self.deviceDetection()
 
