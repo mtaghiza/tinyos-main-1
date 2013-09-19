@@ -80,8 +80,14 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
         finishedCallBack=None):
     print packetSource
     db = Database.Database()
-    d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
-    bsId = d.mif.bsId
+    try:
+        d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
+        bsId = d.mif.bsId
+    except:
+        if finishedCallBack:
+            finishedCallBack(constants.BCAST_ADDR, """Could not connect to base station.
+              Make sure you've selected the right device and make sure
+              it has been set up as a base station.""")
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
@@ -158,7 +164,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
         d.stop()
     print "done for real"
     if finishedCallBack:
-        finishedCallBack(d.mif.bsId)
+        finishedCallBack(d.mif.bsId, "Finished.\n")
 
 def pushConfig(packetSource, networkSegment, configFile,
       newConfigFile, nodeList):

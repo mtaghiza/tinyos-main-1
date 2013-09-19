@@ -303,6 +303,7 @@ class ControlFrame(Frame):
           finishedCallBack=self.downloadFinished )
 
     def download(self):
+        self.hub.status.addMessage("Download Started\n")
         print "Download: %u %u %s"%(self.networkSegment,
           self.downloadChannel, self.comDict[self.comVar.get()])
         self.downloadButton.config(text="DOWNLOADING", bg="red",
@@ -314,7 +315,8 @@ class ControlFrame(Frame):
 
         
 
-    def downloadFinished(self, masterId):
+    def downloadFinished(self, masterId, message):
+        self.hub.status.addMessage(message)
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
@@ -334,7 +336,7 @@ class ControlFrame(Frame):
           self.DEFAULT_DATA_DIR )
 
     def refCallBack(self, node):
-        self.hub.status.addMessage("Contacted %u.\n"%(node))
+        self.hub.status.addMessage("Contacted %x.\n"%(node))
     
     def commitChanges(self):
         print "Commit Changes"

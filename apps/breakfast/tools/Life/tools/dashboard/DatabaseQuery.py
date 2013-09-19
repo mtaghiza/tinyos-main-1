@@ -40,7 +40,7 @@ class DatabaseQuery(object):
         
         query = '''
           SELECT nm.slave_id, 
-            coalesce(bs.barcode_id, '(guess) '||nm.slave_id), 
+            coalesce(bs.barcode_id, 'X'), 
             coalesce(bs.subnetwork_channel, ?), 
             nm.master_id, 
             ap.network_segment
@@ -73,6 +73,8 @@ class DatabaseQuery(object):
         output = {}
         for row in self.cursor:
           key = "%04x" % int(row[0])
+          if row[1] == 'X':
+              row[1] = "(?) %x"%(row[0])
           data = row[1:3]
           
           output[key] = data
@@ -87,7 +89,7 @@ class DatabaseQuery(object):
         """
         
         query ='''SELECT  
-            coalesce(bs.barcode_id, '(guess) '||nm.slave_id) as barcode_id, 
+            coalesce(bs.barcode_id, 'X') as barcode_id, 
             coalesce(bs.toast_interval, 0) as toast_interval, 
             coalesce(bs.subnetwork_channel, ?) as subnetwork_channel, 
             coalesce(bs.cookie, 0) as cookie,
@@ -100,9 +102,9 @@ class DatabaseQuery(object):
           JOIN network_membership nm 
             ON nm.master_id = last_ap.master_id 
             AND nm.cookie = last_ap.cookie
-          JOIN last_bs 
+          LEFT JOIN last_bs 
             ON nm.slave_id = last_bs.node_id
-          left JOIN bacon_settings bs
+          LEFT JOIN bacon_settings bs
             ON last_bs.node_id = bs.node_id 
             AND last_bs.cookie=bs.cookie
           WHERE ap.network_segment = ?
@@ -122,6 +124,8 @@ class DatabaseQuery(object):
 
         output = {}
         for row in self.cursor:
+          if row[0] == 'X':
+              row[0] = '(?) %x'%(row[4]) 
           key = row[0]
           output[key] = row[1:3]
         
