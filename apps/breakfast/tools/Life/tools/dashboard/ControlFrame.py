@@ -15,11 +15,17 @@ def getDisplayVal(rootStr, channel):
 class ControlFrame(Frame):
 
     DEFAULT_TYPE_STRING = "All Types"
-    DEFAULT_DOWNLOAD_STRING = getDisplayVal("Routers",
-      constants.CHANNEL_ROUTER)
+    ROUTERS_STR = "Routers"
+    SUBNETWORK_STR = "Manual Subnetwork"
+    GLOBAL_STR = "Global"
+    DEFAULT_DOWNLOAD_TARGET = (getDisplayVal(SUBNETWORK_STR, 
+      constants.CHANNEL_SUBNETWORK_DEFAULT), 
+      constants.NS_SUBNETWORK, 
+      constants.CHANNEL_SUBNETWORK_DEFAULT)    
     DEFAULT_SITE_STRING = "All Sites"
     SPACING = 10
     DEFAULT_DATA_DIR = "data"
+    MASTER_ID=21
 
     def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
@@ -97,14 +103,10 @@ class ControlFrame(Frame):
         self.downloadLabel.grid(column=0, row=0)
 
         self.downloadVar = StringVar()
-#        self.downloadVar.set(self.DEFAULT_DOWNLOAD_STRING)
-        self.downloadVar.set(getDisplayVal("Manual Subnetwork",
-          constants.CHANNEL_SUBNETWORK_DEFAULT))
-        self.downloadChannel = constants.CHANNEL_ROUTER
-        self.networkSegment = constants.NS_ROUTER
         self.downloadOption = OptionMenu(self.downloadFrame,
           self.downloadVar, [])
         self.updateDownloadOptions({})
+        self.selectDownloadTarget(self.DEFAULT_DOWNLOAD_TARGET)
         self.downloadOption.grid(column=1, row=0)
 
         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
@@ -124,10 +126,10 @@ class ControlFrame(Frame):
     def updateDownloadOptions(self, siteChannels):
         menu = self.downloadOption["menu"]
         menu.delete(0, "end")
-        self.addDownloadOption(menu, "Routers", 
+        self.addDownloadOption(menu, self.ROUTERS_STR, 
           constants.NS_ROUTER, 
           constants.CHANNEL_ROUTER)
-        self.addDownloadOption(menu, "Global",
+        self.addDownloadOption(menu, self.GLOBAL_STR,
           constants.NS_GLOBAL, 
           constants.CHANNEL_GLOBAL)
         for channel in sorted(siteChannels):
@@ -136,7 +138,7 @@ class ControlFrame(Frame):
               constants.NS_SUBNETWORK,
               channel)
         for channel in self.channels:
-            self.addDownloadOption(menu, "Manual Subnetwork",
+            self.addDownloadOption(menu, self.SUBNETWORK_STR,
               constants.NS_SUBNETWORK, 
               channel)
 
@@ -226,6 +228,7 @@ class ControlFrame(Frame):
 
     def selectDownloadTarget(self, t):
         (displayVal, networkSegment, target) = t
+        print "SDT:", t
         self.downloadVar.set(displayVal)
         self.networkSegment = networkSegment
         self.downloadChannel = target
@@ -240,7 +243,8 @@ class ControlFrame(Frame):
         # download we are doing).
         configMap= {'subNetworkChannel':self.downloadChannel}
         #TODO: pull these settings from somewhere...?
-        CXController.download('serial@/dev/ttyUSB0:115200', 61,
+        CXController.download('serial@/dev/ttyUSB0:115200',
+          self.MASTER_ID,
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
           finishedCallBack=self.downloadFinished )
@@ -260,7 +264,7 @@ class ControlFrame(Frame):
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
         #TODO: where does this come from?
-        masterId=61
+        masterId=self.MASTER_ID
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.hub.status.addMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
         self.hub.node.loadSettings()
