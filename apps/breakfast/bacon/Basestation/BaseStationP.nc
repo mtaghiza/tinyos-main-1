@@ -36,12 +36,15 @@ module BaseStationP @safe() {
   uses interface AMPacket as RadioAMPacket;
   uses interface CXLinkPacket;
 
+  uses interface ActiveMessageAddress;
+
   
   //Control interfaces: separated from the am_id agnostic forwarding
   //code.
   uses interface Receive as CXDownloadReceive;
   uses interface AMSend as CtrlAckSend;
   uses interface AMSend as CXDownloadFinishedSend;
+  uses interface AMSend as IDResponseSend;
 
   uses interface CXDownload[uint8_t ns];
 
@@ -222,9 +225,32 @@ implementation
   task void prepareRadio();
   task void txRadio();
 
+  task void sendIDResponse(){
+    message_t* m = call Pool.get();
+    if (m != NULL){
+      identify_response_t* pl = call SerialPacket.getPayload(m,
+        sizeof(identify_response_t));
+      call SerialPacket.clear(m);
+      pl -> self = call ActiveMessageAddress.amAddress();
+      call SerialAMPacket.setSource(m, 
+        call ActiveMessageAddress.amAddress());
+      call IDResponseSend.send(0, m, sizeof(identify_response_t));
+    }else{
+      cerror(BASESTATION, "IDRE\r\n");
+    }
+  }
+
+  event void IDResponseSend.sendDone(message_t* m, error_t error){
+    call Pool.put(m);
+  }
+
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
+    if (id == AM_IDENTIFY_REQUEST){
+      post sendIDResponse();
+      return msg;
+    }
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
       cdbg(BASESTATION, "Serial full\r\n");
       cflushdbg(BASESTATION);
@@ -335,6 +361,8 @@ implementation
       ackRMsg = ackMsg;
       call SerialPacket.clear(ackMsg);
       pl -> error = error;
+      call SerialAMPacket.setSource(ackMsg, 
+        call ActiveMessageAddress.amAddress());
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
       if (error != SUCCESS){
         cerror(BASESTATION, "Couldn't send radio TX ack %x\r\n",
@@ -407,6 +435,8 @@ implementation
       ackDMsg = ackMsg;
       call SerialPacket.clear(ackMsg);
       pl -> error = downloadError;
+      call SerialAMPacket.setSource(ackMsg, 
+        call ActiveMessageAddress.amAddress());
       error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
       if (error != SUCCESS){
         cdbg(BASESTATION, "Couldn't ack download %x\r\n", error);
@@ -433,6 +463,8 @@ implementation
       error_t error;
       call SerialPacket.clear(ctrlMsg);
       pl -> networkSegment = segment;
+      call SerialAMPacket.setSource(ctrlMsg, 
+        call ActiveMessageAddress.amAddress());
       error = call CXDownloadFinishedSend.send(0, ctrlMsg,
         sizeof(cx_download_finished_t));
       if (error != SUCCESS){
@@ -486,6 +518,8 @@ implementation
     pl -> node = node;
     pl -> rc = rc;
     pl -> ts = ts;
+    call SerialAMPacket.setSource(statusMsg, 
+      call ActiveMessageAddress.amAddress());
     if (SUCCESS != call StatusTimeRefSend.send(0, statusMsg, sizeof(status_time_ref_t))){
       cdbg(BASESTATION, "P sr!\r\n");
       call Pool.put(statusMsg);
@@ -513,5 +547,7 @@ implementation
     ftCount ++;
     printfflush();
   }
+
+  async event void ActiveMessageAddress.changed(){}
 
 }  

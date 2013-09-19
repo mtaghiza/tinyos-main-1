@@ -76,6 +76,10 @@ implementation {
     as StatusTimeRefSend;
   BaseStationP.StatusTimeRefSend -> StatusTimeRefSend;
 
+  components new SerialAMSenderC(AM_IDENTIFY_RESPONSE) 
+    as IDResponseSend;
+  BaseStationP.IDResponseSend -> IDResponseSend;
+
   components new DummyLogWriteC();
   components SettingsStorageC;
   SettingsStorageC.LogWrite -> DummyLogWriteC;
@@ -99,5 +103,8 @@ implementation {
 
   components new TimerMilliC();
   BaseStationP.FlushTimer -> TimerMilliC;
+
+  components CXAMAddressC;
+  BaseStationP.ActiveMessageAddress -> CXAMAddressC;
 
 }
