@@ -74,7 +74,7 @@ if __name__ == '__main__':
     
     hub = Hub()    
     
-    WIDTH = 1280
+    WIDTH = 1400
     HEIGHT = 630
     MAIN = WIDTH * 2/3
     

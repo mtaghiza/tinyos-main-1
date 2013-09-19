@@ -7,12 +7,14 @@ from tools.dashboard.DatabaseQuery import DatabaseQuery
 import tools.cx.DumpCSV as DumpCSV
 
 from threading import Thread
+from tools.serial.tools.list_ports import comports
 
 
 def getDisplayVal(rootStr, channel):
     return "%s (c. %u)"%(rootStr, channel)
 
 class ControlFrame(Frame):
+    DEFAULT_COM_STRING = "<no device detected>"
 
     DEFAULT_TYPE_STRING = "All Types"
     ROUTERS_STR = "Routers"
@@ -33,11 +35,61 @@ class ControlFrame(Frame):
         self.dbFile = dbFile
         self.hub = hub
         self.channels = [0, 31, 63, 95, 159, 191, 223]
-        
+        self.connected = False
+        self.comDict={}
         self.initUI()
 
+    def deviceDetection(self):
+        """ Detect serial devices by using the built-in comports command in pyserial.
+        """
+        # make dictionary with (description, comport)
+        newDict = {}
+        ports = sorted(comports())
+        for port, desc, hwid in ports:
+            newDict[desc] = port
+        
+        # call disconnect function if the current device disappears
+        if self.connected and self.comVar.get() not in newDict:
+            self.disconnect()
+        
+        # update menu when not currently connected
+        if newDict != self.comDict:
+            
+            # reset menu
+            menu = self.comOption["menu"]
+            menu.delete(0, "end")
+            
+            # keep current selection
+            oldIndex = self.comVar.get()
+            
+            # if devices were found
+            if newDict:
+                
+                # populate menu
+                for key in sorted(newDict.keys()):    
+                    menu.add_command(label=key, command=Tkinter._setit(self.comVar, key))
+                
+                # choose first port if no port was previously selected
+                if oldIndex not in newDict:
+                    self.comVar.set(ports[0][1])
+                self.downloadButton.config(state=NORMAL )
+            else:
+                menu.add_command(label=self.DEFAULT_COM_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_COM_STRING))
+                self.comVar.set(self.DEFAULT_COM_STRING)
+                self.downloadButton.config(state=DISABLED )
+            # update
+            self.comDict = newDict
+        # run detection again after 1000 ms
+        self.comOption.after(1000, self.deviceDetection)
+    
 
     def initUI(self):
+        self.comVar = StringVar()        
+        self.comVar.set(self.DEFAULT_COM_STRING)
+        self.comOption = OptionMenu(self, self.comVar,
+          [self.DEFAULT_COM_STRING])
+        self.comOption.config(width=25)
+        self.comOption.grid(column=0,row=0)
 
         #
         #
@@ -57,7 +109,7 @@ class ControlFrame(Frame):
         self.allButton = Button(self.allFrame, text="Select", command=self.selectAll)
         self.allButton.grid(column=2, row=0)
         
-        self.allFrame.grid(column=0, row=0)
+        self.allFrame.grid(column=1, row=0)
 
 
         #
@@ -85,7 +137,7 @@ class ControlFrame(Frame):
         self.siteButton = Button(self.siteFrame, text="Select", command=self.selectSite)
         self.siteButton.grid(column=3, row=0)
 
-        self.siteFrame.grid(column=1, row=0)
+        self.siteFrame.grid(column=2, row=0)
         
         #
         #
@@ -93,7 +145,7 @@ class ControlFrame(Frame):
         self.commitFrame = Frame(self, padx=self.SPACING)
         self.commitButton = Button(self.commitFrame, text="Commit Changes", command=self.commitChanges)
         self.commitButton.grid(column=0, row=0)
-        self.commitFrame.grid(column=2, row=0)
+        self.commitFrame.grid(column=3, row=0)
         
         #
         self.downloadFrame = Frame(self, padx=self.SPACING)
@@ -110,9 +162,9 @@ class ControlFrame(Frame):
 
         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
         self.downloadButton.grid(column=2, row=0)
-        self.downloadFrame.grid(column=3, row=0)
-        #self.refreshButton = Button(self, text="Refresh", command=self.refresh)
-        #self.refreshButton.grid(column=2, row=0)
+        self.downloadFrame.grid(column=4, row=0)
+
+        self.deviceDetection()
 
         
    
@@ -241,14 +293,14 @@ class ControlFrame(Frame):
         # globalChannel or routerChannel (depending on the type of
         # download we are doing).
         configMap= {'subNetworkChannel':self.downloadChannel}
-        #TODO: how to figure out the USB?
-        CXController.download('serial@/dev/ttyUSB0:115200',
+        CXController.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
           finishedCallBack=self.downloadFinished )
 
     def download(self):
-        print "Download: %u %u"%(self.networkSegment, self.downloadChannel)
+        print "Download: %u %u %s"%(self.networkSegment,
+          self.downloadChannel, self.comDict[self.comVar.get()])
         self.downloadButton.config(text="DOWNLOADING", bg="red",
           state=DISABLED)
         self.downloadThread = Thread(target=self.downloadRunner,
