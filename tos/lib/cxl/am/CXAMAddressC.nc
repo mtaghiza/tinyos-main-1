@@ -9,6 +9,7 @@ configuration CXAMAddressC{
   #endif
 
   #if AM_ID_FROM_FLASH == 1
+  #warning "Load AM ID from flash"
   components CXAMInitC;
   CXAMInitC.ActiveMessageAddress -> Ieee154AMAddressC;
   #else
