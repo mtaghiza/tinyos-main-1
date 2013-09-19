@@ -127,6 +127,8 @@ MIGCLASSES += $(CXMIGDIR)/CxRecordRequestMsg.py $(CXMIGDIR)/LogRecordDataMsg.py
 MIGCLASSES += $(CXMIGDIR)/SetSettingsStorageMsg.py
 MIGCLASSES += $(CXMIGDIR)/PingMsg.py $(CXMIGDIR)/PongMsg.py 
 MIGCLASSES += $(CXMIGDIR)/PrintfMsg.py
+MIGCLASSES += $(CXMIGDIR)/IdentifyRequest.py $(CXMIGDIR)/IdentifyResponse.py
+
 
 
 $(LPPMIGDIR):
@@ -141,7 +143,10 @@ $(CXMIGDIR):
 $(CXMIGDIR)/CxDownload.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/scheduler/CXRouter.h $@ $(CFLAGS) 
 
-$(CXMIGDIR)/%.py: $(CXMIGDIR)
+$(CXMIGDIR)/PingMsg.py: $(CXMIGDIR)
+	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
+
+$(CXMIGDIR)/PongMsg.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/Ping/ping.h $@ $(CFLAGS) 
 
 $(CXMIGDIR)/CxRecordRequestMsg.py: $(CXMIGDIR)
