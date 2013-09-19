@@ -36,3 +36,4 @@ DEFAULT_RADIO_CONFIG = {
   'subNetworkMaxDepth':5,
   'routerMaxDepth': 5,
   'maxDownloadRounds':10}
+BCAST_ADDR= 0xFFFF

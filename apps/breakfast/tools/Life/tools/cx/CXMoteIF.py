@@ -8,6 +8,9 @@ from tools.cx.listeners.CtrlAckListener import CtrlAckListener
 from tools.cx.messages.CtrlAck import CtrlAck
 
 from tools.cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedListener
+from tools.cx.listeners.IdentifyResponseListener import IdentifyResponseListener
+from tools.cx.messages.IdentifyResponse import IdentifyResponse
+from tools.cx.messages.IdentifyRequest import IdentifyRequest
 from tools.cx.messages.CxDownloadFinished import CxDownloadFinished
 from tools.cx.messages import SetProbeSchedule
 from tools.cx.messages import SetMaxDownloadRounds
@@ -18,20 +21,33 @@ class MultipleSourceException(Exception):
     pass
 
 class CXMoteIF(MoteIF):
-    def __init__(self, bsId):
+    def __init__(self):
         MoteIF.__init__(self)
         self.ackQueue = Queue.Queue()
         self.addListener(CtrlAckListener(self.ackQueue),
           CtrlAck)
         self.finishedListener = CxDownloadFinishedListener()
         self.addListener(self.finishedListener, CxDownloadFinished)
+
+        self.identifyResponseListener = IdentifyResponseListener()
+        self.addListener(self.identifyResponseListener,
+          IdentifyResponse)
+
         #TODO: less arbitrary. In fact, we should probably be waiting
         # until we get a downloadFinished. Might be helpful to add 
         # downloadOngoing / haltDownload packets?
         self.sendTimeout = 30
         self.retryLimit = 0
         self.source = None
-        self.bsId = bsId
+
+    def identifyMote(self):
+        identifyRequestMsg = IdentifyRequest()
+        with self.identifyResponseListener.identifiedCV:
+            self.send(constants.BCAST_ADDR, identifyRequestMsg, False)
+            self.identifyResponseListener.identifiedCV.wait(1)
+        self.bsId = self.identifyResponseListener.moteId
+        return self.bsId != constants.BCAST_ADDR
+        
 
     def configureMoteRadio(self, moteId, config):
         radioConfig = constants.DEFAULT_RADIO_CONFIG.copy()

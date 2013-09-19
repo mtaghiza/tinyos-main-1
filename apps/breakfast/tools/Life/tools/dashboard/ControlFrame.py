@@ -25,7 +25,6 @@ class ControlFrame(Frame):
     DEFAULT_SITE_STRING = "All Sites"
     SPACING = 10
     DEFAULT_DATA_DIR = "data"
-    MASTER_ID=21
 
     def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
@@ -242,9 +241,8 @@ class ControlFrame(Frame):
         # globalChannel or routerChannel (depending on the type of
         # download we are doing).
         configMap= {'subNetworkChannel':self.downloadChannel}
-        #TODO: pull these settings from somewhere...?
+        #TODO: how to figure out the USB?
         CXController.download('serial@/dev/ttyUSB0:115200',
-          self.MASTER_ID,
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
           finishedCallBack=self.downloadFinished )
@@ -260,11 +258,9 @@ class ControlFrame(Frame):
 
         
 
-    def downloadFinished(self):
+    def downloadFinished(self, masterId):
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
-        #TODO: where does this come from?
-        masterId=self.MASTER_ID
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.hub.status.addMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
         self.hub.node.loadSettings()

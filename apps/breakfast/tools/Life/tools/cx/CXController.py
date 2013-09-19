@@ -36,29 +36,33 @@ from tools.cx import constants
 from tools.cx.messages import SetBaconSampleInterval
 from tools.cx.messages import SetToastSampleInterval
 
+
 class Dispatcher(object):
-    def __init__(self, motestring, bsId, db, configMap={},
+    def __init__(self, motestring, db, configMap={},
       configFile=None):
         #hook up to mote
-        self.mif = CXMoteIF(bsId)
+        self.mif = CXMoteIF()
         self.tos_source = self.mif.addSource(motestring)
-        #format printf's correctly
-        self.mif.addListener(PrintfListener.PrintfListener(bsId), 
-          PrintfMsg.PrintfMsg)
-        self.mif.addListener(RecordListener.RecordListener(db), 
-          LogRecordDataMsg.LogRecordDataMsg)
-        self.mif.addListener(PongListener.PongListener(), 
-          PongMsg.PongMsg)
-        if configFile:
-            #evaluate each key:=value pair and stick it into config
-            with open(configFile, 'r') as f:
-                for line in f:
-                    if not line.startswith('#'):
-                        r = line.split(':=')
-                        configMap[r[0]] = ast.literal_eval(r[1])
-        self.mif.configureMoteRadio(bsId, configMap)
-        time.sleep(1)
-        self.mif.configureMaxDownloadRounds(bsId, configMap)
+        if self.mif.identifyMote():
+            #format printf's correctly
+            self.mif.addListener(PrintfListener.PrintfListener(self.mif.bsId), 
+              PrintfMsg.PrintfMsg)
+            self.mif.addListener(RecordListener.RecordListener(db), 
+              LogRecordDataMsg.LogRecordDataMsg)
+            self.mif.addListener(PongListener.PongListener(), 
+              PongMsg.PongMsg)
+            if configFile:
+                #evaluate each key:=value pair and stick it into config
+                with open(configFile, 'r') as f:
+                    for line in f:
+                        if not line.startswith('#'):
+                            r = line.split(':=')
+                            configMap[r[0]] = ast.literal_eval(r[1])
+            self.mif.configureMoteRadio(self.mif.bsId, configMap)
+            time.sleep(1)
+            self.mif.configureMaxDownloadRounds(self.mif.bsId, configMap)
+        else:
+            raise Exception("Connected mote did not respond to ID request (has it been set up as a BaseStation?")
 
 
     def stop(self):
@@ -71,12 +75,13 @@ class Dispatcher(object):
     def send(self, m, dest=0, requireAck=True):
         return self.mif.send(dest, m, requireAck)
 
-def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL,
+def download(packetSource, networkSegment=constants.NS_GLOBAL,
         configMap={}, configFile=None, refCallBack=None,
         finishedCallBack=None):
     print packetSource
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configMap=configMap, configFile=configFile)
+    d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
+    bsId = d.mif.bsId
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
@@ -153,12 +158,13 @@ def download(packetSource, bsId, networkSegment=constants.NS_GLOBAL,
         d.stop()
     print "done for real"
     if finishedCallBack:
-        finishedCallBack()
+        finishedCallBack(d.mif.bsId)
 
-def pushConfig(packetSource, bsId, networkSegment, configFile,
+def pushConfig(packetSource, networkSegment, configFile,
       newConfigFile, nodeList):
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configFile=configFile)
+    d = Dispatcher(packetSource, db, configFile=configFile)
+    bsId = d.mif.bsId
     #we will get status refs in this process
     refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
@@ -188,9 +194,10 @@ def pushConfig(packetSource, bsId, networkSegment, configFile,
         print "Cleaning up"
         d.stop()
 
-def ping(packetSource, bsId, networkSegment, configFile):
+def ping(packetSource, networkSegment, configFile):
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configFile=configFile)
+    d = Dispatcher(packetSource, db, configFile=configFile)
+    bsId = d.mif.bsId
     #we will get status refs in this process
     refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
@@ -218,19 +225,21 @@ def ping(packetSource, bsId, networkSegment, configFile):
         print "Cleaning up"
         d.stop()
 
-def sleep(packetSource, bsId, networkSegment, configFile, sleepDuration):
+def sleep(packetSource, networkSegment, configFile, sleepDuration):
     print "Sleeping for %f" % sleepDuration
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configFile=configFile)
+    d = Dispatcher(packetSource, db, configFile=configFile)
+    bsId = d.mif.bsId
     try:
         time.sleep(sleepDuration)
     finally:
         print "Cleaning up"
         d.stop()
 
-def triggerRouterDownload(packetSource, bsId, networkSegment, configFile):
+def triggerRouterDownload(packetSource, networkSegment, configFile):
     db = Database.Database()
-    d = Dispatcher(packetSource, bsId, db, configFile=configFile)
+    d = Dispatcher(packetSource, db, configFile=configFile)
+    bsId = d.mif.bsId
     #we will get status refs in this process
     refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName)
     d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
@@ -280,19 +289,18 @@ def triggerRouterDownload(packetSource, bsId, networkSegment, configFile):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "Usage:", sys.argv[0], "packetSource(e.g serial@/dev/ttyUSB0:115200) bsId [networkSegment] [configFile] [-p newConfigFile [node]*] [--ping]" 
+        print "Usage:", sys.argv[0], "packetSource(e.g serial@/dev/ttyUSB0:115200) [networkSegment] [configFile] [-p newConfigFile [node]*] [--ping]" 
         print "  [networkSegment=0] : 0=global 1=subnetwork 2=router"
         print "  -p: push configFile settings to nodes listed"
         sys.exit()
 
     packetSource = sys.argv[1]
-    bsId = int(sys.argv[2])
     networkSegment = constants.NS_GLOBAL
     configFile = None
+    if len(sys.argv) > 2:
+        networkSegment = int(sys.argv[2])
     if len(sys.argv) > 3:
-        networkSegment = int(sys.argv[3])
-    if len(sys.argv) > 4:
-        configFile = sys.argv[4]
+        configFile = sys.argv[3]
 
     if '-p' in sys.argv:
         pIndex= sys.argv.index('-p')
@@ -300,15 +308,15 @@ if __name__ == '__main__':
         nodeList += [int(s) for s in sys.argv[pIndex+2:] if not s.startswith('0x')]
         newConfigFile = sys.argv[pIndex+1]
         print "Pushing config %s to %s"%(newConfigFile, nodeList)
-        pushConfig(packetSource, bsId, networkSegment, configFile, newConfigFile, nodeList)
+        pushConfig(packetSource, networkSegment, configFile, newConfigFile, nodeList)
     elif '--ping' in sys.argv:
-        ping(packetSource, bsId, networkSegment, configFile)
+        ping(packetSource, networkSegment, configFile)
     elif '--routerDownload' in sys.argv:
-        triggerRouterDownload(packetSource, bsId, networkSegment, configFile)
+        triggerRouterDownload(packetSource, networkSegment, configFile)
     elif '--download' in sys.argv:
-        download(packetSource, bsId, networkSegment, configFile)
+        download(packetSource, networkSegment, configFile)
 
     if '--sleep' in sys.argv:
         sleepDuration = float(sys.argv[sys.argv.index('--sleep')+1])
-        sleep(packetSource, bsId, networkSegment, configFile, sleepDuration)
+        sleep(packetSource, networkSegment, configFile, sleepDuration)
 
