@@ -60,4 +60,22 @@ configuration SlotSchedulerC{
 
   components StateDumpC;
   SlotSchedulerP.StateDump -> StateDumpC;
+
+  #ifndef AM_STATS_LOG
+  #define AM_STATS_LOG 0
+  #endif
+  #ifndef PRINTF_STATS_LOG
+  #define PRINTF_STATS_LOG 1
+  #endif
+
+  #if AM_STATS_LOG == 1
+  components AMStatsLogC as StatsLog;
+  #elif PRINTF_STATS_LOG == 1
+  components PrintfStatsLogC as StatsLog;
+  #else
+  components DummyStatsLogC as StatsLog;
+  #endif
+  SlotSchedulerP.StatsLog -> StatsLog;
+  StatsLog.CXLinkPacket -> CXWakeupC.CXLinkPacket;
+  StatsLog.Packet -> CXWakeupC.Packet;
 }

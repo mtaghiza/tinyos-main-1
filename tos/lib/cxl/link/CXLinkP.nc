@@ -45,6 +45,8 @@ module CXLinkP {
   uint32_t dfLog;
   bool dfMissed;
   uint32_t rxStart;
+  #endif
+  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
   uint32_t aFeCapture;
   cx_link_stats_t lastStats;
   cx_link_stats_t curStats;
@@ -62,7 +64,7 @@ module CXLinkP {
     R_NUMSTATES = 6
   } link_status_e;
 
-  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_DEBUG
+  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
   link_status_e curState = R_OFF;
   uint32_t lastChange;
 
@@ -1009,7 +1011,7 @@ module CXLinkP {
 
   command cx_link_stats_t CXLink.getStats(){
     cx_link_stats_t ret;
-    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_DEBUG
+    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic{
       radioStateChange(curState);
       curStats.total = call FastAlarm.getNow();

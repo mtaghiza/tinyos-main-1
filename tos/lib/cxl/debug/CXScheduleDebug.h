@@ -1,5 +1,6 @@
 #ifndef CX_SCHEDULE_DEBUG_H
 #define CX_SCHEDULE_DEBUG_H
+#include "CXDebug.h"
 
 #ifndef DL_SCHED
 #define DL_SCHED DL_WARN

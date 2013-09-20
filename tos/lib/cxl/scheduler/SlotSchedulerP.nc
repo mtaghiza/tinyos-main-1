@@ -35,6 +35,8 @@ module SlotSchedulerP {
 
   uses interface Get<probe_schedule_t*> as ProbeSchedule;
   uses interface StateDump;
+
+  uses interface StatsLog;
 } implementation {
 
   enum {
@@ -881,38 +883,19 @@ module SlotSchedulerP {
   
   #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
   void logStats(){
-    cx_link_stats_t stats = call CXLink.getStats();
+    call StatsLog.logSlotStats(call CXLink.getStats(), 
+      wakeupNum, slotNum, slotRole);
     //slot stats
-    cinfo(STATS, "SS %u %u %lu %lu %lu %lu %lu %lu %lu %u\r\n",
-      wakeupNum,
-      slotNum,
-      stats.total,
-      stats.off,
-      stats.idle,
-      stats.sleep,
-      stats.rx,
-      stats.tx,
-      stats.fstxon, 
-      slotRole); //e.g. owner, origin, forwarder, slept
     ctsReceived = FALSE;
     slotRole = ROLE_UNKNOWN;
   }
 
   void logReception(message_t* msg){
-    cinfo(STATS, "R %u %u %u %u %u\r\n",
-      wakeupNum,
-      slotNum,
-      call CXLinkPacket.source(msg),
-      call CXLinkPacket.getSn(msg),
-      call CXLinkPacket.rxHopCount(msg));
+    call StatsLog.logReception(msg, wakeupNum, slotNum);
   }
 
   void logTransmission(message_t* msg){
-    cinfo(STATS, "T %u %u %u %u\r\n",
-      wakeupNum,
-      slotNum, 
-      call CXLinkPacket.getSn(msg),
-      call Packet.payloadLength(msg));
+    call StatsLog.logTransmission(msg, wakeupNum, slotNum);
   }
   #else
   void logStats(){}
