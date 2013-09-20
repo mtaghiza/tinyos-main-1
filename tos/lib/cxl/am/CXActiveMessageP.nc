@@ -54,6 +54,7 @@ implementation {
 
   event void Boot.booted(){
     cinfo(STATS, "START %s\r\n", TEST_DESC);
+    cflushinfo(STATS);
   }
 
   async command error_t Acks.requestAck( message_t* msg ){

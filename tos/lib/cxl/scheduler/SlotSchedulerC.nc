@@ -69,6 +69,7 @@ configuration SlotSchedulerC{
   #endif
 
   #if AM_STATS_LOG == 1
+  components SerialStartC;
   components AMStatsLogC as StatsLog;
   #elif PRINTF_STATS_LOG == 1
   components PrintfStatsLogC as StatsLog;
