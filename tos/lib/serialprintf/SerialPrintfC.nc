@@ -43,7 +43,11 @@ configuration SerialPrintfC {
 }
 
 implementation {
+  #if PRINTF_STREAM == 1
+  components SerialPrintfStreamP as SerialPrintfP;
+  #else
   components SerialPrintfP;
+  #endif
   StdControl = SerialPrintfP.StdControl;
 
   components MainC;
@@ -51,6 +55,11 @@ implementation {
 
   components PlatformSerialC;
   SerialPrintfP.UartControl -> PlatformSerialC;
+
+  #if PRINTF_STREAM == 1
+  SerialPrintfP.UartStream -> PlatformSerialC;
+  #else
   SerialPrintfP.UartByte -> PlatformSerialC;
+  #endif
 }
 

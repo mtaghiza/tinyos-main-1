@@ -39,5 +39,13 @@
 
 #include <stdio.h>
 
+#ifndef PRINTF_STREAM_BUF_LEN
+#define PRINTF_STREAM_BUF_LEN 100
+#endif
+
+#ifndef PRINTF_STREAM
+#define PRINTF_STREAM 1
+#endif
+
 #endif
 

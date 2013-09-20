@@ -35,10 +35,10 @@
  * @author David Moss
  * @author Kevin Klues
  */
-module SerialPrintfP {
+module SerialPrintfStreamP {
   uses {
     interface StdControl as UartControl;
-    interface UartByte;
+    interface UartStream;
   }
   provides {
     interface StdControl;
@@ -62,6 +62,47 @@ implementation {
     return call UartControl.stop();
   }
 
+  uint8_t buf0[PRINTF_STREAM_BUF_LEN];
+  uint8_t buf1[PRINTF_STREAM_BUF_LEN];
+
+  uint8_t* fillBuf = buf0;
+  uint8_t* swapBuf = buf1;
+  uint8_t cnt = 0;
+  bool sending;
+
+  error_t sendAndSwap(){
+    atomic{
+      if (sending){
+        //debug code
+//        swapBuf[cnt-2]='!';
+        return EBUSY;
+      }else{
+        uint8_t* newFillBuf = swapBuf;
+        error_t error;
+        swapBuf = fillBuf;
+        fillBuf = newFillBuf;
+        //debug code
+//        swapBuf[0]='*';
+        error = call UartStream.send(swapBuf, cnt);
+        sending = (SUCCESS == error);
+        cnt = 0;
+        return error;
+      }
+    }
+  }
+
+  task void sendAndSwapTask(){
+    sendAndSwap();
+  }
+
+  async event void UartStream.sendDone( uint8_t* buf, uint16_t len, error_t error ) { 
+    sending = FALSE;
+    if (cnt){
+      post sendAndSwapTask();
+    }
+  }
+
+
   /***************** Printf Implementation ****************/
 #ifdef _H_msp430hardware_h
   int (putchar)(int c) __attribute__((noinline)) @C() @spontaneous()
@@ -70,16 +111,28 @@ implementation {
   int uart_putchar(char c, FILE *stream) __attribute__((noinline)) @C() @spontaneous()
 #endif
   {
-    return (SUCCESS == call UartByte.send(c)) ? c : -1;
+    atomic{
+      if (cnt == PRINTF_STREAM_BUF_LEN){
+        //immediately start a send and get the free buffer. If we can't
+        //make the swap, return an error.
+        if (SUCCESS != sendAndSwap()){
+          return -1;
+        }
+      }
+      //if we reach this point, there is a buffer available and it has
+      //  some space in it.
+      fillBuf[cnt] = c;
+      cnt++;
+    }
+    //Printf should be doing all of the putchar's in the
+    //same execution context, so posting this as a task will
+    //implicitly wait until the printf (or series of printf's) yield
+    //and will then spit them out.
+    post sendAndSwapTask();
+    return c;
   }
-  
-  //TODO: replace with UartStream and double-buffering
-  // - putchar: 
-  //   - space available? append to filling buffer and set short timeout
-  //   - no space available
-  //     - already sending? drop it, sorry
-  //     - not already sending? send filling buffer, swap buffers,
-  //       append to new filling buffer
-  //  - timeout fires: send filling buffer, swap buffers
-
+  async event void UartStream.receivedByte(uint8_t c){}
+  async event void UartStream.receiveDone(uint8_t* buf, uint16_t len,
+  error_t error){}
 }
+
