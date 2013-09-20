@@ -77,8 +77,8 @@ do
     SUBNETWORK_CHANNEL=$snc\
     ENABLE_AUTOPUSH=$eap\
     TEST_DESC=$testDesc\
+    DL_STATS=DL_INFO\
     ENABLE_PRINTF=$enablePrintf || exit 1
-  
   testDesc=\\\"${testDescLeaf}_snc_${snc}\\\"
 
   ./burnRole.sh $map Leaf -f Makefile.dummycxl \
@@ -96,5 +96,6 @@ do
     DEFAULT_SAMPLE_INTERVAL=61440UL\
     ENABLE_AUTOPUSH=$eap\
     TEST_DESC=$testDesc\
+    DL_STATS=DL_INFO\
     ENABLE_PRINTF=$enablePrintf || exit 1
 done  
