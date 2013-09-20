@@ -27,7 +27,9 @@ CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noShare
 CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noI2c
 CFLAGS += -I$(TOSDIR)/platforms/bacon/chips/stm25p/noI2c
 
-CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+CFLAGS += -I$(TOSDIR)/lib/cxl/serial
+#CFLAGS+=-I$(TOSDIR)/lib/serialprintf
+CFLAGS+=-I$(TOSDIR)/lib/printf
 
 CFLAGS += -I$(TOSDIR)/lib/cxl/link
 CFLAGS += -I$(TOSDIR)/lib/cxl/packet
@@ -123,7 +125,9 @@ CFLAGS+=-DENABLE_FORWARDER_SELECTION=$(ENABLE_FORWARDER_SELECTION)
 
 ENABLE_PRINTF ?= 1
 CFLAGS += -DENABLE_PRINTF=$(ENABLE_PRINTF)
-CFLAGS += -DRAW_SERIAL_PRINTF=1
+PRINTF_MSG_LENGTH=100
+RAW_SERIAL_PRINTF ?= 0
+CFLAGS += -DRAW_SERIAL_PRINTF=$(RAW_SERIAL_PRINTF)
 DL_GLOBAL?=DL_DEBUG
 CFLAGS += -DDL_GLOBAL=$(DL_GLOBAL)
 

@@ -5,8 +5,12 @@
 configuration RouterAppC{
 } implementation {
   #if ENABLE_PRINTF == 1
+  #if RAW_SERIAL_PRINTF == 1
   components SerialPrintfC;
+  #else
   components SerialStartC;
+  components PrintfC;
+  #endif
   #endif
 
   components WatchDogC;
