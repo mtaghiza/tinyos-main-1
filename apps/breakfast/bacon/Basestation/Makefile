@@ -16,6 +16,7 @@ CFLAGS += -DAM_ID_FROM_FLASH=$(AM_ID_FROM_FLASH)
 CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/settingsStorage
 CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
 
+CFLAGS += -I$(TOSDIR)/lib/cxl/serial
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -I$(TOSDIR)/lib/serial
 CFLAGS += -I$(TOSDIR)/lib/cxl/debug
