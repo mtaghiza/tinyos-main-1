@@ -1,0 +1,6 @@
+COMPONENT=TestAppC
+CFLAGS+=-I$(TOSDIR)/lib/printf
+CFLAGS+=-I$(TOSDIR)/lib/serial
+
+CFLAGS+=-DRAW_PRINTF=0
+include $(MAKERULES)

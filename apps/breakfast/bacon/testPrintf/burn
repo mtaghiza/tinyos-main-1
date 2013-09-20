@@ -4,10 +4,10 @@ then
   exit 1
 fi
 
-MAP=map.bacon
-make $1
+MAP=map.0
+make bacon2 $@
 
 for i in `cut -d ' ' -f 2 $MAP`
 do
-  make $1 reinstall,$i wpt,$MAP
+  make bacon2 reinstall,$i wpt,$MAP
 done
