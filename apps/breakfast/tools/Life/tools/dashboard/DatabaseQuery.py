@@ -74,10 +74,11 @@ class DatabaseQuery(object):
         for row in self.cursor:
           key = "%04x" % int(row[0])
           if row[1] == 'X':
-              row[1] = "(?) %x"%(row[0])
-          data = row[1:3]
+              barcode = "(?) %x"%(row[0])
+          else:
+            barcode = row[1]
           
-          output[key] = data
+          output[key] = (barcode, row[2])
         
         return output
 
@@ -125,8 +126,9 @@ class DatabaseQuery(object):
         output = {}
         for row in self.cursor:
           if row[0] == 'X':
-              row[0] = '(?) %x'%(row[4]) 
-          key = row[0]
+              key = '(?) %x'%(row[4]) 
+          else:
+              key = row[0]
           output[key] = row[1:3]
         
         return output
