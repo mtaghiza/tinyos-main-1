@@ -11,10 +11,6 @@ typedef nx_struct tunneled_msg {
   nx_uint8_t data[MAX_RECORD_PACKET_LEN];
 } tunneled_msg_t;
 
-enum {
-  AM_TUNNELED_MSG = 0x15,
-};
-
 #define SS_KEY_DOWNLOAD_INTERVAL 0x18
 
 #ifndef DEFAULT_DOWNLOAD_INTERVAL

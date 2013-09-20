@@ -100,9 +100,12 @@ Misc. Tests: 0xD0 - 0xDF
 bacon/cxActiveMessage/test.h:#define AM_ID_CX_TESTBED 0xdc
 
 
-Printf: 0x64
+serial port logging 
 -------
 $(TOSDIR)/lib/printf/printf.h: AM_PRINTF_MSG = 100, //0x64
+lib/cxl/scheduler/AMStatsLog.h: AM_STATS_LOG_RADIO = 0xFA
+lib/cxl/scheduler/AMStatsLog.h: AM_STATS_LOG_RX = 0xFB
+lib/cxl/scheduler/AMStatsLog.h: AM_STATS_LOG_TX = 0xFC
 
 Log Records: 0xE0 - 0xEF
 -------
@@ -112,15 +115,13 @@ tos/platforms/bacon/chips/stm25p/RecordStorage.h: AM_LOG_RECORD_DATA_MSG = 0xE0
 CX collection control: 0xF0 - 0xF7
 ------
 bacon/autoPush/RecordRequest.h: AM_CX_RECORD_REQUEST_MSG = 0xF0
-bacon/router/router.h: AM_TUNNELED_MSG 0x15
-cxl/mac/CXMac.h: AM_CX_STATUS=0xF1
 
 Ping: 0xF8-0xF9
 ------
 bacon/ping/ping.h: AM_PING_MSG=0xF8
 bacon/ping/ping.h: AM_PONG_MSG=0xF9
 
-Unused : 0xFA-0xFF
+Unused : 0xFD-0xFF
 ------
 
 Log record types
