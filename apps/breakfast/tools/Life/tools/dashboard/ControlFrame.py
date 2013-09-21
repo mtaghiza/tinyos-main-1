@@ -46,7 +46,7 @@ class ControlFrame(Frame):
         newDict = {}
         ports = sorted(comports())
         for port, desc, hwid in ports:
-            newDict[desc] = port
+            newDict["%s (%s)"%(port, desc)] = port
         
         # call disconnect function if the current device disappears
         if self.connected and self.comVar.get() not in newDict:
@@ -71,7 +71,7 @@ class ControlFrame(Frame):
                 
                 # choose first port if no port was previously selected
                 if oldIndex not in newDict:
-                    self.comVar.set(ports[0][1])
+                    self.comVar.set(sorted(newDict.keys())[0])
                 self.downloadButton.config(state=NORMAL )
             else:
                 menu.add_command(label=self.DEFAULT_COM_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_COM_STRING))
