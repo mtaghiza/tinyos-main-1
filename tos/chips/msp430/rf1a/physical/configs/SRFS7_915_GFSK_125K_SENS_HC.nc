@@ -80,7 +80,7 @@ module SRFS7_915_GFSK_125K_SENS_HC{
     test0:   0x09,   
     
     #ifndef PATABLE0_SETTING
-    patable: {0xc6},
+    patable: {0xc3},
     #else
     patable: {PATABLE0_SETTING},
     #endif
