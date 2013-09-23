@@ -98,6 +98,7 @@ bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_ENTRY_RESPONSE_MSG = 0xAB,
 Misc. Tests: 0xD0 - 0xDF
 ---------
 bacon/cxActiveMessage/test.h:#define AM_ID_CX_TESTBED 0xdc
+bacon/cxlTestbed/autosender.h:  AM_TEST_MSG=0xdc,
 
 
 serial port logging 

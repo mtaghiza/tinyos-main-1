@@ -37,6 +37,7 @@
  * @author Doug Carlson <carlson@cs.jhu.edu>
  */
  #include "CXAM.h"
+ #include "CXDebug.h"
 module CXActiveMessageP {
   provides interface AMSend[uint8_t ns];
   provides interface Receive[am_id_t id];

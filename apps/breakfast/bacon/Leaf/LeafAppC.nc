@@ -120,6 +120,14 @@ configuration LeafAppC{
   components UartRebooterC;
   #endif
 
+  #ifndef ENABLE_AUTOSENDER
+  #define ENABLE_AUTOSENDER 0
+  #endif
+  #if ENABLE_AUTOSENDER == 1
+  #warning Enabled auto-sender: TEST ONLY
+  components AutoSenderC;
+  #endif
+
   LeafP.SplitControl -> ActiveMessageC;
   LeafP.Boot -> MainC;
 
