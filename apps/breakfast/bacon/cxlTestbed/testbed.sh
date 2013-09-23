@@ -29,12 +29,16 @@ dr=0
 tpl=64
 #enable auto-sender
 eas=1
+#max attempts
+ma=2
+#max download rounds
+mdr=1
 td=0xFFFF
 installTS=$(date +%s)
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
-"gc" "rc" "installTS" "dr" "tpl" "td" "eas")
+"gc" "rc" "installTS" "dr" "tpl" "td" "eas" "ma" "mdr")
 
 while [ $# -gt 1 ]
 do
@@ -94,6 +98,15 @@ do
     TEST_PAYLOAD_LEN=$tpl\
     TEST_DESTINATION=$td\
     ENABLE_AUTO_SENDER=$eas\
+    ENABLE_PROBE_SCHEDULE_CONFIG=0\
+    ENABLE_BACON_SAMPLER=0\
+    ENABLE_TOAST_SAMPLER=0\
+    ENABLE_PHOENIX=0\
+    ENABLE_SETTINGS_CONFIG=0\
+    ENABLE_SETTINGS_LOGGING=0\
+    ENABLE_CONFIGURABLE_LOG_NOTIFY=0\
+    DEFAULT_MAX_DOWNLOAD_ROUNDS=$mdr\
+    DEFAULT_MAX_ATTEMPTS=$ma\
     ENABLE_PRINTF=$enablePrintf"
 
   testDesc=\\\"${testDescRouter}_snc_${snc}\\\"
