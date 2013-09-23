@@ -158,7 +158,12 @@ class DatabaseInit(object):
                                           slave_id INTEGER,
                                           distance INTEGER,
                                           PRIMARY KEY (master_id,
-                                          cookie, slave_id))'''}
+                                          cookie, slave_id))''',
+              'packet':'''CREATE TABLE packet
+                            (src INTEGER, 
+                             ts FLOAT, 
+                             amId INTEGER, 
+                             data BLOB)'''}
     views = {'last_ap':'''CREATE VIEW last_ap AS
                           SELECT master_id, network_segment, 
                             max(cookie) as cookie 

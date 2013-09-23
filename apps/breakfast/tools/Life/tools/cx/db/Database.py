@@ -6,6 +6,8 @@ from DatabaseInit import DatabaseInit
 from DatabaseInsert import DatabaseInsert
 from DatabaseMissing import DatabaseMissing
 
+import time
+
 
 class Database(object):
 
@@ -44,6 +46,10 @@ class Database(object):
             ##self.oldLenVal = lenVal
         else: 
             print "No decoder for 0x%x"%recordType
+
+    def insertRaw(self, source, message):
+        self.insert.insertRaw(source, message)
+#         print "RAW",message.addr, time.time(), message.am_type, message.data
 
     def findMissing(self, incrementRetries=True):
         

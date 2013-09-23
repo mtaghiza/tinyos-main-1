@@ -59,6 +59,8 @@ class RecordListener(object):
         self.db = db
 
     def receive(self, src, msg):
+        #TODO: this should be in a generic message-listener
+        self.db.insertRaw(src, msg)
         address = msg.getAddr()
         rp = RecordParser(msg)        
         records = rp.getList()

@@ -39,4 +39,16 @@ class DatabaseInsert(object):
             self.connection.commit();
             
         #print "DatabaseInsert.insertFlash()", threading.current_thread().name
-
+    
+    def insertRaw(self, source, message):
+        if self.connected == False:
+            self.connected == True
+            # raises sqlite3 exceptions
+            self.connection = sqlite3.connect(self.dbName)
+            #self.cursor = self.connection.cursor()
+        self.connection.execute('INSERT INTO packet (src, ts, amId, data) values (?, ?, ?, ?)',
+            (message.addr, 
+              time.time(), 
+              message.am_type,
+              sqlite3.Binary(bytearray(message.data))))
+        self.connection.commit()
