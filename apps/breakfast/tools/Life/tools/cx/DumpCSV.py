@@ -111,8 +111,45 @@ queries=[
   FROM sensor_sample_flat ssf
   JOIN fits 
     ON fits.node1=ssf.node_id AND fits.rc1=ssf.reboot_counter
-       AND fits.node2 is NULL AND fits.rc2 is NULL'''
-]
+       AND fits.node2 is NULL AND fits.rc2 is NULL''',
+  '''DROP TABLE IF EXISTS current_sensors''',
+  '''CREATE TABLE current_sensors AS
+      SELECT bacon_settings.barcode_id as bacon_barcode, 
+        tc.node_id as node_id,
+        tc.reboot_counter as rc, 
+        tc.time as time, 
+        tc.cookie as cookie, 
+        tc.toast_id as toast_barcode,
+        sc.channel_number as channel_number, 
+        sc.sensor_type as sensor_type, 
+        sc.sensor_id as sensor_id
+      FROM (
+      SELECT lc.node_id, lc.toast_id, 
+        max(lc.cookie, coalesce(lb.cookie, -1), coalesce(ld.cookie, -1)) as cookie
+      FROM last_connection lc 
+      LEFT JOIN last_disconnection ld
+        ON lc.node_id = ld.node_id 
+           AND lc.toast_id = ld.toast_id
+      LEFT JOIN last_bs lb
+        ON lc.node_id = lb.node_id
+        ) lr 
+      JOIN toast_connection tc 
+        ON lr.node_id = tc.node_id 
+           AND lr.cookie = tc.cookie
+      JOIN sensor_connection sc 
+        ON sc.node_id = tc.node_id AND sc.cookie = tc.cookie
+      JOIN last_bs on tc.node_id = last_bs.node_id
+      JOIN bacon_settings on last_bs.node_id = bacon_settings.node_id AND
+      last_bs.cookie = bacon_settings.cookie''',
+    '''DROP TABLE IF EXISTS current_sensors_final''',
+    '''CREATE TABLE current_sensors_final AS
+       SELECT bacon_barcode, toast_barcode, 
+          (time*beta+alpha) as ts,
+          channel_number, sensor_type, sensor_id
+       FROM current_sensors 
+       LEFT JOIN fits
+       ON fits.node1 = current_sensors.node_id
+          AND fits.rc1 = current_sensors.rc''']
 
 def deNormalize(dbName):
     c = sqlite3.connect(dbName)
@@ -133,6 +170,8 @@ def dump(dbName, baseDir, sep=','):
       "lightVoltage", "thermistorVoltage"]
     externalCols= ["sensor_type", "bacon_id", "toast_id", 
       "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage"]
+    sensorCols = ["bacon_id", "toast_id", "unixTS", "isoTS", "date",
+      "time", "channel", "sensorType", "sensorId"]
     c = sqlite3.connect(dbName)
     with open(os.path.join(baseDir, 'internal.csv'), 'w') as f:
         with c:
@@ -166,6 +205,23 @@ def dump(dbName, baseDir, sep=','):
                     f.write(sep.join([str(sensor_type), bacon_id,
                     toast_id, str(sensor_channel), str(sensor_id), 
                     "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage])+'\n')
+
+    with c:
+        q = '''SELECT bacon_barcode, toast_barcode, 
+                ts as unixTS,
+                datetime(ts, 'unixepoch', 'localtime') as isoTS,
+                date(ts, 'unixepoch', 'localtime'), 
+                time(ts, 'unixepoch', 'localtime'), 
+                channel_number+1,
+                sensor_type, sensor_id
+               FROM current_sensors_final'''
+        with open(os.path.join(baseDir, 'sensors.csv'), 'w') as f:
+            f.write(sep.join(sensorCols)+'\n')
+            for (bacon_id, toast_id, unixTS, isoTS, date, time, channel, sensorType, sensorId) in c.execute(q).fetchall():
+                f.write(sep.join([bacon_id, toast_id, "%.2f"%unixTS, isoTS, date,
+                  time, str(channel), str(sensorType), hex(sensorId)])+'\n')
+
+
 
 def dumpCSV(dbName='database0.sqlite', baseDir='data'):
     print "Dumping from %s to %s"%(dbName, baseDir)

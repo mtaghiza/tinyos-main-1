@@ -167,7 +167,17 @@ class DatabaseInit(object):
              'last_bs':'''CREATE VIEW last_bs AS
                           SELECT bs.node_id, max(cookie) as cookie 
                           FROM bacon_settings bs 
-                          GROUP BY node_id'''}
+                          GROUP BY node_id''',
+             'last_connection':'''CREATE VIEW last_connection AS
+                          SELECT node_id, toast_id, 
+                          max(cookie) as cookie
+                          FROM toast_connection 
+                          GROUP BY node_id, toast_id''',
+             'last_disconnection':'''CREATE VIEW last_disconnection AS
+                          SELECT node_id, toast_id, 
+                          max(cookie) as cookie
+                          FROM toast_disconnection 
+                          GROUP BY node_id, toast_id'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):

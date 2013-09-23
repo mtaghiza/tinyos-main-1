@@ -142,35 +142,28 @@ class DatabaseQuery(object):
         """
         
         query = '''
-                    SELECT c.bacon_id, c.toast_id
-                    , MAX(CASE WHEN d.channel_number = 0 THEN d.sensor_type ELSE 0 END) AS channel0
-                    , MAX(CASE WHEN d.channel_number = 1 THEN d.sensor_type ELSE 0 END) AS channel1
-                    , MAX(CASE WHEN d.channel_number = 2 THEN d.sensor_type ELSE 0 END) AS channel2
-                    , MAX(CASE WHEN d.channel_number = 3 THEN d.sensor_type ELSE 0 END) AS channel3
-                    , MAX(CASE WHEN d.channel_number = 4 THEN d.sensor_type ELSE 0 END) AS channel4
-                    , MAX(CASE WHEN d.channel_number = 5 THEN d.sensor_type ELSE 0 END) AS channel5
-                    , MAX(CASE WHEN d.channel_number = 6 THEN d.sensor_type ELSE 0 END) AS channel6
-                    , MAX(CASE WHEN d.channel_number = 7 THEN d.sensor_type ELSE 0 END) AS channel7
-                    FROM
-                    (
-                        SELECT a.barcode_id AS bacon_id, a.node_id AS node_id, b.toast_id AS toast_id, b.cookie AS cookie
-                        FROM 
-                        bacon_settings AS a,
-                        (
-                            SELECT node_id, toast_id, cookie, 'c' AS type FROM toast_connection
-                            UNION
-                            SELECT node_id, toast_id, cookie, 'd' AS type FROM toast_disconnection
-                            ORDER BY cookie ASC
-                        ) AS b
-                        WHERE a.node_id = b.node_id
-                        GROUP BY toast_id
-                        HAVING type = 'c'
-                    ) AS c
-                    LEFT JOIN sensor_connection AS d 
-                    ON c.node_id = d.node_id AND c.cookie = d.cookie 
-                    GROUP BY toast_id
-                    '''
-            
+          SELECT bacon_settings.barcode_id, tc.node_id,
+          tc.reboot_counter, tc.time, tc.cookie, tc.toast_id,
+          sc.channel_number, sc.sensor_type, sc.sensor_id
+          FROM (
+          SELECT lc.node_id, lc.toast_id, 
+            max(lc.cookie, coalesce(lb.cookie, -1), coalesce(ld.cookie, -1)) as cookie
+          FROM last_connection lc 
+          LEFT JOIN last_disconnection ld
+            ON lc.node_id = ld.node_id 
+               AND lc.toast_id = ld.toast_id
+          LEFT JOIN last_bs lb
+            ON lc.node_id = lb.node_id
+            ) lr 
+          JOIN toast_connection tc 
+            ON lr.node_id = tc.node_id 
+               AND lr.cookie = tc.cookie
+          JOIN sensor_connection sc 
+            ON sc.node_id = tc.node_id AND sc.cookie = tc.cookie
+          JOIN last_bs on tc.node_id = last_bs.node_id
+          JOIN bacon_settings on last_bs.node_id = bacon_settings.node_id AND
+          last_bs.cookie = bacon_settings.cookie'''
+
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
             self.connected == True
@@ -182,21 +175,25 @@ class DatabaseQuery(object):
         self.cursor.execute(query)
 
         output = {}
+        #sql query return 1 row per currently-connected sensor
+        #we want to put this into a nested set of maps like this:
+        #{
+        #  bacon_barcode:{
+        #    toast_barcode:{
+        #      channel:(sensor_type, sensor_barcode)}
+        #  }
+        #}
         for row in self.cursor:
-            print row
-            if len(row) == 10:
-                if row[0] is not None:
-                    key = row[0]
-                    data = row[1:10]
-                    
-                    if key in output:
-                        list = output[key]
-                        list.append(data)
-                        output[key] = list
-                    else:
-                        output[key] = [data]
-        
+            baconBar = row[0]
+            toastBar = row[5]
+            cn = row[6]
+            st = row[7]
+            sid = row[8]
+            output[baconBar] = output.get(baconBar, {})
+            output[baconBar][toastBar] = output[baconBar].get(toastBar, {})
+            output[baconBar][toastBar][cn]=(st, sid)
         return output
+
 
     def getPlex(self, plex):
         """ Get information about multiplexer.
@@ -226,7 +223,7 @@ class DatabaseQuery(object):
         for row in self.cursor:
             if row[0] is not None:
                 channel = int(row[0])
-                output[channel] = (row[1], row[2])
+                output[channel] = (hex(row[1]), hex(row[2]))
         
         return output
 

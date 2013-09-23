@@ -219,9 +219,10 @@ class NodeFrame(Frame):
             # if node has multiplexer(s) attached, draw multiplexer and sensor types
             if leaf in self.multiplexers:
                 # each node can have multiple multiplexers attached
-                for i, plex in enumerate(self.multiplexers[leaf]):
-                    print "plexs: ", i, plex[0]
-                    plexid = plex[0]
+                for i, plexid in enumerate(self.multiplexers[leaf]):
+#                     print "plexs: ", i, plex[0]
+#                     plexid = plex[0]
+                    print leaf, i, plexid
                     subframe = Frame(frame, bd=1, relief=SUNKEN)
                     self.tkobjects["plexFrame_%s" % plexid] = frame
                     
@@ -237,15 +238,16 @@ class NodeFrame(Frame):
                     button.configure(width=18, height=2, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                     button.grid(column=0, row=0, columnspan=8, sticky=N+S+E+W)
                     self.tkobjects["plexButton_%s" % plexid] = button
-                    
+                    toastMap = self.multiplexers[leaf][plexid]
                     # each multiplexer has 8 channels
-                    for j, sensor in enumerate(plex[1:9]):
-                        self.sensorTypes[sensor] = 1
+                    for sc in toastMap.keys():
+                        (sensorType, sensorId) = toastMap[sc]
+                        self.sensorTypes[sensorType] = 1
                         
-                        label = Label(subframe, text=str(sensor), bd=1, relief=SUNKEN)
+                        label = Label(subframe, text=str(sensorType), bd=1, relief=SUNKEN)
                         label.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
-                        label.grid(column=j, row=1, sticky=N+S+E+W)
-                        self.tkobjects["sensLabel_%s_%d" % (plexid, j)] = label
+                        label.grid(column=sc, row=1, sticky=N+S+E+W)
+                        self.tkobjects["sensLabel_%s_%d" % (plexid, sc)] = label
                     
                     subframe.grid(column=i+2, row=rowNumber)
             
