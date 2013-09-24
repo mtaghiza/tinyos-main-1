@@ -79,7 +79,7 @@ echo "root: ${testDescLeaf}"
 
 #for map in map.p0
 #for map in map.p0 map.p1 map.p2 map.p3
-for map in flat
+for map in map.flat
 do
   snc=$(grep SNC $map | cut -d ' ' -f 2)
 
@@ -98,8 +98,8 @@ do
     DATA_RATE=$dr\
     TEST_PAYLOAD_LEN=$tpl\
     TEST_DESTINATION=$td\
-    ENABLE_AUTO_SENDER=$eas\
-    ENABLE_PROBE_SCHEDULE_CONFIG=0\
+    ENABLE_AUTOSENDER=$eas\
+    ENABLE_PROBE_SCHEDULE_CONFIG=1\
     ENABLE_BACON_SAMPLER=0\
     ENABLE_TOAST_SAMPLER=0\
     ENABLE_PHOENIX=0\

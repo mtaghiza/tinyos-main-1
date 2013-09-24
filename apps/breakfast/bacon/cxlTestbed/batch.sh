@@ -1,5 +1,5 @@
 #!/bin/bash
-testDuration=$(60 * 30)
+testDuration=$((60 * 30))
 
 while true
 do
@@ -9,13 +9,13 @@ do
     do
       for dr in 1024
       do
+        ./testbed.sh eas $eas fps $fps dr $dr
+        sleep $testDuration
         pushd .
         cd ~/tinyos-2.x/apps/Blink
         ./burn map.all
         sleep 60
         popd
-        ./testbed.sh eas $eas fps $fps dr $dr
-        sleep $testDuration
       done
     done
   done
