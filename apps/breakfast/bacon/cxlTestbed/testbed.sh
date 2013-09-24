@@ -5,11 +5,11 @@ enablePrintf=1
 #enable auto push
 eap=0
 #router power
-rp=0xC3
+rp=0x2D
 #leaf power
 lp=0x2D
-rxSlack=20UL
-txSlack=100UL
+rxSlack=15UL
+txSlack=44UL
 gitRev=$(git log --pretty=format:'%h' -n 1)
 #enable forwarder selection
 efs=0
@@ -77,6 +77,7 @@ echo "Router: ${testDescRouter}"
 echo "Leaf: ${testDescLeaf}"
 echo "root: ${testDescLeaf}"
 
+set -x
 #for map in map.p0
 #for map in map.p0 map.p1 map.p2 map.p3
 for map in map.flat

@@ -784,7 +784,7 @@ module CXLinkP {
           call CXLinkPacket.len(msg), om);
         frameLen = (call CXLinkPacket.len(msg) == SHORT_PACKET) ?  FRAMELEN_FAST_SHORT : FRAMELEN_FAST_NORMAL;
       }else{
-        cwarn(LINK, "rp.st %x\r\n", error);
+        cerror(LINK, "rp.st %x\r\n", error);
       }
       return error;
     } else {

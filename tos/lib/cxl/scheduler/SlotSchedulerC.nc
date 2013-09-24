@@ -78,5 +78,6 @@ configuration SlotSchedulerC{
   #endif
   SlotSchedulerP.StatsLog -> StatsLog;
   StatsLog.CXLinkPacket -> CXWakeupC.CXLinkPacket;
+  StatsLog.CXMacPacket -> CXWakeupC.CXMacPacket;
   StatsLog.Packet -> CXWakeupC.Packet;
 }

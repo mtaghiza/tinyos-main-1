@@ -951,7 +951,7 @@ module HplMsp430Rf1aP {
        * it's gone. */
       if (! transmitIsInactive_atomic_()) {
 //        printf ("%s\n\r",__FUNCTION__);
-        return ERETRY;
+        return EALREADY;
       }
 
       /* Do we need to tell the radio how long the packet is?  If so,

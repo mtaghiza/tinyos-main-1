@@ -663,7 +663,6 @@ module SlotSchedulerP {
       return EBUSY;
     } else {
       error_t error;
-      logTransmission(msg);
       (call CXLinkPacket.getLinkMetadata(msg))->txTime = txTime;
       call CXLinkPacket.setTtl(msg, ttl);
       call Packet.setPayloadLength(msg, len);
@@ -678,6 +677,7 @@ module SlotSchedulerP {
   }
 
   event void SubSend.sendDone(message_t* msg, error_t error){
+    logTransmission(msg);
     cinfo(SCHED_RX, "LTX %u %lu %u %lu \r\n", 
       call CXLinkPacket.getSn(msg),
       timestamp(msg) - baseCTS,
