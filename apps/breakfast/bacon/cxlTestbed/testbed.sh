@@ -33,12 +33,21 @@ eas=1
 ma=2
 #max download rounds
 mdr=1
+#missed CTS threshold
+mct=4
+#self sfd synch
+ssfds=1
+#power adjust (decrease power on retx)
+pa=1
 td=0xFFFF
 installTS=$(date +%s)
+dls=DL_INFO
+dlsr=DL_INFO
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
-"gc" "rc" "installTS" "dr" "tpl" "td" "eas" "ma" "mdr")
+"gc" "rc" "installTS" "dr" "tpl" "td" "eas" "ma" "mdr" "dls" "dlsr"
+"mct" "ssfds" "pa")
 
 while [ $# -gt 1 ]
 do
@@ -63,7 +72,7 @@ done
 testDesc=""
 for v in ${settingVars[@]}
 do
-  testDesc=${testDesc}_${v}_${!v}
+  testDesc=${testDesc}_${v//_/-}_${!v//_/-}
 done
 
 #trim off the leading underscore
@@ -76,7 +85,6 @@ testDescRoot=${testDesc}_role_root
 echo "Router: ${testDescRouter}"
 echo "Leaf: ${testDescLeaf}"
 echo "root: ${testDescLeaf}"
-
 set -x
 #for map in map.p0
 #for map in map.p0 map.p1 map.p2 map.p3
@@ -94,7 +102,8 @@ do
     ROUTER_CHANNEL=$rc\
     SUBNETWORK_CHANNEL=$snc\
     ENABLE_AUTOPUSH=$eap\
-    DL_STATS=DL_INFO\
+    DL_STATS=$dls\
+    DL_STATS_RADIO=$dlsr\
     DL_TESTBED=DL_INFO\
     DATA_RATE=$dr\
     TEST_PAYLOAD_LEN=$tpl\
@@ -109,6 +118,9 @@ do
     ENABLE_CONFIGURABLE_LOG_NOTIFY=0\
     DEFAULT_MAX_DOWNLOAD_ROUNDS=$mdr\
     DEFAULT_MAX_ATTEMPTS=$ma\
+    SELF_SFD_SYNCH=$ssfds\
+    POWER_ADJUST=$pa\
+    MISSED_CTS_THRESH=$mct\
     ENABLE_PRINTF=$enablePrintf"
 
   testDesc=\\\"${testDescRouter}_snc_${snc}\\\"
