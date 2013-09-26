@@ -46,7 +46,7 @@ module CXLinkP {
   bool dfMissed;
   uint32_t rxStart;
   #endif
-  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+  #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
   uint32_t aFeCapture;
   cx_link_stats_t lastStats;
   cx_link_stats_t curStats;
@@ -64,7 +64,7 @@ module CXLinkP {
     R_NUMSTATES = 6
   } link_status_e;
 
-  #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+  #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
   link_status_e curState = R_OFF;
   uint32_t lastChange;
 
@@ -404,7 +404,7 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
-    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+    #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic radioStateChangeAtTime(R_TX, aSfdCapture - sfdAdjust);
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     #endif
@@ -546,7 +546,7 @@ module CXLinkP {
         call FastAlarm.start(CX_CS_TIMEOUT_EXTEND);
       } else {
         call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
-        #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+        #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
         aFeCapture = call FastAlarm.getNow();
         radioStateChange(R_IDLE);
         #endif
@@ -569,13 +569,13 @@ module CXLinkP {
     if (reCapture){
       //expand to 32 bits
       aSfdCapture = (ft & 0xffff0000) | time;
-      #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+      #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
       reCapture = FALSE;
       call SynchCapture.captureFallingEdge();
       #endif
     }else{
       call SynchCapture.disable();
-      #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+      #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
       aFeCapture = (ft & 0xffff0000) | time;
       #endif
     }
@@ -825,7 +825,7 @@ module CXLinkP {
       crcIndex++;
     }
     #endif
-    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+    #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     #endif
     post handleReception();
@@ -1011,7 +1011,7 @@ module CXLinkP {
 
   command cx_link_stats_t CXLink.getStats(){
     cx_link_stats_t ret;
-    #if DL_STATS <= DL_INFO && DL_GLOBAL <= DL_INFO
+    #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic{
       radioStateChange(curState);
       curStats.total = call FastAlarm.getNow();

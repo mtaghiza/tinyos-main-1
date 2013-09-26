@@ -10,7 +10,7 @@ module PrintfStatsLogP{
   command void StatsLog.logSlotStats(cx_link_stats_t stats, 
       uint16_t wakeupNum, uint16_t slotNum, 
       uint8_t slotRole){
-    cinfo(STATS, "SS %u %u %lu %lu %lu %lu %lu %lu %lu %u\r\n",
+    cinfo(STATS_RADIO, "SS %u %u %lu %lu %lu %lu %lu %lu %lu %u\r\n",
       wakeupNum,
       slotNum,
       stats.total,

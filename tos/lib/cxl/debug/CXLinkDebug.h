@@ -14,4 +14,8 @@
 #define DL_STATS DL_WARN
 #endif
 
+#ifndef DL_STATS_RADIO
+#define DL_STATS_RADIO DL_WARN
+#endif
+
 #endif
