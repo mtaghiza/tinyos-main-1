@@ -3,19 +3,28 @@ testDuration=$((60 * 30))
 
 while true
 do
-  for eas in 0 1
+  for pa in 0 1
   do
-    for fps in 30 60 90
+    for txp in 0x2D 
     do
-      for dr in 1024
+      for eas in 0
       do
-        ./testbed.sh eas $eas fps $fps dr $dr
-        sleep $testDuration
-        pushd .
-        cd ~/tinyos-2.x/apps/Blink
-        ./burn map.all
-        sleep 60
-        popd
+        for fps in 30 
+        do
+          for dr in 1024
+          do
+            for mct in 2 4 8
+            do
+              ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp pa $pa mct $mct
+              sleep $testDuration
+              pushd .
+              cd ~/tinyos-2.x/apps/Blink
+              ./burn map.all
+              sleep 60
+              popd
+            done
+          done
+        done
       done
     done
   done
