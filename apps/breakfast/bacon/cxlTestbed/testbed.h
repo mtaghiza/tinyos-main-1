@@ -11,6 +11,6 @@
 #define TEST_SEGMENT NS_SUBNETWORK
 #endif
 
-#define TEST_DELAY (LPP_SLEEP_TIMEOUT * 2UL)
+#define TEST_DELAY (LPP_SLEEP_TIMEOUT * 4UL)
 
 #endif

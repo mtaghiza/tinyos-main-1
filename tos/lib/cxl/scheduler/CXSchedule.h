@@ -66,7 +66,7 @@
 
 //back to sleep when we miss this many CTS packets in a download.
 #ifndef MISSED_CTS_THRESH
-#define MISSED_CTS_THRESH 2
+#define MISSED_CTS_THRESH 4
 #endif
 
 #ifndef ENABLE_FORWARDER_SELECTION
