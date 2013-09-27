@@ -44,7 +44,7 @@ generic module Rf1aTinyOsPhysicalP() {
     interface Receive[uint8_t frame_type];
   }
   uses {
-    interface Resource;
+    interface SplitControl as SubSplitControl;
     interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Packet;
@@ -147,7 +147,7 @@ generic module Rf1aTinyOsPhysicalP() {
           return EBUSY;
           break;
         case SCS_off:
-          if (SUCCESS == call Resource.request()) {
+          if (SUCCESS == call SubSplitControl.start()) {
             split_control_state = SCS_starting;
             return SUCCESS;
           }
@@ -173,7 +173,7 @@ generic module Rf1aTinyOsPhysicalP() {
           return EBUSY;
           break;
         case SCS_on:
-          if (SUCCESS == call Resource.release()) {
+          if (SUCCESS == call SubSplitControl.stop()) {
             split_control_state = SCS_stopping;
             return SUCCESS;
           }
@@ -184,18 +184,20 @@ generic module Rf1aTinyOsPhysicalP() {
     }
   }
 
-  event void Resource.granted ()
+  event void SubSplitControl.startDone (error_t error)
   {
-    /* Upon granting the resource, the radio configuration has been
-     * reset, and there are no buffers provided for receives.
-     * Configure a default buffer. */
-    call Packet.clear(&rx_buffer);
-    setReceiveBuffer(&rx_buffer);
-    atomic {
-      split_control_state = SCS_on;
-      tx_state = TXS_idle;
+    if (error == SUCCESS){
+      /* Upon granting the resource, the radio configuration has been
+       * reset, and there are no buffers provided for receives.
+       * Configure a default buffer. */
+      call Packet.clear(&rx_buffer);
+      setReceiveBuffer(&rx_buffer);
+      atomic {
+        split_control_state = SCS_on;
+        tx_state = TXS_idle;
+      }
     }
-    signal SplitControl.startDone(SUCCESS);
+    signal SplitControl.startDone(error);
   }
 
   task void stopDone_task ()
@@ -205,7 +207,9 @@ generic module Rf1aTinyOsPhysicalP() {
   }
 
   async event void Rf1aPhysical.released ()
-  {
+  {}
+
+  event void SubSplitControl.stopDone(error_t error){
     post stopDone_task();
   }
 

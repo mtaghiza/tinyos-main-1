@@ -50,7 +50,7 @@ generic configuration Rf1aTinyOsPhysicalC() {
     interface Receive[uint8_t frame_type];
   }
   uses {
-    interface Resource;
+    interface SplitControl as SubSplitControl;
     interface Rf1aPhysical;
     interface Rf1aPhysicalMetadata;
     interface Packet;
@@ -62,7 +62,7 @@ generic configuration Rf1aTinyOsPhysicalC() {
   SplitControl = Rf1aTinyOsPhysicalP;
   Send = Rf1aTinyOsPhysicalP.Send;
   Receive = Rf1aTinyOsPhysicalP;
-  Resource = Rf1aTinyOsPhysicalP;
+  Rf1aTinyOsPhysicalP.SubSplitControl = SubSplitControl;
   Rf1aPhysical = Rf1aTinyOsPhysicalP;
   Rf1aPhysicalMetadata = Rf1aTinyOsPhysicalP;
   Packet = Rf1aTinyOsPhysicalP;

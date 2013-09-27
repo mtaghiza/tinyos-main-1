@@ -47,13 +47,13 @@ configuration Rf1aActiveMessageC {
   provides {
     interface SplitControl;
     interface AMSend[am_id_t id];
-    interface DelayedSend[am_id_t id];
+//    interface DelayedSend[am_id_t id];
     interface SendNotifier[am_id_t id];
     interface Receive[am_id_t id];
     interface Receive as Snoop[am_id_t id];
     interface Packet;
     interface AMPacket;
-    interface Resource;
+//    interface Resource;
     interface PacketAcknowledgements;
     interface LowPowerListening;
     
@@ -89,8 +89,8 @@ implementation {
   /* Stack architecture: A module that supports the
    * ActiveMessage-relevant interfaces is laid on top of a
    * TinyOS/physical bridge which uses an Rf1a physical layer. */
-  components new Rf1aPhysicalC() as PhysicalC;
-  Resource = PhysicalC;
+  components Rf1aPhysicalC as PhysicalC;
+//  Resource = PhysicalC;
   HplMsp430Rf1aIf = PhysicalC;
   Rf1aPhysical = PhysicalC;
   Rf1aStatus = PhysicalC;
@@ -102,7 +102,7 @@ implementation {
   PhyPacketC.Rf1aPhysicalMetadata -> PhysicalC;
 
   components new Rf1aTinyOsPhysicalC() as TinyOsPhysicalC;
-  TinyOsPhysicalC.Resource -> PhysicalC;
+  TinyOsPhysicalC.SubSplitControl -> PhysicalC;
   TinyOsPhysicalC.Rf1aPhysical -> PhysicalC;
   TinyOsPhysicalC.Rf1aPhysicalMetadata -> PhysicalC;
   TinyOsPhysicalC.Packet -> PacketC;
@@ -130,12 +130,12 @@ implementation {
   SendNotifier = AM;
   Receive = AM.Receive;
   Snoop = AM.Snoop;
-  DelayedSend = AM.DelayedSend;
+//  DelayedSend = AM.DelayedSend;
   AM.Rf1aPacket -> PhyPacketC;
   AM.Ieee154Packet -> PhyPacketC;
   AM.Packet -> PacketC;
   AM.AMPacket -> PacketC;
-  AM.SubDelayedSend -> PhysicalC;
+//  AM.SubDelayedSend -> PhysicalC;
 
 
 #if defined(LOW_POWER_LISTENING) || defined(ACK_LOW_POWER_LISTENING)
