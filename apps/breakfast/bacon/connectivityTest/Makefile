@@ -46,9 +46,9 @@ PFLAGS += -I$(TOSDIR)/lib/serialprintf
 PFLAGS+=-I.
 CFLAGS += -I../../util
 CFLAGS += -I../../util/crc
-CFLAGS += -I$(TOSDIR)/lib/rf1a-fec/physical
-CFLAGS += -I$(TOSDIR)/lib/rf1a-fec/fec
-CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical/configs
+# CFLAGS += -I$(TOSDIR)/lib/rf1a-fec/physical
+# CFLAGS += -I$(TOSDIR)/lib/rf1a-fec/fec
+# CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/physical/configs
 #CFLAGS += -I../sniffer
 
 #16mhz mclk, 32 mhz dco
