@@ -156,4 +156,24 @@ JOIN (
   FROM RXR 
   GROUP BY it, src, dest
 ) b ON a.it = b.it AND a.src=b.src;
+
+DROP TABLE IF EXISTS agg;
+CREATE TEMPORARY TABLE agg AS 
+SELECT prr.it as it, txp.val as power, mct.val as mct, pa.val as pa, avg(prr) as prr
+FROM prr 
+JOIN setup as txp 
+  ON txp.node=0 and txp.it=prr.it AND txp.key='lp'
+JOIN setup as mct 
+  ON mct.node=0 and mct.it=prr.it AND mct.key='mct'
+JOIN setup as pa 
+  ON pa.node=0 and pa.it=prr.it AND pa.key='pa'
+JOIN setup as installed
+  ON installed.node = prr.dest
+  AND installed.key='installTS'
+  AND installed.val=prr.it
+WHERE src=0 
+AND prr.dest not in (0)
+--AND prr.prr > 0.0
+GROUP BY prr.it, txp.val, mct.val, pa.val
+ORDER BY avg(prr);
 EOF

@@ -3,17 +3,17 @@ testDuration=$((60 * 30))
 
 while true
 do
-  for pa in 0 1
+  for pa in 1
   do
-    for txp in 0x2D 
+    for txp in 0x2D 0x8D 
     do
       for eas in 0
       do
-        for fps in 30 
+        for fps in 30 60
         do
           for dr in 1024
           do
-            for mct in 2 4 8
+            for mct in 2 4
             do
               ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp pa $pa mct $mct
               sleep $testDuration
