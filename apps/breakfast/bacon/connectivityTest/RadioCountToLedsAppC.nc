@@ -103,6 +103,8 @@ implementation {
   App.HplMsp430Rf1aIf -> Rf1aActiveMessageC;
   App.SendTimer -> SendTimer;
 
+  App.Rf1aStatus -> Rf1aActiveMessageC;
+
   components CC1190C;
   App.CC1190 -> CC1190C;
   App.CC1190Control -> CC1190C;

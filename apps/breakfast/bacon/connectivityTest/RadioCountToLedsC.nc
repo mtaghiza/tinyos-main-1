@@ -76,6 +76,8 @@ module RadioCountToLedsC @safe() {
   uses interface HplMsp430Rf1aIf;
   uses interface StdControl as CC1190Control;
   uses interface CC1190;
+
+  uses interface Rf1aStatus;
 //  uses interface Rf1aConfigure;
 }
 implementation {
@@ -93,16 +95,25 @@ implementation {
   uint16_t counter = 0;
   
   event void Boot.booted() {
-    P1SEL &= ~(BIT1|BIT2|BIT3|BIT4);
-    P1OUT &= ~(BIT1|BIT2|BIT3|BIT4);
-    P1DIR |= (BIT1|BIT2|BIT3|BIT4);
-    P2SEL &= ~(BIT4);
-    P2OUT &= ~(BIT4);
-    P2DIR |= BIT4;
+    atomic{
+      P1SEL &= ~(BIT1|BIT2|BIT3|BIT4);
+      P1OUT &= ~(BIT1|BIT2|BIT3|BIT4);
+      P1DIR |= (BIT1|BIT2|BIT3|BIT4);
+      P2SEL &= ~(BIT4);
+      P2OUT &= ~(BIT4);
+      P2DIR |= BIT4;
+
+      P2SEL |= BIT4;
+      
+      PMAPPWD = PMAPKEY;
+      PMAPCTL = PMAPRECFG;
+      P2MAP4 = PM_RFGDO0;
+      PMAPPWD = 0x00;
+    }
+
     call AMControl.start();
     call SerialControl.start();
-    printf("CONNECTIVITY TEST \r\n");
-    //TODO: set up GDO pins
+    printf("CONNECTIVITY %s\r\n", TEST_DESC);
   }
 
   event void AMControl.startDone(error_t err) {
@@ -119,11 +130,11 @@ implementation {
     printf("P3DIR: %x P3SEL: %x P3OUT: %x\r\n", P3DIR, P3SEL, P3OUT);
     printf("PJDIR: %x PJOUT: %x\r\n", PJDIR, PJOUT);
     call Rf1aPhysical.setChannel(TEST_CHANNEL);
-    call HplMsp430Rf1aIf.writeSinglePATable(TEST_POWER);
+    call Rf1aPhysical.setPower(TEST_POWER);
     call Rf1aPhysical.readConfiguration(&config);
     call Rf1aDumpConfig.display(&config);
+    printf("Started %x\r\n", err);
     if (err == SUCCESS) {
-      printf("Started\r\n");
       if (AUTOSEND){
         call SendTimer.startOneShot(SEND_INTERVAL);
       }
@@ -150,6 +161,7 @@ implementation {
       if (rcm == NULL) {
 	return;
       }
+      call Rf1aPhysical.setPower(TEST_POWER);
 
       rcm->counter = counter;
       error = call AMSend.send(AM_BROADCAST_ADDR, &packet,
@@ -158,7 +170,7 @@ implementation {
         dbg("RadioCountToLedsC", "RadioCountToLedsC: packet sent.\n", counter);	
         locked = TRUE;
       }
-//      printf("TX %u\r\n", TOS_NODE_ID);
+      printf("TX %u %x\r\n", TOS_NODE_ID, error);
     }
   }
 
@@ -168,12 +180,12 @@ implementation {
     if (len != sizeof(radio_count_msg_t)) {return bufPtr;}
     else {
       radio_count_msg_t* rcm = (radio_count_msg_t*)payload;
-//      printf("RX %u %u %lu %d %d \r\n", 
-//        call AMPacket.source(bufPtr),
-//        TOS_NODE_ID,
-//        rcm->counter, 
-//        call Rf1aPacket.rssi(bufPtr),
-//        call Rf1aPacket.lqi(bufPtr));
+      printf("RX %u %u %lu %d %d \r\n", 
+        call AMPacket.source(bufPtr),
+        TOS_NODE_ID,
+        rcm->counter, 
+        call Rf1aPacket.rssi(bufPtr),
+        call Rf1aPacket.lqi(bufPtr));
       if (rcm->counter & 0x1) {
 	call Leds.led0On();
       }
@@ -197,6 +209,7 @@ implementation {
   }
 
   event void AMSend.sendDone(message_t* bufPtr, error_t error) {
+    printf("Send Done: %x\r\n", error);
     if (&packet == bufPtr) {
       locked = FALSE;
     }
@@ -222,7 +235,6 @@ implementation {
 	call Leds.led2Off();
       }
 //    printf("+");
-//    printf("Send Done: %x\n\r", error);
 //    printf("\n\r\n\r");
   }
 
@@ -240,6 +252,15 @@ implementation {
 //    call DelayedSend.completeSend();
 //  }
 //
+
+  task void readStatus(){
+    rf1a_config_t config;
+    
+    printf("status: %x\r\n", call Rf1aStatus.get());
+    call Rf1aPhysical.readConfiguration(&config);
+    call Rf1aDumpConfig.display(&config);
+  }
+
   async event void UartStream.receivedByte(uint8_t byte){
     switch(byte){
       case 'q':
@@ -247,6 +268,9 @@ implementation {
         break;
       case 't':
         post doSend();
+        break;
+      case '?':
+        post readStatus();
         break;
       case '\r':
         printf("\r\n");
