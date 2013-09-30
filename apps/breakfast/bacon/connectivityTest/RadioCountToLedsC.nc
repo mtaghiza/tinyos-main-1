@@ -162,7 +162,7 @@ implementation {
 	return;
       }
       call Rf1aPhysical.setPower(TEST_POWER);
-
+      call Packet.clear(&packet);
       rcm->counter = counter;
       error = call AMSend.send(AM_BROADCAST_ADDR, &packet,
         sizeof(radio_count_msg_t));
@@ -170,22 +170,32 @@ implementation {
         dbg("RadioCountToLedsC", "RadioCountToLedsC: packet sent.\n", counter);	
         locked = TRUE;
       }
-      printf("TX %u %x\r\n", TOS_NODE_ID, error);
     }
   }
 
   event message_t* Receive.receive(message_t* bufPtr, 
 				   void* payload, uint8_t len) {
     dbg("RadioCountToLedsC", "Received packet of length %hhu.\n", len);
-    if (len != sizeof(radio_count_msg_t)) {return bufPtr;}
-    else {
+    {
       radio_count_msg_t* rcm = (radio_count_msg_t*)payload;
-      printf("RX %u %u %lu %d %d \r\n", 
+      printf("RX %u %u %u %u %u %u %lu %d %d %x\r\n",
+        TEST_SR,
+        TEST_POWER,
+        call Packet.payloadLength(bufPtr) + sizeof(rf1a_nalp_am_t)+sizeof(rf1a_ieee154_t),
         call AMPacket.source(bufPtr),
+        call AMPacket.destination(bufPtr),
         TOS_NODE_ID,
-        rcm->counter, 
+        rcm->counter,
         call Rf1aPacket.rssi(bufPtr),
-        call Rf1aPacket.lqi(bufPtr));
+        call Rf1aPacket.lqi(bufPtr),
+        call Rf1aPacket.crcPassed(bufPtr)
+      );
+//      printf("RX %u %u %lu %d %d \r\n", 
+//        call AMPacket.source(bufPtr),
+//        TOS_NODE_ID,
+//        rcm->counter, 
+//        call Rf1aPacket.rssi(bufPtr),
+//        call Rf1aPacket.lqi(bufPtr));
       if (rcm->counter & 0x1) {
 	call Leds.led0On();
       }
@@ -209,7 +219,14 @@ implementation {
   }
 
   event void AMSend.sendDone(message_t* bufPtr, error_t error) {
-    printf("Send Done: %x\r\n", error);
+    radio_count_msg_t* rcm = (radio_count_msg_t*)call Packet.getPayload(&packet, sizeof(radio_count_msg_t));
+    printf("TX %u %u %u %u %u %lu\r\n", 
+      TEST_SR,
+      TEST_POWER,
+      call Packet.payloadLength(bufPtr) + sizeof(rf1a_nalp_am_t)+sizeof(rf1a_ieee154_t),
+      call AMPacket.source(bufPtr),
+      call AMPacket.destination(bufPtr),
+      rcm->counter);
     if (&packet == bufPtr) {
       locked = FALSE;
     }
