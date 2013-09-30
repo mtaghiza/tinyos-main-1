@@ -290,9 +290,6 @@ class Handler(object):
         for i in range(0,8):
             output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
             
-        if output[7] != 0x05: # magic number
-            raise TypeError
-            
         self.toast.writeBarcode(output)
         
         # update successful, store in handler

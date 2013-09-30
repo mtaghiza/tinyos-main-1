@@ -72,6 +72,10 @@ class BaconFrame(Frame):
         self.mfrVarLabel.config(state=NORMAL)
 
     def disableUI(self):
+        # reset variables
+        self.barcodeVar.set("Not available")
+        self.mfrVar.set("Not available")
+        
         self.currentLabel.config(state=DISABLED)
         self.newLabel.config(state=DISABLED)
         self.barcodeLabel.config(state=DISABLED)
@@ -115,8 +119,7 @@ class BaconFrame(Frame):
     def updateBarcodeKey(self, event):
         self.updateBarcode()
 
-    def updateBarcode(self):
-        
+    def updateBarcode(self):        
         if self.barcodeSet:
             if not tkMessageBox.askokcancel("Warning", "Barcode already set. Do you wish to overwrite?", parent=self.parent):
                 self.newBarcodeVar.set("")
