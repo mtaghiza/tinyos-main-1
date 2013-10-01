@@ -361,8 +361,6 @@ class ControlFrame(Frame):
           state=NORMAL)
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.progressMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
-        for i in range(100):
-            self.progressMessage("test %u\n"%i)
 
         self.hub.node.loadSettings()
         self.hub.node.redrawAllNodes()
@@ -377,6 +375,12 @@ class ControlFrame(Frame):
         DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR)
         self.progressMessage("CSV files ready (under '%s' directory)\n"%
           self.DEFAULT_DATA_DIR )
+        for (nodeId, barcodeId, lastSampleTime, lastContact, batteryVoltage) in self.db.contactSummary():
+            self.progressMessage("Node %s last sample %u ago last contact %u ago battery %.2f"%(
+              barcodeId, 
+              time.time() - lastSampleTime, 
+              time.time() - lastContact,
+              batteryVoltage))
 
     def refCallBack(self, node):
         self.progressMessage("Contacted %x.\n"%(node))
