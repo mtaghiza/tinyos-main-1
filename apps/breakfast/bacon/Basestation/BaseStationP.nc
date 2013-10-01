@@ -70,6 +70,8 @@ implementation
   message_t* statusMsg;
   cx_status_t* statusPl;
 
+  message_t* strMsg;
+
   message_t* ackDMsg;
   message_t* ackRMsg;
 
@@ -507,23 +509,31 @@ implementation
   }
 
   task void logStatus(){
-    am_addr_t node = call RadioAMPacket.source(statusMsg);
-    uint16_t rc = statusPl->wakeupRC;
-    uint32_t ts = statusPl->wakeupTS;
-    status_time_ref_t* pl = call
-    StatusTimeRefSend.getPayload(statusMsg,
-      sizeof(status_time_ref_t));
-
-    call SerialPacket.clear(statusMsg);
-    pl -> node = node;
-    pl -> rc = rc;
-    pl -> ts = ts;
-    call SerialAMPacket.setSource(statusMsg, 
-      call ActiveMessageAddress.amAddress());
-    if (SUCCESS != call StatusTimeRefSend.send(0, statusMsg, sizeof(status_time_ref_t))){
-      cdbg(BASESTATION, "P sr!\r\n");
-      call Pool.put(statusMsg);
-      statusMsg = NULL;
+    strMsg = call Pool.get();
+    if (strMsg){
+      am_addr_t node = call RadioAMPacket.source(statusMsg);
+      uint16_t rc = statusPl->wakeupRC;
+      uint32_t ts = statusPl->wakeupTS;
+      status_time_ref_t* pl = call
+      StatusTimeRefSend.getPayload(strMsg,
+        sizeof(status_time_ref_t));
+  
+      call SerialPacket.clear(strMsg);
+      pl -> node = node;
+      pl -> rc = rc;
+      pl -> ts = ts;
+      call SerialAMPacket.setSource(strMsg, 
+        call ActiveMessageAddress.amAddress());
+      if (SUCCESS != call StatusTimeRefSend.send(0, strMsg, sizeof(status_time_ref_t))){
+        cdbg(BASESTATION, "P sr!\r\n");
+        call Pool.put(strMsg);
+        strMsg = NULL;
+        call Pool.put(radioReceive(statusMsg, statusPl,
+          sizeof(cx_status_t)));
+      }
+    }else{
+      call Pool.put(radioReceive(statusMsg, statusPl,
+        sizeof(cx_status_t)));
     }
   }
 
@@ -531,8 +541,10 @@ implementation
   event void StatusTimeRefSend.sendDone(message_t* msg, 
       error_t error){
     cdbg(BASESTATION, "P sr\r\n");
-    call Pool.put(statusMsg);
+    call Pool.put(strMsg);
     statusMsg = NULL;
+    call Pool.put(radioReceive(statusMsg, statusPl,
+      sizeof(cx_status_t)));
   }
 
   default command error_t CXDownload.startDownload[uint8_t ns](){
