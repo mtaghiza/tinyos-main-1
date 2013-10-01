@@ -77,7 +77,7 @@ class Dispatcher(object):
 
 def download(packetSource, networkSegment=constants.NS_GLOBAL,
         configMap={}, configFile=None, refCallBack=None,
-        finishedCallBack=None):
+        finishedCallBack=None, requestMissing=True):
     print packetSource
     db = Database.Database()
     try:
@@ -86,8 +86,10 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
     except:
         if finishedCallBack:
             finishedCallBack(constants.BCAST_ADDR, """Could not connect to base station.
-              Make sure you've selected the right device and make sure
-              it has been set up as a base station.""")
+  Make sure you've selected the right device and make sure
+  it has been set up as a base station.
+""")
+        return
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
@@ -120,29 +122,29 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
 #         setTSI = SetToastSampleInterval.SetToastSampleInterval(60*1024)
 #         error = d.send(setTSI, 0xFFFF)
 #         #END TESTING
-        
-        request_list = db.findMissing()
-#         request_list = []
-        print "Recovery requests: ", request_list
-#         MAX_PACKET_PAYLOAD = 100
-        for request in request_list:
-            if request['node_id'] != bsId:
-                msg = CxRecordRequestMsg.CxRecordRequestMsg()
-                msg.set_node_id(request['node_id'])
-                msg.set_cookie(request['nextCookie'])
-                msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
-    #             if request['missing'] < MAX_PACKET_PAYLOAD:
-    #                 msg.set_length(request['missing'])
-    #             else:
-    #                 msg.set_length(MAX_PACKET_PAYLOAD)
-                print "requesting %u at %u from %u"%(msg.get_length(),
-                  msg.get_cookie(), msg.get_node_id())
-                error = d.send(msg, msg.get_node_id())
-                print "Request status: %x"%error
-                if error:
-                    break
-            else:
-                print "Skip BS pseudo-cookie"
+        if requestMissing:
+            request_list = db.findMissing()
+    #         request_list = []
+            print "Recovery requests: ", request_list
+    #         MAX_PACKET_PAYLOAD = 100
+            for request in request_list:
+                if request['node_id'] != bsId:
+                    msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                    msg.set_node_id(request['node_id'])
+                    msg.set_cookie(request['nextCookie'])
+                    msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
+        #             if request['missing'] < MAX_PACKET_PAYLOAD:
+        #                 msg.set_length(request['missing'])
+        #             else:
+        #                 msg.set_length(MAX_PACKET_PAYLOAD)
+                    print "requesting %u at %u from %u"%(msg.get_length(),
+                      msg.get_cookie(), msg.get_node_id())
+                    error = d.send(msg, msg.get_node_id())
+                    print "Request status: %x"%error
+                    if error:
+                        break
+                else:
+                    print "Skip BS pseudo-cookie"
 
         if error:
             print "Download failed: %x"%error

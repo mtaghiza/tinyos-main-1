@@ -12,6 +12,30 @@ from tools.serial.tools.list_ports import comports
 
 def getDisplayVal(rootStr, channel):
     return "%s (c. %u)"%(rootStr, channel)
+   
+class ProgressWindow(Toplevel):
+    def __init__(self, onClose):
+        Toplevel.__init__(self)
+        self.protocol("WM_DELETE_WINDOW", onClose)
+        self.title = "Download Progress"
+        self.focus_set()
+
+        self.messageFrame = Frame(self)
+        self.messageText = Text(self.messageFrame, height=10, width=70,
+          background='white')
+
+        self.scroll = Scrollbar(self.messageFrame)
+        self.messageText.configure(yscrollcommand=self.scroll.set)
+        self.scroll.configure(command = self.messageText.yview)
+
+        self.scroll.pack(side="right", fill="y")
+        self.messageText.pack(side="left", fill="both", expand=True)
+        self.messageFrame.pack(fill="both", expand=True)
+
+
+    def addMessage(self, message):
+        self.messageText.insert(END, message)
+        self.messageText.yview(END)
 
 class ControlFrame(Frame):
     DEFAULT_COM_STRING = "<no device detected>"
@@ -38,6 +62,16 @@ class ControlFrame(Frame):
         self.connected = False
         self.comDict={}
         self.initUI()
+    
+    def removeProgressWindow(self):
+        self.progressWindow.destroy()
+        del self.progressWindow
+        self.progressWindow = None
+
+    def progressMessage(self, message):
+        if not self.progressWindow:
+            self.progressWindow = ProgressWindow(self.removeProgressWindow)
+        self.progressWindow.addMessage(message)
 
     def deviceDetection(self):
         """ Detect serial devices by using the built-in comports command in pyserial.
@@ -84,6 +118,7 @@ class ControlFrame(Frame):
     
 
     def initUI(self):
+        self.progressWindow = None
         self.selectionFrame = Frame(self, padx=self.SPACING)
         self.selectionFrame.grid(column=0, row=0)
         #
@@ -164,6 +199,11 @@ class ControlFrame(Frame):
 
         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
         self.downloadButton.grid(column=1, row=1)
+        
+        self.repairVar = IntVar()
+        self.repairButton = Checkbutton(self.downloadFrame,
+          text="Repair", variable=self.repairVar)
+        self.repairButton.grid(column=2, row=1)
 
 
         self.downloadFrame.grid(column=3, row=0)
@@ -303,7 +343,7 @@ class ControlFrame(Frame):
           finishedCallBack=self.downloadFinished )
 
     def download(self):
-        self.hub.status.addMessage("Download Started\n")
+        self.progressMessage( "Download Started: request repairs= %s\n"% ("True" if self.repairVar.get() else "False")) 
         print "Download: %u %u %s"%(self.networkSegment,
           self.downloadChannel, self.comDict[self.comVar.get()])
         self.downloadButton.config(text="DOWNLOADING", bg="red",
@@ -316,11 +356,14 @@ class ControlFrame(Frame):
         
 
     def downloadFinished(self, masterId, message):
-        self.hub.status.addMessage(message)
+        self.progressMessage(message)
         self.downloadButton.config(text="Download", bg="gray",
           state=NORMAL)
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
-        self.hub.status.addMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
+        self.progressMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
+        for i in range(100):
+            self.progressMessage("test %u\n"%i)
+
         self.hub.node.loadSettings()
         self.hub.node.redrawAllNodes()
         self.csvThread = Thread(target=self.csvRunner,
@@ -330,13 +373,13 @@ class ControlFrame(Frame):
 
 
     def csvRunner(self):
-        self.hub.status.addMessage("Processing data to CSV files\n")
+        self.progressMessage("Processing data to CSV files\n")
         DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR)
-        self.hub.status.addMessage("CSV files ready (under %s)\n"%
+        self.progressMessage("CSV files ready (under '%s' directory)\n"%
           self.DEFAULT_DATA_DIR )
 
     def refCallBack(self, node):
-        self.hub.status.addMessage("Contacted %x.\n"%(node))
+        self.progressMessage("Contacted %x.\n"%(node))
     
     def commitChanges(self):
         print "Commit Changes"

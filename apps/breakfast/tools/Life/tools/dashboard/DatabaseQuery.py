@@ -31,7 +31,10 @@ class DatabaseQuery(object):
           ON lastDownload.master_id = reachedCount.master_id AND lastDownload.cookie = reachedCount.cookie
         '''
         c = sqlite3.connect(self.dbName)
-        return c.execute(query, (masterId,)).fetchone()
+        ret = c.execute(query, (masterId,)).fetchone()
+        if not ret:
+            ret = (0, 0, 0)
+        return ret
 
     def getRouters(self):
         """
@@ -226,6 +229,12 @@ class DatabaseQuery(object):
                 output[channel] = (hex(row[1]), hex(row[2]))
         
         return output
+
+    def contactSummary(self):
+        now = time.time()
+        #TODO: time since last contact
+        #TODO: time since last bacon/toast sample
+        #TODO: most recent battery voltage measurement
 
 
 if __name__ == '__main__':

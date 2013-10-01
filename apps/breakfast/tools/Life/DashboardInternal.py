@@ -78,7 +78,7 @@ if __name__ == '__main__':
     centerHeight=500
     statusHeight=80
     WIDTH = 1080
-    HEIGHT = controlHeight+centerHeight+statusHeight
+    HEIGHT = controlHeight+centerHeight+20
     MAIN = WIDTH * 2/3
     
     root.geometry(str(WIDTH) + "x" + str(HEIGHT))
@@ -144,11 +144,11 @@ if __name__ == '__main__':
     nodeFrame.grid(column=1, row=2)
     hub.addNodeFrame(nodeFrame.frame)
     
-    statusFrame = StatusFrame(rootFrame, hub, width=WIDTH-4,
-      height=statusHeight, bd=1, relief=SUNKEN)
-    statusFrame.grid_propagate(False)
-    statusFrame.grid(column=1, row=3, columnspan=2)
-    hub.addStatusFrame(statusFrame)
+#     statusFrame = StatusFrame(rootFrame, hub, width=WIDTH-4,
+#       height=statusHeight, bd=1, relief=SUNKEN)
+#     statusFrame.grid_propagate(False)
+#     statusFrame.grid(column=1, row=3, columnspan=2)
+#     hub.addStatusFrame(statusFrame)
     
     #
     #
