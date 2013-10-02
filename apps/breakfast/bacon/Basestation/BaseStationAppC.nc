@@ -72,10 +72,6 @@ implementation {
     as CXDownloadFinishedSend;
   BaseStationP.CXDownloadFinishedSend -> CXDownloadFinishedSend;
 
-  components new SerialAMSenderC(AM_STATUS_TIME_REF) 
-    as StatusTimeRefSend;
-  BaseStationP.StatusTimeRefSend -> StatusTimeRefSend;
-
   components new SerialAMSenderC(AM_IDENTIFY_RESPONSE) 
     as IDResponseSend;
   BaseStationP.IDResponseSend -> IDResponseSend;

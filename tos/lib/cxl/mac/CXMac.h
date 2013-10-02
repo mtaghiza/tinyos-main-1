@@ -109,7 +109,7 @@ enum {
 
 //for serial use only
 enum {
-  AM_CX_STATUS=0xF1,
+  AM_CX_STATUS=0xD3,
 };
 
 #endif

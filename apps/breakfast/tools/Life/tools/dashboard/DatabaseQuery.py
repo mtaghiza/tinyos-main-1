@@ -3,6 +3,7 @@
 import sqlite3
 
 import tools.cx.constants as constants
+import time
 
 class DatabaseQuery(object):
 
@@ -233,20 +234,10 @@ class DatabaseQuery(object):
     def contactSummary(self):
         now = time.time()
         query ='''
-        SELECT x.node_id, x.barcode_id, x.lastSampleTime, y.lastContact, batteryVoltage 
+        SELECT y.node_id, y.barcode_id, coalesce(x.lastSampleTime, 0),
+          y.lastContact, coalesce(batteryVoltage, 0)
         FROM (
-          SELECT 
-            node_id,
-            barcode_id,
-            max(ts) as lastSampleTime
-          FROM bacon_sample_final
-          GROUP BY node_id, 
-            barcode_id ) x
-        JOIN bacon_sample_final 
-          ON x.node_id=bacon_sample_final.node_id 
-            AND x.lastSampleTime = bacon_sample_final.ts
-        JOIN (
-          SELECT barcode_id,
+          SELECT last_bs.node_id, barcode_id,
             max(unixTS) as lastContact
           FROM base_reference
           JOIN last_bs 
@@ -255,20 +246,33 @@ class DatabaseQuery(object):
             ON last_bs.node_id = bacon_settings.node_id
             AND last_bs.cookie = bacon_settings.cookie
           GROUP BY base_reference.node1, barcode_id) y 
-          ON y.barcode_id = x.barcode_id'''
+        LEFT JOIN (
+          SELECT 
+            node_id,
+            barcode_id,
+            max(ts) as lastSampleTime
+          FROM bacon_sample_final
+          GROUP BY node_id, 
+            barcode_id ) x
+        ON y.barcode_id = x.barcode_id
+        LEFT JOIN bacon_sample_final 
+          ON x.node_id=bacon_sample_final.node_id 
+            AND x.lastSampleTime = bacon_sample_final.ts
+        '''
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = sqlite3.connect(self.dbName)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
-        return self.cursor.execute(lastContactQuery).fetchall()
+        return self.cursor.execute(query).fetchall()
 
 if __name__ == '__main__':
     db = DatabaseQuery("database0.sqlite")
     print "Leafs:",db.getLeafs()
     print "Routers:",db.getRouters()
     print "LDR:",db.getLastDownloadResults(61)
+    print "CS:", db.contactSummary()
     
 #     network = db.getNetwork()
 # 

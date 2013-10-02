@@ -9,6 +9,7 @@ import tools.cx.DumpCSV as DumpCSV
 from threading import Thread
 from tools.serial.tools.list_ports import comports
 
+import time
 
 def getDisplayVal(rootStr, channel):
     return "%s (c. %u)"%(rootStr, channel)
@@ -336,11 +337,13 @@ class ControlFrame(Frame):
         # doing a single-patch download) or it will be ignored for
         # globalChannel or routerChannel (depending on the type of
         # download we are doing).
-        configMap= {'subNetworkChannel':self.downloadChannel}
+        configMap= {'subNetworkChannel':self.downloadChannel,
+          'maxDownloadRounds':255}
         CXController.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
-          finishedCallBack=self.downloadFinished )
+          finishedCallBack=self.downloadFinished,
+          requestMissing=self.repairVar.get())
 
     def download(self):
         self.progressMessage( "Download Started: request repairs= %s\n"% ("True" if self.repairVar.get() else "False")) 
@@ -376,14 +379,14 @@ class ControlFrame(Frame):
         self.progressMessage("CSV files ready (under '%s' directory)\n"%
           self.DEFAULT_DATA_DIR )
         for (nodeId, barcodeId, lastSampleTime, lastContact, batteryVoltage) in self.db.contactSummary():
-            self.progressMessage("Node %s last sample %u ago last contact %u ago battery %.2f"%(
-              barcodeId, 
-              time.time() - lastSampleTime, 
+            self.progressMessage("Node %s last sample %s s ago last contact %u s ago battery %s v\n"%(
+              barcodeId if barcodeId else hex(nodeId), 
+              "%.2f"%(time.time() - lastSampleTime) if lastSampleTime else "NA", 
               time.time() - lastContact,
-              batteryVoltage))
+              "%.2f"%batteryVoltage if batteryVoltage else "NA"))
 
-    def refCallBack(self, node):
-        self.progressMessage("Contacted %x.\n"%(node))
+    def refCallBack(self, node, neighbors):
+        self.progressMessage("Contacted %x (%u neighbors).\n"%(node, len(neighbors)))
     
     def commitChanges(self):
         print "Commit Changes"

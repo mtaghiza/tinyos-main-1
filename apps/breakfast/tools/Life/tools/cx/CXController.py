@@ -25,10 +25,10 @@ from tools.cx.decoders import LogPrintf
 from tools.cx.decoders import NetworkMembership
 from tools.cx.decoders import Tunneled
 
+from tools.cx.messages import CxStatus
 from tools.cx.messages import CxDownload
 from tools.cx.CXMoteIF import CXMoteIF
 
-from tools.cx.messages import StatusTimeRef
 from tools.cx.listeners import StatusTimeRefListener
 
 from tools.cx import constants
@@ -104,7 +104,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
     pingId = 0
 
     refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName, refCallBack)
-    d.mif.addListener(refListener, StatusTimeRef.StatusTimeRef)
+    d.mif.addListener(refListener, CxStatus.CxStatus)
 
     try:
         print "Wakeup start", time.time()
@@ -145,6 +145,8 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
                         break
                 else:
                     print "Skip BS pseudo-cookie"
+        else:
+            print "Skip recovery"
 
         if error:
             print "Download failed: %x"%error

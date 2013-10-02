@@ -50,7 +50,6 @@ module BaseStationP @safe() {
 
   //For simple timestamping: separate from forwarding structures.
   uses interface Receive as StatusReceive;
-  uses interface AMSend as StatusTimeRefSend;
 
   uses interface Leds;
   
@@ -67,10 +66,6 @@ module BaseStationP @safe() {
 implementation
 {
   uint8_t aux[TOSH_DATA_LENGTH];
-  message_t* statusMsg;
-  cx_status_t* statusPl;
-
-  message_t* strMsg;
 
   message_t* ackDMsg;
   message_t* ackRMsg;
@@ -489,62 +484,15 @@ implementation
     call Pool.put(msg);
   }
 
-  task void logStatus();
-
   event message_t* StatusReceive.receive(message_t* msg, void* pl,
       uint8_t len){
-    message_t* ret;
-    cdbg(BASESTATION, "G sr\r\n");
-    ret = call Pool.get();
-    if (ret != NULL){
-      statusMsg = msg;
-      statusPl = pl;
-      post logStatus();
-      return ret;
-    } else {
-      cerror(BASESTATION, "Status rx: pool empty\r\n");
-      cflusherror(BASESTATION);
-      return msg;
-    }
-  }
-
-  task void logStatus(){
-    strMsg = call Pool.get();
-    if (strMsg){
-      am_addr_t node = call RadioAMPacket.source(statusMsg);
-      uint16_t rc = statusPl->wakeupRC;
-      uint32_t ts = statusPl->wakeupTS;
-      status_time_ref_t* pl = call
-      StatusTimeRefSend.getPayload(strMsg,
-        sizeof(status_time_ref_t));
-  
-      call SerialPacket.clear(strMsg);
-      pl -> node = node;
-      pl -> rc = rc;
-      pl -> ts = ts;
-      call SerialAMPacket.setSource(strMsg, 
-        call ActiveMessageAddress.amAddress());
-      if (SUCCESS != call StatusTimeRefSend.send(0, strMsg, sizeof(status_time_ref_t))){
-        cdbg(BASESTATION, "P sr!\r\n");
-        call Pool.put(strMsg);
-        strMsg = NULL;
-        call Pool.put(radioReceive(statusMsg, statusPl,
-          sizeof(cx_status_t)));
-      }
-    }else{
-      call Pool.put(radioReceive(statusMsg, statusPl,
-        sizeof(cx_status_t)));
-    }
-  }
-
-  
-  event void StatusTimeRefSend.sendDone(message_t* msg, 
-      error_t error){
-    cdbg(BASESTATION, "P sr\r\n");
-    call Pool.put(strMsg);
-    statusMsg = NULL;
-    call Pool.put(radioReceive(statusMsg, statusPl,
-      sizeof(cx_status_t)));
+    cx_status_t buf;
+    cx_status_t* amPl;
+    memcpy(&buf, pl, sizeof(cx_status_t));
+    call RadioAMPacket.setType(msg, AM_CX_STATUS);
+    amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
+    memcpy(amPl, &buf, sizeof(cx_status_t));
+    return radioReceive(msg, amPl, sizeof(cx_status_t));
   }
 
   default command error_t CXDownload.startDownload[uint8_t ns](){

@@ -69,6 +69,7 @@ class MoteIF:
 
         amTypes = self.listeners[listener]
         amTypes[msgClass.get_amType()] = msgClass
+#         print "addListener", listener, msgClass, msgClass.get_amType()
 
     def removeListener(self, listener):
         del self.listeners[listener]
@@ -115,6 +116,9 @@ class MoteIF:
                 except Exception, x:
                     print >>sys.stderr, x
                     print >>sys.stderr, traceback.print_tb(sys.exc_info()[2])
+            else:
+                #print "No listener for", amType
+                pass
     
     def readPacket(self):
         while self.running:
