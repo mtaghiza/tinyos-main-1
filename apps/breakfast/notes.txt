@@ -113,6 +113,7 @@ CX collection control: 0xF0 - 0xF7
 ------
 bacon/autoPush/RecordRequest.h: AM_CX_RECORD_REQUEST_MSG = 0xF0
 bacon/router/router.h: AM_TUNNELED_MSG 0x15
+cxl/mac/CXMac.h: AM_CX_STATUS=0xF1
 
 Ping: 0xF8-0xF9
 ------

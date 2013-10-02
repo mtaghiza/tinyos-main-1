@@ -128,7 +128,7 @@ MIGCLASSES += $(CXMIGDIR)/SetSettingsStorageMsg.py
 MIGCLASSES += $(CXMIGDIR)/PingMsg.py $(CXMIGDIR)/PongMsg.py 
 MIGCLASSES += $(CXMIGDIR)/PrintfMsg.py
 MIGCLASSES += $(CXMIGDIR)/IdentifyRequest.py $(CXMIGDIR)/IdentifyResponse.py
-
+MIGCLASSES += $(CXMIGDIR)/CxStatus.py
 
 
 $(LPPMIGDIR):
@@ -160,6 +160,9 @@ $(CXMIGDIR)/PrintfMsg.py:
 
 $(CXMIGDIR)/SetSettingsStorageMsg.py:
 	genMig.sh $(PLATFORM) $(TOSROOT)/apps/breakfast/bacon/settingsStorage/SettingsStorage.h $@ $(CFLAGS)
+
+$(CXMIGDIR)/CxStatus.py:
+	genMig.sh $(PLATFORM) $(TOSDIR)/lib/cxl/mac/CXMac.h $@ $(CFLAGS)
 
 $(CXMIGDIR)/%.py: $(CXMIGDIR)
 	genMig.sh $(PLATFORM) basestation.h $@ $(CFLAGS) 
