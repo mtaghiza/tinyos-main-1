@@ -11,7 +11,7 @@ class StatusTimeRefListener(object):
 
     def receive(self, src, msg):
         neighbors = [v for v in msg.get_neighbors() if v != constants.BCAST_ADDR]
-        print "REF", self.downloadStart, msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(), neighbors
+        print "REF", self.downloadStart, msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(), msg.get_dataPending(), neighbors
         q = ''' INSERT INTO base_reference
           (node1, rc1, ts1, unixTS) VALUES
           (?,     ?,   ?,   ?)'''
