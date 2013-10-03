@@ -2,6 +2,7 @@
 
 import sqlite3
 import threading
+import sys
 
 class DatabaseMissing(object):
 
@@ -10,17 +11,17 @@ class DatabaseMissing(object):
                         FROM cookie_table 
                         ORDER BY node_id, cookie;'''
                             
-    MISSING_ORDER_AGE_SQL = '''SELECT t1.node_id, 
-                                t1.cookie, 
-                                t1.nextCookie, 
-                                (t2.cookie - t1.nextCookie - 1) AS missing, 
-                                t1.retry
-                            FROM sorted_flash AS t1, sorted_flash AS t2
-                            WHERE (t1.node_id = t2.node_id)
-                                AND (t1.ROWID = t2.ROWID - 1) 
-                                AND (missing > 0) 
-                                AND (t1.retry < 5)
-                            ORDER BY t1.node_id, t1.cookie;'''
+    MISSING_ORDER_AGE_SQL = '''SELECT l.node_id, 
+      l.cookie, l.nextCookie,
+      (r.cookie - l.nextCookie -1) as missing,
+      l.retry
+    FROM sorted_flash l
+    JOIN sorted_flash r
+    ON l.node_id = r.node_id
+      AND l.ROWID +1 = r.ROWID
+      AND missing > 0
+      AND l.retry < 5
+      ORDER BY l.node_id, l.cookie'''
 
 
     def __init__(self, dbName):
@@ -85,8 +86,12 @@ class DatabaseMissing(object):
         #self.connection.commit();
 
 
-
-
+if __name__ == '__main__':
+    dbName = 'database0.sqlite'
+    if len(sys.argv) > 1:
+        dbName = sys.argv[1]
+    dbm = DatabaseMissing(dbName)
+    print dbm.findMissing(False)
 
 
 
