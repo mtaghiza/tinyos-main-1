@@ -12,6 +12,7 @@ module LeafP{
     #endif
     #if CC430_PIN_DEBUG == 1
     atomic{
+      uint8_t i;
       //map SFD to 2.4
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
@@ -26,6 +27,10 @@ module LeafP{
       P1SEL &= ~BIT1;
       P1DIR |=  BIT1;
       P1OUT &= ~BIT1;
+
+      for (i=0 ; i < 10; i++){
+        P1OUT ^=BIT1;
+      }
     }
     #endif
   }
