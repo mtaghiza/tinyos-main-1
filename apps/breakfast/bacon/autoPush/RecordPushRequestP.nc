@@ -119,6 +119,9 @@ generic module RecordPushRequestP() {
   
   event void LogRead.seekDone(error_t error)
   {
+    if (error != SUCCESS){
+      cerror(AUTOPUSH, "sd %x\r\n", error);
+    }
     // seekDone either always returns SUCCESS or doesn't return at all
     
     state = S_SOUGHT;
@@ -128,16 +131,25 @@ generic module RecordPushRequestP() {
 
   event message_t* Receive.receive(message_t* received, void* payload, uint8_t len)
   {
+    {
+      uint8_t i;
+      for(i = 0; i < 10; i++){
+        P1OUT ^= BIT1;
+      }
+    }
     if (!requestInQueue)
     {
       cx_record_request_msg_t *recordRequestPtr = payload;
 
       requestLength = recordRequestPtr->length;
       requestCookie = recordRequestPtr->cookie;
+      cdbg(AUTOPUSH, "req %u %lu\r\n", requestLength, requestCookie);
 //      printf("reqLen: %u\r\n", requestLength);
       requestInQueue = TRUE;
 
       post processTask();
+    }else{
+      cwarn(AUTOPUSH, "rb\r\n");
     }
     
     return received;
@@ -164,18 +176,23 @@ generic module RecordPushRequestP() {
     // recovery operations have higher priority than push
     if (state == S_IDLE) {
       if (requestInQueue) {
+        cdbg(AUTOPUSH, "riq\r\n");
         if (readFirst(requestCookie, requestLength) == SUCCESS){
           control = C_REQUEST;
         }
       } else if (pushInQueue) {
+        cdbg(AUTOPUSH, "piq\r\n");
         // pushCookie is global and read at init and updated at sendDone
         // pushLength is set once during compile
         if (readFirst(pushCookie, pushLength) == SUCCESS){
           control = C_PUSH;
         }
       } else {
+        cdbg(AUTOPUSH, "pti\r\n");
         control = C_NONE;
       }
+    }else{
+      cdbg(AUTOPUSH, "ptb\r\n");
     }
   }
 
@@ -195,18 +212,21 @@ generic module RecordPushRequestP() {
 
       if (recordPtr)
       {
+        error_t error;
         bufferStart = (uint8_t*)recordPtr; 
         bufferEnd = bufferStart + MAX_RECORD_PACKET_LEN;
-
-        if (SUCCESS == call LogRead.seek(cookie)) 
+        error = call LogRead.seek(cookie);
+        if (SUCCESS == error) 
         {
           state = S_SEEKING;
 
           // SUCCESS, exit function
           return SUCCESS;
         } else {
+          cerror(AUTOPUSH, "sf %x\r\n", error);
         }
       }else{
+        cerror(AUTOPUSH, "rp0\r\n");
       }
     }    
 
@@ -218,6 +238,7 @@ generic module RecordPushRequestP() {
 
   task void readNext()
   {
+    error_t error;
     // read requested bytes up to the available buffer
 
     storage_len_t bufferLeft = bufferEnd - (uint8_t*)recordPtr->data;
@@ -230,7 +251,10 @@ generic module RecordPushRequestP() {
 
     //read current record: account for log_record_t's 5-byte header
     // will only return FAIL if LogRead is busy
-    call LogRead.read(recordPtr->data, readLength);
+    error = call LogRead.read(recordPtr->data, readLength);
+    if (error != SUCCESS){
+      cerror(AUTOPUSH, "rn %x\r\n", error);
+    }
 
     state = S_READING;
   }
@@ -240,7 +264,7 @@ generic module RecordPushRequestP() {
   {
 
     if( (error == SUCCESS) && (len != 0) )
-    {
+    { 
       // update record_n length 
       recordPtr->length = len;
 
@@ -267,27 +291,35 @@ generic module RecordPushRequestP() {
       if ( ((uint8_t*)recordPtr + sizeof(log_record_t) < bufferEnd)
           && (missingLength > 0))
       {
+        cdbg(AUTOPUSH, "rdOK more\r\n");
         // try to read the next record
         post readNext();
       } else 
       {
+        cdbg(AUTOPUSH, "rdOK go\r\n");
         //no space for another record, send it.
         send();
       }
 
+    } else if (error == SUCCESS && len == 0){
+      cdbg(AUTOPUSH, "end\r\n");
+      send();
     } else {
       //ESIZE: ran out of space in buffer. So, don't clear missingLength. other
       //errors indicate something actually went wrong.
       if (error != ESIZE){
+        cerror(AUTOPUSH, "rd %x\r\n", error);
         //a real error occurred
 //        printf("rd %x len %lu clear ml\r\n", error, len);
         missingLength = 0;
       }else if (readLength == missingLength){
+        cdbg(AUTOPUSH, "rend\r\n");
 //        printf("rl==ml == %lu\r\n", readLength);
         //this was the last requested chunk of data: so, there is not
         //enough left in the req to merit another read.
         missingLength =0;
       }else{
+        cdbg(AUTOPUSH, "more\r\n");
         //there is more data to be read, so leave missingLength as-is
       }
       
@@ -310,7 +342,7 @@ generic module RecordPushRequestP() {
 
     state = S_SENDING;
     
-    (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (recordsLeft > recordsRead);
+    (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (call LogNotify.getOutstanding() > recordsRead);
     // use fixed packet size or variable packet size
     error = call AMSend.send(call Get.get(), 
       msg,
@@ -324,6 +356,7 @@ generic module RecordPushRequestP() {
 
   event void AMSend.sendDone(message_t* msg_, error_t error)
   {
+    cdbg(AUTOPUSH, "SD %x\r\n", error);
 //    printf("RPR.SendDone: %x %lu\r\n", error, call LocalTime.get());
     call Pool.put(msg);
 
@@ -349,6 +382,9 @@ generic module RecordPushRequestP() {
                       requestCookie = call LogRead.currentOffset();
                       //still more data outstanding
                     }
+                    //give the LogNotify module a chance to request
+                    //more transmissions
+                    call LogNotify.reportSent(0);
                     break;
       default:
                     break;
