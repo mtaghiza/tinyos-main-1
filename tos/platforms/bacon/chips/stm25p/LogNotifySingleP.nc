@@ -15,6 +15,10 @@ generic module LogNotifySingleP(){
 
   void checkRecordState(bool repostOK);
 
+  command uint16_t RecordsNotify.getOutstanding(){
+    return outstandingRecords;
+  }
+
   task void recordSendRequest(){
     signal RecordsNotify.sendRequested(outstandingRecords);
   }

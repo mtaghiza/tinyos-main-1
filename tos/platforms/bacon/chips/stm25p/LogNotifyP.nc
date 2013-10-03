@@ -22,6 +22,10 @@ generic module LogNotifyP(){
     signal RecordsNotify.sendRequested(outstandingRecords);
   }
 
+  command uint16_t RecordsNotify.getOutstanding(){
+    return outstandingRecords;
+  }
+
   command error_t RecordsNotify.setHighThreshold(uint16_t thresh){
     if (thresh >= recordLow){
       recordHigh = thresh;
