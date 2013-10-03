@@ -37,16 +37,16 @@ module BaconSamplerLowP{
   };
 
   event void Boot.booted(){
-    nx_uint32_t sampleInterval;
-    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
-    #if CONFIGURABLE_BACON_SAMPLE_INTERVAL == 1
-    call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
-      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
-    #endif
+//    nx_uint32_t sampleInterval;
+//    sampleInterval = DEFAULT_SAMPLE_INTERVAL;
+//    #if CONFIGURABLE_BACON_SAMPLE_INTERVAL == 1
+//    call SettingsStorage.get(SS_KEY_BACON_SAMPLE_INTERVAL,
+//      (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
+//    #endif
     call SettingsStorage.get(SS_KEY_REBOOT_COUNTER,
       (uint8_t*)(&sampleRec.rebootCounter), 
       sizeof(sampleRec.rebootCounter));
-    call Timer.startOneShot(sampleInterval);
+    call Timer.startOneShot(INITIAL_SAMPLE_DELAY);
   }
   
   task void readBattery();

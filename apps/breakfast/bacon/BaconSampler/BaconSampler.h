@@ -22,4 +22,8 @@ typedef struct bacon_sample_t {
 #warning Non-configurable bacon sample interval.
 #endif
 
+#ifndef INITIAL_SAMPLE_DELAY
+#define INITIAL_SAMPLE_DELAY DEFAULT_SAMPLE_INTERVAL 
+#endif
+
 #endif
