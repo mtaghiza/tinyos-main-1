@@ -132,6 +132,9 @@ module CXMasterP {
     if (numRounds < maxRounds){
       //don't worry, we'll decrement this if we get a status back
       contactList[contactIndex].failedAttempts ++;
+      if (contactList[contactIndex].failedAttempts >= maxAttempts){
+        printf("me %u %u\r\n", contactList[contactIndex].nodeId, contactList[contactIndex].failedAttempts);
+      }
       return TRUE;
     }else {
       //If we did exceed the limit, then we're done, and contactIndex

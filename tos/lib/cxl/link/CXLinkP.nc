@@ -311,6 +311,7 @@ module CXLinkP {
     if (sleepPending){
       call CXLink.sleep();
     }
+    P1OUT &= ~BIT1;
     signal CXLink.rxDone();
   }
 
@@ -619,6 +620,7 @@ module CXLinkP {
       error = call Rf1aPhysical.setReceiveBuffer((uint8_t*)rxMsg, 
         TOSH_DATA_LENGTH + sizeof(message_header_t)+sizeof(message_footer_t), TRUE,
         RF1A_OM_FSTXON );
+      P1OUT |= BIT1;
       #if DL_LINK_TIMING <= DL_INFO && DL_GLOBAL <= DL_WARN
       rxStart = call FastAlarm.getNow();
       #endif
