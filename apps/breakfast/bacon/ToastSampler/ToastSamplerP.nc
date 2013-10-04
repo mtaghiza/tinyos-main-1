@@ -92,12 +92,8 @@ module ToastSamplerP{
     error = call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
         (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     #endif
-    if (sampleInterval != (61440UL)){
-      for (i=0 ; i < 10; i++){
-        P1OUT ^=BIT1;
-      }
-    }
-    call Timer.startOneShot(sampleInterval);
+    call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), 
+      sampleInterval);
     if (!busy){
       busy = TRUE;
       for (i=0; i < MAX_BUS_LEN; i++){
@@ -107,10 +103,6 @@ module ToastSamplerP{
     }else{
       failCount ++;
       if (failCount > MAX_TOAST_FAILS){
-//        uint8_t i;
-//        for (i=0 ; i < 10; i++){
-//          P1OUT ^=BIT1;
-//        }
         printf("Toast fail count exceeded, resetting\r\n");
         atomic{
           WDTCTL = 0;

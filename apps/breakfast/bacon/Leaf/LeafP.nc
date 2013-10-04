@@ -28,9 +28,9 @@ module LeafP{
       P1DIR |=  BIT1;
       P1OUT &= ~BIT1;
 
-      for (i=0 ; i < 10; i++){
-        P1OUT ^=BIT1;
-      }
+//      for (i=0 ; i < 10; i++){
+//        P1OUT ^=BIT1;
+//      }
     }
     #endif
   }
