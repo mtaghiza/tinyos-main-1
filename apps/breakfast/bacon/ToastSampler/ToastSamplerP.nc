@@ -85,13 +85,19 @@ module ToastSamplerP{
 
   event void Timer.fired(){
     nx_uint32_t sampleInterval;
+    error_t error;
     uint8_t i;
     sampleInterval = DEFAULT_SAMPLE_INTERVAL;
     #if CONFIGURABLE_TOAST_SAMPLE_INTERVAL == 1
-      call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+    error = call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
         (uint8_t*)(&sampleInterval), sizeof(sampleInterval));
     #endif
-    call Timer.startOneShotAt(call Timer.gett0() + call Timer.getdt(), sampleInterval);
+    if (sampleInterval != (61440UL)){
+      for (i=0 ; i < 10; i++){
+        P1OUT ^=BIT1;
+      }
+    }
+    call Timer.startOneShot(sampleInterval);
     if (!busy){
       busy = TRUE;
       for (i=0; i < MAX_BUS_LEN; i++){
@@ -101,6 +107,10 @@ module ToastSamplerP{
     }else{
       failCount ++;
       if (failCount > MAX_TOAST_FAILS){
+//        uint8_t i;
+//        for (i=0 ; i < 10; i++){
+//          P1OUT ^=BIT1;
+//        }
         printf("Toast fail count exceeded, resetting\r\n");
         atomic{
           WDTCTL = 0;
@@ -301,6 +311,7 @@ module ToastSamplerP{
   
   task void nextSynch(){
     if (toastSampleIndex == MAX_BUS_LEN){
+      printf("done sampling, stopping\r\n");
       call SplitControl.stop();
       return;
     }else{
@@ -318,7 +329,13 @@ module ToastSamplerP{
         post nextSynch();
       }
       #else 
-      post nextSampleSensors();
+      if (toastState[toastSampleIndex] == PRESENT 
+          && sensorMaps[toastSampleIndex]){
+        post nextSampleSensors();
+      }else{
+        toastSampleIndex++;
+        post nextSynch();
+      }
       #endif
     }
   }
