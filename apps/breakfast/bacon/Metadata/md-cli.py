@@ -59,6 +59,25 @@ class ScanListener(object):
     def receive(self, src, msg):
         self.responseQueue.put(msg.get_numFound())
 
+class TLVParser(object):
+    def __init__(self):
+        pass
+
+    def receive(self, src, msg):
+        tlv = msg.get_tlvs()
+        crc = tlv[0:2]
+        tlvi = 0
+        tlv = tlv[2:]
+        print "TLV",tlv
+        print "CRC", crc
+        while tlv:
+            k = tlv[0]
+            l = tlv[1]
+            d = tlv[2:2+l]
+            print "(%s, %s, [%s])"%(hex(k), hex(l), ', '.join([hex(v) for v in d]))
+            tlv = tlv[2+l:]
+        
+
 
 class Dispatcher:
     def __init__(self, motestring, quiet=False):
@@ -73,6 +92,10 @@ class Dispatcher:
         self.responseLock = Lock()
         self.responseCV = Condition(self.responseLock)
         self.mif.addListener(ADCLogger(self.responseCV), ReadAnalogSensorResponseMsg.ReadAnalogSensorResponseMsg)
+        self.mif.addListener(TLVParser(),
+          tools.mig.ReadBaconTlvResponseMsg.ReadBaconTlvResponseMsg)
+        self.mif.addListener(TLVParser(),
+          tools.mig.ReadToastTlvResponseMsg.ReadToastTlvResponseMsg)
         for messageClass in tools.mig.__all__:
             if 'Response' in messageClass:
                 self.mif.addListener(GenericLogger(self.quiet), 
