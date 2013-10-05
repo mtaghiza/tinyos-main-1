@@ -4,23 +4,32 @@ import sys
 
 def fit(xy):
     '''Work out the best fit line for an array of (x, y)
-    tuples and return (slope, intercept, error)'''
-    xy_bar = sum( 1.0*x*y for (x,y) in xy)/len(xy)
-    x_bar  = sum( 1.0*x for (x,y) in xy)/len(xy)
-    y_bar  = sum( 1.0*y for (x,y) in xy)/len(xy)
-    x2_bar = sum( x**2.0 for (x,y) in xy)/len(xy)
-    
-    if (x2_bar - x_bar**2) !=0:
-        beta = (xy_bar - (x_bar * y_bar))/ (x2_bar - x_bar**2)
-        alpha = y_bar - (beta * x_bar)
-    
-        ss_tot = sum( (y-y_bar )**2.0 for (x,y) in xy)
-        F = [ alpha + beta*x for (x,y) in xy]
-        ss_res = sum( (y-f )**2.0 for ((x,y), f) in zip(xy, F))
-        r_sq = 1- (ss_res/ss_tot)
-        return (True, alpha, beta, r_sq)
-    else:
+    tuples and return (isValid, intercept, slope, r-squared)'''
+
+    if not xy:
         return (False, None, None, None)
+
+    if len(xy) == 1:
+        print "single point fit for", xy, "assume skewless binary ms"
+        (x, y) = xy[0]
+        return (True, y-(x*1.0/1024.0), 1.0/1024, 0)
+    else:
+        xy_bar = sum( 1.0*x*y for (x,y) in xy)/len(xy)
+        x_bar  = sum( 1.0*x for (x,y) in xy)/len(xy)
+        y_bar  = sum( 1.0*y for (x,y) in xy)/len(xy)
+        x2_bar = sum( x**2.0 for (x,y) in xy)/len(xy)
+        
+        if (x2_bar - x_bar**2) !=0:
+            beta = (xy_bar - (x_bar * y_bar))/ (x2_bar - x_bar**2)
+            alpha = y_bar - (beta * x_bar)
+        
+            ss_tot = sum( (y-y_bar )**2.0 for (x,y) in xy)
+            F = [ alpha + beta*x for (x,y) in xy]
+            ss_res = sum( (y-f )**2.0 for ((x,y), f) in zip(xy, F))
+            r_sq = 1- (ss_res/ss_tot)
+            return (True, alpha, beta, r_sq)
+        else:
+            return (False, None, None, None)
 
 
 #work out best fit for each (node_id, rc) tuple in base_reference
@@ -28,11 +37,12 @@ def fit(xy):
 #  get all (unixTS, nodeTS) tuples
 #  compute fit for these tuples
 #  stick it into fits table as (node1, rc1, node2, rc2, alpha, beta, r_sq)
+# alpha = intercept, beta = slope
 
 def computeFits(dbName):
     c = sqlite3.connect(dbName)
     q0 = '''SELECT distinct node1, rc1 FROM base_reference'''
-    q1 = '''SELECT ts1, unixTS FROM base_reference WHERE node1= ? AND rc1 = ?'''
+    q1 = '''SELECT distinct ts1, unixTS FROM base_reference WHERE node1= ? AND rc1 = ?'''
     q2 = '''INSERT INTO fits (node1, rc1, node2, rc2, alpha, beta, r_sq) VALUES (?, ?, NULL, NULL, ?, ?, ?)'''
     for (node, rc) in c.execute(q0).fetchall():
         xy = c.execute(q1, (node, rc)).fetchall()
