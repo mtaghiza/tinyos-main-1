@@ -379,6 +379,13 @@ module CXLinkP {
             #endif
             call FastAlarm.startAt(fb0 + (fb1-fb0)/2, df);
           } else{
+            //TODO: if we missed the deadline, then it's very likely
+            //that no nodes will be around to receive it.  Would be
+            //better to cancel the transmission and signal ERETRY up.
+            //Or, at least signal completion with ERETRY so that we
+            //attempt to send this again (am queuing layer will do
+            //this automatically, though it will also stop
+            //transmitting for the remainder of this slot.)
             #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
             dfMissed = TRUE;
             dfLog = slowToFast( sb - metadata(fwdMsg)->txTime);
