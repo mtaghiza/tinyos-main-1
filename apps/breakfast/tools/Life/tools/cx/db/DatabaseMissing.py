@@ -59,6 +59,7 @@ class DatabaseMissing(object):
 
         # get first entry for each node_id, increment the retry counter
         # and remove old records from the source table
+        allMissing = results
         for res in results:
             if last_result != res[0]:
                 
@@ -79,7 +80,7 @@ class DatabaseMissing(object):
         
         self.connection.commit();
 
-        return missing_list
+        return (missing_list, allMissing)
         
         #row = [node_id, time.time(), cookie, length]
         #self.cursor.execute('INSERT INTO cookie_table (node_id, base_time, cookie, length) VALUES (?,?,?,?)', row)        
@@ -91,7 +92,11 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         dbName = sys.argv[1]
     dbm = DatabaseMissing(dbName)
-    print dbm.findMissing(False)
+    (toReq, allMissing) = dbm.findMissing(False)
+    for m in allMissing:
+        print "GAP", m
+    for m in toReq:
+        print "REQ",m
 
 
 

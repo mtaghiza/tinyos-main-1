@@ -88,8 +88,11 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
             finishedCallBack(constants.BCAST_ADDR, """Could not connect to base station.
   Make sure you've selected the right device and make sure
   it has been set up as a base station.
-""")
-        return
+""") 
+            return
+        else:
+            raise
+
     db.addDecoder(BaconSample.BaconSample)
     db.addDecoder(ToastSample.ToastSample)
     db.addDecoder(ToastConnection.ToastConnection)
@@ -123,9 +126,10 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
 #         error = d.send(setTSI, 0xFFFF)
 #         #END TESTING
         if requestMissing:
-            request_list = db.findMissing()
+            (request_list, allGaps)  = db.findMissing()
     #         request_list = []
             print "Recovery requests: ", request_list
+            print "All gaps: ", allGaps
     #         MAX_PACKET_PAYLOAD = 100
             for request in request_list:
                 if request['node_id'] != bsId:
@@ -307,10 +311,15 @@ if __name__ == '__main__':
     packetSource = sys.argv[1]
     networkSegment = constants.NS_GLOBAL
     configFile = None
-    if len(sys.argv) > 2:
-        networkSegment = int(sys.argv[2])
-    if len(sys.argv) > 3:
-        configFile = sys.argv[3]
+    
+#     if len(sys.argv) > 2:
+#         networkSegment = int(sys.argv[2])
+#     if len(sys.argv) > 3:
+#         configFile = sys.argv[3]
+    if '--segment' in sys.argv:
+        networkSegment = int(sys.argv[sys.argv.index('--segment')+1])
+    if '--configFile' in sys.argv:
+        configFile = sys.argv[sys.argv.index('--configFile')+1]
 
     if '-p' in sys.argv:
         pIndex= sys.argv.index('-p')
@@ -324,7 +333,7 @@ if __name__ == '__main__':
     elif '--routerDownload' in sys.argv:
         triggerRouterDownload(packetSource, networkSegment, configFile)
     elif '--download' in sys.argv:
-        download(packetSource, networkSegment, configFile)
+        download(packetSource, networkSegment, configFile=configFile)
 
     if '--sleep' in sys.argv:
         sleepDuration = float(sys.argv[sys.argv.index('--sleep')+1])
