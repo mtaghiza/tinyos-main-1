@@ -158,7 +158,7 @@ JOIN (
 ) b ON a.it = b.it AND a.src=b.src;
 
 DROP TABLE IF EXISTS agg;
-CREATE TEMPORARY TABLE agg AS 
+CREATE TABLE agg AS 
 SELECT prr.it as it, txp.val as power, mct.val as mct, pa.val as pa, avg(prr) as prr
 FROM prr 
 JOIN setup as txp 

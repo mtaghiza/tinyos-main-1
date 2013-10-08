@@ -84,7 +84,7 @@ testDescRoot=${testDesc}_role_root
 
 echo "Router: ${testDescRouter}"
 echo "Leaf: ${testDescLeaf}"
-echo "root: ${testDescLeaf}"
+echo "root: ${testDescRoot}"
 set -x
 #for map in map.p0
 #for map in map.p0 map.p1 map.p2 map.p3
