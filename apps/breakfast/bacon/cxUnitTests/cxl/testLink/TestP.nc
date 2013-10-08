@@ -148,9 +148,9 @@ module TestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, retx);   
-      if (packetLength >= sizeof(test_payload_t)){
-        call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
-      }
+//      if (packetLength >= sizeof(test_payload_t)){
+//        call CXLinkPacket.setTSLoc(txMsg, &(pl->timestamp));
+//      }
 //      err = call Send.send(txMsg, sizeof(test_payload_t));
       err = call Send.send(txMsg, packetLength);
 //      printf("Send: %x %x %u\r\n", retx, err, 
