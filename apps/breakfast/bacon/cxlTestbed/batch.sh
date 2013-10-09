@@ -23,16 +23,22 @@ do
             do
               #debug level stats-radio. DL_NONE disables radio state
               # change logging
-              for dlsr in DL_INFO DL_NONE
+              for dlsr in DL_NONE
               do
-                ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp \
-                  pa $pa mct $mct dlsr $dlsr gc 128
-                sleep $testDuration
-                pushd .
-                cd ~/tinyos-2.x/apps/Blink
-                ./burn map.all
-                sleep 60
-                popd
+                for slackScale in 1 2 4 8
+                do
+                  rxs=$(($slackScale * 15))UL
+                  txs=$(($slackScale * 44))UL
+                  ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp \
+                    pa $pa mct $mct dlsr $dlsr gc 128 \
+                    rxSlack $rxs txSlack $txs
+                  sleep $testDuration
+                  pushd .
+                  cd ~/tinyos-2.x/apps/Blink
+                  ./burn map.all
+                  sleep 60
+                  popd
+                done
               done
             done
           done
