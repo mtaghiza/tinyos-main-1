@@ -42,6 +42,7 @@ module TestP{
     printf("* Channel: %u\r\n", channel);
     printf("* packetLength: %u\r\n", packetLength);
     printf("* repeat: %x\r\n", repeat);
+    printf("\r\n");
   }
 
   task void usage(){
@@ -59,6 +60,7 @@ module TestP{
     printf(" s: sleep\r\n");
     printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
+    printf("\r\n");
     post getStatus();
   }
 
@@ -72,6 +74,7 @@ module TestP{
     channel = 0;
     call SerialControl.start();
     printf("Booted\r\n");
+    printf("\r\n");
     post usage();
     atomic{
       PMAPPWD = PMAPKEY;
