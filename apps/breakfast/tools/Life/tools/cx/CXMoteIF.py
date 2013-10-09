@@ -127,6 +127,7 @@ class CXMoteIF(MoteIF):
                 self.finishedListener.finishedCV.wait()
 
     def clearRXQueue(self):
+        time.sleep(1)
         print "Clearing RX Queue"
         while not self.receiveQueue.empty():
             time.sleep(1)

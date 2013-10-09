@@ -100,16 +100,19 @@ module CXMasterP {
   task void downloadFinished(){
     cinfo(ROUTER, "Download finished\r\n");
     signal CXDownload.downloadFinished[activeNS]();
-    post logMembership();
   }
   
+  void finish(){
+    post logMembership();
+    post downloadFinished();
+  }
 
   command bool SlotController.isActive(){
     #ifdef SLOT_LIMIT
     if (slotsLeft){
       slotsLeft --;
     }else{
-      post downloadFinished();
+      finish();
       return FALSE;
     }
     #endif
@@ -139,7 +142,7 @@ module CXMasterP {
     }else {
       //If we did exceed the limit, then we're done, and contactIndex
       //  is pointing at a node with pending data.
-      post downloadFinished();
+      finish();
       return FALSE;
     }
   }
