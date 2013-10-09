@@ -26,13 +26,16 @@ module AutoTestP{
   task void toggleStartStop();
   task void nextRX();
   
+  uint8_t packetLength = PACKET_LENGTH;
+
+  #define SERIAL_PAUSE_TIME 10240UL
+
   #ifndef PAYLOAD_LEN 
   #define PAYLOAD_LEN 10
   #endif
-  #define SERIAL_PAUSE_TIME 10240UL
 
   #ifndef TIMEOUT_LEN
-  #define TIMEOUT_LEN 5UL
+  #define TIMEOUT_LEN 10UL
   #endif
   
   #define FAST_TICKS_PER_SECOND (6500000UL)
@@ -62,7 +65,7 @@ module AutoTestP{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
 //      //SMCLK to 1.1
-      P1MAP1 = PM_SMCLK;
+//      P1MAP1 = PM_SMCLK;
       //GDO to 2.4 (synch)
       P2MAP4 = PM_RFGDO0;
       PMAPPWD = 0x00;
@@ -78,8 +81,8 @@ module AutoTestP{
       P2SEL &=~BIT1;
       P2OUT |=BIT1;
       //enable p1.2,3,4 for gpio
-      P1DIR |= BIT2 | BIT3 | BIT4;
-      P1SEL &= ~(BIT2 | BIT3 | BIT4);
+      P1DIR |= BIT1 | BIT2 | BIT3 | BIT4;
+      P1SEL &= ~(BIT1 | BIT2 | BIT3 | BIT4);
     }
     post toggleStartStop();
   }
@@ -99,7 +102,7 @@ module AutoTestP{
       header->destination = AM_BROADCAST_ADDR;
       header->source = TOS_NODE_ID;
       call CXLinkPacket.setAllowRetx(txMsg, TRUE);   
-      err = call Send.send(txMsg, call Packet.maxPayloadLength());
+      err = call Send.send(txMsg, packetLength);
       printf("APP TX %x\r\n", err);
       if (err != SUCCESS){
         call Pool.put(txMsg);
@@ -126,7 +129,16 @@ module AutoTestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("APP TXD %x\r\n", error);
+    printf("TX %u %x %u %u %x %x %x %x %lu\r\n", 
+      (call CXLinkPacket.getLinkHeader(msg))->sn,
+      error,
+      TEST_NUM,
+      call Packet.payloadLength(msg),
+      SELF_SFD_SYNCH,
+      POWER_ADJUST,
+      MIN_POWER,
+      MAX_POWER,
+      FRAMELEN_FAST_SHORT);
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -139,7 +151,16 @@ module AutoTestP{
   task void handleRX(){
     test_payload_t* pl = call Packet.getPayload(rxMsg,
       sizeof(test_payload_t));
-    printf("APP RX %p %p\r\n", rxMsg, pl); 
+    printf("RX %u %u %u %u %x %x %x %x %lu\r\n",
+      (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
+      call CXLinkPacket.rxHopCount(rxMsg),
+      TEST_NUM,
+      call Packet.payloadLength(rxMsg),
+      SELF_SFD_SYNCH,
+      POWER_ADJUST,
+      MIN_POWER,
+      MAX_POWER, 
+      FRAMELEN_FAST_SHORT);
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
