@@ -558,6 +558,8 @@ module CXWakeupP {
     return msg;
   }
 
+  default event void LppProbeSniffer.sniffDone(error_t error){ }
+
   command cx_link_stats_t CXLink.getStats(){
     return call SubCXLink.getStats();
   }
