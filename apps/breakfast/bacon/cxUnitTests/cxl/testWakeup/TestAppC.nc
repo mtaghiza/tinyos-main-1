@@ -3,7 +3,16 @@ configuration TestAppC {
   components PlatformSerialC;
   components SerialPrintfC;
   components CXWakeupC;
+
+  #define AUTO_TEST 1
+
+  #if AUTO_TEST == 1
+  components AutoTestP as TestP;
+  components new TimerMilliC();
+  TestP.Timer -> TimerMilliC;
+  #else
   components TestP;
+  #endif
   components LedsC;
 
   TestP.SplitControl -> CXWakeupC;
@@ -24,5 +33,9 @@ configuration TestAppC {
   components new PoolC(message_t, 3);
   CXWakeupC.Pool -> PoolC;
   TestP.Pool -> PoolC;
+
+  components SettingsStorageC;
+  components new DummyLogWriteC();
+  SettingsStorageC.LogWrite -> DummyLogWriteC;
 
 }

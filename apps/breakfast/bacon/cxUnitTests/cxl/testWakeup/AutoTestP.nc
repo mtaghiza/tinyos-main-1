@@ -1,4 +1,4 @@
-module TestP{
+module AutoTestP{
   uses interface Boot;
   uses interface UartStream;
   uses interface StdControl as SerialControl;
@@ -13,18 +13,31 @@ module TestP{
   uses interface Pool<message_t>;
 
   uses interface Leds;
+  uses interface Timer<TMilli>;
 } implementation {
 
   message_t* txMsg;
   message_t* rxMsg;
 
   bool started = FALSE;
+
+  bool active = FALSE;
+  uint32_t wakeupStart;
+
   task void toggleStartStop();
+  task void nextRX();
   
   #ifndef PAYLOAD_LEN 
   #define PAYLOAD_LEN 10
   #endif
   #define SERIAL_PAUSE_TIME 10240UL
+
+  #ifndef TIMEOUT_LEN
+  #define TIMEOUT_LEN 5UL
+  #endif
+  
+  #define FAST_TICKS_PER_SECOND (6500000UL)
+  uint32_t rxTimeoutFast =  FAST_TICKS_PER_SECOND * TIMEOUT_LEN;
 
   typedef nx_struct test_payload{
     nx_uint8_t body[PAYLOAD_LEN];
@@ -36,23 +49,9 @@ module TestP{
     printf("USAGE\r\n");
     printf("-----\r\n");
     printf(" q: reset\r\n");
-    printf(" s: sleep\r\n");
     printf(" w: wakeup\r\n");
     printf(" t: transmit packet\r\n");
-    printf(" p: toggle probe interval between 1 second and default\r\n");
-    printf(" r: receive packet\r\n");
-    printf(" R: receive packet, no retx\r\n");
-    printf(" k: kill serial (for 10 seconds)\r\n");
     printf(" S: toggle start/stop\r\n");
-  }
-
-  task void receivePacket(){ 
-    printf("RX: %x\r\n",
-      call CXLink.rx(0xFFFFFFFF, TRUE));
-  }
-  task void receivePacketNoRetx(){ 
-    printf("RXn: %x\r\n",
-      call CXLink.rx(0xFFFFFFFF, FALSE));
   }
 
 
@@ -106,6 +105,8 @@ module TestP{
       if (err != SUCCESS){
         call Pool.put(txMsg);
         txMsg = NULL;
+      }else{
+        active = TRUE;
       }
     }
   }
@@ -114,14 +115,11 @@ module TestP{
     printf("Sleep: %x\r\n", call LppControl.sleep());
   }
 
-  task void linkSleep(){
-    printf("Link Sleep: %x\r\n", call CXLink.sleep());
-  }
-
   event void SplitControl.startDone(error_t error){ 
     printf("start done: %x pool: %u\r\n", error, call Pool.size());
     started = (error == SUCCESS);
   }
+
   event void SplitControl.stopDone(error_t error){ 
     printf("stop done: %x pool: %u\r\n", error, call Pool.size());
     started = FALSE;
@@ -136,6 +134,7 @@ module TestP{
     } else{
       printf("mystery packet: %p\r\n", msg);
     }
+    post nextRX();
   }
 
   task void handleRX(){
@@ -147,6 +146,7 @@ module TestP{
   }
 
   event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
+    active = TRUE;
     if (rxMsg == NULL){
       message_t* ret = call Pool.get();
       if (ret){
@@ -163,7 +163,6 @@ module TestP{
     }
   }
 
-
   task void toggleStartStop(){
     if (started){
       call SplitControl.stop();
@@ -176,29 +175,27 @@ module TestP{
     printf("wakeup: %x\r\n", call LppControl.wakeup(0));
   }
 
-  bool longProbe = TRUE;
-  task void setProbeInterval(){
-    uint32_t pi;
-    error_t error;
-    if (longProbe){
-      pi = PROBE_INTERVAL;
-    }else{
-      pi = LPP_DEFAULT_PROBE_INTERVAL;
-    }
-    error = call LppControl.setProbeInterval(pi);
-    if (error == SUCCESS){
-      longProbe = (pi == LPP_DEFAULT_PROBE_INTERVAL);
-    }
-    printf("SPI %lu: %x\r\n", pi, error);
+  task void nextRX(){
+    active = FALSE;
+    call CXLink.rx(rxTimeoutFast, TRUE);
+  }
+
+  bool isActive(){
+    return active || ( (call Timer.getNow()) - wakeupStart  < (1024UL * TIMEOUT_LEN));
   }
  
   event void LppControl.wokenUp(uint8_t ns){
     printf("woke up: %u\r\n", ns);
+    active = TRUE;
+    wakeupStart = call Timer.getNow();
+    post nextRX();
   }
 
   event void LppControl.fellAsleep(){
     printf("Fell asleep\r\n");
   }
+
+  event void Timer.fired(){}
 
   async event void UartStream.receivedByte(uint8_t byte){ 
      switch(byte){
@@ -211,20 +208,8 @@ module TestP{
        case 's':
          post sleep();
          break;
-       case 'S':
-         post linkSleep();
-         break;
-       case 'p':
-         post setProbeInterval();
-         break;
        case 'w':
          post wakeup();
-         break;
-       case 'r':
-         post receivePacket();
-         break;
-       case 'R':
-         post receivePacketNoRetx();
          break;
        case '?':
          post usage();
@@ -239,7 +224,11 @@ module TestP{
   }
 
   event void CXLink.rxDone(){
-    printf("RXD\r\n");
+    if (!isActive()){
+      post sleep();
+    }else{
+      post nextRX();
+    }
   }
 
   async event void UartStream.receiveDone( uint8_t* buf, uint16_t len,

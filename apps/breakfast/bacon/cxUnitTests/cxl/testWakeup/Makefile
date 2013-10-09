@@ -5,6 +5,10 @@ CFLAGS += -I$(TOSDIR)/lib/cxl/mac
 CFLAGS += -I$(TOSDIR)/lib/cxl/link
 CFLAGS += -I$(TOSDIR)/lib/cxl/debug
 CFLAGS += -I$(TOSDIR)/lib/cxl/packet
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/settingsStorage
+CFLAGS += -I$(TOSROOT)/apps/breakfast/bacon/RebootCounter
+CFLAGS += -I$(TOSROOT)/apps/breakfast/util
+CFLAGS += -I$(TOSDIR)/chips/msp430/tlvStorage
 CFLAGS += -I$(TOSDIR)/lib/rf1a-tdma/timer
 
 
@@ -16,7 +20,8 @@ CFLAGS+=-DXT2_SMCLK
 
 CFLAGS+= -DTOSH_DATA_LENGTH=111
 CFLAGS+= -DRF1A_FEC_ENABLED=1
-CFLAGS += -DPATABLE0_SETTING=0x2D
+MAX_POWER?=0x25
+CFLAGS += -DMAX_POWER=$(MAX_POWER)
 CFLAGS+= -DRF1A_AUTOCAL=0
 
 CFLAGS += -DENABLE_PRINTF=1
@@ -27,5 +32,6 @@ CFLAGS += -DDL_LINK=DL_WARN
 PROBE_INTERVAL?=1024UL
 CFLAGS += -DPROBE_INTERVAL=$(PROBE_INTERVAL)
 CFLAGS += -DLPP_SLEEP_TIMEOUT=6144UL
+
 
 include $(MAKERULES)
