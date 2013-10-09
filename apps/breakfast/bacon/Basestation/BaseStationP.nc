@@ -348,7 +348,7 @@ implementation
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     message_t* ackMsg;
     radioSending = FALSE;
-    printf("RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
+    cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");
     call Pool.put(msg);
     cdbg(BASESTATION, "G ackR\r\n");
@@ -493,7 +493,7 @@ implementation
     call RadioAMPacket.setType(msg, AM_CX_STATUS);
     amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
     memcpy(amPl, &buf, sizeof(cx_status_t));
-    printf("SR %u\r\n", call RadioAMPacket.source(msg));
+    cdbg(BASESTATION, "SR %u\r\n", call RadioAMPacket.source(msg));
     return radioReceive(msg, amPl, sizeof(cx_status_t));
   }
 
