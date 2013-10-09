@@ -131,12 +131,12 @@ generic module RecordPushRequestP() {
 
   event message_t* Receive.receive(message_t* received, void* payload, uint8_t len)
   {
-    {
-      uint8_t i;
-      for(i = 0; i < 10; i++){
-        P1OUT ^= BIT1;
-      }
-    }
+//    {
+//      uint8_t i;
+//      for(i = 0; i < 10; i++){
+//        P1OUT ^= BIT1;
+//      }
+//    }
     if (!requestInQueue)
     {
       cx_record_request_msg_t *recordRequestPtr = payload;
