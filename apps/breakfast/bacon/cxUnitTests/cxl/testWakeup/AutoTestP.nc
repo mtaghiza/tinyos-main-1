@@ -21,8 +21,7 @@ module AutoTestP{
 
   bool started = FALSE;
 
-  bool active = FALSE;
-  uint32_t wakeupStart;
+  uint32_t lastActivity;
 
   task void toggleStartStop();
   task void nextRX();
@@ -106,7 +105,7 @@ module AutoTestP{
         call Pool.put(txMsg);
         txMsg = NULL;
       }else{
-        active = TRUE;
+        lastActivity = call Timer.getNow();
       }
     }
   }
@@ -146,7 +145,7 @@ module AutoTestP{
   }
 
   event message_t* Receive.receive(message_t* msg, void* pl, uint8_t len){
-    active = TRUE;
+    lastActivity = call Timer.getNow();
     if (rxMsg == NULL){
       message_t* ret = call Pool.get();
       if (ret){
@@ -176,18 +175,16 @@ module AutoTestP{
   }
 
   task void nextRX(){
-    active = FALSE;
     call CXLink.rx(rxTimeoutFast, TRUE);
   }
 
   bool isActive(){
-    return active || ( (call Timer.getNow()) - wakeupStart  < (1024UL * TIMEOUT_LEN));
+    return ( (call Timer.getNow()) - lastActivity < (1024UL * TIMEOUT_LEN));
   }
  
   event void LppControl.wokenUp(uint8_t ns){
     printf("woke up: %u\r\n", ns);
-    active = TRUE;
-    wakeupStart = call Timer.getNow();
+    lastActivity = call Timer.getNow();
     post nextRX();
   }
 
