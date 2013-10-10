@@ -25,19 +25,28 @@ do
               # change logging
               for dlsr in DL_NONE
               do
-                for slackScale in 1 2 4 8
+                for slackScale in 1 
                 do
-                  rxs=$(($slackScale * 15))UL
-                  txs=$(($slackScale * 44))UL
-                  ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp \
-                    pa $pa mct $mct dlsr $dlsr gc 128 \
-                    rxSlack $rxs txSlack $txs
-                  sleep $testDuration
-                  pushd .
-                  cd ~/tinyos-2.x/apps/Blink
-                  ./burn map.all
-                  sleep 60
-                  popd
+                  for md in 10 5
+                  do
+                    rxs=$(($slackScale * 15))UL
+                    txs=$(($slackScale * 44))UL
+                    installTS=$(date +%s)
+                    #welp, try it twice.
+                    for i in $(seq 2)
+                    do
+                      ./testbed.sh eas $eas fps $fps dr $dr rp $txp lp $txp \
+                        pa $pa mct $mct dlsr $dlsr gc 128 md $md\
+                        rxSlack $rxs txSlack $txs installTS $installTS
+                      sleep 60
+                    done
+                    sleep $testDuration
+                    pushd .
+                    cd ~/tinyos-2.x/apps/Blink
+                    ./burn map.all
+                    sleep 60
+                    popd
+                  done
                 done
               done
             done

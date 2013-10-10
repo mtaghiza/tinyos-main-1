@@ -121,10 +121,26 @@ CREATE TABLE setup (
 
 .import $setup setup
 
+SELECT "Removing duplicate setup entries";
+CREATE TEMPORARY TABLE lastSetup AS 
+SELECT node, it, 
+  max(ts) as ts
+FROM setup 
+GROUP BY node, it;
+
+DELETE FROM setup 
+WHERE rowid in (
+  SELECT setup.rowid 
+  FROM setup 
+  JOIN lastSetup ON setup.node=lastSetup.node 
+    AND setup.it = lastSetup.it 
+    AND setup.ts != lastSetup.ts);
+
 SELECT "Enumerating nodes";
 DROP TABLE IF EXISTS nodes;
 CREATE TABLE nodes AS SELECT distinct node FROM setup order by node;
 
+--TODO: 
 SELECT "Finding missing RX (may take a while)";
 DROP TABLE IF EXISTS RXR;
 CREATE TABLE RXR AS 
@@ -159,7 +175,7 @@ JOIN (
 
 DROP TABLE IF EXISTS agg;
 CREATE TABLE agg AS 
-SELECT prr.it as it, txp.val as power, mct.val as mct, pa.val as pa, avg(prr) as prr
+SELECT prr.it as it, txp.val as power, mct.val as mct, pa.val as pa, rxSlack.val as rxSlack, avg(prr) as prr
 FROM prr 
 JOIN setup as txp 
   ON txp.node=0 and txp.it=prr.it AND txp.key='lp'
@@ -167,13 +183,15 @@ JOIN setup as mct
   ON mct.node=0 and mct.it=prr.it AND mct.key='mct'
 JOIN setup as pa 
   ON pa.node=0 and pa.it=prr.it AND pa.key='pa'
+JOIN setup as rxSlack
+  on rxSlack.node=0 and rxSlack.it=prr.it and rxSlack.key='rxSlack'
 JOIN setup as installed
   ON installed.node = prr.dest
   AND installed.key='installTS'
   AND installed.val=prr.it
 WHERE src=0 
 AND prr.dest not in (0)
---AND prr.prr > 0.0
-GROUP BY prr.it, txp.val, mct.val, pa.val
+AND prr.prr > 0.0
+GROUP BY prr.it, txp.val, mct.val, pa.val, rxSlack.val
 ORDER BY avg(prr);
 EOF

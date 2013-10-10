@@ -39,15 +39,16 @@ mct=4
 ssfds=1
 #power adjust (decrease power on retx)
 pa=1
+#max depth
+md=10
 td=0xFFFF
-installTS=$(date +%s)
 dls=DL_INFO
 dlsr=DL_INFO
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa")
+"mct" "ssfds" "pa" "md")
 
 while [ $# -gt 1 ]
 do
@@ -68,6 +69,11 @@ do
     exit 1
   fi
 done
+
+if [ $installTS -eq 0 ]
+then
+  installTS=$(date +%s)
+fi
 
 testDesc=""
 for v in ${settingVars[@]}
@@ -96,6 +102,7 @@ do
     TX_SLACK=$txSlack\
     ENABLE_FORWARDER_SELECTION=$efs\
     FRAMES_PER_SLOT=$fps\
+    CX_MAX_DEPTH=$md\
     STATIC_BW=$bw\
     LPP_DEFAULT_PROBE_INTERVAL=${pi}UL\
     GLOBAL_CHANNEL=$gc\
