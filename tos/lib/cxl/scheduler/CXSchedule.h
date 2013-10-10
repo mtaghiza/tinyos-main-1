@@ -49,7 +49,7 @@
 // - delay between sender frame timer/actual tx start
 #define DATA_TIMEOUT (ASYNCHRONY_32K + CS_PROPAGATION + SCHED_TX_DELAY + ((RX_SLACK * 2UL* FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW))
 
-#define CTS_TIMEOUT (FRAMELEN_FAST_SHORT*CX_MAX_DEPTH + ((RX_SLACK * 2UL* FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW))
+#define CTS_TIMEOUT (ASYNCHRONY_32K + CS_PROPAGATION + FRAMELEN_FAST_SHORT*CX_MAX_DEPTH + ((RX_SLACK * 2UL* FRAMELEN_FAST_NORMAL) / FRAMELEN_SLOW))
 
 //EOS_FRAMES: integer for the number of partial full-length frames required by a
 //max-depth fast flood. e.g. if FLFS is 1/5 of a normal frame and
