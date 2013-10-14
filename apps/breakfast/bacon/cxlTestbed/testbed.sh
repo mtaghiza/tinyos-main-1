@@ -41,6 +41,10 @@ ssfds=1
 pa=1
 #max depth
 md=10
+#enable configurable lognotify
+ecl=0
+#high push threshold
+hpt=1
 td=0xFFFF
 dls=DL_INFO
 dlsr=DL_INFO
@@ -48,7 +52,7 @@ dlsr=DL_INFO
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa" "md")
+"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl")
 
 while [ $# -gt 1 ]
 do
@@ -122,7 +126,8 @@ do
     ENABLE_PHOENIX=0\
     ENABLE_SETTINGS_CONFIG=0\
     ENABLE_SETTINGS_LOGGING=0\
-    ENABLE_CONFIGURABLE_LOG_NOTIFY=0\
+    ENABLE_CONFIGURABLE_LOG_NOTIFY=$ecl\
+    DEFAULT_HIGH_PUSH_THRESHOLD=$hpt\
     DEFAULT_MAX_DOWNLOAD_ROUNDS=$mdr\
     DEFAULT_MAX_ATTEMPTS=$ma\
     SELF_SFD_SYNCH=$ssfds\
@@ -137,7 +142,7 @@ do
     $commonOptions || exit 1
 
   testDesc=\\\"${testDescLeaf}_snc_${snc}\\\"
-  ./burnRole.sh $map Leaf -f Makefile.dummycxl \
+  ./burnRole.sh $map Leaf -f Makefile.cxl \
     MAX_POWER=$lp\
     TEST_DESC=$testDesc\
     $commonOptions || exit 1

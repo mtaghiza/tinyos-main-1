@@ -578,13 +578,20 @@ module SlotSchedulerP {
   
         case S_DATA_READY:
           { 
+            #if ENABLE_FORWARDER_SELECTION == 0
+            error_t error = send(pendingMsg, 
+              pendingLen,
+              call SlotController.maxDepth[activeNS](activeNS),
+              call FrameTimer.gett0() + TX_SLACK);
+            #else
             error_t error = send(pendingMsg, 
               pendingLen,
               call RoutingTable.getDistance(
                 call ActiveMessageAddress.amAddress(), 
                 call CXLinkPacket.destination(pendingMsg))
                 + call SlotController.bw[activeNS](activeNS),
-                call FrameTimer.gett0() + TX_SLACK);
+              call FrameTimer.gett0() + TX_SLACK);
+            #endif
             if (error == SUCCESS){
               state = S_DATA_SENDING;
             }else{
