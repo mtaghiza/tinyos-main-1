@@ -142,7 +142,7 @@ do
     $commonOptions || exit 1
 
   testDesc=\\\"${testDescLeaf}_snc_${snc}\\\"
-  ./burnRole.sh $map Leaf -f Makefile.cxl \
+  ./burnRole.sh $map Leaf -f Makefile.testbed \
     MAX_POWER=$lp\
     TEST_DESC=$testDesc\
     $commonOptions || exit 1
