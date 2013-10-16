@@ -31,12 +31,10 @@ class MessageWindow(object):
         self.addMessage("Updating\n")
         sp = subprocess.Popen("git pull", shell=True,
           stdout=subprocess.PIPE, 
-          stderr=subprocess.PIPE)
+          stderr=subprocess.STDOUT)
         (out, err) = sp.communicate()
         for line in out:
             self.addMessage(line)
-        for line in err:
-            self.addMessage("ERROR: " + err)
         self.updateButton.config(text="Update", bg="gray",
           state=NORMAL)
 
