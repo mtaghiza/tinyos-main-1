@@ -23,15 +23,11 @@ def tlvIterator(data):
         i += l+2
 
 class Decoder(object):
-    def __init__(self, dbName):
-        self.dbName = dbName
-        self.connected = False
-        pass
+    def __init__(self, dbInsert):
+        self.dbInsert = dbInsert
 
     def __del__(self):
-        if self.connected == True:
-            #self.cursor.close()
-            self.connection.close()
+        pass
 
     @classmethod
     def decode(self, arr, reverseByteOrder=True):

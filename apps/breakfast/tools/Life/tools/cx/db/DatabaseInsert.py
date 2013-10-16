@@ -11,44 +11,37 @@ class DatabaseInsert(object):
         self.connected = False
         #print "DatabaseInsert()", threading.current_thread().name
 
+    def connect(self):
+        if not self.connected:
+            self.connected = True
+            self.connection = sqlite3.connect(self.dbName)
                 
     def __del__(self):
-        if self.connected == True:
+        if self.connected:
+            self.connection.commit()
             #self.cursor.close()
             self.connection.close()
-            
             print "closing connection"
         
     def insertFlash(self, node_id, cookie, nextCookie, length):
-             
         cookieDiff = nextCookie - (cookie + length)
-        
         if (0 < length) and (length < 140) and (cookieDiff > 0) and (cookieDiff < 0xFF):
-            
-            # sqlite connections can only be used from the same threads they are established from
-            if self.connected == False:
-                self.connected == True
-                # raises sqlite3 exceptions
-                self.connection = sqlite3.connect(self.dbName)
-                #self.cursor = self.connection.cursor()
-
             # the table has a PK uniqueness constraint on (node_id, cookie)
             # duplicate data is ignored
             row = [node_id, time.time(), cookie, nextCookie, length]
-            self.connection.execute('INSERT OR IGNORE INTO cookie_table (node_id, base_time, cookie, nextCookie, length) VALUES (?,?,?,?,?)', row)        
-            self.connection.commit();
-            
-        #print "DatabaseInsert.insertFlash()", threading.current_thread().name
+            self.execute('INSERT OR IGNORE INTO cookie_table (node_id, base_time, cookie, nextCookie, length) VALUES (?,?,?,?,?)', row)        
+
+    def commit(self):
+        self.connect()
+        self.connection.commit()
     
     def insertRaw(self, source, message):
-        if self.connected == False:
-            self.connected == True
-            # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
-            #self.cursor = self.connection.cursor()
-        self.connection.execute('INSERT INTO packet (src, ts, amId, data) values (?, ?, ?, ?)',
+        self.execute('INSERT INTO packet (src, ts, amId, data) values (?, ?, ?, ?)',
             (message.addr, 
               time.time(), 
               message.am_type,
               sqlite3.Binary(bytearray(message.data))))
-        self.connection.commit()
+
+    def execute(self, query, args):
+        self.connect()
+        self.connection.execute(query, args)

@@ -16,13 +16,11 @@ class ToastDisconnection(Decoder.Decoder):
         return (source, cookie, rc, ts, buffer(toastIdS))
 
     def insert(self, source, cookie, data):
-        if not self.connected:
-            self.connection = sqlite3.connect(self.dbName)
         q ='''INSERT OR IGNORE INTO toast_disconnection 
            (node_id, cookie, reboot_counter, time, toast_id) values 
            (?,       ?,      ?,              ?,    ?)'''
 
         (source, cookie, rc, ts, toastIdBin) = self.unpack(source, cookie, data)
         toastIdText = Decoder.toHexStr(toastIdBin)
-        self.connection.execute(q, (source, cookie, rc, ts, toastIdText))
-        self.connection.commit()
+        self.insert.execute(q, (source, cookie, rc, ts, toastIdText))
+        self.insert.commit()

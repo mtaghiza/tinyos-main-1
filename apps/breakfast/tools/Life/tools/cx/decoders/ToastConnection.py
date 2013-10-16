@@ -16,8 +16,6 @@ class ToastConnection(Decoder.Decoder):
         return (source, cookie, rc, ts, buffer(body))
 
     def insert(self, source, cookie, data):
-        if not self.connected:
-            self.connection = sqlite3.connect(self.dbName)
         q ='''INSERT OR IGNORE INTO toast_connection 
            (node_id, cookie, reboot_counter, time, toast_id, tlv) values 
            (?,       ?,      ?,              ?,    ?,       ?)'''
@@ -35,12 +33,10 @@ class ToastConnection(Decoder.Decoder):
                 channel = 0
                 while i < length:
                     (sensorType, sensorId) = struct.unpack('>BH', value[i:i+3])
-                    self.connection.execute(q1, (source, cookie, channel, sensorType, sensorId))
+                    self.insert.execute(q1, (source, cookie, channel, sensorType, sensorId))
                     i += 3
                     channel += 1
             if tag == 0x04:
                 toastIdBin = value
                 toastIdText = Decoder.toHexStr(toastIdBin)
-                self.connection.execute(q, (source, cookie, rc, ts, toastIdText, tlv))
-
-        self.connection.commit()
+                self.insert.execute(q, (source, cookie, rc, ts, toastIdText, tlv))

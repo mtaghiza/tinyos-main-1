@@ -21,7 +21,7 @@ class Database(object):
         
 
     def addDecoder(self, decoderClass):
-        self.decoders[decoderClass.recordType()] = decoderClass(self.dbName)
+        self.decoders[decoderClass.recordType()] = decoderClass(self.insert)
         return self.decoders[decoderClass.recordType()]
 
 

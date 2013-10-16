@@ -16,12 +16,9 @@ class BaconSample(Decoder.Decoder):
         return (source, cookie, rc, baseTime, battery, light, thermistor)
 
     def insert(self, source, cookie, data):
-        if not self.connected:
-            self.connection = sqlite3.connect(self.dbName)
         q='''INSERT OR IGNORE INTO bacon_sample 
              (node_id, cookie, reboot_counter, base_time, battery, light, thermistor) 
              VALUES (?, ?, ?, ?, ?, ?, ?)'''
         t = self.unpack(source, cookie, data)
         print "Decoded Bacon Sample", Decoder.toHexArrayStr(data), "to", Decoder.toHexArrayStr(t)
-        self.connection.execute(q, t)
-        self.connection.commit()
+        self.insert.execute(q, t)

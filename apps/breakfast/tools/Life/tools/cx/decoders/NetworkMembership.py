@@ -21,16 +21,12 @@ class NetworkMembership(Decoder.Decoder):
         return (source, cookie, masterId, networkSegment, channel, rc, ts, memberDistances)
 
     def insert(self, source, cookie, data):
-        if not self.connected:
-            self.connection = sqlite3.connect(self.dbName)
         (source, cookie, masterId, networkSegment, channel, rc, ts, memberDistances) = self.unpack(source, cookie, data)
         q0 = '''INSERT INTO active_period (master_id, cookie, rc, ts, network_segment, channel) VALUES (?, ?, ?, ?, ?, ?)'''
         q1 = '''INSERT INTO network_membership (master_id, cookie, slave_id, distance) VALUES (?, ?, ?, ?)'''
-        self.connection.execute(q0, 
+        self.insert.execute(q0, 
           (masterId, cookie, rc, ts, networkSegment, channel))
         for (member, distance) in memberDistances:
             if member != 0xFFFF:
-                self.connection.execute(q1,
+                self.insert.execute(q1,
                   (masterId, cookie, member, distance))
-
-        self.connection.commit()

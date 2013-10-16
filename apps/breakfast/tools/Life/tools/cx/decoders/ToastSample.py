@@ -19,8 +19,6 @@ class ToastSample(Decoder.Decoder):
         return (rc, ts, samplerId, samples)
 
     def insert(self, source, cookie, data):
-        if not self.connected:
-            self.connection = sqlite3.connect(self.dbName)
         q0='''INSERT OR IGNORE INTO toast_sample 
              (node_id, cookie, reboot_counter, base_time, toast_id) VALUES 
              (?,       ?,      ?,              ?,         ?)'''
@@ -29,7 +27,6 @@ class ToastSample(Decoder.Decoder):
              (?,       ?,      ?,              ?)'''
         (rc, ts, samplerIdBin, samples) = self.unpack(data)
         samplerIdText = Decoder.toHexStr(samplerIdBin)
-        self.connection.execute(q0, (source, cookie, rc, ts, samplerIdText))
+        self.insert.execute(q0, (source, cookie, rc, ts, samplerIdText))
         for (channel, sample) in enumerate(samples):
-            self.connection.execute(q1, (source, cookie, channel, sample))
-        self.connection.commit()
+            self.insert.execute(q1, (source, cookie, channel, sample))
