@@ -27,6 +27,6 @@ class ToastSample(Decoder.Decoder):
              (?,       ?,      ?,              ?)'''
         (rc, ts, samplerIdBin, samples) = self.unpack(data)
         samplerIdText = Decoder.toHexStr(samplerIdBin)
-        self.insert.execute(q0, (source, cookie, rc, ts, samplerIdText))
+        self.dbInsert.execute(q0, (source, cookie, rc, ts, samplerIdText))
         for (channel, sample) in enumerate(samples):
-            self.insert.execute(q1, (source, cookie, channel, sample))
+            self.dbInsert.execute(q1, (source, cookie, channel, sample))

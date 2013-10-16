@@ -33,10 +33,10 @@ class ToastConnection(Decoder.Decoder):
                 channel = 0
                 while i < length:
                     (sensorType, sensorId) = struct.unpack('>BH', value[i:i+3])
-                    self.insert.execute(q1, (source, cookie, channel, sensorType, sensorId))
+                    self.dbInsert.execute(q1, (source, cookie, channel, sensorType, sensorId))
                     i += 3
                     channel += 1
             if tag == 0x04:
                 toastIdBin = value
                 toastIdText = Decoder.toHexStr(toastIdBin)
-                self.insert.execute(q, (source, cookie, rc, ts, toastIdText, tlv))
+                self.dbInsert.execute(q, (source, cookie, rc, ts, toastIdText, tlv))

@@ -4,9 +4,9 @@ import sqlite3
 import tools.cx.constants as constants
 
 class StatusTimeRefListener(object):
-    def __init__(self, dbName, refCallBack=None):
+    def __init__(self, db, refCallBack=None):
         self.downloadStart = None
-        self.dbName = dbName
+        self.db = db
         self.refCallBack = refCallBack
 
     def receive(self, src, msg):
@@ -15,9 +15,7 @@ class StatusTimeRefListener(object):
         q = ''' INSERT INTO base_reference
           (node1, rc1, ts1, unixTS) VALUES
           (?,     ?,   ?,   ?)'''
-        self.connection = sqlite3.connect(self.dbName)
-        self.connection.execute(q, 
+        self.db.insert.execute(q, 
           (msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(), self.downloadStart))
-        self.connection.commit()
         if self.refCallBack:
             self.refCallBack(msg.addr, neighbors)

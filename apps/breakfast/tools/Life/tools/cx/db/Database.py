@@ -7,6 +7,7 @@ from DatabaseInsert import DatabaseInsert
 from DatabaseMissing import DatabaseMissing
 
 import time
+from threading import Thread
 
 
 class Database(object):
@@ -16,6 +17,10 @@ class Database(object):
         self.dbName = init.getName()
 
         self.insert = DatabaseInsert(self.dbName)
+
+        self.insertThread = Thread(target=self.insert.mainLoop,
+          name="dbInsert")
+        self.insertThread.start()
         self.missing = DatabaseMissing(self.dbName)
         self.decoders = {}
         
@@ -54,7 +59,9 @@ class Database(object):
     def findMissing(self, incrementRetries=True):
         
         return self.missing.findMissing(incrementRetries)
-        
+    
+    def stop(self):
+        self.insert.stop()
 
 
 if __name__ == '__main__':

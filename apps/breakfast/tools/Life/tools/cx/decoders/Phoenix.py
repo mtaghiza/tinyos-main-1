@@ -19,4 +19,4 @@ class Phoenix(Decoder.Decoder):
              VALUES (?, ?, ?, ?, ?, ?, ?)'''
         t = self.unpack(source, cookie, data)
         print "Decoded Phoenix Ref", Decoder.toHexArrayStr(data), "to", Decoder.toHexArrayStr(t)
-        self.insert.execute(q, t)
+        self.dbInsert.execute(q, t)

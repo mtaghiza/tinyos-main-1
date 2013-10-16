@@ -106,7 +106,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
 #     t.receiveQueue = d.mif.receiveQueue
     pingId = 0
 
-    refListener = StatusTimeRefListener.StatusTimeRefListener(db.dbName, refCallBack)
+    refListener = StatusTimeRefListener.StatusTimeRefListener(db, refCallBack)
     d.mif.addListener(refListener, CxStatus.CxStatus)
 
     try:
@@ -170,6 +170,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
     finally:
         print "Cleaning up"
         d.stop()
+        db.stop()
     print "done for real"
     if finishedCallBack:
         finishedCallBack(d.mif.bsId, "Finished.\n")
@@ -249,6 +250,7 @@ def sleep(packetSource, networkSegment, configFile, sleepDuration):
     finally:
         print "Cleaning up"
         d.stop()
+        db.stop()
 
 def triggerRouterDownload(packetSource, networkSegment, configFile):
     db = Database.Database()
