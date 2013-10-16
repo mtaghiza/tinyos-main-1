@@ -12,10 +12,10 @@ module AutoSenderP{
   bool sending;
 
   event void Boot.booted(){
-    if (DATA_RATE){
+    if (TEST_DATA_RATE){
       testMsg = call Pool.get();
       if (testMsg){
-        call Timer.startPeriodic(DATA_RATE);
+        call Timer.startPeriodic(TEST_DATA_RATE);
       }else{
         cerror(TESTBED, "TMPE\r\n");
       }
@@ -25,15 +25,17 @@ module AutoSenderP{
   }
 
   task void sendAgain(){
-   if (!sending && packetsQueued){
-     error_t error;
-     (call CXLinkPacket.getLinkMetadata(testMsg))->dataPending = (packetsQueued > 1);
-     error = call AMSend.send(TEST_DESTINATION, testMsg,
-       TEST_PAYLOAD_LEN);
-     if (SUCCESS != error){
-       cerror(TESTBED, "Send %x\r\n", error);
-     }else{
-       sending = TRUE;
+   if (!sending){
+     if (packetsQueued){
+       error_t error;
+       (call CXLinkPacket.getLinkMetadata(testMsg))->dataPending = (packetsQueued > 1);
+       error = call AMSend.send(TEST_DESTINATION, testMsg,
+         TEST_PAYLOAD_LEN);
+       if (SUCCESS != error){
+         cerror(TESTBED, "Send %x\r\n", error);
+       }else{
+         sending = TRUE;
+       }
      }
    }
   }

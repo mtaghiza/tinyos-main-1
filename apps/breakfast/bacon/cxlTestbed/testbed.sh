@@ -116,7 +116,10 @@ do
     DL_STATS=$dls\
     DL_STATS_RADIO=$dlsr\
     DL_TESTBED=DL_INFO\
-    DATA_RATE=$dr\
+    DL_GLOBAL=DL_DEBUG\
+    DL_SCHED=DL_WARN\
+    DL_AM=DL_DEBUG\
+    TEST_DATA_RATE=$dr\
     TEST_PAYLOAD_LEN=$tpl\
     TEST_DESTINATION=$td\
     ENABLE_AUTOSENDER=$eas\
