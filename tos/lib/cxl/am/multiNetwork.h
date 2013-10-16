@@ -15,4 +15,8 @@ enum {
   NS_INVALID=0xFF
 };
 
+#define NS_GLOBAL_DEF 0
+#define NS_SUBNETWORK_DEF 1
+#define NS_ROUTER_DEF 2
+
 #endif
