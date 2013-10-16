@@ -19,6 +19,15 @@ function runTestbed(){
 
 while true 
 do
+  #full-speed ahead: to determine goodput during active period
+  # - auto-send
+  # - 1-second IPI
+  # - single download round
+  for efs in 0 1
+  do
+    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 40
+  done
+  
   #moderate data level: for validation against original CX
   # - enable auto-send
   # - 60 second packet generation interval
@@ -27,15 +36,6 @@ do
   for efs in 0 1
   do
     runTestbed eas 1 efs $efs dr 61440UL tpl 12 mdr 100 fps 40
-  done
-  
-  #full-speed ahead: to determine goodput during active period
-  # - auto-send
-  # - 1-second IPI
-  # - single download round
-  for efs in 0 1
-  do
-    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 40
   done
   
   #idle, vary frames per slot
