@@ -145,7 +145,6 @@ SELECT "Enumerating nodes";
 DROP TABLE IF EXISTS nodes;
 CREATE TABLE nodes AS SELECT distinct node FROM setup order by node;
 
---TODO: 
 SELECT "Finding missing RX (may take a while)";
 DROP TABLE IF EXISTS RXR;
 CREATE TABLE RXR AS 
@@ -156,27 +155,35 @@ SELECT TX.it as it,
   coalesce(received, 0) as received
 FROM TX
 JOIN nodes 
-  ON (TX.mt in (3, 5, 6) OR TX.dest = 65535)
+  ON (TX.mt in (3, 5, 6) OR TX.dest = 65535 OR TX.dest=nodes.node)
 LEFT JOIN RX
   ON RX.it = TX.it 
     AND RX.src = TX.src 
     AND RX.sn = TX.sn 
-    AND RX.node = nodes.node;
+    AND RX.node = nodes.node
+WHERE TX.src != nodes.node;
 
 SELECT "Computing PRR (may take a while)";
 
 DROP TABLE IF EXISTS PRR;
 CREATE TABLE PRR AS
-SELECT a.it, a.src, b.dest, a.cnt as txc, b.cnt as rxc,
-  b.cnt/(1.0*a.cnt) as prr
-FROM (
-  SELECT it, src, count(*) as cnt FROM TX GROUP BY it, src
-) a
-JOIN (
-  SELECT it, src, dest, sum(received) as cnt 
-  FROM RXR 
-  GROUP BY it, src, dest
-) b ON a.it = b.it AND a.src=b.src;
+SELECT it, src, dest, count(*) as txc, sum(received) as rxc,
+  (sum(received)*1.0)/count(*) as prr
+FROM RXR
+GROUP BY it, src, dest;
+
+-- DROP TABLE IF EXISTS PRR;
+-- CREATE TABLE PRR AS
+-- SELECT a.it, a.src, b.dest, a.cnt as txc, b.cnt as rxc,
+--   b.cnt/(1.0*a.cnt) as prr
+-- FROM (
+--   SELECT it, src, count(*) as cnt FROM TX GROUP BY it, src
+-- ) a
+-- JOIN (
+--   SELECT it, src, dest, sum(received) as cnt 
+--   FROM RXR 
+--   GROUP BY it, src, dest
+-- ) b ON a.it = b.it AND a.src=b.src;
 
 DROP TABLE IF EXISTS agg;
 CREATE TABLE agg AS 
