@@ -25,7 +25,7 @@ do
   # - single download round
   for efs in 0 1
   do
-    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 40
+    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 40 td 0
   done
   
   #moderate data level: for validation against original CX
@@ -35,13 +35,13 @@ do
   # - 40 frames per slot (from original)
   for efs in 0 1
   do
-    runTestbed eas 1 efs $efs dr 61440UL tpl 12 mdr 100 fps 40
+    runTestbed eas 1 efs $efs dr 61440UL tpl 12 mdr 100 fps 40 td 0
   done
   
   #idle, vary frames per slot
   for fps in 20 40 80
   do
-    runTestbed eas 0 efs 1 mdr 1 fps $fps
+    runTestbed eas 0 efs 1 mdr 1 fps $fps td 0
   done
 
 

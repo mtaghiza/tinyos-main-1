@@ -3,14 +3,19 @@
 f=$1
 db=$2
 
-dos2unix $f
-
 t=data/tmp
 tx=${t}.tx
 rx=${t}.rx
 s=${t}.s
 e=${t}.e
 setup=${t}.setup
+
+
+dos2unix $f
+
+echo "removing stray carriage returns"
+pv $f | tr '\015' '\012' > $t
+mv $t $f
 
 echo "Extracting setups"
 pv $f | grep 'START' | sed 's/DL_/DL-/g' | tr '_' ' ' | awk '{
