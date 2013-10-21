@@ -85,7 +85,7 @@ typedef nx_struct cx_lpp_sleep {
 } cx_lpp_sleep_t;
 
 typedef nx_struct cx_lpp_cts {
-  nx_uint8_t slotNum;
+  nx_int8_t slotNum;
 } cx_lpp_cts_t;
 
 typedef nx_struct cx_status {
