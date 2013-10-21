@@ -101,6 +101,8 @@ module SlotSchedulerP {
     ROLE_FORWARDER = 2,
     ROLE_NONFORWARDER =3,
     ROLE_WAKEUP = 4,
+    ROLE_IDLE = 5,
+    ROLE_NO_CTS = 6,
   };
   uint8_t slotRole;
 
@@ -128,7 +130,7 @@ module SlotSchedulerP {
   am_addr_t master;
   uint8_t missedCTS;
  
-  uint16_t slotNum;
+  int16_t slotNum;
   uint16_t ctsSN;
   bool ctsReceived;
 
@@ -177,6 +179,7 @@ module SlotSchedulerP {
     return ((call ProbeSchedule.get())->wakeupLen[activeNS]);
   }
 
+  void logStats();
   uint16_t wakeupNum;
   event void LppControl.wokenUp(uint8_t ns){
     if (state == S_UNSYNCHED){
@@ -188,6 +191,10 @@ module SlotSchedulerP {
       state = S_WAKEUP;
       wakeupStart = call SlotTimer.getNow();
       wakeupStartMilli = call LocalTime.get();
+      slotNum = -1;
+      slotRole = ROLE_IDLE;
+      logStats();
+      slotRole = ROLE_WAKEUP;
       slotNum = 0;
       cdbg(SCHED, "Sched wakeup for %lu on %u\r\n", 
         wakeupLen(),
@@ -616,10 +623,14 @@ module SlotSchedulerP {
   }
 
   uint8_t clearTime(message_t* msg){
+    #if ENABLE_FORWARDER_SELECTION == 0
+    return call SlotController.maxDepth[activeNS](activeNS);
+    #else
     return call RoutingTable.getDistance(
       call CXLinkPacket.source(msg),
       call CXLinkPacket.destination(msg)) 
       + call SlotController.bw[activeNS](activeNS);
+    #endif
   }
 
   command error_t Send.send(message_t* msg, uint8_t len){
@@ -852,6 +863,7 @@ module SlotSchedulerP {
       }
     }else if (state == S_SLOT_CHECK){
       missedCTS++;
+      slotRole = ROLE_NO_CTS;
       if (missedCTS < MISSED_CTS_THRESH && call SlotTimer.isRunning()){
         cdbg(SCHED, "MCC %u %u\r\n", slotNum, missedCTS);
 
@@ -880,6 +892,7 @@ module SlotSchedulerP {
     error_t error = call LppControl.sleep();
     call SlotTimer.stop();
     call FrameTimer.stop();
+    logStats();
     #if LOG_NEIGHBORHOOD == 1
     call Neighborhood.freeze();
     post logNeighborhood();
