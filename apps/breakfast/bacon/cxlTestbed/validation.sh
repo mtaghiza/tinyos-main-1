@@ -29,9 +29,13 @@ do
   #   in the dcoss work.
   for efs in 0 1
   do
-    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 55 td 0
+    runTestbed eas 1 efs $efs dr 1024UL tpl 12 mdr 1 fps 60 td 0
   done
 
+  for efs in 0 1
+  do
+    runTestbed eas 1 efs $efs dr 61440UL tpl 12 mdr 100 fps 60 td 0
+  done
   
   #----
   #retests with forwarder selection off (fix bug with clearTime)
