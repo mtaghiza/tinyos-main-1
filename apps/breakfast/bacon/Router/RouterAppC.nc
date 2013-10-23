@@ -112,6 +112,14 @@ configuration RouterAppC{
   components AutoSenderC;
   #endif
 
+  #ifndef ENABLE_TESTBED
+  #define ENABLE_TESTBED 0
+  #endif
+  #if ENABLE_TESTBED == 1
+  #warning Enable Testbed Router
+  components TestbedRouterC;
+  #endif
+
 
   components new AMReceiverC(AM_CX_DOWNLOAD) as CXDownloadReceive;
   RouterP.CXDownloadReceive -> CXDownloadReceive; 

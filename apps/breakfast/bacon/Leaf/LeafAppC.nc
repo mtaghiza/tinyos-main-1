@@ -128,6 +128,14 @@ configuration LeafAppC{
   components AutoSenderC;
   #endif
 
+  #ifndef ENABLE_TESTBED
+  #define ENABLE_TESTBED 0
+  #endif
+  #if ENABLE_TESTBED == 1
+  #warning Enable Testbed Router
+  components TestbedLeafC;
+  #endif
+
   LeafP.SplitControl -> ActiveMessageC;
   LeafP.Boot -> MainC;
 

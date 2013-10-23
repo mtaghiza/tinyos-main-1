@@ -13,4 +13,9 @@
 
 #define TEST_DELAY (LPP_SLEEP_TIMEOUT * 4UL)
 
+#ifndef PACKETS_PER_DOWNLOAD
+#define PACKETS_PER_DOWNLOAD 0
+#endif 
+
+
 #endif

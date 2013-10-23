@@ -37,6 +37,8 @@ module SlotSchedulerP {
   uses interface StateDump;
 
   uses interface StatsLog;
+
+  provides interface DownloadNotify[uint8_t ns];
 } implementation {
 
   enum {
@@ -208,6 +210,7 @@ module SlotSchedulerP {
         wakeupLen());
       cflushdbg(SCHED);
       wrxCount = 0;
+      signal DownloadNotify.downloadStarted[activeNS]();
       post nextRX();
     }else{
       cerror(SCHED, "US0 %x\r\n", state);
@@ -898,6 +901,7 @@ module SlotSchedulerP {
     post logNeighborhood();
     #endif
     state = S_UNSYNCHED;
+    signal DownloadNotify.downloadFinished[activeNS]();
     return error;
   }
   
@@ -1058,5 +1062,8 @@ module SlotSchedulerP {
   default command void SlotController.endSlot[uint8_t ns](){}
 
   event void StateDump.dumpRequested(){}
+
+  default event void DownloadNotify.downloadStarted[uint8_t ns](){}
+  default event void DownloadNotify.downloadFinished[uint8_t ns](){}
 
 }

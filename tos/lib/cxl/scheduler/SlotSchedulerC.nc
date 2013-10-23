@@ -10,6 +10,7 @@ configuration SlotSchedulerC{
   uses interface SlotController[uint8_t ns];
 
   provides interface Neighborhood;
+  provides interface DownloadNotify[uint8_t ns];
 } implementation {
   components CXWakeupC;
   components SlotSchedulerP;
@@ -80,4 +81,6 @@ configuration SlotSchedulerC{
   StatsLog.CXLinkPacket -> CXWakeupC.CXLinkPacket;
   StatsLog.CXMacPacket -> CXWakeupC.CXMacPacket;
   StatsLog.Packet -> CXWakeupC.Packet;
+
+  DownloadNotify = SlotSchedulerP;
 }
