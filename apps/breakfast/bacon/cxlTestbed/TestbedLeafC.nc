@@ -3,6 +3,7 @@
  #include "autosender.h"
 configuration TestbedLeafC{
 } implementation {
+  #warning Testbed Leaf app
   components TestbedLeafP;
   components SlotSchedulerC;
   components CXLeafC;
