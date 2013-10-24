@@ -37,7 +37,7 @@ module CXMasterP {
   network_membership_t membership;
 
   #ifdef SLOT_LIMIT
-  uint16_t slotsLeft;
+  int16_t slotsLeft;
   #endif
 
   command am_addr_t GetRoot.get[uint8_t ns](){
@@ -137,7 +137,7 @@ module CXMasterP {
       contactList[contactIndex].failedAttempts ++;
       contactList[contactIndex].contactFlag = FALSE;
       if (contactList[contactIndex].failedAttempts >= maxAttempts){
-        printf("me %u %u\r\n", contactList[contactIndex].nodeId, contactList[contactIndex].failedAttempts);
+        cdbg(ROUTER, "me %u %u\r\n", contactList[contactIndex].nodeId, contactList[contactIndex].failedAttempts);
       }
       return TRUE;
     }else {
@@ -229,9 +229,9 @@ module CXMasterP {
   command message_t* SlotController.receiveEOS(message_t* msg,
       cx_eos_t* pl){
     contactList[contactIndex].dataPending = pl->dataPending;
-//    printf( "node %u pending %u\r\n",
-//      contactList[contactIndex].nodeId,
-//      contactList[contactIndex].dataPending);
+    cdbg(ROUTER, "EDP %u %u\r\n",
+      contactList[contactIndex].nodeId,
+      contactList[contactIndex].dataPending);
     return msg;
   }
 

@@ -18,5 +18,6 @@ configuration TestbedRouterC{
   components CXLinkPacketC;
   TestbedRouterP.Pool -> ActiveMessageC;
   TestbedRouterP.CXLinkPacket -> CXLinkPacketC;
+  TestbedRouterP.Packet -> AMSenderC;
   
 }

@@ -29,7 +29,7 @@ do
   done
   
   #overhead: fix frames per slot, vary packets per download
-  for ppd in 0 25 50 100
+  for ppd in 25 50 100
   do
     runTestbed efs 1 ppd $ppd map map.flat mdr 100 fps 60 td 0 tpl 128
   done

@@ -8,6 +8,7 @@ module TestbedRouterP{
   uses interface Receive;
   uses interface Pool<message_t>;
   uses interface CXLinkPacket;
+  uses interface Packet;
 } implementation {
   message_t* testMsg = NULL;
   uint16_t packetsQueued = 0;
@@ -26,6 +27,7 @@ module TestbedRouterP{
           cerror(TESTBED, "Router Pool Empty\r\n");
         }else{
           error_t error;
+          call Packet.clear(testMsg);
           (call CXLinkPacket.getLinkMetadata(testMsg))->dataPending = (packetsQueued > 1);
           error = call AMSend.send(TEST_DESTINATION, testMsg,
             TEST_PAYLOAD_LEN);

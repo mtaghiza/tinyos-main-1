@@ -17,4 +17,5 @@ configuration TestbedLeafC{
   components CXLinkPacketC;
   TestbedLeafP.Pool -> ActiveMessageC;
   TestbedLeafP.CXLinkPacket -> CXLinkPacketC;
+  TestbedLeafP.Packet -> AMSenderC;
 }

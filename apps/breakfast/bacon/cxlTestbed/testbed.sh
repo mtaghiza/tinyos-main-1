@@ -126,7 +126,7 @@ do
       DL_TESTBED=DL_INFO\
       DL_GLOBAL=DL_DEBUG\
       DL_SCHED=DL_WARN\
-      DL_AM=DL_DEBUG\
+      DL_AM=DL_WARN\
       TEST_DATA_RATE=$dr\
       TEST_PAYLOAD_LEN=$tpl\
       TEST_DESTINATION=$td\
