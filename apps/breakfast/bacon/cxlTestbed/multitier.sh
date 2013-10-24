@@ -20,24 +20,25 @@ while true
 do
   #multitier: fix frames per slot, vary routers, test at idle and
   # active
-  for map in map.flat map.patches.4 map.patches.8 
+  for map in map.patches.1 map.patches.4 map.patches.8 
   do
+    tdel=$(grep '#tdel' $map | cut -d ' ' -f 2)
     for ppd in 0 50 
     do
-      runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 128
+      runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel
     done
   done
   
   #overhead: fix frames per slot, vary packets per download
   for ppd in 25 50 100
   do
-    runTestbed efs 1 ppd $ppd map map.flat mdr 100 fps 60 td 0 tpl 128
+    runTestbed efs 1 ppd $ppd map map.patches.1 mdr 100 fps 60 td 0 tpl 100
   done
 
   #overhead: fix packets per download, vary frames per slot
   for fps in 30 60 90 120
   do
-    runTestbed efs 1 ppd 50 map map.flat mdr 100 fps $fps td 0 tpl 128
+    runTestbed efs 1 ppd 50 map map.patches.1 mdr 100 fps $fps td 0 tpl 100
   done
   
 done

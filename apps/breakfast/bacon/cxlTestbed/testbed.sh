@@ -53,11 +53,12 @@ dlsr=DL_INFO
 map=map.flat
 #packets per download
 ppd=0
+tdel=61440
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd")
+"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel")
 
 while [ $# -gt 1 ]
 do
@@ -146,6 +147,7 @@ do
       MISSED_CTS_THRESH=$mct\
       ENABLE_TESTBED=$etb\
       PACKETS_PER_DOWNLOAD=$ppd\
+      TEST_DELAY=$tdel\
       ENABLE_PRINTF=$enablePrintf"
   
     testDesc=\\\"${testDescRouter}_snc_${snc}\\\"
