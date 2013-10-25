@@ -28,6 +28,7 @@ do
     ts=$(grep '#ts' $map | cut -d ' ' -f 2)
     for ppd in 50
     do
+      set -x
       runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D
     done
   done

@@ -1,5 +1,5 @@
 #SNC 32
-#tdel 61440UL
+#tdel 122880UL
 #ts 1
 cxlTestbed 0 32
 Leaf 1 32
