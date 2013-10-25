@@ -1,5 +1,6 @@
 #SNC 0
-#tdel 61440
+#tdel 61440UL
+#ts 1
 cxlTestbed 0 0
 Leaf 1 0
 Leaf 8 0
@@ -50,6 +51,7 @@ Leaf 44 0
 Leaf 45 0
 Leaf 48 0
 Leaf 49 0
+Leaf 50 0
 Leaf 51 0
 Leaf 54 0
 Leaf 55 0

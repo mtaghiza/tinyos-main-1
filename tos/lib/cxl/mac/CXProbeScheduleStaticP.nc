@@ -29,10 +29,16 @@ module CXProbeScheduleStaticP {
   };
 
   command error_t Init.init(){
+//    uint8_t i;
     sched.probeInterval = LPP_DEFAULT_PROBE_INTERVAL;
     sched.wakeupLen[0] = 32*CX_MAX_DEPTH*2 * IF_G * LPP_DEFAULT_PROBE_INTERVAL;
     sched.wakeupLen[1] = 32*CX_MAX_DEPTH*1 * IF_SN * LPP_DEFAULT_PROBE_INTERVAL;
     sched.wakeupLen[2] = 32*CX_MAX_DEPTH*1 * IF_R  * LPP_DEFAULT_PROBE_INTERVAL;
+//    for (i =0; i <= 2; i++){
+//      printf("Segment %u chan %u if %u bw %u md %u wu %lu\r\n",
+//        i, sched.channel[i], sched.invFrequency[i], sched.bw[i],
+//        sched.maxDepth[i], sched.wakeupLen[i]);
+//    }
     return SUCCESS;
   }
 

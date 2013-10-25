@@ -1,3 +1,5 @@
+#tdel 122880UL
+#ts 1
 cxlTestbed 0 0
 Router 1 10
 Leaf 2 10

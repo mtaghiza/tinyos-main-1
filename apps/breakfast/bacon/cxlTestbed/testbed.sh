@@ -20,9 +20,9 @@ bw=2
 #probe interval
 pi=1024
 #global channel
-gc=0
+gc=128
 #router channel
-rc=64
+rc=0
 #data rate
 dr=0
 #test payload len
@@ -51,6 +51,8 @@ td=0xFFFF
 dls=DL_INFO
 dlsr=DL_INFO
 map=map.flat
+#test segment: default= subnetwork(flat)
+ts=1
 #packets per download
 ppd=0
 tdel=61440
@@ -58,7 +60,7 @@ tdel=61440
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel")
+"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts")
 
 while [ $# -gt 1 ]
 do
@@ -92,11 +94,10 @@ do
 done
 
 #trim off the leading underscore
-testDesc=$(echo "$testDesc" | cut -c 1 --complement)
+testDescFull=$(echo "$testDesc" | cut -c 1 --complement)
 
-testDescRouter=${testDesc}_role_router
-testDescLeaf=${testDesc}_role_leaf
-testDescRoot=${testDesc}_role_root
+#shorten that down bigtime
+testDescShort=installTS_${installTS}
 
 echo "Router: ${testDescRouter}"
 echo "Leaf: ${testDescLeaf}"
@@ -132,7 +133,7 @@ do
       TEST_PAYLOAD_LEN=$tpl\
       TEST_DESTINATION=$td\
       ENABLE_AUTOSENDER=$eas\
-      ENABLE_PROBE_SCHEDULE_CONFIG=1\
+      ENABLE_PROBE_SCHEDULE_CONFIG=0\
       ENABLE_BACON_SAMPLER=0\
       ENABLE_TOAST_SAMPLER=0\
       ENABLE_PHOENIX=0\
@@ -148,25 +149,34 @@ do
       ENABLE_TESTBED=$etb\
       PACKETS_PER_DOWNLOAD=$ppd\
       TEST_DELAY=$tdel\
+      TEST_SEGMENT=$ts\
       ENABLE_PRINTF=$enablePrintf"
   
-    testDesc=\\\"${testDescRouter}_snc_${snc}\\\"
+    cat $subnetMap | while read line 
+    do
+      role=$(echo "$line" | cut -d ' ' -f 1 )
+      id=$(echo "$line" | cut -d ' ' -f 2)
+      echo "$(date +%s) SETUP $id ${testDescFull}_role_${role}_snc_${snc}"
+    done
+
+    testDesc=\\\"${testDescShort}_snc_${snc}\\\"
     ./burnRole.sh $subnetMap Router\
       MAX_POWER=$rp\
       TEST_DESC=$testDesc\
       $commonOptions || exit 1
 
-    testDesc=\\\"${testDescLeaf}_snc_${snc}\\\"
+    testDesc=\\\"${testDescShort}_snc_${snc}\\\"
     ./burnRole.sh $subnetMap Leaf -f Makefile.testbed \
       MAX_POWER=$lp\
       TEST_DESC=$testDesc\
       $commonOptions || exit 1
 
-    testDesc=\\\"${testDescRoot}_snc_${snc}\\\"
+    testDesc=\\\"${testDescShort}_snc_${snc}\\\"
     ./burnRole.sh $subnetMap cxlTestbed\
       MAX_POWER=$rp\
       TEST_DESC=$testDesc\
       $commonOptions || exit 1
+
   done
 
 done  

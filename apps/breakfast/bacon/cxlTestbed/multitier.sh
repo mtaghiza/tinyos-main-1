@@ -3,7 +3,7 @@
 function runTestbed(){
   testDuration=$((60 * 60))
   installTS=$(date +%s)
-  for i in $(seq 2)
+  for i in $(seq 1)
   do
     ./testbed.sh installTS $installTS $@
     sleep 60
@@ -20,12 +20,13 @@ while true
 do
   #multitier: fix frames per slot, vary routers, test at idle and
   # active
-  for map in map.patches.1 map.patches.4 map.patches.8 
+  for map in map.patches.8 map.patches.1 map.patches.4 
   do
     tdel=$(grep '#tdel' $map | cut -d ' ' -f 2)
-    for ppd in 0 50 
+    ts=$(grep '#ts' $map | cut -d ' ' -f 2)
+    for ppd in 50 0 
     do
-      runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel
+      runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0xC3
     done
   done
   

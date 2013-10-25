@@ -112,6 +112,7 @@ module CXMasterP {
     if (slotsLeft){
       slotsLeft --;
     }else{
+      printf("SLE\r\n");
       finish();
       return FALSE;
     }
@@ -141,6 +142,7 @@ module CXMasterP {
       }
       return TRUE;
     }else {
+      printf("MRE\r\n");
       //If we did exceed the limit, then we're done, and contactIndex
       //  is pointing at a node with pending data.
       finish();

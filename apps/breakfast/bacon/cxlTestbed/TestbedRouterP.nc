@@ -43,6 +43,7 @@ module TestbedRouterP{
     if (error == SUCCESS){
       if (packetsQueued){
         packetsQueued --;
+        cinfo(TESTBED, "PQ %u\r\n", packetsQueued);
       }
     }
     call Pool.put(msg);
@@ -51,6 +52,7 @@ module TestbedRouterP{
   }
 
   event void DownloadNotify.downloadStarted(){
+    cinfo(TESTBED, "RDS\r\n");
     packetsQueued += PACKETS_PER_DOWNLOAD;
     post sendAgain();
   }
@@ -59,12 +61,17 @@ module TestbedRouterP{
     error_t error = call CXDownload.startDownload();
     if (error != SUCCESS){
       cerror(TESTBED, "DOWNLOAD %x\r\n", error);
+    }else{
+      cinfo(TESTBED, "SNDS\r\n");
     }
   }
 
   event void DownloadNotify.downloadFinished(){
+    cinfo(TESTBED, "RDF\r\n");
     post startDownload();
   }
-  event void CXDownload.downloadFinished(){}
+  event void CXDownload.downloadFinished(){
+    cinfo(TESTBED, "SNDF\r\n");
+  }
 
 }

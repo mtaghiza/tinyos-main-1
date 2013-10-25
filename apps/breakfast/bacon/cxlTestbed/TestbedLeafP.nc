@@ -42,9 +42,12 @@ module TestbedLeafP{
   }
 
   event void DownloadNotify.downloadStarted(){
+    cinfo(TESTBED, "SNDS\r\n");
     packetsQueued += PACKETS_PER_DOWNLOAD;
     post sendAgain();
   }
 
-  event void DownloadNotify.downloadFinished(){}
+  event void DownloadNotify.downloadFinished(){
+    cinfo(TESTBED, "SNDF\r\n");
+  }
 }

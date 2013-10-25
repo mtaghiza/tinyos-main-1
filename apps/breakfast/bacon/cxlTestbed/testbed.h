@@ -4,7 +4,7 @@
 #include "multiNetwork.h"
 
 #ifndef STARTUP_DELAY
-#define STARTUP_DELAY (40UL*1024UL)
+#define STARTUP_DELAY (90UL*1024UL)
 #endif
 
 #ifndef TEST_SEGMENT
