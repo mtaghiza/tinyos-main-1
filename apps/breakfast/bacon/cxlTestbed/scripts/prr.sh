@@ -18,7 +18,7 @@ pv $f | tr '\015' '\012' > $t
 mv $t $f
 
 echo "Extracting setups"
-pv $f | grep 'START' | sed 's/DL_/DL-/g' | tr '_' ' ' | awk '{
+pv $f | grep 'SETUP' | sed 's/DL_/DL-/g' | tr '_' ' ' | awk '{
   for(i=4; i < NF; i+=2){
     settings[$i]=$(i+1)
   }
@@ -34,7 +34,7 @@ echo "Extracting TX events"
 #ts            src w s sn pl dest
 #1379977037.16 0 T 1 0 0 255 dest macType 
 #1             2   4 5 6 7   8    9 
-pv $f | tr '_' ' ' | awk '/ START /{
+pv $f | tr '_' ' ' | awk '/ SETUP /{
   for(i=4; i < NF; i+=2){
     if ($i == "installTS"){ 
       it[$2]=$(i+1)
@@ -47,7 +47,7 @@ echo "Extracting RX events"
 #ts            r   w s src sn  hc
 #1379977037.17 2 R 1 0 0   139 1
 #1             2   4 5 6   7   8
-pv $f | tr '_' ' ' | awk '/ START /{
+pv $f | tr '_' ' ' | awk '/ SETUP /{
   for(i=4; i < NF; i+=2){
     if ($i == "installTS"){ 
       it[$2]=$(i+1)
@@ -60,7 +60,7 @@ pv $f | tr '_' ' ' | awk '/ START /{
 echo "Extracting STATUS details"
 #1  2     4 5    6  7
 #ts src S w slot sn dp
-pv $f | tr '_' ' ' | awk '/ START /{
+pv $f | tr '_' ' ' | awk '/ SETUP /{
   for(i=4; i < NF; i+=2){
     if ($i == "installTS"){ 
       it[$2]=$(i+1)
@@ -70,7 +70,7 @@ pv $f | tr '_' ' ' | awk '/ START /{
 ($3 == "S"){print it[$2], $1, $2, $4, $5, $6, $7}' > $s
 
 echo "Extracting EOS details"
-pv $f | tr '_' ' ' | awk '/ START /{
+pv $f | tr '_' ' ' | awk '/ SETUP /{
   for(i=4; i < NF; i+=2){
     if ($i == "installTS"){ 
       it[$2]=$(i+1)
@@ -143,7 +143,7 @@ WHERE rowid in (
 
 SELECT "Enumerating nodes";
 DROP TABLE IF EXISTS nodes;
-CREATE TABLE nodes AS SELECT distinct node FROM setup order by node;
+CREATE TABLE nodes AS SELECT distinct it, node FROM setup order by it, node;
 
 SELECT "Finding missing RX (may take a while)";
 DROP TABLE IF EXISTS RXR;
@@ -155,7 +155,8 @@ SELECT TX.it as it,
   coalesce(received, 0) as received
 FROM TX
 JOIN nodes 
-  ON (TX.mt in (3, 5, 6) OR TX.dest = 65535 OR TX.dest=nodes.node)
+  ON nodes.it= TX.it 
+  AND (TX.mt in (3, 5, 6) OR TX.dest = 65535 OR TX.dest=nodes.node)
 LEFT JOIN RX
   ON RX.it = TX.it 
     AND RX.src = TX.src 

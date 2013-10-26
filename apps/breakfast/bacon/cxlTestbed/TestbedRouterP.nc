@@ -54,6 +54,7 @@ module TestbedRouterP{
   event void DownloadNotify.downloadStarted(){
     cinfo(TESTBED, "RDS\r\n");
     packetsQueued += PACKETS_PER_DOWNLOAD;
+    cinfo(TESTBED, "PQ %u\r\n", packetsQueued);
     post sendAgain();
   }
 

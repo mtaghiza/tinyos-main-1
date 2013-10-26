@@ -156,7 +156,7 @@ do
     do
       role=$(echo "$line" | cut -d ' ' -f 1 )
       id=$(echo "$line" | cut -d ' ' -f 2)
-      echo "$(date +%s) SETUP $id ${testDescFull}_role_${role}_snc_${snc}"
+      echo "$(date +%s) $id SETUP ${testDescFull}_role_${role}_snc_${snc}"
     done
 
     testDesc=\\\"${testDescShort}_snc_${snc}\\\"
