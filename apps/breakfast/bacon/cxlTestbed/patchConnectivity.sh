@@ -28,23 +28,23 @@ do
     ts=$(grep '#ts' $map | cut -d ' ' -f 2)
     for ppd in 50
     do
-      for pa in 0 1
+      for settings in "pa 0 rxSlack 30UL" "pa 1 rxSlack 15UL"
       do
-        runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D pa $pa
+        runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D $settings
       done
     done
   done
   
-  #check full network on a range of channels
-  for map in maps/flat/*
-  do
-    tdel=$(grep '#tdel' $map | cut -d ' ' -f 2)
-    ts=$(grep '#ts' $map | cut -d ' ' -f 2)
-    for ppd in 50
-    do
-      runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D
-    done
-    
-  done
+#   #check full network on a range of channels
+#   for map in maps/flat/*
+#   do
+#     tdel=$(grep '#tdel' $map | cut -d ' ' -f 2)
+#     ts=$(grep '#ts' $map | cut -d ' ' -f 2)
+#     for ppd in 50
+#     do
+#       runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D
+#     done
+#     
+#   done
 
 done
