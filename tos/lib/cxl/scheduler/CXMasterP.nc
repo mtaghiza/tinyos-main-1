@@ -168,8 +168,8 @@ module CXMasterP {
     uint8_t i;
     uint8_t k;
     contactList[contactIndex].dataPending = pl->dataPending;
-    contactList[contactIndex].failedAttempts--;
     contactList[contactIndex].contactFlag = TRUE;
+    contactList[contactIndex].failedAttempts = 0;
 //    printf("pl %p\r\n", pl->neighbors);
 //    cdbg(ROUTER, "rs %u %u\r\n", 
 //      contactList[contactIndex].nodeId,
