@@ -9,6 +9,7 @@ module TestbedRouterP{
   uses interface Pool<message_t>;
   uses interface CXLinkPacket;
   uses interface Packet;
+  uses interface Get<am_addr_t>;
 } implementation {
   message_t* testMsg = NULL;
   uint16_t packetsQueued = 0;
@@ -30,7 +31,7 @@ module TestbedRouterP{
           error_t error;
           call Packet.clear(testMsg);
           (call CXLinkPacket.getLinkMetadata(testMsg))->dataPending = (packetsQueued > 1);
-          error = call AMSend.send(TEST_DESTINATION, testMsg,
+          error = call AMSend.send(call Get.get(), testMsg,
             TEST_PAYLOAD_LEN);
            if (SUCCESS != error){
              cerror(TESTBED, "Send %x\r\n", error);

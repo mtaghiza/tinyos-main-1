@@ -19,5 +19,6 @@ configuration TestbedRouterC{
   TestbedRouterP.Pool -> ActiveMessageC;
   TestbedRouterP.CXLinkPacket -> CXLinkPacketC;
   TestbedRouterP.Packet -> AMSenderC;
+  TestbedRouterP.Get -> CXRouterC.Get[NS_ROUTER];
   
 }

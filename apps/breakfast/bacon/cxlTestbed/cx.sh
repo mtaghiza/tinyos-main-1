@@ -40,7 +40,7 @@ do
       runTestbed map maps/segmented/map.patches.9 efs 1 \
         ppd $ppd mdr $mdr tpl $tpl fps $fps \
         tdel 184320UL sdel 122880UL\
-        ts 2 rc 0 gc 254
+        ts 2 rc 0 gc 254 td 0
     done
   done
   
@@ -52,7 +52,7 @@ do
       runTestbed map maps/segmented/map.patches.9 efs 1 \
         ppd $ppd mdr $mdr tpl $tpl fps $fps \
         tdel 368640UL ts 2 sdel 122880UL \
-        ts 2 rc 0 gc 254
+        ts 2 rc 0 gc 254 td 0
     done
   done
   
