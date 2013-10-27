@@ -55,12 +55,14 @@ map=map.flat
 ts=1
 #packets per download
 ppd=0
-tdel=61440
+tdel=61440UL
+sdel=92160UL
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts")
+"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
+"sdel")
 
 while [ $# -gt 1 ]
 do
@@ -148,6 +150,7 @@ do
       MISSED_CTS_THRESH=$mct\
       ENABLE_TESTBED=$etb\
       PACKETS_PER_DOWNLOAD=$ppd\
+      STARTUP_DELAY=$sdel\
       TEST_DELAY=$tdel\
       TEST_SEGMENT=$ts\
       ENABLE_PRINTF=$enablePrintf"

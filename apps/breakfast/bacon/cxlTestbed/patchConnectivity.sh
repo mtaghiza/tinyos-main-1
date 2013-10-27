@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function runTestbed(){
-  testDuration=$((20 * 60))
+  testDuration=$((10*60))
   installTS=$(date +%s)
   for i in $(seq 1)
   do
@@ -22,15 +22,15 @@ while true
 do
   #check router tier and each patch individually on channel 0, router at normal (-6)
   # tx power
-  for map in maps/individual/* maps/routers/routers
+  for map in maps/routers/routers maps/individual/* 
   do
     tdel=$(grep '#tdel' $map | cut -d ' ' -f 2)
     ts=$(grep '#ts' $map | cut -d ' ' -f 2)
-    for ppd in 50
+    for ppd in 20
     do
-      for settings in "pa 1 rxSlack 30UL" "pa 0 rxSlack 15UL" "pa 1 rxSlack 15UL"
+      for settings in "pa 0 rxSlack 15UL"
       do
-        runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D $settings
+        runTestbed efs 1 ppd $ppd map $map sdel 20480UL mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D $settings
       done
     done
   done
