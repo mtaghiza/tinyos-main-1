@@ -28,7 +28,7 @@ do
     ts=$(grep '#ts' $map | cut -d ' ' -f 2)
     for ppd in 50
     do
-      for settings in "pa 0 rxSlack 30UL" "pa 1 rxSlack 15UL"
+      for settings in "pa 1 rxSlack 30UL" "pa 0 rxSlack 15UL" "pa 1 rxSlack 15UL"
       do
         runTestbed efs 1 ppd $ppd map $map mdr 100 fps 60 td 0 tpl 100 tdel $tdel ts $ts rp 0x2D $settings
       done
