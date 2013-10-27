@@ -1004,6 +1004,7 @@ module SlotSchedulerP {
       }else{
         cerror(SCHED, "CTSLF %x\r\n", error);
         state = S_UNUSED_SLOT;
+        missedCTS++;
       }
     }
   }
