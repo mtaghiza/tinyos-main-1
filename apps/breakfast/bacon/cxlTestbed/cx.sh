@@ -37,7 +37,10 @@ do
   do
     for fps in 60 40 80 
     do
-      runTestbed map maps/segmented/map.patches.9 efs 1 ppd $ppd mdr $mdr tpl $tpl fps $fps tdel 184320UL ts 2 sdel 122880UL
+      runTestbed map maps/segmented/map.patches.9 efs 1 \
+        ppd $ppd mdr $mdr tpl $tpl fps $fps \
+        tdel 184320UL sdel 122880UL\
+        ts 2 rc 0 gc 254
     done
   done
   
@@ -46,7 +49,10 @@ do
   do
     for fps in 60
     do
-      runTestbed map maps/segmented/map.patches.9 efs 1 ppd $ppd mdr $mdr tpl $tpl fps $fps tdel 368640UL ts 2 sdel 122880UL
+      runTestbed map maps/segmented/map.patches.9 efs 1 \
+        ppd $ppd mdr $mdr tpl $tpl fps $fps \
+        tdel 368640UL ts 2 sdel 122880UL \
+        ts 2 rc 0 gc 254
     done
   done
   
@@ -56,13 +62,13 @@ do
   tpl=12
   mdr=1
   #   idle: 0 ppd
-  runTestbed map maps/flat/map.flat.0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0
+  runTestbed map maps/flat/map.flat.0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0 ts 1
   #   active: 50 ppd, mdr=1, pl=12 (ppd doesn't really matter, we only do one round)
   #     fsel on
   #     fsel off
   for efs in 0 1
   do
-    runTestbed map maps/flat/map.flat.0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0
+    runTestbed map maps/flat/map.flat.0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1
   done
 
 done
