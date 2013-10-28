@@ -6,6 +6,7 @@ db=$2
 t=data/tmp
 tx=${t}.tx
 rx=${t}.rx
+wu=${t}.wu
 s=${t}.s
 e=${t}.e
 setup=${t}.setup
@@ -41,7 +42,24 @@ pv $f | tr '_' ' ' | awk '/ SETUP /{
     }
   }
 }
-($3 == "T"){print it[$2], $1, $2, $4, $5, $6, $7, $8, $9}' > $tx
+/WU/{
+  channel[$2] = $5
+  wut[$2] = $1
+}
+($3 == "T"){print it[$2], $1, $2, $4, $5, $6, $7, $8, $9, channel[$2], wut[$2]}' > $tx
+
+echo "Extracting wakeup events"
+pv $f | tr '_' ' ' | awk '/ SETUP /{
+  for(i=4; i < NF; i+=2){
+    if ($i == "installTS"){ 
+      it[$2]=$(i+1)
+    }
+  }
+}
+/WU/{
+  print it[$2], $1, $2, $5
+}' > $wu
+
 
 echo "Extracting RX events"
 #ts            r   w s src sn  hc
@@ -53,6 +71,9 @@ pv $f | tr '_' ' ' | awk '/ SETUP /{
       it[$2]=$(i+1)
     }
   }
+}
+/WU/{
+  channel[$2] = $5
 }
 ($3 == "R"){print it[$2], $1, $2, $4, $5, $6, $7, $8, 1}' > $rx
 
@@ -94,8 +115,7 @@ CREATE TABLE RX (
   src INTEGER,
   sn INTEGER,
   hc INTEGER,
-  received INTEGER
-);
+  received INTEGER);
 
 .import $rx RX
 
@@ -110,7 +130,9 @@ CREATE TABLE TX (
   sn INTEGER,
   pl INTEGER,
   dest INTEGER,
-  mt INTEGER);
+  mt INTEGER,
+  channel INTEGER,
+  wut FLOAT);
 
 .import $tx TX
 
@@ -125,6 +147,17 @@ CREATE TABLE setup (
   val TEXT);
 
 .import $setup setup
+
+SELECT "Loading wakeups";
+DROP TABLE IF EXISTS wakeup;
+CREATE TABLE wakeup (
+  it INTEGER,
+  ts FLOAT,
+  node INTEGER,
+  channel INTEGER
+);
+
+.import $wu wakeup
 
 SELECT "Removing duplicate setup entries";
 CREATE TEMPORARY TABLE lastSetup AS 
@@ -151,18 +184,20 @@ CREATE TABLE RXR AS
 SELECT TX.it as it, 
   TX.src as src, 
   TX.sn as sn, 
-  nodes.node as dest, 
+  wakeup.node as dest, 
   coalesce(received, 0) as received
 FROM TX
-JOIN nodes 
-  ON nodes.it= TX.it 
-  AND (TX.mt in (3, 5, 6) OR TX.dest = 65535 OR TX.dest=nodes.node)
+JOIN wakeup
+  ON wakeup.it = TX.it 
+  AND wakeup.channel = tx.channel
+  AND wakeup.ts > tx.wut - 10 and wakeup.ts < tx.wut + 10
+  AND (TX.mt in (3, 5, 6) OR TX.dest = 65535 OR TX.dest=wakeup.node)
 LEFT JOIN RX
   ON RX.it = TX.it 
     AND RX.src = TX.src 
     AND RX.sn = TX.sn 
-    AND RX.node = nodes.node
-WHERE TX.src != nodes.node;
+    AND RX.node = wakeup.node
+WHERE TX.src != wakeup.node;
 
 SELECT "Computing PRR (may take a while)";
 
