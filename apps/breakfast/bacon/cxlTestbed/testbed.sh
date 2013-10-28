@@ -50,6 +50,7 @@ hpt=1
 td=0xFFFF
 dls=DL_INFO
 dlsr=DL_INFO
+dlsched=DL_INFO
 map=map.flat
 #test segment: default= subnetwork(flat)
 ts=1
@@ -62,7 +63,7 @@ settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
 "mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
-"sdel")
+"sdel" "dlsched")
 
 while [ $# -gt 1 ]
 do
@@ -129,7 +130,7 @@ do
       DL_STATS_RADIO=$dlsr\
       DL_TESTBED=DL_INFO\
       DL_GLOBAL=DL_DEBUG\
-      DL_SCHED=DL_WARN\
+      DL_SCHED=$dlsched\
       DL_AM=DL_WARN\
       TEST_DATA_RATE=$dr\
       TEST_PAYLOAD_LEN=$tpl\
