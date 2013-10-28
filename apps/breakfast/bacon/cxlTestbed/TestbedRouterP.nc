@@ -16,7 +16,6 @@ module TestbedRouterP{
 
   event message_t* Receive.receive(message_t* msg, void* payload,
       uint8_t len){
-    cinfo(TESTBED, "RP\r\n");
     packetsQueued ++;
     return msg;
   }

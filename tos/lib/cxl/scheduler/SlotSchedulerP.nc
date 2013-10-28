@@ -203,7 +203,7 @@ module SlotSchedulerP {
         activeNS);
       call RoutingTable.setDefault((call ProbeSchedule.get())->maxDepth[activeNS]);
       baseCTS = 0;
-      cwarn(SCHED, "WU %u %u %lu %lu\r\n", 
+      cinfo(SCHED, "WU %u %u %lu %lu\r\n", 
         activeNS, 
         (call ProbeSchedule.get())->channel[activeNS],
         DATA_TIMEOUT,
@@ -287,7 +287,7 @@ module SlotSchedulerP {
       uint8_t framesElapsed = 5;
       slotRole = ROLE_OWNER;
       //Cts, Own
-      cinfo(SCHED, "C O %u %u %lu %u\r\n", 
+      cdbg(SCHED, "C O %u %u %lu %u\r\n", 
         slotNum,
         (call CXLinkPacket.getLinkHeader(msg))->destination,
         timestamp(msg) - baseCTS, 
@@ -307,7 +307,7 @@ module SlotSchedulerP {
       //TODO: see above
       uint8_t framesElapsed = 5;
       //Cts, Else
-      cinfo(SCHED, "C E %u %u %lu %u\r\n", 
+      cdbg(SCHED, "C E %u %u %lu %u\r\n", 
         slotNum, 
         (call CXLinkPacket.getLinkHeader(msg))->destination,
         timestamp(msg) - baseCTS, 
@@ -374,7 +374,7 @@ module SlotSchedulerP {
           if (status->dataPending && shouldForward(call CXLinkPacket.source(msg), 
               call CXLinkPacket.destination(msg), status->bw)){
             slotRole = ROLE_FORWARDER;
-            cinfo(SCHED, "S F %u %u %u %u\r\n", 
+            cdbg(SCHED, "S F %u %u %u %u\r\n", 
               slotNum, 
               call CXLinkPacket.source(msg),
               call CXLinkPacket.getSn(msg),
@@ -383,7 +383,7 @@ module SlotSchedulerP {
           } else {
             error_t error = call CXLink.sleep();
             slotRole = ROLE_NONFORWARDER;
-            cinfo(SCHED, "S S %u %u %u %x %u\r\n", 
+            cdbg(SCHED, "S S %u %u %u %x %u\r\n", 
               slotNum, 
               call CXLinkPacket.source(msg), 
               call CXLinkPacket.getSn(msg),
@@ -400,7 +400,7 @@ module SlotSchedulerP {
         }
 
       case CXM_EOS:
-        cinfo(SCHED, "RE %u %u %u\r\n",
+        cdbg(SCHED, "RE %u %u %u\r\n",
           slotNum,
           call CXLinkPacket.source(msg),
           call CXLinkPacket.getSn(msg));
@@ -409,7 +409,7 @@ module SlotSchedulerP {
           call Packet.getPayload(msg, sizeof(cx_eos_t)));
 
       case CXM_DATA:
-        cinfo(SCHED, "RD %u %u %u %u %u\r\n",
+        cdbg(SCHED, "RD %u %u %u %u %u\r\n",
           slotNum,
           call CXLinkPacket.source(msg),
           call CXLinkPacket.getSn(msg),
@@ -446,7 +446,7 @@ module SlotSchedulerP {
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
-      cinfo(SCHED, "SR %x\r\n", pl->dataPending);
+      cdbg(SCHED, "SR %x\r\n", pl->dataPending);
       state = S_STATUS_READY;
       //great. when we get the next FrameTimer.fired, we'll send it
       //out.
@@ -699,7 +699,7 @@ module SlotSchedulerP {
 
   event void SubSend.sendDone(message_t* msg, error_t error){
     logTransmission(msg);
-    cinfo(SCHED_RX, "LTX %u %lu %u %lu \r\n", 
+    cdbg(SCHED_RX, "LTX %u %lu %u %lu \r\n", 
       call CXLinkPacket.getSn(msg),
       timestamp(msg) - baseCTS,
       call Packet.payloadLength(msg),
@@ -763,7 +763,7 @@ module SlotSchedulerP {
   event void CXLink.rxDone(){
     pendingRX = FALSE;
     rxEnd = call FrameTimer.getNow();
-    cinfo(SCHED_RX, "LRX %lu %lu %lu %lu %lu\r\n", 
+    cdbg(SCHED_RX, "LRX %lu %lu %lu %lu %lu\r\n", 
       rxStart - baseCTS, 
       rxTime - baseCTS,
       rxEnd - baseCTS,
@@ -901,6 +901,8 @@ module SlotSchedulerP {
     post logNeighborhood();
     #endif
     state = S_UNSYNCHED;
+    cinfo(SCHED, "SLEEP %u\r\n", 
+      (call ProbeSchedule.get())->channel[activeNS]);
     signal DownloadNotify.downloadFinished[activeNS]();
     return error;
   }
@@ -999,12 +1001,11 @@ module SlotSchedulerP {
       ctsStart = call FrameTimer.getNow();
       #endif
       error = rx(CTS_TIMEOUT, TRUE);
-      if (error == SUCCESS){
-        state = S_SLOT_CHECK;
-      }else{
+      state = S_SLOT_CHECK;
+      if (error != SUCCESS){
         cerror(SCHED, "CTSLF %x\r\n", error);
-        state = S_UNUSED_SLOT;
         missedCTS++;
+        post nextRX();
       }
     }
   }
