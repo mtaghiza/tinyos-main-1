@@ -416,6 +416,9 @@ module CXLinkP {
     atomic radioStateChangeAtTime(R_TX, aSfdCapture - sfdAdjust);
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     #endif
+    //N.B. at this point, you could check packet length and TTL, and
+    //either immediately post this task or set a milli timer to kick
+    //it off prior to the next fastalarm.
     post handleSendDone();
   }
 
@@ -837,6 +840,9 @@ module CXLinkP {
     #if DL_STATS_RADIO <= DL_INFO && DL_GLOBAL <= DL_INFO
     atomic radioStateChangeAtTime(call Rf1aStatus.get() == RF1A_S_FSTXON?  R_FSTXON : R_IDLE, aFeCapture);
     #endif
+    //N.B. at this point, you could check packet length and TTL, and
+    //either immediately post this task or set a milli timer to kick
+    //it off prior to the next fastalarm.
     post handleReception();
   } 
 

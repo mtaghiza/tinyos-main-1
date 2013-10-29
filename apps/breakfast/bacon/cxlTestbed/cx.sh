@@ -43,7 +43,16 @@ do
         pa 0\
         ts 2 rc 0 gc 254 td 0
     done
+
   done
+
+  #baseline comparison for segmented network performance against flat
+  # network
+  for ppd in 75 0
+  do
+    runTestbed map maps/flat/map.flat.0 pa 0 efs 1 ppd $ppd mdr 100 tpl 100 fps 60 td 0 ts 1
+  done
+
   
   #vary "download interval"
   for ppd in 25 50 150
@@ -57,15 +66,15 @@ do
         ts 2 rc 0 gc 254 td 0
     done
   done
-  
+ 
 
-  # 3 validation: 60 fps
+  # 3 validation: 60 fps, pl=12
   fps=60
   tpl=12
-  mdr=1
+  mdr=100
   #   idle: 0 ppd
   runTestbed map maps/flat/map.flat.0 pa 0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0 ts 1
-  #   active: 50 ppd, mdr=1, pl=12 (ppd doesn't really matter, we only do one round)
+  #   active: 50 ppd, equivalent to a download every 50 minutes
   #     fsel on
   #     fsel off
   for efs in 0 1
