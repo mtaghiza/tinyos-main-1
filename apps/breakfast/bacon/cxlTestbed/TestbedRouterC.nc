@@ -20,5 +20,8 @@ configuration TestbedRouterC{
   TestbedRouterP.CXLinkPacket -> CXLinkPacketC;
   TestbedRouterP.Packet -> AMSenderC;
   TestbedRouterP.Get -> CXRouterC.Get[NS_ROUTER];
+
+  components new TimerMilliC();
+  TestbedRouterP.Timer -> TimerMilliC;
   
 }

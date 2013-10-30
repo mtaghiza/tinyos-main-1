@@ -10,6 +10,7 @@ module TestbedRouterP{
   uses interface CXLinkPacket;
   uses interface Packet;
   uses interface Get<am_addr_t>;
+  uses interface Timer<TMilli>;
 } implementation {
   message_t* testMsg = NULL;
   uint16_t packetsQueued = 0;
@@ -68,9 +69,13 @@ module TestbedRouterP{
     }
   }
 
+  event void Timer.fired(){
+    post startDownload();
+  }
+
   event void DownloadNotify.downloadFinished(){
     cinfo(TESTBED, "RDF\r\n");
-    post startDownload();
+    call Timer.startOneShot(1024);
   }
   event void CXDownload.downloadFinished(){
     cinfo(TESTBED, "SNDF\r\n");
