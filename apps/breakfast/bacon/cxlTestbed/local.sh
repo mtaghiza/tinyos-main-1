@@ -59,11 +59,14 @@ ts=1
 ppd=0
 tdel=61440UL
 sdel=92160UL
+#max tx
+mt=1
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
-"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts" "sdel")
+"mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
+"sdel" "mt")
 
 while [ $# -gt 1 ]
 do
@@ -149,6 +152,7 @@ snc=0
       TEST_DELAY=$tdel\
       TEST_SEGMENT=$ts\
       CC430_PIN_DEBUG=1\
+      MAX_TX=$mt\
       ENABLE_PRINTF=$enablePrintf"
 
     pushd .

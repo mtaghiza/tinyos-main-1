@@ -203,7 +203,7 @@ module CXWakeupP {
         if (err == SUCCESS){
           call TimeoutCheck.startOneShot(CHECK_TIMEOUT_SLOW);
         } else {
-          cerror(LPP, "LPP ss.sd ack rx %x\r\n", error);
+          cerror(LPP, "LPP ss.sd ack rx %x\r\n", err);
         }
 
       }else{

@@ -12,6 +12,10 @@
 #define FRAMELEN_SLOW (1024UL * CX_SCALE_TIME)
 #endif
 
+#ifndef FRAMELEN_SHORT_SLOW
+#define FRAMELEN_SHORT_SLOW 187UL
+#endif
+
 #ifndef FRAMELEN_FAST_NORMAL
 //6.5M = 2**5 * 5**16 * 13
 #define FRAMELEN_FAST_NORMAL (203125UL * CX_SCALE_TIME)
@@ -127,5 +131,9 @@ typedef struct cx_link_stats {
   uint32_t tx;
   uint32_t fstxon;
 } cx_link_stats_t; 
+
+#ifndef MAX_TX
+#define MAX_TX 1
+#endif
 
 #endif

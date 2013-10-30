@@ -16,6 +16,7 @@ module CXLinkP {
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface LocalTime<T32khz>; 
   uses interface LocalTime<TMilli> as LocalTimeMilli; 
+  uses interface Timer<T32khz> as CompletionTimer;
 
   provides interface Receive;
   provides interface Send;
@@ -40,6 +41,7 @@ module CXLinkP {
   uint32_t origTimeout;
   bool started = FALSE;
   bool sleepPending = FALSE;
+  uint8_t txLeft;
   
   #if DL_LINK_TIMING <= DL_WARN && DL_GLOBAL <= DL_WARN
   uint32_t dfLog;
@@ -152,6 +154,9 @@ module CXLinkP {
     S_RX = 1,
     S_TX = 2,
     S_FWD = 3,
+
+    S_TX_END=4,
+    S_FWD_END=5,
 
     S_IDLE = 7,
   };
@@ -422,6 +427,33 @@ module CXLinkP {
     post handleSendDone();
   }
 
+  event void CompletionTimer.fired(){
+    uint8_t localState;
+    atomic localState = state;
+    if(localState == S_TX_END){
+      atomic state = S_IDLE;
+      signal Send.sendDone(fwdMsg, SUCCESS);
+    }else if (localState == S_FWD_END){
+      atomic state = S_IDLE;
+      rxMsg = signal Receive.receive(rxMsg, 
+        call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
+        call Packet.payloadLength(rxMsg));
+      doSignalRXDone();
+    }
+  }
+   
+  void setCompletionTimer(message_t* msg){
+    if (! metadata(msg)->retx){
+      call CompletionTimer.startOneShot(0);
+    }else{
+      if (call CXLinkPacket.len(msg) == SHORT_PACKET){
+        call CompletionTimer.startOneShot(FRAMELEN_SHORT_SLOW*header(msg)->ttl);
+      }else{
+        call CompletionTimer.startOneShot(FRAMELEN_SLOW*header(msg)->ttl);
+      }
+    }
+  }
+
   task void handleSendDone(){
     uint8_t localState;
     error_t error;
@@ -430,6 +462,10 @@ module CXLinkP {
     if (POWER_ADJUST && frameLen == FRAMELEN_FAST_SHORT){
       call Rf1aPhysical.setPower(MIN_POWER);
     }
+    if (txLeft){
+      txLeft --;
+    }
+//    printf("hsd %u\r\n", txLeft);
     if (error != SUCCESS){
       cerror(LINK, "TXR %x\r\n", error);
 //      //mark this transmission as having failed CRC so we stop
@@ -465,7 +501,7 @@ module CXLinkP {
           header(fwdMsg)->hopCount);
         if (localState == S_TX){
           atomic {
-            state = S_IDLE;
+            state = S_TX_END;
             stopMicro();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
             radioStateChange(R_IDLE);
@@ -503,10 +539,10 @@ module CXLinkP {
           if (sleepPending){
             call CXLink.sleep();
           }
-          signal Send.sendDone(fwdMsg, SUCCESS);
+          setCompletionTimer(fwdMsg);
         } else {
           atomic {
-            state = S_IDLE;
+            state = S_FWD_END;
             stopMicro();
             call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
             radioStateChange(R_IDLE);
@@ -529,18 +565,14 @@ module CXLinkP {
               metadata(rxMsg)->timeFast - rxStart);
           }
           #endif
-          rxMsg = signal Receive.receive(rxMsg, 
-            call Packet.getPayload(rxMsg, call Packet.payloadLength(rxMsg)), 
-            call Packet.payloadLength(rxMsg));
-          doSignalRXDone();
+          setCompletionTimer(rxMsg);
         }
       }
     }else{
       cwarn(LINK, "Link hsd unexpected state %x\r\n", localState);
     }
   }
-  
-  
+
   task void signalRXDone(){
     doSignalRXDone();
   }
@@ -757,6 +789,7 @@ module CXLinkP {
     
         if (error == SUCCESS){
           atomic{
+            txLeft = (MAX_TX > header(msg)->ttl)? header(msg)->ttl: MAX_TX;
             aSfdCapture = 0;
             aSynched = FALSE;
             fwdMsg = msg;
@@ -814,7 +847,7 @@ module CXLinkP {
         header(msg)->hopCount++;
         header(msg)->ttl--;
       }
-      return (header(msg)->ttl > 0) && (metadata(msg)->retx);
+      return (txLeft > 0) && (header(msg)->ttl > 0) && (metadata(msg)->retx);
     }else{
       cinfo(LINK, "CRCF\r\n");
       return FALSE;
@@ -874,8 +907,10 @@ module CXLinkP {
     }
 
     if (localState == S_RX){
+      txLeft = MAX_TX;
       if (readyForward(rxMsg) ){
         error_t error;
+        txLeft = (MAX_TX > header(rxMsg)->ttl)? header(rxMsg)->ttl: MAX_TX;
         atomic{
           state = S_FWD;
           fwdMsg = rxMsg;
