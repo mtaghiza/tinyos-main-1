@@ -20,6 +20,24 @@ function runTestbed(){
 #- start with these 5, do an hour of each
 while true
 do
+  # 3 validation: 60 fps, pl=12
+  fps=60
+  tpl=12
+  mdr=100
+  #   active: 50 ppd, equivalent to a download every 50 minutes
+  #     fsel on
+  #     fsel off
+  for efs in 0 1
+  do
+    for mt in 1 10
+    do
+      runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 mt $mt
+    done
+  done
+
+  #   idle: 0 ppd
+  runTestbed map maps/flat/map.flat.0 pa 0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0 ts 1
+
 
   # 2 multitier+params: map is map.patches.8. data rate is ~daily download
   #    - 44 B per sample, 144 per day = 6336 B, round it up to an even
@@ -67,20 +85,6 @@ do
     done
   done
  
-
-  # 3 validation: 60 fps, pl=12
-  fps=60
-  tpl=12
-  mdr=100
-  #   idle: 0 ppd
-  runTestbed map maps/flat/map.flat.0 pa 0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0 ts 1
-  #   active: 50 ppd, equivalent to a download every 50 minutes
-  #     fsel on
-  #     fsel off
-  for efs in 0 1
-  do
-    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1
-  done
 
 done
 
