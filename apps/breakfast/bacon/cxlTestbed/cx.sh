@@ -29,10 +29,7 @@ do
   #     fsel off
   for efs in 0 1
   do
-    for mt in 1 10
-    do
-      runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 mt $mt
-    done
+    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 
   done
 
   #   idle: 0 ppd
