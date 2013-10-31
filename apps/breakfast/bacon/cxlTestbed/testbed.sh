@@ -58,13 +58,15 @@ ts=1
 ppd=0
 tdel=61440UL
 sdel=92160UL
-mt=1
+#max tx short/long
+mts=4
+mtl=1
 
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
 "mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
-"sdel" "dlsched" "mt")
+"sdel" "dlsched" "mts" "mtl")
 
 while [ $# -gt 1 ]
 do
@@ -155,7 +157,8 @@ do
       STARTUP_DELAY=$sdel\
       TEST_DELAY=$tdel\
       TEST_SEGMENT=$ts\
-      MAX_TX=$mt\
+      MAX_TX_SHORT=$mts\
+      MAX_TX_LONG=$mtl\
       ENABLE_PRINTF=$enablePrintf"
   
     cat $subnetMap | while read line 

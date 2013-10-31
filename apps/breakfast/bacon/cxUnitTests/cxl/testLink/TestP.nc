@@ -42,6 +42,8 @@ module TestP{
     printf("* Channel: %u\r\n", channel);
     printf("* packetLength: %u\r\n", packetLength);
     printf("* repeat: %x\r\n", repeat);
+    printf("* max_tx_short: %u\r\n", MAX_TX_SHORT);
+    printf("* max_tx_long: %u\r\n", MAX_TX_LONG);
     printf("\r\n");
   }
 
@@ -228,7 +230,7 @@ module TestP{
   task void handleRX(){
 //    test_payload_t* pl = call Packet.getPayload(rxMsg,
 //      sizeof(test_payload_t));
-    printf("RX %u %u %u %u %x %x %x %x %lu\r\n",
+    printf("RX %u %u %u %u %x %x %x %x %lu %u %u\r\n",
       (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
       call CXLinkPacket.rxHopCount(rxMsg),
       TEST_NUM,
@@ -237,7 +239,9 @@ module TestP{
       POWER_ADJUST,
       MIN_POWER,
       MAX_POWER, 
-      FRAMELEN_FAST_SHORT);
+      FRAMELEN_FAST_SHORT,
+      MAX_TX_SHORT,
+      MAX_TX_LONG);
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }

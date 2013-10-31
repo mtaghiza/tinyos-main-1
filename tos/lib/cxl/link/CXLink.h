@@ -132,8 +132,12 @@ typedef struct cx_link_stats {
   uint32_t fstxon;
 } cx_link_stats_t; 
 
-#ifndef MAX_TX
-#define MAX_TX 1
+#ifndef MAX_TX_LONG
+#define MAX_TX_LONG 1
+#endif
+
+#ifndef MAX_TX_SHORT
+#define MAX_TX_SHORT 4
 #endif
 
 #endif

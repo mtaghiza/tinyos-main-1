@@ -789,7 +789,9 @@ module CXLinkP {
     
         if (error == SUCCESS){
           atomic{
-            txLeft = (MAX_TX > header(msg)->ttl)? header(msg)->ttl: MAX_TX;
+            txLeft = (call CXLinkPacket.len(msg) == SHORT_PACKET)?  MAX_TX_SHORT : MAX_TX_LONG;
+
+            txLeft = (txLeft > header(msg)->ttl)? header(msg)->ttl: txLeft;
             aSfdCapture = 0;
             aSynched = FALSE;
             fwdMsg = msg;
@@ -907,10 +909,12 @@ module CXLinkP {
     }
 
     if (localState == S_RX){
-      txLeft = MAX_TX;
+      txLeft = MAX_TX_SHORT;
       if (readyForward(rxMsg) ){
         error_t error;
-        txLeft = (MAX_TX > header(rxMsg)->ttl)? header(rxMsg)->ttl: MAX_TX;
+        txLeft = (call CXLinkPacket.len(rxMsg) == SHORT_PACKET)?  MAX_TX_SHORT : MAX_TX_LONG;
+
+        txLeft = (txLeft > header(rxMsg)->ttl)? header(rxMsg)->ttl: txLeft;
         atomic{
           state = S_FWD;
           fwdMsg = rxMsg;
