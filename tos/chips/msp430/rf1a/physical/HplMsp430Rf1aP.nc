@@ -914,7 +914,6 @@ module HplMsp430Rf1aP {
           rx_result = FAIL;
           post receiveData_task();
 	}
-        cerror(LINK, "RIP\r\n");
         return EBUSY;
       }
 
