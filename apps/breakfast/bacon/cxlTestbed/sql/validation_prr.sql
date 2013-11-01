@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS tests_vprr;
 CREATE TABLE tests_vprr AS 
 SELECT it
 FROM label 
-WHERE multitier=0 and ppd=50 and fps=60 and tpl=12 and mt=10;
+WHERE multitier=0 and ppd=50 and fps=60 and tpl=12;
 
 --leaf -> root: average: 99.57%/99.69% on first run
 SELECT label.efs, dest, avg(prr) as avgPrr 

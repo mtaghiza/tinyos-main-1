@@ -24,13 +24,6 @@ do
   fps=60
   tpl=12
   mdr=100
-  #   active: 50 ppd, equivalent to a download every 50 minutes
-  #     fsel on
-  #     fsel off
-  for efs in 0 1
-  do
-    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 
-  done
 
   #   idle: 0 ppd
   runTestbed map maps/flat/map.flat.0 pa 0 efs 0 ppd 0 mdr $mdr tpl $tpl fps $fps td 0 ts 1
@@ -45,32 +38,23 @@ do
   #   active: ppd=75 mdr=100, fps=60, tpl=100
   #     vary slot length
 
-  #vary slot length
+  #vary slot length: use flat network
   mdr=100
   tpl=100
   for ppd in 75 0
   do
     for fps in 60 40 80 
     do
-      runTestbed map maps/segmented/map.patches.9 efs 1 \
+      runTestbed map maps/flat/map.flat.0 efs 1 \
         ppd $ppd mdr $mdr tpl $tpl fps $fps \
         tdel 184320UL sdel 122880UL\
         pa 0\
         ts 2 rc 0 gc 254 td 0
     done
-
   done
 
-  #baseline comparison for segmented network performance against flat
-  # network
-  for ppd in 75 0
-  do
-    runTestbed map maps/flat/map.flat.0 pa 0 efs 1 ppd $ppd mdr 100 tpl 100 fps 60 td 0 ts 1
-  done
-
-  
   #vary "download interval"
-  for ppd in 25 50 150
+  for ppd in 25 50 75 150
   do
     for fps in 60
     do
@@ -80,6 +64,26 @@ do
         pa 0\
         ts 2 rc 0 gc 254 td 0
     done
+  done
+
+
+  #baseline comparison for segmented network performance against flat
+  # network
+  for ppd in 75 0
+  do
+    runTestbed map maps/flat/map.flat.0 pa 0 efs 1 ppd $ppd mdr 100 tpl 100 fps 60 td 0 ts 1
+  done
+  
+
+  fps=60
+  tpl=12
+  mdr=100
+  #   active: 50 ppd, equivalent to a download every 50 minutes
+  #     fsel on
+  #     fsel off
+  for efs in 0 1
+  do
+    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 
   done
  
 
