@@ -190,4 +190,9 @@ JOIN (
 ) patchSize ON patchSize.master=dc.node
 order by ppd, fps, mtFrac;
 
-
+DROP TABLE IF EXISTS seg_dc_final;
+CREATE TABLE seg_dc_final AS
+SELECT ppd, node, mtFrac, shorten, patchSize, 1 as router 
+FROM seg_router_final 
+UNION select ppd, node, mtFrac, shorten, patchSize, 0 as router 
+FROM seg_leaf_final;
