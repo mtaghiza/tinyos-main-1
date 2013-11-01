@@ -297,10 +297,10 @@ module CXLinkP {
 
   #if DL_LINK <= DL_ERROR && DL_GLOBAL <= DL_ERROR
   task void logRetxMiss(){
-    cerror(LINK, "RMD\r\n");
+    cwarn(LINK, "RMD\r\n");
   }
   task void logSynchMiss(){
-    cerror(LINK, "SMD\r\n");
+    cwarn(LINK, "SMD\r\n");
   }
   #endif
 
@@ -898,7 +898,7 @@ module CXLinkP {
       call Rf1aPhysicalMetadata.store(phy(rxMsg));
       //mark as failed CRC, ugh
       if (rxResult != SUCCESS){
-        cwarn(LINK, "p.rxf %x\r\n", rxResult);
+        cerror(LINK, "p.rxf %x\r\n", rxResult);
         phy(rxMsg)->lqi &= ~0x80;
       }
 

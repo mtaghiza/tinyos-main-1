@@ -20,6 +20,17 @@ function runTestbed(){
 #- start with these 5, do an hour of each
 while true
 do
+  fps=60
+  tpl=12
+  mdr=100
+  #   active: 50 ppd, equivalent to a download every 50 minutes
+  #     fsel on
+  #     fsel off
+  for efs in 0 1
+  do
+    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 
+  done
+ 
   # 3 validation: 60 fps, pl=12
   fps=60
   tpl=12
@@ -73,19 +84,6 @@ do
   do
     runTestbed map maps/flat/map.flat.0 pa 0 efs 1 ppd $ppd mdr 100 tpl 100 fps 60 td 0 ts 1
   done
-  
-
-  fps=60
-  tpl=12
-  mdr=100
-  #   active: 50 ppd, equivalent to a download every 50 minutes
-  #     fsel on
-  #     fsel off
-  for efs in 0 1
-  do
-    runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd 50 mdr $mdr tpl $tpl fps $fps td 0 ts 1 
-  done
- 
 
 done
 
