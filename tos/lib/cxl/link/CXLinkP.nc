@@ -491,6 +491,8 @@ module CXLinkP {
         error = subsend(fwdMsg);
         if (error != SUCCESS){
           cerror(LINK, "SS1 %x\r\n", error);
+          //TODO: a failure here will leave the link layer state
+          //machine stuck. set up for completion.
         }
       } else {
         call FastAlarm.stop();
@@ -922,7 +924,34 @@ module CXLinkP {
         call Rf1aPhysical.setPower(MAX_POWER);
         error = subsend(fwdMsg);
         if (error != SUCCESS){
+          //state flow expects to get a sendDone from this call.
+          //if subsend fails, it won't. so, hook it up.
           cerror(LINK, "SS0 %x\r\n", error);
+          atomic {
+            state = S_FWD_END;
+            stopMicro();
+            call Rf1aPhysical.resumeIdleMode(RF1A_OM_IDLE);
+            radioStateChange(R_IDLE);
+            call Rf1aPhysical.setReceiveBuffer(NULL, 0, TRUE,
+              RF1A_OM_IDLE);
+          }
+          cinfo(LINK, "LRX %u %u %u %u %x\r\n",
+            header(fwdMsg)->source, 
+            header(fwdMsg)->sn,
+            header(fwdMsg)->destination, 
+            metadata(fwdMsg)->rxHopCount,
+            metadata(fwdMsg)->retx); 
+          logCRCs(
+            header(fwdMsg)->source, 
+            header(fwdMsg)->sn);
+          applyTimestamp(fwdMsg);
+          #if DL_LINK_TIMING <= DL_INFO && DL_GLOBAL <= DL_INFO
+          if (metadata(fwdMsg)->retx){
+            cinfo(LINK_TIMING, "R %lu\r\n", 
+              metadata(fwdMsg)->timeFast - rxStart);
+          }
+          #endif
+          setCompletionTimer(fwdMsg);
         }
       }else{
         call FastAlarm.stop();

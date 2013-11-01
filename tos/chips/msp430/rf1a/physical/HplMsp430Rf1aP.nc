@@ -914,11 +914,13 @@ module HplMsp430Rf1aP {
           rx_result = FAIL;
           post receiveData_task();
 	}
+        cerror(LINK, "RIP\r\n");
         return EBUSY;
       }
 
       /* And we can't already be transmitting something. */
       if (0 < tx_remain) {
+        cerror(LINK, "TIP\r\n");
         return EBUSY;
       }
 

@@ -193,6 +193,7 @@ generic module Rf1aFECP () {
     }
     atomic{
       if (sendOutstanding){
+        cerror(LINK, "FB\r\n");
         return EBUSY;
       }
     }
