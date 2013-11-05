@@ -20,6 +20,10 @@ configuration TestAppC {
   TestP.Packet -> CXLinkC;
   TestP.CXLinkPacket -> CXLinkC;
 
+  components CXLinkPacketC;
+  TestP.MessageRssi -> CXLinkPacketC.MessageRssi;
+  TestP.MessageLqi -> CXLinkPacketC.MessageLqi;
+
   components new PoolC(message_t, 3);
   CXLinkC.Pool -> PoolC;
   TestP.Pool -> PoolC;

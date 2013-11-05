@@ -8,6 +8,8 @@ module TestP{
   uses interface Send;
   uses interface Packet;
   uses interface CXLinkPacket;
+  uses interface MessageRssi;
+  uses interface MessageLqi;
   uses interface Receive;
   uses interface Pool<message_t>;
   uses interface Timer<TMilli>;
@@ -23,6 +25,8 @@ module TestP{
   uint8_t packetLength = PACKET_LENGTH;
   uint8_t channel = CHANNEL;
   bool repeat = REPEAT;
+
+  bool repeatRX = TRUE;
 
   bool started = FALSE;
   task void toggleStartStop();
@@ -77,7 +81,9 @@ module TestP{
     call SerialControl.start();
     printf("Booted\r\n");
     printf("\r\n");
-    post usage();
+    if(VERBOSE){
+      post usage();
+    }
     atomic{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
@@ -113,7 +119,7 @@ module TestP{
     setChannel();
     error = call CXLink.rx(0xFFFFFFFF, TRUE);
     if (error != SUCCESS){
-      printf("RX: %x\r\n",
+      printf("!RX %x\r\n",
         error);
     }
   }
@@ -132,7 +138,7 @@ module TestP{
   void doSendPacket(bool retx){
     setChannel();
     if (txMsg){
-      printf("still sending\r\n");
+      printf("~busy\r\n");
     }else{
       cx_link_header_t* header;
       test_payload_t* pl;
@@ -177,18 +183,23 @@ module TestP{
   }
 
   task void sleep(){
-    printf("Sleep: %x\r\n", call CXLink.sleep());
+    error_t error = call CXLink.sleep();
+    printf("Sleep: %x\r\n", error);
   }
 
   
   event void SplitControl.startDone(error_t error){ 
+    if(VERBOSE){
     printf("start done: %x pool: %u\r\n", error, call Pool.size());
+    }
     started = (error == SUCCESS);
     
     if (IS_SENDER){
       post sendPacket();
     } else {
-      post receivePacket();
+      if (START_IN_RX){
+        post receivePacket();
+      }
     }
   }
 
@@ -199,16 +210,23 @@ module TestP{
 
   event void Send.sendDone(message_t* msg, error_t error){
     call Leds.led0Toggle();
-    printf("TX %u %x %u %u %x %x %x %x %lu\r\n", 
-      (call CXLinkPacket.getLinkHeader(msg))->sn,
-      error,
-      TEST_NUM,
-      call Packet.payloadLength(msg),
-      SELF_SFD_SYNCH,
-      POWER_ADJUST,
-      MIN_POWER,
-      MAX_POWER,
-      FRAMELEN_FAST_SHORT);
+    if (VERBOSE){
+      printf("TX %u %u %x %u %u %x %x %x %x %lu\r\n", 
+        (call CXLinkPacket.getLinkHeader(msg))->source,
+        (call CXLinkPacket.getLinkHeader(msg))->sn,
+        error,
+        TEST_NUM,
+        call Packet.payloadLength(msg),
+        SELF_SFD_SYNCH,
+        POWER_ADJUST,
+        MIN_POWER,
+        MAX_POWER,
+        FRAMELEN_FAST_SHORT);
+    }else{
+      printf("TX %u %u\r\n", 
+        (call CXLinkPacket.getLinkHeader(msg))->source,
+        (call CXLinkPacket.getLinkHeader(msg))->sn);
+    }
     if (msg == txMsg){
       call Pool.put(txMsg);
       txMsg = NULL;
@@ -221,6 +239,8 @@ module TestP{
       }else{
         call RetransmitTimer.startOneShot(TX_DELAY);
       }
+    }else if(repeatRX){
+      post receivePacket();
     }
   }
   event void RetransmitTimer.fired(){
@@ -230,18 +250,30 @@ module TestP{
   task void handleRX(){
 //    test_payload_t* pl = call Packet.getPayload(rxMsg,
 //      sizeof(test_payload_t));
-    printf("RX %u %u %u %u %x %x %x %x %lu %u %u\r\n",
-      (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
-      call CXLinkPacket.rxHopCount(rxMsg),
-      TEST_NUM,
-      call Packet.payloadLength(rxMsg),
-      SELF_SFD_SYNCH,
-      POWER_ADJUST,
-      MIN_POWER,
-      MAX_POWER, 
-      FRAMELEN_FAST_SHORT,
-      MAX_TX_SHORT,
-      MAX_TX_LONG);
+    if (VERBOSE){
+      printf("RX %u %u %u %i %u %u %u %x %x %x %x %lu %u %u\r\n",
+        (call CXLinkPacket.getLinkHeader(rxMsg))->source,
+        (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
+        call CXLinkPacket.rxHopCount(rxMsg),
+        call MessageRssi.rssi(rxMsg),
+        call MessageLqi.lqi(rxMsg),
+        TEST_NUM,
+        call Packet.payloadLength(rxMsg),
+        SELF_SFD_SYNCH,
+        POWER_ADJUST,
+        MIN_POWER,
+        MAX_POWER, 
+        FRAMELEN_FAST_SHORT,
+        MAX_TX_SHORT,
+        MAX_TX_LONG);
+    }else{
+      printf("RX %u %u %u %i %u\r\n",
+        (call CXLinkPacket.getLinkHeader(rxMsg))->source,
+        (call CXLinkPacket.getLinkHeader(rxMsg))->sn,
+        call CXLinkPacket.rxHopCount(rxMsg),
+        call MessageRssi.rssi(rxMsg),
+        call MessageLqi.lqi(rxMsg));
+    }
     call Pool.put(rxMsg);
     rxMsg = NULL;
   }
@@ -264,8 +296,7 @@ module TestP{
   }
 
   event void CXLink.rxDone(){
-    printf("RXD\r\n");
-    if (repeat){
+    if ((txMsg == NULL) && (repeat || repeatRX) ){
       post receivePacket();
     }
   }
@@ -316,7 +347,7 @@ module TestP{
          break;
        case 't':
          post sendPacket();
-         break;
+         return;
        case 'T':
          post sendPacketNoRetx();
          break;
