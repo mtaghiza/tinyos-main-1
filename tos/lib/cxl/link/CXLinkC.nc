@@ -47,6 +47,8 @@ configuration CXLinkC {
   Packet = CXLinkPacketC.Packet;
   CXLinkPacket = CXLinkPacketC.CXLinkPacket;
 
+  CXLinkPacketC.Rf1aPhysicalMetadata -> Rf1aPhysicalC;
+
   components CXAMAddressC;
   CXLinkP.ActiveMessageAddress -> CXAMAddressC;
   

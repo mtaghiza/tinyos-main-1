@@ -1,15 +1,28 @@
 module CXLinkPacketC{
   provides interface Packet;
   provides interface CXLinkPacket;
+  provides interface MessageRssi;
+  provides interface MessageLqi;
+  uses interface Rf1aPhysicalMetadata;
 } implementation {
   
-  message_metadata_t* md(message_t* msg){
+  message_metadata_t* md(const message_t* msg){
     return (message_metadata_t*)(msg->metadata);
+  }
+
+  const rf1a_metadata_t* cmetadata_ (const message_t* msg) { 
+    return (const rf1a_metadata_t*)&(md(msg)->rf1a); 
   }
 
   command void CXLinkPacket.setTtl(message_t* msg, 
       uint8_t ttl){
     (call CXLinkPacket.getLinkHeader(msg))->ttl = ttl;
+  }
+  command int MessageRssi.rssi (const message_t* msg) { 
+    return call Rf1aPhysicalMetadata.rssi(cmetadata_(msg)); 
+  }
+  command int MessageLqi.lqi (const message_t* msg) { 
+    return call Rf1aPhysicalMetadata.lqi(cmetadata_(msg)); 
   }
 
   command void CXLinkPacket.setSource(message_t* msg, 
