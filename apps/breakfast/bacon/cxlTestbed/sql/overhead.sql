@@ -1,8 +1,13 @@
 DROP TABLE IF EXISTS tests_overhead;
 CREATE TABLE tests_overhead AS
-SELECT it, ppd, fps, multitier
+SELECT label.it as it, ppd, fps, multitier
 FROM label
-WHERE multitier=1;
+JOIN prr_summary
+ON label.it=prr_summary.it
+WHERE multitier=0
+AND (ppd=75 and tpl=100 and efs=1) or (ppd=0)
+AND min(lr, rl) > 0.98
+;
 
 DROP TABLE IF EXISTS overhead_active;
 CREATE TABLE overhead_active

@@ -68,9 +68,17 @@ settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
 "sdel" "dlsched" "mts" "mtl")
 
+dryRun=0
+set -x 
 while [ $# -gt 1 ]
 do
   varMatched=0
+  if [ "$1" == "--dryrun" ]
+  then
+    dryRun=1
+    shift 1
+    continue
+  fi
   for v in ${settingVars[@]}
   do
     if [ "$v" == "$1" ]
@@ -167,7 +175,10 @@ do
       id=$(echo "$line" | cut -d ' ' -f 2)
       echo "$(date +%s) $id SETUP ${testDescFull}_role_${role}_snc_${snc}"
     done
-
+    if [ $dryRun -eq 1 ]
+    then
+      continue
+    fi
     testDesc=\\\"${testDescShort}_snc_${snc}\\\"
     ./burnRole.sh $subnetMap Router\
       MAX_POWER=$rp\

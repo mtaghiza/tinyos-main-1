@@ -1,3 +1,4 @@
+
 plotFile <- F
 argc <- length(commandArgs())
 argStart <- 1 + which (commandArgs() == '--args')
@@ -5,19 +6,21 @@ library(plyr)
 library(ggplot2)
 library(RSQLite)
 
-selectQ <- "SELECT efs, src, dest, prr FROM validation_prr"
-xmin <- 0
-xmax <- 1.0 
+
+selectQ <-"SELECT src, tunneledPrr, tunneledPrr-flatPrr as
+tunneledChange FROM seg_prr_final"
+
+plotType <- 'hist'
+xmin <- -0.045
+xmax <- 0.045
 ymin <- 0
 ymax <- 1
-dir <- 'lr'
-efs <- 0
-plotType <- 'hist'
 size <- 'small'
-bw <- 0.01
-x <- c()
-pdfFile <- '' 
 blacklist <- c()
+pdfFile <- '' 
+bw <- 0.005
+
+x<-c()
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
   val <- commandArgs()[i+1]
@@ -41,6 +44,15 @@ for (i in seq(argStart, argc-1)){
     plotFile=T
     png(val, width=9, height=6, units="in", res=200)
   }
+  if (opt == '--router'){
+    router <- as.numeric(val)
+  }
+  if (opt == '--ipi'){
+    ipi <- as.numeric(val)
+  }
+  if (opt == '--ppd'){
+    ppd <- as.numeric(val)
+  }
   if (opt == '--xmin'){
     xmin <- as.numeric(val)
   }
@@ -53,67 +65,49 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--ymax'){
     ymax <- as.numeric(val)
   }
-  if (opt == '--dir'){
-    dir <- val
-  }
   if (opt == '--efs'){
     efs <- as.numeric(val)
   }
-  if (opt == '--bl'){
-    blacklist <- c(blacklist, as.numeric(val))
-  }
-  if (opt == '--bw'){
+  if(opt == '--bw'){
     bw <- as.numeric(val)
   }
-
+  if (opt=='--lpos'){
+    if (val == 'ur'){
+      lpos <- c(1,1)
+    }else if (val == 'ul'){
+      lpos <- c(0,1)
+    }else if (val == 'br'){
+      lpos <- c(1,0)
+    }else if (val == 'bl'){
+      lpos <- c(0,0)
+    }
+  }
 }
-
-if (efs == 1){
-  efsLab <- "FS on"
-}else{
-  efsLab <- "FS off"
-}
-if (dir == 'lr'){
-  drLab <- "Leaf - Root"
-}else{
-  drLab <- "Root - Leaf"
-}
-
-xlab <- paste(drLab, "PRR,", efsLab)
-
 if (pdfFile != ''){
   if (size == 'small'){
-    pdf(val, width=4, height=3, title=paste("Validation",xlab))
+    pdf(val, width=4, height=3, title="Tunneled PRR Change")
   }else{
-    pdf(val, width=8, height=4, title=paste("Valdation",xlab))
+    pdf(val, width=8, height=4, title="Tunneled PRR Change")
   }
 }
 
-if (dir == 'lr'){
-  filtered <- x[x$dest == 0,]
-}else{
-  filtered <- x[x$src == 0,]
-}
-
-filtered <- filtered[filtered$efs == efs,]
-
 for (blNode in blacklist){
-  filtered <- filtered[filtered$src!=blNode & filtered$dest!=blNode,]
+  x <- x[x$src!=blNode,]
 }
 
-print(paste("PRR", dir, "efs",efs, "blacklist", blacklist))
-print(summary(filtered))
+print(summary(x))
 
 print(
-  ggplot(filtered, aes(prr-bw/2))
+  ggplot(x, aes(tunneledChange-bw/2))
   + geom_histogram(aes(y=..count../sum(..count..)),
     fill='white',
     color='black',
     binwidth=bw)
-  + xlab(xlab)
+  + xlab("Tunneled PRR Change")
   + ylab("Fraction")
   + scale_x_continuous(limits=c(xmin, xmax))
   + scale_y_continuous(limits=c(ymin, ymax))
-    + theme_bw()
-    + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+  + theme_bw()
+  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
 )
+

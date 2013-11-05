@@ -1,8 +1,12 @@
 DROP TABLE IF EXISTS tests_vt;
 CREATE TABLE tests_vt AS 
-SELECT it 
+SELECT label.it as it
 FROM label 
-WHERE multitier=0 and ppd=50 and fps=60 and tpl=12;
+JOIN prr_summary
+ON label.it=prr_summary.it
+WHERE multitier=0 and ppd=50 and fps=60 and tpl=12
+AND min(lr, rl) > 0.98
+;
 
 --the last slot for each of these nodes drags down its average (since
 -- it doesn't use the full slot) 

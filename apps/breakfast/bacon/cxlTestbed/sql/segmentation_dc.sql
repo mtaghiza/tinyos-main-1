@@ -1,9 +1,12 @@
 --identify the tests for segmentation v. flat 
 DROP TABLE IF EXISTS tests_seg;
 CREATE TABLE tests_seg AS
-SELECT it, multitier, ppd, fps
+SELECT label.it as it, multitier, ppd, fps
 FROM label
-WHERE fps=60 and (efs=1 and ppd in (0, 75)) OR (efs=0 and ppd=0);
+JOIN prr_summary
+ON label.it=prr_summary.it
+WHERE fps=60 and (efs=1 and ppd in (0, 75)) OR (efs=0 and ppd=0)
+AND min(lr, rl) > 0.98;
 
 --duty cycle: get active time for download by node, and mark each with
 -- the type of download (subnetwork or router)
@@ -154,6 +157,8 @@ CREATE TABLE seg_leaf_final AS
 select dc.ppd, dc.fps, dc.node, 
   flatDistance.distance as flat, 
   leafDistance.distance as leaf ,
+  dc.mtActive as mtActive,
+  dc.flatActive as flatActive,
   dc.mtActive/dc.flatActive as mtFrac,
   flatDistance.distance/leafDistance.distance as shorten,
   patchSize.patchSize 
@@ -175,6 +180,8 @@ CREATE TABLE seg_router_final AS
 select dc.ppd, dc.fps, dc.node, 
   flatDistance.distance as flat, 
   routerDistance.distance as router,
+  dc.mtActive as mtActive,
+  dc.flatActive as flatActive,
   dc.mtActive/dc.flatActive as mtFrac,
   flatDistance.distance/routerDistance.distance as shorten,
   patchSize.patchSize 
@@ -192,7 +199,8 @@ order by ppd, fps, mtFrac;
 
 DROP TABLE IF EXISTS seg_dc_final;
 CREATE TABLE seg_dc_final AS
-SELECT ppd, node, mtFrac, shorten, patchSize, 1 as router 
+SELECT ppd, node, mtFrac, mtActive, flatActive, shorten, patchSize, 1 as router 
 FROM seg_router_final 
-UNION select ppd, node, mtFrac, shorten, patchSize, 0 as router 
+UNION 
+select ppd, node, mtFrac, mtActive, flatActive, shorten, patchSize, 0 as router 
 FROM seg_leaf_final;

@@ -52,20 +52,19 @@ do
   #vary slot length: use flat network
   mdr=100
   tpl=100
-  for ppd in 75 0
-  do
-    for fps in 60 40 80 
-    do
-      runTestbed map maps/flat/map.flat.0 efs 1 \
-        ppd $ppd mdr $mdr tpl $tpl fps $fps \
-        tdel 184320UL sdel 122880UL\
-        pa 0\
-        ts 2 rc 0 gc 254 td 0
-    done
-  done
+#   for ppd in 75 0
+#   do
+#     for fps in 60 40 80 
+#     do
+#       runTestbed map maps/flat/map.flat.0 efs 1 \
+#         ppd $ppd mdr $mdr tpl $tpl fps $fps \
+#         tdel 184320UL sdel 122880UL\
+#         pa 0\
+#         ts 2 rc 0 gc 254 td 0
+#     done
+#   done
 
-  #vary "download interval"
-  for ppd in 25 50 75 150
+  for ppd in 75 0
   do
     for fps in 60
     do

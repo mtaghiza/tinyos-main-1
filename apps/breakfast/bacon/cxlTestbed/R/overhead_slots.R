@@ -1,7 +1,3 @@
-#plot mtFrac against patchSize or shorten 
-# - or use symbol/color for non-axis condition
-#do routers or leaf nodes separately
-
 plotFile <- F
 argc <- length(commandArgs())
 argStart <- 1 + which (commandArgs() == '--args')
@@ -9,22 +5,19 @@ library(plyr)
 library(ggplot2)
 library(RSQLite)
 
-selectQ <- "SELECT * FROM seg_dc_final;";
-
+# not sure how ppd/fps ended up being text, but there you have it
+selectQ <- "SELECT 1.0*ppd as ppd, 1.0*fps as fps,activeS from overhead_dc_agg"
 xmin <- 0
 xmax <- 2
 ymin <- 0
 ymax <- 1
-plotType <- 'scatter'
-size <- 'small'
-ppd <- 75
-router<-0
-efs <- 0
-x<-c()
-pdfFile <- ''
-ipi <- 9.5
-maxDepth <- 10.0
 
+ppd <- 75
+x <- c()
+
+ipi <- 9.5
+pdfFile <- '' 
+maxDepth <- 10.0
 lpos <- c(1,1)
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
@@ -88,24 +81,10 @@ for (i in seq(argStart, argc-1)){
     }
   }
 }
-
-probeTime <- (0.005/ipi)*60*60*24
-wakeupTime <- ipi*maxDepth
-
-x$flatTotal <- (probeTime+wakeupTime)+x$flatActive
-x$mtTotal   <- (probeTime+wakeupTime)*(x$router+1)+x$mtActive
-x$mtFracFinal <- x$mtTotal/x$flatTotal
-
 if (ppd == 0){
-  ylab <- "Idle"
+  ylab <- "Overhead-only Duty Cycle"
 }else{
-  ylab <- "Active"
-}
-
-if (router == 1){
-  ylab <- paste(ylab, "Router Duty Cycle (rel. to flat) [0, 1.0]")
-}else{
-  ylab <- paste(ylab, "Leaf Duty Cycle (rel. to flat) [0, 1.0]")
+  ylab <- "Active Duty Cycle"
 }
 
 if (pdfFile != ''){
@@ -116,34 +95,37 @@ if (pdfFile != ''){
   }
 }
 
-agg <- ddply(x, .(router, ppd), summarize,
-  mtFrac =mean(mtFrac),
-  mtFracFinal =mean(mtFracFinal))
-print(agg)
+dayLen <- 60*60*24
+probeTime <- (0.005/ipi)*dayLen
+wakeupTime <- ipi*maxDepth
 
-agg <- ddply(x, .(ppd), summarize,
-  mtFrac =mean(mtFrac),
-  mtFracFinal =mean(mtFracFinal))
-print(agg)
-
+x$total <- probeTime + wakeupTime + x$activeS
 
 x <- x[x$ppd == ppd,]
-x <- x[x$router == router,]
+
+agg <- ddply(x, .(fps), summarize,
+  totalMean=mean(total),
+  totalMed=median(total),
+  totalQ25=quantile(total, 0.25),
+  totalQ75=quantile(total, 0.75),
+  totalMin=min(total),
+  totalMax=max(total)
+  )
 
 print(
-  ggplot(x, aes(x=1/shorten, y=mtFracFinal, size=patchSize))
-  + scale_y_continuous(limits=c(ymin, ymax))
-  + scale_x_continuous(limits=c(xmin, xmax))
-  + geom_point(alpha=0.75)
-  + theme_bw()
-  + theme(legend.justification=lpos, legend.position=lpos)
-  + scale_size_continuous(name="Patch Size",
-    breaks=c(1, 3, 5, 7, 8))
-  + xlab("Sink Distance (rel. to flat)")
+  ggplot(agg, aes(x=fps, y=totalMean/dayLen))
+  + geom_point()
+  + geom_errorbar(aes(ymin=totalMin/dayLen, ymax=totalMax/dayLen,
+  # + geom_errorbar(aes(ymin=totalQ25/dayLen, ymax=totalQ75/dayLen,
+    width=1))
   + ylab(ylab)
-#  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+  + xlab("Frames per slot")
+  + theme_bw()
+#  + geom_point(aes(y=totalMean/(60*60*24)), color='black')
+#  + geom_point(aes(y=totalQ25/(60*60*24)), color='red')
+#  + geom_point(aes(y=totalQ75/(60*60*24)), color='blue')
 )
 
 if (plotFile){
-  g <-dev.off()
+  g<- dev.off()
 }

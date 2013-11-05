@@ -1,8 +1,11 @@
 DROP TABLE IF EXISTS tests_vfdc;
 CREATE TABLE tests_vfdc AS 
-SELECT it,efs
+SELECT label.it as it,efs
 FROM label 
-WHERE multitier=0 and ppd=50 and fps=60 and tpl=12;
+JOIN prr_summary
+ON label.it=prr_summary.it
+WHERE multitier=0 and ppd=50 and fps=60 and tpl=12
+AND min(lr, rl) > 0.98;
 
 
 --OK, well this gives us duty cycle numbers for each wakeup
