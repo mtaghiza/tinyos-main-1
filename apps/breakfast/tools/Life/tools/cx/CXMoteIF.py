@@ -3,17 +3,20 @@ from tinyos.message.MoteIF import MoteIF
 import Queue 
 import time
 
-
+from tools.labeler.TOS import TOS
 from tools.cx.listeners.CtrlAckListener import CtrlAckListener
 from tools.cx.messages.CtrlAck import CtrlAck
 
 from tools.cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedListener
 from tools.cx.listeners.IdentifyResponseListener import IdentifyResponseListener
+from tools.cx.messages.FwdStatus import FwdStatus
+from tools.cx.listeners.FwdStatusListener import FwdStatusListener
 from tools.cx.messages.IdentifyResponse import IdentifyResponse
 from tools.cx.messages.IdentifyRequest import IdentifyRequest
 from tools.cx.messages.CxDownloadFinished import CxDownloadFinished
 from tools.cx.messages import SetProbeSchedule
 from tools.cx.messages import SetMaxDownloadRounds
+from tools.cx.messages import CxDownload
 
 import tools.cx.constants as constants
 
@@ -26,6 +29,9 @@ class CXMoteIF(MoteIF):
         self.ackQueue = Queue.Queue()
         self.addListener(CtrlAckListener(self.ackQueue),
           CtrlAck)
+        self.fwdStatusQueue = Queue.Queue()
+        self.addListener(FwdStatusListener(self.fwdStatusQueue),
+          FwdStatus)
         self.finishedListener = CxDownloadFinishedListener()
         self.addListener(self.finishedListener, CxDownloadFinished)
 
@@ -33,17 +39,17 @@ class CXMoteIF(MoteIF):
         self.addListener(self.identifyResponseListener,
           IdentifyResponse)
 
-        #TODO: less arbitrary. In fact, we should probably be waiting
-        # until we get a downloadFinished. Might be helpful to add 
-        # downloadOngoing / haltDownload packets?
-        self.sendTimeout = 30
-        self.retryLimit = 0
+        self.fwdStatusTimeout = 60
         self.source = None
 
     def identifyMote(self):
         identifyRequestMsg = IdentifyRequest()
         with self.identifyResponseListener.identifiedCV:
-            self.send(constants.BCAST_ADDR, identifyRequestMsg, False)
+            self.sendMsg(self.source, 
+              constants.BCAST_ADDR,
+              identifyRequestMsg.get_amType(),
+              0,
+              identifyRequestMsg)
             self.identifyResponseListener.identifiedCV.wait(1)
         self.bsId = self.identifyResponseListener.moteId
         return self.bsId != constants.BCAST_ADDR
@@ -67,8 +73,17 @@ class CXMoteIF(MoteIF):
           [ radioConfig['globalMaxDepth'], 
             radioConfig['subNetworkMaxDepth'], 
             radioConfig['routerMaxDepth']])
-        ackExpected = ( moteId != self.bsId)
-        self.send(moteId, setProbeScheduleMsg, ackExpected)
+
+        #To base station: no queueing
+        if moteId == self.bsId:
+            self.sendMsg(self.source,
+              moteId, 
+              setProbeScheduleMsg.get_amType(),
+              0,
+              setProbeScheduleMsg)
+        #To others, must be queue-aware
+        else:
+            self.send(moteId, setProbeScheduleMsg)
 
     def configureMaxDownloadRounds(self, moteId, config):
         radioConfig = constants.DEFAULT_RADIO_CONFIG.copy()
@@ -76,7 +91,14 @@ class CXMoteIF(MoteIF):
         setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
           radioConfig['maxDownloadRounds']
           )
-        self.send(moteId, setMaxDownloadRoundsMsg, False)
+        if moteId == self.bsId:
+            self.sendMsg(self.source,
+              moteId, 
+              setMaxDownloadRoundsMsg.get_amType(),
+              0,
+              setMaxDownloadRoundsMsg)
+        else:
+            self.send(moteId, setMaxDownloadRoundsMsg)
 
         time.sleep(1)
 
@@ -96,29 +118,38 @@ class CXMoteIF(MoteIF):
                 self.source = s
             return s
 
-    def send(self, addr, msg, ackRequired=True, source=None):
+    def downloadStart(self, bsId, networkSegment, source=None):
         if not source:
             source = self.source
-        error = 1
+        downloadMsg = CxDownload.CxDownload()
+        downloadMsg.set_networkSegment(networkSegment)
+        t0 = time.time() 
+        error = self.sendMsg(source, bsId, 
+          downloadMsg.get_amType(), 0, downloadMsg)
+        #return the unix time that the download command was sent
+        return (time.time() + t0)/2
+        
+    def send(self, addr, msg, source=None):
+        if addr == self.bsId:
+            print "Attempting remote send to base station?"
+            return TOS.EINVAL
+        if not source:
+            source = self.source
+        queueCap = 0
         retries = 0
         print "Sending", msg, "to", addr
-        while error and retries <= self.retryLimit:
-            self.sendMsg(source, addr, msg.get_amType(), 0, msg)
-            if not ackRequired:
-                print "(no ack required)"
-                return 0
+        self.sendMsg(source, addr, msg.get_amType(), 0, msg)
+        while not queueCap:
             try:
-                m = self.ackQueue.get(True, self.sendTimeout)
-                print "ack:", m
+                m = self.fwdStatusQueue.get(True,
+                  self.fwdStatusTimeout)
+                print "dequeue fwd status", m
                 if m:
-                    error = m.get_error()
+                    queueCap = m.get_queueCap()
             except Queue.Empty:
-                print "no ack received"
-                #no response before timeout
-                pass
-            finally:
-                retries += 1
-        return error
+                print "No fwd status received"
+                return TOS.ENOACK
+        return TOS.SUCCESS
 
     def downloadWait(self):
         print "Waiting for download to finish"

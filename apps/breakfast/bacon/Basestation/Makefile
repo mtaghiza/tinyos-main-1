@@ -65,13 +65,13 @@ LPPMIGDIR = lpp
 MIGCLASSES = $(LPPMIGDIR)/CxLppCts.py $(LPPMIGDIR)/CxLppSleep.py $(LPPMIGDIR)/CxLppWakeup.py 
 
 CXMIGDIR = cx/messages
-MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py
+MIGCLASSES += $(CXMIGDIR)/CxDownload.py $(CXMIGDIR)/CtrlAck.py $(CXMIGDIR)/CxDownloadFinished.py $(CXMIGDIR)/StatusTimeRef.py $(CXMIGDIR)/CxDownloadStarted.py
 MIGCLASSES += $(CXMIGDIR)/CxRecordRequestMsg.py $(CXMIGDIR)/LogRecordDataMsg.py
 MIGCLASSES += $(CXMIGDIR)/SetSettingsStorageMsg.py
 MIGCLASSES += $(CXMIGDIR)/PingMsg.py $(CXMIGDIR)/PongMsg.py 
 MIGCLASSES += $(CXMIGDIR)/PrintfMsg.py
 MIGCLASSES += $(CXMIGDIR)/IdentifyRequest.py $(CXMIGDIR)/IdentifyResponse.py
-MIGCLASSES += $(CXMIGDIR)/CxStatus.py
+MIGCLASSES += $(CXMIGDIR)/FwdStatus.py
 
 
 $(LPPMIGDIR):

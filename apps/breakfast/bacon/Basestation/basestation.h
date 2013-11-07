@@ -10,13 +10,17 @@ typedef struct queue_entry {
   uint8_t len;
 } queue_entry_t;
 
+typedef nx_struct cx_download_started{
+  nx_uint8_t error;
+} cx_download_started_t;
+
+typedef nx_struct fwd_status{
+  nx_uint8_t queueCap;
+} fwd_status_t;
+
 typedef nx_struct cx_download_finished {
   nx_uint8_t networkSegment;
 } cx_download_finished_t;
-
-typedef nx_struct ctrl_ack {
-  nx_uint8_t error;
-} ctrl_ack_t;
 
 //typedef nx_struct status_time_ref {
 //  nx_am_addr_t node;
@@ -34,10 +38,11 @@ typedef nx_struct identify_response {
 
 enum {
   AM_CX_DOWNLOAD_FINISHED=0xD1,
-  AM_CTRL_ACK=0xD2,
-//  AM_CX_STATUS=0xD3,
+  AM_CX_DOWNLOAD_STARTED=0xD2,
+  AM_CX_STATUS=0xD3,
   AM_IDENTIFY_REQUEST=0xD4,
   AM_IDENTIFY_RESPONSE=0xD5,
+  AM_FWD_STATUS=0xD6
 };
 
 #endif

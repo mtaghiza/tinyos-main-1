@@ -4,4 +4,5 @@ __all__ = [
 'CxStatusListener', 
 'StatusTimeRefListener', 
 'CxDownloadFinishedListener', 
-'CtrlAckListener']
+'CtrlAckListener',
+'FwdStatusListener']

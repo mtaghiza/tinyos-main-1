@@ -4,6 +4,7 @@ __all__ = [
 'CxDownload',
 'CxRecordRequestMsg', 
 'CxStatus', 
+'FwdStatus',
 'IdentifyRequest',
 'IdentifyResponse',
 'LogRecordDataMsg', 

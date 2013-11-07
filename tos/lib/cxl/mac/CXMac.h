@@ -107,9 +107,4 @@ enum {
  AM_CX_LPP_CTS=0xC8,
 };
 
-//for serial use only
-enum {
-  AM_CX_STATUS=0xD3,
-};
-
 #endif

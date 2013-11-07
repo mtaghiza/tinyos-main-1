@@ -3,6 +3,7 @@ import sys
 import time
 import ast
 
+from tools.labeler.TOS import TOS
 from tools.cx.listeners import RecordListener
 from tools.cx.listeners import PrintfListener
 from tools.cx.messages import PrintfMsg
@@ -26,7 +27,6 @@ from tools.cx.decoders import NetworkMembership
 from tools.cx.decoders import Tunneled
 
 from tools.cx.messages import CxStatus
-from tools.cx.messages import CxDownload
 from tools.cx.CXMoteIF import CXMoteIF
 
 from tools.cx.listeners import StatusTimeRefListener
@@ -72,8 +72,8 @@ class Dispatcher(object):
         self.mif.finishAll()
         print "finished"
 
-    def send(self, m, dest=0, requireAck=True):
-        return self.mif.send(dest, m, requireAck)
+    def send(self, m, dest=0):
+        return self.mif.send(dest, m)
 
 def download(packetSource, networkSegment=constants.NS_GLOBAL,
         configMap={}, configFile=None, refCallBack=None,
@@ -89,7 +89,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
   Make sure you've selected the right device and make sure
   it has been set up as a base station.
 """) 
-            return
+            raise
         else:
             raise
 
@@ -112,25 +112,13 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
     try:
         print "Wakeup start", time.time()
 
-        
-        downloadMsg = CxDownload.CxDownload()
-        downloadMsg.set_networkSegment(networkSegment)
-        t0 = time.time() 
-        error = d.send(downloadMsg, bsId)
-        refListener.downloadStart = (time.time() + t0)/2
-#         #TESTING 
-#         setBSI = SetBaconSampleInterval.SetBaconSampleInterval(2*60*1024)
-#         #send it via broadcast
-#         error = d.send(setBSI, 0xFFFF)
-#         setTSI = SetToastSampleInterval.SetToastSampleInterval(60*1024)
-#         error = d.send(setTSI, 0xFFFF)
-#         #END TESTING
+        refListener.downloadStart = d.mif.downloadStart(bsId, 
+          networkSegment)
+        error = TOS.SUCCESS
         if requestMissing:
             (request_list, allGaps)  = db.findMissing()
-    #         request_list = []
             print "Recovery requests: ", request_list
             print "All gaps: ", allGaps
-    #         MAX_PACKET_PAYLOAD = 100
             for request in request_list:
                 if request['node_id'] != bsId:
                     msg = CxRecordRequestMsg.CxRecordRequestMsg()
@@ -145,6 +133,7 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
                       msg.get_cookie(), msg.get_node_id())
                     error = d.send(msg, msg.get_node_id())
                     print "Request status: %x"%error
+                    
                     if error:
                         break
                 else:
@@ -187,11 +176,8 @@ def pushConfig(packetSource, networkSegment, configFile,
     #Should not be receiving other types of data here.
     db.addDecoder(NetworkMembership.NetworkMembership)
     try:
-        downloadMsg = CxDownload.CxDownload()
-        downloadMsg.set_networkSegment(networkSegment)
-        t0 = time.time() 
-        error = d.send(downloadMsg, bsId)
-        refListener.downloadStart = (time.time() + t0)/2
+        refListener.downloadStart = d.mif.downloadStart(bsId,
+          networkSegment)
 
         if error:
             print "Download failed: %x"%error
@@ -220,11 +206,8 @@ def ping(packetSource, networkSegment, configFile):
     #Should not be receiving other types of data here.
     db.addDecoder(NetworkMembership.NetworkMembership)
     try:
-        downloadMsg = CxDownload.CxDownload()
-        downloadMsg.set_networkSegment(networkSegment)
-        t0 = time.time() 
-        error = d.send(downloadMsg, bsId)
-        refListener.downloadStart = (time.time() + t0)/2
+        refListener.downloadStart = d.mif.downloadStart(bsId,
+          networkSegment)
 
         if error:
             print "Ping failed: %x"%error
@@ -275,17 +258,15 @@ def triggerRouterDownload(packetSource, networkSegment, configFile):
     #Should not be receiving other types of data here.
     db.addDecoder(NetworkMembership.NetworkMembership)
     try:
-        downloadMsg = CxDownload.CxDownload()
-        downloadMsg.set_networkSegment(networkSegment)
-        t0 = time.time() 
-        error = d.send(downloadMsg, bsId)
-        refListener.downloadStart = (time.time() + t0)/2
+        refListener.downloadStart = d.mif.downloadStart(bsId,
+          networkSegment)
 
 
         if error:
             print "BS download failed: %x"%error
             pass
         else: 
+            downloadMsg = CxDownload.CxDownload()
             downloadMsg.set_networkSegment(constants.NS_SUBNETWORK)
             time.sleep(1)
             error = d.send(downloadMsg, 0xFFFF)

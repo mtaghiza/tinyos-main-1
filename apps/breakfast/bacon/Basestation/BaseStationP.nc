@@ -42,7 +42,8 @@ module BaseStationP @safe() {
   //Control interfaces: separated from the am_id agnostic forwarding
   //code.
   uses interface Receive as CXDownloadReceive;
-  uses interface AMSend as CtrlAckSend;
+  uses interface AMSend as FwdStatusSend;
+  uses interface AMSend as CXDownloadStartedSend;
   uses interface AMSend as CXDownloadFinishedSend;
   uses interface AMSend as IDResponseSend;
 
@@ -241,9 +242,53 @@ implementation
     call Pool.put(m);
   }
 
+  message_t* fsMsg = NULL;
+  task void queueReport(){
+    printf("QR %p %u %u -> %u \r\n",
+      fsMsg,
+      call SerialRXQueue.maxSize(),
+      call SerialRXQueue.size(),
+      call SerialRXQueue.maxSize() - call SerialRXQueue.size());
+    if (fsMsg == NULL){
+      fsMsg = call Pool.get();
+      if (fsMsg != NULL) {
+        error_t error;
+        fwd_status_t* pl = call FwdStatusSend.getPayload(fsMsg,
+          sizeof(fwd_status_t));
+        call SerialPacket.clear(fsMsg);
+        pl -> queueCap = (call SerialRXQueue.maxSize()) - (call SerialRXQueue.size());
+        call SerialAMPacket.setSource(fsMsg, 
+          call ActiveMessageAddress.amAddress());
+        error = call FwdStatusSend.send(0, fsMsg, sizeof(fwd_status_t));
+        if (error != SUCCESS){
+          cerror(BASESTATION, "Send fs msg %x\r\n",
+            error);
+          cflushdbg(BASESTATION);
+          call Pool.put(fsMsg);
+          fsMsg = NULL;
+        }
+      }else{
+        cerror(BASESTATION, "no FS pool\r\n");
+      }
+    }else{
+      cdbg(BASESTATION, "Still sending FS\r\n");
+    }
+  }
+
+  event void FwdStatusSend.sendDone(message_t* msg, error_t error){
+    if (msg == fsMsg){
+      call Pool.put(fsMsg);
+      fsMsg = NULL;
+    }else{
+      cerror(BASESTATION, "Mystery packet FSS.SD %p != %p\r\n",
+        fsMsg, msg);
+    }
+  }
+
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
 						   uint8_t len) {
+    post queueReport();
     if (id == AM_IDENTIFY_REQUEST){
       post sendIDResponse();
       return msg;
@@ -280,6 +325,7 @@ implementation
       am_group_t grp = call SerialAMPacket.group(qe.msg);
       am_addr_t addr = call SerialAMPacket.destination(qe.msg);
       am_id_t id = call SerialAMPacket.type(qe.msg);
+      post queueReport();
       //move the payload out of the way
       memmove(aux, 
         call SerialPacket.getPayload(qe.msg, qe.len),
@@ -309,6 +355,9 @@ implementation
       queue_entry_t qe = call RadioTXQueue.dequeue();
 
       error_t error;
+      (call CXLinkPacket.getLinkMetadata(qe.msg))->dataPending = 
+        ((call SerialRXQueue.size() > 0) 
+           || (call RadioTXQueue.size() > 0));
       switch (activeNS){
         case NS_ROUTER:
           error = call RouterSend.send[call RadioAMPacket.type(qe.msg)](call RadioAMPacket.destination(qe.msg), qe.msg, qe.len);
@@ -346,43 +395,16 @@ implementation
   }
 
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
-    message_t* ackMsg;
     radioSending = FALSE;
     cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");
     call Pool.put(msg);
     cdbg(BASESTATION, "G ackR\r\n");
-    ackMsg = call Pool.get();
-    if (ackMsg != NULL) {
-      ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
-        sizeof(ctrl_ack_t));
-      ackRMsg = ackMsg;
-      call SerialPacket.clear(ackMsg);
-      pl -> error = error;
-      call SerialAMPacket.setSource(ackMsg, 
-        call ActiveMessageAddress.amAddress());
-      error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
-      if (error != SUCCESS){
-        cerror(BASESTATION, "Couldn't send radio TX ack %x\r\n",
-          error);
-        cflushdbg(BASESTATION);
-        cdbg(BASESTATION, "P ackR!\r\n");
-        call Pool.put(ackMsg);
-        ackMsg = NULL;
-      }
-    }else{
-      cerror(BASESTATION, "no ack pool\r\n");
-    }
+    post queueReport();
+    post txRadio();
   }
 
-  event void CtrlAckSend.sendDone(message_t* msg, error_t error){
-    if (msg == ackRMsg){
-      cdbg(BASESTATION, "P ackR\r\n");
-      ackRMsg = NULL;
-    }else if (msg == ackDMsg){
-      cdbg(BASESTATION, "P ackD\r\n");
-      ackDMsg = NULL;
-    }
+  event void CXDownloadStartedSend.sendDone(message_t* msg, error_t error){
     call Pool.put(msg);
     post txRadio();
   }
@@ -427,15 +449,15 @@ implementation
     cdbg(BASESTATION, "G ackD\r\n");
     ackMsg = call Pool.get();
     if (ackMsg != NULL){
-      ctrl_ack_t* pl = call CtrlAckSend.getPayload(ackMsg,
-        sizeof(ctrl_ack_t));
+      cx_download_started_t* pl = call CXDownloadStartedSend.getPayload(ackMsg,
+        sizeof(cx_download_started_t));
       error_t error;
-      ackDMsg = ackMsg;
       call SerialPacket.clear(ackMsg);
       pl -> error = downloadError;
       call SerialAMPacket.setSource(ackMsg, 
         call ActiveMessageAddress.amAddress());
-      error = call CtrlAckSend.send(0, ackMsg, sizeof(ctrl_ack_t));
+      error = call CXDownloadStartedSend.send(0, ackMsg,
+        sizeof(cx_download_started_t));
       if (error != SUCCESS){
         cdbg(BASESTATION, "Couldn't ack download %x\r\n", error);
         cflushdbg(BASESTATION);
@@ -494,7 +516,7 @@ implementation
     amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
     memcpy(amPl, &buf, sizeof(cx_status_t));
     cdbg(BASESTATION, "SR %u\r\n", call RadioAMPacket.source(msg));
-    return radioReceive(msg, amPl, sizeof(cx_status_t));
+    return radioReceive(msg, amPl, len);
   }
 
   default command error_t CXDownload.startDownload[uint8_t ns](){

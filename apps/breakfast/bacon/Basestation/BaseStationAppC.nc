@@ -65,8 +65,11 @@ implementation {
     as CXDownloadReceive;
   BaseStationP.CXDownloadReceive -> CXDownloadReceive;
 
-  components new SerialAMSenderC(AM_CTRL_ACK) as CtrlAckSend;
-  BaseStationP.CtrlAckSend -> CtrlAckSend;
+  components new SerialAMSenderC(AM_FWD_STATUS) as FwdStatusSend;
+  BaseStationP.FwdStatusSend -> FwdStatusSend;
+
+  components new SerialAMSenderC(AM_CX_DOWNLOAD_STARTED) as CXDownloadStartedSend;
+  BaseStationP.CXDownloadStartedSend -> CXDownloadStartedSend;
 
   components new SerialAMSenderC(AM_CX_DOWNLOAD_FINISHED) 
     as CXDownloadFinishedSend;
