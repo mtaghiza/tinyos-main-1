@@ -23,6 +23,18 @@ class DatabaseMissing(object):
       AND l.retry < 5
       ORDER BY l.node_id, l.cookie'''
 
+    MISSING_ORDER_SIZE_SQL = '''SELECT l.node_id, 
+      l.cookie, l.nextCookie,
+      (r.cookie - l.nextCookie -1) as missing,
+      l.retry
+    FROM sorted_flash l
+    JOIN sorted_flash r
+    ON l.node_id = r.node_id
+      AND l.ROWID +1 = r.ROWID
+      AND missing > 0
+      AND l.retry < 5
+      ORDER BY l.node_id, missing desc'''
+
 
     def __init__(self, dbName):
         self.dbName = dbName
@@ -50,7 +62,7 @@ class DatabaseMissing(object):
         # sort the flash table by cookie values (ascending)
         # and find missing segments by comparing lengths and cookies
         self.connection.execute(DatabaseMissing.SORT_COOKIE_SQL)
-        results = self.connection.execute(DatabaseMissing.MISSING_ORDER_AGE_SQL)
+        results = self.connection.execute(DatabaseMissing.MISSING_ORDER_SIZE_SQL)
         
         #results = self.connection.fetchall()
 
