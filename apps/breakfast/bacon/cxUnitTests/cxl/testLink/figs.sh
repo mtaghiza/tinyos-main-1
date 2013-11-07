@@ -6,6 +6,12 @@ R --no-save --slave --args\
   --plotType size \
   --pdf fig/sp_v_fs_size.pdf \
   < R/fss_v_spl.R
+
+R --no-save --slave --args\
+  --db $db \
+  --plotType sizeHist \
+  --pdf fig/sp_v_fs_size_hist.pdf \
+  < R/fss_v_spl.R
   
 R --no-save --slave --args\
   --db $db \
@@ -13,6 +19,12 @@ R --no-save --slave --args\
   --pdf fig/sp_v_fs_length.pdf \
   < R/fss_v_spl.R
   
+R --no-save --slave --args\
+  --db $db \
+  --plotType lengthHist \
+  --pdf fig/sp_v_fs_length_hist.pdf \
+  < R/fss_v_spl.R
+
 R --no-save --slave --args\
   --db $db \
   --plotType normalized\

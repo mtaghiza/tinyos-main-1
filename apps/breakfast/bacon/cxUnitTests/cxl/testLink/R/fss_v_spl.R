@@ -107,6 +107,8 @@ if (plotType == 'size'){
   t <- "CX size v. SP size"
 }else if (plotType == 'length'){
   t <- "CX len v. SP len"
+}else if (plotType == 'sizeHist'){
+  t <- "CX size v. SP size histogram"
 }
 
 if (pdfFile != ''){
@@ -129,6 +131,21 @@ if (plotType == 'size'){
 # plot(spc_v_cxc$cx_cnt, spc_v_cxc$sp_cnt)
 }
 
+if (plotType == 'sizeHist'){
+  bw <- 1.0
+  print(
+    ggplot(spc_v_cxc, aes((cx_cnt/sp_cnt)-bw/2))
+    + geom_histogram(aes(y=..count../sum(..count..)),
+      fill='white',
+      color='black',
+      binwidth=bw)
+    + ylab("Fraction of node pairs")
+    + xlab("|Frr| / |Fmin|")
+    + theme_bw()
+  )
+  print(mean(spc_v_cxc$cx_cnt/spc_v_cxc$sp_cnt))
+}
+
 #sp len vs. avg cx len
 if (plotType == 'length'){
   spl_v_cxl$cx_shorter_fac <- as.factor(spl_v_cxl$cx_shorter)
@@ -148,6 +165,21 @@ if (plotType == 'length'){
 
 #  plot(spl_v_cxl$cx_len, spl_v_cxl$sp_len, col=1+spl_v_cxl$cx_shorter)
 #  lines(x=c(0,10), y=c(0,10))
+}
+
+if (plotType == 'lengthHist'){
+  bw <- 0.05
+  print(
+    ggplot(spl_v_cxl, aes((cx_len/sp_len)))
+    + geom_histogram(aes(y=..count../sum(..count..)),
+      fill='white',
+      color='black',
+      binwidth=bw)
+    + ylab("Fraction of node pairs")
+    + xlab("Average Multi-TX Distance / Shortest Path Length")
+    + theme_bw()
+  )
+  print(mean(spl_v_cxl$cx_len/spl_v_cxl$sp_len))
 }
 
 if (plotFile){
