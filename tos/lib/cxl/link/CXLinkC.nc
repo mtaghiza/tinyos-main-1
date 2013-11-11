@@ -57,7 +57,7 @@ configuration CXLinkC {
 
   CXLinkP.LastCRC -> Rf1aPhysicalC;
 
-  components new Timer32khzC() as CompletionTimer;
-  CXLinkP.CompletionTimer -> CompletionTimer;
+//  components new Timer32khzC() as CompletionTimer;
+//  CXLinkP.CompletionTimer -> CompletionTimer;
 }
 

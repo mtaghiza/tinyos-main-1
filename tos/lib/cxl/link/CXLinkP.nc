@@ -16,7 +16,7 @@ module CXLinkP {
   uses interface Alarm<TMicro, uint32_t> as FastAlarm;
   uses interface LocalTime<T32khz>; 
   uses interface LocalTime<TMilli> as LocalTimeMilli; 
-  uses interface Timer<T32khz> as CompletionTimer;
+//  uses interface Timer<T32khz> as CompletionTimer;
 
   provides interface Receive;
   provides interface Send;
@@ -427,9 +427,10 @@ module CXLinkP {
     post handleSendDone();
   }
 
-  event void CompletionTimer.fired(){
+  task void completeOperation(){
     uint8_t localState;
     atomic localState = state;
+    stopMicro();
     if(localState == S_TX_END){
       atomic state = S_IDLE;
       signal Send.sendDone(fwdMsg, SUCCESS);
@@ -444,12 +445,15 @@ module CXLinkP {
    
   void setCompletionTimer(message_t* msg){
     if (! metadata(msg)->retx){
-      call CompletionTimer.startOneShot(0);
+      post startImmediately();
     }else{
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        startMicro();
+      }
       if (call CXLinkPacket.len(msg) == SHORT_PACKET){
-        call CompletionTimer.startOneShot(FRAMELEN_SHORT_SLOW*header(msg)->ttl);
+        call FastAlarm.start(FRAMELEN_FAST_SHORT*header(msg)->ttl);
       }else{
-        call CompletionTimer.startOneShot(FRAMELEN_SLOW*header(msg)->ttl);
+        call FastAlarm.start(FRAMELEN_FAST_NORMAL*header(msg)->ttl);
       }
     }
   }
@@ -600,6 +604,8 @@ module CXLinkP {
         state = S_IDLE;
         post signalRXDone();
       }
+    } else if (state == S_TX_END || state == S_FWD_END){
+      post completeOperation();
     } else {
       cwarn(LINK, "Link fa.f unexpected state %x\r\n", state);
     }
