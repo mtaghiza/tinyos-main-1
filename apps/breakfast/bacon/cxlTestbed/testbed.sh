@@ -167,7 +167,8 @@ do
       TEST_SEGMENT=$ts\
       MAX_TX_SHORT=$mts\
       MAX_TX_LONG=$mtl\
-      ENABLE_PRINTF=$enablePrintf"
+      ENABLE_PRINTF=$enablePrintf\
+      PRINTF_STATS_LOG=1"
   
     cat $subnetMap | while read line 
     do

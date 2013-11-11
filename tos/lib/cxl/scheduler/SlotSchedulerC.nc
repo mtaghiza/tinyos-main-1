@@ -66,21 +66,26 @@ configuration SlotSchedulerC{
   #define AM_STATS_LOG 0
   #endif
   #ifndef PRINTF_STATS_LOG
-  #define PRINTF_STATS_LOG 1
+  #define PRINTF_STATS_LOG 0
   #endif
 
   #if AM_STATS_LOG == 1
   components SerialStartC;
   components AMStatsLogC as StatsLog;
-  #elif PRINTF_STATS_LOG == 1
-  components PrintfStatsLogC as StatsLog;
-  #else
-  components DummyStatsLogC as StatsLog;
-  #endif
-  SlotSchedulerP.StatsLog -> StatsLog;
+
   StatsLog.CXLinkPacket -> CXWakeupC.CXLinkPacket;
   StatsLog.CXMacPacket -> CXWakeupC.CXMacPacket;
   StatsLog.Packet -> CXWakeupC.Packet;
+  SlotSchedulerP.StatsLog -> StatsLog;
+
+  #elif PRINTF_STATS_LOG == 1
+
+  components PrintfStatsLogC as StatsLog;
+  StatsLog.CXLinkPacket -> CXWakeupC.CXLinkPacket;
+  StatsLog.CXMacPacket -> CXWakeupC.CXMacPacket;
+  StatsLog.Packet -> CXWakeupC.Packet;
+  SlotSchedulerP.StatsLog -> StatsLog;
+  #endif
 
   DownloadNotify = SlotSchedulerP;
 }
