@@ -919,7 +919,6 @@ module HplMsp430Rf1aP {
 
       /* And we can't already be transmitting something. */
       if (0 < tx_remain) {
-        cerror(LINK, "TIP\r\n");
         return EBUSY;
       }
 
