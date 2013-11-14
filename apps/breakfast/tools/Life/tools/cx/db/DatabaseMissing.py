@@ -71,8 +71,8 @@ class DatabaseMissing(object):
 
         # get first entry for each node_id, increment the retry counter
         # and remove old records from the source table
-        allMissing = results
-        for res in results:
+        allMissing = [res for res in results]
+        for res in allMissing:
             if last_result != res[0]:
                 
                 last_result = res[0]
@@ -90,7 +90,7 @@ class DatabaseMissing(object):
                 #old_records = (node_id_field, cookie_field)
                 #self.cursor.execute('DELETE FROM cookie_table WHERE node_id=? AND cookie<?', old_records)
         
-        self.connection.commit();
+        self.connection.commit()
 
         return (missing_list, allMissing)
         
