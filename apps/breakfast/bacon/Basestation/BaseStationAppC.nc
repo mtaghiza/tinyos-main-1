@@ -41,12 +41,14 @@ implementation {
   
   BaseStationP.Leds -> LedsC;
 
-  components new QueueC(queue_entry_t, 4) as RadioRXQueue;
-  components new QueueC(queue_entry_t, 4) as SerialRXQueue;
-  components new QueueC(queue_entry_t, 4) as RadioTXQueue;
-  components new QueueC(queue_entry_t, 4) as SerialTXQueue;
+  components new QueueC(queue_entry_t, BS_QUEUE_SIZE) as RadioRXQueue;
+  components new QueueC(queue_entry_t, BS_QUEUE_SIZE) as SerialRXQueue;
+  components new QueueC(queue_entry_t, BS_QUEUE_SIZE) as RadioTXQueue;
+  components new QueueC(queue_entry_t, BS_QUEUE_SIZE) as SerialTXQueue;
 
-  BaseStationP.Pool -> RadioAM.Pool;
+  components new PoolC(message_t, BS_POOL_SIZE);
+
+  BaseStationP.Pool -> PoolC;
 
   BaseStationP.RadioRXQueue -> RadioRXQueue;
   BaseStationP.SerialRXQueue -> SerialRXQueue;
@@ -59,7 +61,7 @@ implementation {
 
   components new SerialLogStorageC();
   CXBaseStationC.LogWrite -> SerialLogStorageC.LogWrite;
-  SerialLogStorageC.Pool -> RadioAM.Pool;
+  SerialLogStorageC.Pool -> PoolC;
 
   components new SerialAMReceiverC(AM_CX_DOWNLOAD) 
     as CXDownloadReceive;
@@ -84,7 +86,7 @@ implementation {
   SettingsStorageC.LogWrite -> DummyLogWriteC;
 
   components BareSettingsStorageConfiguratorC;
-  BareSettingsStorageConfiguratorC.Pool -> RadioAM.Pool;
+  BareSettingsStorageConfiguratorC.Pool -> PoolC;
   components new SerialAMReceiverC(AM_SET_SETTINGS_STORAGE_MSG) 
     as SetReceive;
   components new SerialAMReceiverC(AM_CLEAR_SETTINGS_STORAGE_MSG) 
