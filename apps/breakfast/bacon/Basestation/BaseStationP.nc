@@ -284,6 +284,9 @@ implementation
         fsMsg, msg);
     }
   }
+  //TODO: receive EOS event from CXDownload
+  // - set up a serial packet to send to the base station that
+  //   indicates what happened
 
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
@@ -293,6 +296,11 @@ implementation
       post sendIDResponse();
       return msg;
     }
+    if (id == AM_CX_RECORD_REQUEST_MSG){
+      //TODO: set dataPending for ourselves
+      //TODO: set dataPending for the destination of this message
+    }
+
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
       cdbg(BASESTATION, "Serial full\r\n");
       cflushdbg(BASESTATION);

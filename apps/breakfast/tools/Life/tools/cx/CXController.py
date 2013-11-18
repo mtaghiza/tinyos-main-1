@@ -115,6 +115,15 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
         refListener.downloadStart = d.mif.downloadStart(bsId, 
           networkSegment)
         error = TOS.SUCCESS
+        #TODO: add readNext to MoteIF
+        #  - should block on an EOS message
+        #  - if the message says "download finished" then we're done
+        #  - if the message indicates a node was contacted and it had
+        #    no data left at the end of the slot, then check for gaps
+        #    in its data
+        #  - if gaps are found, then construct the request and put it
+        #    in
+
         if requestMissing:
             (request_list, allGaps)  = db.findMissing()
             print "Recovery requests: ", request_list

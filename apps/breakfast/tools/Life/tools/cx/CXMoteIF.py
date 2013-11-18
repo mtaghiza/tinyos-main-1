@@ -151,6 +151,10 @@ class CXMoteIF(MoteIF):
                 return TOS.ENOACK
         return TOS.SUCCESS
 
+    #TODO: replace downloadWait with eosWait 
+    # - This should return either a download-finished or a status
+    #   report on the node whose slot just ended
+
     def downloadWait(self):
         print "Waiting for download to finish"
         while not self.finishedListener.finished:

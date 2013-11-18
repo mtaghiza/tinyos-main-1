@@ -235,6 +235,12 @@ module CXMasterP {
   
   //At the end of a slot, increment contactIndex, wrap if needed.
   command void SlotController.endSlot(){
+    //TODO: post task to signal EOS status up (on CXDownload
+    //   interface):
+    // - should indicate which node just had a slot assigned
+    // - whether it was contacted
+    // - if it was contacted, whether it still has data pending
+
 //    printf("es %u/%u ->", contactIndex, totalNodes);
     contactIndex++;
     if (contactIndex >= totalNodes){
@@ -243,6 +249,10 @@ module CXMasterP {
     }
 //    printf("%u\r\n", contactIndex);
   }
+
+  //TODO: default CXDownload eos event handler
+
+  //TODO: command to manually set dataPending for a given node
 
   default event message_t* Receive.receive(message_t* msg, void* pl,
       uint8_t len){
