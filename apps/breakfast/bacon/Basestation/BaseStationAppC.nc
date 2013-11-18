@@ -81,6 +81,9 @@ implementation {
     as IDResponseSend;
   BaseStationP.IDResponseSend -> IDResponseSend;
 
+  components new SerialAMSenderC(AM_CX_EOS_REPORT) as EosSend;
+  BaseStationP.EosSend -> EosSend;
+
   components new DummyLogWriteC();
   components SettingsStorageC;
   SettingsStorageC.LogWrite -> DummyLogWriteC;

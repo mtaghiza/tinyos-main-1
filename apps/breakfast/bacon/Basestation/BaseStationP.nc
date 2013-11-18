@@ -6,6 +6,7 @@
  #include "CXMac.h"
  #include "CXRouter.h"
  #include "CXBasestationDebug.h"
+ #include "RecordRequest.h"
 
 module BaseStationP @safe() {
   uses interface Boot;
@@ -42,6 +43,7 @@ module BaseStationP @safe() {
   //Control interfaces: separated from the am_id agnostic forwarding
   //code.
   uses interface Receive as CXDownloadReceive;
+  uses interface AMSend as EosSend;
   uses interface AMSend as FwdStatusSend;
   uses interface AMSend as CXDownloadStartedSend;
   uses interface AMSend as CXDownloadFinishedSend;
@@ -538,6 +540,47 @@ implementation
     }
     ftCount ++;
     printfflush();
+  }
+
+  message_t* eosMsg;
+
+  task void sendEos(){
+    if (eosMsg == NULL){
+      cerror(BASESTATION, "EOS msg null?\r\n");
+    } else {
+      error_t error = call EosSend.send(0, eosMsg, sizeof(cx_eos_report_t));
+      if (error != SUCCESS){
+        call Pool.put(eosMsg);
+        eosMsg = NULL;
+        cerror(BASESTATION, "EOS fail: %x\r\n", error);
+      }
+    }
+  }
+
+  event void CXDownload.eos[uint8_t ns](am_addr_t owner, 
+      eos_status_t status){
+    printf("EOS %x %x\r\n", owner, status);
+    //construct EOS packet and post task to send it
+    if (eosMsg == NULL){
+      eosMsg = call Pool.get();
+      if (eosMsg){
+        cx_eos_report_t* pl = call EosSend.getPayload(eosMsg,
+          sizeof(cx_eos_report_t));
+        pl->owner = owner;
+        pl->status = status;
+        post sendEos();
+      } else {
+        cerror(BASESTATION, "EOS pool empty\r\n");
+      }
+    }
+  }
+
+  event void EosSend.sendDone(message_t* msg, error_t error){
+    call Pool.put(msg);
+    eosMsg = NULL;
+    if (error != SUCCESS){
+      cerror(BASESTATION, "EOS sd %x\r\n", error);
+    }
   }
 
   async event void ActiveMessageAddress.changed(){}

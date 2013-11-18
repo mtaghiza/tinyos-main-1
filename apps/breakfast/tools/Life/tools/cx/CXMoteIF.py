@@ -11,12 +11,14 @@ from tools.cx.listeners.CxDownloadFinishedListener import CxDownloadFinishedList
 from tools.cx.listeners.IdentifyResponseListener import IdentifyResponseListener
 from tools.cx.messages.FwdStatus import FwdStatus
 from tools.cx.listeners.FwdStatusListener import FwdStatusListener
+from tools.cx.listeners.CxEosReportListener import CxEosReportListener
 from tools.cx.messages.IdentifyResponse import IdentifyResponse
 from tools.cx.messages.IdentifyRequest import IdentifyRequest
 from tools.cx.messages.CxDownloadFinished import CxDownloadFinished
 from tools.cx.messages import SetProbeSchedule
 from tools.cx.messages import SetMaxDownloadRounds
 from tools.cx.messages import CxDownload
+from tools.cx.messages import CxEosReport
 
 import tools.cx.constants as constants
 
@@ -38,6 +40,10 @@ class CXMoteIF(MoteIF):
         self.identifyResponseListener = IdentifyResponseListener()
         self.addListener(self.identifyResponseListener,
           IdentifyResponse)
+
+        self.eosQueue = Queue.Queue()
+        self.eosListener =  CxEosReportListener(self.eosQueue)
+        self.addListener(self.eosListener, CxEosReport.CxEosReport)
 
         self.fwdStatusTimeout = 60
         self.source = None

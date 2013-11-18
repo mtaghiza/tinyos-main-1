@@ -151,4 +151,6 @@ module RouterP{
     }
     return msg;
   }
+
+  event void CXDownload.eos(am_addr_t owner, eos_status_t status){}
 }

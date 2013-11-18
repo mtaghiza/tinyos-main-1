@@ -135,6 +135,7 @@ module CXMasterP {
     if (numRounds < maxRounds){
       //don't worry, we'll decrement this if we get a status back
       contactList[contactIndex].failedAttempts ++;
+      contactList[contactIndex].contactFlag = FALSE;
       if (contactList[contactIndex].failedAttempts >= maxAttempts){
         printf("me %u %u\r\n", contactList[contactIndex].nodeId, contactList[contactIndex].failedAttempts);
       }
@@ -166,6 +167,7 @@ module CXMasterP {
     uint8_t k;
     contactList[contactIndex].dataPending = pl->dataPending;
     contactList[contactIndex].failedAttempts--;
+    contactList[contactIndex].contactFlag = TRUE;
 //    printf("pl %p\r\n", pl->neighbors);
 //    cdbg(ROUTER, "rs %u %u\r\n", 
 //      contactList[contactIndex].nodeId,
@@ -232,14 +234,21 @@ module CXMasterP {
 //      contactList[contactIndex].dataPending);
     return msg;
   }
+
+  am_addr_t eosAddr;
+  eos_status_t eosStatus;
+
+  task void signalEOS(){
+    signal CXDownload.eos[activeNS](eosAddr, eosStatus);
+  }
   
   //At the end of a slot, increment contactIndex, wrap if needed.
   command void SlotController.endSlot(){
-    //TODO: post task to signal EOS status up (on CXDownload
-    //   interface):
-    // - should indicate which node just had a slot assigned
-    // - whether it was contacted
-    // - if it was contacted, whether it still has data pending
+    eosAddr = contactList[contactIndex].nodeId;
+    eosStatus = contactList[contactIndex].contactFlag
+        ? (contactList[contactIndex].dataPending? ES_DATA: ES_NO_DATA)
+        : ES_NO_CONTACT;
+    post signalEOS();
 
 //    printf("es %u/%u ->", contactIndex, totalNodes);
     contactIndex++;
@@ -250,7 +259,6 @@ module CXMasterP {
 //    printf("%u\r\n", contactIndex);
   }
 
-  //TODO: default CXDownload eos event handler
 
   //TODO: command to manually set dataPending for a given node
 
@@ -291,6 +299,7 @@ module CXMasterP {
 
   default event void CTS.ctsReceived[uint8_t ns](){}
   default event void CXDownload.downloadFinished[uint8_t ns](){}
+  default event void CXDownload.eos[uint8_t ns](am_addr_t owner, eos_status_t status){}
 
   default command error_t LogWrite.append(void* buf, storage_len_t len){ return FAIL;}
   default command storage_cookie_t LogWrite.currentOffset(){ return 0; }

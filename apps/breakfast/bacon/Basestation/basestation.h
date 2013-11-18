@@ -36,13 +36,19 @@ typedef nx_struct identify_response {
   nx_am_addr_t self;
 } identify_response_t;
 
+typedef nx_struct cx_eos_report {
+  nx_am_addr_t owner;
+  nx_uint8_t status;
+} cx_eos_report_t;
+
 enum {
   AM_CX_DOWNLOAD_FINISHED=0xD1,
   AM_CX_DOWNLOAD_STARTED=0xD2,
   AM_CX_STATUS=0xD3,
   AM_IDENTIFY_REQUEST=0xD4,
   AM_IDENTIFY_RESPONSE=0xD5,
-  AM_FWD_STATUS=0xD6
+  AM_FWD_STATUS=0xD6,
+  AM_CX_EOS_REPORT = 0xD7,
 };
 
 #endif
