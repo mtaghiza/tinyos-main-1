@@ -24,10 +24,10 @@ module CXMasterP {
 
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
   uint8_t contactIndex;
-  uint8_t numRounds;
+  uint16_t numRounds;
   uint8_t totalNodes;
   uint8_t activeNS = NS_INVALID;
-  uint8_t maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
+  uint16_t maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
   uint8_t maxAttempts = DEFAULT_MAX_ATTEMPTS;
 
   am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 

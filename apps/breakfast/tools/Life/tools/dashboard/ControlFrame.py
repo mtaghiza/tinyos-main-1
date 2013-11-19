@@ -338,7 +338,7 @@ class ControlFrame(Frame):
         # globalChannel or routerChannel (depending on the type of
         # download we are doing).
         configMap= {'subNetworkChannel':self.downloadChannel,
-          'maxDownloadRounds':255}
+          'maxDownloadRounds':1000}
         CXController.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
