@@ -260,7 +260,16 @@ module CXMasterP {
   }
 
 
-  //TODO: command to manually set dataPending for a given node
+  command error_t CXDownload.markPending[uint8_t ns](am_addr_t addr){
+    uint8_t i;
+    for (i=0; i < totalNodes; i++){
+      if (contactList[i].nodeId == addr){
+        contactList[i].dataPending = TRUE;
+        return SUCCESS;
+      }
+    }
+    return FAIL;
+  }
 
   default event message_t* Receive.receive(message_t* msg, void* pl,
       uint8_t len){

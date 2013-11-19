@@ -286,9 +286,6 @@ implementation
         fsMsg, msg);
     }
   }
-  //TODO: receive EOS event from CXDownload
-  // - set up a serial packet to send to the base station that
-  //   indicates what happened
 
   event message_t *SerialSnoop.receive[am_id_t id](message_t *msg,
 						   void *payload,
@@ -299,8 +296,8 @@ implementation
       return msg;
     }
     if (id == AM_CX_RECORD_REQUEST_MSG){
-      //TODO: set dataPending for ourselves
-      //TODO: set dataPending for the destination of this message
+      call CXDownload.markPending[activeNS](call ActiveMessageAddress.amAddress());
+      call CXDownload.markPending[activeNS](call SerialAMPacket.destination(msg));
     }
 
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
@@ -530,6 +527,9 @@ implementation
   }
 
   default command error_t CXDownload.startDownload[uint8_t ns](){
+    return EINVAL;
+  }
+  default command error_t CXDownload.markPending[uint8_t ns](am_addr_t node){
     return EINVAL;
   }
   
