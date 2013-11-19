@@ -3,6 +3,23 @@ db=$1
 
 R --no-save --slave --args\
   --db $db \
+  --plotBW 0 \
+  --filter sp\
+  --plotType absolute \
+  --pdf fig/prr_v_failrate_absolute_pres_sp.pdf \
+  < R/reliability.R
+
+R --no-save --slave --args\
+  --db $db \
+  --plotBW 0 \
+  --plotType absolute \
+  --pdf fig/prr_v_failrate_absolute_pres.pdf \
+  < R/reliability.R
+
+exit 0
+
+R --no-save --slave --args\
+  --db $db \
   --plotType size \
   --pdf fig/sp_v_fs_size.pdf \
   < R/fss_v_spl.R

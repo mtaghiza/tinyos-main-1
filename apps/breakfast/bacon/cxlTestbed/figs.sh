@@ -13,6 +13,50 @@ do
   dbArgs="$dbArgs --db $dbf "
 done
 
+function segmentationPres(){
+  echo "Segmentation DC: leaf idle"
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 0 \
+    --lpos ul\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_idle_pres.pdf \
+    < R/segmentation_dc.R
+  
+  echo "Segmentation DC: leaf active"
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 75 \
+    --lpos ur\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_active_pres.pdf \
+    < R/segmentation_dc.R
+  
+  echo "Segmentation DC: router idle"
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 1 --ppd 0 \
+    --lpos bl\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_router_idle_pres.pdf \
+    < R/segmentation_dc.R
+  
+  echo "Segmentation DC: router active"
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 1 --ppd 75 \
+    --lpos bl\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_router_active_pres.pdf \
+    < R/segmentation_dc.R
+}
+
+segmentationPres
+exit 0
 
 echo "segmentation PRR"
 R --slave --no-save --args $dbArgs \
@@ -21,7 +65,6 @@ R --slave --no-save --args $dbArgs \
   --size big --pdf figs/segmentation_prr.pdf \
   < R/segmentation_prr.R
 
-exit 0
 echo "Segmentation DC: leaf idle"
 R --no-save --slave --args $dbArgs\
   --router 0 --ppd 0 \

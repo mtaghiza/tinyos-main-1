@@ -24,6 +24,7 @@ x<-c()
 pdfFile <- ''
 ipi <- 9.5
 maxDepth <- 10.0
+plotPatchSize <- 1
 
 lpos <- c(1,1)
 for (i in seq(argStart, argc-1)){
@@ -87,6 +88,9 @@ for (i in seq(argStart, argc-1)){
       lpos <- c(0,0)
     }
   }
+  if (opt == '--plotPatchSize'){
+    plotPatchSize <- as.numeric(val)
+  }
 }
 
 probeTime <- (0.005/ipi)*60*60*24
@@ -114,6 +118,8 @@ if (pdfFile != ''){
   }else{
     pdf(val, width=8, height=4, title=ylab)
   }
+  print("Plotting to")
+  print(pdfFile)
 }
 
 agg <- ddply(x, .(router, ppd), summarize,
@@ -130,19 +136,33 @@ print(agg)
 x <- x[x$ppd == ppd,]
 x <- x[x$router == router,]
 
-print(
-  ggplot(x, aes(x=1/shorten, y=mtFracFinal, size=patchSize))
-  + scale_y_continuous(limits=c(ymin, ymax))
-  + scale_x_continuous(limits=c(xmin, xmax))
-  + geom_point(alpha=0.75)
-  + theme_bw()
-  + theme(legend.justification=lpos, legend.position=lpos)
-  + scale_size_continuous(name="Patch Size",
-    breaks=c(1, 3, 5, 7, 8))
-  + xlab("Sink Distance (rel. to flat)")
-  + ylab(ylab)
-#  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
-)
+if (plotPatchSize == 1){
+  print(
+    ggplot(x, aes(x=1/shorten, y=mtFracFinal, size=patchSize))
+    + scale_y_continuous(limits=c(ymin, ymax))
+    + scale_x_continuous(limits=c(xmin, xmax))
+    + geom_point(alpha=0.75)
+    + theme_bw()
+    + theme(legend.justification=lpos, legend.position=lpos)
+    + scale_size_continuous(name="Patch Size",
+      breaks=c(1, 3, 5, 7, 8))
+    + xlab("Sink Distance (rel. to flat)")
+    + ylab(ylab)
+  #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+  )
+}else{
+  print(
+    ggplot(x, aes(x=1/shorten, y=mtFracFinal))
+    + scale_y_continuous(limits=c(ymin, ymax))
+    + scale_x_continuous(limits=c(xmin, xmax))
+    + geom_point(alpha=0.75)
+    + theme_bw()
+    + theme(legend.justification=lpos, legend.position=lpos)
+    + xlab("Sink Distance (rel. to flat)")
+    + ylab(ylab)
+  #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+  )
+}
 
 if (plotFile){
   g <-dev.off()

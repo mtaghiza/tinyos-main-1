@@ -117,6 +117,9 @@ size <- 'big'
 x <- c()
 pdfFile <- ''
 lpos <- c(0,0)
+plotBW <- 1
+
+filterVal <- ''
 
 for (i in seq(argStart, argc-1)){
   opt <- commandArgs()[i]
@@ -164,6 +167,12 @@ for (i in seq(argStart, argc-1)){
       lpos <- c(0,0)
     }
   }
+  if (opt == '--plotBW'){
+    plotBW <- as.numeric(val)
+  }
+  if (opt == '--filter'){
+    filterVal <- val
+  }
 }
 
 t <- "PRR v. failure rate"
@@ -175,29 +184,9 @@ if (pdfFile != ''){
   }
 }
 
-# agg <- ddply(x, .(bin, f), summarize,
-#   fracSP=mean(prrSP/prrBaseSP),
-#   fracCX=mean(prrCX/prrBaseCX))
-# 
-# linetypes <- c('2 - 2.5',
-#       '2.5 - 3.5',
-#       '3.5 - 4.5',
-#       '> 4.5')
-# x$flood_hc_fac <- as.factor(x$floodHC)
-# print(
-#   ggplot(agg, aes(x=f))
-#   + geom_line(color=2, aes(y=fracSP, linetype=bin, color=2))
-#   + geom_point(color=2, shape=2, aes(y=fracSP))
-#   + geom_line(color=1, aes(y=fracCX, linetype=bin, color=1))
-#   + geom_point(color=1, shape=1, aes(y=fracCX))
-#   + xlab('Node Failure Rate')
-#   + ylab('Normalized PRR')
-#   + theme_bw()
-#   + scale_linetype_discrete(name="Flood Distance")
-#   + scale_shape_discrete(name='mode')
-#   + theme(legend.justification=lpos, legend.position=lpos)
-#   #Why can't i get the fucking color to show up?
-# )
+if (filterVal != ''){
+  x <- x[x$type == filterVal,]
+}
 
 if (plotType == 'normalized'){
   agg <- ddply(x, .(type, bin, f), summarize,
@@ -222,19 +211,38 @@ if(plotType == 'absolute'){
   agg <- ddply(x, .(type, bin, f), summarize,
     prr = mean(prr),
     hc = mean(hc))
-  print (
-    ggplot(agg, aes(x=f,y=prr, linetype=bin, shape=type, group=interaction(type, bin)))
-    + geom_line()
-    + geom_point(size=3)
-    + xlab('Node Failure Rate')
-    + ylab('PRR')
-    + scale_shape_discrete(name='Nodes Used',
-      breaks=c('cx', 'sp'),
-      labels=c('CXFS', 'Shortest Path'))
-    + scale_linetype_discrete(name='Average Flood Distance (Hops)')
-    + theme_bw()
-    + theme(legend.justification=lpos, legend.position=lpos)
-  )
+  if (plotBW){
+    print (
+      ggplot(agg, aes(x=f,y=prr, linetype=bin, shape=type, group=interaction(type, bin)))
+      + geom_line()
+      + geom_point(size=3)
+      + xlab('Node Failure Rate')
+      + ylab('PRR')
+      + scale_shape_discrete(name='Nodes Used',
+        breaks=c('cx', 'sp'),
+        labels=c('CXFS', 'Shortest Path'))
+      + scale_linetype_discrete(name='Average Flood Distance (Hops)')
+      + theme_bw()
+      + theme(legend.justification=lpos, legend.position=lpos)
+    )
+  }else{
+    print (
+      ggplot(agg, aes(x=f,y=prr, linetype=bin, color=type, group=interaction(type, bin)))
+      + geom_line()
+      + geom_point(size=3)
+      + xlab('Node Failure Rate')
+      + ylab('PRR')
+      + scale_y_continuous(limits=c(0,1))
+      + scale_color_manual(name='Nodes Used',
+        values=c('sp'='red', 'cx'='blue'),
+        labels=c('sp'='Shortest Path', 'cx'='CXFS'))
+      + scale_linetype_discrete(name='Average Flood Distance (Hops)')
+      + theme_bw()
+      + theme(legend.justification=lpos, legend.position=lpos)
+    )
+
+  }
+
 }
 
 if (plotFile){
