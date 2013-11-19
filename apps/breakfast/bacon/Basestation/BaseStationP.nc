@@ -57,7 +57,9 @@ module BaseStationP @safe() {
   uses interface Leds;
   
   //bookkeeping
-  uses interface Pool<message_t>;
+  uses interface Pool<message_t> as OutgoingPool;
+  uses interface Pool<message_t> as ControlPool;
+  uses interface Pool<message_t> as IncomingPool;
   uses interface Queue<queue_entry_t> as RadioRXQueue;
   uses interface Queue<queue_entry_t> as SerialRXQueue;
   uses interface Queue<queue_entry_t> as RadioTXQueue;
@@ -151,7 +153,7 @@ implementation
       cdbg(BASESTATION, "Radio full\r\n");
       cflushdbg(BASESTATION);
       return msg;
-    } else if (call Pool.empty()){
+    } else if (call IncomingPool.empty()){
       cerror(BASESTATION, "Pool empty fwdR\r\n");
       cflusherror(BASESTATION);
       return msg;
@@ -163,7 +165,7 @@ implementation
       call RadioRXQueue.enqueue(qe);
       post prepareSerial();
       cdbg(BASESTATION, "G fwdR\r\n");
-      return call Pool.get();
+      return call IncomingPool.get();
     }
   }
 
@@ -217,7 +219,7 @@ implementation
   event void SerialSend.sendDone[am_id_t id](message_t* msg, error_t error) {
     serialSending = FALSE;
     cdbg(BASESTATION, "P fwdR\r\n");
-    call Pool.put(msg);
+    call IncomingPool.put(msg);
     post txSerial();
   }
   
@@ -226,7 +228,7 @@ implementation
   task void txRadio();
 
   task void sendIDResponse(){
-    message_t* m = call Pool.get();
+    message_t* m = call ControlPool.get();
     if (m != NULL){
       identify_response_t* pl = call SerialPacket.getPayload(m,
         sizeof(identify_response_t));
@@ -241,7 +243,7 @@ implementation
   }
 
   event void IDResponseSend.sendDone(message_t* m, error_t error){
-    call Pool.put(m);
+    call ControlPool.put(m);
   }
 
   message_t* fsMsg = NULL;
@@ -252,13 +254,13 @@ implementation
       call SerialRXQueue.size(),
       call SerialRXQueue.maxSize() - call SerialRXQueue.size());
     if (fsMsg == NULL){
-      fsMsg = call Pool.get();
+      fsMsg = call ControlPool.get();
       if (fsMsg != NULL) {
         error_t error;
         fwd_status_t* pl = call FwdStatusSend.getPayload(fsMsg,
           sizeof(fwd_status_t));
         call SerialPacket.clear(fsMsg);
-        pl -> queueCap = (call SerialRXQueue.maxSize()) - (call SerialRXQueue.size());
+        pl -> queueCap = call OutgoingPool.size();
         call SerialAMPacket.setSource(fsMsg, 
           call ActiveMessageAddress.amAddress());
         error = call FwdStatusSend.send(0, fsMsg, sizeof(fwd_status_t));
@@ -266,7 +268,7 @@ implementation
           cerror(BASESTATION, "Send fs msg %x\r\n",
             error);
           cflushdbg(BASESTATION);
-          call Pool.put(fsMsg);
+          call ControlPool.put(fsMsg);
           fsMsg = NULL;
         }
       }else{
@@ -279,7 +281,7 @@ implementation
 
   event void FwdStatusSend.sendDone(message_t* msg, error_t error){
     if (msg == fsMsg){
-      call Pool.put(fsMsg);
+      call ControlPool.put(fsMsg);
       fsMsg = NULL;
     }else{
       cerror(BASESTATION, "Mystery packet FSS.SD %p != %p\r\n",
@@ -305,7 +307,7 @@ implementation
       cflushdbg(BASESTATION);
       return msg;
     } else {
-      message_t* ret = call Pool.get();
+      message_t* ret = call OutgoingPool.get();
       if (ret == NULL){
         cerror(BASESTATION, "Pool empty fwdS\r\n");
         cflusherror(BASESTATION);
@@ -405,14 +407,14 @@ implementation
     radioSending = FALSE;
     cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");
-    call Pool.put(msg);
+    call OutgoingPool.put(msg);
     cdbg(BASESTATION, "G ackR\r\n");
     post queueReport();
     post txRadio();
   }
 
   event void CXDownloadStartedSend.sendDone(message_t* msg, error_t error){
-    call Pool.put(msg);
+    call ControlPool.put(msg);
     post txRadio();
   }
 
@@ -428,12 +430,12 @@ implementation
 
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
-    if (!call Pool.empty()){
+    if (!call ControlPool.empty()){
       downloadPl = pl;
       downloadMsg = msg;
       post startDownload();
       cdbg(BASESTATION, "G cxd\r\n");
-      return call Pool.get();
+      return call ControlPool.get();
     }else{
       cerror(BASESTATION, "DownloadRX: pool empty\r\n");
       cflusherror(BASESTATION);
@@ -447,14 +449,14 @@ implementation
       activeNS = downloadPl->networkSegment;
     }
     cdbg(BASESTATION, "P cxd\r\n");
-    call Pool.put(downloadMsg);
+    call ControlPool.put(downloadMsg);
     post ackDownload();
   }
 
   task void ackDownload(){
     message_t* ackMsg;
     cdbg(BASESTATION, "G ackD\r\n");
-    ackMsg = call Pool.get();
+    ackMsg = call ControlPool.get();
     if (ackMsg != NULL){
       cx_download_started_t* pl = call CXDownloadStartedSend.getPayload(ackMsg,
         sizeof(cx_download_started_t));
@@ -469,7 +471,7 @@ implementation
         cdbg(BASESTATION, "Couldn't ack download %x\r\n", error);
         cflushdbg(BASESTATION);
         cdbg(BASESTATION, "P ackD!\r\n");
-        call Pool.put(ackMsg);
+        call ControlPool.put(ackMsg);
       }
     }
   }
@@ -484,7 +486,7 @@ implementation
     message_t* ctrlMsg;
     printfflush();
     cdbg(BASESTATION, "G rf\r\n");
-    ctrlMsg = call Pool.get();
+    ctrlMsg = call ControlPool.get();
     if (ctrlMsg != NULL){
       cx_download_finished_t* pl = call CXDownloadFinishedSend.getPayload(ctrlMsg, sizeof(cx_download_finished_t));
       error_t error;
@@ -496,10 +498,13 @@ implementation
         sizeof(cx_download_finished_t));
       if (error != SUCCESS){
         cdbg(BASESTATION, "P rf!\r\n");
-        call Pool.put(ctrlMsg);
+        call ControlPool.put(ctrlMsg);
       }else{
-        cinfo(BASESTATION, "DownloadFinishedSend.send %x pool %u min %u\r\n",
-          error, call Pool.size(), call Pool.minFree());
+        cinfo(BASESTATION, "DownloadFinishedSend.send %x ctrl %u/%u incoming %u/%u outgoing %u/%u\r\n",
+          error, 
+          call ControlPool.size(), call ControlPool.minFree(), 
+          call IncomingPool.size(), call IncomingPool.minFree(), 
+          call OutgoingPool.size(), call OutgoingPool.minFree());
         cflushdbg(BASESTATION);
       }
     }else{
@@ -511,7 +516,7 @@ implementation
 
   event void CXDownloadFinishedSend.sendDone(message_t* msg, error_t error){
     cdbg(BASESTATION, "P rf\r\n");
-    call Pool.put(msg);
+    call ControlPool.put(msg);
   }
 
   event message_t* StatusReceive.receive(message_t* msg, void* pl,
@@ -550,7 +555,7 @@ implementation
     } else {
       error_t error = call EosSend.send(0, eosMsg, sizeof(cx_eos_report_t));
       if (error != SUCCESS){
-        call Pool.put(eosMsg);
+        call ControlPool.put(eosMsg);
         eosMsg = NULL;
         cerror(BASESTATION, "EOS fail: %x\r\n", error);
       }
@@ -562,7 +567,7 @@ implementation
     printf("EOS %x %x\r\n", owner, status);
     //construct EOS packet and post task to send it
     if (eosMsg == NULL){
-      eosMsg = call Pool.get();
+      eosMsg = call ControlPool.get();
       if (eosMsg){
         cx_eos_report_t* pl = call EosSend.getPayload(eosMsg,
           sizeof(cx_eos_report_t));
@@ -576,7 +581,7 @@ implementation
   }
 
   event void EosSend.sendDone(message_t* msg, error_t error){
-    call Pool.put(msg);
+    call ControlPool.put(msg);
     eosMsg = NULL;
     if (error != SUCCESS){
       cerror(BASESTATION, "EOS sd %x\r\n", error);
