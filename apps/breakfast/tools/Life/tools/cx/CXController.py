@@ -115,50 +115,22 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
         refListener.downloadStart = d.mif.downloadStart(bsId, 
           networkSegment)
         error = TOS.SUCCESS
-        #TODO: add readNext to MoteIF
-        #  - should block on an EOS message
-        #  - if the message says "download finished" then we're done
-        #  - if the message indicates a node was contacted and it had
-        #    no data left at the end of the slot, then check for gaps
-        #    in its data
-        #  - if gaps are found, then construct the request and put it
-        #    in
-
-        if requestMissing:
-            (request_list, allGaps)  = db.findMissing()
-            print "Recovery requests: ", request_list
-            print "All gaps: ", allGaps
-            for request in request_list:
-                if request['node_id'] != bsId:
-                    msg = CxRecordRequestMsg.CxRecordRequestMsg()
-                    msg.set_node_id(request['node_id'])
-                    msg.set_cookie(request['nextCookie'])
-                    msg.set_length(min(request['missing'], constants.MAX_REQUEST_UNIT))
-        #             if request['missing'] < MAX_PACKET_PAYLOAD:
-        #                 msg.set_length(request['missing'])
-        #             else:
-        #                 msg.set_length(MAX_PACKET_PAYLOAD)
-                    print "requesting %u at %u from %u"%(msg.get_length(),
-                      msg.get_cookie(), msg.get_node_id())
-                    error = d.send(msg, msg.get_node_id())
-                    print "Request status: %x"%error
-                    
-                    if error:
-                        break
+        while not d.mif.finishedListener.finished:
+            eos = d.mif.readNext()
+            if eos and eos.get_status() == 1 and requestMissing:
+                if eos.get_owner() == bsId:
+                    print "Skip BS pseudo cookie"
                 else:
-                    print "Skip BS pseudo-cookie"
-        else:
-            print "Skip recovery"
-
-        if error:
-            print "Download failed: %x"%error
-            pass
-        else: 
-            #TODO: we should send repair requests out first (since
-            #  controller gets to go first)
-            print "starting download wait"
-            d.mif.downloadWait()
-            print "ending download wait"
+                    missingT = db.nodeMissing(eos.get_owner())
+                    if missingT:
+                        (node_id, cookie, nextCookie, missing, retry) = missingT
+                        msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                        msg.set_node_id(node_id)
+                        msg.set_cookie(nextCookie)
+                        msg.set_length(min(missing, constants.MAX_REQUEST_UNIT))
+                        print "requesting %u at %u from %u"%(msg.get_length(),
+                          msg.get_cookie(), msg.get_node_id())
+                        d.send(msg, msg.get_node_id())
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:

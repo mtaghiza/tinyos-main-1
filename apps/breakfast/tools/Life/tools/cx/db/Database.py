@@ -57,8 +57,10 @@ class Database(object):
 #         print "RAW",message.addr, time.time(), message.am_type, message.data
 
     def findMissing(self, incrementRetries=True):
-        
         return self.missing.findMissing(incrementRetries)
+
+    def nodeMissing(self, node, incrementRetries=True):
+        return self.missing.nodeMissing(node, incrementRetries)
     
     def stop(self):
         self.insert.stop()

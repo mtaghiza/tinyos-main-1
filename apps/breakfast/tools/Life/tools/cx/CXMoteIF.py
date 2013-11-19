@@ -22,18 +22,20 @@ from tools.cx.messages import CxEosReport
 
 import tools.cx.constants as constants
 
+from threading import Thread
+
 class MultipleSourceException(Exception):
     pass
 
 class CXMoteIF(MoteIF):
     def __init__(self):
         MoteIF.__init__(self)
+        self.txQueue = Queue.Queue()
         self.ackQueue = Queue.Queue()
         self.addListener(CtrlAckListener(self.ackQueue),
           CtrlAck)
-        self.fwdStatusQueue = Queue.Queue()
-        self.addListener(FwdStatusListener(self.fwdStatusQueue),
-          FwdStatus)
+        self.fwdStatusListener = FwdStatusListener()
+        self.addListener(self.fwdStatusListener, FwdStatus)
         self.finishedListener = CxDownloadFinishedListener()
         self.addListener(self.finishedListener, CxDownloadFinished)
 
@@ -47,6 +49,11 @@ class CXMoteIF(MoteIF):
 
         self.fwdStatusTimeout = 60
         self.source = None
+        self.sendWorkerThread = Thread(target=self.sendWorker,
+          name="sendWorker")
+        self.sendWorkerThread.daemon = True
+        self.sendWorkerThread.start()
+
 
     def identifyMote(self):
         identifyRequestMsg = IdentifyRequest()
@@ -134,6 +141,24 @@ class CXMoteIF(MoteIF):
           downloadMsg.get_amType(), 0, downloadMsg)
         #return the unix time that the download command was sent
         return (time.time() + t0)/2
+
+    def sendWorker(self):
+        while not self.finishedListener.finished:
+            try:
+                (source, addr, msg) = self.txQueue.get(True, 0.1)
+                while not self.fwdStatusListener.spaceFree and not self.finishedListener.finished:
+                    with self.fwdStatusListener.cv:
+                        #check in on the status and whether or not the
+                        # thread is finished
+                        self.fwdStatusListener.wait(1.0)
+
+                if not self.finishedListener.finished:
+                    self.sendMsg(source, addr, msg.get_amType(), 0, msg)
+                else:
+                    pass
+            except Queue.Empty:
+                #OK, we didn't get a transmit in the last second.
+                pass
         
     def send(self, addr, msg, source=None):
         if addr == self.bsId:
@@ -141,31 +166,11 @@ class CXMoteIF(MoteIF):
             return TOS.EINVAL
         if not source:
             source = self.source
-        queueCap = 0
-        retries = 0
-        print "Sending", msg, "to", addr
-        self.sendMsg(source, addr, msg.get_amType(), 0, msg)
-        while not queueCap:
-            try:
-                m = self.fwdStatusQueue.get(True,
-                  self.fwdStatusTimeout)
-                print "dequeue fwd status", m
-                if m:
-                    queueCap = m.get_queueCap()
-            except Queue.Empty:
-                print "No fwd status received"
-                return TOS.ENOACK
+        self.txQueue.put( (source, addr, msg))
         return TOS.SUCCESS
 
-    #TODO: replace downloadWait with eosWait 
-    # - This should return either a download-finished or a status
-    #   report on the node whose slot just ended
-
-    def downloadWait(self):
-        print "Waiting for download to finish"
-        while not self.finishedListener.finished:
-            with self.finishedListener.finishedCV:
-                self.finishedListener.finishedCV.wait()
+    def readNext(self):
+        return self.eosQueue.get(5.0)
 
     def clearRXQueue(self):
         time.sleep(1)
