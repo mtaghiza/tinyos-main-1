@@ -341,8 +341,7 @@ generic module RecordPushRequestP() {
     recordMsgPtr->nextCookie = call LogRead.currentOffset();
 
     state = S_SENDING;
-    
-    (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (call LogNotify.getOutstanding() > recordsRead);
+    (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (call LogNotify.getOutstanding() > recordsRead) || requestInQueue;
     // use fixed packet size or variable packet size
     error = call AMSend.send(call Get.get(), 
       msg,
