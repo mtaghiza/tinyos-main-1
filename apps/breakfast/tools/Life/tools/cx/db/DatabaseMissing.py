@@ -23,6 +23,17 @@ class DatabaseMissing(object):
       AND l.retry < 5
       ORDER BY l.node_id, l.cookie'''
 
+    TOTAL_MISSING_BY_NODE= '''SELECT 
+        sum(r.cookie - l.nextCookie -1) as totalMissing
+      FROM sorted_flash l
+      JOIN sorted_flash r
+        ON l.node_id=r.node_id and l.ROWID+1=r.ROWID
+      WHERE l.node_id=?
+        AND r.cookie - l.nextCookie > 0
+        AND l.retry < 5
+      GROUP BY l.node_id'''
+
+
     MISSING_ORDER_SIZE_SQL = '''SELECT l.node_id, 
       l.cookie, l.nextCookie,
       (r.cookie - l.nextCookie -1) as missing,
@@ -73,7 +84,14 @@ class DatabaseMissing(object):
         # and find missing segments by comparing lengths and cookies
         self.connection.execute(DatabaseMissing.SORT_COOKIE_SQL)
         results = self.connection.execute(DatabaseMissing.MISSING_ORDER_SIZE_NODE_SQL, (node,))
-        return results.fetchone()
+        repairInfo = results.fetchone()
+        if repairInfo:
+            results = self.connection.execute(DatabaseMissing.TOTAL_MISSING_BY_NODE,
+              (node,))
+            (totalMissing,) = results.fetchone()
+            return (repairInfo, totalMissing)
+        else:
+            return repairInfo
         
 
     def findMissing(self, incrementRetries=True):
@@ -93,7 +111,7 @@ class DatabaseMissing(object):
         #results = self.connection.fetchall()
 
         last_result = None
-        missing_list = []
+        missingMap = {}
 
         # get first entry for each node_id, increment the retry counter
         # and remove old records from the source table
@@ -104,7 +122,7 @@ class DatabaseMissing(object):
                 last_result = res[0]
                 
                 hash = {'node_id':res[0], 'cookie':res[1], 'nextCookie':res[2], 'missing':res[3], 'retry':res[4]}
-                missing_list.append(hash)
+                missingMap[res[0]] = hash
                 
                 if incrementRetries:
                     node_id_field = res[0]
@@ -118,7 +136,7 @@ class DatabaseMissing(object):
         
         self.connection.commit()
 
-        return (missing_list, allMissing)
+        return (missingMap, allMissing)
         
         #row = [node_id, time.time(), cookie, length]
         #self.cursor.execute('INSERT INTO cookie_table (node_id, base_time, cookie, length) VALUES (?,?,?,?)', row)        

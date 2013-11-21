@@ -77,6 +77,7 @@ class Dispatcher(object):
 
 def download(packetSource, networkSegment=constants.NS_GLOBAL,
         configMap={}, configFile=None, refCallBack=None,
+        eosCallBack=None, repairCallBack=None,
         finishedCallBack=None, requestMissing=True):
     print packetSource
     db = Database.Database()
@@ -108,6 +109,15 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
 
     refListener = StatusTimeRefListener.StatusTimeRefListener(db, refCallBack)
     d.mif.addListener(refListener, CxStatus.CxStatus)
+    
+    # How to prevent the download from completing too fast (before we
+    #   can do repairs)
+    # - base station should stay active until it gets an all-clear
+    #   message (just mark itself as having data pending at every eos
+    #   event)
+    # - at base station EOS (after the initial contact): terminate keep-alives if we've gone
+    #   through at least one download cycle and none of the contacted nodes
+    #   have missing data.
 
     try:
         print "Wakeup start", time.time()
@@ -115,22 +125,43 @@ def download(packetSource, networkSegment=constants.NS_GLOBAL,
         refListener.downloadStart = d.mif.downloadStart(bsId, 
           networkSegment)
         error = TOS.SUCCESS
+        firstContact = True
+        nodes=set()
         while not d.mif.finishedListener.finished:
             eos = d.mif.readNext()
-            if eos and eos.get_status() == 1 and requestMissing:
-                if eos.get_owner() == bsId:
-                    print "Skip BS pseudo cookie"
-                else:
-                    missingT = db.nodeMissing(eos.get_owner())
-                    if missingT:
-                        (node_id, cookie, nextCookie, missing, retry) = missingT
-                        msg = CxRecordRequestMsg.CxRecordRequestMsg()
-                        msg.set_node_id(node_id)
-                        msg.set_cookie(nextCookie)
-                        msg.set_length(min(missing, constants.MAX_REQUEST_UNIT))
-                        print "requesting %u at %u from %u"%(msg.get_length(),
-                          msg.get_cookie(), msg.get_node_id())
-                        d.send(msg, msg.get_node_id())
+            if eos:
+                if eos.get_owner() != bsId:
+                    nodes.add(eos.get_owner())
+                if eosCallBack:
+                    eosCallBack(eos.get_owner(), eos.get_status())
+                if eos.get_status() == 1 and requestMissing:
+                    if eos.get_owner() == bsId:
+                        if firstContact:
+                            firstContact = False
+                        else:
+                            pass
+#                             (missingMap, allMissing) = db.findMissing(incrementRetries=False)
+#                             outstandingNodes = nodes & set(missingMap.keys())
+#                             if outstandingNodes:
+#                                 print "Gaps remain, keep-alive", outstandingNodes
+#                                d.mif.keepAlive(bsId)
+                        print "Skip BS pseudo cookie"
+                    else:
+                        missingT = db.nodeMissing(eos.get_owner())
+                        totalMissing=-1
+#                         totalMissing = db.totalMissing(eos.get_owner()
+                        if missingT:
+                            ((node_id, cookie, nextCookie, missing, retry), totalMissing) = missingT
+                            msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                            msg.set_node_id(node_id)
+                            msg.set_cookie(nextCookie)
+                            msg.set_length(min(missing, constants.MAX_REQUEST_UNIT))
+                            print "requesting %u at %u from %u"%(msg.get_length(),
+                              msg.get_cookie(), msg.get_node_id())
+                            if repairCallBack:
+                                repairCallBack(msg.get_node_id(),
+                                  msg.get_length(), totalMissing)
+                            d.send(msg, msg.get_node_id())
 
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:

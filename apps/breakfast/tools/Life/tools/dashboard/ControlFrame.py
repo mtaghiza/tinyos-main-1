@@ -73,6 +73,7 @@ class ControlFrame(Frame):
         if not self.progressWindow:
             self.progressWindow = ProgressWindow(self.removeProgressWindow)
         self.progressWindow.addMessage(message)
+        print "PROG %.2f %s"%(time.time(), message,),
 
     def deviceDetection(self):
         """ Detect serial devices by using the built-in comports command in pyserial.
@@ -343,6 +344,8 @@ class ControlFrame(Frame):
         CXController.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
+          eosCallBack=self.eosCallBack,
+          repairCallBack=self.repairCallBack,
           finishedCallBack=self.downloadFinished,
           requestMissing=self.repairVar.get())
 
@@ -388,6 +391,17 @@ class ControlFrame(Frame):
 
     def refCallBack(self, node, neighbors):
         self.progressMessage("Contacted %x (%u neighbors).\n"%(node, len(neighbors)))
+
+    def eosCallBack(self, node, status):
+        if status == 0:
+            self.progressMessage("Node %x NOT reached\n"%(node,))
+        if status == 1:
+            self.progressMessage(" Node %x transfer completed\n"%(node,))
+        if status == 2:
+            self.progressMessage(" Node %x transfer continues\n"%(node,))
+
+    def repairCallBack(self, node, length, totalMissing):
+        self.progressMessage("Node %x request %u (missing: %u)\n"%(node, length, totalMissing))
     
     def commitChanges(self):
         print "Commit Changes"
