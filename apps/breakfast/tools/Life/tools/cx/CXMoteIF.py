@@ -150,7 +150,7 @@ class CXMoteIF(MoteIF):
                     with self.fwdStatusListener.cv:
                         #check in on the status and whether or not the
                         # thread is finished
-                        self.fwdStatusListener.wait(1.0)
+                        self.fwdStatusListener.cv.wait(1.0)
 
                 if not self.finishedListener.finished:
                     self.sendMsg(source, addr, msg.get_amType(), 0, msg)
