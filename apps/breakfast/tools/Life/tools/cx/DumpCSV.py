@@ -97,7 +97,8 @@ queries=[
     (base_time*beta + alpha) as ts, 
     2.0*(battery/4096.0)*2.5 as batteryVoltage,
     (light/4096.0)*2.5 as lightVoltage,
-    (thermistor/4096.0)*2.5 as thermistorVoltage
+    (thermistor/4096.0)*2.5 as thermistorVoltage,
+    fits.r_sq as tsQuality
   FROM bacon_sample_flat bsf
   JOIN fits 
     ON fits.node1=bsf.node_id AND fits.rc1=bsf.reboot_counter
@@ -107,7 +108,8 @@ queries=[
   '''CREATE TABLE sensor_sample_final AS
   SELECT ssf.bacon_id, ssf.toast_id, ssf.sensor_type, ssf.channel_number, ssf.sensor_id, 
     (base_time*beta + alpha) as ts,
-    (sample/4096.0)*2.5 as voltage
+    (sample/4096.0)*2.5 as voltage,
+    fits.r_sq as tsQuality
   FROM sensor_sample_flat ssf
   JOIN fits 
     ON fits.node1=ssf.node_id AND fits.rc1=ssf.reboot_counter
@@ -145,7 +147,8 @@ queries=[
     '''CREATE TABLE current_sensors_final AS
        SELECT bacon_barcode, toast_barcode, 
           (time*beta+alpha) as ts,
-          channel_number, sensor_type, sensor_id
+          channel_number, sensor_type, sensor_id,
+          fits.r_sq as tsQuality
        FROM current_sensors 
        LEFT JOIN fits
        ON fits.node1 = current_sensors.node_id
@@ -167,11 +170,11 @@ def dump(dbName, baseDir, sep=','):
     if not os.path.isdir(baseDir):
         os.mkdir(baseDir)
     internalCols= ["bacon_id", "unixTS", "isoTS", "date", "time", "batteryVoltage",
-      "lightVoltage", "thermistorVoltage"]
+      "lightVoltage", "thermistorVoltage", "tsQuality"]
     externalCols= ["sensor_type", "bacon_id", "toast_id", 
-      "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage"]
+      "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage", "tsQuality"]
     sensorCols = ["bacon_id", "toast_id", "unixTS", "isoTS", "date",
-      "time", "channel", "sensorType", "sensorId"]
+      "time", "channel", "sensorType", "sensorId", "tsQuality"]
     c = sqlite3.connect(dbName)
     with open(os.path.join(baseDir, 'internal.csv'), 'w') as f:
         with c:
@@ -179,13 +182,13 @@ def dump(dbName, baseDir, sep=','):
               datetime(ts, 'unixepoch', 'localtime'), 
               date(ts, 'unixepoch', 'localtime'), 
               time(ts, 'unixepoch', 'localtime'), 
-              batteryVoltage, lightVoltage, thermistorVoltage
+              batteryVoltage, lightVoltage, thermistorVoltage, tsQuality
             FROM bacon_sample_final ORDER BY barcode_id, ts'''
             f.write(sep.join(internalCols) +'\n')
-            for (bacon_id, unixTS, isoTS, date, time, bv, lv, tv) in c.execute(q).fetchall():
+            for (bacon_id, unixTS, isoTS, date, time, bv, lv, tv, tsq) in c.execute(q).fetchall():
                 #f.write(sep.join([str(col) for col in row]) + '\n')
                 f.write(sep.join([bacon_id, "%.2f"%unixTS, isoTS,
-                date, time, "%.4f"%bv, "%.4f"%lv, "%.4f"%tv])+"\n")
+                date, time, "%.4f"%bv, "%.4f"%lv, "%.4f"%tv, "%.4f"%tsq])+"\n")
 
     #baseDir/<sensorType>.csv
     with c:
@@ -197,14 +200,15 @@ def dump(dbName, baseDir, sep=','):
                 datetime(ts, 'unixepoch', 'localtime') as isoTS, 
                 date(ts, 'unixepoch', 'localtime'), 
                 time(ts, 'unixepoch', 'localtime'), 
-                voltage
+                voltage, tsQuality
                 FROM sensor_sample_final WHERE sensor_type=? ORDER BY
                 bacon_id, toast_id, sensor_id, ts'''
                 for (sensor_type, bacon_id, toast_id, sensor_channel, 
-                  sensor_id, unixTS, isoTS, date, time, voltage) in c.execute(q, (st,)).fetchall():
+                  sensor_id, unixTS, isoTS, date, time, voltage, tsq) in c.execute(q, (st,)).fetchall():
                     f.write(sep.join([str(sensor_type), bacon_id,
                     toast_id, str(sensor_channel), str(sensor_id), 
-                    "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage])+'\n')
+                    "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage,
+                    "%.4f"%tsq])+'\n')
 
     with c:
         q = '''SELECT bacon_barcode, toast_barcode, 
@@ -213,22 +217,22 @@ def dump(dbName, baseDir, sep=','):
                 date(ts, 'unixepoch', 'localtime'), 
                 time(ts, 'unixepoch', 'localtime'), 
                 channel_number+1,
-                sensor_type, sensor_id
+                sensor_type, sensor_id,
+                tsQuality
                FROM current_sensors_final'''
         with open(os.path.join(baseDir, 'sensors.csv'), 'w') as f:
             f.write(sep.join(sensorCols)+'\n')
-            for (bacon_id, toast_id, unixTS, isoTS, date, time, channel, sensorType, sensorId) in c.execute(q).fetchall():
+            for (bacon_id, toast_id, unixTS, isoTS, date, time, channel, sensorType, sensorId, tsq) in c.execute(q).fetchall():
                 f.write(sep.join([bacon_id, toast_id, "%.2f"%unixTS, isoTS, date,
-                  time, str(channel), str(sensorType), hex(sensorId)])+'\n')
+                  time, str(channel), str(sensorType), hex(sensorId),
+                  "%.4f"%tsq])+'\n')
 
 
 
 def dumpCSV(dbName='database0.sqlite', baseDir='data'):
     print "Dumping from %s to %s"%(dbName, baseDir)
-    print "Generating timestamp tables"
-    Phoenix.rebuildTables(dbName)
-    print "computing timestamp fits"
-    Phoenix.computeFits(dbName)
+    print "Generating timestamp information"
+    Phoenix.phoenix(dbName)
     print "formatting data"
     deNormalize(dbName)
     print "dumping to .csv files"

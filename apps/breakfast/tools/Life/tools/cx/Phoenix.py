@@ -61,6 +61,70 @@ def computeFits(dbName):
     #            (this is the distance metric that jay spent so much
     #            time thinking about)
 
+def approxFits(dbName):
+    c = sqlite3.connect(dbName)
+
+    q0 = '''SELECT x.node_id as node_id, min(x.reboot_counter) as reboot_counter
+      FROM 
+      (
+        SELECT distinct node_id, reboot_counter FROM
+        (
+          SELECT node_id, reboot_counter FROM bacon_sample
+          UNION
+          SELECT node_id, reboot_counter FROM toast_sample
+        )
+      ) x 
+      LEFT JOIN fits ON x.node_id = fits.node1 AND x.reboot_counter=fits.rc1
+      LEFT JOIN unmatched ON unmatched.node_id = x.node_id AND unmatched.reboot_counter = x.reboot_counter
+      WHERE fits.node1 IS NULL
+      AND unmatched.node_id IS NULL
+      GROUP BY x.node_id'''
+
+    q1 = '''SELECT fits.node1, fits.rc1, fits.alpha+fits.beta*max(base_time), fits.beta
+      FROM fits 
+      JOIN (
+      SELECT fits.node1 as node1, max(rc1) as rc
+      FROM fits
+      WHERE fits.node1=?
+        AND rc1 < ?
+      ) maxRC ON fits.node1=maxRC.node1 and fits.rc1 = maxRC.rc
+      JOIN (
+        SELECT node_id, reboot_counter, base_time 
+        FROM bacon_sample
+        UNION
+        SELECT node_id, reboot_counter, base_time 
+        FROM toast_sample
+      ) sampleTimes ON sampleTimes.node_id=maxRC.node1
+      AND sampleTimes.reboot_counter = maxRC.rc'''
+
+    q2 = '''INSERT INTO fits 
+      (node1, rc1, node2, rc2, alpha, beta, r_sq) 
+      VALUES (?, ?, NULL, NULL, ?, ?, ?)'''
+
+    q3 = '''CREATE TEMPORARY TABLE UNMATCHED (
+      node_id INTEGER, 
+      reboot_counter INTEGER)'''
+
+    q4 = '''INSERT INTO unmatched 
+      (node_id, reboot_counter)
+      VALUES (?, ?)'''
+
+    c.execute(q3)
+    needFits = c.execute(q0).fetchall()
+    while needFits:
+        for (node_id, reboot_counter) in needFits:
+            lastFit = c.execute(q1, (node_id, reboot_counter)).fetchone()
+            if lastFit and not lastFit[0] is None:
+                (node1, rc1, fakeAlpha, lastBeta) = lastFit
+                print "Approximate fit for (%u, %u) "%(node_id, reboot_counter)
+                c.execute(q2, (node_id, reboot_counter, fakeAlpha, lastBeta, -1))
+            else:
+                print "No approximate fit for %u %u"%(node_id, reboot_counter)
+                c.execute(q4, (node_id, reboot_counter))
+        needFits = c.execute(q0).fetchall()
+    c.commit()
+
+
 def rebuildTables(dbName):
     c = sqlite3.connect(dbName)
     q0 = '''DROP TABLE IF EXISTS fits'''
@@ -73,6 +137,7 @@ def rebuildTables(dbName):
 def phoenix(dbName):
     rebuildTables(dbName)
     computeFits(dbName)
+    approxFits(dbName)
 
 if __name__ == '__main__':
     dbName = sys.argv[1]
