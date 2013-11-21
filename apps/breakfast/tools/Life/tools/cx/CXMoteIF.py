@@ -147,18 +147,24 @@ class CXMoteIF(MoteIF):
             try:
                 (source, addr, msg) = self.txQueue.get(True, 0.1)
                 while not self.fwdStatusListener.spaceFree and not self.finishedListener.finished:
+                    print "SW W %u %u %x"%(addr, self.fwdStatusListener.spaceFree, self.finishedListener.finished)
                     with self.fwdStatusListener.cv:
                         #check in on the status and whether or not the
                         # thread is finished
                         self.fwdStatusListener.cv.wait(1.0)
-
                 if not self.finishedListener.finished:
-                    self.sendMsg(source, addr, msg.get_amType(), 0, msg)
+                    print "SW TX %u %u %x"%(addr, self.fwdStatusListener.spaceFree, self.finishedListener.finished)
+                    with self.fwdStatusListener.cv:
+                        self.sendMsg(source, addr, msg.get_amType(), 0, msg)
+                        self.fwdStatusListener.spaceFree -= 1
                 else:
+                    print "SW DROP %u %u %x"%(addr, self.fwdStatusListener.spaceFree, self.finishedListener.finished)
                     pass
             except Queue.Empty:
                 #OK, we didn't get a transmit in the last second.
                 pass
+
+    
         
     def send(self, addr, msg, source=None):
         if addr == self.bsId:
