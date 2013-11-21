@@ -204,6 +204,7 @@ class ControlFrame(Frame):
         self.repairVar = IntVar()
         self.repairButton = Checkbutton(self.downloadFrame,
           text="Repair", variable=self.repairVar)
+        self.repairButton.select()
         self.repairButton.grid(column=2, row=1)
 
 
