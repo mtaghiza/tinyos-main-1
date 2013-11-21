@@ -37,7 +37,7 @@ module CXMasterP {
   network_membership_t membership;
 
   #ifdef SLOT_LIMIT
-  uint8_t slotsLeft;
+  uint16_t slotsLeft;
   #endif
 
   command am_addr_t GetRoot.get[uint8_t ns](){

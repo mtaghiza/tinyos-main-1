@@ -60,8 +60,8 @@ CFLAGS +=-DCC430_PIN_DEBUG=1
 
 STORAGEDIR = $(TOSDIR)/platforms/bacon/chips/stm25p
 
-SLOT_LIMIT ?= 255
-CFLAGS += -DSLOT_LIMIT=$(SLOT_LIMIT)
+# SLOT_LIMIT ?= 255
+# CFLAGS += -DSLOT_LIMIT=$(SLOT_LIMIT)
 
 include $(TOSROOT)/apps/breakfast/bacon/cxCommon/Makefile
 
