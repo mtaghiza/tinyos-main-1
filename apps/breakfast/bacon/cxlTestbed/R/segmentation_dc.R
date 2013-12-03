@@ -16,6 +16,7 @@ xmax <- 2
 ymin <- 0
 ymax <- 1
 plotType <- 'scatter'
+plotData <- 'relative'
 size <- 'small'
 ppd <- 75
 router<-0
@@ -25,6 +26,7 @@ pdfFile <- ''
 ipi <- 9.5
 maxDepth <- 10.0
 plotPatchSize <- 1
+bw <- 0.02
 
 lpos <- c(1,1)
 for (i in seq(argStart, argc-1)){
@@ -91,6 +93,9 @@ for (i in seq(argStart, argc-1)){
   if (opt == '--plotPatchSize'){
     plotPatchSize <- as.numeric(val)
   }
+  if (opt == '--plotData'){
+    plotData <- val
+  }
 }
 
 probeTime <- (0.005/ipi)*60*60*24
@@ -100,6 +105,10 @@ x$flatTotal <- (probeTime+wakeupTime)+x$flatActive
 x$mtTotal   <- (probeTime+wakeupTime)*(x$router+1)+x$mtActive
 x$mtFracFinal <- x$mtTotal/x$flatTotal
 
+print("Overhead DC Leaf:")
+print((probeTime+wakeupTime)/(24*60*60))
+print("Overhead DC Router:")
+print(2*(probeTime+wakeupTime)/(24*60*60))
 if (ppd == 0){
   ylab <- "Idle"
 }else{
@@ -111,6 +120,8 @@ if (router == 1){
 }else{
   ylab <- paste(ylab, "Leaf Duty Cycle (rel. to flat) [0, 1.0]")
 }
+
+print(x[x$router == 1,])
 
 if (pdfFile != ''){
   if (size == 'small'){
@@ -124,18 +135,29 @@ if (pdfFile != ''){
 
 agg <- ddply(x, .(router, ppd), summarize,
   mtFrac =mean(mtFrac),
-  mtFracFinal =mean(mtFracFinal))
+  mtFracFinal =mean(mtFracFinal),
+  mtTotal = mean(mtTotal)/(24*60*60),
+  flatTotal = mean(flatTotal)/(24*60*60),
+  flatActive = mean(flatActive)/(24*60*60),
+  mtActive = mean(mtActive)/(24*60*60)
+  )
 print(agg)
 
 agg <- ddply(x, .(ppd), summarize,
   mtFrac =mean(mtFrac),
-  mtFracFinal =mean(mtFracFinal))
+  mtFracFinal =mean(mtFracFinal),
+  mtTotal = mean(mtTotal)/(24*60*60),
+  flatTotal = mean(flatTotal)/(24*60*60),
+  flatActive = mean(flatActive)/(24*60*60),
+  mtActive = mean(mtActive)/(24*60*60)
+)
 print(agg)
 
 
 x <- x[x$ppd == ppd,]
 x <- x[x$router == router,]
 
+if (plotType == 'scatter'){
 if (plotPatchSize == 1){
   print(
     ggplot(x, aes(x=1/shorten, y=mtFracFinal, size=patchSize))
@@ -151,17 +173,54 @@ if (plotPatchSize == 1){
   #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
   )
 }else{
-  print(
-    ggplot(x, aes(x=1/shorten, y=mtFracFinal))
-    + scale_y_continuous(limits=c(ymin, ymax))
-    + scale_x_continuous(limits=c(xmin, xmax))
-    + geom_point(alpha=0.75)
-    + theme_bw()
-    + theme(legend.justification=lpos, legend.position=lpos)
-    + xlab("Sink Distance (rel. to flat)")
-    + ylab(ylab)
-  #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
-  )
+  if (plotData == 'relative'){
+    print(
+      ggplot(x, aes(x=1/shorten, y=mtFracFinal))
+      + scale_y_continuous(limits=c(ymin, ymax))
+      + scale_x_continuous(limits=c(xmin, xmax))
+      + geom_point(alpha=0.75)
+      + theme_bw()
+      + theme(legend.justification=lpos, legend.position=lpos)
+      + xlab("Sink Distance (rel. to flat)")
+      + ylab(ylab)
+    #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+    )
+  }else if (plotData == 'mt'){
+    print(
+      ggplot(x, aes(x=1/shorten, y=mtTotal))
+      + scale_y_continuous(limits=c(ymin, ymax))
+      + scale_x_continuous(limits=c(xmin, xmax))
+      + geom_point(alpha=0.75)
+      + theme_bw()
+      + theme(legend.justification=lpos, legend.position=lpos)
+      + xlab("Sink Distance (rel. to flat)")
+      + ylab(ylab)
+    #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+    )
+  }else if (plotData == 'flat'){
+    print(
+      ggplot(x, aes(x=1/shorten, y=flatTotal))
+      + scale_y_continuous(limits=c(ymin, ymax))
+      + scale_x_continuous(limits=c(xmin, xmax))
+      + geom_point(alpha=0.75)
+      + theme_bw()
+      + theme(legend.justification=lpos, legend.position=lpos)
+      + xlab("Sink Distance (rel. to flat)")
+      + ylab(ylab)
+    #  + theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())
+    )
+  }
+}
+} else if (plotType == 'histogram'){
+  if (plotData == 'relative'){
+    print(
+      ggplot(x, aes((1.0-mtFracFinal)-bw/2))
+      + geom_histogram(aes(y=..count../sum(..count..)), binwidth=bw)
+      + theme_bw()
+      + xlab("DC Improvement")
+      + ylab("Fraction of nodes")
+    )
+  }
 }
 
 if (plotFile){

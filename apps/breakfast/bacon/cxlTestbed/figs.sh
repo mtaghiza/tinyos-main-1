@@ -13,6 +13,60 @@ do
   dbArgs="$dbArgs --db $dbf "
 done
 
+function segmentationCheck(){
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 1 --ppd 75 \
+    --lpos ul\
+    --plotData relative\
+    --plotType histogram\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_router_active_rel_hist.pdf \
+    < R/segmentation_dc.R
+
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 75 \
+    --lpos ul\
+    --plotData relative\
+    --plotType histogram\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_active_rel_hist.pdf \
+    < R/segmentation_dc.R
+  exit 0
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 75 \
+    --lpos ul\
+    --plotData flat\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_active_flat.pdf \
+    < R/segmentation_dc.R
+  
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 75 \
+    --lpos ul\
+    --plotData mt\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_active_mt.pdf \
+    < R/segmentation_dc.R
+
+  R --no-save --slave --args $dbArgs\
+    --plotPatchSize 0 \
+    --router 0 --ppd 75 \
+    --lpos ul\
+    --plotData relative\
+    --ymin 0.0 --ymax 2.0 \
+    --xmin 0 --xmax 2.5\
+    --size big --pdf figs/segmentation_dc_leaf_active_relative.pdf \
+    < R/segmentation_dc.R
+}
+
 function segmentationPres(){
   echo "Segmentation DC: leaf idle"
   R --no-save --slave --args $dbArgs\
@@ -55,7 +109,7 @@ function segmentationPres(){
     < R/segmentation_dc.R
 }
 
-segmentationPres
+segmentationCheck
 exit 0
 
 echo "segmentation PRR"
