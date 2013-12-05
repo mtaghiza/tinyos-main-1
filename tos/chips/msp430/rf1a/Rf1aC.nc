@@ -62,7 +62,11 @@ configuration Rf1aC {
 //  Resource = HplRf1aC;
 //  ResourceRequested = HplRf1aC;
 //  ArbiterInfo = HplRf1aC;
-  Rf1aPhysical = HplRf1aC;
+
+  components AmpControlC;
+  Rf1aPhysical = AmpControlC.Rf1aPhysical;
+  AmpControlC.SubRf1aPhysical -> HplRf1aC;
+//  Rf1aPhysical = HplRf1aC;
   Rf1aPhysicalMetadata = HplRf1aC;
   Rf1aTransmitFragment = HplRf1aC;
   Rf1aConfigure = HplRf1aC;
