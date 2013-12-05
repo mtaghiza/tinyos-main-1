@@ -39,6 +39,9 @@ module SlotSchedulerP {
   uses interface StatsLog;
 
   provides interface DownloadNotify[uint8_t ns];
+
+  uses interface Get<uint32_t> as PushCookie;
+  uses interface Get<uint32_t> as WriteCookie;
 } implementation {
 
   enum {
@@ -443,6 +446,9 @@ module SlotSchedulerP {
         call ActiveMessageAddress.amAddress());
       pl -> wakeupRC = call RebootCounter.get();
       pl -> wakeupTS = wakeupStartMilli;
+
+      pl -> pushCookie = call PushCookie.get();
+      pl -> writeCookie = call WriteCookie.get();
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
@@ -1068,4 +1074,11 @@ module SlotSchedulerP {
   default event void DownloadNotify.downloadStarted[uint8_t ns](){}
   default event void DownloadNotify.downloadFinished[uint8_t ns](){}
 
+  default command uint32_t PushCookie.get(){
+    return 0;
+  }
+
+  default command uint32_t WriteCookie.get(){
+    return 0;
+  }
 }

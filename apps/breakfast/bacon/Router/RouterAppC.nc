@@ -36,6 +36,10 @@ configuration RouterAppC{
   RecordPushRequestC.AMSend -> RouterAMSenderC;
   RecordPushRequestC.Packet -> RouterAMSenderC;
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
+
+  components SlotSchedulerC;
+  SlotSchedulerC.PushCookie -> RecordPushRequestC.PushCookie;
+  SlotSchedulerC.WriteCookie -> RecordPushRequestC.WriteCookie;
   #else
   #warning "Disable autopush"
   #endif

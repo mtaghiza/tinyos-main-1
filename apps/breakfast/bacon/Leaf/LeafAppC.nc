@@ -50,6 +50,12 @@ configuration LeafAppC{
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
   RecordPushRequestC.Receive -> AMReceiverC;
   RecordPushRequestC.Get -> CXLeafC.Get[NS_SUBNETWORK];
+
+  components SlotSchedulerC;
+  components RecordPushRequestC;
+  SlotSchedulerC.PushCookie -> RecordPushRequestC.PushCookie;
+  SlotSchedulerC.WriteCookie -> RecordPushRequestC.WriteCookie;
+
   #else
   #warning Autopush disabled!
   #endif

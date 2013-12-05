@@ -19,6 +19,9 @@ generic module RecordPushRequestP() {
   uses interface Get<am_addr_t>;
   uses interface Packet;
   uses interface CXLinkPacket;
+
+  provides interface Get<uint32_t> as PushCookie;
+  provides interface Get<uint32_t> as WriteCookie;
 } implementation {
 
   enum {
@@ -394,8 +397,12 @@ generic module RecordPushRequestP() {
   }
 
 
-  
-
+  command uint32_t PushCookie.get(){
+    return pushCookie;
+  }
+  command uint32_t WriteCookie.get(){
+    return call LogWrite.currentOffset();
+  }
    
 
   //unused

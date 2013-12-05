@@ -11,10 +11,15 @@ configuration SlotSchedulerC{
 
   provides interface Neighborhood;
   provides interface DownloadNotify[uint8_t ns];
+
+  uses interface Get<uint32_t> as PushCookie;
+  uses interface Get<uint32_t> as WriteCookie;
 } implementation {
   components CXWakeupC;
   components SlotSchedulerP;
 
+  SlotSchedulerP.PushCookie = PushCookie;
+  SlotSchedulerP.WriteCookie = WriteCookie;
   components new Timer32khzC() as SlotTimer;
   components new Timer32khzC() as FrameTimer;
   components LocalTimeMilliC;

@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 41
+DEFAULT_MESSAGE_SIZE = 49
 
 # The Active Message type associated with this message.
-AM_TYPE = 0xD3
+AM_TYPE = -1
 
 class CxStatus(tinyos.message.Message.Message):
-    # Create a new CxStatus of size 41.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=41):
+    # Create a new CxStatus of size 49.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=49):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -48,6 +48,14 @@ class CxStatus(tinyos.message.Message.Message):
             pass
         try:
             s += "  [wakeupTS=0x%x]\n" % (self.get_wakeupTS())
+        except:
+            pass
+        try:
+            s += "  [pushCookie=0x%x]\n" % (self.get_pushCookie())
+        except:
+            pass
+        try:
+            s += "  [writeCookie=0x%x]\n" % (self.get_writeCookie())
         except:
             pass
         try:
@@ -337,9 +345,119 @@ class CxStatus(tinyos.message.Message.Message):
         return 32
     
     #
+    # Accessor methods for field: pushCookie
+    #   Field type: long
+    #   Offset (bits): 72
+    #   Size (bits): 32
+    #
+
+    #
+    # Return whether the field 'pushCookie' is signed (False).
+    #
+    def isSigned_pushCookie(self):
+        return False
+    
+    #
+    # Return whether the field 'pushCookie' is an array (False).
+    #
+    def isArray_pushCookie(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'pushCookie'
+    #
+    def offset_pushCookie(self):
+        return (72 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'pushCookie'
+    #
+    def offsetBits_pushCookie(self):
+        return 72
+    
+    #
+    # Return the value (as a long) of the field 'pushCookie'
+    #
+    def get_pushCookie(self):
+        return self.getUIntElement(self.offsetBits_pushCookie(), 32, 1)
+    
+    #
+    # Set the value of the field 'pushCookie'
+    #
+    def set_pushCookie(self, value):
+        self.setUIntElement(self.offsetBits_pushCookie(), 32, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'pushCookie'
+    #
+    def size_pushCookie(self):
+        return (32 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'pushCookie'
+    #
+    def sizeBits_pushCookie(self):
+        return 32
+    
+    #
+    # Accessor methods for field: writeCookie
+    #   Field type: long
+    #   Offset (bits): 104
+    #   Size (bits): 32
+    #
+
+    #
+    # Return whether the field 'writeCookie' is signed (False).
+    #
+    def isSigned_writeCookie(self):
+        return False
+    
+    #
+    # Return whether the field 'writeCookie' is an array (False).
+    #
+    def isArray_writeCookie(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'writeCookie'
+    #
+    def offset_writeCookie(self):
+        return (104 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'writeCookie'
+    #
+    def offsetBits_writeCookie(self):
+        return 104
+    
+    #
+    # Return the value (as a long) of the field 'writeCookie'
+    #
+    def get_writeCookie(self):
+        return self.getUIntElement(self.offsetBits_writeCookie(), 32, 1)
+    
+    #
+    # Set the value of the field 'writeCookie'
+    #
+    def set_writeCookie(self, value):
+        self.setUIntElement(self.offsetBits_writeCookie(), 32, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'writeCookie'
+    #
+    def size_writeCookie(self):
+        return (32 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'writeCookie'
+    #
+    def sizeBits_writeCookie(self):
+        return 32
+    
+    #
     # Accessor methods for field: neighbors
     #   Field type: int[]
-    #   Offset (bits): 72
+    #   Offset (bits): 136
     #   Size of each element (bits): 16
     #
 
@@ -359,7 +477,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'neighbors'
     #
     def offset_neighbors(self, index1):
-        offset = 72
+        offset = 136
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16
@@ -369,7 +487,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'neighbors'
     #
     def offsetBits_neighbors(self, index1):
-        offset = 72
+        offset = 136
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16

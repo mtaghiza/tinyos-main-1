@@ -8,6 +8,9 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
   uses interface Packet;
   uses interface CXLinkPacket;
   uses interface Receive;
+
+  provides interface Get<uint32_t> as PushCookie;
+  provides interface Get<uint32_t> as WriteCookie;
 } implementation {
   components new LogStorageC(VOLUME_ID, circular);
   components new LogNotifyC(VOLUME_ID);
@@ -35,5 +38,8 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
   RecordPushRequestP.LogRead -> LogStorageC;
   RecordPushRequestP.Get = Get;
   RecordPushRequestP.Pool = Pool;
+
+  PushCookie = RecordPushRequestP.PushCookie;
+  WriteCookie = RecordPushRequestP.WriteCookie;
 
 }

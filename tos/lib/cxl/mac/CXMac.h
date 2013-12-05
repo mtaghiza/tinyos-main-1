@@ -94,6 +94,8 @@ typedef nx_struct cx_status {
   nx_uint8_t bw;
   nx_uint16_t wakeupRC;
   nx_uint32_t wakeupTS;
+  nx_uint32_t pushCookie;
+  nx_uint32_t writeCookie;
   nx_am_addr_t neighbors[CX_NEIGHBORHOOD_SIZE];
 } cx_status_t; 
 
