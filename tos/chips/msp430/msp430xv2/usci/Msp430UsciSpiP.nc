@@ -118,6 +118,7 @@ generic module Msp430UsciSpiP () @safe() {
     call SOMI.selectIOFunc();
     call CLK.makeOutput();
     call CLK.selectIOFunc();
+    call Usci.unconfigure();
   }
 
   /** Configure the USCI for SPI mode.

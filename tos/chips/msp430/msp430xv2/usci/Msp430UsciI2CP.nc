@@ -140,7 +140,7 @@ generic module Msp430UsciI2CP () @safe() {
     call Msp430PortMappingConfigure.unconfigure[client]();
     call SCL.selectIOFunc();
     call SDA.selectIOFunc();
- 
+    call Usci.unconfigure();
     return SUCCESS;
   }
 

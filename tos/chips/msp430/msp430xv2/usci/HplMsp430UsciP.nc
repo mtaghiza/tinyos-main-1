@@ -56,6 +56,7 @@ generic module HplMsp430UsciP(
     interface HplMsp430UsciInterrupts as RawInterrupts;
     interface ArbiterInfo;
     interface Leds;
+    interface Msp430XV2ClockControl;
   }
 }
 implementation {
@@ -129,12 +130,22 @@ implementation {
 //    UCmxCTL1 &= ~UCSWRST;
   }
 
+  async command void Usci.unconfigure ()
+  { 
+    //would be better to verify that we were actually using a clock
+    //sourced from XT2 before calling this.
+    call Msp430XV2ClockControl.decXT2Users();
+  }
+
   async command void Usci.configure (const msp430_usci_config_t* config,
                                      bool leave_in_reset)
   {
     if (! config) {
       return;
     }
+    //would be better to verify that we were actually using a clock
+    //sourced from XT2 before calling this.
+    call Msp430XV2ClockControl.incXT2Users();
     call Usci.enterResetMode_();
 
     UCmxCTLW0 = ((config->ctl0) << 8) + (config->ctl1) + UCSWRST;

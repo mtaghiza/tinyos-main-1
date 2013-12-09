@@ -52,6 +52,58 @@ module Msp430XV2ClockControlP @safe() {
   }
   uses interface Alarm<T32khz,uint16_t> as UCS7Alarm;
 } implementation {
+  #ifdef XT2_SMCLK
+  #ifndef XT2_DC_ENABLED
+  #define XT2_DC_ENABLED 1
+  #endif
+
+  #if XT2_DC_ENABLED == 1
+  uint8_t xt2Users = 0;
+  
+  async command void Msp430XV2ClockControl.decXT2Users(){
+    atomic{
+      if (xt2Users){
+        xt2Users --;
+      }
+      //If we just went down to 0 users of XT2, then we need to SET
+      //xt2off meaning "turn XT2 off when the radio's not using it"
+      if (!xt2Users){
+        UCSCTL6 |= XT2OFF;
+      }
+    }
+  }
+  
+  async command void Msp430XV2ClockControl.incXT2Users(){
+    atomic {
+      //If this is the first user of XT2, then we need to CLEAR xt2off,
+      //setting XT2OFF to 0 which means "stay active even if the radio
+      //is not using it"
+      if (!xt2Users){
+        //TODO: not sure what a reasonable number of iterations is
+        //here.  If XT2 is unhappy, a lot of other things will go
+        //wrong, so there's not really much harm in setting this to a
+        //large value
+        uint32_t faultTimeout = 1000000;
+        UCSCTL6 &= ~XT2OFF;
+        do {
+          faultTimeout --;
+          // Clear XT2 fault flags
+          UCSCTL7 &= ~(XT2OFFG);
+          SFRIFG1 &= ~OFIFG;                      // Clear fault flags
+        } while ((UCSCTL7 & XT2OFFG) && faultTimeout); // Test XT2 fault flag
+      }
+      xt2Users++;
+    }
+  }
+  #else
+  async command void Msp430XV2ClockControl.incXT2Users(){}
+  async command void Msp430XV2ClockControl.decXT2Users(){}
+  #endif
+  
+  #else
+  async command void Msp430XV2ClockControl.incXT2Users(){}
+  async command void Msp430XV2ClockControl.decXT2Users(){}
+  #endif
 
   async command void Msp430XV2ClockControl.configureUnifiedClockSystem (int dco_config)
   {
@@ -66,7 +118,7 @@ module Msp430XV2ClockControlP @safe() {
        *
        * MCLK is set to DCOCLKDIV, or half the DCO rate.
        *
-       * SMLCK is set to DCOCLKDIV / N such that it has a value of ~ 1MHz (2^20 Hz)
+       * SMCLK is set to DCOCLKDIV / N such that it has a value of ~ 1MHz (2^20 Hz)
        *
        * The technique used here is cribbed from the TI Example programs
        * for the CC430, cc430x613x_UCS_2.c.  */
@@ -79,9 +131,16 @@ module Msp430XV2ClockControlP @safe() {
 
       #ifdef XT2_SMCLK
       #warning Using XT2 for SMCLK
-      UCSCTL6 = (((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2))) & ~XT2OFF;
+
+        #if XT2_DC_ENABLED == 1
+        //write xcap setting
+        UCSCTL6 = (((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2))) | XT2OFF;
+        #else
+        #warning "XT2 duty cycling DISABLED"
+        UCSCTL6 = (((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2))) & ~XT2OFF;
+        #endif
       #else
-      UCSCTL6 = ((UCSCTL6 & ~(0x03 <<2)) | (XCAP_SETTING << 2));
+      UCSCTL6 = ((UCSCTL6  & ~(0x03 <<2)) | (XCAP_SETTING << 2));
       #endif
 
       //if an external crystal is available, then we'll use that for
@@ -222,11 +281,11 @@ module Msp430XV2ClockControlP @safe() {
       #ifdef XT2_SMCLK
       //26mhz / 4/1 = 6.5 mhz
       TA0CTL = TASSEL__SMCLK | ID__1 | TACLR | MC__STOP | TAIE;
-      #ifdef TA_DIV
-        TA0EX0 = TA_DIV - 1;
-      #else
-        TA0EX0 = 0x00;
-      #endif
+        #ifdef TA_DIV
+          TA0EX0 = TA_DIV - 1;
+        #else
+          TA0EX0 = 0x00;
+        #endif
       #else
       TA0CTL = TASSEL__SMCLK | TACLR | MC__STOP | TAIE;
       #endif
@@ -251,12 +310,22 @@ module Msp430XV2ClockControlP @safe() {
 
   async command void Msp430XV2ClockControl.startMicroTimer ()
   {
-    atomic TA0CTL = MC__CONTINOUS | (TA0CTL & ~(MC0|MC1));
+    atomic{
+      if (! call Msp430XV2ClockControl.isMicroTimerRunning()){
+        call Msp430XV2ClockControl.incXT2Users();
+        TA0CTL = MC__CONTINOUS | (TA0CTL & ~(MC0|MC1));
+      }
+    }
   }
 
   async command void Msp430XV2ClockControl.stopMicroTimer ()
   {
-    atomic TA0CTL = MC__STOP | (TA0CTL & ~(MC0|MC1));
+    atomic{
+      if (call Msp430XV2ClockControl.isMicroTimerRunning()){
+        call Msp430XV2ClockControl.decXT2Users();
+        TA0CTL = MC__STOP | (TA0CTL & ~(MC0|MC1));
+      }
+    } 
   }
 
   async command bool Msp430XV2ClockControl.isMicroTimerRunning ()

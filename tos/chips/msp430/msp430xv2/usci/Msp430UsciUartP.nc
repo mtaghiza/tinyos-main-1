@@ -142,6 +142,7 @@ generic module Msp430UsciUartP () @safe() {
     call URXD.selectIOFunc();
     call UTXD.makeOutput();
     call UTXD.selectIOFunc();
+    call Usci.unconfigure();
   }
 
   /** Configure the USCI for UART mode.

@@ -296,6 +296,7 @@ interface HplMsp430Usci {
    */
   async command void configure (const msp430_usci_config_t* config,
                                 bool leave_in_reset);
+  async command void unconfigure();
 
   /**
    * Place the USCI into software reset mode.
