@@ -1,5 +1,7 @@
 COMPONENT=MinLeafAppC
 
+#CFLAGS +=-I../settingsStorage/dummy
+
 CFLAGS += -DCX_BASESTATION=0
 
 # for tunneled message debug

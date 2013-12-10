@@ -13,5 +13,6 @@ circular){
   BaconSamplerP.SettingsStorage -> SettingsStorageC;
 
   components new LogStorageC(VOLUME_ID, circular);
+//  components new DummyLogWriteC() as LogStorageC;
   BaconSamplerP.LogWrite -> LogStorageC;
 }

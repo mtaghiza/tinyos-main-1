@@ -19,10 +19,10 @@ fps=60
 tpl=12
 mdr=100
 ppd=75
-efs=1
+efs=0
 xt2dc=1
 
-blinkAll
+#blinkAll
 
 installNodes map maps/flat/map.leafOnly.0 pa 0 efs $efs ppd $ppd \
           mdr $mdr tpl $tpl fps $fps td 0 ts 1 xt2dc $xt2dc enablePrintf 0

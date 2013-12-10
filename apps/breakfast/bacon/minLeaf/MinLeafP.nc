@@ -2,6 +2,7 @@
 module MinLeafP{
   uses interface Boot;
   uses interface SplitControl;
+  uses interface Timer<TMilli>;
 } implementation {
 
   event void Boot.booted(){
@@ -35,6 +36,11 @@ module MinLeafP{
 //      }
     }
     #endif
+    call Timer.startPeriodic(1024);
+  }
+
+  event void Timer.fired(){
+    P1OUT ^= BIT1;
   }
 
   event void SplitControl.startDone(error_t error){

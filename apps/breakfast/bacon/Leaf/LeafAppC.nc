@@ -52,7 +52,6 @@ configuration LeafAppC{
   RecordPushRequestC.Get -> CXLeafC.Get[NS_SUBNETWORK];
 
   components SlotSchedulerC;
-  components RecordPushRequestC;
   SlotSchedulerC.PushCookie -> RecordPushRequestC.PushCookie;
   SlotSchedulerC.WriteCookie -> RecordPushRequestC.WriteCookie;
 

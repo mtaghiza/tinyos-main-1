@@ -17,11 +17,14 @@ module LeafP{
       PMAPPWD = PMAPKEY;
       PMAPCTL = PMAPRECFG;
       P2MAP4 = PM_RFGDO0;
+//      P1MAP1 = PM_MCLK;
       PMAPPWD = 0x00;
   
       //set as output/function
       P2SEL |= BIT4;
       P2DIR |= BIT4;
+//      P1SEL |= BIT1;
+//      P1DIR |= BIT1;
       
       //clear p1.1, use as gpio
       P1SEL &= ~BIT1;

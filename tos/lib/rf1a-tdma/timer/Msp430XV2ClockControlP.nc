@@ -325,7 +325,7 @@ module Msp430XV2ClockControlP @safe() {
         call Msp430XV2ClockControl.decXT2Users();
         TA0CTL = MC__STOP | (TA0CTL & ~(MC0|MC1));
       }
-    } 
+    }
   }
 
   async command bool Msp430XV2ClockControl.isMicroTimerRunning ()

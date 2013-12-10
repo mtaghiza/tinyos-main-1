@@ -176,4 +176,14 @@ module SettingsStorageP {
       return ret;
     }
   }
+ 
+  
+  task void signalAD(){
+    signal LogWrite.appendDone(NULL, 0, FALSE, SUCCESS);
+  }
+
+  default command error_t LogWrite.append(void* buf, storage_len_t len){
+    post signalAD();
+    return SUCCESS;
+  }
 }
