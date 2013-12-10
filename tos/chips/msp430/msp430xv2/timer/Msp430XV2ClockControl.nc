@@ -111,4 +111,7 @@ interface Msp430XV2ClockControl {
   /** Return TRUE iff TMicro is running. */
   async command bool isMicroTimerRunning ();
 
+  async command void incXT2Users();
+  async command void decXT2Users();
+
 }

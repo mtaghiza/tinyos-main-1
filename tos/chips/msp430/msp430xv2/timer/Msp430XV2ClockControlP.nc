@@ -52,6 +52,9 @@ module Msp430XV2ClockControlP @safe() {
   uses interface Alarm<T32khz,uint16_t> as UCS7Alarm;
 } implementation {
 
+  async command void Msp430XV2ClockControl.incXT2Users(){}
+  async command void Msp430XV2ClockControl.decXT2Users(){}
+
   async command void Msp430XV2ClockControl.configureUnifiedClockSystem (int dco_config)
   {
     uint16_t divs;
