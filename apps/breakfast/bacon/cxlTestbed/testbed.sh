@@ -68,7 +68,7 @@ settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
 "mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
-"sdel" "dlsched" "mts" "mtl" "xt2dc")
+"sdel" "dlsched" "mts" "mtl" "xt2dc" "enablePrintf")
 
 dryRun=0
 set -x 

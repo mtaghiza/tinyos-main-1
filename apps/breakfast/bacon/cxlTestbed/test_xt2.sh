@@ -1,13 +1,6 @@
 #!/bin/bash
-function runTestbed(){
-  testDuration=$((30 * 60))
-  installTS=$(date +%s)
-  for i in $(seq 1)
-  do
-    ./testbed.sh installTS $installTS $@
-    sleep 60
-  done
-  sleep $testDuration
+
+function blinkAll(){
   pushd .
   cd ~/tinyos-2.x/apps/Blink
   ./burn map.all
@@ -17,21 +10,22 @@ function runTestbed(){
   popd
 }
 
-while true
-do
-  # 3 validation: 60 fps, pl=12
-  fps=60
-  tpl=12
-  mdr=100
+function installNodes(){
+  installTS=$(date +%s)
+  ./testbed.sh installTS $installTS $@
+}
 
-  for ppd in 75
-  do
-    for efs in 1 0
-    do
-      for xt2dc in 1 0
-      do
-        runTestbed map maps/flat/map.flat.0 pa 0 efs $efs ppd $ppd mdr $mdr tpl $tpl fps $fps td 0 ts 1 xt2dc $xt2dc
-      done
-    done
-  done
-done
+fps=60
+tpl=12
+mdr=100
+ppd=75
+efs=1
+xt2dc=1
+
+blinkAll
+
+installNodes map maps/flat/map.leafOnly.0 pa 0 efs $efs ppd $ppd \
+          mdr $mdr tpl $tpl fps $fps td 0 ts 1 xt2dc $xt2dc enablePrintf 0
+
+installNodes map maps/flat/map.rootOnly.0 pa 0 efs $efs ppd $ppd \
+          mdr $mdr tpl $tpl fps $fps td 0 ts 1 xt2dc $xt2dc enablePrintf 1
