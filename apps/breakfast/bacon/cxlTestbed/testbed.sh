@@ -62,11 +62,13 @@ sdel=92160UL
 mts=4
 mtl=1
 
+xt2dc=1
+
 settingVars=( "rp" "lp" "rxSlack" "txSlack" "gitRev"
 "efs" "fps" "bw" "pi"
 "gc" "rc" "installTS" "dr" "tpl" "td" "eas" "etb" "ma" "mdr" "dls" "dlsr"
 "mct" "ssfds" "pa" "md" "ecl" "hpt" "tpl" "map" "ppd" "tdel" "ts"
-"sdel" "dlsched" "mts" "mtl")
+"sdel" "dlsched" "mts" "mtl" "xt2dc")
 
 dryRun=0
 set -x 
@@ -168,7 +170,8 @@ do
       MAX_TX_SHORT=$mts\
       MAX_TX_LONG=$mtl\
       ENABLE_PRINTF=$enablePrintf\
-      PRINTF_STATS_LOG=1"
+      PRINTF_STATS_LOG=1\
+      XT2_DC_ENABLED=$xt2dc"
   
     cat $subnetMap | while read line 
     do
