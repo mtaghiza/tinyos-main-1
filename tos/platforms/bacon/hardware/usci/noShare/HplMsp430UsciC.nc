@@ -85,4 +85,7 @@ generic configuration HplMsp430UsciC(
   
   components LedsC;
   HplUsciP.Leds -> LedsC;
+
+  components Msp430XV2ClockC;
+  HplUsciP.Msp430XV2ClockControl -> Msp430XV2ClockC;
 }
