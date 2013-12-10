@@ -57,4 +57,6 @@ module TestbedRootP {
   default command error_t CXDownload.startDownload[uint8_t ns](){
     return FAIL;
   }
+
+  event void CXDownload.eos[uint8_t ns](am_addr_t owner, eos_status_t status){}
 }

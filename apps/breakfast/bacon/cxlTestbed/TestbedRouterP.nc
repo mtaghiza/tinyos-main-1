@@ -80,5 +80,6 @@ module TestbedRouterP{
   event void CXDownload.downloadFinished(){
     cinfo(TESTBED, "SNDF\r\n");
   }
+  event void CXDownload.eos(am_addr_t owner, eos_status_t status){}
 
 }
