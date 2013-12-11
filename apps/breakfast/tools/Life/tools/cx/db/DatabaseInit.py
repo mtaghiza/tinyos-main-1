@@ -3,8 +3,10 @@
 import sqlite3
 import sys
 import threading
-
-
+import subprocess
+import datetime
+import os
+    
 #This class initializes the sqlite database file and creates xxx tables:
 #- raw_table
 #- meta_table
@@ -188,12 +190,73 @@ class DatabaseInit(object):
     def __init__(self, rootName):
         # retry multiple filenames by incrementing counter in filename
         # a filename is accepted if either tables exists in it or 
-        # tables can be created
+        # tables can be created and the db passes an integrity check
         for fileCounter in range(0, DatabaseInit.FILE_RETRIES):
             dbFile = rootName + str(fileCounter) + '.sqlite'
+            
+            # test db for integrity
             try:
                 connection = sqlite3.connect(dbFile)
                 cursor = connection.cursor()
+                
+                cursor.execute('''PRAGMA integrity_check;''')                
+                rows = cursor.fetchone()
+            except sqlite3.DatabaseError:
+                # database failed integrity check
+                print "Database integrity error"
+                
+                # close file
+                cursor.close()
+                connection.close()
+                
+                # copy db to seperate file
+                # and use non-corrupted data in new db
+                now = datetime.datetime.now()
+                bakFile = rootName + str(fileCounter) + '.' + now.strftime("%Y%m%dT%H%M%S") + '.sqlite.bak'
+                
+                print "Saving corrupt database file as: %s" % bakFile
+                
+                # chose an sqlite3, depending on os
+                if os.name == 'nt': #sys.platform == 'win32':
+                    ret1 = subprocess.call("echo .dump | sqlite3.exe %s > dump.sql" % dbFile, shell=True)
+                    ret2 = subprocess.call("move %s %s" % (dbFile, bakFile), shell=True)
+                    ret3 = subprocess.call("sqlite3.exe %s < dump.sql" % dbFile, shell=True)
+                    ret4 = subprocess.call("del dump.sql", shell=True)
+                elif os.name == 'posix':                
+                    ret1 = subprocess.call("echo .dump | sqlite3 %s > dump.sql" % dbFile, shell=True)
+                    ret2 = subprocess.call("mv %s %s" % (dbFile, bakFile), shell=True)
+                    ret3 = subprocess.call("sqlite3 %s < dump.sql" % dbFile, shell=True)
+                    ret4 = subprocess.call("rm dump.sql", shell=True)
+                
+                # was recovery successful?
+                if (ret1 + ret2 + ret3) == 0:
+                    print "Restored valid data to: %s" % dbFile
+                elif ret2 == 0:
+                    # recovery unsuccessful, corrupted file has been renamed, recreate db with same name below
+                    print "Unable to recover data from corrupt file. Creating clean file to start over with."
+                else:
+                    # recovery unsuccessful, increment file name and try again
+                    print "Unable to recover data from corrupt file. Unable to rename corrupt file. Creating clean file to start over with."
+                    continue
+            except sqlite3.Error as e:
+                sys.stderr.write("Error reading file: " + dbFile + str(e)+ "\n")
+                continue
+            else:
+                print "%s passed integrity check" % dbFile
+                
+            # clean up
+            # note: this cannot be in a finally: statement since the connection migth already be closed
+            try:
+                cursor.close()
+                connection.close()
+            except:
+                pass
+                
+            # check db for missing tables, create file if necessary 
+            try:
+                connection = sqlite3.connect(dbFile)
+                cursor = connection.cursor()
+
                 cursor.execute('''SELECT name, sql FROM sqlite_master WHERE type == 'table' ''')
                 foundTables = dict(cursor.fetchall())
                 for table in DatabaseInit.tables:
@@ -216,19 +279,19 @@ class DatabaseInit(object):
                             print "%s Found %s, expected %s"%(view, foundViews[view], DatabaseInit.views[view])
                         else:
                             print "%s OK"%view
-
                 connection.commit();
-
- 
-                # only set name if no exceptions thrown
-                self.dbName = dbFile
+                
             except sqlite3.Error as e:
                 sys.stderr.write("Error reading file: " + dbFile + str(e)+ "\n")
                 continue
             finally:
                 cursor.close()
                 connection.close()
+                    
+            # only set name if no exceptions thrown
+            self.dbName = dbFile
             break
+            
         if self.dbName is None:
             raise IOError
 
