@@ -34,7 +34,7 @@ useLongIpi=FALSE
 channel=0
 power=2
 dl=28
-fecEnabled=0
+fecEnabled=1
 autocal=1
 dumpConfig=0
 
