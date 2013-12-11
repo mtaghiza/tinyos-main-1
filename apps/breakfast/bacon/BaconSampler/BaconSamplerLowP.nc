@@ -64,6 +64,10 @@ module BaconSamplerLowP{
     post readBattery();
   }
 
+  adc12ctl1_t initCtl1;
+  adc12memctl_t initMemctl;
+  adc12ctl0_t initCtl0;
+
   task void readBattery(){
     adc12ctl1_t ctl1 = {
       adc12busy: 0,
@@ -92,6 +96,10 @@ module BaconSamplerLowP{
       sht0: 0x0,
       sht1: 0x0
     };
+    initCtl1 = int2adc12ctl1(ADC12CTL1);
+    initCtl0 = int2adc12ctl0(ADC12CTL0);
+    initMemctl = int2adc12memctl(ADC12MCTL[0]);
+
     P2SEL |= BIT0;
     P2DIR &= ~BIT0;
     PJDIR |= BIT2;
@@ -138,8 +146,8 @@ module BaconSamplerLowP{
       sht0: 0x0,
       sht1: 0x0
     };
-    P2SEL |= BIT0;
-    P2DIR &= ~BIT0;
+    P2SEL |= BIT2;
+    P2DIR &= ~BIT2;
     REFCTL0 &= ~ REFMSTR;
     ADC12CTL0 &= ~BIT1;
     ADC12CTL0 = adc12ctl0cast2int(ctl0); 
@@ -195,7 +203,10 @@ module BaconSamplerLowP{
 
   task void append(){
     ADC12IE &= ~BIT0;
-    ADC12CTL0 &= ~(ADC12ON | ENC);
+    ADC12CTL0 &= ~(ADC12ON | ENC | ADC12SC);
+    ADC12CTL0 = adc12ctl0cast2int(initCtl0);   
+    ADC12CTL1 = adc12ctl1cast2int(initCtl1);   
+    ADC12MCTL[0] = adc12memctl2int(initMemctl);   
     call LogWrite.append(&sampleRec, sizeof(sampleRec));
   }
 
@@ -207,17 +218,26 @@ module BaconSamplerLowP{
         sampleRec.battery = conversionResult;
   //      printf("b %x %x %x\r\n", ADC12CTL0, ADC12CTL1, ADC12MCTL[0]);
         PJOUT &= ~BIT2;
+        P2SEL &= ~BIT0;
+        P2OUT &= ~BIT0;
+        P2DIR |= BIT1;
         post readLight();
         break;
       case LIGHT: 
         sampleRec.light = conversionResult;
   //      printf("l %x %x %x\r\n", ADC12CTL0, ADC12CTL1, ADC12MCTL[0]);
         P3OUT &= ~BIT3;
+        P2SEL &= ~BIT2;
+        P2DIR |= BIT2;
+        P2OUT &= ~BIT2;
         post readThermistor();
         break;
       case THERMISTOR:
         sampleRec.thermistor = conversionResult;
         PJOUT &= ~BIT1;
+        P2SEL &= ~BIT5;
+        P2DIR |= BIT5;
+        P2OUT &= ~BIT5;
         post append();
         break;
       default:
