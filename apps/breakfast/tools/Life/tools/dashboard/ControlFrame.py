@@ -341,7 +341,9 @@ class ControlFrame(Frame):
         # download we are doing).
         configMap= {'subNetworkChannel':self.downloadChannel,
           'maxDownloadRounds':1000}
-        CXController.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
+        
+        cxCtrl = CXController.CXController(self.dbFile)
+        cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
           refCallBack=self.refCallBack,
           eosCallBack=self.eosCallBack,
@@ -353,24 +355,38 @@ class ControlFrame(Frame):
         self.progressMessage( "Download Started: request repairs= %s\n"% ("True" if self.repairVar.get() else "False")) 
         print "Download: %u %u %s"%(self.networkSegment,
           self.downloadChannel, self.comDict[self.comVar.get()])
-        self.downloadButton.config(text="DOWNLOADING", bg="red",
+        self.downloadButton.config(text="DOWNLOADING", bg="green",
           state=DISABLED)
         self.downloadThread = Thread(target=self.downloadRunner,
           name="downloadThread")
         self.downloadThread.daemon = True
         self.downloadThread.start()
+        self.downloadProgress()
 
-        
+    def downloadProgress(self):
+        """ This function is here to ensure Windows compatibility.
+            TKInter on Windows stalls when widgets are updated from other threads.
+            This function calls itself every second and checks whether the download
+            thread has completed and updates the GUI once done. For some reason the
+            thread.join() also stalls the GUI.
+        """
+        if self.downloadThread.isAlive():
+            self.downloadButton.after(1000, self.downloadProgress)
+        else:
+            self.downloadButton.config(text="Download", bg="gray",
+              state=NORMAL)
+            self.hub.node.loadSettings()
+            self.hub.node.redrawAllNodes()
 
     def downloadFinished(self, masterId, message):
+        """ Callback function. Called by the download thread once done and 
+            updates the progress windows with status updates and spawns the
+            CSV thread to generate data files from the database.
+        """
         self.progressMessage(message)
-        self.downloadButton.config(text="Download", bg="gray",
-          state=NORMAL)
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.progressMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
 
-        self.hub.node.loadSettings()
-        self.hub.node.redrawAllNodes()
         self.csvThread = Thread(target=self.csvRunner,
           name="csvThread")
         self.csvThread.daemon = True

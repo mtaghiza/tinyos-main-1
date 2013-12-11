@@ -9,27 +9,30 @@ def fit(xy):
     if not xy:
         return (False, None, None, None)
 
-    if len(xy) == 1:
-        print "single point fit for", xy, "assume skewless binary ms"
-        (x, y) = xy[0]
-        return (True, y-(x*1.0/1024.0), 1.0/1024, 0)
-    else:
-        xy_bar = sum( 1.0*x*y for (x,y) in xy)/len(xy)
-        x_bar  = sum( 1.0*x for (x,y) in xy)/len(xy)
-        y_bar  = sum( 1.0*y for (x,y) in xy)/len(xy)
-        x2_bar = sum( x**2.0 for (x,y) in xy)/len(xy)
-        
-        if (x2_bar - x_bar**2) !=0:
-            beta = (xy_bar - (x_bar * y_bar))/ (x2_bar - x_bar**2)
-            alpha = y_bar - (beta * x_bar)
-        
-            ss_tot = sum( (y-y_bar )**2.0 for (x,y) in xy)
-            F = [ alpha + beta*x for (x,y) in xy]
-            ss_res = sum( (y-f )**2.0 for ((x,y), f) in zip(xy, F))
-            r_sq = 1- (ss_res/ss_tot)
-            return (True, alpha, beta, r_sq)
+    try:
+        if len(xy) == 1:
+            print "single point fit for", xy, "assume skewless binary ms"
+            (x, y) = xy[0]
+            return (True, y-(x*1.0/1024.0), 1.0/1024, 0)
         else:
-            return (False, None, None, None)
+            xy_bar = sum( 1.0*x*y for (x,y) in xy)/len(xy)
+            x_bar  = sum( 1.0*x for (x,y) in xy)/len(xy)
+            y_bar  = sum( 1.0*y for (x,y) in xy)/len(xy)
+            x2_bar = sum( x**2.0 for (x,y) in xy)/len(xy)
+            
+            if (x2_bar - x_bar**2) !=0:
+                beta = (xy_bar - (x_bar * y_bar))/ (x2_bar - x_bar**2)
+                alpha = y_bar - (beta * x_bar)
+            
+                ss_tot = sum( (y-y_bar )**2.0 for (x,y) in xy)
+                F = [ alpha + beta*x for (x,y) in xy]
+                ss_res = sum( (y-f )**2.0 for ((x,y), f) in zip(xy, F))
+                r_sq = 1- (ss_res/ss_tot)
+                return (True, alpha, beta, r_sq)
+            else:
+                return (False, None, None, None)
+    except TypeError:
+        return (False, None, None, None)
 
 
 #work out best fit for each (node_id, rc) tuple in base_reference

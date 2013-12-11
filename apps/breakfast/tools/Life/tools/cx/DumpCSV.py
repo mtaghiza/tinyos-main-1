@@ -229,7 +229,7 @@ def dump(dbName, baseDir, sep=','):
 
 
 
-def dumpCSV(dbName='database0.sqlite', baseDir='data'):
+def dumpCSV(dbName, baseDir='data'):
     print "Dumping from %s to %s"%(dbName, baseDir)
     print "Generating timestamp information"
     Phoenix.phoenix(dbName)

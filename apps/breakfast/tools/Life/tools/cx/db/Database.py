@@ -2,7 +2,6 @@
 
 import threading
 
-from DatabaseInit import DatabaseInit
 from DatabaseInsert import DatabaseInsert
 from DatabaseMissing import DatabaseMissing
 
@@ -12,9 +11,8 @@ from threading import Thread
 
 class Database(object):
 
-    def __init__(self, rootName='database'):
-        init = DatabaseInit(rootName)
-        self.dbName = init.getName()
+    def __init__(self, dbName):
+        self.dbName = dbName
 
         self.insert = DatabaseInsert(self.dbName)
 

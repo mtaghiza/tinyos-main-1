@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from tools.cx.db import Database
 
 class RecordParser(object):
     COOKIE_LEN = 4
