@@ -23,4 +23,4 @@ class ToastDisconnection(Decoder.Decoder):
         (source, cookie, rc, ts, toastIdBin) = self.unpack(source, cookie, data)
         toastIdText = Decoder.toHexStr(toastIdBin)
         self.dbInsert.execute(q, (source, cookie, rc, ts, toastIdText))
-        self.dbInsert.commit()
+#        self.dbInsert.commit()
