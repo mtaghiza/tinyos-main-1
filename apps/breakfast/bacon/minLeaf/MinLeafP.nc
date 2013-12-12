@@ -40,7 +40,7 @@ module MinLeafP{
   }
 
   event void Timer.fired(){
-    P1OUT ^= BIT1;
+//    P1OUT ^= BIT1;
   }
 
   event void SplitControl.startDone(error_t error){

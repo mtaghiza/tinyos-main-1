@@ -15,6 +15,12 @@ configuration MinLeafAppC{
   components new LogStorageC(VOLUME_RECORD, TRUE) as SettingsLS;
   SettingsStorageC.LogWrite -> SettingsLS;
 
-//  components new ToastSamplerC(VOLUME_RECORD, TRUE);
+  #if ENABLE_PHOENIX == 1
+  components PhoenixNeighborhoodP;
+  components new LogStorageC(VOLUME_RECORD, TRUE) as PhoenixLS;
+  PhoenixNeighborhoodP.LogWrite -> PhoenixLS;
+  #endif
+
+  components new ToastSamplerC(VOLUME_RECORD, TRUE);
   components new BaconSamplerC(VOLUME_RECORD, TRUE);
 }
