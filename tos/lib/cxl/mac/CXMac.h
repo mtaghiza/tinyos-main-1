@@ -21,7 +21,7 @@
 typedef struct probe_schedule {
    nx_uint32_t probeInterval;
    uint8_t channel[NUM_SEGMENTS];
-   uint8_t invFrequency[NUM_SEGMENTS];
+//   uint8_t invFrequency[NUM_SEGMENTS];
    uint8_t bw[NUM_SEGMENTS];
    uint8_t maxDepth[NUM_SEGMENTS];
    nx_uint32_t wakeupLen[NUM_SEGMENTS];

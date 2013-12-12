@@ -11,7 +11,7 @@ module CXProbeScheduleP {
   //basestation uses global/router only
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 1, 1},
+//    .invFrequency={4, 1, 1},
     .bw={2, 2, 2},
     .maxDepth={2*CX_MAX_DEPTH,CX_MAX_DEPTH,CX_MAX_DEPTH}
   };
@@ -23,17 +23,17 @@ module CXProbeScheduleP {
   // from router (though router may store refs from leafs)
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 0, 1},
+//    .invFrequency={4, 0, 1},
     .bw={2, 2, 2},
-    .maxDepth={2*CX_MAX_DEPTH,CX_MAX_DEPTH,CX_MAX_DEPTH}
+    .maxDepth={2*CX_MAX_DEPTH, 0, CX_MAX_DEPTH}
   };
   #else
   //leaf uses  global/subnetwork only
   probe_schedule_t sched = { 
     .channel={128, 0, 64},
-    .invFrequency={4, 1, 0},
+//    .invFrequency={4, 1, 0},
     .bw={2, 2, 2},
-    .maxDepth={2*CX_MAX_DEPTH,CX_MAX_DEPTH,CX_MAX_DEPTH}
+    .maxDepth={2*CX_MAX_DEPTH,CX_MAX_DEPTH, 0 }
   };
   #endif
 

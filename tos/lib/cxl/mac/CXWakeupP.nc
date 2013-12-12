@@ -93,12 +93,15 @@ module CXWakeupP {
   uint8_t nextProbe(uint8_t startIndex){
     uint8_t i;
     for (i = startIndex; i < NUM_SEGMENTS; i++){
-      uint8_t invFreq;
-      invFreq = sched -> invFrequency[i];
-      if (invFreq && (probeCount % invFreq) == 0){
-        cdbg(LPP, "match %u\r\n", i);
+      if (sched->maxDepth[i]){
         break;
       }
+//      uint8_t invFreq;
+//      invFreq = sched -> invFrequency[i];
+//      if (invFreq && (probeCount % invFreq) == 0){
+//        cdbg(LPP, "match %u\r\n", i);
+//        break;
+//      }
     }
     return i;
   }
@@ -296,12 +299,12 @@ module CXWakeupP {
     if (state == S_IDLE){
       uint32_t probeIntervalFast;
       error_t error;
-      uint32_t probeIntervalMilli;
+      uint32_t probeIntervalMilli = probeInterval;
       activeNS = ns;
       if (curChannel != activeChannel()){
         setChannel(activeChannel());
       }
-      probeIntervalMilli = (sched->invFrequency[ns]*probeInterval);
+//      probeIntervalMilli = (sched->invFrequency[ns]*probeInterval);
       probeIntervalFast = milliToFast(probeIntervalMilli);
       if (probeIntervalFast == 0){
         return EINVAL;

@@ -856,7 +856,9 @@ module SlotSchedulerP {
 //          signal SlotTimer.fired();
         } else {
           probe_schedule_t* sched = call ProbeSchedule.get();
-          error_t error = rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
+//          error_t error = rx(slowToFast(2*sched->probeInterval*sched->invFrequency[activeNS]), 
+//            TRUE);
+          error_t error = rx(slowToFast(2*sched->probeInterval), 
             TRUE);
           if (error != SUCCESS){
             cerror(SCHED, "SRXF %x\r\n", error);
