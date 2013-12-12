@@ -16,8 +16,8 @@ generic configuration ToastSamplerC(volume_id_t VOLUME_ID, bool circular){
   ToastSamplerP.LogWrite -> LogStorageC;
   
   //power/discovery
-  components new BusPowerClientC();
-  ToastSamplerP.SplitControl -> BusPowerClientC;
+  components PlatformBusPowerP;
+  ToastSamplerP.SplitControl -> PlatformBusPowerP;
   components new I2CDiscovererC();
   ToastSamplerP.I2CDiscoverer -> I2CDiscovererC;
   
