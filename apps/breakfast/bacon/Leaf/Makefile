@@ -1,7 +1,6 @@
 COMPONENT=LeafAppC
 
 CFLAGS += -DCX_BASESTATION=0
-CFLAGS +=-I../settingsStorage/dummy
 
 # for tunneled message debug
 CFLAGS += -I../Router
