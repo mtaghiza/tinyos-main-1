@@ -5,6 +5,10 @@ CFLAGS += -DCX_BASESTATION=0
 # for tunneled message debug
 CFLAGS += -I../Router
 
+CFLAGS += -I$(TOSDIR)/platforms/bacon/chips/stm25p/noUart
+CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noUart
+CFLAGS += -I$(TOSDIR)/platforms/bacon/hardware/usci/noShare
+
 #-30  -12  -6   0    10   "max"
 #0x03 0x25 0x2D 0x8D 0xC3 0xC0
 MAX_POWER?= 0xC3
