@@ -82,9 +82,18 @@ implementation {
   components PlatformPinsC;
   PlatformP.PlatformPins -> PlatformPinsC;
   
+  #ifndef ENABLE_LEDS
+  #define ENABLE_LEDS 1
+  #endif
+
+  #if ENABLE_LEDS == 1
   components PlatformLedC;
+  #else
+  #warning "Disable LEDs"
+  components PlatformNoLedC as PlatformLedC;
+  #endif
   PlatformP.PlatformLed -> PlatformLedC;
-  
+
   components PlatformUsciInitC;
   PlatformP.Usci -> PlatformUsciInitC.Init;
 

@@ -14,6 +14,7 @@ for (split(/\n/, <<'EOText'
   %T/platforms/bacon2/hardware/pins
   %T/platforms/bacon/hardware/pins
   %T/platforms/surf/hardware/pins
+  %T/platforms/bacon2/hardware/leds
 
   %T/platforms/surf/hardware/buttons
 
