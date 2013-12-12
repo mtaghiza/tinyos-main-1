@@ -22,6 +22,7 @@
     uint8_t cmd;
     uint8_t globalAddr[GLOBAL_ID_LEN];
     uint16_t localAddr;
+    uint8_t padding[5];
   } __attribute__((__packed__)) discoverer_register_t;
 
   typedef union{
