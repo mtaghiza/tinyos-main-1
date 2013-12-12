@@ -103,7 +103,7 @@ class BaconSettings(Decoder.Decoder):
                           WHERE node_id=? and rc=? and ts=?''',
                           (downloadInterval, node_id, rc, ts))
                     if tag == tools.cx.constants.SS_KEY_MAX_DOWNLOAD_ROUNDS:
-                        (maxDownloadRounds,) = struct.unpack('>B', value)
+                        (maxDownloadRounds,) = struct.unpack('>H', value)
                         self.dbInsert.execute(
                           '''UPDATE bacon_settings 
                           SET max_download_rounds=?
