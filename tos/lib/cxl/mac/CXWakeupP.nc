@@ -85,9 +85,17 @@ module CXWakeupP {
     return error;
   }
 
+  #ifndef LPP_RAND_RANGE_EXP
+  #define LPP_RAND_RANGE_EXP 8
+  #endif
+
+  #define LPP_RAND_RANGE (1 << LPP_RAND_RANGE_EXP)
+
+  #define LPP_RAND_MASK (LPP_RAND_RANGE - 1)
+  #define LPP_RAND_OFFSET (LPP_RAND_RANGE >> 1)
+
   uint32_t randomize(uint32_t mean){
-    uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
-    return ret;
+    return (mean - LPP_RAND_OFFSET) + ((call Random.rand32()) & LPP_RAND_MASK ) ;
   }
 
   uint8_t nextProbe(uint8_t startIndex){

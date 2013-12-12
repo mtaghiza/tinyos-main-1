@@ -17,10 +17,22 @@ module PhoenixNeighborhoodP {
 } implementation {
   phoenix_reference_t ref;
   bool sniffing = FALSE;
+ 
+
+  //This 2**RAND_RANGE_EXP is the range of values around the mean
+  //which our randomized selections may take. So, if this is 8, then
+  //our selections will be +/- 128 from the mean.
+  #ifndef PHOENIX_RAND_RANGE_EXP
+  #define PHOENIX_RAND_RANGE_EXP 8
+  #endif
+
+  #define PHOENIX_RAND_RANGE (1 << PHOENIX_RAND_RANGE_EXP)
+
+  #define PHOENIX_RAND_MASK (PHOENIX_RAND_RANGE - 1)
+  #define PHOENIX_RAND_OFFSET (PHOENIX_RAND_RANGE >> 1)
 
   uint32_t randomize(uint32_t mean){
-    uint32_t ret = (mean/2) + (call Random.rand32())%mean ;
-    return ret;
+    return (mean - PHOENIX_RAND_OFFSET) + ((call Random.rand32()) & PHOENIX_RAND_MASK ) ;
   }
 
   void setNext(){
