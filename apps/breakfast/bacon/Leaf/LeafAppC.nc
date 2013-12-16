@@ -54,6 +54,7 @@ configuration LeafAppC{
   components SlotSchedulerC;
   SlotSchedulerC.PushCookie -> RecordPushRequestC.PushCookie;
   SlotSchedulerC.WriteCookie -> RecordPushRequestC.WriteCookie;
+  SlotSchedulerC.MissingLength -> RecordPushRequestC.MissingLength;
 
   #else
   #warning Autopush disabled!

@@ -14,12 +14,14 @@ configuration SlotSchedulerC{
 
   uses interface Get<uint32_t> as PushCookie;
   uses interface Get<uint32_t> as WriteCookie;
+  uses interface Get<uint32_t> as MissingLength;
 } implementation {
   components CXWakeupC;
   components SlotSchedulerP;
 
   SlotSchedulerP.PushCookie = PushCookie;
   SlotSchedulerP.WriteCookie = WriteCookie;
+  SlotSchedulerP.MissingLength = MissingLength;
   components new Timer32khzC() as SlotTimer;
   components new Timer32khzC() as FrameTimer;
   components LocalTimeMilliC;
