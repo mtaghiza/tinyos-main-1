@@ -70,7 +70,6 @@ module BaseStationP @safe() {
 
 implementation
 {
-  uint8_t aux[TOSH_DATA_LENGTH];
 
   message_t* ackDMsg;
   message_t* ackRMsg;
@@ -172,6 +171,7 @@ implementation
   //convert enqueued incoming radio packet to enqueued outgoing serial
   //packet
   task void prepareSerial(){
+    uint8_t aux[TOSH_DATA_LENGTH];
     if (!call RadioRXQueue.empty() 
         && call RadioTXQueue.size() < call RadioTXQueue.maxSize()){
       queue_entry_t qe = call RadioRXQueue.dequeue();
@@ -326,6 +326,7 @@ implementation
   }
 
   task void prepareRadio(){
+    uint8_t aux[TOSH_DATA_LENGTH];
     if (!call SerialRXQueue.empty() 
         && call SerialTXQueue.size() < call SerialTXQueue.maxSize()){
       queue_entry_t qe = call SerialRXQueue.dequeue();
@@ -523,6 +524,7 @@ implementation
       uint8_t len){
     cx_status_t buf;
     cx_status_t* amPl;
+    call Leds.led0Toggle();
     memcpy(&buf, pl, sizeof(cx_status_t));
     call RadioAMPacket.setType(msg, AM_CX_STATUS);
     amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
