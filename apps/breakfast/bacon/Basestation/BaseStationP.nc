@@ -136,12 +136,14 @@ implementation
   event message_t *RadioSnoop.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
+    lastActivity = call FlushTimer.getNow();
     return radioReceive(msg, payload, len);
   }
   
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg,
 						    void *payload,
 						    uint8_t len) {
+    lastActivity = call FlushTimer.getNow();
     return radioReceive(msg, payload, len);
   }
 
