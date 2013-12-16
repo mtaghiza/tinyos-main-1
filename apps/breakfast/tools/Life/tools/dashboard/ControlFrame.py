@@ -386,15 +386,15 @@ class ControlFrame(Frame):
         self.progressMessage(message)
         (masterId, contacted, found) = self.db.getLastDownloadResults(masterId)
         self.progressMessage("Download finished: %u/%u identified nodes contacted\n"%(contacted, found))
-
-        self.csvThread = Thread(target=self.csvRunner,
-          name="csvThread")
-        self.csvThread.daemon = True
-        self.csvThread.start()
+        self.csvRunner()
+#         self.csvThread = Thread(target=self.csvRunner,
+#           name="csvThread")
+#         self.csvThread.daemon = True
+#         self.csvThread.start()
 
 
     def csvRunner(self):
-        self.progressMessage("Processing data to CSV files\n")
+        self.progressMessage("Processing data to CSV files, please wait.\n")
         DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR)
         self.progressMessage("CSV files ready (under '%s' directory)\n"%
           self.DEFAULT_DATA_DIR )
