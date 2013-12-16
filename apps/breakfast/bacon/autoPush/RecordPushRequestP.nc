@@ -22,6 +22,7 @@ generic module RecordPushRequestP() {
 
   provides interface Get<uint32_t> as PushCookie;
   provides interface Get<uint32_t> as WriteCookie;
+  provides interface Get<uint32_t> as MissingLength;
 } implementation {
 
   enum {
@@ -402,6 +403,9 @@ generic module RecordPushRequestP() {
   }
   command uint32_t WriteCookie.get(){
     return call LogWrite.currentOffset();
+  }
+  command uint32_t MissingLength.get(){
+    return missingLength;
   }
    
 

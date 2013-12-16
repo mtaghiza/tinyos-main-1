@@ -11,6 +11,7 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
 
   provides interface Get<uint32_t> as PushCookie;
   provides interface Get<uint32_t> as WriteCookie;
+  provides interface Get<uint32_t> as MissingLength;
 } implementation {
   components new LogStorageC(VOLUME_ID, circular);
   components new LogNotifyC(VOLUME_ID);
@@ -41,5 +42,6 @@ generic configuration RecordPushRequestC(volume_id_t VOLUME_ID, bool circular){
 
   PushCookie = RecordPushRequestP.PushCookie;
   WriteCookie = RecordPushRequestP.WriteCookie;
+  MissingLength = RecordPushRequestP.MissingLength;
 
 }

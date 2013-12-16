@@ -42,6 +42,7 @@ module SlotSchedulerP {
 
   uses interface Get<uint32_t> as PushCookie;
   uses interface Get<uint32_t> as WriteCookie;
+  uses interface Get<uint32_t> as MissingLength;
 } implementation {
 
   enum {
@@ -449,6 +450,7 @@ module SlotSchedulerP {
 
       pl -> pushCookie = call PushCookie.get();
       pl -> writeCookie = call WriteCookie.get();
+      pl -> missingLength = call MissingLength.get();
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);
@@ -1081,6 +1083,9 @@ module SlotSchedulerP {
   }
 
   default command uint32_t WriteCookie.get(){
+    return 0;
+  }
+  default command uint32_t MissingLength.get(){
     return 0;
   }
 }

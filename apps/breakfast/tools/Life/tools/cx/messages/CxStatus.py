@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 49
+DEFAULT_MESSAGE_SIZE = 53
 
 # The Active Message type associated with this message.
 AM_TYPE = 0xD3
 
 class CxStatus(tinyos.message.Message.Message):
-    # Create a new CxStatus of size 49.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=49):
+    # Create a new CxStatus of size 53.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=53):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -56,6 +56,10 @@ class CxStatus(tinyos.message.Message.Message):
             pass
         try:
             s += "  [writeCookie=0x%x]\n" % (self.get_writeCookie())
+        except:
+            pass
+        try:
+            s += "  [missingLength=0x%x]\n" % (self.get_missingLength())
         except:
             pass
         try:
@@ -455,9 +459,64 @@ class CxStatus(tinyos.message.Message.Message):
         return 32
     
     #
+    # Accessor methods for field: missingLength
+    #   Field type: long
+    #   Offset (bits): 136
+    #   Size (bits): 32
+    #
+
+    #
+    # Return whether the field 'missingLength' is signed (False).
+    #
+    def isSigned_missingLength(self):
+        return False
+    
+    #
+    # Return whether the field 'missingLength' is an array (False).
+    #
+    def isArray_missingLength(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'missingLength'
+    #
+    def offset_missingLength(self):
+        return (136 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'missingLength'
+    #
+    def offsetBits_missingLength(self):
+        return 136
+    
+    #
+    # Return the value (as a long) of the field 'missingLength'
+    #
+    def get_missingLength(self):
+        return self.getUIntElement(self.offsetBits_missingLength(), 32, 1)
+    
+    #
+    # Set the value of the field 'missingLength'
+    #
+    def set_missingLength(self, value):
+        self.setUIntElement(self.offsetBits_missingLength(), 32, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'missingLength'
+    #
+    def size_missingLength(self):
+        return (32 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'missingLength'
+    #
+    def sizeBits_missingLength(self):
+        return 32
+    
+    #
     # Accessor methods for field: neighbors
     #   Field type: int[]
-    #   Offset (bits): 136
+    #   Offset (bits): 168
     #   Size of each element (bits): 16
     #
 
@@ -477,7 +536,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'neighbors'
     #
     def offset_neighbors(self, index1):
-        offset = 136
+        offset = 168
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16
@@ -487,7 +546,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'neighbors'
     #
     def offsetBits_neighbors(self, index1):
-        offset = 136
+        offset = 168
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16

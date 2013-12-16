@@ -405,8 +405,9 @@ class ControlFrame(Frame):
               time.time() - lastContact,
               "%.2f"%batteryVoltage if batteryVoltage else "NA"))
 
-    def refCallBack(self, node, neighbors):
-        self.progressMessage("Contacted %x (%u neighbors).\n"%(node, len(neighbors)))
+    def refCallBack(self, node, neighbors, pushCookie, writeCookie,
+          missingLength):
+        self.progressMessage("Contacted %x (%u neighbors). %d queued, %d in current request\n"%(node, len(neighbors), writeCookie-pushCookie, missingLength))
 
     def eosCallBack(self, node, status):
         if status == 0:
