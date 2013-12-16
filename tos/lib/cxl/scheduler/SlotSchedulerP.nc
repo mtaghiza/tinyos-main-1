@@ -1088,4 +1088,12 @@ module SlotSchedulerP {
   default command uint32_t MissingLength.get(){
     return 0;
   }
+
+  default command void StatsLog.logSlotStats(cx_link_stats_t stats_, 
+    uint16_t wakeupNum_, int16_t slotNum_, uint8_t slotRole_){}
+  default command void StatsLog.logReception(message_t* msg_, 
+    uint16_t wakeupNum_, int16_t slotNum_){}
+  default command void StatsLog.logTransmission(message_t* msg_, 
+    uint16_t wakeupNum_, int16_t slotNum_){}
+  default command void StatsLog.flush(){}
 }

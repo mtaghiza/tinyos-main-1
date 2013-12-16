@@ -70,6 +70,7 @@ module BaseStationP @safe() {
 
 implementation
 {
+  uint32_t lastControlTime;
 
   message_t* ackDMsg;
   message_t* ackRMsg;
@@ -293,6 +294,8 @@ implementation
 						   void *payload,
 						   uint8_t len) {
     post queueReport();
+    lastControlTime = call FlushTimer.getNow();
+    call Leds.led2Toggle();
     if (id == AM_IDENTIFY_REQUEST){
       post sendIDResponse();
       return msg;
@@ -431,6 +434,8 @@ implementation
 
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
+    lastControlTime = call FlushTimer.getNow();
+    call Leds.led2Toggle();
     if (!call ControlPool.empty()){
       downloadPl = pl;
       downloadMsg = msg;
@@ -524,7 +529,6 @@ implementation
       uint8_t len){
     cx_status_t buf;
     cx_status_t* amPl;
-    call Leds.led0Toggle();
     memcpy(&buf, pl, sizeof(cx_status_t));
     call RadioAMPacket.setType(msg, AM_CX_STATUS);
     amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
@@ -542,6 +546,7 @@ implementation
   
   uint8_t ftCount;
   event void FlushTimer.fired(){
+    call Leds.led0Toggle();
     if ((ftCount % 64) == 0){
       cdbg(BASESTATION, "(keepalive)\r\n");
     }
@@ -587,6 +592,17 @@ implementation
     eosMsg = NULL;
     if (error != SUCCESS){
       cerror(BASESTATION, "EOS sd %x\r\n", error);
+    }
+  }
+  event void CXDownload.nextAssignment[uint8_t ns](am_addr_t owner, 
+      bool dataPending, uint8_t failedAttempts){
+    //if we are still in keep-alive and owner == my ID, then
+    //assign ourselves another slot to keep things active.
+    if (owner == call ActiveMessageAddress.amAddress()){
+      call Leds.led1Toggle();
+      if ((call FlushTimer.getNow() - lastControlTime)  < BS_KEEP_ALIVE_TIMEOUT){
+        call CXDownload.markPending[ns](owner);
+      }
     }
   }
 

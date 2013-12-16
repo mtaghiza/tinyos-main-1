@@ -19,7 +19,7 @@ class DatabaseMissing(object):
     JOIN sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
-      AND missing > 0
+      AND missing > 6
       AND l.retry < 5
       ORDER BY l.node_id, l.cookie'''
 
@@ -29,7 +29,7 @@ class DatabaseMissing(object):
       JOIN sorted_flash r
         ON l.node_id=r.node_id and l.ROWID+1=r.ROWID
       WHERE l.node_id=?
-        AND r.cookie - l.nextCookie > 0
+        AND r.cookie - l.nextCookie > 6
         AND l.retry < 5
       GROUP BY l.node_id'''
 
@@ -42,7 +42,7 @@ class DatabaseMissing(object):
     JOIN sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
-      AND missing > 0
+      AND missing > 6
       AND l.retry < 5
       ORDER BY l.node_id, missing desc'''
 
@@ -54,7 +54,7 @@ class DatabaseMissing(object):
     JOIN sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
-      AND missing > 0
+      AND missing > 6
       AND l.retry < 5
     WHERE l.node_id = ?
     ORDER BY l.node_id, missing desc'''

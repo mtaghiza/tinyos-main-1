@@ -59,4 +59,6 @@ module TestbedRootP {
   }
 
   event void CXDownload.eos[uint8_t ns](am_addr_t owner, eos_status_t status){}
+  event void CXDownload.nextAssignment[uint8_t ns](am_addr_t owner, 
+    bool dataPending, uint8_t failedAttempts){}
 }

@@ -153,4 +153,6 @@ module RouterP{
   }
 
   event void CXDownload.eos(am_addr_t owner, eos_status_t status){}
+  event void CXDownload.nextAssignment(am_addr_t owner, 
+    bool dataPending, uint8_t failedAttempts){}
 }

@@ -117,6 +117,11 @@ module CXMasterP {
       return FALSE;
     }
     #endif
+
+    signal CXDownload.nextAssignment[activeNS](
+      contactList[contactIndex].nodeId,
+      contactList[contactIndex].dataPending,
+      contactList[contactIndex].failedAttempts);
 //    printf("ia %u %u/%u -> ", numRounds, contactIndex, totalNodes);
     //Loop through contact list (wrapping contactIndex at totalNodes) until you either:
     // - hit a node with pending data
@@ -129,6 +134,10 @@ module CXMasterP {
         contactIndex = contactIndex % totalNodes;
         numRounds++;
       }
+      signal CXDownload.nextAssignment[activeNS](
+        contactList[contactIndex].nodeId,
+        contactList[contactIndex].dataPending,
+        contactList[contactIndex].failedAttempts);
     }
 //    printf("%u %u\r\n", numRounds, contactIndex);
     //If the above loop did not put you over the maxRounds limit, then
@@ -267,6 +276,7 @@ module CXMasterP {
     for (i=0; i < totalNodes; i++){
       if (contactList[i].nodeId == addr){
         contactList[i].dataPending = TRUE;
+        contactList[i].failedAttempts = 0;
         return SUCCESS;
       }
     }
@@ -310,6 +320,7 @@ module CXMasterP {
 
   default event void CTS.ctsReceived[uint8_t ns](){}
   default event void CXDownload.downloadFinished[uint8_t ns](){}
+  default event void CXDownload.nextAssignment[uint8_t ns](am_addr_t owner, bool dataPending, uint8_t failedAttempts){}
   default event void CXDownload.eos[uint8_t ns](am_addr_t owner, eos_status_t status){}
 
   default command error_t LogWrite.append(void* buf, storage_len_t len){ return FAIL;}
