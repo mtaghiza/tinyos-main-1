@@ -307,6 +307,9 @@ generic module RecordPushRequestP() {
 
     } else if (error == SUCCESS && len == 0){
       cdbg(AUTOPUSH, "end\r\n");
+//      //rare case where a node keeps sending a packet having length
+//      0?
+//      missingLength =0;
       send();
     } else {
       //ESIZE: ran out of space in buffer. So, don't clear missingLength. other
@@ -343,6 +346,10 @@ generic module RecordPushRequestP() {
     // cookie for next record in flash
     recordMsgPtr->length = recordsRead * sizeof(log_record_t) + totalLen;
     recordMsgPtr->nextCookie = call LogRead.currentOffset();
+
+    if (recordMsgPtr -> length == 0){
+      recordsRead = 0;
+    }
 
     state = S_SENDING;
     (call CXLinkPacket.getLinkMetadata(msg))->dataPending = (call LogNotify.getOutstanding() > recordsRead) || requestInQueue;
