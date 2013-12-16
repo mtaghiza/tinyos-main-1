@@ -70,7 +70,7 @@ module BaseStationP @safe() {
 
 implementation
 {
-  uint32_t lastControlTime;
+  uint32_t lastActivity;
 
   message_t* ackDMsg;
   message_t* ackRMsg;
@@ -78,6 +78,7 @@ implementation
   uint8_t activeNS;
   bool serialSending;
   bool radioSending;
+  bool somebodyPending;
 
   event void Boot.booted() {
     uint8_t i;
@@ -146,6 +147,7 @@ implementation
 
   //record metadata, enqueue radio packet
   message_t* radioReceive(message_t *msg, void *payload, uint8_t len) {
+//    lastActivity = call FlushTimer.getNow();
     cdbg(BASESTATION, "RRX %x %u\r\n", 
       call CXLinkPacket.source(msg), 
       call CXLinkPacket.getSn(msg));
@@ -294,14 +296,21 @@ implementation
 						   void *payload,
 						   uint8_t len) {
     post queueReport();
-    lastControlTime = call FlushTimer.getNow();
+    lastActivity = call FlushTimer.getNow();
     call Leds.led2Toggle();
     if (id == AM_IDENTIFY_REQUEST){
       post sendIDResponse();
       return msg;
-    }
-    if (id == AM_CX_RECORD_REQUEST_MSG){
+    }else{
+      //Anything other than an identify-request will have to be
+      //forwarded out, so make sure that we are marked as having
+      //pending data
       call CXDownload.markPending[activeNS](call ActiveMessageAddress.amAddress());
+    }
+    
+    //Mark the node who we are requesting data from as having pending
+    //data.
+    if (id == AM_CX_RECORD_REQUEST_MSG){
       call CXDownload.markPending[activeNS](call SerialAMPacket.destination(msg));
     }
 
@@ -434,7 +443,7 @@ implementation
 
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
-    lastControlTime = call FlushTimer.getNow();
+    lastActivity = call FlushTimer.getNow();
     call Leds.led2Toggle();
     if (!call ControlPool.empty()){
       downloadPl = pl;
@@ -450,6 +459,7 @@ implementation
   }
   
   task void startDownload(){
+    somebodyPending = FALSE;
     downloadError = call CXDownload.startDownload[downloadPl->networkSegment]();
     if (downloadError == SUCCESS){
       activeNS = downloadPl->networkSegment;
@@ -580,6 +590,9 @@ implementation
           sizeof(cx_eos_report_t));
         pl->owner = owner;
         pl->status = status;
+        if (status == ES_DATA){
+          somebodyPending = TRUE;
+        }
         post sendEos();
       } else {
         cerror(BASESTATION, "EOS pool empty\r\n");
@@ -600,9 +613,14 @@ implementation
     //assign ourselves another slot to keep things active.
     if (owner == call ActiveMessageAddress.amAddress()){
       call Leds.led1Toggle();
-      if ((call FlushTimer.getNow() - lastControlTime)  < BS_KEEP_ALIVE_TIMEOUT){
+      //Force the download to stay alive by assigning ourselves
+      //another slot if there is no data pending. Otherwise, download
+      //will stay alive because other nodes will get assigned slots.
+      if (!somebodyPending && 
+        ((call FlushTimer.getNow() - lastActivity)  < BS_KEEP_ALIVE_TIMEOUT)){
         call CXDownload.markPending[ns](owner);
       }
+      somebodyPending = FALSE;
     }
   }
 
