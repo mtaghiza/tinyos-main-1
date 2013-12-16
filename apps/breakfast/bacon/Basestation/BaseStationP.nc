@@ -70,6 +70,7 @@ module BaseStationP @safe() {
 
 implementation
 {
+  bool downloadStarting;
   uint32_t lastActivity;
 
   message_t* ackDMsg;
@@ -446,6 +447,7 @@ implementation
   event message_t* CXDownloadReceive.receive(message_t* msg, 
       void* pl, uint8_t len){
     lastActivity = call FlushTimer.getNow();
+    downloadStarting = TRUE;
     call Leds.led2Toggle();
     if (!call ControlPool.empty()){
       downloadPl = pl;
@@ -541,6 +543,11 @@ implementation
       uint8_t len){
     cx_status_t buf;
     cx_status_t* amPl;
+    if (downloadStarting && 
+        call RadioAMPacket.source(msg) == call ActiveMessageAddress.amAddress()){
+      downloadStarting = FALSE;
+      lastActivity = call FlushTimer.getNow();
+    }
     memcpy(&buf, pl, sizeof(cx_status_t));
     call RadioAMPacket.setType(msg, AM_CX_STATUS);
     amPl = call RadioPacket.getPayload(msg, sizeof(cx_status_t));
