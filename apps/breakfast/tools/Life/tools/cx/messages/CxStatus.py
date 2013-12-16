@@ -10,7 +10,7 @@ import tinyos.message.Message
 DEFAULT_MESSAGE_SIZE = 49
 
 # The Active Message type associated with this message.
-AM_TYPE = -1
+AM_TYPE = 0xD3
 
 class CxStatus(tinyos.message.Message.Message):
     # Create a new CxStatus of size 49.
