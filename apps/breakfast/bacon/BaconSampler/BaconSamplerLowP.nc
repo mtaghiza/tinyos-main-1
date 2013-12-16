@@ -219,8 +219,8 @@ module BaconSamplerLowP{
   //      printf("b %x %x %x\r\n", ADC12CTL0, ADC12CTL1, ADC12MCTL[0]);
         PJOUT &= ~BIT2;
         P2SEL &= ~BIT0;
-        P2OUT &= ~BIT0;
-        P2DIR |= BIT1;
+//        P2OUT &= ~BIT0;
+//        P2DIR |= BIT1;
         post readLight();
         break;
       case LIGHT: 
@@ -228,16 +228,16 @@ module BaconSamplerLowP{
   //      printf("l %x %x %x\r\n", ADC12CTL0, ADC12CTL1, ADC12MCTL[0]);
         P3OUT &= ~BIT3;
         P2SEL &= ~BIT2;
-        P2DIR |= BIT2;
-        P2OUT &= ~BIT2;
+//        P2DIR |= BIT2;
+//        P2OUT &= ~BIT2;
         post readThermistor();
         break;
       case THERMISTOR:
         sampleRec.thermistor = conversionResult;
         PJOUT &= ~BIT1;
         P2SEL &= ~BIT5;
-        P2DIR |= BIT5;
-        P2OUT &= ~BIT5;
+//        P2DIR |= BIT5;
+//        P2OUT &= ~BIT5;
         post append();
         break;
       default:

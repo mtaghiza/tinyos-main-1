@@ -71,7 +71,7 @@ implementation {
       //P2.4: CARD_DET (nc by default, out gnd)
       //P2.5: thermistor sense (input? out to gnd?)
       //P2.6/2.7: I2C (out to GND)
-      P2DIR = BIT1|BIT3|BIT4|BIT6|BIT7;
+      P2DIR = BIT0|BIT1|BIT2|BIT3|BIT4|BIT5|BIT6|BIT7;
       P2OUT = BIT6|BIT7;
 #endif 
     
