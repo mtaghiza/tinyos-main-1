@@ -412,7 +412,7 @@ generic module RecordPushRequestP() {
     return call LogWrite.currentOffset();
   }
   command uint32_t MissingLength.get(){
-    return missingLength;
+    return requestLength;
   }
    
 
