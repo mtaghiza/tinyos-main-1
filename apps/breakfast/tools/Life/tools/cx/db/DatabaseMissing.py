@@ -6,8 +6,21 @@ import sys
 
 class DatabaseMissing(object):
 
+##TODO: this query uses the end of the log (as reported by status
+## messages) in the gap computation. It works correctly, but only if
+## the find-missing command is run when the database is all synched up,
+## not if it gets run from a separate thread.
+#     SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash 
+#                         AS SELECT node_id, cookie, nextCookie, retry
+#                         FROM cookie_table 
+#                         UNION SELECT node1 as node_id, 
+#                           writeCookie as cookie,
+#                           writeCookie + 1 as nextCookie,
+#                           0 as retry
+#                           FROM base_reference
+#                         ORDER BY node_id, cookie;'''
     SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash 
-                        AS SELECT * 
+                        AS SELECT node_id, cookie, nextCookie, retry
                         FROM cookie_table 
                         ORDER BY node_id, cookie;'''
                             
