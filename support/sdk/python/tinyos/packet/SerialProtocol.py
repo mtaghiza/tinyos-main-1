@@ -65,7 +65,8 @@ class RXThread(Thread):
         self.signalError = signalError
 
     def run(self):
-        while True:
+        ioDone = False
+        while not ioDone:
             try:
                 frame = self.prot.readFramedPacket()       
                 frameType = ord(frame[0])
@@ -92,6 +93,7 @@ class RXThread(Thread):
                 with self.prot.ackCV:
                     self.prot.lastAck = None
                     self.prot.ackCV.notify()
+                ioDone = True
             except:
                 self.signalError()
 #                 print "SerialProtocol Exception"
@@ -124,6 +126,7 @@ class SerialProtocol:
     # encapsulated in a single constructor.
     def open(self):
         self.rxThread = RXThread(self, self.signalError)
+        self.rxThread.daemon = True
         self.rxThread.start()
         
     def readPacket(self):
