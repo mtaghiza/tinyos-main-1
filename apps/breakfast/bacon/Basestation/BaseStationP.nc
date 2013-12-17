@@ -590,7 +590,7 @@ implementation
 
   event void CXDownload.eos[uint8_t ns](am_addr_t owner, 
       eos_status_t status){
-    printf("EOS %x %x\r\n", owner, status);
+//    printf("EOS %x %x\r\n", owner, status);
     //construct EOS packet and post task to send it
     if (eosMsg == NULL){
       eosMsg = call ControlPool.get();
