@@ -104,6 +104,7 @@ class CXMoteIF(MoteIF):
         setMaxDownloadRoundsMsg = SetMaxDownloadRounds.SetMaxDownloadRounds(
           radioConfig['maxDownloadRounds']
           )
+        print "Setting MDR to ", radioConfig['maxDownloadRounds']
         if moteId == self.bsId:
             self.sendMsg(self.source,
               moteId, 

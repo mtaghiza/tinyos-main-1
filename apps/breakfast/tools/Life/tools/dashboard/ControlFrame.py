@@ -53,6 +53,10 @@ class ControlFrame(Frame):
     SPACING = 10
     DEFAULT_DATA_DIR = "data"
 
+    DT_ALL_STR = "Recover all"
+    DT_RECENT_STR = "New data only"
+    DT_STATUS_STR = "Data status update only"
+
     def __init__(self, parent, hub, dbFile, **args):
         Frame.__init__(self, parent, **args)
         
@@ -202,12 +206,18 @@ class ControlFrame(Frame):
         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
         self.downloadButton.grid(column=1, row=1)
         
-        self.repairVar = IntVar()
-        self.repairButton = Checkbutton(self.downloadFrame,
-          text="Repair", variable=self.repairVar)
-        self.repairButton.select()
-        self.repairButton.grid(column=2, row=1)
+#         self.repairVar = IntVar()
+#         self.repairButton = Checkbutton(self.downloadFrame,
+#           text="Repair", variable=self.repairVar)
+#         self.repairButton.select()
+#         self.repairButton.grid(column=2, row=1)
 
+        self.downloadTypeVar = StringVar()
+        self.downloadTypeVar.set(self.DT_ALL_STR)
+        self.downloadTypeOption = OptionMenu(self.downloadFrame,
+          self.downloadTypeVar, 
+          self.DT_ALL_STR, self.DT_RECENT_STR, self.DT_STATUS_STR)
+        self.downloadTypeOption.grid(column=2, row=1)
 
         self.downloadFrame.grid(column=3, row=0)
 
@@ -339,9 +349,13 @@ class ControlFrame(Frame):
         # doing a single-patch download) or it will be ignored for
         # globalChannel or routerChannel (depending on the type of
         # download we are doing).
+        requestMissing = (self.downloadTypeVar.get() == self.DT_ALL_STR)
+        mdr= 1000
+        if self.downloadTypeVar.get() == self.DT_STATUS_STR:
+            mdr=1
         configMap= {'subNetworkChannel':self.downloadChannel,
-          'maxDownloadRounds':1000}
-        
+          'maxDownloadRounds':mdr}
+        print "Download type: ", self.downloadTypeVar.get(), "mdr", mdr, "requestMissing", requestMissing
         cxCtrl = CXController.CXController(self.dbFile)
         cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
           self.networkSegment, configMap, 
@@ -349,10 +363,10 @@ class ControlFrame(Frame):
           eosCallBack=self.eosCallBack,
           repairCallBack=self.repairCallBack,
           finishedCallBack=self.downloadFinished,
-          requestMissing=self.repairVar.get())
+          requestMissing=requestMissing)
 
     def download(self):
-        self.progressMessage( "Download Started: request repairs= %s\n"% ("True" if self.repairVar.get() else "False")) 
+        self.progressMessage( "Download Started: %s\n"%(self.downloadTypeVar.get(),)) 
         print "Download: %u %u %s"%(self.networkSegment,
           self.downloadChannel, self.comDict[self.comVar.get()])
         self.downloadButton.config(text="DOWNLOADING", bg="green",
