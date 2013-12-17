@@ -23,6 +23,9 @@ configuration CXBaseStationC {
   components CXLinkPacketC;
   CXMasterP.CXLinkPacket -> CXLinkPacketC;
 
+  components LedsC, NoLedsC;
+  CXMasterP.Leds -> NoLedsC;
+
   CXDownload[NS_GLOBAL] = CXMasterP.CXDownload[NS_GLOBAL];
   CXDownload[NS_SUBNETWORK] = CXMasterP.CXDownload[NS_SUBNETWORK];
   CXDownload[NS_ROUTER] = CXMasterP.CXDownload[NS_ROUTER];

@@ -20,6 +20,8 @@ module CXMasterP {
   uses interface CXLinkPacket;
 
   uses interface LogWrite;
+
+  uses interface Leds;
 } implementation {
 
   contact_entry_t contactList[CX_MAX_SUBNETWORK_SIZE];
@@ -27,7 +29,8 @@ module CXMasterP {
   uint16_t numRounds;
   uint8_t totalNodes;
   uint8_t activeNS = NS_INVALID;
-  uint16_t maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
+  nx_uint16_t maxRounds; 
+  //= DEFAULT_MAX_DOWNLOAD_ROUNDS;
   uint8_t maxAttempts = DEFAULT_MAX_ATTEMPTS;
 
   am_addr_t masters[NUM_SEGMENTS] = {AM_BROADCAST_ADDR, 
@@ -57,6 +60,7 @@ module CXMasterP {
     } else {
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
+        maxRounds = DEFAULT_MAX_DOWNLOAD_ROUNDS;
         #ifdef SLOT_LIMIT
         slotsLeft = SLOT_LIMIT;
         #endif
@@ -117,7 +121,12 @@ module CXMasterP {
       return FALSE;
     }
     #endif
-
+    if (numRounds >= maxRounds){
+      printf("IA0\r\n");
+      finish();
+      return FALSE;
+    }
+    
     signal CXDownload.nextAssignment[activeNS](
       contactList[contactIndex].nodeId,
       contactList[contactIndex].dataPending,
@@ -151,7 +160,7 @@ module CXMasterP {
       }
       return TRUE;
     }else {
-      printf("MRE\r\n");
+      printf("MRE %u >= %u\r\n", numRounds, maxRounds);
       //If we did exceed the limit, then we're done, and contactIndex
       //  is pointing at a node with pending data.
       finish();
