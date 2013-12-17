@@ -110,7 +110,8 @@ class DatabaseInit(object):
                              (node1 INTEGER,
                               rc1 INTEGER,
                               ts1 INTEGER,
-                              unixTS REAL)''',
+                              unixTS REAL,
+                              writeCookie INTEGER)''',
 #               'bacon_id': '''CREATE TABLE bacon_id 
 #                              (node_id INTEGER,
 #                               cookie INTEGER,
