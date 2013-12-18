@@ -254,11 +254,11 @@ implementation
 
   message_t* fsMsg = NULL;
   task void queueReport(){
-    printf("QR %p %u %u -> %u \r\n",
-      fsMsg,
-      call SerialRXQueue.maxSize(),
-      call SerialRXQueue.size(),
-      call SerialRXQueue.maxSize() - call SerialRXQueue.size());
+//    printf("QR %p %u %u -> %u \r\n",
+//      fsMsg,
+//      call SerialRXQueue.maxSize(),
+//      call SerialRXQueue.size(),
+//      call SerialRXQueue.maxSize() - call SerialRXQueue.size());
     if (fsMsg == NULL){
       fsMsg = call ControlPool.get();
       if (fsMsg != NULL) {
@@ -300,7 +300,6 @@ implementation
 						   uint8_t len) {
     post queueReport();
     lastActivity = call FlushTimer.getNow();
-    call Leds.led2Toggle();
     if (id == AM_IDENTIFY_REQUEST){
       post sendIDResponse();
       return msg;
@@ -376,6 +375,7 @@ implementation
   }
 
   task void txRadio(){
+    call Leds.set(call RadioTXQueue.size());
     if (! call RadioTXQueue.empty() && !radioSending){
       queue_entry_t qe = call RadioTXQueue.dequeue();
 
@@ -399,6 +399,7 @@ implementation
       if (error == SUCCESS){
         radioSending = TRUE;
       }else{
+        //TODO: use leds to see if we are ever getting errors here
         cerror(BASESTATION, "RadioTX: %x\r\n", error);
         call RadioTXQueue.enqueue(qe);
       }
@@ -420,6 +421,11 @@ implementation
   }
 
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
+    //Mark the recipient as having data pending so it can respond to
+    //the message that it just received.
+    if (id == AM_CX_RECORD_REQUEST_MSG){
+      call CXDownload.markPending[activeNS](call RadioAMPacket.destination(msg));
+    }
     radioSending = FALSE;
     cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");
@@ -448,7 +454,6 @@ implementation
       void* pl, uint8_t len){
     lastActivity = call FlushTimer.getNow();
     downloadStarting = TRUE;
-    call Leds.led2Toggle();
     if (!call ControlPool.empty()){
       downloadPl = pl;
       downloadMsg = msg;
@@ -565,7 +570,11 @@ implementation
   
   uint8_t ftCount;
   event void FlushTimer.fired(){
-    call Leds.led0Toggle();
+//    printf("FT\r\n");
+    post queueReport();
+    if (activeNS != NS_INVALID && !call RadioTXQueue.empty()){
+      call CXDownload.markPending[activeNS](call ActiveMessageAddress.amAddress());
+    }
     if ((ftCount % 64) == 0){
       cdbg(BASESTATION, "(keepalive)\r\n");
     }
@@ -616,12 +625,12 @@ implementation
       cerror(BASESTATION, "EOS sd %x\r\n", error);
     }
   }
+
   event void CXDownload.nextAssignment[uint8_t ns](am_addr_t owner, 
       bool dataPending, uint8_t failedAttempts){
     //if we are still in keep-alive and owner == my ID, then
     //assign ourselves another slot to keep things active.
     if (owner == call ActiveMessageAddress.amAddress()){
-      call Leds.led1Toggle();
       //Force the download to stay alive by assigning ourselves
       //another slot if there is no data pending. Otherwise, download
       //will stay alive because other nodes will get assigned slots.
