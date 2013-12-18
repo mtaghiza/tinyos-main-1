@@ -9,6 +9,10 @@ import tools.cx.DumpCSV as DumpCSV
 from threading import Thread
 from tools.serial.tools.list_ports import comports
 
+from tools.cx.messages import SetBaconSampleInterval
+from tools.cx.messages import SetToastSampleInterval
+from tools.cx.messages import SetProbeSchedule
+
 import time
 
 def getDisplayVal(rootStr, channel):
@@ -371,6 +375,8 @@ class ControlFrame(Frame):
           self.downloadChannel, self.comDict[self.comVar.get()])
         self.downloadButton.config(text="DOWNLOADING", bg="green",
           state=DISABLED)
+        self.commitButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
         self.downloadThread = Thread(target=self.downloadRunner,
           name="downloadThread")
         self.downloadThread.daemon = True
@@ -388,6 +394,8 @@ class ControlFrame(Frame):
             self.downloadButton.after(1000, self.downloadProgress)
         else:
             self.downloadButton.config(text="Download", bg="gray",
+              state=NORMAL)
+            self.commitButton.config(text="Commit Changes", bg="gray",
               state=NORMAL)
             self.hub.node.loadSettings()
             self.hub.node.redrawAllNodes()
@@ -433,9 +441,69 @@ class ControlFrame(Frame):
 
     def repairCallBack(self, node, length, totalMissing):
         self.progressMessage("Node %x request %u (missing: %u)\n"%(node, length, totalMissing))
+
+    def outboundCallback(self, node):
+        self.progressMessage("Sent settings-change to %x.\n"%(node))
+
+    def getNodeId(self, barcodeId):
+        #TODO: look up node ID by barcode in database
+        barcodeIdInt = int(barcodeId, 16)
+        barcodeIdInt = barcodeIdInt & (0xFFFF)
+        return barcodeIdInt
     
     def commitChanges(self):
-        print "Commit Changes"
+        self.progressMessage("Committing settings changes, please wait.\n")
+        self.downloadButton.config(bg="yellow", text="BUSY",
+          state=DISABLED)
+        self.commitButton.config(bg="green", text="COMMITTING",
+          state=DISABLED)
+        self.downloadThread = Thread(target=self.commitChangesRunner,
+          name="commitThread")
+        self.downloadThread.daemon = True
+        self.downloadThread.start()
+        self.downloadProgress()
+        
+
+    def commitChangesRunner(self):
+        changeMessages = {}
+        for barcode in self.hub.node.leafs:
+            nodeId = self.getNodeId(barcode)
+            print "barcode", barcode, "node id", nodeId
+            (oInterval, oChannel) = self.hub.node.originalLeafs[barcode]
+            (mInterval, mChannel) = self.hub.node.leafs[barcode]
+            if oInterval != mInterval:
+                print "%s Interval %u -> %u"%(barcode, oInterval, mInterval)
+                setToastInterval = SetToastSampleInterval.SetToastSampleInterval(mInterval)
+                setBaconInterval = SetBaconSampleInterval.SetBaconSampleInterval(mInterval)
+                changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setToastInterval, setBaconInterval]
+            if oChannel != mChannel:
+                print "%s Channel %u -> %u"%(barcode, oInterval, mInterval)
+                #TODO: this is for leaf nodes, need to set up routers
+                # with different segment memberships.
+                setProbeSchedule = SetProbeSchedule(PROBE_INTERVAL,
+                  [GLOBAL_CHANNEL, mChannel, ROUTER_CHANNEL],
+                  [1, 1, 1], # legacy: probe rate divider
+                  [2, 2, 2], # boundary width
+                  [2*MAX_DEPTH, MAX_DEPTH, 0])
+                changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setProbeSchedule]
+        if changeMessages:
+            cxCtrl = CXController.CXController(self.dbFile)
+    
+            configMap= { 'maxDownloadRounds':1000}
+            cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
+              constants.NS_GLOBAL, configMap, 
+              refCallBack=self.refCallBack,
+              eosCallBack=self.eosCallBack,
+              repairCallBack=self.repairCallBack,
+              finishedCallBack=self.downloadFinished,
+              requestMissing=False,
+              outboundMessages = changeMessages,
+              outboundCallback = self.outboundCallback)
+            self.progressMessage("""Changes applied. These will be
+            reflected in the dashboard when data is collected from the
+            affected nodes.\n""")
+        else:
+            self.progressMessage("No changes to apply.\n")
 
 
     def refresh(self):

@@ -84,7 +84,8 @@ class CXController(object):
     def download(self, packetSource, networkSegment=constants.NS_GLOBAL,
             configMap={}, configFile=None, refCallBack=None,
             eosCallBack=None, repairCallBack=None,
-            finishedCallBack=None, requestMissing=True):
+            finishedCallBack=None, requestMissing=True,
+            outboundMessages={}, outboundCallback=None):
         print packetSource
         db = Database.Database(self.dbName)
         try:
@@ -140,6 +141,13 @@ class CXController(object):
                         nodes.add(eos.get_owner())
                     if eosCallBack:
                         eosCallBack(eos.get_owner(), eos.get_status())
+                    if eos.get_owner() in outboundMessages:
+                        for message in outboundMessages[eos.get_owner()]:
+                            d.send(message, eos.get_owner())
+                            if outboundCallback:
+                                outboundCallback(eos.get_owner())
+                        del outboundMessages[eos.get_owner()]
+
                     if eos.get_status() == 1 and requestMissing:
                         if eos.get_owner() == bsId:
                             if firstContact:

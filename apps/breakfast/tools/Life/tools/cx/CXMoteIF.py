@@ -165,6 +165,9 @@ class CXMoteIF(MoteIF):
 #                 print "TXQ E"
                 #OK, we didn't get a transmit in the last second.
                 pass
+        while not self.txQueue.empty():
+            (source, addr, msg) = self.txQueue.get()
+            print "TXQ SW DROP %u %u %x"%(addr, self.fwdStatusListener.spaceFree, self.finishedListener.finished)
 
     
         
