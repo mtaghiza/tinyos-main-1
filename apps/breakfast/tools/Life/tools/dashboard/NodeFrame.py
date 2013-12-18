@@ -65,6 +65,45 @@ class NodeFrame(Frame):
         self.redrawAllNodes()
         
 
+
+    #################################################################################################
+    #                                                                                               #
+    #   super frame                                                                                 #
+    #                                                                                               #
+    #   #########################################################################################   #    
+    #   #                                                                                       #   #
+    #   #   router frame                                                                        #   #
+    #   #                                                                                       #   #
+    #   #   #################################################################################   #   #
+    #   #   #                                                                               #   #   #   
+    #   #   #   leaf frame                                                                  #   #   #   
+    #   #   #                                                                               #   #   #   
+    #   #   #   #####################   #################################################   #   #   #
+    #   #   #   #                   #   #                                               #   #   #   #                    
+    #   #   #   #   node frame      #   #   status frame                                #   #   #   #
+    #   #   #   #                   #   #                                               #   #   #   #    
+    #   #   #   #                   #   #################################################   #   #   #
+    #   #   #   #                   #                                                       #   #   #                
+    #   #   #   #                   #   #################   #################   #########   #   #   #
+    #   #   #   #                   #   #               #   #               #   #       #   #   #   #    
+    #   #   #   #                   #   #  plex frame   #   #  plex frame   #   #  ...  #   #   #   #
+    #   #   #   #                   #   #               #   #               #   #       #   #   #   #
+    #   #   #   #####################   #################   #################   #########   #   #   #
+    #   #   #                                                                               #   #   #
+    #   #   #################################################################################   #   #
+    #   #                                                                                       #   #
+    #   #########################################################################################   #
+    #                                                                                               #
+    #   #########################################################################################   #    
+    #   #                                                                                       #   #
+    #   #   router frame                                                                        #   #
+    #   #                                                                                       #   #
+    #   #   ...                                                                                 #   #
+    #   #                                                                                       #   #
+    #   #########################################################################################   #
+    #                                                                                               #
+    #################################################################################################
+    
     def redrawAllNodes(self):
         siteChannels = {}
         siteLeafs = {}
@@ -79,6 +118,7 @@ class NodeFrame(Frame):
         self.superFrame = Frame(self)
         
         # draw routers
+        # create a frame for each router
         for rowNumber, router in enumerate(sorted(self.routers.iterkeys())):
             print rowNumber, router
             
@@ -90,9 +130,11 @@ class NodeFrame(Frame):
                 siteChannels[channel] = router
             
             siteLeafs[router] = 0
-        
-            frame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
-            subframe = Frame(frame, bd=1, relief=SUNKEN)
+            
+            # routerFrame : contains leafs, multiplexers, connected to same router
+            # subframe    : contains router widgets
+            routerFrame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
+            subframe = Frame(routerFrame, bd=1, relief=SUNKEN)
             
             barcode_text = "%s\nSite: %s" % (barcode, router)
             button = Button(subframe, text=barcode_text, width=18, justify=LEFT, command=lambda barcode=barcode: self.selectRouter(barcode))
@@ -131,27 +173,30 @@ class NodeFrame(Frame):
             
             subframe.grid(column=0, row=0, sticky=N+S+E+W)
 
-            frame.grid(column=0, row=rowNumber, sticky=N+S+E+W)
+            routerFrame.grid(column=0, row=rowNumber, sticky=N+S+E+W)
             
-            self.tkobjects["routerFrame_%s" % router] = frame
+            self.tkobjects["routerFrame_%s" % router] = routerFrame
             self.tkobjects["routerButton_%s" % router] = button
             self.tkobjects["routerOption_%s" % router] = typeOption
             self.tkobjects["routerOptionVar_%s" % router] = typeVar
         
         
         # draw default frame for unassigned leafs
-        frame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
-        button = Button(frame, text="", width=18, relief=FLAT)
+        routerFrame = Frame(self.superFrame, bd=2, relief=RIDGE, padx=1, pady=1)
+        button = Button(routerFrame, text="", width=18, relief=FLAT)
         button.grid(column=0, row=0)
         button.configure(state=DISABLED)
-        frame.grid(column=0, row=len(self.routers), sticky=N+S+E+W)            
-        self.tkobjects["routerFrame_none"] = frame
+        routerFrame.grid(column=0, row=len(self.routers), sticky=N+S+E+W)            
+        self.tkobjects["routerFrame_none"] = routerFrame
         siteLeafs["none"] = 0
         
         
         # draw leaf nodes 
         for rowNumber, leaf in enumerate(sorted(self.leafs.iterkeys())):
             interval, channel = self.leafs[leaf]
+            
+            # correlate leaf with router
+            # update row number to correspond with number of leafs connected to router
             
             # if leaf in self.membership:
             # site = self.membership[leaf]    
@@ -173,12 +218,16 @@ class NodeFrame(Frame):
                 siteLeafs[site] = rowNumber + 1
                 self.membership[leaf] = site
             
-            #frame = Frame(self.superFrame, bd=1, relief=SUNKEN)
-            frame = self.tkobjects["routerFrame_%s" % site]
+            # retrieve router frame from TK objects and use as frame to hold leaf widgets
+            routerFrame = self.tkobjects["routerFrame_%s" % site]
             
-            subframe = Frame(frame, bd=1, relief=SUNKEN)
+            # leaf frame contains nodeframe, plexframe(s), and status bar
+            leafFrame = Frame(routerFrame, bd=1, relief=SUNKEN)
+            
+            # nodeframe contains the leaf ID, sampling rate
+            nodeFrame = Frame(leafFrame, bd=1, relief=SUNKEN)
             button_text = "%s\nSampling: %s" % (leaf, interval)            
-            button = Button(subframe, text=button_text, width=18, justify=LEFT, command=lambda leaf=leaf: self.selectNode(leaf))
+            button = Button(nodeFrame, text=button_text, width=18, justify=LEFT, command=lambda leaf=leaf: self.selectNode(leaf))
 
             # color code button: grey=selected, yellow=modified
             if leaf in selection:
@@ -191,30 +240,31 @@ class NodeFrame(Frame):
             button.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)            
             button.grid(column=0, row=0, columnspan=2, sticky=N+S+E+W)
             
-            label = Label(subframe, text="Site:", bd=0, relief=SUNKEN)
+            label = Label(nodeFrame, text="Site:", bd=0, relief=SUNKEN)
             label.configure(background=colorCode)            
             label.grid(column=0, row=1, sticky=N+S+E+W)
 
             typeVar = StringVar()        
             typeVar.set(site)
-            typeOption = OptionMenu(subframe, typeVar, [site])
+            typeOption = OptionMenu(nodeFrame, typeVar, [site])
             typeOption.configure(width=3, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
             typeOption.grid(column=1, row=1, sticky=N+S+E+W)
 
             menu = typeOption["menu"]
             menu.delete(0, "end")
             
-            # populate menu
+            # populate menu to choose between sites
             for site in sorted(self.routers.iterkeys()):
                 #menu.add_command(label=site, command=Tkinter._setit(typeVar, site)) 
                 menu.add_command(label=site, command=lambda leaf=leaf, site=site: self.updateLeaf(leaf,site))
-       
-            subframe.grid(column=1, row=rowNumber, sticky=N+S+E+W)
             
-            self.tkobjects["nodeFrame_%s" % leaf] = subframe
+            nodeFrame.grid(column=0, row=0, rowspan=2, sticky=N+S+E+W)
+            
+            self.tkobjects["nodeFrame_%s" % leaf] = nodeFrame
             self.tkobjects["nodeButton_%s" % leaf] = button
             self.tkobjects["nodeOption_%s" % leaf] = typeOption
             self.tkobjects["nodeOptionVar_%s" % leaf] = typeVar
+                        
             
             # if node has multiplexer(s) attached, draw multiplexer and sensor types
             if leaf in self.multiplexers:
@@ -223,8 +273,8 @@ class NodeFrame(Frame):
 #                     print "plexs: ", i, plex[0]
 #                     plexid = plex[0]
                     print leaf, i, plexid
-                    subframe = Frame(frame, bd=1, relief=SUNKEN)
-                    self.tkobjects["plexFrame_%s" % plexid] = frame
+                    plexFrame = Frame(leafFrame, bd=1, relief=SUNKEN)
+                    self.tkobjects["plexFrame_%s" % plexid] = plexFrame
                     
                     # color code button: grey=selected, yellow=modified
                     if plexid in selection:
@@ -234,8 +284,8 @@ class NodeFrame(Frame):
                     else:
                         colorCode = self.cget("bg")
                     
-                    button = Button(subframe, text=plexid, command=lambda plexid=plexid: self.selectPlex(plexid))
-                    button.configure(width=18, height=2, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
+                    button = Button(plexFrame, text=plexid, command=lambda plexid=plexid: self.selectPlex(plexid))
+                    button.configure(width=18, height=1, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                     button.grid(column=0, row=0, columnspan=8, sticky=N+S+E+W)
                     self.tkobjects["plexButton_%s" % plexid] = button
                     toastMap = self.multiplexers[leaf][plexid]
@@ -244,13 +294,17 @@ class NodeFrame(Frame):
                         (sensorType, sensorId) = toastMap[sc]
                         self.sensorTypes[sensorType] = 1
                         
-                        label = Label(subframe, text=str(sensorType), bd=1, relief=SUNKEN)
+                        label = Label(plexFrame, text=str(sensorType), bd=1, relief=SUNKEN)
                         label.configure(background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                         label.grid(column=sc, row=1, sticky=N+S+E+W)
                         self.tkobjects["sensLabel_%s_%d" % (plexid, sc)] = label
                     
-                    subframe.grid(column=i+2, row=rowNumber)
-            
+                    plexFrame.grid(column=i+1, row=1)
+                
+            # draw leaf frame and store it in TK objects
+            leafFrame.grid(column=1, row=rowNumber, sticky=N+S+E+W)
+            self.tkobjects["leafFrame_%s" % leaf] = leafFrame
+
 #        # draw remaining nodes from settings file
 #        for barcode in sorted(self.offline.iterkeys()):
 #            #print "nodes: ", barcode
