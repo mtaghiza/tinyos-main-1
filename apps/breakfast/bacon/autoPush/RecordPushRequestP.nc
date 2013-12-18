@@ -383,12 +383,12 @@ generic module RecordPushRequestP() {
                     break;
 
       case C_REQUEST:
-                    if (missingLength == 0){
+                    requestLength = missingLength;
+                    if (missingLength == 0 || recordsRead == 0){
 //                      printf("done\r\n");
                       requestInQueue = FALSE;
                     }else{
 //                      printf("moar data %lu\r\n", missingLength);
-                      requestLength = missingLength;
                       requestCookie = call LogRead.currentOffset();
                       //still more data outstanding
                     }
