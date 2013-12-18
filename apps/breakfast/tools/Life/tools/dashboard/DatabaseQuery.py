@@ -4,6 +4,7 @@ import sqlite3
 
 import tools.cx.constants as constants
 import time
+import traceback
 
 class DatabaseQuery(object):
 
@@ -31,8 +32,13 @@ class DatabaseQuery(object):
           (select master_id, cookie, count(*) as cnt FROM network_membership WHERE distance < 255 GROUP BY master_id, cookie) as reachedCount
           ON lastDownload.master_id = reachedCount.master_id AND lastDownload.cookie = reachedCount.cookie
         '''
-        c = sqlite3.connect(self.dbName)
-        ret = c.execute(query, (masterId,)).fetchone()
+        
+        try:
+            c = sqlite3.connect(self.dbName)
+            ret = c.execute(query, (masterId,)).fetchone()
+        except:
+            traceback.print_exc()
+            
         if not ret:
             ret = (0, 0, 0)
         return ret
@@ -70,20 +76,24 @@ class DatabaseQuery(object):
             self.connection = sqlite3.connect(self.dbName)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
-
-        self.cursor.execute(query,
-          (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_ROUTER,))
-
-        output = {}
-        for row in self.cursor:
-          key = "%04x" % int(row[0])
-          if row[1] == 'X':
-              barcode = "(?) %x"%(row[0])
-          else:
-            barcode = row[1]
-          
-          output[key] = (barcode, row[2])
         
+        output = {}
+        
+        try:
+            self.cursor.execute(query,
+              (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_ROUTER,))
+
+            for row in self.cursor:
+              key = "%04x" % int(row[0])
+              if row[1] == 'X':
+                  barcode = "(?) %x"%(row[0])
+              else:
+                barcode = row[1]
+              
+              output[key] = (barcode, row[2])
+        except:
+            traceback.print_exc()
+            
         return output
 
 
@@ -124,16 +134,20 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
-        self.cursor.execute(query,
-          (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_SUBNETWORK,))
-
         output = {}
-        for row in self.cursor:
-          if row[0] == 'X':
-              key = '(?) %x'%(row[4]) 
-          else:
-              key = row[0]
-          output[key] = row[1:3]
+        
+        try:
+            self.cursor.execute(query,
+              (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_SUBNETWORK,))
+              
+            for row in self.cursor:
+              if row[0] == 'X':
+                  key = '(?) %x'%(row[4]) 
+              else:
+                  key = row[0]
+              output[key] = row[1:3]
+        except:
+            traceback.print_exc()
         
         return output
 
@@ -176,26 +190,29 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute(query)
-
         output = {}
-        #sql query return 1 row per currently-connected sensor
-        #we want to put this into a nested set of maps like this:
-        #{
-        #  bacon_barcode:{
-        #    toast_barcode:{
-        #      channel:(sensor_type, sensor_barcode)}
-        #  }
-        #}
-        for row in self.cursor:
-            baconBar = row[0]
-            toastBar = row[5]
-            cn = row[6]
-            st = row[7]
-            sid = row[8]
-            output[baconBar] = output.get(baconBar, {})
-            output[baconBar][toastBar] = output[baconBar].get(toastBar, {})
-            output[baconBar][toastBar][cn]=(st, sid)
+        try:
+            self.cursor.execute(query)        
+            #sql query return 1 row per currently-connected sensor
+            #we want to put this into a nested set of maps like this:
+            #{
+            #  bacon_barcode:{
+            #    toast_barcode:{
+            #      channel:(sensor_type, sensor_barcode)}
+            #  }
+            #}
+            for row in self.cursor:
+                baconBar = row[0]
+                toastBar = row[5]
+                cn = row[6]
+                st = row[7]
+                sid = row[8]
+                output[baconBar] = output.get(baconBar, {})
+                output[baconBar][toastBar] = output[baconBar].get(toastBar, {})
+                output[baconBar][toastBar][cn]=(st, sid)
+        except:
+            traceback.print_exc()
+        
         return output
 
 
@@ -220,14 +237,18 @@ class DatabaseQuery(object):
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute(query)
-
         #output = [("",""), ("",""), ("",""), ("",""), ("",""), ("",""), ("",""), ("","")]
         output = [(None,None), (None,None), (None,None), (None,None), (None,None), (None,None), (None,None), (None,None)]
-        for row in self.cursor:
-            if row[0] is not None:
-                channel = int(row[0])
-                output[channel] = (hex(row[1]), hex(row[2]))
+        
+        try:
+            self.cursor.execute(query)
+            
+            for row in self.cursor:
+                if row[0] is not None:
+                    channel = int(row[0])
+                    output[channel] = (hex(row[1]), hex(row[2]))
+        except:
+            traceback.print_exc()
         
         return output
 
@@ -265,7 +286,15 @@ class DatabaseQuery(object):
             self.connection = sqlite3.connect(self.dbName)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
-        return self.cursor.execute(query).fetchall()
+            
+        output = []
+            
+        try:
+            output = self.cursor.execute(query).fetchall()
+        except:
+            traceback.print_exc()
+        
+        return output
 
 if __name__ == '__main__':
     db = DatabaseQuery("database0.sqlite")
