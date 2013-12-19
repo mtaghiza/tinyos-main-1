@@ -65,7 +65,6 @@ module BaconSamplerLowP{
   }
 
   adc12ctl1_t initCtl1;
-  adc12memctl_t initMemctl;
   adc12ctl0_t initCtl0;
 
   task void readBattery(){
@@ -98,14 +97,12 @@ module BaconSamplerLowP{
     };
     initCtl1 = int2adc12ctl1(ADC12CTL1);
     initCtl0 = int2adc12ctl0(ADC12CTL0);
-    initMemctl = int2adc12memctl(ADC12MCTL[0]);
 
     P2SEL |= BIT0;
     P2DIR &= ~BIT0;
     PJDIR |= BIT2;
     PJOUT |= BIT2;
     REFCTL0 &= ~ REFMSTR;
-    ADC12CTL0 &= ~BIT1;
     ADC12CTL0 = adc12ctl0cast2int(ctl0); 
     ADC12CTL1 = adc12ctl1cast2int(ctl1); 
     ADC12MCTL[0] = adc12memctl2int(memctl);
@@ -119,39 +116,13 @@ module BaconSamplerLowP{
   }
 
   task void readLight(){
-    adc12ctl1_t ctl1 = {
-      adc12busy: 0,
-      conseq: 0,
-      adc12ssel: SHT_SOURCE_ACLK,
-      adc12div: SHT_CLOCK_DIV_1,
-      issh: 0,
-      shp: 1,
-      shs: 0,
-      cstartadd: 0
-    };
     adc12memctl_t memctl = {
       inch: INPUT_CHANNEL_A2,
       sref: REFERENCE_VREFplus_AVss,
       eos: 1
     };        
-    adc12ctl0_t ctl0 = {
-      adc12sc: 0,
-      enc: 0,
-      adc12tovie: 0,
-      adc12ovie: 0,
-      adc12on: 1,
-      refon: 1,
-      r2_5v: 1,
-      msc: 0,
-      sht0: 0x0,
-      sht1: 0x0
-    };
     P2SEL |= BIT2;
     P2DIR &= ~BIT2;
-    REFCTL0 &= ~ REFMSTR;
-    ADC12CTL0 &= ~BIT1;
-    ADC12CTL0 = adc12ctl0cast2int(ctl0); 
-    ADC12CTL1 = adc12ctl1cast2int(ctl1); 
     ADC12MCTL[0] = adc12memctl2int(memctl);
     P3SEL &= ~BIT3;
     P3DIR |= BIT3;
@@ -161,39 +132,13 @@ module BaconSamplerLowP{
   }
 
   task void readThermistor(){
-    adc12ctl1_t ctl1 = {
-      adc12busy: 0,
-      conseq: 0,
-      adc12ssel: SHT_SOURCE_ACLK,
-      adc12div: SHT_CLOCK_DIV_1,
-      issh: 0,
-      shp: 1,
-      shs: 0,
-      cstartadd: 0
-    };
     adc12memctl_t memctl = {
       inch: INPUT_CHANNEL_A5,
       sref: REFERENCE_VREFplus_AVss,
       eos: 1
     };        
-    adc12ctl0_t ctl0 = {
-      adc12sc: 0,
-      enc: 0,
-      adc12tovie: 0,
-      adc12ovie: 0,
-      adc12on: 1,
-      refon: 1,
-      r2_5v: 1,
-      msc: 0,
-      sht0: 0x0,
-      sht1: 0x0
-    };
     P2SEL |= BIT5;
     P2DIR &= ~BIT5;
-    REFCTL0 &= ~ REFMSTR;
-    ADC12CTL0 &= ~BIT1;
-    ADC12CTL0 = adc12ctl0cast2int(ctl0); 
-    ADC12CTL1 = adc12ctl1cast2int(ctl1); 
     ADC12MCTL[0] = adc12memctl2int(memctl);
     PJDIR |= BIT1;
     PJOUT |= BIT1;
@@ -206,13 +151,13 @@ module BaconSamplerLowP{
     ADC12CTL0 &= ~(ADC12ON | ENC | ADC12SC);
     ADC12CTL0 = adc12ctl0cast2int(initCtl0);   
     ADC12CTL1 = adc12ctl1cast2int(initCtl1);   
-    ADC12MCTL[0] = adc12memctl2int(initMemctl);   
     call LogWrite.append(&sampleRec, sizeof(sampleRec));
   }
 
   norace uint16_t conversionResult;
 
   task void conversionDone(){
+    ADC12CTL0 &= ~(ADC12SC | ENC);
     switch (step){
       case BATTERY:
         sampleRec.battery = conversionResult;
