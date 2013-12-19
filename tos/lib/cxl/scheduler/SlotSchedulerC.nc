@@ -94,5 +94,8 @@ configuration SlotSchedulerC{
   SlotSchedulerP.StatsLog -> StatsLog;
   #endif
 
+  components SettingsStorageC;
+  SlotSchedulerP.SettingsStorage -> SettingsStorageC;
+
   DownloadNotify = SlotSchedulerP;
 }

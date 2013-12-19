@@ -7,14 +7,14 @@
 import tinyos.message.Message
 
 # The default size of this message type in bytes.
-DEFAULT_MESSAGE_SIZE = 53
+DEFAULT_MESSAGE_SIZE = 59
 
 # The Active Message type associated with this message.
 AM_TYPE = 0xD3
 
 class CxStatus(tinyos.message.Message.Message):
-    # Create a new CxStatus of size 53.
-    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=53):
+    # Create a new CxStatus of size 59.
+    def __init__(self, data="", addr=None, gid=None, base_offset=0, data_length=59):
         tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
         self.amTypeSet(AM_TYPE)
     
@@ -60,6 +60,18 @@ class CxStatus(tinyos.message.Message.Message):
             pass
         try:
             s += "  [missingLength=0x%x]\n" % (self.get_missingLength())
+        except:
+            pass
+        try:
+            s += "  [subnetChannel=0x%x]\n" % (self.get_subnetChannel())
+        except:
+            pass
+        try:
+            s += "  [sampleInterval=0x%x]\n" % (self.get_sampleInterval())
+        except:
+            pass
+        try:
+            s += "  [role=0x%x]\n" % (self.get_role())
         except:
             pass
         try:
@@ -514,9 +526,174 @@ class CxStatus(tinyos.message.Message.Message):
         return 32
     
     #
+    # Accessor methods for field: subnetChannel
+    #   Field type: short
+    #   Offset (bits): 168
+    #   Size (bits): 8
+    #
+
+    #
+    # Return whether the field 'subnetChannel' is signed (False).
+    #
+    def isSigned_subnetChannel(self):
+        return False
+    
+    #
+    # Return whether the field 'subnetChannel' is an array (False).
+    #
+    def isArray_subnetChannel(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'subnetChannel'
+    #
+    def offset_subnetChannel(self):
+        return (168 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'subnetChannel'
+    #
+    def offsetBits_subnetChannel(self):
+        return 168
+    
+    #
+    # Return the value (as a short) of the field 'subnetChannel'
+    #
+    def get_subnetChannel(self):
+        return self.getUIntElement(self.offsetBits_subnetChannel(), 8, 1)
+    
+    #
+    # Set the value of the field 'subnetChannel'
+    #
+    def set_subnetChannel(self, value):
+        self.setUIntElement(self.offsetBits_subnetChannel(), 8, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'subnetChannel'
+    #
+    def size_subnetChannel(self):
+        return (8 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'subnetChannel'
+    #
+    def sizeBits_subnetChannel(self):
+        return 8
+    
+    #
+    # Accessor methods for field: sampleInterval
+    #   Field type: long
+    #   Offset (bits): 176
+    #   Size (bits): 32
+    #
+
+    #
+    # Return whether the field 'sampleInterval' is signed (False).
+    #
+    def isSigned_sampleInterval(self):
+        return False
+    
+    #
+    # Return whether the field 'sampleInterval' is an array (False).
+    #
+    def isArray_sampleInterval(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'sampleInterval'
+    #
+    def offset_sampleInterval(self):
+        return (176 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'sampleInterval'
+    #
+    def offsetBits_sampleInterval(self):
+        return 176
+    
+    #
+    # Return the value (as a long) of the field 'sampleInterval'
+    #
+    def get_sampleInterval(self):
+        return self.getUIntElement(self.offsetBits_sampleInterval(), 32, 1)
+    
+    #
+    # Set the value of the field 'sampleInterval'
+    #
+    def set_sampleInterval(self, value):
+        self.setUIntElement(self.offsetBits_sampleInterval(), 32, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'sampleInterval'
+    #
+    def size_sampleInterval(self):
+        return (32 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'sampleInterval'
+    #
+    def sizeBits_sampleInterval(self):
+        return 32
+    
+    #
+    # Accessor methods for field: role
+    #   Field type: short
+    #   Offset (bits): 208
+    #   Size (bits): 8
+    #
+
+    #
+    # Return whether the field 'role' is signed (False).
+    #
+    def isSigned_role(self):
+        return False
+    
+    #
+    # Return whether the field 'role' is an array (False).
+    #
+    def isArray_role(self):
+        return False
+    
+    #
+    # Return the offset (in bytes) of the field 'role'
+    #
+    def offset_role(self):
+        return (208 / 8)
+    
+    #
+    # Return the offset (in bits) of the field 'role'
+    #
+    def offsetBits_role(self):
+        return 208
+    
+    #
+    # Return the value (as a short) of the field 'role'
+    #
+    def get_role(self):
+        return self.getUIntElement(self.offsetBits_role(), 8, 1)
+    
+    #
+    # Set the value of the field 'role'
+    #
+    def set_role(self, value):
+        self.setUIntElement(self.offsetBits_role(), 8, value, 1)
+    
+    #
+    # Return the size, in bytes, of the field 'role'
+    #
+    def size_role(self):
+        return (8 / 8)
+    
+    #
+    # Return the size, in bits, of the field 'role'
+    #
+    def sizeBits_role(self):
+        return 8
+    
+    #
     # Accessor methods for field: neighbors
     #   Field type: int[]
-    #   Offset (bits): 168
+    #   Offset (bits): 216
     #   Size of each element (bits): 16
     #
 
@@ -536,7 +713,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bytes) of the field 'neighbors'
     #
     def offset_neighbors(self, index1):
-        offset = 168
+        offset = 216
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16
@@ -546,7 +723,7 @@ class CxStatus(tinyos.message.Message.Message):
     # Return the offset (in bits) of the field 'neighbors'
     #
     def offsetBits_neighbors(self, index1):
-        offset = 168
+        offset = 216
         if index1 < 0 or index1 >= 16:
             raise IndexError
         offset += 0 + index1 * 16

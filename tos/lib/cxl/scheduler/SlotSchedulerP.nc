@@ -3,6 +3,8 @@
  #include "CXSchedule.h"
  #include "CXMac.h"
  #include "CXRoutingDebug.h"
+ //for sample interval in status message
+ #include "ToastSampler.h"
 module SlotSchedulerP {
   provides interface Send;
   provides interface Receive;
@@ -43,6 +45,7 @@ module SlotSchedulerP {
   uses interface Get<uint32_t> as PushCookie;
   uses interface Get<uint32_t> as WriteCookie;
   uses interface Get<uint32_t> as MissingLength;
+  uses interface SettingsStorage;
 } implementation {
 
   enum {
@@ -447,10 +450,26 @@ module SlotSchedulerP {
         call ActiveMessageAddress.amAddress());
       pl -> wakeupRC = call RebootCounter.get();
       pl -> wakeupTS = wakeupStartMilli;
+      //These fields are somewhat application specific. It would be
+      //better if this component called a configureStatus interface
+      //that could be specified on an application-by-application
+      //basis (or ignored) and would fill in a second nested payload.
+
+      #if CX_BASESTATION == 1
+      pl -> role = ROLE_BASESTATION;
+      #elif CX_ROUTER == 1
+      pl -> role = ROLE_ROUTER;
+      #else
+      pl -> role = ROLE_LEAF;
+      #endif
 
       pl -> pushCookie = call PushCookie.get();
       pl -> writeCookie = call WriteCookie.get();
       pl -> missingLength = call MissingLength.get();
+      pl -> subnetChannel = (call ProbeSchedule.get())->channel[NS_SUBNETWORK];
+      pl -> sampleInterval = 0;
+      call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
+        &(pl->sampleInterval), sizeof(pl->sampleInterval));
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);

@@ -19,4 +19,10 @@ enum {
 #define NS_SUBNETWORK_DEF 1
 #define NS_ROUTER_DEF 2
 
+enum {
+  ROLE_LEAF = 0,
+  ROLE_ROUTER = 1,
+  ROLE_BASESTATION = 2,
+};
+
 #endif
