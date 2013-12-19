@@ -109,9 +109,9 @@ class CXController(object):
         db.addDecoder(BaconSettings.BaconSettings)
         db.addDecoder(LogPrintf.LogPrintf)
         db.addDecoder(NetworkMembership.NetworkMembership)
-    #     #man that is ugghly to hook 
-    #     t = db.addDecoder(Tunneled.Tunneled)
-    #     t.receiveQueue = d.mif.receiveQueue
+        #man that is ugghly to hook 
+        t = db.addDecoder(Tunneled.Tunneled)
+        t.receiveQueue = d.mif.receiveQueue
         pingId = 0
 
         refListener = StatusTimeRefListener.StatusTimeRefListener(db, refCallBack)
