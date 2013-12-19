@@ -25,7 +25,7 @@ module CXProbeScheduleP {
     .channel={128, 0, 64},
 //    .invFrequency={4, 0, 1},
     .bw={2, 2, 2},
-    .maxDepth={2*CX_MAX_DEPTH, 0, CX_MAX_DEPTH}
+    .maxDepth={2*CX_MAX_DEPTH, CX_MAX_DEPTH, CX_MAX_DEPTH}
   };
   #else
   //leaf uses  global/subnetwork only
