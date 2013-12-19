@@ -141,12 +141,14 @@ class CXController(object):
                         nodes.add(eos.get_owner())
                     if eosCallBack:
                         eosCallBack(eos.get_owner(), eos.get_status())
-                    if eos.get_owner() in outboundMessages:
-                        for message in outboundMessages[eos.get_owner()]:
-                            d.send(message, eos.get_owner())
-                            if outboundCallback:
-                                outboundCallback(eos.get_owner())
-                        del outboundMessages[eos.get_owner()]
+                    if eos.get_owner() in outboundMessages and outboundMessages[eos.get_owner()]:
+                        messageList = outboundMessages[eos.get_owner()]
+                        message = messageList[0]
+                        messageList = messageList[1:]
+                        d.send(message, eos.get_owner())
+                        if outboundCallback:
+                            outboundCallback(eos.get_owner())
+                        outboundMessages[eos.get_owner()] = messageList
 
                     if eos.get_status() == 1 and requestMissing:
                         if eos.get_owner() == bsId:

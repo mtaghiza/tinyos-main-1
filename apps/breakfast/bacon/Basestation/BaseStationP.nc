@@ -423,9 +423,9 @@ implementation
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     //Mark the recipient as having data pending so it can respond to
     //the message that it just received.
-    if (id == AM_CX_RECORD_REQUEST_MSG){
+//    if (id == AM_CX_RECORD_REQUEST_MSG){
       call CXDownload.markPending[activeNS](call RadioAMPacket.destination(msg));
-    }
+//    }
     radioSending = FALSE;
     cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");

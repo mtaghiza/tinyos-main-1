@@ -473,9 +473,10 @@ class ControlFrame(Frame):
             (mInterval, mChannel) = self.hub.node.leafs[barcode]
             if oInterval != mInterval:
                 print "%s Interval %u -> %u"%(barcode, oInterval, mInterval)
-                setToastInterval = SetToastSampleInterval.SetToastSampleInterval(mInterval)
                 setBaconInterval = SetBaconSampleInterval.SetBaconSampleInterval(mInterval)
-                changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setToastInterval, setBaconInterval]
+                changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setBaconInterval]
+                setToastInterval = SetToastSampleInterval.SetToastSampleInterval(mInterval)
+                changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setToastInterval]
             if oChannel != mChannel:
                 print "%s Channel %u -> %u"%(barcode, oInterval, mInterval)
                 #TODO: this is for leaf nodes, need to set up routers
