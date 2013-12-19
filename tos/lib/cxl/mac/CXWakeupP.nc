@@ -78,9 +78,12 @@ module CXWakeupP {
   }
 
   error_t setChannel(uint8_t channel){
-    error_t error = call SubCXLink.setChannel(channel);
-    if (error == SUCCESS){
-      curChannel = channel;
+    error_t error = SUCCESS;
+    if (curChannel != channel){
+      error = call SubCXLink.setChannel(channel);
+      if (error == SUCCESS){
+        curChannel = channel;
+      }
     }
     return error;
   }
@@ -99,19 +102,34 @@ module CXWakeupP {
   }
 
   uint8_t nextProbe(uint8_t startIndex){
-    uint8_t i;
-    for (i = startIndex; i < NUM_SEGMENTS; i++){
-      if (sched->maxDepth[i]){
-        break;
-      }
-//      uint8_t invFreq;
-//      invFreq = sched -> invFrequency[i];
-//      if (invFreq && (probeCount % invFreq) == 0){
-//        cdbg(LPP, "match %u\r\n", i);
+    #if CX_BASESTATION  == 1
+    return startIndex;
+    #elif CX_ROUTER == 1
+    if (startIndex == NS_SUBNETWORK){
+      return startIndex+1;
+    }else{
+      return startIndex;
+    }
+    #else
+    if (startIndex == NS_ROUTER){
+      return startIndex +1;
+    }else{
+      return startIndex;
+    }
+    #endif
+//    uint8_t i;
+//    for (i = startIndex; i < NUM_SEGMENTS; i++){
+//      if (sched->maxDepth[i]){
 //        break;
 //      }
-    }
-    return i;
+////      uint8_t invFreq;
+////      invFreq = sched -> invFrequency[i];
+////      if (invFreq && (probeCount % invFreq) == 0){
+////        cdbg(LPP, "match %u\r\n", i);
+////        break;
+////      }
+//    }
+//    return i;
   }
 
   task void sendProbe(){
@@ -129,9 +147,7 @@ module CXWakeupP {
     call Packet.setPayloadLength(probe, sizeof(cx_lpp_probe_t));
     pl -> rc = call RebootCounter.get();
     pl -> tMilli = call ProbeTimer.getNow();
-    if (curChannel != activeChannel()){
-      setChannel(activeChannel());
-    }
+    setChannel(activeChannel());
     error = call SubSend.send(probe, 
       call LinkPacket.payloadLength(probe));
     if ((call CXLinkPacket.getSn(probe) % PROBE_LOG_INTERVAL) == 1){
@@ -289,9 +305,7 @@ module CXWakeupP {
     } else if (state == S_CHECK){
       return ERETRY;
     }else if (state == S_AWAKE){
-      if (curChannel != activeChannel()){ 
-        setChannel(activeChannel());
-      }
+      setChannel(activeChannel());
       return call SubCXLink.rx(timeout, retx);
     }else{
       cerror(LPP, "LPPUS %x\r\n", state); 
@@ -309,9 +323,7 @@ module CXWakeupP {
       error_t error;
       uint32_t probeIntervalMilli = probeInterval;
       activeNS = ns;
-      if (curChannel != activeChannel()){
-        setChannel(activeChannel());
-      }
+      setChannel(activeChannel());
 //      probeIntervalMilli = (sched->invFrequency[ns]*probeInterval);
       probeIntervalFast = milliToFast(probeIntervalMilli);
       if (probeIntervalFast == 0){
