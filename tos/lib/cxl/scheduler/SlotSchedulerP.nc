@@ -470,6 +470,9 @@ module SlotSchedulerP {
       pl -> sampleInterval = 0;
       call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
         &(pl->sampleInterval), sizeof(pl->sampleInterval));
+      memset(&pl->barcode, 0xff, GLOBAL_ID_LEN);
+      call SettingsStorage.get(TAG_GLOBAL_ID,
+        &(pl->barcode), GLOBAL_ID_LEN);
       call Neighborhood.copyNeighborhood(pl->neighbors);
       //indicate whether there is any data to be sent.
       pl -> dataPending = (pendingMsg != NULL);

@@ -3,6 +3,7 @@
 
 #include "CXLink.h"
 #include "multiNetwork.h"
+#include "GlobalID.h"
 
 #define CXM_DATA 0
 #define CXM_PROBE 1
@@ -100,6 +101,7 @@ typedef nx_struct cx_status {
   nx_uint8_t subnetChannel;
   nx_uint32_t sampleInterval;
   nx_uint8_t role;
+  nx_uint8_t barcode[GLOBAL_ID_LEN];
   nx_am_addr_t neighbors[CX_NEIGHBORHOOD_SIZE];
 } cx_status_t; 
 
@@ -111,6 +113,7 @@ enum {
  AM_CX_LPP_WAKEUP=0xC6,
  AM_CX_LPP_SLEEP=0xC7,
  AM_CX_LPP_CTS=0xC8,
+ AM_CX_STATUS=0xD3,
 };
 
 #endif
