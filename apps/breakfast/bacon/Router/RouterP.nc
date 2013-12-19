@@ -16,8 +16,9 @@ module RouterP{
   uses interface Timer<TMilli>;
   uses interface SettingsStorage;
   uses interface CXDownload;
-  uses interface Receive as CXDownloadReceive;
-
+//  uses interface Receive as CXDownloadReceive;
+  uses interface DownloadNotify;
+  uses interface Leds;
 } implementation {
 
   event void Boot.booted(){
@@ -67,12 +68,18 @@ module RouterP{
       //OK to try again momentarily.
       call Timer.startOneShot(DOWNLOAD_RETRY_INTERVAL);
     }else{
+      if (error == SUCCESS){
+        call Leds.led2On();
+      }else{
+        call Leds.set(error);
+      }
       post downloadNext();
     }
   }
 
   event void CXDownload.downloadFinished(){
     cinfo(ROUTER, "DF\r\n");
+    call Leds.led2Off();
     post downloadNext();
   }
 
@@ -122,6 +129,7 @@ module RouterP{
 
   event message_t* ReceiveData.receive(message_t* msg, 
       void* pl, uint8_t len){
+    call Leds.led1Toggle();
     if (toAppend == NULL){
       message_t* ret = call Pool.get();
       if (ret){
@@ -142,14 +150,24 @@ module RouterP{
     }
   }
 
-  event message_t* CXDownloadReceive.receive(message_t* msg, 
-      void* pl, uint8_t len){
-    cx_download_t* dpl = (cx_download_t*)pl;
-    cinfo(ROUTER, "CXDR %u\r\n", dpl->networkSegment);
-    if (dpl->networkSegment == NS_SUBNETWORK){
-      signal Timer.fired();
-    }
-    return msg;
+//  event message_t* CXDownloadReceive.receive(message_t* msg, 
+//      void* pl, uint8_t len){
+//    cx_download_t* dpl = (cx_download_t*)pl;
+//    cinfo(ROUTER, "CXDR %u\r\n", dpl->networkSegment);
+//    if (dpl->networkSegment == NS_SUBNETWORK){
+//      signal Timer.fired();
+//    }
+//    return msg;
+//  }
+  event void DownloadNotify.downloadStarted(){
+    call Leds.led0On();
+  }
+  task void downloadImmediate(){
+    signal Timer.fired();
+  }
+  event void DownloadNotify.downloadFinished(){
+    call Leds.led0Off();
+    post downloadImmediate();
   }
 
   event void CXDownload.eos(am_addr_t owner, eos_status_t status){}

@@ -30,12 +30,14 @@ configuration RouterAppC{
   #if ENABLE_AUTOPUSH == 1
   components new RecordPushRequestC(VOLUME_RECORD, TRUE);
   components new RouterAMSenderC(AM_LOG_RECORD_DATA_MSG);
+  components new AMReceiverC(AM_CX_RECORD_REQUEST_MSG) as RequestReceive;
   components CXLinkPacketC;
 
   RecordPushRequestC.Pool -> ActiveMessageC;
   RecordPushRequestC.AMSend -> RouterAMSenderC;
   RecordPushRequestC.Packet -> RouterAMSenderC;
   RecordPushRequestC.CXLinkPacket -> CXLinkPacketC;
+  RecordPushRequestC.Receive -> RequestReceive;
 
   components SlotSchedulerC;
   SlotSchedulerC.PushCookie -> RecordPushRequestC.PushCookie;
@@ -123,9 +125,11 @@ configuration RouterAppC{
   #warning Enable Testbed Router
   components TestbedRouterC;
   #endif
+  
+  components LedsC, NoLedsC;
 
-
-  components new AMReceiverC(AM_CX_DOWNLOAD) as CXDownloadReceive;
-  RouterP.CXDownloadReceive -> CXDownloadReceive; 
-
+//  components new AMReceiverC(AM_CX_DOWNLOAD) as CXDownloadReceive;
+//  RouterP.CXDownloadReceive -> CXDownloadReceive; 
+  RouterP.DownloadNotify -> SlotSchedulerC.DownloadNotify[NS_ROUTER];
+  RouterP.Leds -> LedsC;
 }
