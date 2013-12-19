@@ -467,7 +467,10 @@ module SlotSchedulerP {
       pl -> writeCookie = call WriteCookie.get();
       pl -> missingLength = call MissingLength.get();
       pl -> subnetChannel = (call ProbeSchedule.get())->channel[NS_SUBNETWORK];
-      pl -> sampleInterval = 0;
+      #ifndef DEFAULT_SAMPLE_INTERVAL
+      #define DEFAULT_SAMPLE_INTERVAL 0
+      #endif
+      pl -> sampleInterval = DEFAULT_SAMPLE_INTERVAL;
       call SettingsStorage.get(SS_KEY_TOAST_SAMPLE_INTERVAL,
         &(pl->sampleInterval), sizeof(pl->sampleInterval));
       memset(&pl->barcode, 0xff, GLOBAL_ID_LEN);
