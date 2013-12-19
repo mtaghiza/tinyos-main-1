@@ -13,12 +13,21 @@ class StatusTimeRefListener(object):
         neighbors = [v for v in msg.get_neighbors() if v != constants.BCAST_ADDR]
         print "REF", self.downloadStart, msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(), msg.get_dataPending(), neighbors
         print "Status", msg
-        q = ''' INSERT INTO base_reference
-          (node1, rc1, ts1, unixTS, writeCookie) VALUES
-          (?,     ?,   ?,   ?, ?)'''
-        self.db.insert.execute(q, 
+        q0 = ''' INSERT INTO base_reference
+          (node1, rc1, ts1, unixTS) VALUES
+          (?, ?, ?, ?)'''
+        self.db.insert.execute(q0, 
           (msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(),
-            self.downloadStart, msg.get_writeCookie()))
+            self.downloadStart))
+        q1 = '''INSERT INTO node_status 
+          (node_id, ts, writeCookie, subnetChannel, sampleInterval, role) 
+          VALUES (?, ?, ?, ?, ?, ?)'''
+        self.db.insert.execute(q1, (msg.addr, 
+          time.time(),
+          msg.get_writeCookie(),
+          msg.get_subnetChannel(), 
+          msg.get_sampleInterval(),
+          msg.get_role()))
         if self.refCallBack:
             self.refCallBack(msg.addr, neighbors, msg.get_pushCookie(),
                 msg.get_writeCookie(), msg.get_missingLength())
