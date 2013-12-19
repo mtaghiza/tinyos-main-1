@@ -56,7 +56,7 @@ module CXMasterP {
     }else if(activeNS != NS_INVALID){
       return ERETRY;
     } else if ((call GetProbeSchedule.get())->maxDepth[ns] == 0){
-      return EINVAL;
+      return FAIL;
     } else {
       error_t error = call LppControl.wakeup(ns);
       if (error == SUCCESS){
