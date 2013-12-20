@@ -265,6 +265,8 @@ class NodeFrame(Frame):
             routersFrame.grid(column=0, row=1, sticky=N+S+E+W)
             leafsFrame.grid(column=1, row=1, sticky=N+S+E+W)
             channelFrame.grid(column=0, row=rowNumber, sticky=N+S+E+W)
+        # update menu list of available sensor types
+        self.hub.control.updateTypes(self.sensorTypes)
 
     def drawTheRest(self):
         if False:
@@ -307,10 +309,6 @@ class NodeFrame(Frame):
             leafFrame.grid(column=1, row=rowNumber, sticky=N+S+E+W)
             self.tkobjects["leafFrame_%s" % leaf] = leafFrame
 
-        # update menu list of available sensor types
-        self.hub.control.updateTypes(self.sensorTypes)
-        self.hub.control.updateSites(self.routers)
-        self.hub.control.updateDownloadOptions(siteChannels)
     
     def redrawAllNodes(self):
         siteChannels = {}
