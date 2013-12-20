@@ -117,6 +117,7 @@ class DatabaseInit(object):
                               writeCookie INTEGER,
                               subnetChannel INTEGER,
                               sampleInterval INTEGER,
+                              barcode_id TEXT,
                               role INTEGER)''',
 #               'bacon_id': '''CREATE TABLE bacon_id 
 #                              (node_id INTEGER,

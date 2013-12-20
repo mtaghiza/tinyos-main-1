@@ -43,31 +43,18 @@ class DatabaseQuery(object):
             ret = (0, 0, 0)
         return ret
 
-    def getRouters(self):
-        """
-        Get list of routers in range of basestation.
-        """
-        
+    def getNodesByRole(self, role):
         query = '''
-          SELECT nm.slave_id, 
-            coalesce(bs.barcode_id, 'X'), 
-            coalesce(bs.subnetwork_channel, ?), 
-            nm.master_id, 
-            ap.network_segment
-          FROM last_ap
-          JOIN active_period ap 
-            ON last_ap.master_id = ap.master_id 
-            AND last_ap.cookie = ap.cookie
-          JOIN network_membership nm 
-            ON nm.master_id = last_ap.master_id 
-            AND nm.cookie = last_ap.cookie
-          LEFT JOIN last_bs 
-            ON nm.slave_id = last_bs.node_id
-          LEFT JOIN bacon_settings bs
-            ON last_bs.node_id = bs.node_id 
-            AND last_bs.cookie=bs.cookie
-          WHERE ap.network_segment = ?
-            AND nm.slave_id != nm.master_id'''
+          SELECT node_status.node_id, 
+            barcode_id, 
+            sampleInterval,
+            subnetChannel,
+            role
+          FROM last_status
+          JOIN node_status 
+            ON last_status.node_id = node_status.node_id 
+            AND last_status.ts = node_status.ts
+          WHERE node_status.role = ?'''
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
@@ -81,20 +68,26 @@ class DatabaseQuery(object):
         
         try:
             self.cursor.execute(query,
-              (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_ROUTER,))
+              (constants.ROLE_ROUTER,))
 
             for row in self.cursor:
-              key = "%04x" % int(row[0])
-              if row[1] == 'X':
-                  barcode = "(?) %x"%(row[0])
-              else:
+                nodeId  = row[0]
                 barcode = row[1]
-              
-              output[key] = (barcode, row[2])
+                sampleInterval = row[2]
+                channel = row[3]
+                output[channel] = output.get(channel, []) + [(barcode,
+                  nodeId, sampleInterval)]
         except:
             traceback.print_exc()
-            
         return output
+        
+
+    def getRouters(self):
+        """
+        Get list of routers in range of basestation.
+        """
+        return self.getNodesByRole(constants.ROLE_ROUTER)
+
 
 
     def getLeafs(self):
@@ -102,29 +95,34 @@ class DatabaseQuery(object):
         Get the latest downloaded settings from all the Nodes in the network.
         This is complimentary to what is found in the network.settings file.
         """
-        
-        query ='''SELECT  
-            coalesce(bs.barcode_id, 'X') as barcode_id, 
-            coalesce(bs.toast_interval, 0) as toast_interval, 
-            coalesce(bs.subnetwork_channel, ?) as subnetwork_channel, 
-            coalesce(bs.cookie, 0) as cookie,
-            nm.slave_id, nm.master_id, 
-            ap.network_segment
-          FROM last_ap
-          JOIN active_period ap 
-            ON last_ap.master_id = ap.master_id 
-            AND last_ap.cookie = ap.cookie
-          JOIN network_membership nm 
-            ON nm.master_id = last_ap.master_id 
-            AND nm.cookie = last_ap.cookie
-          LEFT JOIN last_bs 
-            ON nm.slave_id = last_bs.node_id
-          LEFT JOIN bacon_settings bs
-            ON last_bs.node_id = bs.node_id 
-            AND last_bs.cookie=bs.cookie
-          WHERE ap.network_segment = ?
-            AND nm.slave_id != nm.master_id;
-        '''
+        return self.getNodesByRole(constants.ROLE_LEAF)
+    
+    def getSiteMap(self):
+        site = {}
+        routers = self.getRouters()
+        for channel in routers:
+            channelMap = site.get(channel,{})
+            channelMap['routers'] = routers[channel]
+            site[channel] = channelMap
+
+        leafs = self.getLeafs()
+        for channel in leafs:
+            channelMap = site.get(channel,{})
+            channelMap['leafs'] = leafs[channel]
+            site[channel] = channelMap
+        return site
+
+    def getSettings(self):
+        query = '''
+          SELECT node_status.node_id, 
+            barcode_id, 
+            sampleInterval,
+            subnetChannel,
+            role
+          FROM last_status
+          JOIN node_status 
+            ON last_status.node_id = node_status.node_id 
+            AND last_status.ts = node_status.ts'''
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
@@ -137,20 +135,19 @@ class DatabaseQuery(object):
         output = {}
         
         try:
-            self.cursor.execute(query,
-              (constants.CHANNEL_SUBNETWORK_DEFAULT, constants.NS_SUBNETWORK,))
-              
+            self.cursor.execute(query)
+
             for row in self.cursor:
-              if row[0] == 'X':
-                  key = '(?) %x'%(row[4]) 
-              else:
-                  key = row[0]
-              output[key] = row[1:3]
+                nodeId  = row[0]
+                barcode = row[1]
+                sampleInterval = row[2]
+                channel = row[3]
+                role = row[4]
+                output[barcode] = (nodeId, sampleInterval, channel, role)
         except:
             traceback.print_exc()
-        
         return output
-
+        
    
     def getMultiplexers(self):
         """

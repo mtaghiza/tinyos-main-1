@@ -229,8 +229,8 @@ class DisplayFrame(Frame):
             label.grid(column=2, row=2, sticky=E)
             
             # when read from network
-            (readInterval, readChannel) = self.hub.node.originalLeafs[node]
-            
+            (nodeId, readInterval, readChannel, role) = self.hub.node.originalSettings[node]
+             
             label = Label(self.frame, text="Current:")
             label.grid(column=0, row=3, sticky=E)
             
@@ -241,7 +241,7 @@ class DisplayFrame(Frame):
             label.grid(column=2, row=3, sticky=E)
             
             # queued for transmission
-            (reqInterval, reqChannel) = self.hub.node.leafs[node]
+            (nodeId, reqInterval, reqChannel, role) = self.hub.node.settings[node]
             
             if reqInterval != readInterval:
                 interval = reqInterval

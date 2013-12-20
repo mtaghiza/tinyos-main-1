@@ -20,10 +20,12 @@ class StatusTimeRefListener(object):
           (msg.addr, msg.get_wakeupRC(), msg.get_wakeupTS(),
             self.downloadStart))
         q1 = '''INSERT INTO node_status 
-          (node_id, ts, writeCookie, subnetChannel, sampleInterval, role) 
-          VALUES (?, ?, ?, ?, ?, ?)'''
+          (node_id, ts, barcode_id, writeCookie, subnetChannel, sampleInterval, role) 
+          VALUES (?, ?, ?, ?, ?, ?, ?)'''
+        #TODO: format entire barcode correctly
         self.db.insert.execute(q1, (msg.addr, 
           time.time(),
+          hex(msg.addr),
           msg.get_writeCookie(),
           msg.get_subnetChannel(), 
           msg.get_sampleInterval(),
