@@ -192,7 +192,11 @@ class DatabaseInit(object):
                           SELECT node_id, toast_id, 
                           max(cookie) as cookie
                           FROM toast_disconnection 
-                          GROUP BY node_id, toast_id'''}
+                          GROUP BY node_id, toast_id''',
+             'last_status': '''CREATE VIEW last_status AS
+                          SELECT node_id, max(ts) as ts
+                          FROM node_status
+                          GROUP BY node_id'''}
 
     # class finds suitable filename for DB and creates tables if needed
     def __init__(self, rootName):
