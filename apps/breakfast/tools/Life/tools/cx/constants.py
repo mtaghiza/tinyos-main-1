@@ -24,20 +24,23 @@ CHANNEL_GLOBAL=128
 CHANNEL_ROUTER=64
 CHANNEL_SUBNETWORK_DEFAULT=0
 
+DEFAULT_PROBE_INTERVAL=1024
+SEGMENT_MAX_DEPTH=5
+
 MAX_REQUEST_UNIT=50000
 DEFAULT_RADIO_CONFIG = {
-  'probeInterval': 1024,
+  'probeInterval': DEFAULT_PROBE_INTERVAL,
   'globalChannel': CHANNEL_GLOBAL,
   'subNetworkChannel': CHANNEL_SUBNETWORK_DEFAULT,
   'routerChannel': CHANNEL_ROUTER,
-  'globalInvFrequency': 4,
+  'globalInvFrequency': 1,
   'subNetworkInvFrequency': 1,
   'routerInvFrequency': 1,
   'globalBW': 2,
   'subNetworkBW': 2,
   'routerBW': 2,
-  'globalMaxDepth':8,
-  'subNetworkMaxDepth':5,
-  'routerMaxDepth': 5,
+  'globalMaxDepth':2*SEGMENT_MAX_DEPTH,
+  'subNetworkMaxDepth':SEGMENT_MAX_DEPTH,
+  'routerMaxDepth':SEGMENT_MAX_DEPTH,
   'maxDownloadRounds':10}
 BCAST_ADDR= 0xFFFF
