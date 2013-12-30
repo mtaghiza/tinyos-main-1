@@ -308,12 +308,14 @@ implementation
       //forwarded out, so make sure that we are marked as having
       //pending data
       call CXDownload.markPending[activeNS](call ActiveMessageAddress.amAddress());
+      somebodyPending = TRUE;
     }
     
     //Mark the node who we are requesting data from as having pending
     //data.
     if (id == AM_CX_RECORD_REQUEST_MSG){
       call CXDownload.markPending[activeNS](call SerialAMPacket.destination(msg));
+      somebodyPending = TRUE;
     }
 
     if (call SerialRXQueue.size() >= call SerialRXQueue.maxSize()){
@@ -423,9 +425,8 @@ implementation
   void radioSendDone(am_id_t id, message_t* msg, error_t error) {
     //Mark the recipient as having data pending so it can respond to
     //the message that it just received.
-//    if (id == AM_CX_RECORD_REQUEST_MSG){
-      call CXDownload.markPending[activeNS](call RadioAMPacket.destination(msg));
-//    }
+    call CXDownload.markPending[activeNS](call RadioAMPacket.destination(msg));
+    somebodyPending = TRUE;
     radioSending = FALSE;
     cdbg(BASESTATION, "RSD %x %u\r\n", id, call RadioAMPacket.destination(msg));
     cdbg(BASESTATION, "P fwdS\r\n");
@@ -637,8 +638,9 @@ implementation
       if (!somebodyPending && 
         ((call FlushTimer.getNow() - lastActivity)  < BS_KEEP_ALIVE_TIMEOUT)){
         call CXDownload.markPending[ns](owner);
+      }else{
+        somebodyPending = FALSE;
       }
-      somebodyPending = FALSE;
     }
   }
 
