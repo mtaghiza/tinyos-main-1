@@ -445,12 +445,6 @@ class ControlFrame(Frame):
     def outboundCallback(self, node):
         self.progressMessage("Sent settings-change to %x.\n"%(node))
 
-    def getNodeId(self, barcodeId):
-        #TODO: look up node ID by barcode in database
-        barcodeIdInt = int(barcodeId, 16)
-        barcodeIdInt = barcodeIdInt & (0xFFFF)
-        return barcodeIdInt
-    
     def commitChanges(self):
         self.progressMessage("Committing settings changes, please wait.\n")
         self.downloadButton.config(bg="yellow", text="BUSY",
@@ -466,11 +460,10 @@ class ControlFrame(Frame):
 
     def commitChangesRunner(self):
         changeMessages = {}
-        for barcode in self.hub.node.leafs:
-            nodeId = self.getNodeId(barcode)
-            print "barcode", barcode, "node id", nodeId
-            (oInterval, oChannel) = self.hub.node.originalLeafs[barcode]
-            (mInterval, mChannel) = self.hub.node.leafs[barcode]
+        for barcode in self.hub.node.settings:
+            (nodeId, oInterval, oChannel, oRole) = self.hub.node.originalSettings[barcode]
+            (nodeId, mInterval, mChannel, mRole) = self.hub.node.settings[barcode]
+            print "Check modifications for %s (%u)"%(barcode, nodeId)
             if oInterval != mInterval:
                 print "%s Interval %u -> %u"%(barcode, oInterval, mInterval)
                 setBaconInterval = SetBaconSampleInterval.SetBaconSampleInterval(mInterval)
@@ -478,14 +471,25 @@ class ControlFrame(Frame):
                 setToastInterval = SetToastSampleInterval.SetToastSampleInterval(mInterval)
                 changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setToastInterval]
             if oChannel != mChannel:
-                print "%s Channel %u -> %u"%(barcode, oInterval, mInterval)
-                #TODO: this is for leaf nodes, need to set up routers
-                # with different segment memberships.
-                setProbeSchedule = SetProbeSchedule(PROBE_INTERVAL,
-                  [GLOBAL_CHANNEL, mChannel, ROUTER_CHANNEL],
-                  [1, 1, 1], # legacy: probe rate divider
-                  [2, 2, 2], # boundary width
-                  [2*MAX_DEPTH, MAX_DEPTH, 0])
+                if mRole == constants.ROLE_ROUTER:
+                    print "Router %s Channel %u -> %u"%(barcode, oChannel, mChannel)
+                    setProbeSchedule = SetProbeSchedule.SetProbeSchedule(constants.DEFAULT_PROBE_INTERVAL,
+                      [constants.CHANNEL_GLOBAL, mChannel, constants.CHANNEL_ROUTER],
+                      [1, 1, 1], # legacy: probe rate divider
+                      [2, 2, 2], # boundary width
+                      [2*constants.SEGMENT_MAX_DEPTH, constants.SEGMENT_MAX_DEPTH, constants.SEGMENT_MAX_DEPTH])
+                elif mRole == constants.ROLE_LEAF:
+                    print "Leaf %s Channel %u -> %u"%(barcode, oChannel, mChannel)
+                    setProbeSchedule = SetProbeSchedule.SetProbeSchedule(constants.DEFAULT_PROBE_INTERVAL,
+                      [constants.CHANNEL_GLOBAL, mChannel, constants.CHANNEL_ROUTER],
+                      [1, 1, 1], # legacy: probe rate divider
+                      [2, 2, 2], # boundary width
+                      [2*constants.SEGMENT_MAX_DEPTH, constants.SEGMENT_MAX_DEPTH, 0])
+#                     setProbeSchedule = SetProbeSchedule(constants.PROBE_INTERVAL,
+#                       [constants.GLOBAL_CHANNEL, mChannel, constants.ROUTER_CHANNEL],
+#                       [1, 1, 1], # legacy: probe rate divider
+#                       [2, 2, 2], # boundary width
+#                       [2*constants.MAX_DEPTH, constants.MAX_DEPTH, 0])
                 changeMessages[nodeId] = changeMessages.get(nodeId, [])+[setProbeSchedule]
         if changeMessages:
             cxCtrl = CXController.CXController(self.dbFile)
