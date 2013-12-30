@@ -292,12 +292,12 @@ class DisplayFrame(Frame):
             pass
         else:        
             for node in self.nodes:
-                if node in self.hub.node.leafs:
+                if node in self.hub.node.settings:
                     # read old settings
-                    (oldInterval, oldChannel) = self.hub.node.leafs[node]
+                    (nodeId, oldInterval, oldChannel, role) = self.hub.node.settings[node]
                     
                     # store new settings
-                    self.hub.node.leafs[node] = (interval, oldChannel)
+                    self.hub.node.settings[node] = (nodeId, interval, oldChannel, role)
                 
             self.redrawAll()
             self.hub.node.redrawAllNodes()
