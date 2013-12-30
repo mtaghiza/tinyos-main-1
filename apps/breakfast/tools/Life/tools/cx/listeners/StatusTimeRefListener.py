@@ -3,6 +3,7 @@ import time
 import sqlite3
 import tools.cx.constants as constants
 
+
 class StatusTimeRefListener(object):
     def __init__(self, db, refCallBack=None):
         self.downloadStart = None
@@ -22,10 +23,10 @@ class StatusTimeRefListener(object):
         q1 = '''INSERT INTO node_status 
           (node_id, ts, barcode_id, writeCookie, subnetChannel, sampleInterval, role) 
           VALUES (?, ?, ?, ?, ?, ?, ?)'''
-        #TODO: format entire barcode correctly
+        barcodeText = '0x'+''.join(['%02x'%v for v in reversed(msg.get_barcode())])
         self.db.insert.execute(q1, (msg.addr, 
           time.time(),
-          hex(msg.addr),
+          barcodeText,
           msg.get_writeCookie(),
           msg.get_subnetChannel(), 
           msg.get_sampleInterval(),
