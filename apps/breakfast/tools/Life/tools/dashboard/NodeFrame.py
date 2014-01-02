@@ -223,15 +223,15 @@ class NodeFrame(Frame):
 
                     if barcode in self.multiplexers:
                         # each node can have multiple multiplexers attached
-                        for i, plexid in enumerate(self.multiplexers[leaf]):
+                        for i, plexid in enumerate(self.multiplexers[barcode]):
         #                     print "plexs: ", i, plex[0]
         #                     plexid = plex[0]
-                            print leaf, i, plexid
+                            print barcode, i, plexid
                             plexFrame = Frame(leafFrame, bd=1, relief=SUNKEN)
                             self.tkobjects["plexFrame_%s" % plexid] = plexFrame
                             
                             # color code button: grey=selected, yellow=modified
-                            if plexid in selection:
+                            if plexid in self.selection:
                                 colorCode = "grey"
                             #elif self.leafs[leaf] != self.originalLeafs[leaf]:
                             #    colorCode = "yellow"
@@ -242,7 +242,7 @@ class NodeFrame(Frame):
                             button.configure(width=18, height=1, background=colorCode, activebackground=colorCode, highlightbackground=colorCode)
                             button.grid(column=0, row=0, columnspan=8, sticky=N+S+E+W)
                             self.tkobjects["plexButton_%s" % plexid] = button
-                            toastMap = self.multiplexers[leaf][plexid]
+                            toastMap = self.multiplexers[barcode][plexid]
                             # each multiplexer has 8 channels
                             for sc in toastMap.keys():
                                 (sensorType, sensorId) = toastMap[sc]
