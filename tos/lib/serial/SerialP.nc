@@ -76,7 +76,7 @@ module SerialP {
   }
 }
 implementation {
-#define NO_TX_SEQNO
+//#define NO_TX_SEQNO
 
   enum {
     RX_DATA_BUFFER_SIZE = 2,

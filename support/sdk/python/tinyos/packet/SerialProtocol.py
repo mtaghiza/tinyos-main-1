@@ -64,15 +64,16 @@ class RXThread(Process):
 
     def run(self):
         ioDone = False
+        lastSeqNo = 0
         while not ioDone:
             try:
                 frame = self.prot.readFramedPacket()       
                 frameType = ord(frame[0])
-                pdataOffset = 1
+                seqNo = ord(frame[1])
+                pdataOffset = 2
                 if frameType == P_PACKET_ACK:
                     # send an ACK
-                    self.prot.writeFramedPacket(P_ACK, frame[1], "", 0)
-                    pdataOffset = 2
+                    self.prot.writeFramedPacket(P_ACK, seqNo, "", 0)
                 packet = frame[pdataOffset:]
                 
                 if frameType == P_ACK:
@@ -83,6 +84,9 @@ class RXThread(Process):
                         self.prot.lastAck = packet
                         self.prot.ackCV.notify()
                 else:
+                    if seqNo != ((lastSeqNo+1)%256):
+                        print "!SRX (%d, %d)"%( lastSeqNo, seqNo)
+                    lastSeqNo = seqNo
                     self.prot.queue.put(packet)
             #OK, kind of ugly. finishing the SerialSource (ThreadTask)
             # leads (ultimately) to an IODone exception coming up
