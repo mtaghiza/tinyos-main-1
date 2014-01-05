@@ -40,11 +40,7 @@ from tinyos.message.SerialPacket import SerialPacket
 import tinyos.packet.PacketDispatcher
 import tinyos.packet.PacketSource
 import tinyos.packet.SFSource
-try:
-    import tinyos.packet.SerialSource
-except:
-    print >> sys.stderr, "SerialSource not imported"
-    tinyos.packet.SerialSource = None
+import tinyos.packet.SerialSource
 
 import Queue
 from threading import Thread

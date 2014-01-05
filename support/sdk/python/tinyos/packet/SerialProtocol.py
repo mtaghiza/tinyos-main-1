@@ -33,6 +33,8 @@
 #  - Add sequence number
 #  - Handle acknowledgements correctly
 from multiprocessing import Lock, Condition, Process, Queue
+from Queue import Empty
+from threading import Thread
 from IO import IODone
 from Serial import Serial
 
@@ -55,13 +57,31 @@ class NoAckException(Exception):
 def hex(x):
     return "0x%02X" % (ord(x))
 
+class TXThread(Thread):
+    def __init__(self, prot):
+        Thread.__init__(self)
+        self.prot = prot
 
-class RXThread(Process):
+    def run(self):
+        #It's OK to do this in an infinite loop here because the
+        # serial port is closed elsewhere and we are running this
+        # thread as a daemon
+        while True:
+            try:
+                args = self.prot.txQueue.get(True, 1)
+                self.prot.writeFramedPacket(*args)
+            except Empty:
+                pass
+            except NoAckException:
+                print "No ACK"
+            
+
+class RXThread(Thread):
     def __init__(self, prot, signalError):
-        Process.__init__(self)
+        Thread.__init__(self)
         self.prot = prot
         self.signalError = signalError
-
+        
     def run(self):
         ioDone = False
         lastSeqNo = 0
@@ -98,11 +118,25 @@ class RXThread(Process):
                 ioDone = True
             except:
                 self.signalError()
-#                 print "SerialProtocol Exception"
-#                 with self.prot.ackCV:
-#                     self.prot.lastAck = None
-#                     self.prot.ackCV.notify()
-#                 self.prot.queue.put(None)
+
+class SerialWorkerProcess(Process):
+    def __init__(self, prot, signalError):
+        Process.__init__(self)
+        self.prot = prot
+        self.signalError = signalError
+
+    def run(self):
+        self.rxThread = RXThread(self.prot, self.signalError)
+        self.rxThread.daemon = True
+        self.rxThread.start()
+        self.txThread = TXThread(self.prot)
+        self.txThread.daemon = True
+        self.txThread.start()
+        #necessary to keep child threads alive.
+        # The process should be run as a daemon so that when its
+        # parent terminates, it terminates (as do its child threads)
+        while True:
+            pass
 
 class SerialProtocol:
     def __init__(self, ins, outs, signalError):
@@ -122,19 +156,30 @@ class SerialProtocol:
         self.ackCV = Condition(rxLock)
         self.lastAck = None
         self.queue = Queue()
+        self.txQueue = Queue()
     
     #also a little ugly: can't start this thread until the
     # serial.Serial object has been opened. This should all be
     # encapsulated in a single constructor.
     def open(self):
-        self.rxThread = RXThread(self, self.signalError)
-        self.rxThread.daemon = True
-        self.rxThread.start()
+        useMultiprocessing = True
+        if useMultiprocessing:
+            self.workerProcess = SerialWorkerProcess(self, self.signalError)
+            self.workerProcess.daemon = True
+            self.workerProcess.start()
+        else:
+            self.rxThread = RXThread(self, self.signalError)
+            self.rxThread.daemon = True
+            self.rxThread.start()
+            self.txThread = TXThread(self)
+            self.txThread.daemon = True
+            self.txThread.start()
+        
         
     def readPacket(self):
         try:
             packet = self.queue.get(True, 1)
-        except Queue.Empty:
+        except Empty:
             return None
         else:
             return packet
@@ -222,7 +267,8 @@ class SerialProtocol:
         while attemptsLeft:
             attemptsLeft -= 1
             try:
-                self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
+                self.txQueue.put( (P_PACKET_ACK, self.seqNo, data))
+#                self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
                 break
             except NoAckException:
                 if DEBUG:
