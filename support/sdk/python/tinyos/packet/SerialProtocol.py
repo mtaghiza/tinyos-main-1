@@ -157,13 +157,13 @@ class SerialProtocol:
         self.lastAck = None
         self.queue = Queue()
         self.txQueue = Queue()
+        self.useMultiprocessing = False
     
     #also a little ugly: can't start this thread until the
     # serial.Serial object has been opened. This should all be
     # encapsulated in a single constructor.
     def open(self):
-        useMultiprocessing = True
-        if useMultiprocessing:
+        if self.useMultiprocessing:
             self.workerProcess = SerialWorkerProcess(self, self.signalError)
             self.workerProcess.daemon = True
             self.workerProcess.start()
@@ -267,8 +267,10 @@ class SerialProtocol:
         while attemptsLeft:
             attemptsLeft -= 1
             try:
-                self.txQueue.put( (P_PACKET_ACK, self.seqNo, data))
-#                self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
+                if self.useMultiprocessing:
+                    self.txQueue.put( (P_PACKET_ACK, self.seqNo, data))
+                else:
+                    self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
                 break
             except NoAckException:
                 if DEBUG:
