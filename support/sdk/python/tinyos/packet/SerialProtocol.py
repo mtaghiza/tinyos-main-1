@@ -32,9 +32,7 @@
 #  - Assign constants from Serial.py
 #  - Add sequence number
 #  - Handle acknowledgements correctly
-
-import Queue
-from threading import Lock, Condition, Thread
+from multiprocessing import Lock, Condition, Process, Queue
 from IO import IODone
 from Serial import Serial
 
@@ -58,9 +56,9 @@ def hex(x):
     return "0x%02X" % (ord(x))
 
 
-class RXThread(Thread):
+class RXThread(Process):
     def __init__(self, prot, signalError):
-        Thread.__init__(self)
+        Process.__init__(self)
         self.prot = prot
         self.signalError = signalError
 
@@ -119,7 +117,7 @@ class SerialProtocol:
         rxLock = Lock()
         self.ackCV = Condition(rxLock)
         self.lastAck = None
-        self.queue = Queue.Queue()
+        self.queue = Queue()
     
     #also a little ugly: can't start this thread until the
     # serial.Serial object has been opened. This should all be
@@ -141,7 +139,6 @@ class SerialProtocol:
         count = 0
         escaped = False
         receiveBuffer = ""
-
         while True:
             if not self.inSync:
                 if DEBUG:
