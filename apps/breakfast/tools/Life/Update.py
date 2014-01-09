@@ -57,7 +57,7 @@ if __name__ == '__main__':
     if not os.path.isdir(logDir):
         os.mkdir(logDir)
     now_str = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
-    logFile = open(os.path.join(logDir, "%s.updateLog"%(now_str,)), 'w')
+    logFile = open(os.path.join(logDir, "%s.update.log"%(now_str,)), 'w')
     mw = MessageWindow(root, logFile)
     try:
         root.focus_set()
