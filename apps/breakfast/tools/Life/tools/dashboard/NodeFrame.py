@@ -348,8 +348,6 @@ class NodeFrame(Frame):
             channelFrame.grid(column=0, row=rowNumber, sticky=N+S+E+W)
         # update menu list of available sensor types
         self.hub.control.updateTypes(self.sensorTypes)
-        
-        print self.downloadRange
 
     def drawTheRest(self):
         if False:
