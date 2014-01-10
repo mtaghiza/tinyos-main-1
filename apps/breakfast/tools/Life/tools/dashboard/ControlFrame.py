@@ -116,99 +116,127 @@ class ControlFrame(Frame):
                 # choose first port if no port was previously selected
                 if oldIndex not in newDict:
                     self.comVar.set(sorted(newDict.keys())[0])
-                self.downloadButton.config(state=NORMAL )
+#                 self.downloadButton.config(state=NORMAL )
+                #TODO: update state of commit, discover, download buttons
             else:
                 menu.add_command(label=self.DEFAULT_COM_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_COM_STRING))
                 self.comVar.set(self.DEFAULT_COM_STRING)
-                self.downloadButton.config(state=DISABLED )
+#                 self.downloadButton.config(state=DISABLED )
+                #TODO: disable commit, discover, and download buttons.
             # update
             self.comDict = newDict
         # run detection again after 1000 ms
         self.comOption.after(1000, self.deviceDetection)
     
-
     def initUI(self):
         self.progressWindow = None
-        self.selectionFrame = Frame(self, padx=self.SPACING)
-        self.selectionFrame.grid(column=0, row=0)
-        #
-        #
-        #
-        self.allFrame = Frame(self.selectionFrame, padx=self.SPACING)
-        
-        self.allLabel = Label(self.allFrame, text="All: ")
-        self.allLabel.grid(column=0, row=0)
-        
-        self.allTypeVar = StringVar()        
-        self.allTypeVar.set(self.DEFAULT_TYPE_STRING)
-        self.allTypeOption = OptionMenu(self.allFrame, self.allTypeVar, [self.DEFAULT_TYPE_STRING])
-        self.allTypeOption.config(state=DISABLED)
-        self.allTypeOption.config(width=len(self.DEFAULT_TYPE_STRING))
-        self.allTypeOption.grid(column=1, row=0)
-        
-        self.allButton = Button(self.allFrame, text="Select", command=self.selectAll)
-        self.allButton.grid(column=2, row=0)
-        
-        self.allFrame.grid(column=0, row=0)
 
-
-        #
-        #
-        #
-        self.siteFrame = Frame(self.selectionFrame, padx=self.SPACING)
-        
-        self.siteLabel = Label(self.siteFrame, text="Site: ")
-        self.siteLabel.grid(column=0, row=0)
-        
-        self.siteSiteVar = StringVar()        
-        self.siteSiteVar.set(self.DEFAULT_SITE_STRING)
-        self.siteSiteOption = OptionMenu(self.siteFrame, self.siteSiteVar, [self.DEFAULT_SITE_STRING])
-        self.siteSiteOption.config(state=DISABLED)
-        self.siteSiteOption.config(width=len(self.DEFAULT_SITE_STRING))
-        self.siteSiteOption.grid(column=1, row=0)
-
-        self.siteTypeVar = StringVar()        
-        self.siteTypeVar.set(self.DEFAULT_TYPE_STRING)
-        self.siteTypeOption = OptionMenu(self.siteFrame, self.siteTypeVar, [self.DEFAULT_TYPE_STRING])
-        self.siteTypeOption.config(state=DISABLED)
-        self.siteTypeOption.config(width=len(self.DEFAULT_TYPE_STRING))
-        self.siteTypeOption.grid(column=2, row=0)
-
-        self.siteButton = Button(self.siteFrame, text="Select", command=self.selectSite)
-        self.siteButton.grid(column=3, row=0)
-
-        self.siteFrame.grid(column=0, row=1)
-        
-        #
-        #
-        #
-        self.commitFrame = Frame(self.selectionFrame, padx=self.SPACING)
-        self.commitButton = Button(self.commitFrame, text="Commit Changes", command=self.commitChanges)
-        self.commitButton.grid(column=0, row=0)
-        self.commitFrame.grid(column=2, row=0)
-        
-        #
-        self.downloadFrame = Frame(self, padx=self.SPACING)
-        self.downloadLabel = Label(self.downloadFrame,
-          text="Download From:")
-        self.downloadLabel.grid(column=0, row=0)
-
-        self.downloadVar = StringVar()
-        self.downloadOption = OptionMenu(self.downloadFrame,
-          self.downloadVar, [])
-        self.updateDownloadOptions({})
-        self.selectDownloadTarget(self.DEFAULT_DOWNLOAD_TARGET)
-        self.downloadOption.grid(column=1, row=0)
-
+        self.comFrame = Frame(self, padx=self.SPACING)        
+        self.comLabel = Label(self.comFrame,
+          text="Basestation:")
+        self.comLabel.grid(column=0, row=0)
         self.comVar = StringVar()        
         self.comVar.set(self.DEFAULT_COM_STRING)
-        self.comOption = OptionMenu(self.downloadFrame, self.comVar,
+        self.comOption = OptionMenu(self.comFrame, self.comVar,
           [self.DEFAULT_COM_STRING])
         self.comOption.config(width=25)
-        self.comOption.grid(column=0,row=1)
+        self.comOption.grid(column=1,row=0)
+        self.comFrame.grid(column=0, row=0)
+        
+        self.commitFrame = Frame(self, padx=self.SPACING)
+        self.commitButton = Button(self.commitFrame, 
+          text="Commit Changes", 
+          command=self.commitChanges, state=DISABLED)
+        self.commitButton.grid(column=0, row=0)
+        self.commitFrame.grid(column=1, row=0)
 
-        self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
-        self.downloadButton.grid(column=1, row=1)
+        self.discoverFrame = Frame(self, padx=self.SPACING)
+        self.discoverButton = Button(self.discoverFrame,
+          text="Discover Network",
+          command=self.discoverNetwork)
+        self.discoverButton.grid(column=0, row=0)
+        self.discoverFrame.grid(column=2, row=0)
+
+        self.routerDownloadFrame = Frame(self, padx=self.SPACING)
+        self.routerDownloadButton = Button(self.routerDownloadFrame,
+          text="Router Download",
+          command = self.routerDownload)
+        self.routerDownloadButton.grid(column=0, row=0)
+        self.routerDownloadFrame.grid(column=3, row=0)
+        #TODO: would be cool to disable this if no routers have been
+        # detected
+
+#         self.selectionFrame = Frame(self, padx=self.SPACING)
+#         self.selectionFrame.grid(column=0, row=0)
+#         #
+#         #
+#         #
+#         self.allFrame = Frame(self.selectionFrame, padx=self.SPACING)
+#         
+#         self.allLabel = Label(self.allFrame, text="All: ")
+#         self.allLabel.grid(column=0, row=0)
+#         
+#         self.allTypeVar = StringVar()        
+#         self.allTypeVar.set(self.DEFAULT_TYPE_STRING)
+#         self.allTypeOption = OptionMenu(self.allFrame, self.allTypeVar, [self.DEFAULT_TYPE_STRING])
+#         self.allTypeOption.config(state=DISABLED)
+#         self.allTypeOption.config(width=len(self.DEFAULT_TYPE_STRING))
+#         self.allTypeOption.grid(column=1, row=0)
+#         
+#         self.allButton = Button(self.allFrame, text="Select", command=self.selectAll)
+#         self.allButton.grid(column=2, row=0)
+#         
+#         self.allFrame.grid(column=0, row=0)
+# 
+# 
+#         #
+#         #
+#         #
+#         self.siteFrame = Frame(self.selectionFrame, padx=self.SPACING)
+#         
+#         self.siteLabel = Label(self.siteFrame, text="Site: ")
+#         self.siteLabel.grid(column=0, row=0)
+#         
+#         self.siteSiteVar = StringVar()        
+#         self.siteSiteVar.set(self.DEFAULT_SITE_STRING)
+#         self.siteSiteOption = OptionMenu(self.siteFrame, self.siteSiteVar, [self.DEFAULT_SITE_STRING])
+#         self.siteSiteOption.config(state=DISABLED)
+#         self.siteSiteOption.config(width=len(self.DEFAULT_SITE_STRING))
+#         self.siteSiteOption.grid(column=1, row=0)
+# 
+#         self.siteTypeVar = StringVar()        
+#         self.siteTypeVar.set(self.DEFAULT_TYPE_STRING)
+#         self.siteTypeOption = OptionMenu(self.siteFrame, self.siteTypeVar, [self.DEFAULT_TYPE_STRING])
+#         self.siteTypeOption.config(state=DISABLED)
+#         self.siteTypeOption.config(width=len(self.DEFAULT_TYPE_STRING))
+#         self.siteTypeOption.grid(column=2, row=0)
+# 
+#         self.siteButton = Button(self.siteFrame, text="Select", command=self.selectSite)
+#         self.siteButton.grid(column=3, row=0)
+# 
+#         self.siteFrame.grid(column=0, row=1)
+        
+        #
+        #
+        #
+#         self.commitFrame = Frame(self, padx=self.SPACING)
+#         self.commitFrame.grid(column=1, row=0)
+        
+        #
+#         self.downloadFrame = Frame(self, padx=self.SPACING)
+#         self.downloadLabel = Label(self.downloadFrame,
+#           text="Download From:")
+#         self.downloadLabel.grid(column=0, row=0)
+# 
+#         self.downloadVar = StringVar()
+#         self.downloadOption = OptionMenu(self.downloadFrame,
+#           self.downloadVar, [])
+#         self.updateDownloadOptions({})
+#         self.selectDownloadTarget(self.DEFAULT_DOWNLOAD_TARGET)
+#         self.downloadOption.grid(column=1, row=0)
+
+#         self.downloadButton = Button(self.downloadFrame, text="Download", command=self.download)
+#         self.downloadButton.grid(column=1, row=1)
         
 #         self.repairVar = IntVar()
 #         self.repairButton = Checkbutton(self.downloadFrame,
@@ -216,14 +244,13 @@ class ControlFrame(Frame):
 #         self.repairButton.select()
 #         self.repairButton.grid(column=2, row=1)
 
-        self.downloadTypeVar = StringVar()
-        self.downloadTypeVar.set(self.DT_ALL_STR)
-        self.downloadTypeOption = OptionMenu(self.downloadFrame,
-          self.downloadTypeVar, 
-          self.DT_ALL_STR, self.DT_RECENT_STR, self.DT_STATUS_STR)
-        self.downloadTypeOption.grid(column=2, row=1)
+#         self.downloadTypeVar = StringVar()
+#         self.downloadTypeVar.set(self.DT_ALL_STR)
+#         self.downloadTypeOption = OptionMenu(self.downloadFrame,
+#           self.downloadTypeVar, 
+#           self.DT_ALL_STR, self.DT_RECENT_STR, self.DT_STATUS_STR)
+#         self.downloadTypeOption.grid(column=2, row=1)
 
-        self.downloadFrame.grid(column=3, row=0)
 
         self.deviceDetection()
 
@@ -277,7 +304,7 @@ class ControlFrame(Frame):
         """ Populates drop-down menu with available sensor types.
             Called from redrawAllNodes in NodeFrame.
         """
-        
+        return       
         #
         # populate "All" menu
         #
@@ -344,44 +371,86 @@ class ControlFrame(Frame):
         self.downloadVar.set(displayVal)
         self.networkSegment = networkSegment
         self.downloadChannel = target
-    
-    def downloadRunner(self):
-        #OK, this is kind of ugly: since the global/router channels
-        # are fixed, and the channel which is actually used will be
-        # read based on the network segment, we don't cause problems
-        # by setting this value. Either it will be used (if we're
-        # doing a single-patch download) or it will be ignored for
-        # globalChannel or routerChannel (depending on the type of
-        # download we are doing).
-        requestMissing = (self.downloadTypeVar.get() == self.DT_ALL_STR)
-        mdr= 1000
-        if self.downloadTypeVar.get() == self.DT_STATUS_STR:
-            mdr=1
-        configMap= {'subNetworkChannel':self.downloadChannel,
-          'maxDownloadRounds':mdr}
-        print "Download type: ", self.downloadTypeVar.get(), "mdr", mdr, "requestMissing", requestMissing
+
+    def patchDownloadRunner(self):
+        configMap= {'subNetworkChannel':self.patchChannel, 
+          'maxDownloadRounds':1000}
         cxCtrl = CXController.CXController(self.dbFile)
         cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
-          self.networkSegment, configMap, 
+          constants.NS_SUBNETWORK, configMap, 
           refCallBack=self.refCallBack,
           eosCallBack=self.eosCallBack,
           repairCallBack=self.repairCallBack,
           finishedCallBack=self.downloadFinished,
-          requestMissing=requestMissing)
+          requestMissing=True)
+    
+    def routerDownloadRunner(self):
+        configMap= {'maxDownloadRounds':1000}
+        cxCtrl = CXController.CXController(self.dbFile)
+        cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
+          constants.NS_ROUTER, configMap, 
+          refCallBack=self.refCallBack,
+          eosCallBack=self.eosCallBack,
+          repairCallBack=self.repairCallBack,
+          finishedCallBack=self.downloadFinished,
+          requestMissing=True)
 
-    def download(self):
-        self.progressMessage( "Download Started: %s\n"%(self.downloadTypeVar.get(),)) 
-        print "Download: %u %u %s"%(self.networkSegment,
-          self.downloadChannel, self.comDict[self.comVar.get()])
-        self.downloadButton.config(text="DOWNLOADING", bg="green",
+    def discoverRunner(self):
+        configMap= {'maxDownloadRounds':1}
+        cxCtrl = CXController.CXController(self.dbFile)
+        cxCtrl.download('serial@%s:115200'%(self.comDict[self.comVar.get()]),
+          constants.NS_GLOBAL, configMap, 
+          refCallBack=self.refCallBack,
+          eosCallBack=self.eosCallBack,
+          repairCallBack=self.repairCallBack,
+          finishedCallBack=self.downloadFinished,
+          requestMissing=False)
+
+    def discoverNetwork(self):
+        self.progressMessage("Network Discovery Started\n")
+        self.discoverButton.config(text="DISCOVERING", bg="green",
           state=DISABLED)
         self.commitButton.config(text="BUSY", bg="yellow",
           state=DISABLED)
-        self.downloadThread = Thread(target=self.downloadRunner,
+        self.routerDownloadButton.config(bg="yellow", text="BUSY",
+          state=DISABLED)
+        self.downloadThread = Thread(target=self.discoverRunner,
+          name="discoverThread")
+        self.downloadThread.daemon = True
+        self.downloadThread.start()
+        self.downloadProgress()
+
+    def routerDownload(self):
+        self.progressMessage( "Router Download Started\n")
+        self.routerDownloadButton.config(text="DOWNLOADING", bg="green",
+          state=DISABLED)
+        self.commitButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
+        self.discoverButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
+        self.downloadThread = Thread(target=self.routerDownloadRunner,
           name="downloadThread")
         self.downloadThread.daemon = True
         self.downloadThread.start()
         self.downloadProgress()
+
+    def patchDownload(self, channel):
+        self.progressMessage( "Patch Download Started\n")
+        self.routerDownloadButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
+        self.commitButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
+        self.discoverButton.config(text="BUSY", bg="yellow",
+          state=DISABLED)
+        self.patchChannel = channel
+        self.downloadThread = Thread(target=self.patchDownloadRunner,
+          name="downloadThread")
+        self.hub.node.markChannelButtonsBusy(channel)
+
+        self.downloadThread.daemon = True
+        self.downloadThread.start()
+        self.downloadProgress()
+        print "patch download %d"%(channel,)
 
     def downloadProgress(self):
         """ This function is here to ensure Windows compatibility.
@@ -391,12 +460,12 @@ class ControlFrame(Frame):
             thread.join() also stalls the GUI.
         """
         if self.downloadThread.isAlive():
-            self.downloadButton.after(1000, self.downloadProgress)
+            self.discoverButton.after(1000, self.downloadProgress)
         else:
-            self.downloadButton.config(text="Download", bg="gray",
+            self.discoverButton.config(text="Discover Network", bg="gray",
               state=NORMAL)
-            self.commitButton.config(text="Commit Changes", bg="gray",
-              state=NORMAL)
+            self.routerDownloadButton.config(text="Router Download",
+              bg="gray", state=NORMAL)
             self.hub.node.loadSettings()
             self.hub.node.redrawAllNodes()
 
@@ -447,7 +516,9 @@ class ControlFrame(Frame):
 
     def commitChanges(self):
         self.progressMessage("Committing settings changes, please wait.\n")
-        self.downloadButton.config(bg="yellow", text="BUSY",
+        self.discoverButton.config(bg="yellow", text="BUSY",
+          state=DISABLED)
+        self.routerDownloadButton.config(bg="yellow", text="BUSY",
           state=DISABLED)
         self.commitButton.config(bg="green", text="COMMITTING",
           state=DISABLED)
@@ -514,5 +585,13 @@ class ControlFrame(Frame):
     def refresh(self):
         self.hub.node.initUI()
     
+    def settingsChanged(self, changesPresent):
+        if changesPresent:
+            self.commitButton.config(text="Commit Changes", 
+              state=NORMAL, bg="gray")
+        else:
+            self.commitButton.config(text="Commit Changes", 
+              state=DISABLED, bg="gray")
+
     
     

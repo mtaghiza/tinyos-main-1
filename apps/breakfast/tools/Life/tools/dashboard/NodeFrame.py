@@ -47,6 +47,7 @@ class NodeFrame(Frame):
         self.originalSettings = copy.deepcopy(self.settings)
 
         self.multiplexers = self.db.getMultiplexers()
+        self.hub.control.settingsChanged(False)
 #         self.site = self.db.getSiteMap()
     
     def saveSettings(self):        
@@ -55,6 +56,7 @@ class NodeFrame(Frame):
 
     def settingsChanged(self, *args):
         if self.changedVar.get():
+            print "settings changed!"
             pass
             # note: give visual cue that settings have changed
             #print "settings changed"
@@ -115,9 +117,20 @@ class NodeFrame(Frame):
             channels[channel]  = channelMap
         return channels
 
+    def markChannelButtonsBusy(self, activeChannel):
+        for channel in self.channelButtons:
+            if channel == activeChannel:
+                self.channelButtons[channel].config(text="BUSY",
+                  bg="green")
+            else:
+                self.channelButtons[channel].config(text="BUSY",
+                  bg="yellow")
+
+
     def drawChannelFrames(self):
         channels = self.organizeChannels()
         print "Channel maps", channels
+        self.channelButtons = {}
 
         # draw channels
         # create a frame for each channel
@@ -129,9 +142,17 @@ class NodeFrame(Frame):
             channelLabel = Label(channelFrame, text="CHANNEL %d"%(channel))
             channelLabel.grid(column=0, row=0)
 
+            channelDownloadButton = Button(channelFrame,
+              text="Download from this patch",
+              command=lambda channel=channel: self.hub.control.patchDownload(channel))
+            channelDownloadButton.grid(column=1, row=0)
+
+            self.channelButtons[channel] = channelDownloadButton
+
+
             channelMap = channels[channel]
             routersFrame = Frame(channelFrame, bd=1, relief=SUNKEN)
-            routersLabel = Label(routersFrame, text="ROUTERS")
+            routersLabel = Label(routersFrame, width=20, text="ROUTERS")
             routersLabel.grid(column=0, row=0)
             if constants.ROLE_ROUTER in channelMap:
                 for (routerRow, barcode) in enumerate(sorted(channelMap[constants.ROLE_ROUTER])):
@@ -176,7 +197,7 @@ class NodeFrame(Frame):
                     self.tkobjects["routerOption_%s" % barcode] = typeOption
                     self.tkobjects["routerOptionVar_%s" % barcode] = typeVar
             leafsFrame = Frame(channelFrame, bd=1, relief=SUNKEN)
-            leafsLabel = Label(leafsFrame, text="LEAVES")
+            leafsLabel = Label(leafsFrame, width=20, text="LEAVES")
             leafsLabel.grid(column=0, row=0)
             if constants.ROLE_LEAF in channelMap:
                 for (leafRow, barcode) in enumerate(sorted(channelMap[constants.ROLE_LEAF])):
@@ -424,4 +445,6 @@ class NodeFrame(Frame):
         
         self.hub.display.redrawAll()
         self.redrawAllNodes()
+        self.hub.control.settingsChanged(self.settings !=
+          self.originalSettings)
 

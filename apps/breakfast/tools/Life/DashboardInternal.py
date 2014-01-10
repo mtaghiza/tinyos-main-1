@@ -74,7 +74,7 @@ if __name__ == '__main__':
     
     hub = Hub()    
     
-    controlHeight=80
+    controlHeight=50
     centerHeight=500
     statusHeight=80
     WIDTH = 1080
