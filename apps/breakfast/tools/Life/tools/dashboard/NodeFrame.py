@@ -116,10 +116,10 @@ class NodeFrame(Frame):
         for channel in self.channelButtons:
             if channel == activeChannel:
                 self.channelButtons[channel].config(text="BUSY",
-                  bg="green")
+                  bg="green", state=DISABLED)
             else:
                 self.channelButtons[channel].config(text="BUSY",
-                  bg="yellow")
+                  bg="yellow", state=DISABLED)
 
 
     def drawChannelFrames(self):
