@@ -85,6 +85,12 @@ class DatabaseMissing(object):
             #self.cursor.close()
             self.connection.close()
             print "closing connection"
+    
+    #TODO: add function that performs the same query as node missing,
+    # but restricts it to a range of cookie values.
+    # This could probably be accomplished most easily by adding
+    # parameters to SORT_COOKIE_SQL that limit what goes into that
+    # temp table.
 
     def nodeMissing(self, node, incrementRetries=True):
         # sqlite connections can only be used from the same threads they are established from

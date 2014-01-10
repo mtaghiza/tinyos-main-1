@@ -80,7 +80,7 @@ class CXController(object):
     def __init__(self, dbName):
         self.dbName = dbName
         
-
+    #TODO: add per-node cookie range parameter for selective recovery.
     def download(self, packetSource, networkSegment=constants.NS_GLOBAL,
             configMap={}, configFile=None, refCallBack=None,
             eosCallBack=None, repairCallBack=None,
@@ -163,6 +163,10 @@ class CXController(object):
     #                                d.mif.keepAlive(bsId)
                             print "Skip BS pseudo cookie"
                         else:
+                            #TODO: if we are doing selective recovery,
+                            # then this should call a function that
+                            # takes in a cookie range and only return gaps
+                            # falling in that range.
                             missingT = db.nodeMissing(eos.get_owner())
                             totalMissing=-1
     #                         totalMissing = db.totalMissing(eos.get_owner()
