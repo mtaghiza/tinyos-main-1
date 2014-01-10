@@ -147,8 +147,114 @@ class DatabaseQuery(object):
         except:
             traceback.print_exc()
         return output
+
+    def getMissingCookies(self):
+        """
+        Get the missing cookie values for each node.
+        """
         
-   
+        SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash 
+                            AS SELECT a.node_id, a.cookie, a.nextCookie, a.retry, b.barcode_id
+                            FROM cookie_table a, node_status b
+                            WHERE a.node_id = b.node_id
+                            ORDER BY a.node_id, a.cookie;'''
+                            
+        MISSING_ORDER_SIZE_SQL = '''SELECT l.barcode_id, 
+              l.cookie,
+              (r.cookie - l.nextCookie -1) as missing
+            FROM sorted_flash l
+            JOIN sorted_flash r
+            ON l.node_id = r.node_id
+              AND l.ROWID +1 = r.ROWID
+              AND missing > 6
+              AND l.retry < 5
+              ORDER BY l.node_id, missing desc'''
+        
+        # sqlite connections can only be used from the same threads they are established from
+        if self.connected == False:
+            self.connected == True
+            # raises sqlite3 exceptions
+            self.connection = sqlite3.connect(self.dbName)
+            self.connection.text_factory = str
+            self.cursor = self.connection.cursor()
+        
+        output = {}
+        
+        # sort the flash table by cookie values (ascending)
+        # and find missing segments by comparing lengths and cookies
+        try:
+            self.cursor.execute(SORT_COOKIE_SQL)
+            self.cursor.execute(MISSING_ORDER_SIZE_SQL)
+            
+            for row in self.cursor:
+                barcode = row[0]
+                cookie = row[1]
+                missing = row[2]
+                
+                if barcode in output:
+                    list = output[barcode]
+                else:
+                    list = []
+                    
+                list.append((cookie, missing))
+                output[barcode] = list
+        except:
+            traceback.print_exc()
+        return output
+
+    def getCookieRate(self):
+        """
+        Get the data generation rate for each node in bytes/seconds.
+        """
+        
+        query = '''
+                SELECT a.barcode_id, a.ts, a.writeCookie, b.ts, b.writeCookie 
+                FROM 
+                    (
+                        SELECT barcode_id, MAX(ts) AS ts, writeCookie
+                        FROM node_status
+                        GROUP BY barcode_id 
+                    ) a 
+                    JOIN 
+                    (
+                        SELECT barcode_id, ts, writeCookie
+                        FROM node_status
+                        ORDER BY barcode_id ASC, ts DESC
+                    ) b
+                    ON a.barcode_id = b.barcode_id 
+                    AND a.ts > b.ts 
+                    AND a.writeCookie <> b.writeCookie
+                GROUP BY a.barcode_id
+                '''   
+
+        # sqlite connections can only be used from the same threads they are established from
+        if self.connected == False:
+            self.connected == True
+            # raises sqlite3 exceptions
+            self.connection = sqlite3.connect(self.dbName)
+            self.connection.text_factory = str
+            self.cursor = self.connection.cursor()
+
+        output = {}
+        try:
+            self.cursor.execute(query)        
+            
+            for row in self.cursor:
+                barcode = row[0]
+                currentTs = row[1]
+                currentCookie = row[2]
+                oldTs = row[3]
+                oldCookie = row[4]
+                
+                if currentTs > oldTs and currentCookie > oldCookie:
+                    rate = (currentCookie - oldCookie) / (currentTs - oldTs)
+                    
+                    output[barcode] = (currentCookie, rate)
+        except:
+            traceback.print_exc()
+        
+        return output
+    
     def getMultiplexers(self):
         """
         Get the current view of the network, i.e., what Nodes are available, 

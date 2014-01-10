@@ -1,6 +1,6 @@
 import Tkinter
 from Tkinter import *
-from math import floor
+from math import floor, ceil
 
 import copy
 
@@ -23,6 +23,7 @@ class NodeFrame(Frame):
         
         self.tkobjects = {}
         self.sensorTypes = {}
+        self.downloadRange = {}
         
         #self.sf = SettingsFile(self.SETTINGS)
         self.db = DatabaseQuery(dbFile)
@@ -46,6 +47,8 @@ class NodeFrame(Frame):
         self.settings = self.db.getSettings()
         self.originalSettings = copy.deepcopy(self.settings)
 
+        self.cookieRate = self.db.getCookieRate()
+        self.missingCookies = self.db.getMissingCookies()
         self.multiplexers = self.db.getMultiplexers()
         self.hub.control.settingsChanged(False)
 #         self.site = self.db.getSiteMap()
@@ -72,40 +75,32 @@ class NodeFrame(Frame):
     #                                                                                               #
     #   super frame                                                                                 #
     #                                                                                               #
-    #   #########################################################################################   #    
-    #   #                                                                                       #   #
-    #   #   channel frame                                                                       #   #
-    #   #                                                                                       #   #
-    #   #   #################################################################################   #   #
-    #   #   #                                                                               #   #   #   
-    #   #   #   leaf frame                                                                  #   #   #   
-    #   #   #                                                                               #   #   #   
-    #   #   #   #####################   #################################################   #   #   #
-    #   #   #   #                   #   #                                               #   #   #   #                    
-    #   #   #   #   node frame      #   #   status frame                                #   #   #   #
-    #   #   #   #                   #   #                                               #   #   #   #    
-    #   #   #   #                   #   #################################################   #   #   #
-    #   #   #   #                   #                                                       #   #   #                
-    #   #   #   #                   #   #################   #################   #########   #   #   #
-    #   #   #   #                   #   #               #   #               #   #       #   #   #   #    
-    #   #   #   #                   #   #  plex frame   #   #  plex frame   #   #  ...  #   #   #   #
-    #   #   #   #                   #   #               #   #               #   #       #   #   #   #
-    #   #   #   #####################   #################   #################   #########   #   #   #
-    #   #   #                                                                               #   #   #
-    #   #   #################################################################################   #   #
-    #   #                                                                                       #   #
-    #   #########################################################################################   #
-    #                                                                                               #
-    #   #########################################################################################   #    
-    #   #                                                                                       #   #
-    #   #   channel frame                                                                       #   #
-    #   #                                                                                       #   #
-    #   #   ...                                                                                 #   #
-    #   #                                                                                       #   #
-    #   #########################################################################################   #
+    #   ##########################################################################################  #    
+    #   #                                                                                        #  #
+    #   #   channel frame                                                                        #  #
+    #   #                                                                                        #  #
+    #   #   ########### #######################################################################  #  #
+    #   #   #         # #                                                                     #  #  #   
+    #   #   # Routers # # Leaves frame                                                        #  #  #   
+    #   #   #         # #                                                                     #  #  #   
+    #   #   #         # #  #################################################################  #  #  #   
+    #   #   #         # #  #                                                               #  #  #  #   
+    #   #   #         # #  # Leaf frame                                                    #  #  #  #   
+    #   #   #         # #  #                                                               #  #  #  #   
+    #   #   #         # #  # ###############  ################  ##############  #########  #  #  #  #
+    #   #   #         # #  # #             #  #              #  #            #  #       #  #  #  #  #
+    #   #   #         # #  # # node frame  #  # status frame #  # plex frame #  #  ...  #  #  #  #  #
+    #   #   #         # #  # #             #  #              #  #            #  #       #  #  #  #  #
+    #   #   #         # #  # ###############  ################  ##############  #########  #  #  #  #
+    #   #   #         # #  #                                                               #  #  #  #   
+    #   #   #         # #  #################################################################  #  #  #   
+    #   #   #         # #                                                                     #  #  #
+    #   #   ########### #######################################################################  #  #
+    #   #                                                                                        #  #
+    #   ##########################################################################################  #
     #                                                                                               #
     #################################################################################################
-
+    
     def organizeChannels(self):
         channels = {}
         for barcode in self.settings:
@@ -196,15 +191,21 @@ class NodeFrame(Frame):
                     self.tkobjects["routerButton_%s" % barcode] = button
                     self.tkobjects["routerOption_%s" % barcode] = typeOption
                     self.tkobjects["routerOptionVar_%s" % barcode] = typeVar
+                    
+            # Leafs Frame
             leafsFrame = Frame(channelFrame, bd=1, relief=SUNKEN)
             leafsLabel = Label(leafsFrame, width=20, text="LEAVES")
             leafsLabel.grid(column=0, row=0)
+            
             if constants.ROLE_LEAF in channelMap:
                 for (leafRow, barcode) in enumerate(sorted(channelMap[constants.ROLE_LEAF])):
                     self.membership[barcode] = channel
                     (nodeId, sampleInterval, channel, role) = self.settings[barcode]
                     leafFrame = Frame(leafsFrame, bd=1, relief=SUNKEN)
+                    
+                    #
                     # nodeframe contains the leaf ID, sampling rate
+                    #
                     nodeFrame = Frame(leafFrame, bd=1, relief=SUNKEN)
                     button_text = "%s\nSampling: %s" % (barcode, sampleInterval)            
                     button = Button(nodeFrame, text=button_text, 
@@ -240,8 +241,66 @@ class NodeFrame(Frame):
                     for key in self.hub.control.channels:
                         menu.add_command(label=key, 
                         command=lambda leaf=barcode, key=key: self.updateLeaf(leaf, key))
-
-
+                    
+                    #
+                    # Status Frame
+                    #
+                    statusFrame = Frame(leafFrame, bd=1, relief=SUNKEN)
+                    self.tkobjects["statusFrame_%s" % barcode] = statusFrame
+                    
+                    # the missing blocks are drawn on a canvas
+                    canvasWidth = 150
+                    canvasHeight = 40
+                    statusCanvas = Canvas(statusFrame, width=canvasWidth, height=canvasHeight)
+                    statusCanvas.create_rectangle(0, 0, canvasWidth, canvasHeight, fill="LightGreen")
+                    self.tkobjects["statusCanvas_%s" % barcode] = statusCanvas
+                    
+                    # read early/latest from control panel, convert days to seconds
+                    earliest = int(self.hub.control.earliestSpinbox.get()) * 24 * 60 * 60
+                    latest = int(self.hub.control.latestSpinbox.get()) * 24 * 60 * 60
+                    
+                    # if leaf has missing data, update status widget
+                    if barcode in self.missingCookies and barcode in self.cookieRate:
+                            
+                        # convert days to cookie values on each node individually
+                        (cookieCurrent, cookieRate) = self.cookieRate[barcode]
+                        cookieLow = max( (cookieCurrent - earliest * cookieRate), 0.0 ) # round up to zero if cookie is negative
+                        cookieHigh = max( (cookieCurrent - latest * cookieRate), 1.0 ) # round up to one if cookie is negative
+                        scaler = canvasWidth * 1.0 / max( (cookieHigh - cookieLow), 1.0 ) # avoid dividing by (close to) zero
+                        
+                        # store cookie range for targeted recovery
+                        self.downloadRange[barcode] = ( int(cookieLow), int(cookieHigh) )
+                        
+                        # go through each missing block and draw it if it lies within the cookie interval
+                        for (cookie, missing) in self.missingCookies[barcode]:
+                            low = cookie
+                            high = low + missing
+                            
+                            # block is between both high and low
+                            if cookieLow <= low and high <= cookieHigh:
+                                # scale cookie values to fit range
+                                scaledLow = floor( (low-cookieLow) * scaler)
+                                scaledHigh = ceil( (high-cookieLow) * scaler)
+                                
+                                statusCanvas.create_rectangle(scaledLow, 0, scaledHigh, canvasHeight, fill="red")
+                            # block crosses low end
+                            elif cookieLow <= high and high <= cookieHigh:
+                                scaledLow = 0
+                                scaledHigh = ceil( (high-cookieLow) * scaler)
+                                
+                                statusCanvas.create_rectangle(scaledLow, 0, scaledHigh, canvasHeight, fill="red")
+                            # block crosses high end
+                            elif cookieLow <= low and low <= cookieHigh:
+                                scaledLow = floor( (low-cookieLow) * scaler)
+                                scaledHigh = ceil( (cookieHigh-cookieLow) * scaler)
+                                
+                                statusCanvas.create_rectangle(scaledLow, 0, scaledHigh, canvasHeight, fill="red")
+                    
+                    statusCanvas.grid(column=0, row=0)
+                    
+                    #
+                    # Plex Frame
+                    #
                     if barcode in self.multiplexers:
                         # each node can have multiple multiplexers attached
                         for i, plexid in enumerate(self.multiplexers[barcode]):
@@ -274,9 +333,10 @@ class NodeFrame(Frame):
                                 label.grid(column=sc, row=1, sticky=N+S+E+W)
                                 self.tkobjects["sensLabel_%s_%d" % (plexid, sc)] = label
                             
-                            plexFrame.grid(column=i+1, row=1)
+                            plexFrame.grid(column=i+2, row=1)
                     leafFrame.grid(column=0, row=leafRow+1)
                     nodeFrame.grid(column=0, row=0, rowspan=2, sticky=N+S+E+W)
+                    statusFrame.grid(column=1, row=0)
                     
                     self.tkobjects["nodeFrame_%s" % barcode] = nodeFrame
                     self.tkobjects["nodeButton_%s" % barcode] = button
@@ -288,6 +348,8 @@ class NodeFrame(Frame):
             channelFrame.grid(column=0, row=rowNumber, sticky=N+S+E+W)
         # update menu list of available sensor types
         self.hub.control.updateTypes(self.sensorTypes)
+        
+        print self.downloadRange
 
     def drawTheRest(self):
         if False:

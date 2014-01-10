@@ -252,9 +252,60 @@ class ControlFrame(Frame):
 #         self.downloadTypeOption.grid(column=2, row=1)
 
 
+        #
+        # Status interval widgets
+        #
+        rangeFrame = Frame(self, padx=self.SPACING)
+        
+        self.rangeLabel = Label(rangeFrame, text="Status Interval: ")
+        self.fromPrefixLabel = Label(rangeFrame, text="From")
+        self.earliestSpinbox = Spinbox(rangeFrame, from_=1, to=36500, increment=1.0, width=5, justify=RIGHT, command=self.earliestSpinboxConsistency)
+        self.fromSuffixLabel = Label(rangeFrame, text="days ago. ")
+
+        self.toPrefixLabel = Label(rangeFrame, text="To")
+        self.latestSpinbox = Spinbox(rangeFrame, from_=0, to=36500, increment=1.0, width=5, justify=RIGHT, command=self.latestSpinboxConsistency)
+        self.toSuffixLabel = Label(rangeFrame, text="days ago.")
+
+        self.earliestSpinbox.bind('<Return>', self.earliestSpinboxConsistency)
+        self.latestSpinbox.bind('<Return>', self.latestSpinboxConsistency)
+        
+        # set default interval to 7 days
+        self.earliestSpinbox.delete(0, END)
+        self.earliestSpinbox.insert(0, "7")
+        
+        self.rangeLabel.grid(column=0, row=0)
+        self.fromPrefixLabel.grid(column=1, row=0)
+        self.earliestSpinbox.grid(column=2, row=0)
+        self.fromSuffixLabel.grid(column=3, row=0)
+        self.toPrefixLabel.grid(column=4, row=0)
+        self.latestSpinbox.grid(column=5, row=0)
+        self.toSuffixLabel.grid(column=6, row=0)
+        rangeFrame.grid(column=0, row=1)
+        
+        #
+        # detect attached nodes
+        #
         self.deviceDetection()
 
+    def earliestSpinboxConsistency(self, event=None):
+        earliest = int(self.earliestSpinbox.get())
+        latest = int(self.latestSpinbox.get())
         
+        if  earliest <= latest:
+            self.latestSpinbox.delete(0, END)
+            self.latestSpinbox.insert(0, str(earliest - 1) )
+            
+        self.hub.node.redrawAllNodes()
+
+    def latestSpinboxConsistency(self, event=None):
+        earliest = int(self.earliestSpinbox.get())
+        latest = int(self.latestSpinbox.get())
+        
+        if  earliest <= latest:
+            self.earliestSpinbox.delete(0, END)
+            self.earliestSpinbox.insert(0, str(latest + 1) )
+            
+        self.hub.node.redrawAllNodes()
    
     def addDownloadOption(self, menu, rootStr, networkSegment, channel):
         displayVal = getDisplayVal(rootStr, channel)
