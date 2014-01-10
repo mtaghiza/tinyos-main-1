@@ -19,73 +19,133 @@ class BaconFrame(Frame):
         self.pack()
 
     def initUI(self):
-        
+
         # row 1
-        self.emptyFrame = Frame(self)
-        self.emptyFrame.grid(column=1, row=1)
-        
-        self.currentLabel = Label(self, text="Current Value")
-        self.currentLabel.grid(column=2, row=1)
-        
-        self.newLabel = Label(self, text="New Value")
-        self.newLabel.grid(column=3, row=1, columnspan=2)
+        self.currentLabel = Label(self, text="Current")
+        self.currentLabel.grid(column=2, row=1, columnspan=2)
+        #         
+        self.newLabel = Label(self, text="New")
+        self.newLabel.grid(column=4, row=1)
         
         # row 2
         self.barcodeLabel = Label(self, text="Node ID:", width=11, anchor=E)
         self.barcodeLabel.grid(column=1, row=2)
+                
+        self.newBarcodeVar = StringVar()
+        self.barcodeEntry = Entry(self, textvariable=self.newBarcodeVar, width=16)
+        self.barcodeEntry.bind("<Return>", self.updateBarcodeKey)
+        self.barcodeEntry.grid(column=4, row=2)
         
         self.barcodeVar = StringVar()
-        self.barcodeVar.set("Not available")
-        
-        self.barcodeVarLabel = Label(self, textvariable=self.barcodeVar, width=18)
-        self.barcodeVarLabel.grid(column=2, row=2)
-        
-        self.newBarcodeVar = StringVar()
-        self.barcodeEntry = Entry(self, textvariable=self.newBarcodeVar, width=18)
-        self.barcodeEntry.bind("<Return>", self.updateBarcodeKey)
-        self.barcodeEntry.grid(column=3, row=2, columnspan=2)
-        
+        self.barcodeVar.set("N/A")
+        self.barcodeVarLabel = Label(self, textvariable=self.barcodeVar, width=16)
+        self.barcodeVarLabel.grid(column=2, row=2, columnspan=2)
+
         # row 3
-        self.mfrLabel = Label(self, text="Mfr. ID:", width=11, anchor=E)
+        self.mfrLabel = Label(self, text="Mfr ID:", width=11, anchor=E)
         self.mfrLabel.grid(column=1, row=3, sticky=E)
         
         self.mfrVar = StringVar()
-        self.mfrVar.set("Not available")
-        self.mfrVarLabel = Label(self, textvariable=self.mfrVar, width=18)
-        self.mfrVarLabel.grid(column=2, row=3)
-        
-        self.reconnectButton = Button(self, text="Reload", command=self.reconnect, width=6)
-        self.reconnectButton.grid(column=3, row=3)
-
+        self.mfrVar.set("N/A")
+        self.mfrVarLabel = Label(self, textvariable=self.mfrVar, width=16)
+        self.mfrVarLabel.grid(column=2, row=3, columnspan=2)
+         
         self.barcodeButton = Button(self, text="Save", command=self.updateBarcode, width=6)
         self.barcodeButton.grid(column=4, row=3)
 
+        # row 4
+        self.assignmentLabel = Label(self, text="Assignments:", width=11, anchor=E)
+        self.assignmentLabel.grid(column=1, row=4)
+        
+        self.assignmentVar = StringVar()
+        self.assignmentVar.set("")
+        self.assignmentVarLabel = Label(self, textvar=self.assignmentVar)
+        self.assignmentVarLabel.grid(column=2, row=4, columnspan=2)
+
+        # row 5
+        self.typeLabel = Label(self, text="Type")
+        self.typeLabel.grid(column=2, row=5)
+        self.idLabel = Label(self, text="ID")
+        self.idLabel.grid(column=3, row=5)
+        self.codeLabel = Label(self, text="Barcode")
+        self.codeLabel.grid(column=4, row=5)
+
+        # convert all the UI widgets to lists        
+        self.stLabels   = []
+        self.stTypeVars = []
+        self.stIDVars   = []
+        self.stTypeLabels = []
+        self.stIDLabels   = []
+        self.stNewIDVars  = []
+        self.stNewIDEntries = []
+        
+        for i in range(0,3):
+            self.stLabels.append(Label(self, text="Channel "+str(i), anchor=E))
+            self.stTypeVars.append(StringVar())
+            self.stIDVars.append(StringVar())
+            self.stNewIDVars.append(StringVar())
+
+            self.stTypeLabels.append(Label(self, textvariable=self.stTypeVars[i], anchor=E))            
+            self.stIDLabels.append(Label(self, textvariable=self.stIDVars[i], anchor=E))
+            self.stNewIDEntries.append(Entry(self, textvariable=self.stNewIDVars[i], width=6))                                           
+
+            self.stTypeVars[i].set('N/A')
+            self.stIDVars[i].set('N/A')
+            
+            self.stLabels[i].grid(column=1, row=i+6, sticky=E)
+            self.stTypeLabels[i].grid(column=2, row=i+6)
+            self.stIDLabels[i].grid(column=3, row=i+6)
+            self.stNewIDEntries[i].grid(column=4, row=i+6)
+#            self.stNewIDEntries[i].grid(column=4, row=i+6, columnspan=2)
+
+        #   disable the ID entries for the internal sensors, those are hardwired
+        for i in range(0,3):
+            self.stNewIDEntries[i].config(state=DISABLED)
+
+        self.reloadButton = Button(self, text="Reload", command=self.reconnect, width=6)
+        self.reloadButton.grid(column=1, row=14, sticky=E)
+
+        self.resetButton = Button(self, text="Reset all", command=self.reset, width=8)
+        self.resetButton.grid(column=2, row=14, columnspan=2)
+ 
+        self.assignButton = Button(self, text="Save", command=self.updateAssignments, width=6)
+        self.assignButton.grid(column=4, row=14)
+
+    def setUIstate(self,st,cur):
+        #
+        self.currentLabel.config(state=st)
+        self.newLabel.config(state=st)
+        self.barcodeLabel.config(state=st)
+        self.mfrLabel.config(state=st)
+        self.barcodeVarLabel.config(state=st)
+        self.barcodeEntry.config(state=st)
+        self.barcodeButton.config(state=st, cursor=cur)
+        self.reloadButton.config(state=st, cursor=cur)
+        self.mfrVarLabel.config(state=st)
+            
+        #
+        self.assignmentLabel.config(state=st)
+        self.typeLabel.config(state=st)
+        self.idLabel.config(state=st)
+        self.codeLabel.config(state=st)
+        self.resetButton.config(state=st)
+        self.assignButton.config(state=st)        
+        #
+        for i in range(0,3):
+            self.stLabels[i].config(state=st)
+            self.stIDLabels[i].config(state=st)
+            self.stTypeLabels[i].config(state=st)
+                
     def enableUI(self):
-        self.currentLabel.config(state=NORMAL)
-        self.newLabel.config(state=NORMAL)
-        self.barcodeLabel.config(state=NORMAL)
-        self.mfrLabel.config(state=NORMAL)
-        self.barcodeVarLabel.config(state=NORMAL)
-        self.barcodeEntry.config(state=NORMAL)
-        self.barcodeButton.config(state=NORMAL, cursor="hand2")
-        self.reconnectButton.config(state=NORMAL, cursor="hand2")
-        self.mfrVarLabel.config(state=NORMAL)
+        self.setUIstate(st=NORMAL,cur="hand2")        
 
     def disableUI(self):
         # reset variables
         self.barcodeVar.set("Not available")
         self.mfrVar.set("Not available")
-        
-        self.currentLabel.config(state=DISABLED)
-        self.newLabel.config(state=DISABLED)
-        self.barcodeLabel.config(state=DISABLED)
-        self.mfrLabel.config(state=DISABLED)
-        self.barcodeVarLabel.config(state=DISABLED)
-        self.barcodeEntry.config(state=DISABLED)
-        self.barcodeButton.config(state=DISABLED, cursor="")
-        self.reconnectButton.config(state=DISABLED, cursor="")
-        self.mfrVarLabel.config(state=DISABLED)
-
+        #
+        self.setUIstate(st=DISABLED,cur="")
+            
 
     def connectSignal(self, connected):
         if connected:
@@ -111,10 +171,11 @@ class BaconFrame(Frame):
         self.handler.notbusy()
 
     def sampleSignal(self, sampling):
-        if sampling:
-            self.disableUI()
-        else:
-            self.enableUI()
+#        return
+         if sampling:
+             self.disableUI()
+         else:
+             self.enableUI()
 
     def updateBarcodeKey(self, event):
         self.updateBarcode()
@@ -129,13 +190,16 @@ class BaconFrame(Frame):
         try:
             self.handler.setBaconBarcode(self.newBarcodeVar.get())
         except ValueError:
-            self.barcodeVar.set("Barcode not an integer")
+            self.barcodeVar.set("Not an integer")
+            self.barcodeVarLabel.config(fg="red")
             self.barcodeVarLabel.config(fg="red")
         except TypeError:
-            self.barcodeVar.set("Barcode incorrect type")
+            self.barcodeVar.set("Incorrect type")
             self.barcodeVarLabel.config(fg="red")        
+            self.barcodeVarLabel.config(fg="red")
         except:
             self.barcodeVar.set("Update failed")
+            self.barcodeVarLabel.config(fg="red")
             self.barcodeVarLabel.config(fg="red")
         else:    
             self.handler.databaseBacon()
@@ -157,4 +221,86 @@ class BaconFrame(Frame):
             self.barcodeVar.set(barcodeStr)
             self.barcodeVarLabel.config(fg="black")
             self.barcodeSet = True
+
     
+    def reset(self):
+        if not tkMessageBox.askokcancel("Warning", "Do you wish to completely reset device?", parent=self.parent):
+            return
+        self.handler.busy()
+        if self.barcodeSet:
+            self.handler.databaseRemoveSensors()
+        self.handler.resetToast()
+        self.reconnect()
+
+    def updateAssignments(self):
+        
+        if not self.barcodeSet:    
+            self.assignmentVar.set("Toast ID must be set")
+            self.assignmentVarLabel.config(fg="red")
+            return
+        
+        self.assignmentVar.set("")
+        change = False
+        duplicate = {}
+        
+        for i in range(0,4):
+            newID = self.assignments[0][i]
+            newType = self.assignments[1][i]
+            
+            setattr(self, "code", eval("self.stNewIDVars[%d].get()" % i))
+            
+            if self.code == "" and (newID is None or newType is None):
+                # channel assignments must be contiguous
+                break
+            elif self.code != "":
+                try:
+                    tmp = int(self.code, 16)
+                    newID = tmp & 0xFFFF
+                    newType = (tmp >> 16) & 0xFF
+                    
+                    # sensor/type with non zero values are real assignments
+                    # sensor/type with both zero values are channel resets
+                    # sensor/type with either zero values are invalid
+                    if bool(newID) ^ bool(newType):
+                        raise
+                except:
+                    self.assignmentVar.set("Invalid input")
+                    self.assignmentVarLabel.config(fg="red")
+                    return
+                
+                if self.assignments[0][i] != newID:
+                    self.assignments[0][i] = newID
+                    change = True
+                    
+                if self.assignments[1][i] != newType:
+                    self.assignments[1][i] = newType
+                    change = True
+                
+            if newID and newType:
+                print (str(newID)+str(newType))
+                if (str(newID)+str(newType)) in duplicate:
+                    self.assignmentVar.set("Duplicate entry")
+                    self.assignmentVarLabel.config(fg="red")
+                    return
+                else:
+                    duplicate[(str(newID)+str(newType))] = 1
+            
+            
+        if change:
+            self.handler.busy()
+            print self.assignments
+            try:
+                # write to toast TLV area
+                self.handler.setAssignments(self.assignments)
+            except OutOfSpaceError:
+                self.assignmentVar.set("Out of memory")
+            except UnexpectedResponseError:
+                self.assignmentVar.set("Update Failed")
+            else:
+                for i in range(0,3):
+                    self.stNewIDVars[i].set('')
+                self.redrawAssignments()
+                
+                # insert into database
+                self.handler.databaseSensors()
+            self.handler.notbusy()

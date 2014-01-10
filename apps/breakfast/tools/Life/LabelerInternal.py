@@ -2,14 +2,16 @@
 
 from Tkinter import *
 
-from tools.labeler.MenuFrame import MenuFrame
+#from tools.labeler.MenuFrame  import MenuFrame
+from tools.labeler.MenuBar  import MenuBar
 from tools.labeler.BaconFrame import BaconFrame
 from tools.labeler.ToastFrame import ToastFrame
-from tools.labeler.Handler import Handler
+from tools.labeler.Handler    import Handler
 from tools.labeler.GraphFrame import GraphFrame
-from tools.labeler.AdcFrame import AdcFrame
+from tools.labeler.AdcFrame   import AdcFrame
+from tools.labeler.TextFrame  import TextFrame
+from tools.SimPy.SimPlot      import SimPlot 
 
-from tools.SimPy.SimPlot import SimPlot 
 
 def selectall(event):
     event.widget.select_range(0, END)
@@ -41,16 +43,27 @@ def yscrollSet(lo, hi):
 def updateCanvas(event):        
     canvas.configure(scrollregion=canvas.bbox("all"))
     
+def donothing():
+    return
+#     filewin = Toplevel(root)
+#     button = Button(filewin, text="Do nothing button")
+#     button.pack()
+                
 simplot = SimPlot()
 root = simplot.root
-#root = Tk()
 
 handler = Handler(root)    
 
-WIDTH = 1280
-HEIGHT = 630
-MAIN = 400
+# MenuFrame      32  32
+# BaconFrame    184 216 184
+# ToastFrame    284 500 468
+# AdcFrame       64 564
 
+WIDTH  = 1024
+HEIGHT =  584          # height of the whole app
+MAIN   =  288          # width of the Connect panel
+
+ 
 root.geometry(str(WIDTH) + "x" + str(HEIGHT))
 root.title("Labeler")
 root.bind_class("Entry","<Control-a>", selectall)
@@ -58,6 +71,10 @@ root.bind("<Alt-F4>", quit)
 root.bind('<Control-c>', quit)
 root.protocol("WM_DELETE_WINDOW", quit)
 
+#global menu
+menu = Menu(root)
+menuBar = MenuBar(menu, handler)
+root.config(menu=menu)
 
 #
 # scroll bars
@@ -75,8 +92,9 @@ canvas.grid(row=0, column=0, sticky=N+S+E+W)
 
 yscrollbar.config(command=canvas.yview)
 xscrollbar.config(command=canvas.xview)
-
+#
 # make the canvas expandable
+#
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
@@ -90,33 +108,38 @@ rootFrame.bind("<Configure>", updateCanvas)
 #
 # Frames on top of canvas
 #
-menuFrame = MenuFrame(rootFrame, handler, width=WIDTH-4, height=40, bd=1, relief=SUNKEN)
-menuFrame.grid_propagate(False)
-menuFrame.grid(column=1, row=1, columnspan=2)
-handler.addMenuFrame(menuFrame)
+# menuFrame = MenuFrame(rootFrame, handler, width=WIDTH-4, height=32, bd=1, relief=SUNKEN)
+# menuFrame.grid_propagate(False)
+# menuFrame.grid(column=1, row=1, columnspan=2)
+# handler.addMenuFrame(menuFrame)
 
-baconFrame = BaconFrame(rootFrame, handler, width=MAIN, height=90, bd=1, relief=SUNKEN)
+handler.addMenuFrame(menuBar)
+
+baconFrame = BaconFrame(rootFrame, handler, width=MAIN, height=184, bd=1, relief=SUNKEN)
 baconFrame.grid_propagate(False)
 baconFrame.grid(column=1, row=2)
 handler.addBaconFrame(baconFrame)
 
-toastFrame = ToastFrame(rootFrame, handler, width=MAIN, height=385, bd=1, relief=SUNKEN)
+toastFrame = ToastFrame(rootFrame, handler, width=MAIN, height=284, bd=1, relief=SUNKEN)
 toastFrame.grid_propagate(False)
 toastFrame.grid(column=1, row=3)
 handler.addToastFrame(toastFrame)
 
-graphFrame = GraphFrame(rootFrame, handler, simplot, width=WIDTH-MAIN-4, height=475, bd=1, relief=SUNKEN)
+graphFrame = GraphFrame(rootFrame, handler, simplot, width=WIDTH-MAIN-4, height=468, bd=1, relief=SUNKEN)
 graphFrame.grid_propagate(False)
 graphFrame.grid(column=2, row=2, rowspan=2)
 handler.addGraphFrame(graphFrame)
 
-adcFrame = AdcFrame(rootFrame, handler, width=WIDTH-4, height=90, bd=1, relief=SUNKEN)
+textFrame = TextFrame(rootFrame, handler, width=MAIN, height=64, bd=1, relief=SUNKEN, bg="#EEEEEE")
+textFrame.grid_propagate(False)
+textFrame.grid(column=1,row=4)
+
+adcFrame = AdcFrame(rootFrame, handler, width=WIDTH-MAIN-4,  height=64, bd=1, relief=SUNKEN)
 adcFrame.grid_propagate(False)
-adcFrame.grid(column=1, row=4, columnspan=2)
+adcFrame.grid(column=2, row=4)
 handler.addAdcFrame(adcFrame)
 
-#menuFrame = Frame(rootFrame, width=1024, height=30, bd=1, relief=SUNKEN)
-#menuFrame.grid(column=1, row=4, columnspan=2)
+
 
 try:
     root.mainloop()

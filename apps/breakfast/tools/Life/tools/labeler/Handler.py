@@ -2,7 +2,7 @@ import Queue
 import time
 import os
 from threading import Thread
-
+from Tkinter import StringVar, IntVar
 
 from tools.CC430bsl.CC430bsl import CC430bsl
 from tools.CC430bsl.Progress import Progress
@@ -11,11 +11,7 @@ from tools.labeler.Toast import Toast
 from tools.labeler.ToastSampling import ToastSampling
 from tools.labeler.BreakfastError import *
 from tools.labeler.Dispatcher import Dispatcher 
-
 from tools.labeler.Database import Database
-
-
-
 
 
 class Handler(object):
@@ -35,9 +31,18 @@ class Handler(object):
         self.toastIdStr = ""
         self.toastAdcList = [0, 0, 0, 0, 0, 0, 0, 0]
         
+        self.baconSensorType = ["","","",""]
+        self.toastSensorType = ["","","","","","","",""]
+        
         self.cleanup = False
         self.autoToastDone = False
         self.maintenanceLoop()
+
+        self.toastType = IntVar()
+        self.dbgVar = StringVar()
+
+        self.TYPE_TOAST = 5
+        self.TYPE_MINITOAST = 6
 
     def maintenanceLoop(self):
         #print "loop"
@@ -77,6 +82,9 @@ class Handler(object):
 
     def addAdcFrame(self, adc):
         self.adcFrame = adc
+        
+#     def addTextFrame(self, textframe)
+#         self.textframe = textframe
 
     def connect(self, port):
         self.currentPort = port
@@ -86,12 +94,16 @@ class Handler(object):
         cc430.start()
         cc430.join()
         
+        print self.currentPort
+        print input
+        
         time.sleep(1)
         
         self.bacon = Bacon('serial@%s:115200' % self.currentPort, self.signalError)
         self.toast = Toast('serial@%s:115200' % self.currentPort)
         
         self.baconFrame.connectSignal(True)
+        self.toastFrame.connectSignal(True)
         
         if self.autoToast:
             self.autoToast = False
@@ -129,11 +141,16 @@ class Handler(object):
         except:
             pass
         
+        self.debugMsg("disconnecting...")
         # order is important
-        self.toastFrame.connectSignal(False)
+        self.graphFrame.sample()
+#        self.toastFrame.connectSignal(False)
         self.graphFrame.connectSignal(False)
         self.baconFrame.connectSignal(False)
         self.adcFrame.connectSignal(False)
+        self.toastFrame.connectSignal(False)
+        self.debugMsg("USB device found, press any menu button to start")
+
 
     #
     # Bacon
@@ -326,11 +343,12 @@ class Handler(object):
     # Sensor
     #
     def startSampling(self, sensors):
+        
         self.sampleThread = ToastSampling(self, sensors)
         self.sampleThread.start()
-        
-        self.baconFrame.disableUI()
-        self.toastFrame.disableUI()
+            
+        #self.baconFrame.disableUI()
+        #self.toastFrame.disableUI()
         self.adcFrame.disableUI()
         self.graphFrame.sampleSignal(True)
 
@@ -349,7 +367,7 @@ class Handler(object):
       return self.toast.readSensor(channel, sensorImpedance, warmUpMs, 
       sref, ref2_5v, samplePeriod32k)
 
-    def getReadings(self):
+    def getToastReadings(self):
         return self.sampleThread.queue.get(False)
 
     #
@@ -384,3 +402,6 @@ class Handler(object):
 
     def exportCSV(self):
         self.database.exportCSV()
+        
+    def debugMsg(self,txt):
+        self.dbgVar.set(txt)

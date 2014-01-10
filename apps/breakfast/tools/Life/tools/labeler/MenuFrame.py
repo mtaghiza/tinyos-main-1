@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
 import Tkinter
+import subprocess
 import tkMessageBox
+import webbrowser
+import os
 from Tkinter import *
 
 from tools.serial.tools.list_ports import *
 from tools.labeler.Handler import Handler
+from tools.labeler.GraphFrame import GraphFrame
 import tools.labeler.ttk as ttk
 
 class MenuFrame(Frame):
@@ -40,8 +44,7 @@ class MenuFrame(Frame):
         self.router_file = os.path.join('tools', 'firmware', 'router.ihex')
         self.toaster_file = os.path.join('tools', 'firmware', 'toaster.ihex')
         
-        
-        
+        #        
         self.initUI()
         self.pack()
 
@@ -49,72 +52,85 @@ class MenuFrame(Frame):
         """Create an option menu, a connect button, and a disconnect button inside a frame
         """
         
-        # option menu. menu is populated by the deviceDetection function
+        # column 3, space
+        self.h0 = Frame(self, width=3)
+        self.h0.grid_propagate(False)
+        self.h0.grid(column=0, row=1)
+
+        # column 1, connect button
+        # disabled when no device detected
+        # turns green when connected otherwise gray
+        self.connectButton = Button(self, width=12, text="Connect", bg="gray", state=DISABLED, command=self.connect)
+        self.connectButton.grid(column=1,row=1)
+
+        # column 2, option menu for COM port
+        # populated by the deviceDetection function
         self.comVar = StringVar()        
         self.comVar.set(self.DEFAULT_STRING)
         self.comOption = OptionMenu(self, self.comVar, [self.DEFAULT_STRING])
         self.comOption.config(state=DISABLED)
-        self.comOption.config(width=25)
-        self.comOption.grid(column=1,row=1)
+        self.comOption.config(width=26)
+        self.comOption.grid(column=2,row=1)
         
-        # connect button. disabled when no device detected and when already connected
-        # turns green when connected otherwise gray
-        self.connectButton = Button(self, width=12, text="Connect", background="gray", state=DISABLED, command=self.connect)
-        self.connectButton.grid(column=2,row=1)
+                
+        # column 3, space
+        self.h1 = Frame(self, width=5)
+        self.h1.grid_propagate(False)
+        self.h1.grid(column=3, row=1)
         
-        # disconnect button. disabled and red when not connected otherwise gray.
-        self.disconnectButton = Button(self, width=12, text="Disconnected", bg="red", state=DISABLED, command=self.disconnect)
-        self.disconnectButton.grid(column=3,row=1)
-        
-        # space
-        self.s3Frame = Frame(self, width=10)
-        self.s3Frame.grid_propagate(False)
-        self.s3Frame.grid(column=4, row=1)
     
-        # export CSV
-        self.exportButton = Button(self, text="Export Database", bg="gray", state=DISABLED, command=self.exportCSV)
-        self.exportButton.grid(column=5, row=1)
+        # column 4, export CSV
+        self.exportButton = Button(self, text="Export Database", bg="gray", state=DISABLED, width=16, command=self.exportCSV)
+        self.exportButton.grid(column=4, row=1)
 
-        # space
-        self.s1Frame = Frame(self, width=10)
-        self.s1Frame.grid_propagate(False)
-        self.s1Frame.grid(column=6, row=1)
+        # column 5, space
+        self.h2 = Frame(self, width=5)
+        self.h2.grid_propagate(False)
+        self.h2.grid(column=5, row=1)
         
         # program buttons
-        self.toasterButton = Button(self, text="Program Labeler", bg="gray", state=DISABLED, command=self.programToaster)
-        self.toasterButton.grid(column=7, row=1)
-
-        self.leafButton = Button(self, text="Program Node", bg="gray", state=DISABLED, command=self.programLeaf)
-        self.leafButton.grid(column=8, row=1)
         
-        self.routerButton = Button(self, text="Program Router", bg="gray", state=DISABLED, command=self.programRouter)
-        self.routerButton.grid(column=9, row=1)
-
-        self.basestationButton = Button(self, text="Program Basestation", bg="gray", state=DISABLED, command=self.programBasestation)
-        self.basestationButton.grid(column=10, row=1)
-
-        # space
-        self.s2Frame = Frame(self, width=10)
-        self.s2Frame.grid_propagate(False)
-        self.s2Frame.grid(column=11, row=1)
+        # column 6, Program Node
+        self.leafButton = Button(self, text="Program Node", bg="gray", state=DISABLED, width=16, command=self.programLeaf)
+        self.leafButton.grid(column=6, row=1)
         
-        # progress bar
+        # column 7, Program Router
+        self.routerButton = Button(self, text="Program Router", bg="gray", state=DISABLED, width=16, command=self.programRouter)
+        self.routerButton.grid(column=7, row=1)
+
+        # column 8, Program Basestation
+        self.basestationButton = Button(self, text="Program Basestation", bg="gray", state=DISABLED, width=18, command=self.programBasestation)
+        self.basestationButton.grid(column=8, row=1)
+
+        # column 9, space
+        self.h3 = Frame(self, width=5)
+        self.h3.grid_propagate(False)
+        self.h3.grid(column=9, row=1)
+        
+        # column 10, progress bar
         self.progressVar = IntVar()
         self.progressVar.set(0)
-        self.progressBar = ttk.Progressbar(self, orient='horizontal', variable=self.progressVar, length=100, mode='determinate')
-        self.progressBar.grid(column=12, row=1)
+        self.progressBar = ttk.Progressbar(self, orient='horizontal', variable=self.progressVar, length=104, mode='determinate')
+        self.progressBar.grid(column=10, row=1)
 
-#        # space
-#        self.s3Frame = Frame(self, width=10)
-#        self.s3Frame.grid_propagate(False)
-#        self.s3Frame.grid(column=13, row=1)
-#
-#        self.updateButton = Button(self, text="Update", bg="gray", state=DISABLED, width=10, command=self.programBasestation)
-#        self.updateButton.grid(column=14, row=1)
+        # column 11, space
+        self.h4 = Frame(self, width=5)
+        self.h4.grid_propagate(False)
+        self.h4.grid(column=11, row=1)
+
+        # column 14, Help
+        self.helpButton = Button(self, text="Help", bg="gray", state=NORMAL, width=15, command=self.show_help)
+        self.helpButton.grid(column=14, row=1)
+        self.helpButton.config(state=NORMAL, cursor="hand2")
+                
+        # send message
+        self.handler.debugMsg("No USB device detected, plase insert one")
         
         # detect devices. this function calls itself every second.
         self.deviceDetection()
 
+    def donothing(self):
+            return
 
     def deviceDetection(self):
         """ Detect serial devices by using the built-in comports command in pyserial.
@@ -125,13 +141,20 @@ class MenuFrame(Frame):
         for port, desc, hwid in ports:
             newDict[desc] = port
         
+        
+#         if self.connected:
+#             self.handler.debugMsg("USB device detected, press any menu button to start")
+
         # call disconnect function if the current device disappears
         if self.connected and self.comVar.get() not in newDict:
+            self.handler.debugMsg("No USB device detected, please connect one...")
             self.disconnect()
-        
+
         # update menu when not currently connected
         if newDict != self.comDict:
             
+            self.handler.debugMsg("No USB device detected, please connect one...")
+
             # reset menu
             menu = self.comOption["menu"]
             menu.delete(0, "end")
@@ -153,26 +176,17 @@ class MenuFrame(Frame):
                 
                 # enable menu and connect/programming buttons
                 self.enableUI()
-                #self.comOption.config(state=NORMAL)
-                #self.connectButton.config(state=NORMAL)
-                #self.toasterButton.config(state=NORMAL)
-                #self.leafButton.config(state=NORMAL)
-                #self.routerButton.config(state=NORMAL)
-                #self.basestationButton.config(state=NORMAL)
+                self.handler.debugMsg("USB device detected, press any menu button to start")
+                
             else:
                 # no devices found. disable menu and all buttons.
                 menu.add_command(label=self.DEFAULT_STRING, command=Tkinter._setit(self.comVar, self.DEFAULT_STRING))
                 #menu.add_command(label=self.DEFAULT_STRING, command=lambda value=string: self.comVar.set(self.DEFAULT_STRING))
                 self.comVar.set(self.DEFAULT_STRING)
-                #self.comOption.config(state=DISABLED)
-                #self.toasterButton.config(state=DISABLED)
-                #self.leafButton.config(state=DISABLED)
-                #self.routerButton.config(state=DISABLED)
-                #self.basestationButton.config(state=DISABLED)
                 self.disableUI()
                 self.connectButton.config(bg="gray", state=DISABLED, cursor="")
-                self.disconnectButton.config(bg="red", state=DISABLED, cursor="")
-            
+                self.handler.debugMsg("No USB device detected, please connect one...")
+                
             # update
             self.comDict = newDict
             
@@ -183,19 +197,13 @@ class MenuFrame(Frame):
     def connect(self):
         """ Event handler for changing connection status.
         """        
+        self.handler.debugMsg("Connecting to Bacon...")
         self.handler.busy()
         self.connected = True
         
-        # enable/disable buttons and change color
-        #self.comOption.config(state=DISABLED)
-        #self.toasterButton.config(state=DISABLED)
-        #self.leafButton.config(state=DISABLED)
-        #self.routerButton.config(state=DISABLED)
-        #self.basestationButton.config(state=DISABLED)
         self.disableUI()
-        self.connectButton.config(text="Connected", bg="green", state=DISABLED, cursor="")
-        self.disconnectButton.config(text="Disconnect", bg="gray", state=NORMAL, cursor="hand2")
-        
+        self.connectButton.config(text="Disconnect", bg="green", command=self.disconnect, state=NORMAL, cursor="hand2") 
+        self.helpButton.config(state=NORMAL, cursor="hand2")
         self.handler.connect(self.comDict[self.comVar.get()])
 
     def disconnect(self):
@@ -204,16 +212,8 @@ class MenuFrame(Frame):
         self.handler.busy()
         self.connected = False
         
-        # enable/disable buttons and change color
-        #self.comOption.config(state=NORMAL)
-        #self.toasterButton.config(state=NORMAL)
-        #self.leafButton.config(state=NORMAL)
-        #self.routerButton.config(state=NORMAL)
-        #self.basestationButton.config(state=NORMAL)
         self.enableUI()
-        self.connectButton.config(text="Connect", bg="gray", state=NORMAL, cursor="hand2")
-        self.disconnectButton.config(text="Disconnected", bg="red", state=DISABLED, cursor="")
-        
+        self.connectButton.config(text="Connect", bg="gray", state=NORMAL, cursor="hand2", command=self.connect)
         self.handler.disconnect()
         self.handler.notbusy()
 
@@ -221,31 +221,21 @@ class MenuFrame(Frame):
     def disableUI(self):
         self.comOption.config(state=DISABLED, cursor="")
         self.connectButton.config(state=DISABLED, cursor="")
-        self.exportButton.config(state=DISABLED, cursor="")
-        self.toasterButton.config(state=DISABLED, cursor="")
         self.leafButton.config(state=DISABLED, cursor="")
         self.routerButton.config(state=DISABLED, cursor="")
         self.basestationButton.config(state=DISABLED, cursor="")
+        self.exportButton.config(state=DISABLED, cursor="")
+        self.helpButton.config(state=DISABLED,cursor="")
 
     def enableUI(self):
         self.comOption.config(state=NORMAL, cursor="hand2")
         self.connectButton.config(state=NORMAL, cursor="hand2")
-        self.disconnectButton.config(bg="red", state=DISABLED, cursor="")
-        self.exportButton.config(state=NORMAL, cursor="hand2")
-        self.toasterButton.config(state=NORMAL, cursor="hand2")
         self.leafButton.config(state=NORMAL, cursor="hand2")
         self.routerButton.config(state=NORMAL, cursor="hand2")
         self.basestationButton.config(state=NORMAL, cursor="hand2")
+        self.exportButton.config(state=NORMAL, cursor="hand2")
+        self.helpButton.config(state=NORMAL, cursor="hand2")
 
-    def programToaster(self):
-        self.handler.busy()
-        self.disableUI()
-
-        self.progressVar.set(0)
-        self.programming = True
-        self.programSize = self.TOASTER_SIZE
-        self.handler.program(self.toaster_file, self.comDict[self.comVar.get()], self.programDone)
-        self.programProgress()
     
     def programLeaf(self):
         self.handler.busy()
@@ -308,6 +298,31 @@ class MenuFrame(Frame):
             tkMessageBox.showerror("Error", "CSV export failed", parent=self.parent)
         else:
             tkMessageBox.showinfo("Labeler", "CSV export done", parent=self.parent)
+
+    def show_help(self):
+        webbrowser.open("file://"+os.path.realpath("LabelerGuide.pdf"))
+#         self.top = Toplevel()
+#         self.top.title("Labeler Help")
+#         self.helpWindow = Text(self.top)
+# 
+#         self.helpY = Scrollbar(self.top,orient=VERTICAL)
+#         self.helpY.config(command=self.helpWindow.yview)
+#         self.helpY.pack(side=RIGHT,fill=Y)
+# 
+#         self.helpX = Scrollbar(self.top, orient=HORIZONTAL)
+#         self.helpX.config(command=self.helpWindow.xview)
+#         self.helpX.pack(side=BOTTOM,fill=X)
+#         
+#         helpfile = file("labeler.help.txt")
+#         helptext = helpfile.read()
+#         helpfile.close()
+# 
+#         self.helpWindow.insert(0.0,helptext)
+#         # insert hyperlink
+#         self.helpWindow.insert()
+#         self.helpWindow.config(state=DISABLED, wrap=NONE, xscrollcommand=self.helpX.set, yscrollcommand=self.helpY.set)
+#         self.helpWindow.pack(side=TOP, expand=True,fill=BOTH)
+        
 
 if __name__ == '__main__':
     root = Tk()
