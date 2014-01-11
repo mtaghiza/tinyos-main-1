@@ -1,0 +1,18 @@
+This is how the bacon v.2 bsl was updated, in case it's a useful
+example in the future.
+
+- create bacon2.dns, listing the NSLUs which are to be updated.
+- use sh stopProxies.sh <pw> bacon2.dns to stop the currently-running
+  proxies. Otherwise, copying the new proxy over will fail.
+  - after the hotplug script is moved out of the way, we reboot the
+    NSLU. So, it comes back up and ignores the USB devices.
+- use sh bacon2.sh <pw> bacon2.dns to:
+  - copy the new proxy app over
+  - remove the old proxy symlink and replace it with one to the
+    newly-copied proxy.
+  - copy the new bsl over
+  - if it exists, remove the previous bsl sym link
+  - make a sym link at /usr/bin/cc430-cppbsl pointing to new bsl
+- use sh startProxies.sh <pw> bacon2.dns to restore the hotplug script
+  and reboot the devices again.
+

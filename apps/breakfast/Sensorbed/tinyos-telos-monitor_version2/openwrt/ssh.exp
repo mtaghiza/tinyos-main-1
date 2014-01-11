@@ -1,0 +1,58 @@
+#!/usr/bin/expect
+#
+# Copyright (c) 2012 Johns Hopkins University.
+# All rights reserved.
+# 
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the (updated) modification history and the author appear in
+# all copies of this source code.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS  `AS IS'
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR  PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR  CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF USE,  DATA,
+# OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR  OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+# THE POSSIBILITY OF SUCH DAMAGE.
+# 
+# @author Doug Carlson <carlson@cs.jhu.edu>
+
+# ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host
+proc connect {user host passw} {
+  puts "connecting with $user $host $passw"
+  expect "*?assword:*" {
+    send -- "$passw\r"
+    send -- "\r"
+  }
+}
+
+set user [lindex $argv 0]
+set host [lindex $argv 1]
+set passw [lindex $argv 2]
+set cmd [lindex $argv 3]
+
+set nonce ""
+while { "$nonce" == "" } {
+  set nonce [exec  head -c 100 /dev/urandom | tr -dc \[:alnum:\] ]
+}
+
+if { $user == "" || $passw == "" || $host == "" || $cmd == "" } {
+  puts "Usage: <user> <passw> <host> <cmd>"
+  exit 1
+}
+
+spawn ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host "$cmd ; echo \"END-$nonce\""
+connect "$user" "$host" "$passw" 
+expect "\r\nEND-$nonce\r\n"  {
+  puts "REMOTE COMMAND EXECUTED: $user@$host"
+  close $spawn_id
+  exit 0
+}
+puts "REMOTE COMMAND FAILED: $user@$host"
+close $spawn_id
+exit 1

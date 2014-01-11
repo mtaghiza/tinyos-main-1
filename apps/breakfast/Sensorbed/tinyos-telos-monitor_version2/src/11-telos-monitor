@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Copyright (c) 2012 Johns Hopkins University.
+# All rights reserved.
+# 
+# Permission to use, copy, modify, and distribute this software and its
+# documentation for any purpose, without fee, and without written
+# agreement is hereby granted, provided that the above copyright
+# notice, the (updated) modification history and the author appear in
+# all copies of this source code.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS  `AS IS'
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED  TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR  PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR  CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF USE,  DATA,
+# OR PROFITS) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR  OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+# THE POSSIBILITY OF SUCH DAMAGE.
+#
+# @author Razvan Musaloiu (razvan@musaloiu.com, Google Inc.)
+# 
+# @version $Revision$ $Date$
+
+# Put this in /etc/hotplug.d/usb
+# When a mote is plugged in, this will automatically start the
+# telos-monitor script. When a mote is unplugged, it will
+# automatically kill the script.
+PIDFILE=/var/run/telos-monitor.$DEVICENAME.pid
+case "$ACTION" in
+	add)
+		[ -n "${MODALIAS}" ] && {
+			# Nobody should be in $PIDFILE
+			[ -e $PIDFILE ] && {
+				kill `cat $PIDFILE`
+			}
+			TTY=`ls /sys/${DEVPATH} | grep tty`
+			[ -n "$TTY" ] && {
+				/usr/bin/telos-monitor sensorbed.hinrg.cs.jhu.edu /dev/$TTY `cat /sys/${DEVPATH}/../serial` &
+				echo $! > /var/run/telos-monitor.$DEVICENAME.pid
+			}
+		}
+		;;
+	remove)
+		[ -n "${MODALIAS}" ] && {
+			kill `cat $PIDFILE`
+			rm $PIDFILE
+		}
+		;;
+esac	

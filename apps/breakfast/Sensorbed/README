@@ -1,0 +1,18 @@
+sp-local-async.py and sp-remote-async.py are the old code that works with the
+proxy code in the tinyos-telos-monitor directory.
+
+For the lastest code, please use the code in version2 directory and
+tinyos-telos-monitor_version2 directory.
+
+----
+The server application can be found under 'version2'. MIB.py reads
+serial packets, MIB_UART_ID.py reads raw uart data streams (e.g.
+unbuffered serial printf)
+
+tinyos-telos-monitor_version2 has instructions for building OpenWRT
+images and cross-compiling the bootstrap loader used by the bacon
+mote.
+
+There are a number of expect scripts under the openwrt directory that
+may be useful for automating manual tasks (such as updating code on
+each NSLU, rebooting NSLUs, copying files to every NSLU)
