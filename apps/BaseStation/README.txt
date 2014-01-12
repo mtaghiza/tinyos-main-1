@@ -56,3 +56,13 @@ SerialForwarder on docs.tinyos.net for more details.
 Known bugs/limitations:
 
 
+Breakfast notes:
+----------------
+* Breakfast deployments should use apps/breakfast/bacon/BaseStation,
+  not this.  The communication mechanism in a breakfast deployment
+  using CX for networking is different enough to require significant
+  changes to a base station binary.
+* This includes fixes to handle cases where the serial packet
+  header and the radio header are different lengths, which may be
+  useful if you are doing work on the breakfast platform and not using
+  CX for networking.

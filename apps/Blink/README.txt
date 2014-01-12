@@ -20,3 +20,13 @@ None.
 
 
 $Id: README.txt,v 1.4 2006-12-12 18:22:48 vlahan Exp $
+
+Breakfast notes:
+----------------
+* burn shows how to use the wpt (testbed) install target for a batch
+  of nodes. See support/make/wpt.extra
+* reset shows how to use direct access to the MIB.py testbed server script to 
+  reset nodes on the testbed. See apps/breakfast/Sensorbed/version2
+  for the server script.
+* The map files show the format which burn and reset expect: basically
+  just the second column matters.
