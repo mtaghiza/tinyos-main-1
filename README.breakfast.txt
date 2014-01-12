@@ -1,3 +1,35 @@
+Repository structure: breakfast project
+------------------
+This repository started from the standard tinyos repository structure,
+but added a "breakfast" directory under apps that contains the bulk of
+the software related to the breakfast hardware and software platform.
+
+Most directories should contain a README.txt file that briefly
+summarizes the function of the contained code and/or the purpose of a
+directory structure. Here is a high-level summary of where important
+code is located for breakfast developers.
+
+apps/breakfast: Bacon and Toast applications, breakfast utility components,
+  testbed tools, command-line tool for Saleae logic analyzer, python
+  scripts for interacting with breakfast hardware/deployments.
+
+bin: added bootstrap loader for CC430 platform, modified scripts for
+  generating log storage header files, and utilities for visualizing
+  ROM and RAM usage.
+
+support: build targets for bacon hardware, extras for debugging memory
+  usage, build targets for testbed, and modifications/bug fixes to
+  python serial stack.
+
+tools: boostrap loader modifications for msp430f235 chip, c-language
+  bootstrap loader with support for both telos and bacon platforms.
+
+tos: bacon and toast platform definitions, drivers.
+
+
+Repository History
+------------------
+
 This repository results from a manual merge of three git repositories.
 
 The most notable features are:
