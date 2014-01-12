@@ -1,3 +1,58 @@
+This document contains a guide to the contents of the apps/breakfast
+directory as well as notes on several important ID spaces in use:
+record types, AM ID's, and storage settings keys. Please keep this
+up-to-date as new ID's are added.
+
+Directory contents
+==================
+This contains essentially all code for the breakfast suite of hardware
+that is not either part of the platform definition, part of the build
+process, or the CX networking stack.
+
+Active code
+-----------
+Sensorbed : Testbed server, build notes, and testbed-compatible BSL. 
+
+bacon : Main bacon applications (Leaf, Router, and BaseStation),
+  sub-applications, and a ton of obsolete test code used during the
+  development process.
+
+logic-cli : command line tool for use with the Saleae Logic analyzer.
+  Useful for automating collection of long traces.
+
+toast : Main toast application, scripts and binaries for
+  manufacture-time installation of firmware, tests for
+  sub-applications.
+
+tools : Python user interface scripts for interacting with the
+  breakfast hardware.
+
+util : breakfast-to-toast I2C communication code, bacon/toast barcode
+  access functions, utility for detecting stack overruns, debug
+  utilities, testbed scripts. 
+
+
+Unused/obsolete code
+--------------------
+electrical_tests : binaries and installers for testing specific steps
+  that had the potential to cause electrical issues on the breakfast
+  hardware
+
+independent : test code for applications that could run on both
+  bacon/toast
+
+pde_fw : binaries and loader scripts for single-purpose firmware used
+  to test current draw and behavior during the hardware design
+  process.
+
+timing : test code for determining how long it takes to start/stop the
+  radio driver and perform a send.
+
+minSerial.py : test code to check basic operation of serial
+  communication without involving the whole python serial stack.
+
+
+
 Some Collected Caveats
 ======================
 (Marked n.b. or N.B. in source)
