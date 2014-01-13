@@ -40,6 +40,8 @@ configuration MetadataAppC{
   components ToastTLVC;
   components BaconTLVC;
 
+  components BaconSensorC;
+
   components new TimerMilliC();
 
   components PrintfC;

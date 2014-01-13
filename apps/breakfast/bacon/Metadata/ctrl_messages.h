@@ -203,6 +203,17 @@ typedef nx_struct read_analog_sensor_response_msg{
   adc_sample_t sample;
 } read_analog_sensor_response_msg_t;
 
+typedef nx_struct read_bacon_sensor_cmd_msg {
+  nx_uint8_t dummy[0];
+} read_bacon_sensor_cmd_msg_t;
+
+typedef nx_struct read_bacon_sensor_response_msg {
+  nx_uint8_t error;
+  nx_uint16_t light;
+  nx_uint16_t thermistor;
+  nx_uint16_t battery;
+} read_bacon_sensor_response_msg_t;
+
 //---Utilities
 typedef nx_struct scan_bus_cmd_msg{
   nx_uint8_t dummy[0];
@@ -387,6 +398,10 @@ enum{
   //
   AM_READ_ANALOG_SENSOR_CMD_MSG = 0xB0,
   AM_READ_ANALOG_SENSOR_RESPONSE_MSG = 0xB1,
+
+  AM_READ_BACON_SENSOR_CMD_MSG = 0xB2,
+  AM_READ_BACON_SENSOR_RESPONSE_MSG = 0xB3,
+
 
   //
   //Utilities

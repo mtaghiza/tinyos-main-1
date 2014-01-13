@@ -149,6 +149,8 @@ bacon/Metadata/ctrl_messages.h:  AM_ADD_TOAST_TLV_ENTRY_CMD_MSG = 0xA6,
 bacon/Metadata/ctrl_messages.h:  AM_READ_TOAST_TLV_ENTRY_RESPONSE_MSG = 0xA9,
 bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_ENTRY_CMD_MSG = 0xAA,
 bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_TLV_ENTRY_RESPONSE_MSG = 0xAB,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_SENSOR_CMD_MSG = 0xB2,
+bacon/Metadata/ctrl_messages.h:  AM_READ_BACON_SENSOR_RESPONSE_MSG = 0xB3,
 
 Misc. Tests: 0xD0 - 0xDF
 ---------
