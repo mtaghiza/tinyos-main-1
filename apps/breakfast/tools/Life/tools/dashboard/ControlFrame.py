@@ -658,9 +658,7 @@ class ControlFrame(Frame):
               requestMissing=False,
               outboundMessages = changeMessages,
               outboundCallback = self.outboundCallback)
-            self.progressMessage("""Changes applied. These will be
-            reflected in the dashboard when data is collected from the
-            affected nodes.\n""")
+            self.progressMessage("""Changes sent to network.\n""")
         else:
             self.progressMessage("No changes to apply.\n")
 
