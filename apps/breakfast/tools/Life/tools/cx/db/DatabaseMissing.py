@@ -142,6 +142,26 @@ class DatabaseMissing(object):
             return (repairInfo, totalMissing)
         else:
             return repairInfo
+
+    def allNodeMissing(self, node, incrementRetries=True):
+        # sqlite connections can only be used from the same threads they are established from
+        if self.connected == False:
+            self.connected == True
+            # raises sqlite3 exceptions
+            self.connection = sqlite3.connect(self.dbName)
+            #self.cursor = self.connection.cursor()
+        # sort the flash table by cookie values (ascending)
+        # and find missing segments by comparing lengths and cookies
+        self.connection.execute(DatabaseMissing.SORT_COOKIE_SQL)
+        results = self.connection.execute(DatabaseMissing.MISSING_ORDER_SIZE_NODE_SQL, (node,))
+        repairInfo = results.fetchall()
+        if repairInfo:
+            results = self.connection.execute(DatabaseMissing.TOTAL_MISSING_BY_NODE,
+              (node,))
+            (totalMissing,) = results.fetchone()
+            return (repairInfo, totalMissing)
+        else:
+            return repairInfo
         
 
     def findMissing(self, incrementRetries=True):
