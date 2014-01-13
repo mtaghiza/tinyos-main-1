@@ -90,6 +90,9 @@ class Database(object):
 
     def nodeMissing(self, node, incrementRetries=True):
         return self.missing.nodeMissing(node, incrementRetries)
+
+    def allNodeMissing(self, node, incrementRetries=True):
+        return self.missing.allNodeMissing(node, incrementRetries)
     
     def stop(self):
         self.insert.stop()

@@ -148,15 +148,6 @@ class CXController(object):
         refListener = StatusTimeRefListener.StatusTimeRefListener(db, refCallBack)
         d.mif.addListener(refListener, CxStatus.CxStatus)
         
-        # How to prevent the download from completing too fast (before we
-        #   can do repairs)
-        # - base station should stay active until it gets an all-clear
-        #   message (just mark itself as having data pending at every eos
-        #   event)
-        # - at base station EOS (after the initial contact): terminate keep-alives if we've gone
-        #   through at least one download cycle and none of the contacted nodes
-        #   have missing data.
-
         try:
             print "Wakeup start", time.time()
 
@@ -165,24 +156,26 @@ class CXController(object):
             error = TOS.SUCCESS
             firstContact = True
             nodes=set()
+            retryMap = {}
             while not d.mif.finishedListener.finished:
                 eos = d.mif.readNext()
                 if eos:
-                    if eos.get_owner() != bsId:
-                        nodes.add(eos.get_owner())
+                    node = eos.get_owner()
+                    if node != bsId:
+                        nodes.add(node)
                     if eosCallBack:
-                        eosCallBack(eos.get_owner(), eos.get_status())
-                    if eos.get_owner() in outboundMessages and outboundMessages[eos.get_owner()]:
-                        messageList = outboundMessages[eos.get_owner()]
+                        eosCallBack(node, eos.get_status())
+                    if node in outboundMessages and outboundMessages[node]:
+                        messageList = outboundMessages[node]
                         message = messageList[0]
                         messageList = messageList[1:]
-                        d.send(message, eos.get_owner())
+                        d.send(message, node)
                         if outboundCallback:
-                            outboundCallback(eos.get_owner())
-                        outboundMessages[eos.get_owner()] = messageList
+                            outboundCallback(node)
+                        outboundMessages[node] = messageList
 
                     if eos.get_status() == 1 and requestMissing:
-                        if eos.get_owner() == bsId:
+                        if node == bsId:
                             if firstContact:
                                 firstContact = False
                             else:
@@ -198,21 +191,35 @@ class CXController(object):
                             # then this should call a function that
                             # takes in a cookie range and only return gaps
                             # falling in that range.
-                            missingT = db.nodeMissing(eos.get_owner())
+                            missingT = db.allNodeMissing(node)
                             totalMissing=-1
     #                         totalMissing = db.totalMissing(eos.get_owner()
                             if missingT:
-                                ((node_id, cookie, nextCookie, missing, retry), totalMissing) = missingT
-                                msg = CxRecordRequestMsg.CxRecordRequestMsg()
-                                msg.set_node_id(node_id)
-                                msg.set_cookie(nextCookie)
-                                msg.set_length(min(missing, constants.MAX_REQUEST_UNIT))
-                                print "requesting %u at %u from %u"%(msg.get_length(),
-                                  msg.get_cookie(), msg.get_node_id())
-                                if repairCallBack:
-                                    repairCallBack(msg.get_node_id(),
-                                      msg.get_length(), totalMissing)
-                                d.send(msg, msg.get_node_id())
+                                (gapList, totalMissing) = missingT
+                                if node not in retryMap:
+                                    retryMap[node] = {}
+                                nodeRetryMap = retryMap[node]
+                                for (node_id, cookie, nextCookie, missing, retry) in gapList:
+                                    print "REC %u check gap %u"%(node_id, nextCookie)
+                                    if nextCookie not in nodeRetryMap or nodeRetryMap[nextCookie] < constants.MAX_RECOVERY_ATTEMPTS:
+                                        msg = CxRecordRequestMsg.CxRecordRequestMsg()
+                                        msg.set_node_id(node_id)
+                                        msg.set_cookie(nextCookie)
+                                        msg.set_length(min(missing, constants.MAX_REQUEST_UNIT))
+                                        if repairCallBack:
+                                            repairCallBack(msg.get_node_id(),
+                                              msg.get_length(), totalMissing)
+                                        d.send(msg, msg.get_node_id())
+                                        nodeRetryMap[nextCookie] = nodeRetryMap.get(nextCookie,0) + 1
+                                        print "REC %u requesting %u at %u from %u (attempt %u)"%(node, msg.get_length(),
+                                          msg.get_cookie(),
+                                          msg.get_node_id(),
+                                          nodeRetryMap[nextCookie])
+                                        break
+                                    else:
+                                        print "REC %u give up on gap %u"%(node, nextCookie)
+                            else:
+                                print "REC %u no gap"%node
 
         #these two exceptions should just make us clean up/quit
         except KeyboardInterrupt:
