@@ -117,6 +117,7 @@ if __name__ == '__main__':
         msg.set_cookie(0)
         msg.set_length(50000)
         d.send(msg)                
+        lastLastCookie = -1
         while True:
             time.sleep(2.0)
             #the dummy parameters are here because executeNow expects
@@ -126,10 +127,15 @@ if __name__ == '__main__':
               WHERE base_time = (select max(base_time) from
               cookie_table) AND 1=? and 1=?''', (1,1))
             print "LAST COOKIE:", lastCookie
-            msg.set_node_id(0xFFFF)
-            msg.set_cookie(lastCookie)
-            msg.set_length(50000)
-            d.send(msg) 
+            if lastCookie == lastLastCookie:
+                print "No log progress, I guess we're done!"
+                break
+            else:
+                msg.set_node_id(0xFFFF)
+                msg.set_cookie(lastCookie)
+                msg.set_length(50000)
+                d.send(msg) 
+                lastLastCookie = lastCookie
     #these two exceptions should just make us clean up/quit
     except KeyboardInterrupt:
         pass
