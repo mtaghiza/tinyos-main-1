@@ -86,6 +86,7 @@ class NodeFrame(Frame):
 #         self.site = self.db.getSiteMap()
     
     def saveSettings(self):        
+        self.hub.control.settingsChanged(self.settings != self.originalSettings)
         #self.sf.write(self.offline)
         self.changedVar.set(False)
 
