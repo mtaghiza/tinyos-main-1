@@ -582,7 +582,8 @@ class ControlFrame(Frame):
 
     def csvRunner(self):
         self.progressMessage("Processing data to CSV files. This may take many minutes.\n")
-        DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR)
+        DumpCSV.dumpCSV(self.dbFile, self.DEFAULT_DATA_DIR,
+          self.progressMessage)
         self.progressMessage("CSV files ready (under '%s' directory)\n"%
           self.DEFAULT_DATA_DIR )
         for (nodeId, barcodeId, lastSampleTime, lastContact, batteryVoltage) in self.db.contactSummary():
