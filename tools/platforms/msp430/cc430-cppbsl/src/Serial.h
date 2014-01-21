@@ -30,6 +30,8 @@
  * hand rolled bsl tool, other ones are too slow
  * @author Andreas Koepke <koepke at tkn.tu-berlin.de>
  * @date 2007-04-16
+ * @author Doug Carlson <carlson@cs.jhu.edu>
+ * - Extensive modifications for compatibility with flash-based BSLs.
  */
 #ifndef BSL_SERIAL_H
 #define BSL_SERIAL_H
@@ -79,7 +81,7 @@ struct addr_frame_t {
 struct bsl_core_frame_t {
   uint8_t CMD;
   union {
-    uint8_t body[BSL_CORE_LEN - 1 + BSL_CRC_LEN]; 
+    uint8_t body[BSL_CORE_LEN - 1 + BSL_CRC_LEN];
     addr_frame_t addrFrame;
   } ;
 } __attribute__ ((packed));
@@ -106,14 +108,14 @@ class BaseSerial {
 protected:
     const int switchdelay;
     termios oldtermios;
-    
+
 protected:
     int serialReadFD;
     int serialWriteFD;
     bool invertTest;
     bool invertReset;
     bool swapRstTest;
-    
+
     fd_set rfds;
 
     enum {
@@ -126,8 +128,14 @@ protected:
 	UNKNOWN_ERROR = 0x55,
 	UNKNOWN_BAUD_RATE = 0x56,
     };
-    
- protected:    
+
+ public:
+    inline int initADG715(int *err){
+	  /* ADG715: from cc430-bsl line 166 */
+      return setRstTck(1, 1, err);
+    }
+
+ protected:
     inline int setDTR(int *err) {
         int i = TIOCM_DTR;
         int r = ioctl(serialWriteFD, TIOCMBIS, &i);
@@ -164,14 +172,14 @@ protected:
         }
         return r;
     }
-    
+
     int setTEST(int *err) {
         int r;
 //        cout << "SetTEST 1" << endl;
-        if(invertTest) { 
-            r = setDTR(err); 
-        } else { 
-            r = clrDTR(err); 
+        if(invertTest) {
+            r = setDTR(err);
+        } else {
+            r = clrDTR(err);
         }
         return r;
     }
@@ -179,10 +187,10 @@ protected:
     int clrTEST(int *err) {
         int r;
 //        cout << "SetTEST 0" << endl;
-        if(invertTest) { 
-            r = clrDTR(err); 
-        } else { 
-            r = setDTR(err); 
+        if(invertTest) {
+            r = clrDTR(err);
+        } else {
+            r = setDTR(err);
         }
         return r;
     }
@@ -190,10 +198,10 @@ protected:
     int setRSTn(int *err) {
         int r;
 //        cout << "SetRSTn 1" << endl;
-        if(invertReset) { 
-            r = setRTS(err); 
-        } else { 
-            r = clrRTS(err); 
+        if(invertReset) {
+            r = setRTS(err);
+        } else {
+            r = clrRTS(err);
         }
         return r;
     }
@@ -201,13 +209,246 @@ protected:
     int clrRSTn(int *err) {
         int r;
 //        cout << "SetRSTn 0" << endl;
-        if(invertReset) { 
-            r= clrRTS(err); 
-        } else { 
-            r = setRTS(err); 
+        if(invertReset) {
+            r= clrRTS(err);
+        } else {
+            r = setRTS(err);
         }
         return r;
     }
+
+	/*************************************************************************/
+	/* Begin ADG715 Section                                                  */
+	/*************************************************************************/
+
+	/**
+	 * def adg715SetSCL(self, level):
+     *     "adjust ADG715 SCL (I2C clock) pin"
+     *     self.serialport.setRTS(not level)
+	 */
+    int adg715SetSCL(int level, int *err) {
+		int r;
+
+		if(!level) {
+			r = setRTS(err);
+		} else {
+			r = clrRTS(err);
+		}
+
+		return r;
+	}
+
+	/**
+	 * def adg715SetSDA(self, level):
+     *     "adjust ADG715 SDA (I2C data) pin"
+     *     self.serialport.setDTR(not level)
+     */
+    int adg715SetSDA(int level, int *err) {
+		int r;
+
+		if(!level) {
+			r = setDTR(err);
+		} else {
+			r = clrDTR(err);
+		}
+
+		return r;
+	}
+
+	/**
+	 *	def adg715I2CStart(self):
+	 *		"""
+	 *		get the ADG715's attention.
+	 *		start condition p.13 ADG714_715.pdf: sec 1. SDA 1->0 with SCL 1.
+	 *		"""
+	 *		self.adg715SetSDA(1)
+	 *		self.adg715SetSCL(1)
+	 *		self.adg715SetSDA(0)
+	 *		time.sleep(2e-6)       # ensure we don't go too fast
+	 */
+	int adg715I2CStart(int *err) {
+		int r;
+
+		// need error and return value recombine function
+		r = adg715SetSDA(1, err);
+		r = adg715SetSCL(1, err);
+		r = adg715SetSDA(0, err);
+	 	usleep(2);
+
+	 	return r;
+	}
+
+	/**
+	 *	def adg715I2CStop(self):
+	 * 		"""
+	 *		finish an interchange with the ADG715 latch.
+	 *		stop condition p.13 ADG714_715.pdf: sec 3. SDA 0->1 with SCL 1.
+	 *		"""
+	 *		self.adg715SetSDA(0)
+	 *		self.adg715SetSCL(1)
+	 *		self.adg715SetSDA(1)
+	 *		time.sleep(2e-6)       # ensure we don't go too fast
+	 */
+	int adg715I2CStop(int *err) {
+		int r;
+
+		// need error and return value recombine function
+		r = adg715SetSDA(0, err);
+		r = adg715SetSCL(1, err);
+		r = adg715SetSDA(1, err);
+	 	usleep(2);
+
+	 	return r;
+	}
+
+	/**
+	 *	def adg715I2CWriteBit(self, bit):
+	 *		"""
+	 *		write bit to ADG715 p.13 ADG714_715.pdf: sec 2. and figures 4 and 5.
+	 *		SDA transition must occur when SCL is low.
+	 *		SDA must be stable during high period of SCL.
+	 *		bring SCL low again at end of bit.
+	 *		ADG715 clock is 400 kHz max (2.5 us cycle time)
+	 *		"""
+	 *		self.adg715SetSCL(0)
+	 *		self.adg715SetSDA(bit)  # SDA transition must occur when SCL is low
+	 *		time.sleep(2e-6)       # ensure we don't go too fast
+	 *		self.adg715SetSCL(1)    # SDA must be stable during high period of SCL
+	 *		time.sleep(2e-6)       # ensure we don't go too fast
+	 *		self.adg715SetSCL(0)    # bring SCL low again at end of bit.
+	 */
+	int adg715I2CWriteBit(int bit, int *err) {
+		int r;
+
+	 	r = adg715SetSCL(0, err);
+	 	r = adg715SetSDA(bit, err);	// SDA transition must occur when SCL is low
+	 	usleep(2);		     		// ensure we don't go too fast
+	 	r = adg715SetSCL(1, err);	// SDA must be stable during high period of SCL
+	 	usleep(2);					// ensure we don't go too fast
+	 	r = adg715SetSCL(0, err);	// bring SCL low again at end of bit.
+
+		return r;
+	}
+
+	/**
+	 *	def adg715I2CWriteByte(self, byte):
+	 *		"""
+	 *		write byte to ADG715.
+	 *		p.13 ADG714_715.pdf: sec 2. 8 data bits plus an ack bit.
+	 *		figures 4 and 5: MSB to LSB.
+	 *		"""
+	 *		self.adg715I2CWriteBit( byte & 0x80 ); # figures 4 and 5: MSB to LSB
+	 *		self.adg715I2CWriteBit( byte & 0x40 );
+	 *		self.adg715I2CWriteBit( byte & 0x20 );
+	 *		self.adg715I2CWriteBit( byte & 0x10 );
+	 *		self.adg715I2CWriteBit( byte & 0x08 );
+	 *		self.adg715I2CWriteBit( byte & 0x04 );
+	 *		self.adg715I2CWriteBit( byte & 0x02 );
+	 *		self.adg715I2CWriteBit( byte & 0x01 );
+	 *		self.adg715I2CWriteBit( 0 );  # "acknowledge"
+	 */
+	int adg715I2CWriteByte(int byte, int *err) {
+		int r;
+
+		r = adg715I2CWriteBit( byte & 0x80, err ); // figures 4 and 5: MSB to LSB
+		r = adg715I2CWriteBit( byte & 0x40, err );
+		r = adg715I2CWriteBit( byte & 0x20, err );
+		r = adg715I2CWriteBit( byte & 0x10, err );
+		r = adg715I2CWriteBit( byte & 0x08, err );
+		r = adg715I2CWriteBit( byte & 0x04, err );
+		r = adg715I2CWriteBit( byte & 0x02, err );
+		r = adg715I2CWriteBit( byte & 0x01, err );
+		r = adg715I2CWriteBit( 0          , err ); // "acknowledge"
+
+		return r;
+	}
+
+
+	/*
+     *	### I2C address byte prefix for ADG715: ADG714_715.pdf p.12 par. 2
+     */
+#define ADG715_PREFIX	0x90
+
+	/*
+     *	### select based on configuration of A0 and A1 lines as 0x0 through 0x3.
+     *	### for the SuRF board, A0 and A1 are tied to GND
+	 */
+#define ADG715_ADDR		0x00
+
+	/*
+	 *	### ADG715 read and write
+	 */
+#define ADG715_READ		0x01
+#define ADG715_WRITE	0x00
+
+	/*
+     *	### ADG715 address byte map:
+     *	###   +---+---+---+---+---+----+----+------+
+     *	###   | 1 | 0 | 0 | 1 | 0 | A1 | A0 | R/Wn |
+     *	###   +---+---+---+---+---+----+----+------+
+     *
+     *	### ADG715 command byte:
+     */
+#define ADG715_COMMAND		ADG715_PREFIX | (ADG715_ADDR << 1) | ADG715_WRITE
+
+	/*
+	 *	def adg715I2CWriteLatch(self, latchState):
+	 *		"""
+	 *		set the state of the ADG715 latch.
+	 *		get chip's attention, send address, send switch state, disconnect.
+	 *		"""
+	 *		debug(5, "adg715I2CWriteLatch: %x"%(latchState))
+	 *		self.adg715I2CStart()
+	 *		self.adg715I2CWriteByte( self.ADG715_COMMAND )
+	 *		self.adg715I2CWriteByte( latchState )
+	 *		### latch has now updated...
+	 *		self.adg715I2CStop()
+	 */
+	int adg715I2CWriteLatch(int latchState, int *err) {
+		int r;
+
+		r = adg715I2CStart(err);
+		r = adg715I2CWriteByte( ADG715_COMMAND, err );
+		r = adg715I2CWriteByte( latchState, err );
+		// latch has now updated...
+		r = adg715I2CStop(err);
+
+		return r;
+	}
+
+	/*
+	 *	def setRstTck(self, Rst, Tck):
+	 *		"""
+	 *		Set the state of the RST and SBWTCK lines.
+	 *
+	 *		On SuRF:
+	 *		 - RSTn has pullup and S1 is connected to RSTn
+	 *		   - S1 open: RSTn high
+	 *		   - S1 closed: RSTn low
+	 *		 - SBWTCK has pullup and S2 is connected to SBWTCK
+	 *		   - S2 open: SBWTCK high
+	 *		   - S2 closed: SBWTCK low
+	 *		"""
+	 *		debug(4, "setRstTck: %x %x"%(Rst, Tck))
+	 *		latchState = ((Rst and 1 or 0)  |     \
+	 *					  (Tck and 2 or 0)) ^ 0x3
+	 *		self.adg715I2CWriteLatch(latchState)
+	 */
+	int setRstTck(int Rst, int Tck, int *err) {
+		int r;
+
+		int latchState = ((Rst ? 1 : 0) | (Tck ? 2 : 0)) ^ 0x03;
+
+		r = adg715I2CWriteLatch(latchState, err);
+
+		return r;
+	}
+
+	/*************************************************************************/
+	/* End ADG715 Section                                                  */
+	/*************************************************************************/
+
+
     inline uint16_t calcChecksum(frame_t* frame){
         uint8_t i;
         uint8_t frameLen = (frame->NH << 8) + frame->NL;
@@ -245,11 +486,11 @@ protected:
         //printf("Comparing computed %x to received %x (l: %x h:%x) (l:%x h:%x)\n\r", computedCRC, receivedCRC, ckl, ckh, computedL, computedH);
         return (ckl == computedL) && (ckh == computedH);
     }
-    
+
     int readFD(int *err, char *buffer, int count, int maxCount);
     virtual int setPins(int *err);
     virtual int resetPins(int *err);
-    
+
 public:
     BaseSerial(const termios& term, int rFD, int wFD, bool T=false, bool R=false) :
         switchdelay(30000),
@@ -260,7 +501,7 @@ public:
         FD_ZERO(&rfds);
         setPins(&err);
     }
-    
+
     virtual ~BaseSerial() {
         int r;
         int err;
@@ -268,7 +509,7 @@ public:
             r = disconnect(&err);
         }
     }
-    
+
     // communicate
     inline int clearBuffers(int *err) {
         int r = tcflush(serialReadFD, TCIOFLUSH);
@@ -283,9 +524,9 @@ public:
         }
         return r;
     };
-    
+
     int txrx(int *err, bool responseExpected, frame_t *txframe, frame_t *rxframe);
-    
+
     // handle connection
     int disconnect(int *err);
 

@@ -30,6 +30,8 @@
  * keep parameters for bsl tool
  * @author Andreas Koepke <koepke at tkn.tu-berlin.de>
  * @date 2007-10-23
+ * @author Doug Carlson <carlson@cs.jhu.edu>
+ * - Added reset-on-connect parameter
  */
 
 #ifndef _PARAMETERS_H

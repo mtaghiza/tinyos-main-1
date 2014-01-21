@@ -30,6 +30,9 @@
  * hand rolled bsl tool, other ones are too slow
  * @author Andreas Koepke <koepke at tkn.tu-berlin.de>
  * @date 2007-04-16
+ * @author Doug Carlson <carlson@cs.jhu.edu>
+ * - Subclassed/modified for compatibility between telos and bacon
+ *   motes
  */
 #include <stdio.h>
 #include <string.h>
@@ -77,7 +80,7 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
     if(*readFD == -1) {
         return -1;
     }
-    
+
     for(int i = 0; i < 3; i++) {
         *writeFD = open(dev, O_WRONLY | O_NOCTTY);
         *err = errno;
@@ -113,7 +116,7 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
     my_tios.c_iflag |= IGNBRK | INPCK;
     my_tios.c_cflag |= (CS8 | CLOCAL | CREAD | PARENB);
     cfsetispeed(&my_tios, B38400); // dummy
-    cfsetospeed(&my_tios, B38400); // dummy    
+    cfsetospeed(&my_tios, B38400); // dummy
 
     r = tcsetattr(*readFD, TCSANOW, &my_tios);
     if(r == -1) {
@@ -121,9 +124,9 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
         r = tcsetattr(*writeFD, TCSANOW, pt);
         close(*readFD);
         close(*writeFD);
-        return -1;        
+        return -1;
     }
-    
+
     /* hack for baudrate */
     r = ioctl(*writeFD, TIOCGSERIAL, &serinfo);
     if(r == -1) {
@@ -131,8 +134,8 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
         r = tcsetattr(*writeFD, TCSANOW, pt);
         close(*readFD);
         close(*writeFD);
-        return -1;        
-    }    
+        return -1;
+    }
     //9600:  0 is 1.042, 1.04175
     //10000: 0 is 1.000
     serinfo.custom_divisor = serinfo.baud_base / 9600;
@@ -145,7 +148,7 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
         r = tcsetattr(*writeFD, TCSANOW, pt);
         close(*readFD);
         close(*writeFD);
-        return -1;        
+        return -1;
     }
 #else
 #warning serialConnect else
@@ -168,10 +171,10 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
         r = tcsetattr(*writeFD, TCSANOW, pt);
         close(*readFD);
         close(*writeFD);
-        return -1;        
+        return -1;
     }
 #endif
-    
+
     // clear buffers
     r = tcflush(*writeFD, TCIOFLUSH);
     if(r == -1) {
@@ -179,7 +182,7 @@ int serial_connect(int* err, const char* dev, int* readFD, int* writeFD, termios
         r = tcsetattr(*writeFD, TCSANOW, pt);
         close(*readFD);
         close(*writeFD);
-        return -1;        
+        return -1;
     }
     if(r == -1) {
         *err = errno;
@@ -203,7 +206,7 @@ int BaseSerial::resetPins(int *err) {
 int BaseSerial::disconnect(int *err) {
     int r;
     if(serialWriteFD != -1) {
-        r = resetPins(err);
+//        r = resetPins(err);
         if(r == -1) {
             cerr << "WARN: BaseSerial::disconnect could not reset pins, " << strerror(*err) << endl;
         }
@@ -221,7 +224,7 @@ int BaseSerial::disconnect(int *err) {
         if(r == -1) {
             *err = errno;
         }
-        serialWriteFD = -1;    
+        serialWriteFD = -1;
     }
     return r;
 }
@@ -229,6 +232,19 @@ int BaseSerial::disconnect(int *err) {
 int BaseSerial::reset(int *err) {
     cout << "Reset device ..." << endl;
     int r = 0;
+
+
+	/* ADG715: from CC430-bsl lines 388-394 */
+    r = setRstTck(1, 0, err);
+    r = setRstTck(1, 1, err);
+    r = setRstTck(1, 0, err);
+    r = setRstTck(1, 1, err);
+    r = setRstTck(1, 0, err);
+    r = setRstTck(0, 0, err);
+    r = setRstTck(1, 0, err);
+
+
+/*
     r = setRSTn(err);
     if(r == -1) return -1;
     r = clrTEST(err);
@@ -243,12 +259,25 @@ int BaseSerial::reset(int *err) {
     r = setTEST(err);
     if(r == -1) return -1;
     serial_delay(switchdelay);
+*/
+
     return clearBuffers(err);
 }
 
 int BaseSerial::bslExitReset(int *err) {
-    cout << "Reset device ..." << endl;
+    cout << "bslExitReset ..." << endl;
     int r = 0;
+
+	/* ADG715: from CC430-bsl lines 388-394 */
+    r = setRstTck(1, 0, err);
+    r = setRstTck(1, 1, err);
+    r = setRstTck(1, 0, err);
+    r = setRstTck(1, 1, err);
+    r = setRstTck(1, 0, err);
+    r = setRstTck(0, 0, err);
+    r = setRstTck(1, 0, err);
+
+/*
     r = setRSTn(err);
     if(r == -1) return -1;
     r = setTEST(err);
@@ -263,12 +292,25 @@ int BaseSerial::bslExitReset(int *err) {
     if(r == -1) return -1;
     r = setRSTn(err);
     if(r == -1) return -1;
+*/
+
     return clearBuffers(err);
 }
 
 int BaseSerial::invokeBsl(int *err) {
-    cout << "invokeBSL" << endl;
     int r = 0;
+
+	/* ADG715: from CC430-bsl lines 345-350 */
+    r = setRstTck(0, 0, err); // looks ok
+    r = setRstTck(0, 1, err); // OK
+    r = setRstTck(0, 0, err); // OK
+    r = setRstTck(0, 1, err); // OK
+    r = setRstTck(1, 1, err); // swapped
+    r = setRstTck(1, 0, err);
+
+	sleep(2);
+
+/*
     r = setRSTn(err);
     if(r == -1) return -1;
     r = setTEST(err);
@@ -293,7 +335,9 @@ int BaseSerial::invokeBsl(int *err) {
     r = clrTEST(err);
     if(r == -1) return -1;
     serial_delay(switchdelay);
-    cout << "/invokeBSL" << endl;
+*/
+
+
     return clearBuffers(err);
 }
 
@@ -349,7 +393,7 @@ int BaseSerial::readFD(int *err, char *buffer, int count, int maxCount) {
     FD_SET(serialReadFD, &rfds);
 //    printf("Read %d to \t%p\n\r", count, buffer);
     int retval;
-    do{ 
+    do{
       retval = select(serialReadFD + 1, &rfds, NULL, NULL, &tv);
       if (retval == -1){
         fprintf(stderr, "Error with select.\n\r");
@@ -382,14 +426,14 @@ int BaseSerial::txrx(int *err, bool responseExpected, frame_t *txframe, frame_t 
         cerr << "BaseSerial::txrx: precondition not fulfilled, "
              << " txFrame: " << txframe
              << " rxFrame: " << rxframe
-             << " txframe->NH: " << (unsigned) txframe->NH 
-             << " txframe->NL: " << (unsigned) txframe->NL 
+             << " txframe->NH: " << (unsigned) txframe->NH
+             << " txframe->NL: " << (unsigned) txframe->NL
              << endl;
         return -1;
     }
     memset(rxframe, 0, sizeof(*rxframe));
     //checksum/transmit frame
-    checksum(txframe);    
+    checksum(txframe);
     //length is the value of NH NL, plus 2 bytes for NH NL plus 2
     //  bytes for crc
     txframe->SYNC = SYNC;
@@ -456,7 +500,7 @@ int BaseSerial::highSpeed(int *err) {
 #else
     struct termios my_tios;
     r = tcgetattr(serialWriteFD, &my_tios);
-    cfsetispeed(&my_tios, B115200); 
+    cfsetispeed(&my_tios, B115200);
     cfsetospeed(&my_tios, B115200);
     r = tcsetattr(serialReadFD, TCSANOW, &my_tios);
     if(r == -1) {
@@ -465,7 +509,7 @@ int BaseSerial::highSpeed(int *err) {
     else {
         r = tcsetattr(serialWriteFD, TCSANOW, &my_tios);
     }
-#endif    
+#endif
     if(r == -1) {
         *err = errno;
         return -1;

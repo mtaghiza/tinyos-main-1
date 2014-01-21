@@ -68,6 +68,7 @@ int main(int argc, char *argv[]) {
         return -1;
     }
     bs = new BaseSerial(oldterm, readFD, writeFD, parameters->invertTest, parameters->invertReset);
+    r = bs->initADG715(&err);
     bsl = new Bsl(bs, parameters->img.c_str(), parameters->chunksize);
     if(parameters->resetFirst){
       r = bsl->reset(&err);

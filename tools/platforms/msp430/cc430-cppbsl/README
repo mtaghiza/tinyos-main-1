@@ -1,3 +1,9 @@
+Doug Carlson, 11/13/2012
+This is a modification of the original tinyos cppbsl from andreas
+kopke. It should work with any msp430 using the flash-based BSL (for
+example, the cc430). The flags are the same as for cppbsl. The
+original readme follows.
+---------
 bsltool is a C++ based tool that can reset, erase and flash msp430 CPUs with a
 bootstrap loader of version 1.6 or higher. Your should be able to use it for
 telosb, tmote sky and eyesIFXv2 node platforms.

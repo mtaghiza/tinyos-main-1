@@ -30,6 +30,8 @@
  * hand rolled bsl tool, other ones are too slow
  * @author Andreas Koepke <koepke at tkn.tu-berlin.de>
  * @date 2007-04-16
+ * @author Doug Carlson <carlson@cs.jhu.edu>
+ * - modifications for compatibility with flash-based BSLs
  */
 
 #include "Bsl.h"

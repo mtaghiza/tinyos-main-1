@@ -25,6 +25,16 @@
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
  * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * 
+ */
+
+/**
+ * hand rolled bsl tool, other ones are too slow
+ * @author Andreas Koepke <koepke at tkn.tu-berlin.de>
+ * @date 2007-04-16
+ * @author Doug Carlson <carlson@cs.jhu.edu>
+ * - add reset-on-connect option
  */
 
 #include <stdio.h>
