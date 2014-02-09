@@ -31,6 +31,17 @@
 */
 
 interface DelayedSend{
+  /**
+   * Indicates that this client has a packet partially loaded in the
+   * TX buffer.
+   */
   event void sendReady();
+
+  /**
+   * Begin transmission of the loaded packet.
+   * @returns EINVAL: there was no loaded packet. ERETRY: the radio
+   * core did not accept the TX strobe. The transmission is cancelled.
+   * SUCCESS: transmission of the packet has begun.
+   */
   async command error_t startSend();
 }
