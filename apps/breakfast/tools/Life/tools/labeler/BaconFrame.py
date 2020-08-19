@@ -48,7 +48,7 @@ class BaconFrame(Frame):
 
         self.initUI()
         self.disableUI()
-        self.pack()
+        #self.pack()
 
     def initUI(self):
 

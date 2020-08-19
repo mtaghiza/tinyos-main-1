@@ -3,34 +3,34 @@ from tools.CC430bsl.Debug import Debug
 from tools.CC430bsl.BSLExceptions import *
 from tools.CC430bsl.hexl import hexl
 
+
 class BSL(LowLevel):
     "Implements (most) BSL commands using txFrame and rxFrame"
 
     BAUD = (
         (115200, 0x06),
-        (57600,  0x05),
-        (38400,  0x04),
-        (19200,  0x03),
-        (9600,   0x02),
+        (57600, 0x05),
+        (38400, 0x04),
+        (19200, 0x03),
+        (9600, 0x02),
     )
-    
-    #added to identify when info a is being written
+
+    # added to identify when info a is being written
     INFO_A_START = 0x001980
-    INFO_A_END   = 0x0019FF
+    INFO_A_END = 0x0019FF
 
-    CMD_BAUD_RATE     = 0x52 # - Implemented
-    CMD_RX_DATA       = 0x10 # - Implemented
-    CMD_RX_DATA_FAST  = 0x1b # - Implemented
-    CMD_RX_PASSWD     = 0x11 # - Implemented
-    CMD_ERASE_SEGMENT = 0x12 # - Implemented
-    CMD_UNLOCK_INFO   = 0x13 # - Implemented
-    CMD_MASS_ERASE    = 0x15 # - Implemented
-    CMD_CRC_CHECK     = 0x16 # x Won't implement
-    CMD_LOAD_PC       = 0x17 # - Implemented, RETA doesn't seem to return...
-    CMD_TX_DATA       = 0x18 # - Implemented
-    CMD_BSL_VERSION   = 0x19 # - Implemented
-    CMD_TX_BUF_SIZE   = 0x1a # ? Doesn't work
-
+    CMD_BAUD_RATE = 0x52  # - Implemented
+    CMD_RX_DATA = 0x10  # - Implemented
+    CMD_RX_DATA_FAST = 0x1b  # - Implemented
+    CMD_RX_PASSWD = 0x11  # - Implemented
+    CMD_ERASE_SEGMENT = 0x12  # - Implemented
+    CMD_UNLOCK_INFO = 0x13  # - Implemented
+    CMD_MASS_ERASE = 0x15  # - Implemented
+    CMD_CRC_CHECK = 0x16  # x Won't implement
+    CMD_LOAD_PC = 0x17  # - Implemented, RETA doesn't seem to return...
+    CMD_TX_DATA = 0x18  # - Implemented
+    CMD_BSL_VERSION = 0x19  # - Implemented
+    CMD_TX_BUF_SIZE = 0x1a  # ? Doesn't work
 
     def __init__(self, *rest, **kw):
         LowLevel.__init__(self, *rest, **kw)
@@ -52,7 +52,7 @@ class BSL(LowLevel):
         except BadBaudRate:
             raise
         else:
-            self.serialport.setBaudrate(rate)
+            self.serialport.baudrate = rate
             Debug.debug(0, "Baud rate set to %d", rate)
         Debug.debug(3, "/setBaud")
 
@@ -80,7 +80,7 @@ class BSL(LowLevel):
         "send BSL password"
         # XXX needs test, works after massErase
         assert self.inBSL
-        #default password is [0xff]*32
+        # default password is [0xff]*32
         passwd = passwd or self.passwd or ([0xff] * 32)
         Debug.debug(2, "txPassword %s", hexl(passwd))
         if not isinstance(passwd, str):
@@ -97,7 +97,7 @@ class BSL(LowLevel):
             self.txFrame(chr(self.CMD_BSL_VERSION))
             resp = self.rxFrame()
         except BSLTimeout:
-            raise 
+            raise
         except BSLException:
             resp = ""
         if len(resp) != 4:
@@ -129,8 +129,8 @@ class BSL(LowLevel):
         assert 0 < length <= 0x100
         Debug.debug(2, "txData %04x @ %06x", length, addr)
         self.txFrame([self.CMD_TX_DATA,
-                      (addr >>  0) & 0xff,
-                      (addr >>  8) & 0xff,
+                      (addr >> 0) & 0xff,
+                      (addr >> 8) & 0xff,
                       (addr >> 16) & 0xff,
                       (length >> 0) & 0xff,
                       (length >> 8) & 0xff])
@@ -151,16 +151,17 @@ class BSL(LowLevel):
         ### stick to 0x100 and lower
         assert 0 < len(data) <= 0x100
         Debug.debug(2, "rxData%s %d @ %06x: %s",
-              (not slow) and " Fast" or "", len(data), addr, hexl(data))
+                    (not slow) and " Fast" or "", len(data), addr, hexl(data))
 
-        #if this is writing to INFO A, need to lock/unlock
-        #TODO: not sure what state things are left in if the toggle works, but the data isn't received by the mcu properly
-        usingInfoA = ( self.INFO_A_START <= addr <= self.INFO_A_END) or ( self.INFO_A_START <= addr+len(data) <= self.INFO_A_END)
+        # if this is writing to INFO A, need to lock/unlock
+        # TODO: not sure what state things are left in if the toggle works, but the data isn't received by the mcu properly
+        usingInfoA = (self.INFO_A_START <= addr <= self.INFO_A_END) or (
+                    self.INFO_A_START <= addr + len(data) <= self.INFO_A_END)
         if usingInfoA:
             self._toggleLOCKA()
         head = "".join([chr(slow and self.CMD_RX_DATA or self.CMD_RX_DATA_FAST),
-                        chr((addr >>  0) & 0xff),
-                        chr((addr >>  8) & 0xff),
+                        chr((addr >> 0) & 0xff),
+                        chr((addr >> 8) & 0xff),
                         chr((addr >> 16) & 0xff)])
         self.txFrame(head + data)
         if slow:
@@ -179,8 +180,8 @@ class BSL(LowLevel):
         assert 0x000000 <= addr <= 0xffffff
         Debug.debug(2, "eraseSegment %06x", addr)
         self.txFrame([self.CMD_ERASE_SEGMENT,
-                      (addr >>  0) & 0xff,
-                      (addr >>  8) & 0xff,
+                      (addr >> 0) & 0xff,
+                      (addr >> 8) & 0xff,
                       (addr >> 16) & 0xff])
         assert self.rxFrame() is None
         Debug.debug(3, "/eraseSegment")
@@ -205,7 +206,7 @@ class BSL(LowLevel):
     ### XXX this probably only works for:
     ### XXX   F5133, F5135, F6125, F6135, F6126, F5137, F6127, and F6137
     INFO_ADDRS = {
-        "a": None,     # use eraseInfoA() for this one
+        "a": None,  # use eraseInfoA() for this one
         "b": 0x001900,
         "c": 0x001880,
         "d": 0x001800,
@@ -215,7 +216,7 @@ class BSL(LowLevel):
         "erase some/all of info segments A-D"
         assert self.inBSL
         assert isinstance(which, str) and which and len(which) <= 4
-        d = { }
+        d = {}
         for seg in which.lower():
             assert seg in self.INFO_ADDRS
             d.setdefault(seg)
@@ -238,8 +239,8 @@ class BSL(LowLevel):
         assert not (addr & 1)
         Debug.debug(2, "loadPC %06x", addr)
         self.txFrame([self.CMD_LOAD_PC,
-                      (addr >>  0) & 0xff,
-                      (addr >>  8) & 0xff,
+                      (addr >> 0) & 0xff,
+                      (addr >> 8) & 0xff,
                       (addr >> 16) & 0xff])
         ### XXX a RETA doesn't seem to return to BSL?
         ### XXX OK, just break ourself then

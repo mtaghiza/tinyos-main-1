@@ -64,7 +64,7 @@ class ToastFrame(Frame):
         self.initUI()
         self.disableBarcodeUI()
         self.disableAssignmentUI()
-        self.pack()
+        #self.pack()
 
     def initUI(self):
         self.initToastID()

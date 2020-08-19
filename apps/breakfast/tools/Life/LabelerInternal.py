@@ -90,9 +90,9 @@ handler = Handler(root)
 # ToastFrame    284 500 468
 # AdcFrame       64 564
 
-WIDTH  = 1024
-HEIGHT =  584          # height of the whole app
-MAIN   =  288          # width of the Connect panel
+WIDTH  = 2560
+HEIGHT =  1600          # height of the whole app
+MAIN   =  488          # width of the Connect panel
 
  
 root.geometry(str(WIDTH) + "x" + str(HEIGHT))
@@ -146,26 +146,26 @@ rootFrame.bind("<Configure>", updateCanvas)
 
 handler.addMenuFrame(menuBar)
 
-baconFrame = BaconFrame(rootFrame, handler, width=MAIN, height=184, bd=1, relief=SUNKEN)
+baconFrame = BaconFrame(rootFrame, handler, width=MAIN, height=284, bd=1, relief=SUNKEN)
 baconFrame.grid_propagate(False)
 baconFrame.grid(column=1, row=2)
 handler.addBaconFrame(baconFrame)
 
-toastFrame = ToastFrame(rootFrame, handler, width=MAIN, height=284, bd=1, relief=SUNKEN)
+toastFrame = ToastFrame(rootFrame, handler, width=MAIN, height=384, bd=1, relief=SUNKEN)
 toastFrame.grid_propagate(False)
 toastFrame.grid(column=1, row=3)
 handler.addToastFrame(toastFrame)
 
-graphFrame = GraphFrame(rootFrame, handler, simplot, width=WIDTH-MAIN-4, height=468, bd=1, relief=SUNKEN)
+graphFrame = GraphFrame(rootFrame, handler, simplot, width=WIDTH-MAIN-4, height=568, bd=1, relief=SUNKEN)
 graphFrame.grid_propagate(False)
 graphFrame.grid(column=2, row=2, rowspan=2)
 handler.addGraphFrame(graphFrame)
 
-textFrame = TextFrame(rootFrame, handler, width=MAIN, height=64, bd=1, relief=SUNKEN, bg="#EEEEEE")
+textFrame = TextFrame(rootFrame, handler, width=MAIN, height=164, bd=1, relief=SUNKEN, bg="#EEEEEE")
 textFrame.grid_propagate(False)
 textFrame.grid(column=1,row=4)
 
-adcFrame = AdcFrame(rootFrame, handler, width=WIDTH-MAIN-4,  height=64, bd=1, relief=SUNKEN)
+adcFrame = AdcFrame(rootFrame, handler, width=WIDTH-MAIN-4,  height=80, bd=1, relief=SUNKEN)
 adcFrame.grid_propagate(False)
 adcFrame.grid(column=2, row=4)
 handler.addAdcFrame(adcFrame)

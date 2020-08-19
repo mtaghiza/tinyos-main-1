@@ -47,7 +47,7 @@ class TextFrame(Frame):
         self.handler = handler
         self.initUI()
         self.enableUI()
-        self.pack()
+        #self.pack()
 
     def initUI(self):
         self.msgVar = StringVar()
