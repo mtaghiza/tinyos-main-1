@@ -1,8 +1,5 @@
-
-import Tkinter
 from Tkinter import *
 
-from tools.labeler.BreakfastError import *
 
 class AdcFrame(Frame):
 

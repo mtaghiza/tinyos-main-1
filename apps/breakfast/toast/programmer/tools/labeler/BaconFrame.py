@@ -3,7 +3,7 @@ import Tkinter
 import tkMessageBox
 from Tkinter import *
 
-from tools.labeler.BreakfastError import *
+from apps.breakfast.tools.Life.tools import *
 
 class BaconFrame(Frame):
 

@@ -28,9 +28,8 @@
 #
 # Author: Geoffrey Mainland <mainland@eecs.harvard.edu>
 #
-from tools.serial import Serial
+from apps.breakfast.tools.Life.tools import Serial
 
-from tools.tinyos.IO import *
 
 class SerialIO(IO):
 	def __init__(self, device, baud):

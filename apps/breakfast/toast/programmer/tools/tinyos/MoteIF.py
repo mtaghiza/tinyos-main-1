@@ -31,19 +31,16 @@
 
 import os
 import re
-import struct
 import sys
 import traceback
 import Queue
 from Queue import Empty
 from threading import Thread
 
-from tools.tinyos.Serial import Serial
-from tools.tinyos.SerialPacket import SerialPacket
-import tools.tinyos.PacketDispatcher
-from tools.tinyos.PacketSource import *
-import tools.tinyos.SFSource
-from tools.tinyos.SerialSource import SerialSource
+from apps.breakfast.tools.Life.tools import Serial
+from apps.breakfast.tools.Life.tools import SerialPacket
+from apps.breakfast.tools.Life import tools
+from apps.breakfast.tools.Life.tools import SerialSource
 
 
 DEBUG = False

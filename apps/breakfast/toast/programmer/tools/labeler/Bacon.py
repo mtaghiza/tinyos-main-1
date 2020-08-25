@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
-import time
-
-from tools.labeler.Dispatcher import Dispatcher 
-from tools.labeler.TOS import TOS
-from tools.labeler.BreakfastError import *
-
-from tools.mig import *
+from apps.breakfast.tools.Life.tools import Dispatcher
+from apps.breakfast.tools.Life.tools import TOS
 
 
 class Bacon(object):

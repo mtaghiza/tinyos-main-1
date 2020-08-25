@@ -28,13 +28,9 @@
 #
 # Author: Geoffrey Mainland <mainland@eecs.harvard.edu>
 #
-import signal
 import sys
 import traceback
 from threading import Semaphore
-
-from tools.tinyos.IO import *
-from tools.tinyos.ThreadTask import *
 
 DEBUG = False
 

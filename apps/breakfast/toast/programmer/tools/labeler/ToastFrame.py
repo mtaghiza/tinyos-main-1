@@ -3,8 +3,8 @@ import Tkinter
 import tkMessageBox
 
 from Tkinter import *
-from tools.labeler.BreakfastError import *
-from tools.labeler.Toast import Toast
+from apps.breakfast.tools.Life.tools import *
+from apps.breakfast.tools.Life.tools import Toast
 
 
 class ToastFrame(Frame):

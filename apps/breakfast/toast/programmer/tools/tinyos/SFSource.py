@@ -29,11 +29,7 @@
 # Author: Geoffrey Mainland <mainland@eecs.harvard.edu>
 #
 import re
-import socket
 
-from tools.tinyos.PacketSource import *
-from tools.tinyos.SFProtocol import *
-from tools.tinyos.SocketIO import *
 
 class SFSource(PacketSource):
     def __init__(self, dispatcher, args):

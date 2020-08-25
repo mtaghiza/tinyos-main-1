@@ -8,9 +8,6 @@ Based on generators.
 """
 import time
 
-from tools.SimPy.Simulation import *
-import tools.SimPy
-
 
 class SimulationRT(Simulation):
     def __init__(self):

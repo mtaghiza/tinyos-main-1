@@ -4,7 +4,7 @@
 # message type.
 #
 
-from tools.tinyos.Message import Message
+from apps.breakfast.tools.Life.tools import Message
 
 # The default size of this message type in bytes.
 DEFAULT_MESSAGE_SIZE = 5

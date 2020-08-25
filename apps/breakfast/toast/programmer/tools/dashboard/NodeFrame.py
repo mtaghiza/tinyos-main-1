@@ -1,11 +1,9 @@
 import Tkinter
 from Tkinter import *
-from math import floor
 
 import copy
 
-from tools.dashboard.DatabaseQuery import DatabaseQuery
-from tools.dashboard.SettingsFile import SettingsFile
+from apps.breakfast.tools.Life.tools import DatabaseQuery
 
 
 class NodeFrame(Frame):

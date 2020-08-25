@@ -31,16 +31,14 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import sys, time, thread
+import sys, time
 from threading import Lock, Condition
 
 from tinyos.message import *
 from tinyos.message.Message import *
 from tinyos.message.SerialPacket import *
-from tinyos.packet.Serial import Serial
 #import tos
-import tools.mig
-from tools.mig import *
+from apps.breakfast.tools.Life import tools
 
 import math
 
@@ -124,13 +122,13 @@ class Dispatcher:
         self.responseCV = Condition(self.responseLock)
         self.mif.addListener(ADCLogger(self.responseCV), ReadAnalogSensorResponseMsg.ReadAnalogSensorResponseMsg)
         self.mif.addListener(TLVParser(),
-          tools.mig.ReadBaconTlvResponseMsg.ReadBaconTlvResponseMsg)
+                             tools.mig.ReadBaconTlvResponseMsg.ReadBaconTlvResponseMsg)
         self.mif.addListener(TLVParser(),
-          tools.mig.ReadToastTlvResponseMsg.ReadToastTlvResponseMsg)
+                             tools.mig.ReadToastTlvResponseMsg.ReadToastTlvResponseMsg)
         for messageClass in tools.mig.__all__:
             if 'Response' in messageClass:
-                self.mif.addListener(GenericLogger(self.quiet), 
-                  getattr(getattr(tools.mig, messageClass), messageClass))
+                self.mif.addListener(GenericLogger(self.quiet),
+                                     getattr(getattr(tools.mig, messageClass), messageClass))
 
     def stop(self):
         self.mif.finishAll()
@@ -255,7 +253,7 @@ if __name__ == '__main__':
             if autoType == 'scan':
                 responseQueue = Queue.Queue()
                 d.mif.addListener(ScanListener(responseQueue),
-                  tools.mig.ScanBusResponseMsg.ScanBusResponseMsg)
+                                  tools.mig.ScanBusResponseMsg.ScanBusResponseMsg)
                 d.initialize(destination)
                 try:
                     numFound = responseQueue.get(True, 0.5)
@@ -303,7 +301,7 @@ if __name__ == '__main__':
                 time.sleep(0.25)
                 mcn = raw_input('''Input message class name (q to quit, blank to resend last). 
   Choices: 
-    %s\n?> '''%('\n    '.join(v for v in tools.mig.__all__ if 'Cmd' in v)))
+    %s\n?> ''' % ('\n    '.join(v for v in tools.mig.__all__ if 'Cmd' in v)))
                 if not last and not mcn:
                     continue
                 if last and not mcn:

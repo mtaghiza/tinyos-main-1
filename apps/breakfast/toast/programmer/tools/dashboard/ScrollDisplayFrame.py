@@ -1,7 +1,6 @@
 from Tkinter import *
-from sys import platform as _platform
 
-from tools.dashboard.DisplayFrame import DisplayFrame as ContentFrame
+from apps.breakfast.tools.Life.tools import DisplayFrame as ContentFrame
 
 
 class ScrollDisplayFrame(Frame):

@@ -5,7 +5,7 @@ Monitor and Tally.
 
 """
 # Required for backward compatibility
-import tools.SimPy.Globals as Globals
+from apps.breakfast.tools.Life import tools as Globals
 
 
 class Histogram(list):

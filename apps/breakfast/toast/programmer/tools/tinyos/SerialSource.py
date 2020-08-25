@@ -29,13 +29,10 @@
 # Author: Geoffrey Mainland <mainland@eecs.harvard.edu>
 #
 import re
-import socket
 import sys
 
-from tools.tinyos.PacketSource import *
-from tools.tinyos.SerialProtocol import *
 if sys.platform != 'cygwin':
-    from tools.tinyos.SerialIO import *
+    pass
 
 class SerialSource(PacketSource):
     def __init__(self, dispatcher, args, signalError=lambda:None):

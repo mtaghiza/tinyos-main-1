@@ -12,8 +12,8 @@ except: # Python 2
     from tkMessageBox import *
 
 from Canvas import Line, CanvasText, Rectangle
-from tools.SimPy import tkconsole as tkcons
-from tools.SimPy import __version__
+from apps.breakfast.tools.Life.tools import tkconsole as tkcons
+from apps.breakfast.tools.Life.tools import __version__
 
 import warnings
 warnings.warn('This module be removed in SimPy 3.', DeprecationWarning)

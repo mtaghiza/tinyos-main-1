@@ -9,11 +9,11 @@ import inspect
 import sys
 import types
 
-from tools.SimPy.Lister import Lister
-from tools.SimPy.Recording import Monitor, Tally
+from apps.breakfast.tools.Life.tools import Lister
+from apps.breakfast.tools.Life.tools import Monitor, Tally
 
 # Required for backward compatiblity
-import tools.SimPy.Globals as Globals
+from apps.breakfast.tools.Life import tools as Globals
 
 
 class Simerror(Exception):

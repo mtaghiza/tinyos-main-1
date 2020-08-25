@@ -33,25 +33,25 @@
 import sys
 import time
 
-from tools.cx.listeners import RecordListener
-from tools.cx.listeners import PrintfListener
-from tools.cx.messages import PrintfMsg
-from tools.cx.messages import LogRecordDataMsg
+from apps.breakfast.tools.Life.tools import RecordListener
+from apps.breakfast.tools.Life.tools import PrintfListener
+from apps.breakfast.tools.Life.tools import PrintfMsg
+from apps.breakfast.tools.Life.tools import LogRecordDataMsg
 
-from tools.cx.messages import CxRecordRequestMsg
+from apps.breakfast.tools.Life.tools import CxRecordRequestMsg
 
-from tools.cx.db import Database
-from tools.cx.db.DatabaseInit import DatabaseInit
+from apps.breakfast.tools.Life.tools import Database
+from apps.breakfast.tools.Life.tools import DatabaseInit
 
-from tools.cx.decoders import BaconSample
-from tools.cx.decoders import ToastSample
-from tools.cx.decoders import BaconSettings
-from tools.cx.decoders import ToastConnection
-from tools.cx.decoders import ToastDisconnection
-from tools.cx.decoders import Phoenix
-from tools.cx.decoders import LogPrintf
-from tools.cx.decoders import NetworkMembership
-from tools.cx.decoders import Tunneled
+from apps.breakfast.tools.Life.tools import BaconSample
+from apps.breakfast.tools.Life.tools import ToastSample
+from apps.breakfast.tools.Life.tools import BaconSettings
+from apps.breakfast.tools.Life.tools import ToastConnection
+from apps.breakfast.tools.Life.tools import ToastDisconnection
+from apps.breakfast.tools.Life.tools import Phoenix
+from apps.breakfast.tools.Life.tools import LogPrintf
+from apps.breakfast.tools.Life.tools import NetworkMembership
+from apps.breakfast.tools.Life.tools import Tunneled
 
 from tinyos.message import *
 from tinyos.message.Message import *

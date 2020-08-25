@@ -16,15 +16,15 @@ import getopt
 import threading
 import time
 
-from tools.serial import SerialException 
+from apps.breakfast.tools.Life.tools import SerialException
 
-from tools.labeler.BreakfastError import *
-from tools.CC430bsl.BootStrapLoader import BootStrapLoader
-from tools.CC430bsl.Memory import Memory
-from tools.CC430bsl.Debug import Debug
-from tools.CC430bsl.BSLExceptions import *
-from tools.CC430bsl.hexl import hexl
-from tools.CC430bsl.Progress import Progress
+from apps.breakfast.tools.Life.tools import *
+from apps.breakfast.tools.Life.tools import BootStrapLoader
+from apps.breakfast.tools.Life.tools import Memory
+from apps.breakfast.tools.Life.tools import Debug
+from apps.breakfast.tools.Life.tools import *
+from apps.breakfast.tools.Life.tools import hexl
+from apps.breakfast.tools.Life.tools import Progress
 
 # Maximum number of times to retry programming until we fail permanently
 MAXIMUM_ATTEMPTS = 20

@@ -2,9 +2,8 @@ import serial
 import time
 import pdb
 
-from tools.CC430bsl.Debug import Debug
-from tools.CC430bsl.BSLExceptions import *
-from tools.CC430bsl.hexl import hexl
+from apps.breakfast.tools.Life.tools import Debug
+from apps.breakfast.tools.Life.tools import hexl
 
 
 class LowLevel(object):

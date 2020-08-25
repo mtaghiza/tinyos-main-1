@@ -4,9 +4,9 @@ import Tkinter
 import tkMessageBox
 from Tkinter import *
 
-from tools.serial.tools.list_ports import *
-from tools.labeler.Handler import Handler
-import tools.labeler.ttk as ttk
+from apps.breakfast.tools.Life.tools import Handler
+from apps.breakfast.tools.Life import tools as ttk
+
 
 class MenuFrame(Frame):
 

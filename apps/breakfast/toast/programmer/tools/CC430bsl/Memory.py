@@ -1,9 +1,9 @@
 import sys
 import os
 
-from tools.CC430bsl.Segment import Segment
-from tools.CC430bsl.Debug import Debug
-from tools.CC430bsl.BSLExceptions import *
+from apps.breakfast.tools.Life.tools import Segment
+from apps.breakfast.tools.Life.tools import Debug
+
 
 ### this class lifted in its entirety from tos-bsl
 class Memory:

@@ -1,12 +1,8 @@
 
 import math
 import Queue
-import Tkinter
 import tkMessageBox
 from Tkinter import *
-
-from tools.labeler.BreakfastError import *
-from tools.SimPy.SimPlot import * 
 
 HEIGHT = 480
 

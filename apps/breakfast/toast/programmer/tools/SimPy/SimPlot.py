@@ -15,11 +15,10 @@ except:  # Python 2
     from tkSimpleDialog import askinteger, askstring, askfloat
     from tkFileDialog import *
 
-from Canvas import Line, CanvasText, Rectangle
+from Canvas import Line, CanvasText
 import string, math
 from math import pi
 
-from tools.SimPy.Simulation import Monitor
 
 #import warnings
 #warnings.warn('This module be removed in SimPy 3.', DeprecationWarning)

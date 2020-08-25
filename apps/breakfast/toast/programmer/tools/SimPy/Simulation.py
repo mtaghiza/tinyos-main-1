@@ -6,21 +6,17 @@ Monitor and Tally.
 Based on generators
 
 """
-import random
 import sys
 import types
 from heapq import heappush, heappop
 
-from tools.SimPy.Lister import Lister
-from tools.SimPy.Recording import Monitor, Tally
-from tools.SimPy.Lib import Process, SimEvent, PriorityQ, Resource, Level, \
-                      Store, Simerror, FatalSimerror, FIFO
+from apps.breakfast.tools.Life.tools import Lister
+from apps.breakfast.tools.Life.tools import Process, SimEvent, PriorityQ, Resource, Store, Simerror, FatalSimerror, FIFO
 
 # Required for backward compatibility
-import tools.SimPy
-import tools.SimPy.Globals as Globals
-from tools.SimPy.Globals import initialize, simulate, now, stopSimulation, \
-        allEventNotices, allEventTimes, startCollection,\
+from apps.breakfast.tools.EHON.Life import tools
+from apps.breakfast.tools.Life import tools as Globals
+from apps.breakfast.tools.Life.tools import initialize, simulate, now, allEventNotices, allEventTimes, startCollection,\
         _startWUStepping, _stopWUStepping, activate, reactivate
 
 

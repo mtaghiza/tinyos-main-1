@@ -4,8 +4,6 @@ SimulationStep supports stepping through SimPy simulation event - by - event.
 Based on generators.
 
 """
-from tools.SimPy.Simulation import *
-
 
 _step = False
 

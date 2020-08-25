@@ -30,7 +30,6 @@
 #
 import socket
 
-from tools.tinyos.IO import *
 
 class SocketIO(IO):
     def __init__(self, host, port):

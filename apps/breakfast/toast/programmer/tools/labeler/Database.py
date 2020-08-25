@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 
-from tools.labeler.DatabaseInit import DatabaseInit
-from tools.labeler.DatabaseInsert import DatabaseInsert
-from tools.labeler.DatabaseExport import DatabaseExport
+from apps.breakfast.tools.Life.tools import DatabaseInit
+from apps.breakfast.tools.Life.tools import DatabaseInsert
+from apps.breakfast.tools.Life.tools import DatabaseExport
 
 class Database(object):
 

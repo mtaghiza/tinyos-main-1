@@ -1,7 +1,6 @@
-from tools.CC430bsl.LowLevel import LowLevel
-from tools.CC430bsl.Debug import Debug
-from tools.CC430bsl.BSLExceptions import *
-from tools.CC430bsl.hexl import hexl
+from apps.breakfast.tools.Life.tools import LowLevel
+from apps.breakfast.tools.Life.tools import Debug
+from apps.breakfast.tools.Life.tools import hexl
 
 class BSL(LowLevel):
     "Implements (most) BSL commands using txFrame and rxFrame"

@@ -1,18 +1,15 @@
 import Queue
 import time
 import os
-from threading import Thread
 
+from apps.breakfast.tools.Life.tools import CC430bsl
+from apps.breakfast.tools.Life.tools import Progress
+from apps.breakfast.tools.Life.tools import Bacon
+from apps.breakfast.tools.Life.tools import Toast
+from apps.breakfast.tools.Life.tools import ToastSampling
+from apps.breakfast.tools.Life.tools import Dispatcher
 
-from tools.CC430bsl.CC430bsl import CC430bsl
-from tools.CC430bsl.Progress import Progress
-from tools.labeler.Bacon import Bacon
-from tools.labeler.Toast import Toast
-from tools.labeler.ToastSampling import ToastSampling
-from tools.labeler.BreakfastError import *
-from tools.labeler.Dispatcher import Dispatcher 
-
-from tools.labeler.Database import Database
+from apps.breakfast.tools.Life.tools import Database
 
 
 

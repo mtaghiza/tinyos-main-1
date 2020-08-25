@@ -3,7 +3,7 @@ try:  # Python 3
 except:  # Python 2
     from Tkinter import *
 
-from tools.SimPy.SimulationStep import now,Globals
+from apps.breakfast.tools.Life.tools import now,Globals
 
 
 import warnings

@@ -18,7 +18,7 @@ use, modify, or distribute the software for any purpose is hereby granted."""
 
 from Tkinter import *
 import sys, string, traceback, types, __builtin__
-from tools.SimPy import __version__
+from apps.breakfast.tools.Life.tools import __version__
 REVISION = __version__
 VERSION = __version__
 

@@ -1,7 +1,7 @@
 from Tkinter import *
 from sys import platform as _platform
 
-from tools.dashboard.NodeFrame import NodeFrame as ContentFrame
+from apps.breakfast.tools.Life.tools import NodeFrame as ContentFrame
 
 
 class ScrollNodeFrame(Frame):

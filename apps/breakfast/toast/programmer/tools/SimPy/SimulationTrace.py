@@ -9,9 +9,6 @@ Based on generators.
 """
 from __future__ import print_function
 
-from tools.SimPy.Lister import *
-from tools.SimPy.Simulation import *
-
 
 def trace_dispatch(trace, command, func):
     """

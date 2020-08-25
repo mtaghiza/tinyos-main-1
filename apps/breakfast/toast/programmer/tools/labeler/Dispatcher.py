@@ -3,14 +3,14 @@
 import sys, time, thread
 import Queue
 
-from tools.tinyos.MoteIF import MoteIF
+from apps.breakfast.tools.Life.tools import MoteIF
 #from tinyos.message import *
 #from tinyos.message.Message import *
 #from tinyos.message.SerialPacket import *
 #from tinyos.packet.Serial import Serial
 #import tos
-import tools.mig as mig
-from tools.mig import *
+from apps.breakfast.tools.Life import tools as mig
+from apps.breakfast.tools.Life.tools import *
 
 import threading
 

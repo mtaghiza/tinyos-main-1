@@ -37,8 +37,8 @@ import Queue
 from threading import Lock, Condition, Thread
 from IO import IODone
 
-import tools.labeler.Dispatcher 
-from tools.tinyos.Serial import Serial
+from apps.breakfast.tools.Life import tools
+from apps.breakfast.tools.Life.tools import Serial
 
 
 SYNC_BYTE = Serial.HDLC_FLAG_BYTE

@@ -1,9 +1,8 @@
 import time
 
-from tools.CC430bsl.BSL import BSL
-from tools.CC430bsl.Debug import Debug
-from tools.CC430bsl.BSLExceptions import *
-from tools.CC430bsl.Progress import Progress
+from apps.breakfast.tools.Life.tools import BSL
+from apps.breakfast.tools.Life.tools import Debug
+from apps.breakfast.tools.Life.tools import Progress
 
 class BootStrapLoader(BSL):
     """higher level Bootstrap Loader functions."""

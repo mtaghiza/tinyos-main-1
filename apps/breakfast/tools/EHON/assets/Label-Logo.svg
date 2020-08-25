@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="88" viewBox="0 0 80 88">
+  <g id="组_270" data-name="组 270" transform="translate(-425 -26)">
+    <path id="barcode" d="M0,124V64H2.813v60Zm4.2-.043V64H5.625v59.957Zm4.241,0V64H9.821v59.957Zm7.009,0V64H16.83v59.957Zm5.625,0V64h2.768v59.957Zm7.009,0V64h1.384v59.957Zm2.813,0V64h1.384v59.957Zm2.812,0V64h1.384v59.957Zm5.58,0V64H42.1v59.957Zm7.009,0V64h2.813v59.957Zm5.625,0V64h2.813v59.957Zm5.625,0V64h2.813v59.957Zm4.2,0V64h2.812v59.957Zm7.054,0V64h4.2v59.957Zm5.58,0V64H75.8v59.957H74.375Zm2.813.043V64H80v60Z" transform="translate(425 -38)" fill="rgba(0,0,0,0.79)"/>
+    <text id="Label" transform="translate(441 110)" fill="rgba(0,0,0,0.79)" font-size="20" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">Label</tspan></text>
+    <text id="Label-2" data-name="Label" transform="translate(441 110)" fill="rgba(0,0,0,0.79)" font-size="20" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">Label</tspan></text>
+  </g>
+</svg>

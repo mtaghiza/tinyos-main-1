@@ -1,12 +1,12 @@
 import sys
-from tools.SimPy.SimulationStep import *
+from apps.breakfast.tools.Life.tools import *
 try:  # Python 3
     from tkinter import *
 except:
     from Tkinter import *
 
-import tools.SimPy.SimulationStep, GUIDebug
-
+import GUIDebug
+from apps.breakfast.tools.Life import tools
 
 import warnings
 warnings.warn('This module be removed in SimPy 3.', DeprecationWarning)
