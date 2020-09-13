@@ -1,0 +1,82 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(2, 614400, 0, 0)
+(8, 614400, 0, 0)
+(18, 614400, 0, 0)
+(17, 614400, 0, 0)
+(0, 30720, 0, 2)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000002', '0x0400000000000008', '0x0400000000000012', '0x0400000000000011', '0x0400000000000001'], 2: ['0x0400000000000000']}}
+0x0400000000000008 0 0x0500000000000008
+0x0400000000000011 0 0x0500000000000011
+0x0400000000000012 0 0x0600000000000012
+Note: mouse wheel not implemented on Mac OS
+PROG 1599782499.71 Processing data to CSV files. This may take many minutes.
+Dumping from database0.sqlite to data
+Generating timestamp information
+PROG 1599782499.72 Rebuilding timestamp tables
+PROG 1599782499.73 Computing fits
+single point fit for [(1962, 1599777277.011271)] assume skewless binary ms
+single point fit for [(1953, 1599777713.72455)] assume skewless binary ms
+single point fit for [(1981, 1599780600.685055)] assume skewless binary ms
+single point fit for [(1955, 1599781617.2169409)] assume skewless binary ms
+PROG 1599782499.79 Computing approximate fits
+formatting data
+PROG 1599782499.79 Formatting data step 0/24
+PROG 1599782499.79 Formatting data step 1/24
+PROG 1599782499.79 Formatting data step 2/24
+PROG 1599782499.79 Formatting data step 3/24
+PROG 1599782499.79 Formatting data step 4/24
+PROG 1599782499.79 Formatting data step 5/24
+PROG 1599782499.79 Formatting data step 6/24
+PROG 1599782499.79 Formatting data step 7/24
+PROG 1599782499.79 Formatting data step 8/24
+PROG 1599782499.79 Formatting data step 9/24
+PROG 1599782499.80 Formatting data step 10/24
+PROG 1599782499.80 Formatting data step 11/24
+PROG 1599782499.80 Formatting data step 12/24
+PROG 1599782499.80 Formatting data step 13/24
+PROG 1599782499.80 Formatting data step 14/24
+PROG 1599782499.80 Formatting data step 15/24
+PROG 1599782499.81 Formatting data step 16/24
+PROG 1599782499.81 Formatting data step 17/24
+PROG 1599782499.81 Formatting data step 18/24
+PROG 1599782499.81 Formatting data step 19/24
+PROG 1599782499.81 Formatting data step 20/24
+PROG 1599782499.81 Formatting data step 21/24
+PROG 1599782499.81 Formatting data step 22/24
+PROG 1599782499.81 Formatting data step 23/24
+dumping to .csv files
+PROG 1599782499.81 Dumping internal sensors
+PROG 1599782499.83 Dumping sensor data for type 19
+PROG 1599782499.83 Dumping sensor data for type 20
+PROG 1599782499.83 Dumping sensor data for type 32
+PROG 1599782499.84 Dumping sensor data for type 33
+PROG 1599782499.84 Dumping sensor listing
+PROG 1599782499.84 CSV files ready (under 'data' directory)
+PROG 1599782499.84 Node 0x0400000000000002 last sample 876.09 s ago last contact 882 s ago battery 3.28 v
+PROG 1599782499.84 Node 0x0400000000000008 last sample 948.46 s ago last contact 882 s ago battery 3.77 v
+PROG 1599782499.84 Node 0x0400000000000011 last sample 1308.90 s ago last contact 882 s ago battery 3.78 v
+PROG 1599782499.84 Node 0x0400000000000012 last sample 1389.87 s ago last contact 882 s ago battery 3.74 v

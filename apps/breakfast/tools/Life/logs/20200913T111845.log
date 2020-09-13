@@ -1,0 +1,113 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 0, 0)
+(18, 614400, 0, 0)
+(2, 614400, 0, 0)
+(0, 30720, 0, 2)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000008', '0x0400000000000012', '0x0400000000000002', '0x0400000000000001'], 2: ['0x0400000000000000']}}
+0x0400000000000008 0 0x0500000000000008
+0x0400000000000011 0 0x0500000000000011
+0x0400000000000012 0 0x0600000000000012
+Note: mouse wheel not implemented on Mac OS
+PROG 1600010329.39 Processing data to CSV files. This may take many minutes.
+Dumping from database0.sqlite to data
+Generating timestamp information
+PROG 1600010329.39 Rebuilding timestamp tables
+PROG 1600010329.40 Computing fits
+single point fit for [(1962, 1599777277.011271)] assume skewless binary ms
+single point fit for [(1953, 1599777713.72455)] assume skewless binary ms
+single point fit for [(1981, 1599780600.685055)] assume skewless binary ms
+single point fit for [(1955, 1599781617.2169409)] assume skewless binary ms
+single point fit for [(1951, 1599789538.058642)] assume skewless binary ms
+single point fit for [(1962, 1599803754.7926788)] assume skewless binary ms
+single point fit for [(1959, 1599803823.418408)] assume skewless binary ms
+single point fit for [(1957, 1599832021.117902)] assume skewless binary ms
+single point fit for [(1966, 1599837555.020255)] assume skewless binary ms
+single point fit for [(1957, 1599848795.1546125)] assume skewless binary ms
+single point fit for [(1973, 1599849007.8173516)] assume skewless binary ms
+single point fit for [(1973, 1599849186.99358)] assume skewless binary ms
+single point fit for [(1990, 1599849279.555337)] assume skewless binary ms
+single point fit for [(1980, 1599849339.221358)] assume skewless binary ms
+single point fit for [(1958, 1599849401.5391264)] assume skewless binary ms
+single point fit for [(1961, 1599849420.3853173)] assume skewless binary ms
+single point fit for [(1976, 1599849573.555812)] assume skewless binary ms
+single point fit for [(1969, 1599849659.1703691)] assume skewless binary ms
+single point fit for [(1958, 1599849746.1396215)] assume skewless binary ms
+single point fit for [(1954, 1599849874.9794674)] assume skewless binary ms
+single point fit for [(1952, 1599849956.0737045)] assume skewless binary ms
+single point fit for [(1962, 1599850125.6435535)] assume skewless binary ms
+single point fit for [(1961, 1599850202.3267446)] assume skewless binary ms
+single point fit for [(1951, 1599850220.7852716)] assume skewless binary ms
+single point fit for [(1957, 1599850315.2978368)] assume skewless binary ms
+single point fit for [(1961, 1599850340.6185565)] assume skewless binary ms
+single point fit for [(1975, 1599850360.1486769)] assume skewless binary ms
+single point fit for [(1958, 1599850378.682952)] assume skewless binary ms
+single point fit for [(1962, 1599918657.909868)] assume skewless binary ms
+single point fit for [(1964, 1599918791.674385)] assume skewless binary ms
+single point fit for [(1953, 1599918876.4169965)] assume skewless binary ms
+single point fit for [(1962, 1600010041.806133)] assume skewless binary ms
+single point fit for [(1959, 1600010221.6253686)] assume skewless binary ms
+single point fit for [(1955, 1600010260.9235456)] assume skewless binary ms
+single point fit for [(1980, 1600010278.395362)] assume skewless binary ms
+PROG 1600010329.44 Computing approximate fits
+formatting data
+PROG 1600010329.45 Formatting data step 0/24
+PROG 1600010329.45 Formatting data step 1/24
+PROG 1600010329.46 Formatting data step 2/24
+PROG 1600010329.46 Formatting data step 3/24
+PROG 1600010329.47 Formatting data step 4/24
+PROG 1600010329.47 Formatting data step 5/24
+PROG 1600010329.47 Formatting data step 6/24
+PROG 1600010329.47 Formatting data step 7/24
+PROG 1600010329.47 Formatting data step 8/24
+PROG 1600010329.48 Formatting data step 9/24
+PROG 1600010329.51 Formatting data step 10/24
+PROG 1600010329.51 Formatting data step 11/24
+PROG 1600010329.51 Formatting data step 12/24
+PROG 1600010329.51 Formatting data step 13/24
+PROG 1600010329.52 Formatting data step 14/24
+PROG 1600010329.52 Formatting data step 15/24
+PROG 1600010329.52 Formatting data step 16/24
+PROG 1600010329.53 Formatting data step 17/24
+PROG 1600010329.53 Formatting data step 18/24
+PROG 1600010329.54 Formatting data step 19/24
+PROG 1600010329.55 Formatting data step 20/24
+PROG 1600010329.55 Formatting data step 21/24
+PROG 1600010329.55 Formatting data step 22/24
+PROG 1600010329.55 Formatting data step 23/24
+dumping to .csv files
+PROG 1600010329.55 Dumping internal sensors
+PROG 1600010329.58 Dumping sensor data for type 19
+PROG 1600010329.59 Dumping sensor data for type 20
+PROG 1600010329.61 Dumping sensor data for type 32
+PROG 1600010329.62 Dumping sensor data for type 33
+PROG 1600010329.62 Dumping sensor listing
+PROG 1600010329.62 CSV files ready (under 'data' directory)
+PROG 1600010329.63 Node 0x0400000000000002 last sample 101.58 s ago last contact 51 s ago battery 3.68 v
+PROG 1600010329.63 Node 0x0400000000000008 last sample 173.71 s ago last contact 51 s ago battery 3.75 v
+PROG 1600010329.63 Node 0x0400000000000011 last sample 533.88 s ago last contact 51 s ago battery 3.78 v
+PROG 1600010329.63 Node 0x0400000000000012 last sample 615.90 s ago last contact 51 s ago battery 3.77 v

@@ -1,0 +1,385 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 0, 0)
+(1, 614400, 0, 0)
+(2, 614400, 0, 0)
+(0, 30720, 0, 2)
+(18, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000008', '0x0400000000000001', '0x0400000000000002', '0x0400000000000012'], 2: ['0x0400000000000000']}}
+0x0400000000000008 0 0x0500000000000008
+0x0400000000000011 0 0x0500000000000011
+0x0400000000000012 0 0x0600000000000012
+Note: mouse wheel not implemented on Mac OS
+PROG 1599803742.47 Patch Download Started
+patch download 0
+serial@/dev/tty.Bluetooth-Incoming-Port:115200
+DatabaseMissing() downloadThread
+PROG 1599803745.74 Could not connect to base station.
+      Make sure you've selected the right device and make sure
+      it has been set up as a base station.
+     PROG 1599803745.74 Download finished: 0/0 identified nodes contacted
+Exception in thread downloadThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 474, in patchDownloadRunner
+    requestMissing=True)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 123, in download
+    d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 96, in __init__
+    raise Exception("Connected mote did not respond to ID request (has it been set up as a BaseStation?")
+Exception: Connected mote did not respond to ID request (has it been set up as a BaseStation?
+
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 0, 0)
+(1, 614400, 0, 0)
+(2, 614400, 0, 0)
+(0, 30720, 0, 2)
+(18, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000008', '0x0400000000000001', '0x0400000000000002', '0x0400000000000012'], 2: ['0x0400000000000000']}}
+0x0400000000000008 0 0x0500000000000008
+0x0400000000000011 0 0x0500000000000011
+0x0400000000000012 0 0x0600000000000012
+PROG 1599803752.44 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-AE01BDNV:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1599803754.78
+ACK 0
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+REF 1599803754.79 0 1084 1962 0 [8, 1, 2]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x43c]
+  [wakeupTS=0x7aa]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x8 0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803760.16 Contacted 0 (3 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1599803761.45  Node 0 transfer completed
+Skip BS pseudo cookie
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x8]
+  [status=0x0]
+
+receive fwd status 2
+PROG 1599803762.99 Node 8 NOT reached
+REF 1599803754.79 1 35 35428591 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0x21c98ef]
+  [pushCookie=0x28a1]
+  [writeCookie=0x2c41]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803763.42 Contacted 1 (1 neighbors). 928 queued, 0 in current request
+2 elapsed, commit
+RPR rx from 1 len 26 nc 10423 records 1
+Database.insertRecord() 1 10401 10423 21 18 [35, 0, 89, 197, 62, 1, 1, 0, 0, 0, 0, 0, 0, 6, 33, 9, 121, 9, 43, 9]
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1599803764.55  Node 1 transfer continues
+REF 1599803754.79 2 1666 34396815 1 []
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x682]
+  [wakeupTS=0x20cda8f]
+  [pushCookie=0x1688e]
+  [writeCookie=0x16a00]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803764.97 Contacted 2 (0 neighbors). 370 queued, 0 in current request
+receive fwd status 2
+RPR rx from 2 len 18 nc 92316 records 1
+Database.insertRecord() 2 92302 92316 13 20 [130, 6, 76, 80, 54, 1, 253, 11, 96, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0x36, 0x1, 0xfd, 0xb, 0x60, 0x3, 0xb, 0x5] to [0x2, 0x1688e, 0x682, 0x136504c, 0xbfd, 0x360, 0x50b]
+RPR rx from 2 len 72 nc 92372 records 4
+Database.insertRecord() 2 92316 92330 13 20 [130, 6, 76, 176, 63, 1, 253, 11, 95, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0x3f, 0x1, 0xfd, 0xb, 0x5f, 0x3, 0xb, 0x5] to [0x2, 0x1689c, 0x682, 0x13fb04c, 0xbfd, 0x35f, 0x50b]
+Database.insertRecord() 2 92330 92344 13 20 [130, 6, 76, 16, 73, 1, 254, 11, 104, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0x49, 0x1, 0xfe, 0xb, 0x68, 0x3, 0xb, 0x5] to [0x2, 0x168aa, 0x682, 0x149104c, 0xbfe, 0x368, 0x50b]
+Database.insertRecord() 2 92344 92358 13 20 [130, 6, 76, 112, 82, 1, 244, 11, 77, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0x52, 0x1, 0xf4, 0xb, 0x4d, 0x3, 0xb, 0x5] to [0x2, 0x168b8, 0x682, 0x152704c, 0xbf4, 0x34d, 0x50b]
+Database.insertRecord() 2 92358 92372 13 20 [130, 6, 76, 208, 91, 1, 255, 11, 92, 3, 13, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0x5b, 0x1, 0xff, 0xb, 0x5c, 0x3, 0xd, 0x5] to [0x2, 0x168c6, 0x682, 0x15bd04c, 0xbff, 0x35c, 0x50d]
+RPR rx from 2 len 72 nc 92428 records 4
+Database.insertRecord() 2 92372 92386 13 20 [130, 6, 76, 48, 101, 1, 207, 11, 112, 3, 13, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0x65, 0x1, 0xcf, 0xb, 0x70, 0x3, 0xd, 0x5] to [0x2, 0x168d4, 0x682, 0x165304c, 0xbcf, 0x370, 0x50d]
+Database.insertRecord() 2 92386 92400 13 20 [130, 6, 76, 144, 110, 1, 252, 11, 65, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0x6e, 0x1, 0xfc, 0xb, 0x41, 0x3, 0xb, 0x5] to [0x2, 0x168e2, 0x682, 0x16e904c, 0xbfc, 0x341, 0x50b]
+Database.insertRecord() 2 92400 92414 13 20 [130, 6, 76, 240, 119, 1, 225, 11, 98, 3, 12, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xf0, 0x77, 0x1, 0xe1, 0xb, 0x62, 0x3, 0xc, 0x5] to [0x2, 0x168f0, 0x682, 0x177f04c, 0xbe1, 0x362, 0x50c]
+Database.insertRecord() 2 92414 92428 13 20 [130, 6, 76, 80, 129, 1, 252, 11, 84, 3, 13, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0x81, 0x1, 0xfc, 0xb, 0x54, 0x3, 0xd, 0x5] to [0x2, 0x168fe, 0x682, 0x181504c, 0xbfc, 0x354, 0x50d]
+RPR rx from 2 len 74 nc 92486 records 4
+Database.insertRecord() 2 92428 92444 15 22 [8, 0, 130, 6, 7, 0, 207, 240, 137, 1, 183, 113, 73, 1]
+Decoded Phoenix Ref [0x8, 0x0, 0x82, 0x6, 0x7, 0x0, 0xcf, 0xf0, 0x89, 0x1, 0xb7, 0x71, 0x49, 0x1] to [0x2, 0x1690c, 0x8, 0x682, 0x7, 0x189f0cf, 0x14971b7]
+Database.insertRecord() 2 92444 92458 13 20 [130, 6, 76, 176, 138, 1, 253, 11, 107, 3, 12, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0x8a, 0x1, 0xfd, 0xb, 0x6b, 0x3, 0xc, 0x5] to [0x2, 0x1691c, 0x682, 0x18ab04c, 0xbfd, 0x36b, 0x50c]
+Database.insertRecord() 2 92458 92472 13 20 [130, 6, 76, 16, 148, 1, 255, 11, 62, 3, 13, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0x94, 0x1, 0xff, 0xb, 0x3e, 0x3, 0xd, 0x5] to [0x2, 0x1692a, 0x682, 0x194104c, 0xbff, 0x33e, 0x50d]
+Database.insertRecord() 2 92472 92486 13 20 [130, 6, 76, 112, 157, 1, 251, 11, 115, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0x9d, 0x1, 0xfb, 0xb, 0x73, 0x3, 0xb, 0x5] to [0x2, 0x16938, 0x682, 0x19d704c, 0xbfb, 0x373, 0x50b]
+2 elapsed, commit
+RPR rx from 2 len 74 nc 92544 records 4
+Database.insertRecord() 2 92486 92500 13 20 [130, 6, 76, 208, 166, 1, 0, 12, 103, 3, 12, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0xa6, 0x1, 0x0, 0xc, 0x67, 0x3, 0xc, 0x5] to [0x2, 0x16946, 0x682, 0x1a6d04c, 0xc00, 0x367, 0x50c]
+Database.insertRecord() 2 92500 92514 13 20 [130, 6, 76, 48, 176, 1, 252, 11, 68, 3, 13, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0xb0, 0x1, 0xfc, 0xb, 0x44, 0x3, 0xd, 0x5] to [0x2, 0x16954, 0x682, 0x1b0304c, 0xbfc, 0x344, 0x50d]
+Database.insertRecord() 2 92514 92528 13 20 [130, 6, 76, 144, 185, 1, 255, 11, 83, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0xb9, 0x1, 0xff, 0xb, 0x53, 0x3, 0xb, 0x5] to [0x2, 0x16962, 0x682, 0x1b9904c, 0xbff, 0x353, 0x50b]
+Database.insertRecord() 2 92528 92544 15 22 [1, 0, 130, 6, 35, 0, 234, 49, 194, 1, 250, 248, 209, 1]
+Decoded Phoenix Ref [0x1, 0x0, 0x82, 0x6, 0x23, 0x0, 0xea, 0x31, 0xc2, 0x1, 0xfa, 0xf8, 0xd1, 0x1] to [0x2, 0x16970, 0x1, 0x682, 0x23, 0x1c231ea, 0x1d1f8fa]
+RPR rx from 2 len 72 nc 92600 records 4
+Database.insertRecord() 2 92544 92558 13 20 [130, 6, 76, 240, 194, 1, 252, 11, 110, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xf0, 0xc2, 0x1, 0xfc, 0xb, 0x6e, 0x3, 0xb, 0x5] to [0x2, 0x16980, 0x682, 0x1c2f04c, 0xbfc, 0x36e, 0x50b]
+Database.insertRecord() 2 92558 92572 13 20 [130, 6, 76, 80, 204, 1, 254, 11, 96, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0xcc, 0x1, 0xfe, 0xb, 0x60, 0x3, 0xb, 0x5] to [0x2, 0x1698e, 0x682, 0x1cc504c, 0xbfe, 0x360, 0x50b]
+Database.insertRecord() 2 92572 92586 13 20 [130, 6, 76, 176, 213, 1, 254, 9, 72, 3, 131, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0xd5, 0x1, 0xfe, 0x9, 0x48, 0x3, 0x83, 0x5] to [0x2, 0x1699c, 0x682, 0x1d5b04c, 0x9fe, 0x348, 0x583]
+Database.insertRecord() 2 92586 92600 13 20 [130, 6, 76, 16, 223, 1, 255, 11, 87, 3, 10, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0xdf, 0x1, 0xff, 0xb, 0x57, 0x3, 0xa, 0x5] to [0x2, 0x169aa, 0x682, 0x1df104c, 0xbff, 0x357, 0x50a]
+RPR rx from 2 len 74 nc 92658 records 4
+Database.insertRecord() 2 92600 92614 13 20 [130, 6, 76, 112, 232, 1, 254, 11, 39, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0xe8, 0x1, 0xfe, 0xb, 0x27, 0x3, 0xb, 0x5] to [0x2, 0x169b8, 0x682, 0x1e8704c, 0xbfe, 0x327, 0x50b]
+Database.insertRecord() 2 92614 92628 13 20 [130, 6, 76, 208, 241, 1, 252, 11, 104, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0xf1, 0x1, 0xfc, 0xb, 0x68, 0x3, 0xb, 0x5] to [0x2, 0x169c6, 0x682, 0x1f1d04c, 0xbfc, 0x368, 0x50b]
+Database.insertRecord() 2 92628 92644 15 22 [8, 0, 130, 6, 7, 0, 100, 116, 250, 1, 50, 245, 185, 1]
+Decoded Phoenix Ref [0x8, 0x0, 0x82, 0x6, 0x7, 0x0, 0x64, 0x74, 0xfa, 0x1, 0x32, 0xf5, 0xb9, 0x1] to [0x2, 0x169d4, 0x8, 0x682, 0x7, 0x1fa7464, 0x1b9f532]
+Database.insertRecord() 2 92644 92658 13 20 [130, 6, 76, 48, 251, 1, 246, 11, 80, 3, 12, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0xfb, 0x1, 0xf6, 0xb, 0x50, 0x3, 0xc, 0x5] to [0x2, 0x169e4, 0x682, 0x1fb304c, 0xbf6, 0x350, 0x50c]
+RPR rx from 2 len 18 nc 92672 records 1
+Database.insertRecord() 2 92658 92672 13 20 [130, 6, 76, 144, 4, 2, 249, 11, 108, 3, 11, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0x4, 0x2, 0xf9, 0xb, 0x6c, 0x3, 0xb, 0x5] to [0x2, 0x169f2, 0x682, 0x204904c, 0xbf9, 0x36c, 0x50b]
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x2]
+  [status=0x1]
+
+PROG 1599803766.12  Node 2 transfer completed
+REC 2 no gap
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x8]
+  [status=0x0]
+
+PROG 1599803767.67 Node 8 NOT reached
+receive fwd status 2
+REF 1599803754.79 1 35 35428591 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0x21c98ef]
+  [pushCookie=0x2a71]
+  [writeCookie=0x2c41]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803768.06 Contacted 1 (1 neighbors). 464 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x1]
+
+PROG 1599803769.25  Node 1 transfer completed
+REC 1 no gap
+REF 1599803754.79 0 1084 1962 0 [8, 1, 2]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x43c]
+  [wakeupTS=0x7aa]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x8 0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803769.54 Contacted 0 (3 neighbors). 0 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1599803770.84  Node 0 transfer completed
+Skip BS pseudo cookie
+receive fwd status 2
+REF 1599803754.79 0 1084 1962 0 [8, 1, 2]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x43c]
+  [wakeupTS=0x7aa]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x8 0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1599803771.07 Contacted 0 (3 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+RPR rx from 0 len 91 nc 61857 records 1
+Database.insertRecord() 0 61770 61857 86 25 [0, 0, 1, 0, 4, 60, 0, 0, 7, 170, 0, 0, 0, 8, 0, 1, 0, 2, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 255, 1, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+FINISHED
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1599803772.49  Node 0 transfer completed
+Skip BS pseudo cookie
+Cleaning up
+clearing
+receive fwd status 2
+Clearing RX Queue
+QUEUE CLEARED
+cleared
+finished
+waiting for db stop
+synchronous stop
+explicit close
+explicit closedb stopped
+done for real
+
+PROG 1599803774.12 Finished.
+PROG 1599803774.12 Download finished: 3/4 identified nodes contacted
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 0, 0)
+(18, 614400, 0, 0)
+(2, 614400, 0, 0)
+(0, 30720, 0, 2)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000008', '0x0400000000000012', '0x0400000000000002', '0x0400000000000001'], 2: ['0x0400000000000000']}}
+0x0400000000000008 0 0x0500000000000008
+0x0400000000000011 0 0x0500000000000011
+0x0400000000000012 0 0x0600000000000012
+PROG 1599803778.22 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-AE01BDNV:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1599803780.54
+ACK 7
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+RPR rx from 0 len 91 nc 61944 records 1
+Database.insertRecord() 0 61857 61944 86 0 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+No decoder for 0x0
+2 elapsed, commit
+FINISHED
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+explicit close
+delete insert object, signal stop
+receive fwd status 2
+receive fwd status 2
+delete insert object, signal stop

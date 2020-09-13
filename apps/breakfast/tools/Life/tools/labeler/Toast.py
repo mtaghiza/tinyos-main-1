@@ -394,7 +394,7 @@ class Toast(object):
         # Command does not return error_t. Use channel to check for consistency
         if ret.get_sample_inputChannel() != channel:
             raise UnexpectedResponseError
-        
+        print(ret)
         return [ret.get_sample_sampleTime(), ret.get_sample_sample()]
     
 if __name__ == '__main__':

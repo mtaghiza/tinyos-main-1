@@ -329,11 +329,11 @@ class GraphFrame(Frame):
                 v *= 2
                 
             elif type == 32:      # 0x20: built-in US Sensor thermistor
-                x = math.log(v/(3.3-v))
+                x = math.log(v/(3.0-v))
                 y = 0.002*x*x-0.07716*x+5.69808
                 v =math.exp(y)-273.15
             elif type == 19:      # 0x13: YSI 44006RC thermistor
-                x = math.log(v/(3.3-v))
+                x = math.log(v/(3.0-v))
                 y = 0.001982*x*x-0.083863*x+5.697970
                 v =math.exp(y)-273.15
             return v

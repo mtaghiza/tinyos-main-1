@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="163.5" height="31.473" viewBox="0 0 163.5 31.473">
+  <g id="组_611" data-name="组 611" transform="translate(-1413.5 -162)">
+    <path id="window-close" d="M36.8,32h-33A3.611,3.611,0,0,0,0,35.372V60.1a3.611,3.611,0,0,0,3.807,3.372h33A3.611,3.611,0,0,0,40.612,60.1V35.372A3.611,3.611,0,0,0,36.8,32ZM30.174,52.408a.8.8,0,0,1,0,1.222l-3.212,2.845a1.068,1.068,0,0,1-1.38,0l-5.275-4.714-5.275,4.714a1.068,1.068,0,0,1-1.38,0l-3.212-2.845a.8.8,0,0,1,0-1.222l5.322-4.672-5.322-4.672a.8.8,0,0,1,0-1.222L13.651,39a1.068,1.068,0,0,1,1.38,0l5.275,4.714L25.581,39a1.068,1.068,0,0,1,1.38,0l3.212,2.845a.8.8,0,0,1,0,1.222l-5.322,4.672Z" transform="translate(1413.5 130)" fill="rgba(255,137,0,0.9)"/>
+    <text id="Quit_Deploy" data-name="Quit Deploy" transform="translate(1465 186)" fill="#ff9519" font-size="20" font-family="HelveticaNeue-Bold, Helvetica Neue" font-weight="700"><tspan x="0" y="0">Quit Deploy</tspan></text>
+  </g>
+</svg>
