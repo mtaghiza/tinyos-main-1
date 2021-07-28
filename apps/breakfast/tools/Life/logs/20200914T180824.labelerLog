@@ -1,0 +1,4069 @@
+DatabaseInit() MainThread
+Reset device
+/dev/tty.usbserial-AE01B5K4
+-S 115200 -c /dev/tty.usbserial-AE01B5K4 -r
+ToastFrame: connection error
+All serial listeners closed
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+tools/firmware/toaster.ihex /dev/tty.usbserial-AE01B5K4
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+20136 bytes programmed in 4.0sec, 39980bps
+Reset device
+auto programming done
+Reset device
+/dev/tty.usbserial-AE01B5K4
+-S 115200 -c /dev/tty.usbserial-AE01B5K4 -r
+Loaded bacon TLV e 0 c aa
+global name 'tinyos' is not defined
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 114, in dispatchPacket
+    gid=serial_pkt.get_header_group())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/mig/ReadBaconSensorResponseMsg.py", line 19, in __init__
+    tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
+None
+Loaded bacon TLV e 0 c a4
+['040000000000010E', 1600121376.453054, 'F25B924613001300', 32773, 1, 2256, 2630, 1691, 1971, 1355, 1578, 31725, 31738, 31730]
+Loaded bacon TLV e 0 c aa
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+New Multiplexer detected
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+generic
+Response sent
+generic
+Response sent
+barcode
+Assignments
+type:  6
+['0600000000000070', 1600121459.121755, 32768, 0, 32592, 2919, 3463, 32680, 1749, 2077]
+barcode
+Assignments
+11232
+11233
+[[112, 112, None, None, None, None, None, None], [32, 33, None, None, None, None, None, None]]
+Assignments
+11232
+11233
+['0600000000000070', [[112, 112, 0, 0, 0, 0, 0, 0], [32, 33, 0, 0, 0, 0, 0, 0]]]
+11232
+11233
+28020
+[[112, 112, 280, None, None, None, None, None], [32, 33, 20, None, None, None, None, None]]
+Assignments
+11232
+11233
+28020
+['0600000000000070', [[112, 112, 280, 0, 0, 0, 0, 0], [32, 33, 20, 0, 0, 0, 0, 0]]]
+skip (112, 32, 1600121459.91595, '0600000000000070', 0) 0600000000000070 0
+skip (112, 33, 1600121459.918663, '0600000000000070', 1) 0600000000000070 1
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x197809]
+  [sample.sample=0xb0d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1992e9]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x19b269]
+  [sample.sample=0x30]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x19d1a9]
+  [sample.sample=0x504]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x19efa9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1a0849]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1a2769]
+  [sample.sample=0x7ec]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1a4649]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1a6429]
+  [sample.sample=0xb08]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1a8369]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1aa1a9]
+  [sample.sample=0x44e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1ac1c9]
+  [sample.sample=0x5c5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1ada49]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1af2c9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1b11e9]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1b3249]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1b51a9]
+  [sample.sample=0xb07]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1b7109]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1b8f89]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1bae09]
+  [sample.sample=0x5c6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1bcce9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1bec09]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1c0ce9]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1c27e9]
+  [sample.sample=0x81a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1c47a9]
+  [sample.sample=0xb04]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1c6669]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1c84a9]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1ca4a9]
+  [sample.sample=0x5c5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1cc449]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1ce3e9]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1d03a9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1d2369]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1d3c09]
+  [sample.sample=0xb02]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1d5b69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1d7b49]
+  [sample.sample=0x44e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1d9629]
+  [sample.sample=0x5c5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1db269]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1dd189]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1df0e9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1e1089]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1e3329]
+  [sample.sample=0xb01]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1e5109]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1e7049]
+  [sample.sample=0x446]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1e8ec9]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1ead89]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1ec4a9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1ee729]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1f04e9]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1f23e9]
+  [sample.sample=0xaff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1f3cc9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1f5b49]
+  [sample.sample=0x44f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1f7909]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1f9829]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1fb129]
+  [sample.sample=0x81c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1fc8c9]
+  [sample.sample=0x82c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1fe1c9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2001c9]
+  [sample.sample=0xafe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x201be9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x203a09]
+  [sample.sample=0x441]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x205909]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2077c9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x209569]
+  [sample.sample=0x806]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x20b4e9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x20d409]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x20f269]
+  [sample.sample=0xafc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x210aa9]
+  [sample.sample=0xa87]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x212a89]
+  [sample.sample=0x442]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2145a9]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2165a9]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2186e9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x21a0a9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x21bf29]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x21dd89]
+  [sample.sample=0xafb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x21fd09]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2214e9]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2233a9]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x225349]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x227309]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x228c09]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x22aa49]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x22cac9]
+  [sample.sample=0xaf9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x22e9c9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2308e9]
+  [sample.sample=0x447]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x232769]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x234649]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2364c9]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2383a9]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x23a2a9]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x23c4e9]
+  [sample.sample=0xaf8]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x23e3a9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2401c9]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x241ac9]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x243269]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x244ac9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x246a49]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x248a29]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x24a949]
+  [sample.sample=0xaf6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x24c889]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x24e809]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2500c9]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x252069]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x253f29]
+  [sample.sample=0x817]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x255e29]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x257c89]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2594e9]
+  [sample.sample=0xaf5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x25adc9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x25cca9]
+  [sample.sample=0x442]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x25ea49]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x260a29]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x262189]
+  [sample.sample=0x81f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x263b09]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x265ac9]
+  [sample.sample=0x806]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x267b49]
+  [sample.sample=0xaf4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x269409]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x26b289]
+  [sample.sample=0x44e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x26d269]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x26f1e9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x270c09]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x272969]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x274a09]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2769a9]
+  [sample.sample=0xaf2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2788e9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x27a0e9]
+  [sample.sample=0x44d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x27c0c9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x27e049]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x27f989]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2816e9]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x282fa9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x284ec9]
+  [sample.sample=0xaf0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x286e89]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x288949]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x28a8a9]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x28c8c9]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x28e1a9]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2901e9]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x291ca9]
+  [sample.sample=0x81a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x293c09]
+  [sample.sample=0xaf0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x295b89]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x297da9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x299c89]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x29b509]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x29d4e9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x29f4c9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2a12e9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2a32c9]
+  [sample.sample=0xaee]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2a52e9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2a7169]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2a8f09]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2aaea9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2ace09]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2ae829]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2b0689]
+  [sample.sample=0x7fa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2b2609]
+  [sample.sample=0xaee]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2b46a9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2b6209]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2b8149]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2b99e9]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2bb9c9]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2bd969]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2bf0e9]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2c09c9]
+  [sample.sample=0xaec]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2c2949]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2c4709]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2c6649]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2c8649]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2ca0e9]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2cb9c9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2cd969]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2cf809]
+  [sample.sample=0xaeb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2d1689]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2d3589]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2d54c9]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2d7089]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2d8f29]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2daf29]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2dc7c9]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2de749]
+  [sample.sample=0xae9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2e0629]
+  [sample.sample=0xa87]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2e2489]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2e43a9]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2e6229]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2e8089]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2e9969]
+  [sample.sample=0x81e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2eb7a9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2ed6e9]
+  [sample.sample=0xae8]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2ef529]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2f1489]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x2f3289]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x2f4ae9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x2f69e9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x2f82a9]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x2f9989]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x2fb0a9]
+  [sample.sample=0xae6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x2fcfe9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x2feea9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x300ea9]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x302969]
+  [sample.sample=0x806]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3048a9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x306769]
+  [sample.sample=0x817]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x308629]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x30a589]
+  [sample.sample=0xae6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x30c489]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x30df89]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x30f809]
+  [sample.sample=0x5c6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3117c9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3135a9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3155a9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3170c9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x319049]
+  [sample.sample=0xae4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x31b009]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x31cac9]
+  [sample.sample=0x442]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x31eae9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x320a49]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x322989]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x324989]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3261e9]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x328329]
+  [sample.sample=0xae4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x32a329]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x32c1c9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x32e009]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x32fe89]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x331e89]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x333e49]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x335c49]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3374e9]
+  [sample.sample=0xae3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3394e9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x33b0a9]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x33d089]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x33f029]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x340de9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x342d29]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x344c09]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x346b09]
+  [sample.sample=0xae1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3489a9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x34a829]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x34c789]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x34e8c9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3508c9]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x352649]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3545c9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x356469]
+  [sample.sample=0xae0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x357dea]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x359f29]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x35b7c9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x35d7e9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x35f269]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x361329]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x362e89]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x364e69]
+  [sample.sample=0xae0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x366fa9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x368829]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x369c29]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x36be49]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x36de29]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x36f6a9]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3716c9]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3735a9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3750c9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x377029]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x378f89]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x37ad49]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x37cc49]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x37eb89]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3809e9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x382869]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x384729]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x386649]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x388489]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x389da9]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x38bca9]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x38d7c9]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x38f049]
+  [sample.sample=0x819]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x390fe9]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x392ea9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x394ca9]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x396cc9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x398789]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x39a0c9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x39c0c9]
+  [sample.sample=0x817]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x39e069]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x39ffc9]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3a1fc9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3a3f29]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3a5ae9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3a79e9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3a9889]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3ab7c9]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3ad609]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3af589]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3b0e69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3b26e9]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3b3b29]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3b5389]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3b6e89]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3b87c9]
+  [sample.sample=0x81a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3ba769]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3bc269]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3be249]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3bf949]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3c1989]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3c3729]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3c5669]
+  [sample.sample=0x7fa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3c75e9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3c9409]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3cb269]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3cd169]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3cea69]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3d08c9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3d26c9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3d4629]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3d6449]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3d8489]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3d9ce9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3dbbc9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3ddba9]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3dfa09]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3e18c9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3e31a9]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3e5029]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3e6ee9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3e8c89]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3eaca9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3ecb29]
+  [sample.sample=0x441]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3ee9c9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3f0829]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x3f2109]
+  [sample.sample=0x81c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x3f4089]
+  [sample.sample=0x820]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x3f6049]
+  [sample.sample=0x819]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x3f7f69]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x3f9d89]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x3fbd29]
+  [sample.sample=0x442]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x3fdc29]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x3ff469]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x400d09]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x402829]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x404189]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x406029]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x407e89]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x409e29]
+  [sample.sample=0x44e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x40b929]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x40d889]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x40f889]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4117c9]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4130c9]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x414ec9]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x416e49]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x418c69]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x41a5a9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x41c3a9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x41e309]
+  [sample.sample=0x7f5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4200c9]
+  [sample.sample=0x817]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4219c9]
+  [sample.sample=0x81c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4238e9]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x425849]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x427789]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x429729]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x42b589]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x42d509]
+  [sample.sample=0x7f5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x42edc9]
+  [sample.sample=0x81c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x430c89]
+  [sample.sample=0x81a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x432529]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x433da9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4356e9]
+  [sample.sample=0x449]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x437629]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x438e29]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x43ad49]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x43cc09]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x43ea09]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4402e9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x441bc9]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x443a89]
+  [sample.sample=0x444]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x445809]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4477a9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x449689]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x44b629]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x44d549]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x44f549]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x451029]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4528e9]
+  [sample.sample=0x440]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x454889]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4567a9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x458209]
+  [sample.sample=0x819]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x45a049]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x45be89]
+  [sample.sample=0x806]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x45dec9]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x45fe29]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4616c9]
+  [sample.sample=0x447]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x463689]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4650e9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x467309]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x469289]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x46adc9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x46cd49]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x46eae9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x470b09]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4729a9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x474829]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4766c9]
+  [sample.sample=0x7f7]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x478589]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x47a429]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x47c1c9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x47e169]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4801a9]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4821e9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4840a9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4860a9]
+  [sample.sample=0x7f4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x487e89]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x489e49]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x48b969]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x48d8c9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x48f849]
+  [sample.sample=0x447]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x491389]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x493389]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x494ea9]
+  [sample.sample=0x819]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x496d89]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x498d29]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x49ab69]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x49ca69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x49e969]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4a00c9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4a2109]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4a3c09]
+  [sample.sample=0x819]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4a54a9]
+  [sample.sample=0x824]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4a7469]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4a91e9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4aac09]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4ac9c9]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4ae969]
+  [sample.sample=0x5c3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4b0809]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4b1fe9]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4b3ec9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4b5e69]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4b7dc9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4b9d49]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4bbb69]
+  [sample.sample=0x43f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4bdb69]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4bfb49]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4c1269]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4c2d49]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4c4c69]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4c6bc9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4c8989]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4ca9a9]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4cc3a9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4ce369]
+  [sample.sample=0x7ed]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4d0329]
+  [sample.sample=0x7f8]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4d21a9]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4d40e9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4d5f49]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4d7cc9]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4d9549]
+  [sample.sample=0x440]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4dae09]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4dcd89]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4ded69]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4e0609]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4e2549]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4e44e9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4e5f49]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4e7d29]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4e9d29]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4eb5e9]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4ece09]
+  [sample.sample=0x81a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4ee8e9]
+  [sample.sample=0x822]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4eff89]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x4f18a9]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x4f37e9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x4f5609]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x4f74c9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x4f94a9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x4fb4c9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x4fcc29]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x4fe4a9]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x500609]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x502529]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5043a9]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5063a9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x507ca9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x509b29]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x50bb89]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x50d429]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x50eca9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x510ca9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x512a89]
+  [sample.sample=0x441]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x514989]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x516909]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x518429]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x51a3e9]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x51c1c9]
+  [sample.sample=0x80c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x51daa9]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x51fa69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x521609]
+  [sample.sample=0x446]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x523609]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x524f49]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x526f29]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x528a09]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x52a2e9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x52c209]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x52e129]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x52f8c9]
+  [sample.sample=0x43f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x531869]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5336c9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5355e9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x536e09]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x538669]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x53a669]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x53c5a9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x53e5a9]
+  [sample.sample=0x44d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5405a9]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x541d69]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x543ce9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x545ba9]
+  [sample.sample=0x815]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x547a69]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5498e9]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x54b709]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x54d6a9]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x54f489]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x551349]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x553289]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x555129]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x556fc9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x558e69]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x55ac0a]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x55c4a9]
+  [sample.sample=0x444]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x55dcc9]
+  [sample.sample=0x5bf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x55f809]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5616a9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x563629]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5653e9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x566d29]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x568c69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x56aba9]
+  [sample.sample=0x446]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x56c709]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x56e649]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x570529]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x572309]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5742a9]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5760a9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x578029]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x579e49]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x57bc09]
+  [sample.sample=0x5bf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x57d489]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x57ed69]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x580d49]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x582889]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x584809]
+  [sample.sample=0xae0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x586749]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x588549]
+  [sample.sample=0x43f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x58a469]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x58c309]
+  [sample.sample=0x7ee]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x58e169]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x590089]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x591ea9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x593729]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x595769]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x597689]
+  [sample.sample=0x447]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x598fa9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x59ae09]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x59ce69]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x59ede9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5a0be9]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5a2b49]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5a4a09]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5a6849]
+  [sample.sample=0x444]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5a8809]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5a9ea9]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5ab729]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5ad689]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5af629]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5b1109]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5b3269]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5b50e9]
+  [sample.sample=0x43d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5b7049]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5b8f89]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5bad89]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5bc609]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5be589]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5c00c9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5c1fa9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5c3ec9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5c5729]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5c76e9]
+  [sample.sample=0x7ed]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5c9249]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5cb1e9]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5ccfa9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5cef49]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5d0789]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5d2669]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5d43e9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5d6389]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5d7c69]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5d93a9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5db309]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5dd2c9]
+  [sample.sample=0xae0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5dedc9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5e0e69]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5e29c9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5e4929]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5e67c9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5e8649]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5ea509]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5ec289]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5ee249]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5f01e9]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x5f1aa9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x5f3329]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x5f5189]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x5f72e9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x5f9269]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x5fb129]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x5fcea9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x5fee89]
+  [sample.sample=0x44b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x600ca9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6025a9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x604449]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x606289]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x608149]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x609fe9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x60bfa9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x60da89]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x60f9e9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6118e9]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6138e9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x615869]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x617169]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x618fe9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x61ae09]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x61c6e9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x61e669]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6208a9]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x622769]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6244e9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x625d69]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x627d49]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x629be9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x62b9e9]
+  [sample.sample=0x441]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x62d9e9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x62fae9]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6313e9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x633349]
+  [sample.sample=0x801]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x635149]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x636fa9]
+  [sample.sample=0xadf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x638409]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x639ca9]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x63bd49]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x63d5e9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x63ede9]
+  [sample.sample=0x806]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x640c89]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x642ac9]
+  [sample.sample=0x7f7]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x644a49]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6465a9]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6484e9]
+  [sample.sample=0x440]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x64a349]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x64c349]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x64dbc9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x64fda9]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x651c89]
+  [sample.sample=0x7f9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6534c9]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6553e9]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x657329]
+  [sample.sample=0x444]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x658c09]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x65ac29]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x65cd49]
+  [sample.sample=0x7f7]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x65e669]
+  [sample.sample=0x81b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x660649]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x662209]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x664129]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x665fe9]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x667d69]
+  [sample.sample=0x5bf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x669d69]
+  [sample.sample=0x7f5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x66bf49]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x66df49]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x66f9c9]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x671429]
+  [sample.sample=0xade]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x672b29]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x674309]
+  [sample.sample=0x44c]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x676149]
+  [sample.sample=0x5c2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x678129]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x679ac9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x67b969]
+  [sample.sample=0x7fe]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x67d8c9]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x67f3c9]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x681309]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x683269]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x684a09]
+  [sample.sample=0x5c4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6869a9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6887a9]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x68a729]
+  [sample.sample=0x813]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x68c589]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x68dce9]
+  [sample.sample=0xadd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x68f549]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x691429]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x693349]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x695269]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x697209]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x698c89]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x69ad89]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x69c7c9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x69dde9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x69f5a9]
+  [sample.sample=0x447]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6a1489]
+  [sample.sample=0x5bf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6a3309]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6a5349]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6a72e9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6a9149]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6ab009]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6acf69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6aed89]
+  [sample.sample=0x440]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6b06c9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6b24e9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6b44a9]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6b5fe9]
+  [sample.sample=0x80e]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6b7fa9]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6b9ce9]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6bb529]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6bd749]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6bf5a9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6c1549]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6c3569]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6c5369]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6c7269]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6c9129]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6cb0c9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6ccc09]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6cec09]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6d07c9]
+  [sample.sample=0x80d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6d27c9]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6d4809]
+  [sample.sample=0x7f9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6d6309]
+  [sample.sample=0x81d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6d7789]
+  [sample.sample=0xadc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6d9749]
+  [sample.sample=0xa85]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6db5e9]
+  [sample.sample=0x445]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6dd449]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6df389]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6e1169]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6e30c9]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6e4809]
+  [sample.sample=0x80b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6e5e69]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6e74e9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6e8b89]
+  [sample.sample=0x439]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6ea1e9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6ec3e9]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6ee3a9]
+  [sample.sample=0x7f8]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6f0389]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x6f2269]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x6f3f69]
+  [sample.sample=0xada]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x6f55c9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x6f77a9]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x6f8fa9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x6fa889]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x6fc7a9]
+  [sample.sample=0x810]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x6fe6e9]
+  [sample.sample=0x7fa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x7005a9]
+  [sample.sample=0x818]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x7023a9]
+  [sample.sample=0xadb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x703c89]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x705b29]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x707aa9]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x709c69]
+  [sample.sample=0x804]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x70bac9]
+  [sample.sample=0x814]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x70da09]
+  [sample.sample=0x808]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x70f7c9]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x7117c9]
+  [sample.sample=0xada]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x713549]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x7154c9]
+  [sample.sample=0x443]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x717429]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x718f29]
+  [sample.sample=0x805]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x71af09]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x71cca9]
+  [sample.sample=0x816]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x71ecc9]
+  [sample.sample=0x80f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x720c09]
+  [sample.sample=0xada]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x722b49]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x724a29]
+  [sample.sample=0x44a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x726929]
+  [sample.sample=0x5c0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x7286e9]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x72a669]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x72c629]
+  [sample.sample=0x803]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x72ddc9]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x72fc49]
+  [sample.sample=0xada]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x731be9]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x733649]
+  [sample.sample=0x448]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x7358e9]
+  [sample.sample=0x5c1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x737809]
+  [sample.sample=0x800]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x739829]
+  [sample.sample=0x7ff]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x73afa9]
+  [sample.sample=0x812]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x73cea9]
+  [sample.sample=0x807]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x73ece9]
+  [sample.sample=0xada]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x740d69]
+  [sample.sample=0xa86]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x742d49]
+  [sample.sample=0x43b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x744b09]
+  [sample.sample=0x5be]
+
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+RX: ReadAnalogSensor BUSY!
+All serial listeners closed
+tools/firmware/leaf.ihex /dev/tty.usbserial-AE01B5K4
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+32752 bytes programmed in 6.6sec, 39970bps
+Reset device

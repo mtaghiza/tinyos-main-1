@@ -1,0 +1,280 @@
+Tables do not exist, create tables
+Error reading file: database0.sqlite
+DatabaseInit() MainThread
+Reset device
+/dev/tty.usbserial-JH000336
+-S 115200 -c /dev/tty.usbserial-JH000336 -r
+ToastFrame: connection error
+All serial listeners closed
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+tools/firmware/toaster.ihex /dev/tty.usbserial-JH000336
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+20136 bytes programmed in 4.0sec, 39992bps
+Reset device
+auto programming done
+Reset device
+/dev/tty.usbserial-JH000336
+-S 115200 -c /dev/tty.usbserial-JH000336 -r
+Loaded bacon TLV e 0 c aa
+global name 'tinyos' is not defined
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 114, in dispatchPacket
+    gid=serial_pkt.get_header_group())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/mig/ReadBaconSensorResponseMsg.py", line 19, in __init__
+    tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
+None
+Loaded bacon TLV e 0 c a4
+['0400000000000115', 1601308409.484721, 'F25B924617000100', 32771, 1, 2055, 2457, 1544, 1843, 1237, 1473, 31690, 31672, 31693]
+Loaded bacon TLV e 0 c aa
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+New Multiplexer detected
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+generic
+Response sent
+generic
+Response sent
+barcode
+Assignments
+type:  6
+['060000000000006E', 1601308460.428694, 32768, 0, 32411, 2910, 3464, 32504, 1743, 2077]
+barcode
+Assignments
+11032
+11033
+[[110, 110, None, None, None, None, None, None], [32, 33, None, None, None, None, None, None]]
+Assignments
+11032
+11033
+['060000000000006E', [[110, 110, 0, 0, 0, 0, 0, 0], [32, 33, 0, 0, 0, 0, 0, 0]]]
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x19f5c9]
+  [sample.sample=0xa13]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1a15a9]
+  [sample.sample=0xabf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1a2e89]
+  [sample.sample=0x79b]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1a4e09]
+  [sample.sample=0x7ef]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1a6c69]
+  [sample.sample=0x7e4]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1a8b89]
+  [sample.sample=0x7f9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1aaa09]
+  [sample.sample=0x7eb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1ac8e9]
+  [sample.sample=0x7e6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1ae789]
+  [sample.sample=0xa13]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1b0689]
+  [sample.sample=0xabf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1b21a9]
+  [sample.sample=0x7a1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1b4069]
+  [sample.sample=0x7e6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1b6009]
+  [sample.sample=0x7f2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1b7e49]
+  [sample.sample=0x7f7]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1b9749]
+  [sample.sample=0x811]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1bb609]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1bd469]
+  [sample.sample=0xa13]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1bf469]
+  [sample.sample=0xabf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1c0cc9]
+  [sample.sample=0x7aa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1c2609]
+  [sample.sample=0x7ea]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1c44e9]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1c6449]
+  [sample.sample=0x7fc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1c7f89]
+  [sample.sample=0x7f9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1c9829]
+  [sample.sample=0x7fa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0x1cb669]
+  [sample.sample=0xa13]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0x1cd809]
+  [sample.sample=0xabf]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0x1cf789]
+  [sample.sample=0x79f]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0x1d14c9]
+  [sample.sample=0x7eb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0x1d3329]
+  [sample.sample=0x7f8]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0x1d4d49]
+  [sample.sample=0x809]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0x1d6a29]
+  [sample.sample=0x7fd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0x1d8b69]
+  [sample.sample=0x801]
+
+All serial listeners closed
+tools/firmware/leaf.ihex /dev/tty.usbserial-JH000336
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+CC430bsl exception
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+CC430bsl exception
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+CC430bsl exception
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+32752 bytes programmed in 6.6sec, 39979bps
+Reset device

@@ -1,0 +1,202 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+Note: mouse wheel not implemented on Mac OS
+PROG 1601230325.55 Patch Download Started
+patch download 0
+serial@/dev/tty.Bluetooth-Incoming-Port:115200
+DatabaseMissing() downloadThread
+PROG 1601230328.81 Could not connect to base station.
+      Make sure you've selected the right device and make sure
+      it has been set up as a base station.
+     PROG 1601230328.82 Download finished: 0/0 identified nodes contacted
+Exception in thread downloadThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 474, in patchDownloadRunner
+    requestMissing=True)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 123, in download
+    d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 96, in __init__
+    raise Exception("Connected mote did not respond to ID request (has it been set up as a BaseStation?")
+Exception: Connected mote did not respond to ID request (has it been set up as a BaseStation?
+
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+PROG 1601230335.78 Router Download Started
+serial@/dev/tty.usbserial-AE01BDNV:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1601230338.09
+ACK 0
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+REF 1601230338.11 0 1150 1953 0 []
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x47e]
+  [wakeupTS=0x7a1]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1601230343.46 Contacted 0 (0 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1601230344.76  Node 0 transfer completed
+Skip BS pseudo cookie
+REF 1601230338.11 0 1150 1953 0 []
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x47e]
+  [wakeupTS=0x7a1]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1601230345.08 Contacted 0 (0 neighbors). 0 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+receive fwd status 2
+PROG 1601230346.31  Node 0 transfer completed
+Skip BS pseudo cookie
+REF 1601230338.11 0 1150 1953 0 []
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x47e]
+  [wakeupTS=0x7a1]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1601230346.62 Contacted 0 (0 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1601230347.89  Node 0 transfer completed
+Skip BS pseudo cookie
+REF 1601230338.11 0 1150 1953 0 []
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x47e]
+  [wakeupTS=0x7a1]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1601230348.14 Contacted 0 (0 neighbors). 0 queued, 0 in current request
+receive fwd status 2

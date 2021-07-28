@@ -1,0 +1,26 @@
+database0.sqlite passed integrity check
+network_membership missing
+active_period missing
+toast_sample missing
+packet missing
+log_record missing
+node_status missing
+cookie_table missing
+toast_connection missing
+bacon_sample missing
+toast_disconnection missing
+sensor_connection missing
+phoenix_reference missing
+sensor_sample missing
+bacon_settings missing
+base_reference missing
+last_bs missing
+last_ap missing
+last_connection missing
+last_status missing
+last_disconnection missing
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+Channel maps {}
+Note: mouse wheel not implemented on Mac OS

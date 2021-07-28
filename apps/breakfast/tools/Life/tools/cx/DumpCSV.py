@@ -56,7 +56,7 @@ queries=[
     max(connection_cookie) as connection_cookie
   FROM ss0
   GROUP BY node_id, reboot_counter, sample_cookie''',
-  
+
   #find matching bacon barcodes
   '''DROP TABLE IF EXISTS ss2''',
   '''CREATE TEMPORARY TABLE ss2 AS
@@ -91,7 +91,7 @@ queries=[
       ON ss1.connection_cookie = tc.cookie AND ss1.node_id = tc.node_id
     JOIN sensor_connection sc
       ON sc.cookie = tc.cookie AND
-      sc.channel_number = ss.channel_number
+      sc.channel_number = ss.channel_number AND sc.node_id=tc.node_id
     JOIN ss3
       ON ss3.sample_cookie = ss.cookie AND ss3.node_id = ss.node_id
     JOIN bacon_settings bs
@@ -145,7 +145,9 @@ queries=[
   JOIN fits 
     ON fits.node1=ssf.node_id AND fits.rc1=ssf.reboot_counter
        AND fits.node2 is NULL AND fits.rc2 is NULL''',
+
   '''DROP TABLE IF EXISTS current_sensors''',
+
   '''CREATE TABLE current_sensors AS
       SELECT bacon_settings.barcode_id as bacon_barcode, 
         tc.node_id as node_id,
@@ -204,7 +206,7 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
         os.mkdir(baseDir)
     internalCols= ["bacon_id", "unixTS", "isoTS", "date", "time", "batteryVoltage",
       "lightVoltage", "thermistorVoltage", "tsQuality"]
-    externalCols= ["sensor_type", "bacon_id", "toast_id", 
+    externalCols= ["sensor_type", "bacon_id", "toast_id",
       "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage", "tsQuality"]
     sensorCols = ["bacon_id", "toast_id", "unixTS", "isoTS", "date",
       "time", "channel", "sensorType", "sensorId", "tsQuality"]
@@ -240,10 +242,10 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
                 voltage, tsQuality
                 FROM sensor_sample_final WHERE sensor_type=? ORDER BY
                 bacon_id, toast_id, sensor_id, ts'''
-                for (sensor_type, bacon_id, toast_id, sensor_channel, 
+                for (sensor_type, bacon_id, toast_id, sensor_channel,
                   sensor_id, unixTS, isoTS, date, time, voltage, tsq) in c.execute(q, (st,)).fetchall():
                     f.write(sep.join([str(sensor_type), bacon_id,
-                    toast_id, str(sensor_channel), str(sensor_id), 
+                    toast_id, str(sensor_channel), str(sensor_id),
                     "%.2f"%unixTS, isoTS, date, time, "%.4f"%voltage,
                     "%.4f"%tsq])+'\n')
 
@@ -276,7 +278,7 @@ def dumpCSV(dbName, baseDir='data', progCallback=None):
     deNormalize(dbName, progCallback=progCallback)
     print "dumping to .csv files"
     dump(dbName, baseDir, progCallback=progCallback)
-    
+
 
 if __name__ == '__main__':
     dbName = 'database0.sqlite'

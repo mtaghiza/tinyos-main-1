@@ -1,0 +1,119 @@
+DatabaseInit() MainThread
+Reset device
+/dev/tty.usbserial-AE01B5K4
+-S 115200 -c /dev/tty.usbserial-AE01B5K4 -r
+Loaded bacon TLV e 0 c aa
+global name 'tinyos' is not defined
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 114, in dispatchPacket
+    gid=serial_pkt.get_header_group())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/mig/ReadBaconSensorResponseMsg.py", line 19, in __init__
+    tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
+None
+Loaded bacon TLV e 0 c a4
+['040000000000011C', 1600117811.949197, 'F25B92462B000B00', 32772, 1, 2211, 2583, 1662, 1938, 1330, 1551, 31647, 31646, 31637]
+Loaded bacon TLV e 0 c aa
+All serial listeners closed
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample

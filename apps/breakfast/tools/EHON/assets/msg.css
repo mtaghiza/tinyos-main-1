@@ -1,0 +1,51 @@
+.success-msg{
+    background-color: #f3f8e8;
+    color: #1E4B1C;
+    border-radius: 3px;
+    height: 4vh;
+    width: 80%;
+    font-size: large;
+    text-align: center;
+    vertical-align: center;
+    margin-left: 10%;
+    margin-bottom: 1vh;
+}
+
+.incomplete-msg{
+    background-color: #f5f3c2;
+    color: #774d0c;
+    border-radius: 3px;
+    height: 4vh;
+    width: 80%;
+    font-size: large;
+    text-align: center;
+    vertical-align: center;
+    margin-left: 10%;
+    margin-bottom: 1vh;
+}
+
+.battery-msg{
+    background-color: #f5dcbc;
+    color: #966e3a;
+    border-radius: 3px;
+    height: 4vh;
+    width: 80%;
+    font-size: large;
+    text-align: center;
+    vertical-align: center;
+    margin-left: 10%;
+    margin-bottom: 1vh;
+}
+
+.failure-msg{
+    background-color: #f8d3d1;
+    color: #774d0c;
+    border-radius: 3px;
+    height: 4vh;
+    width: 80%;
+    font-size: large;
+    text-align: center;
+    vertical-align: center;
+    margin-left: 10%;
+    margin-bottom: 1vh;
+}

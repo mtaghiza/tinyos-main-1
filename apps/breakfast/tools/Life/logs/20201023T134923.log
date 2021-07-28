@@ -1,0 +1,447 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+Note: mouse wheel not implemented on Mac OS
+PROG 1603475370.92 Network Discovery Started
+serial@/dev/tty.usbserial-JH000336:115200
+DatabaseMissing() discoverThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1
+receive fwd status 2
+Wakeup start 1603475373.29
+ACK 0
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+REF 1603475373.3 0 1176 1958 0 [276, 285]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x498]
+  [wakeupTS=0x7a6]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x114 0x11d 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475383.82 Contacted 0 (2 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1603475384.98  Node 0 transfer completed
+receive fwd status 2
+REF 1603475373.3 276 2 3430605561 0 [1, 285]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x2]
+  [wakeupTS=0xcc7ae2f9]
+  [pushCookie=0x19a22]
+  [writeCookie=0x34e3e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x14 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x11d 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475385.56 Contacted 114 (2 neighbors). 111644 queued, 0 in current request
+receive eos Message <CxEosReport> 
+  [owner=0x114]
+  [status=0x1]
+
+receive fwd status 2
+PROG 1603475386.50  Node 114 transfer completed
+REF 1603475373.3 285 11 3009563449 0 []
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0xb]
+  [wakeupTS=0xb3624b39]
+  [pushCookie=0x1dba4]
+  [writeCookie=0x3d5b4]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1d 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475387.18 Contacted 11d (0 neighbors). 129552 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11d]
+  [status=0x1]
+
+PROG 1603475388.05  Node 11d transfer completed
+receive fwd status 2
+REF 1603475373.3 1 1 323972105 0 [285]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x1]
+  [wakeupTS=0x134f6c09]
+  [pushCookie=0x4228a]
+  [writeCookie=0x4732a]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff ]
+  [neighbors=0x11d 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475388.76 Contacted 1 (1 neighbors). 20640 queued, 0 in current request
+receive fwd status 2
+RPR rx from 0 len 91 nc 67947 records 1
+Database.insertRecord() 0 67860 67947 86 25 [0, 0, 0, 128, 4, 152, 0, 0, 7, 166, 0, 0, 1, 20, 1, 29, 0, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 2 elapsed, commit255
+, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 1, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+FINISHED
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x1]
+
+PROG 1603475389.67  Node 1 transfer completed
+Cleaning up
+clearing
+receive fwd status 2
+Clearing RX Queue
+QUEUE CLEARED
+cleared
+finished
+waiting for db stop
+synchronous stop
+explicit close
+explicit closedb stopped
+
+done for real
+PROG 1603475391.50 Finished.
+PROG 1603475391.50 Download finished: 4/4 identified nodes contacted
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+PROG 1603475461.54 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-JH000336:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1603475463.9
+ACK 0
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+REF 1603475463.9 0 1177 1950 0 [285]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x499]
+  [wakeupTS=0x79e]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11d 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475469.30 Contacted 0 (1 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1603475470.55  Node 0 transfer completed
+Skip BS pseudo cookie
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11d]
+  [status=0x0]
+
+receive fwd status 2
+PROG 1603475472.11 Node 11d NOT reached
+REF 1603475463.9 0 1177 1950 0 [285]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x499]
+  [wakeupTS=0x79e]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11d 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1603475472.40 Contacted 0 (1 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1603475473.64  Node 0 transfer completed
+Skip BS pseudo cookie
+receive fwd status 2
+receive fwd status 2
+RPR rx from 0 len 91 nc 68034 records 1
+Database.insertRecord() 0 67947 68034 86 25 [0, 0, 1, 0, 4, 153, 0, 0, 7, 158, 0, 0, 1, 29, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+2 elapsed, commit
+FINISHED
+receive eos Message <CxEosReport> 
+  [owner=0x11d]
+  [status=0x0]
+
+PROG 1603475475.35 Node 11d NOT reached
+Cleaning up
+clearing
+receive fwd status 2
+Clearing RX Queue
+QUEUE CLEARED
+cleared
+finished
+waiting for db stop
+synchronous stop
+explicit close
+explicit closedb stopped
+
+done for real
+PROG 1603475477.17 Finished.
+PROG 1603475477.17 Download finished: 1/2 identified nodes contacted
+delete insert object, signal stop
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+PROG 1603475487.57 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-JH000336:115200
+DatabaseMissing() downloadThread
+delete insert object, signal stop
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1603475489.95
+ACK 7
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+RPR rx from 0 len 91 nc 68121 records 1
+Database.insertRecord() 0 68034 68121 86 0 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+No decoder for 0x0
+2 elapsed, commit
+FINISHED
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+explicit close
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2

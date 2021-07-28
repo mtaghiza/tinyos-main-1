@@ -1,0 +1,378 @@
+Tables do not exist, create tables
+Error reading file: database0.sqlite
+DatabaseInit() MainThread
+Reset device
+/dev/tty.usbserial-JH000336
+-S 115200 -c /dev/tty.usbserial-JH000336 -r
+ToastFrame: connection error
+All serial listeners closed
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+tools/firmware/toaster.ihex /dev/tty.usbserial-JH000336
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+20136 bytes programmed in 4.0sec, 39989bps
+Reset device
+auto programming done
+Reset device
+/dev/tty.usbserial-JH000336
+-S 115200 -c /dev/tty.usbserial-JH000336 -r
+Loaded bacon TLV e 0 c aa
+global name 'tinyos' is not defined
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 114, in dispatchPacket
+    gid=serial_pkt.get_header_group())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/mig/ReadBaconSensorResponseMsg.py", line 19, in __init__
+    tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
+None
+Loaded bacon TLV e 0 c a4
+['0400000000000117', 1601312182.16541, 'F25B924611000700', 32770, 1, 2264, 2624, 1697, 1968, 1361, 1575, 31772, 31780, 31763]
+Loaded bacon TLV e 0 c aa
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+New Multiplexer detected
+AdcFrame: no multiplexer adc settings
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+generic
+Response sent
+barcode
+Assignments
+type:  6
+['060000000000006D', 1601312228.09227, 32768, 0, 32824, 2991, 3535, 32889, 1793, 2127]
+barcode
+Assignments
+10932
+10933
+[[109, 109, None, None, None, None, None, None], [32, 33, None, None, None, None, None, None]]
+type:  6
+['060000000000006D', 1601312246.05544, 32768, 0, 32824, 2991, 3535, 32889, 1793, 2127]
+barcode
+Assignments
+10932
+10933
+[[109, 109, None, None, None, None, None, None], [32, 33, None, None, None, None, None, None]]
+Delete assignments failed
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+Loaded bacon TLV e 0 c aa
+Delete assignments failed
+Delete ID failed
+Delete DCO failed
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+Loaded bacon TLV e 0 c aa
+All serial listeners closed
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+Reset device
+/dev/tty.usbserial-JH000336
+-S 115200 -c /dev/tty.usbserial-JH000336 -r
+Loaded bacon TLV e 0 c aa
+global name 'tinyos' is not defined
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 114, in dispatchPacket
+    gid=serial_pkt.get_header_group())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/mig/ReadBaconSensorResponseMsg.py", line 19, in __init__
+    tinyos.message.Message.Message.__init__(self, data, addr, gid, base_offset, data_length)
+None
+Loaded bacon TLV e 0 c a4
+['0400000000000117', 1601312372.248772, 'F25B924611000700', 32770, 1, 2264, 2624, 1697, 1968, 1361, 1575, 31772, 31780, 31763]
+Loaded bacon TLV e 0 c aa
+#Assigned 40 to 0 0 0 0 0 0 0 0 
+generic
+Response sent
+generic
+Response sent
+barcode
+Assignments
+type:  6
+['060000000000006D', 1601312402.804261, 32768, 0, 32824, 2991, 3535, 32889, 1793, 2127]
+barcode
+Assignments
+10932
+10933
+[[109, 109, None, None, None, None, None, None], [32, 33, None, None, None, None, None, None]]
+Assignments
+10932
+10933
+['060000000000006D', [[109, 109, 0, 0, 0, 0, 0, 0], [32, 33, 0, 0, 0, 0, 0, 0]]]
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0xa2689]
+  [sample.sample=0x9cb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0xa4409]
+  [sample.sample=0xaa6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0xa634a]
+  [sample.sample=0x78d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0xa8149]
+  [sample.sample=0x7ef]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0xa9fc9]
+  [sample.sample=0x7e0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0xabf29]
+  [sample.sample=0x7ee]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0xadf69]
+  [sample.sample=0x7e0]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0xafea9]
+  [sample.sample=0x7ef]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0xb1e09]
+  [sample.sample=0x9cd]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0xb3d09]
+  [sample.sample=0xaa6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0xb5389]
+  [sample.sample=0x79a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0xb6e29]
+  [sample.sample=0x7e6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0xb8969]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0xba969]
+  [sample.sample=0x802]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0xbc429]
+  [sample.sample=0x7ee]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0xbe369]
+  [sample.sample=0x7f1]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0xc0369]
+  [sample.sample=0x9cc]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0xc1f29]
+  [sample.sample=0xaa5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0xc3e29]
+  [sample.sample=0x78d]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0xc5c89]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0xc7be9]
+  [sample.sample=0x7eb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0xc96a9]
+  [sample.sample=0x7e9]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0xcb809]
+  [sample.sample=0x7fa]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0xcd6e9]
+  [sample.sample=0x7f5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0xcefe9]
+  [sample.sample=0x9cb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x1]
+  [sample.sampleTime=0xd0d49]
+  [sample.sample=0xaa5]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x2]
+  [sample.sampleTime=0xd2c89]
+  [sample.sample=0x7b2]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x3]
+  [sample.sampleTime=0xd44a9]
+  [sample.sample=0x7ea]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x4]
+  [sample.sampleTime=0xd5ac9]
+  [sample.sample=0x80a]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x5]
+  [sample.sampleTime=0xd78a9]
+  [sample.sample=0x7f3]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x6]
+  [sample.sampleTime=0xd9789]
+  [sample.sample=0x7fb]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x7]
+  [sample.sampleTime=0xdb629]
+  [sample.sample=0x7f6]
+
+Message <ReadAnalogSensorResponseMsg> 
+  [sample.inputChannel=0x0]
+  [sample.sampleTime=0xdd489]
+  [sample.sample=0x9cc]
+
+ToastSampling: missed sample
+All serial listeners closed
+tools/firmware/leaf.ihex /dev/tty.usbserial-JH000336
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+CC430bsl exception
+CC430bsl exception
+Baud rate set to 115200
+BSL Version: Vendor TI(00), Interp 05, API 04, PI USCI_UART(52)
+Program ...
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+ToastSampling: missed sample
+32752 bytes programmed in 6.6sec, 39977bps
+Reset device

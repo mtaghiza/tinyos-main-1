@@ -1,0 +1,19 @@
+.progress-boundary{
+    background-color: #F1F1F1;
+    margin-top: 2vh;
+    height: 1.5vh;
+    width: 80%;
+    margin-left: 10%;
+    margin-bottom: 2vh;
+}
+
+.progress-inner {
+    background-color: #1D7ACA;
+    height: 1.5vh;
+    width: 40%;
+}
+
+.progress-text {
+    font-size: large;
+    color: #1D7ACA;
+}

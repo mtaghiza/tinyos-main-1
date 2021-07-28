@@ -1,0 +1,283 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(282, 614400, 0, 0)
+(281, 614400, 0, 0)
+(271, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000113', '0x0400000000000114', '0x040000000000011a', '0x0400000000000119', '0x040000000000010f', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+Note: mouse wheel not implemented on Mac OS
+PROG 1604523139.41 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-AE01B5K4:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+receive fwd status 2
+Wakeup start 1604523141.77
+ACK 0
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+receive fwd status 2
+REF 1604523141.78 0 1194 1964 0 [275, 271, 282, 284, 281, 285, 1, 276]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x4aa]
+  [wakeupTS=0x7ac]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x113 0x10f 0x11a 0x11c 0x119 0x11d 0x1 0x114 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1604523147.19 Contacted 0 (8 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x0]
+  [status=0x1]
+
+PROG 1604523148.43  Node 0 transfer completed
+Skip BS pseudo cookie
+REF 1604523141.78 275 9 211306764 0 [271, 282, 284, 281, 285, 1, 276]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x9]
+  [wakeupTS=0xc98490c]
+  [pushCookie=0x49348]
+  [writeCookie=0x49348]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x13 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x10f 0x11a 0x11c 0x119 0x11d 0x1 0x114 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1604523148.81 Contacted 113 (7 neighbors). 0 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x113]
+  [status=0x1]
+
+receive fwd status 2
+PROG 1604523149.98  Node 113 transfer completed
+REC 275 no gap
+REF 1604523141.78 271 2 209766202 0 [282, 284, 281, 272, 285, 1, 276]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x0]
+  [bw=0x2]
+  [wakeupRC=0x2]
+  [wakeupTS=0xc80c73a]
+  [pushCookie=0x457b2]
+  [writeCookie=0x457b2]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0xf 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11a 0x11c 0x119 0x110 0x11d 0x1 0x114 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1604523150.41 Contacted 10f (7 neighbors). 0 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x10f]
+  [status=0x1]
+
+PROG 1604523151.54  Node 10f transfer completed
+REC 271 no gap
+REF 1604523141.78 282 4 210148551 1 [284, 281, 285, 1, 276]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x4]
+  [wakeupTS=0xc869cc7]
+  [pushCookie=0x456d8]
+  [writeCookie=0x456e8]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1a 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11c 0x119 0x11d 0x1 0x114 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1604523151.97 Contacted 11a (5 neighbors). 16 queued, 0 in current request
+receive fwd status 2
+RPR rx from 282 len 20 nc 284392 records 1
+Database.insertRecord() 282 284376 284392 15 22 [28, 1, 4, 0, 91, 0, 36, 54, 134, 12, 215, 192, 186, 12]
+Decoded Phoenix Ref [0x1c, 0x1, 0x4, 0x0, 0x5b, 0x0, 0x24, 0x36, 0x86, 0xc, 0xd7, 0xc0, 0xba, 0xc] to [0x11a, 0x456d8, 0x11c, 0x4, 0x5b, 0xc863624, 0xcbac0d7]
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11a]
+  [status=0x1]
+
+PROG 1604523153.11  Node 11a transfer completed
+REC 282 no gap
+REF 1604523141.78 284 91 213593074 1 [285, 1, 276]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x5b]
+  [wakeupTS=0xcbb2bf2]
+  [pushCookie=0x5389e]
+  [writeCookie=0x538c8]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1c 0x1 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11d 0x1 0x114 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1604523153.54 Contacted 11c (3 neighbors). 42 queued, 0 in current request
+2 elapsed, commit
+RPR rx from 284 len 32 nc 342202 records 1
+Database.insertRecord() 284 342174 342202 27 18 [91, 0, 99, 197, 185, 12, 18, 0, 0, 0, 0, 0, 0, 5, 124, 2, 140, 2, 97, 5, 224, 6, 47, 12, 66, 12]
+RPR rx from 284 len 18 nc 342216 records 1
+Database.insertRecord() 284 342202 342216 13 20 [91, 0, 79, 176, 186, 12, 11, 12, 218, 9, 174, 4]
+Decoded Bacon Sample [0x5b, 0x0, 0x4f, 0xb0, 0xba, 0xc, 0xb, 0xc, 0xda, 0x9, 0xae, 0x4] to [0x11c, 0x538ba, 0x5b, 0xcbab04f, 0xc0b, 0x9da, 0x4ae]
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11c]
+  [status=0x1]
+
+PROG 1604523154.71  Node 11c transfer completed
+REC 284 no gap
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x119]
+  [status=0x0]
+
+PROG 1604523156.20 Node 119 NOT reached
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11d]
+  [status=0x0]
+
+PROG 1604523157.84 Node 11d NOT reached
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x0]
+
+PROG 1604523159.39 Node 1 NOT reached
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x114]
+  [status=0x0]
+
+receive fwd status 2
+PROG 1604523160.96 Node 114 NOT reached
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x110]
+  [status=0x0]
+
+PROG 1604523162.48 Node 110 NOT reached
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x119]
+  [status=0x0]
+
+PROG 1604523164.02 Node 119 NOT reached
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11d]
+  [status=0x0]
+
+PROG 1604523165.59 Node 11d NOT reached
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x0]
+
+PROG 1604523167.22 Node 1 NOT reached
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x114]
+  [status=0x0]
+
+PROG 1604523168.74 Node 114 NOT reached
+receive fwd status 2
+receive fwd status 2
+RPR rx from 0 len 91 nc 68904 records 1
+Database.insertRecord() 0 68817 68904 86 25 [0, 0, 1, 0, 4, 170, 0, 0, 7, 172, 0, 0, 1, 19, 1, 15, 1, 26, 1, 28, 1, 25, 1, 29, 0, 1, 1, 20, 1, 16, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 1, 1, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+2 elapsed, commit
+FINISHED
+receive eos Message <CxEosReport> 
+  [owner=0x110]
+  [status=0x0]
+
+PROG 1604523170.50 Node 110 NOT reached
+Cleaning up
+clearing
+receive fwd status 2
+Clearing RX Queue
+QUEUE CLEARED
+cleared
+finished
+waiting for db stop
+synchronous stop
+explicit close
+explicit closedb stopped
+
+done for real
+PROG 1604523172.14 Finished.
+PROG 1604523172.15 Download finished: 5/10 identified nodes contacted
+selection:  []
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(282, 614400, 0, 0)
+(281, 614400, 0, 0)
+(271, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000113', '0x0400000000000114', '0x040000000000011a', '0x0400000000000119', '0x040000000000010f', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+delete insert object, signal stop

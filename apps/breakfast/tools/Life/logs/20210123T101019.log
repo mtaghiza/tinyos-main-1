@@ -1,0 +1,1366 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 95, 0)
+(6, 30720, 0, 2)
+(18, 614400, 95, 0)
+(2, 614400, 0, 0)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000002', '0x0400000000000001'], 2: ['0x0400000000000006']}, 95: {0: ['0x0400000000000008', '0x0400000000000012']}}
+0x0400000000000008 0 0x0500000000000008
+Note: mouse wheel not implemented on Mac OS
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 95, 0)
+(6, 30720, 0, 2)
+(18, 614400, 95, 0)
+(2, 614400, 223, 0)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000001'], 2: ['0x0400000000000006']}, 223: {0: ['0x0400000000000002']}, 95: {0: ['0x0400000000000008', '0x0400000000000012']}}
+0x0400000000000008 0 0x0500000000000008
+PROG 1611414635.61 Committing settings changes, please wait.
+Check modifications for 0x0400000000000011 (17)
+Check modifications for 0x0400000000000008 (8)
+Check modifications for 0x0400000000000006 (6)
+Check modifications for 0x0400000000000012 (18)
+Check modifications for 0x0400000000000002 (2)
+Leaf 0x0400000000000002 Channel 0 -> 223
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 0 -> 0
+Check modifications for 0x0400000000000001 (1)
+serial@/dev/tty.Bluetooth-Incoming-Port:115200
+DatabaseMissing() commitThread
+PROG 1611414638.87 Could not connect to base station.
+      Make sure you've selected the right device and make sure
+      it has been set up as a base station.
+     PROG 1611414638.88 Download finished: 0/0 identified nodes contacted
+Exception in thread commitThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 674, in commitChangesRunner
+    outboundCallback = self.outboundCallback)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 123, in download
+    d = Dispatcher(packetSource, db, configMap=configMap, configFile=configFile)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 96, in __init__
+    raise Exception("Connected mote did not respond to ID request (has it been set up as a BaseStation?")
+Exception: Connected mote did not respond to ID request (has it been set up as a BaseStation?
+
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 95, 0)
+(6, 30720, 0, 2)
+(18, 614400, 95, 0)
+(2, 614400, 0, 0)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000002', '0x0400000000000001'], 2: ['0x0400000000000006']}, 95: {0: ['0x0400000000000008', '0x0400000000000012']}}
+0x0400000000000008 0 0x0500000000000008
+selection:  []
+(17, 614400, 0, 0)
+(8, 614400, 95, 0)
+(6, 30720, 0, 2)
+(18, 614400, 95, 0)
+(2, 614400, 191, 0)
+(1, 614400, 0, 0)
+Channel maps {0: {0: ['0x0400000000000011', '0x0400000000000001'], 2: ['0x0400000000000006']}, 191: {0: ['0x0400000000000002']}, 95: {0: ['0x0400000000000008', '0x0400000000000012']}}
+0x0400000000000008 0 0x0500000000000008
+PROG 1611414652.46 Committing settings changes, please wait.
+Check modifications for 0x0400000000000011 (17)
+Check modifications for 0x0400000000000008 (8)
+Check modifications for 0x0400000000000006 (6)
+Check modifications for 0x0400000000000012 (18)
+Check modifications for 0x0400000000000002 (2)
+Leaf 0x0400000000000002 Channel 0 -> 191
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 0 -> 0
+Check modifications for 0x0400000000000001 (1)
+serial@/dev/tty.usbserial-AE01BDNV:115200
+DatabaseMissing() commitThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+RPR rx from 2 len 72 nc 146564 records 4
+Database.insertRecord() 2 146508 146522 13 20 [130, 6, 76, 208, 77, 120, 193, 11, 44, 6, 135, 5]
+No decoder for 0x14
+Database.insertRecord() 2 146522 146536 13 20 [130, 6, 76, 48, 87, 120, 191, 11, 32, 6, 136, 5]
+No decoder for 0x14
+Database.insertRecord() 2 146536 146550 13 20 [130, 6, 76, 144, 96, 120, 186, 11, 21, 6, 137, 5]
+No decoder for 0x14
+Database.insertRecord() 2 146550 146564 13 20 [130, 6, 76, 240, 105, 120, 194, 11, 102, 6, 135, 5]
+No decoder for 0x14
+RPR rx from 2 len 74 nc 146622 records 4
+Database.insertRecord() 2 146564 146580 15 22 [17, 0, 130, 6, 10, 0, 207, 237, 106, 120, 86, 191, 141, 120]
+No decoder for 0x16
+Database.insertRecord() 2 146580 146594 13 20 [130, 6, 76, 80, 115, 120, 194, 11, 69, 6, 134, 5]
+No decoder for 0x14
+Database.insertRecord() 2 146594 146608 13 20 [130, 6, 76, 176, 124, 120, 192, 11, 53, 6, 127, 5]
+No decoder for 0x14
+Database.insertRecord() 2 146608 146622 13 20 [130, 6, 76, 16, 134, 120, 194, 11, 11, 6, 129, 5]
+No decoder for 0x14
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x2]
+  [status=0x2]
+
+receive fwd status 2
+Setting MDR to  1000
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+receive fwd status 2
+Wakeup start 1611414654.78
+PROG 1611414654.79  Node 2 transfer continues
+TXQ PUT (<tinyos.packet.SerialSource.SerialSource instance at 0x7fcb87db8410>, 2, <tools.cx.messages.SetProbeSchedule.SetProbeSchedule instance at 0x7fcb87db1050>)
+PROG 1611414654.79 Sent settings-change to 2.
+PROG 1611414654.80  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1259a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414654.82 Contacted 1 (1 neighbors). 688324 queued, 0 in current request
+ACK 7
+TXQ SW TX 2 2 0
+2 elapsed, commit
+receive fwd status 1
+receive fwd status 1
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414656.02  Node 1 transfer continues
+REF 1611414654.78 2 1666 3333695789 1 []
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x682]
+  [wakeupTS=0xc6b4292d]
+  [pushCookie=0x23cbe]
+  [writeCookie=0x65560]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x2 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414656.45 Contacted 2 (0 neighbors). 268450 queued, 0 in current request
+RPR rx from 2 len 72 nc 146678 records 4
+Database.insertRecord() 2 146622 146636 13 20 [130, 6, 76, 112, 143, 120, 192, 11, 7, 6, 126, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0x8f, 0x78, 0xc0, 0xb, 0x7, 0x6, 0x7e, 0x5] to [0x2, 0x23cbe, 0x682, 0x788f704c, 0xbc0, 0x607, 0x57e]
+Database.insertRecord() 2 146636 146650 13 20 [130, 6, 76, 208, 152, 120, 192, 11, 243, 5, 111, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0x98, 0x78, 0xc0, 0xb, 0xf3, 0x5, 0x6f, 0x5] to [0x2, 0x23ccc, 0x682, 0x7898d04c, 0xbc0, 0x5f3, 0x56f]
+Database.insertRecord() 2 146650 146664 13 20 [130, 6, 76, 48, 162, 120, 192, 11, 222, 5, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0xa2, 0x78, 0xc0, 0xb, 0xde, 0x5, 0x7c, 0x5] to [0x2, 0x23cda, 0x682, 0x78a2304c, 0xbc0, 0x5de, 0x57c]
+Database.insertRecord() 2 146664 146678 13 20 [130, 6, 76, 144, 171, 120, 191, 11, 195, 5, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0xab, 0x78, 0xbf, 0xb, 0xc3, 0x5, 0x7c, 0x5] to [0x2, 0x23ce8, 0x682, 0x78ab904c, 0xbbf, 0x5c3, 0x57c]
+RPR rx from 2 len 72 nc 146734 records 4
+Database.insertRecord() 2 146678 146692 13 20 [130, 6, 76, 240, 180, 120, 192, 11, 169, 5, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xf0, 0xb4, 0x78, 0xc0, 0xb, 0xa9, 0x5, 0x7c, 0x5] to [0x2, 0x23cf6, 0x682, 0x78b4f04c, 0xbc0, 0x5a9, 0x57c]
+Database.insertRecord() 2 146692 146706 13 20 [130, 6, 76, 80, 190, 120, 192, 11, 138, 5, 107, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0xbe, 0x78, 0xc0, 0xb, 0x8a, 0x5, 0x6b, 0x5] to [0x2, 0x23d04, 0x682, 0x78be504c, 0xbc0, 0x58a, 0x56b]
+Database.insertRecord() 2 146706 146720 13 20 [130, 6, 76, 176, 199, 120, 191, 11, 120, 5, 106, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0xc7, 0x78, 0xbf, 0xb, 0x78, 0x5, 0x6a, 0x5] to [0x2, 0x23d12, 0x682, 0x78c7b04c, 0xbbf, 0x578, 0x56a]
+Database.insertRecord() 2 146720 146734 13 20 [130, 6, 76, 16, 209, 120, 193, 11, 68, 5, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0xd1, 0x78, 0xc1, 0xb, 0x44, 0x5, 0x7c, 0x5] to [0x2, 0x23d20, 0x682, 0x78d1104c, 0xbc1, 0x544, 0x57c]
+RPR rx from 2 len 74 nc 146792 records 4
+Database.insertRecord() 2 146734 146748 13 20 [130, 6, 76, 112, 218, 120, 191, 11, 38, 5, 117, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0xda, 0x78, 0xbf, 0xb, 0x26, 0x5, 0x75, 0x5] to [0x2, 0x23d2e, 0x682, 0x78da704c, 0xbbf, 0x526, 0x575]
+Database.insertRecord() 2 146748 146764 15 22 [1, 0, 130, 6, 35, 0, 158, 110, 219, 120, 116, 7, 227, 120]
+Decoded Phoenix Ref [0x1, 0x0, 0x82, 0x6, 0x23, 0x0, 0x9e, 0x6e, 0xdb, 0x78, 0x74, 0x7, 0xe3, 0x78] to [0x2, 0x23d3c, 0x1, 0x682, 0x23, 0x78db6e9e, 0x78e30774]
+Database.insertRecord() 2 146764 146778 13 20 [130, 6, 76, 208, 227, 120, 191, 11, 4, 5, 120, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0xe3, 0x78, 0xbf, 0xb, 0x4, 0x5, 0x78, 0x5] to [0x2, 0x23d4c, 0x682, 0x78e3d04c, 0xbbf, 0x504, 0x578]
+Database.insertRecord() 2 146778 146792 13 20 [130, 6, 76, 48, 237, 120, 190, 11, 213, 4, 125, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0xed, 0x78, 0xbe, 0xb, 0xd5, 0x4, 0x7d, 0x5] to [0x2, 0x23d5a, 0x682, 0x78ed304c, 0xbbe, 0x4d5, 0x57d]
+receive fwd status 1
+RPR rx from 2 len 72 nc 146848 records 4
+Database.insertRecord() 2 elapsed, commit
+2 146792 146806 13 20 [130, 6, 76, 144, 246, 120, 194, 11, 175, 4, 125, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0xf6, 0x78, 0xc2, 0xb, 0xaf, 0x4, 0x7d, 0x5] to [0x2, 0x23d68, 0x682, 0x78f6904c, 0xbc2, 0x4af, 0x57d]
+Database.insertRecord() 2 146806 146820 13 20 [130, 6, 76, 240, 255, 120, 193, 11, 183, 4, 123, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xf0, 0xff, 0x78, 0xc1, 0xb, 0xb7, 0x4, 0x7b, 0x5] to [0x2, 0x23d76, 0x682, 0x78fff04c, 0xbc1, 0x4b7, 0x57b]
+Database.insertRecord() 2 146820 146834 13 20 [130, 6, 76, 80, 9, 121, 191, 11, 162, 4, 115, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0x9, 0x79, 0xbf, 0xb, 0xa2, 0x4, 0x73, 0x5] to [0x2, 0x23d84, 0x682, 0x7909504c, 0xbbf, 0x4a2, 0x573]
+Database.insertRecord() 2 146834 146848 13 20 [130, 6, 76, 176, 18, 121, 190, 11, 170, 4, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0x12, 0x79, 0xbe, 0xb, 0xaa, 0x4, 0x7c, 0x5] to [0x2, 0x23d92, 0x682, 0x7912b04c, 0xbbe, 0x4aa, 0x57c]
+RPR rx from 2 len 74 nc 146906 records 4
+Database.insertRecord() 2 146848 146864 15 22 [8, 0, 130, 6, 7, 0, 249, 174, 19, 121, 57, 22, 211, 120]
+Decoded Phoenix Ref [0x8, 0x0, 0x82, 0x6, 0x7, 0x0, 0xf9, 0xae, 0x13, 0x79, 0x39, 0x16, 0xd3, 0x78] to [0x2, 0x23da0, 0x8, 0x682, 0x7, 0x7913aef9, 0x78d31639]
+Database.insertRecord() 2 146864 146878 13 20 [130, 6, 76, 16, 28, 121, 189, 11, 133, 4, 123, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0x1c, 0x79, 0xbd, 0xb, 0x85, 0x4, 0x7b, 0x5] to [0x2, 0x23db0, 0x682, 0x791c104c, 0xbbd, 0x485, 0x57b]
+Database.insertRecord() 2 146878 146892 13 20 [130, 6, 76, 112, 37, 121, 191, 11, 121, 4, 132, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0x25, 0x79, 0xbf, 0xb, 0x79, 0x4, 0x84, 0x5] to [0x2, 0x23dbe, 0x682, 0x7925704c, 0xbbf, 0x479, 0x584]
+Database.insertRecord() 2 146892 146906 13 20 [130, 6, 76, 208, 46, 121, 193, 11, 87, 4, 111, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0x2e, 0x79, 0xc1, 0xb, 0x57, 0x4, 0x6f, 0x5] to [0x2, 0x23dcc, 0x682, 0x792ed04c, 0xbc1, 0x457, 0x56f]
+RPR rx from 2 len 74 nc 146964 records 4
+Database.insertRecord() 2 146906 146920 13 20 [130, 6, 76, 48, 56, 121, 192, 11, 44, 4, 129, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0x38, 0x79, 0xc0, 0xb, 0x2c, 0x4, 0x81, 0x5] to [0x2, 0x23dda, 0x682, 0x7938304c, 0xbc0, 0x42c, 0x581]
+Database.insertRecord() 2 146920 146934 13 20 [130, 6, 76, 144, 65, 121, 191, 11, 22, 4, 127, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0x41, 0x79, 0xbf, 0xb, 0x16, 0x4, 0x7f, 0x5] to [0x2, 0x23de8, 0x682, 0x7941904c, 0xbbf, 0x416, 0x57f]
+Database.insertRecord() 2 146934 146948 13 20 [130, 6, 76, 240, 74, 121, 192, 11, 63, 4, 129, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xf0, 0x4a, 0x79, 0xc0, 0xb, 0x3f, 0x4, 0x81, 0x5] to [0x2, 0x23df6, 0x682, 0x794af04c, 0xbc0, 0x43f, 0x581]
+Database.insertRecord() 2 146948 146964 15 22 [17, 0, 130, 6, 10, 0, 227, 238, 75, 121, 74, 192, 110, 121]
+Decoded Phoenix Ref [0x11, 0x0, 0x82, 0x6, 0xa, 0x0, 0xe3, 0xee, 0x4b, 0x79, 0x4a, 0xc0, 0x6e, 0x79] to [0x2, 0x23e04, 0x11, 0x682, 0xa, 0x794beee3, 0x796ec04a]
+RPR rx from 2 len 72 nc 147020 records 4
+Database.insertRecord() 2 146964 146978 13 20 [130, 6, 76, 80, 84, 121, 191, 11, 26, 4, 131, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x50, 0x54, 0x79, 0xbf, 0xb, 0x1a, 0x4, 0x83, 0x5] to [0x2, 0x23e14, 0x682, 0x7954504c, 0xbbf, 0x41a, 0x583]
+Database.insertRecord() 2 146978 146992 13 20 [130, 6, 76, 176, 93, 121, 191, 11, 13, 4, 128, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xb0, 0x5d, 0x79, 0xbf, 0xb, 0xd, 0x4, 0x80, 0x5] to [0x2, 0x23e22, 0x682, 0x795db04c, 0xbbf, 0x40d, 0x580]
+Database.insertRecord() 2 146992 147006 13 20 [130, 6, 76, 16, 103, 121, 191, 11, 250, 3, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x10, 0x67, 0x79, 0xbf, 0xb, 0xfa, 0x3, 0x7c, 0x5] to [0x2, 0x23e30, 0x682, 0x7967104c, 0xbbf, 0x3fa, 0x57c]
+Database.insertRecord() 2 147006 147020 13 20 [130, 6, 76, 112, 112, 121, 192, 11, 219, 3, 104, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x70, 0x70, 0x79, 0xc0, 0xb, 0xdb, 0x3, 0x68, 0x5] to [0x2, 0x23e3e, 0x682, 0x7970704c, 0xbc0, 0x3db, 0x568]
+RPR rx from 2 len 74 nc 147078 records 4
+Database.insertRecord() 2 147020 147034 13 20 [130, 6, 76, 208, 121, 121, 193, 11, 198, 3, 127, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0xd0, 0x79, 0x79, 0xc1, 0xb, 0xc6, 0x3, 0x7f, 0x5] to [0x2, 0x23e4c, 0x682, 0x7979d04c, 0xbc1, 0x3c6, 0x57f]
+Database.insertRecord() 2 147034 147048 13 20 [130, 6, 76, 48, 131, 121, 191, 11, 182, 3, 124, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x30, 0x83, 0x79, 0xbf, 0xb, 0xb6, 0x3, 0x7c, 0x5] to [0x2, 0x23e5a, 0x682, 0x7983304c, 0xbbf, 0x3b6, 0x57c]
+Database.insertRecord() 2 147048 147064 15 22 [1, 0, 130, 6, 35, 0, 37, 48, 132, 121, 151, 192, 139, 121]
+Decoded Phoenix Ref [0x1, 0x0, 0x82, 0x6, 0x23, 0x0, 0x25, 0x30, 0x84, 0x79, 0x97, 0xc0, 0x8b, 0x79] to [0x2, 0x23e68, 0x1, 0x682, 0x23, 0x79843025, 0x798bc097]
+Database.insertRecord() 2 147064 147078 13 20 [130, 6, 76, 144, 140, 121, 190, 11, 171, 3, 131, 5]
+Decoded Bacon Sample [0x82, 0x6, 0x4c, 0x90, 0x8c, 0x79, 0xbe, 0xb, 0xab, 0x3, 0x83, 0x5] to [0x2, 0x23e78, 0x682, 0x798c904c, 0xbbe, 0x3ab, 0x583]
+receive eos Message <CxEosReport> 
+  [owner=0x2]
+  [status=0x2]
+
+PROG 1611414657.57  Node 2 transfer continues
+receive fwd status 1
+REF 1611414654.78 6 38 1977 1 [17, 1, 2]
+Status Message <CxStatus> 
+  [distance=0x0]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x26]
+  [wakeupTS=0x7b9]
+  [pushCookie=0x0]
+  [writeCookie=0x0]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x7800]
+  [role=0x2]
+  [barcode=0x6 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x11 0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414657.87 Contacted 6 (3 neighbors). 0 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x6]
+  [status=0x1]
+
+PROG 1611414659.09  Node 6 transfer completed
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x11f7c]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414659.57 Contacted 11 (2 neighbors). 391058 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414660.67  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1276a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414661.09 Contacted 1 (1 neighbors). 687860 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414662.25  Node 1 transfer continues
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x2]
+  [status=0x0]
+
+PROG 1611414663.77 Node 2 NOT reached
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x12234]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414664.20 Contacted 11 (2 neighbors). 390362 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414665.38  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1293a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414665.76 Contacted 1 (1 neighbors). 687396 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414666.91  Node 1 transfer continues
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x2]
+  [status=0x0]
+
+PROG 1611414668.48 Node 2 NOT reached
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x124d6]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+2 elapsed, commit
+PROG 1611414668.87 Contacted 11 (2 neighbors). 389688 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414670.07  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x12b0a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414670.45 Contacted 1 (1 neighbors). 686932 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414671.66  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x126f4]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414672.05 Contacted 11 (2 neighbors). 389146 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414673.21  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x12cda]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414673.58 Contacted 1 (1 neighbors). 686468 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414674.75  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x12912]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+2 elapsed, commit
+PROG 1611414675.13 Contacted 11 (2 neighbors). 388604 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414676.28  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x12eaa]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414676.70 Contacted 1 (1 neighbors). 686004 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414677.88  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x12b30]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414678.31 Contacted 11 (2 neighbors). 388062 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414679.45  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x130ca]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414679.84 Contacted 1 (1 neighbors). 685460 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414680.98  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x12d50]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414681.40 Contacted 11 (2 neighbors). 387518 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414682.54  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x13348]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414682.97 Contacted 1 (1 neighbors). 684822 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414684.13  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x12f6e]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414684.54 Contacted 11 (2 neighbors). 386976 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+receive fwd status 2
+PROG 1611414685.70  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x135be]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414686.12 Contacted 1 (1 neighbors). 684192 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414687.24  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x13224]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414687.67 Contacted 11 (2 neighbors). 386282 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414688.79  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1378e]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414689.22 Contacted 1 (1 neighbors). 683728 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414690.38  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1350c]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414690.75 Contacted 11 (2 neighbors). 385538 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414691.93  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1395e]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414692.30 Contacted 1 (1 neighbors). 683264 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414693.50  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1372a]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414693.92 Contacted 11 (2 neighbors). 384996 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414695.11  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x13b2e]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414695.43 Contacted 1 (1 neighbors). 682800 queued, 0 in current request
+explicit close
+delete insert object, signal stop
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414696.68  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1394a]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414697.08 Contacted 11 (2 neighbors). 384452 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414698.18  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x13cfe]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414698.61 Contacted 1 (1 neighbors). 682336 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414699.71  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x13b68]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414700.19 Contacted 11 (2 neighbors). 383910 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414701.34  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x13ed6]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414701.71 Contacted 1 (1 neighbors). 681864 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414702.89  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x13d82]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414703.26 Contacted 11 (2 neighbors). 383372 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414704.47  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x140ee]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414704.84 Contacted 1 (1 neighbors). 681328 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414706.03  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x13fa0]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414706.40 Contacted 11 (2 neighbors). 382830 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414707.53  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1436c]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414707.97 Contacted 1 (1 neighbors). 680690 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414709.17  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1425a]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414709.54 Contacted 11 (2 neighbors). 382132 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414710.70  Node 11 transfer continues
+receive fwd status 2
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x145b8]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414711.09 Contacted 1 (1 neighbors). 680102 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414712.27  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x144fc]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414712.65 Contacted 11 (2 neighbors). 381458 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414713.82  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x147ca]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414714.19 Contacted 1 (1 neighbors). 679572 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414715.42  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1471c]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414715.74 Contacted 11 (2 neighbors). 380914 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414716.92  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x1499a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414717.34 Contacted 1 (1 neighbors). 679108 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414718.51  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x1493a]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414718.91 Contacted 11 (2 neighbors). 380372 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414720.06  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x14b6a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414720.43 Contacted 1 (1 neighbors). 678644 queued, 0 in current request
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414721.65  Node 1 transfer continues
+receive fwd status 2
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x14b54]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414722.00 Contacted 11 (2 neighbors). 379834 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414723.19  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x14d3a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414723.56 Contacted 1 (1 neighbors). 678180 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+PROG 1611414724.74  Node 1 transfer continues
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x14d72]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414725.16 Contacted 11 (2 neighbors). 379292 queued, 0 in current request
+2 elapsed, commit
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x11]
+  [status=0x2]
+
+PROG 1611414726.40  Node 11 transfer continues
+REF 1611414654.78 1 35 3335325151 1 [2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0x23]
+  [wakeupTS=0xc6cd05df]
+  [pushCookie=0x14f0a]
+  [writeCookie=0xba65e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x1 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+PROG 1611414726.72 Contacted 1 (1 neighbors). 677716 queued, 0 in current request
+receive fwd status 2
+receive fwd status 2
+receive eos Message <CxEosReport> 
+  [owner=0x1]
+  [status=0x2]
+
+Cleaning up
+clearing
+REF 1611414654.78 17 10 3340474084 1 [1, 2]
+Status Message <CxStatus> 
+  [distance=0x1]
+  [dataPending=0x1]
+  [bw=0x2]
+  [wakeupRC=0xa]
+  [wakeupTS=0xc71b96e4]
+  [pushCookie=0x14f92]
+  [writeCookie=0x7170e]
+  [missingLength=0x0]
+  [subnetChannel=0x0]
+  [sampleInterval=0x96000]
+  [role=0x0]
+  [barcode=0x11 0x0 0x0 0x0 0x0 0x0 0x0 0x4 ]
+  [neighbors=0x1 0x2 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff 0xffff ]
+
+2 elapsed, commit
+PROG 1611414728.35 Contacted 11 (2 neighbors). 378748 queued, 0 in current request
+receive fwd status 2
+Clearing RX Queue
+QUEUE CLEARED
+cleared
+finished
+waiting for db stop
+synchronous stop
+explicit close
+explicit closedb stopped
+
+Exception in thread commitThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 674, in commitChangesRunner
+    outboundCallback = self.outboundCallback)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/CXController.py", line 167, in download
+    eosCallBack(node, eos.get_status())
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 606, in eosCallBack
+    self.progressMessage(" Node %x transfer continues\n"%(node,))
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 115, in progressMessage
+    self.progressWindow.addMessage(message)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 74, in addMessage
+    self.messageText.insert(END, message)
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/lib-tk/Tkinter.py", line 3115, in insert
+    self.tk.call((self._w, 'insert', index, chars) + args)
+TclError: invalid command name ".140512134415616.140512134507328.140512134507168"
+

@@ -33,8 +33,8 @@
 import Queue
 import time
 import os
-from threading import Thread
-from Tkinter import StringVar, IntVar
+# from threading import Thread
+# from Tkinter import StringVar, IntVar
 
 from tools.CC430bsl.CC430bsl import CC430bsl
 from tools.CC430bsl.Progress import Progress
@@ -42,64 +42,71 @@ from tools.labeler.Bacon import Bacon
 from tools.labeler.Toast import Toast
 from tools.labeler.ToastSampling import ToastSampling
 from tools.labeler.BreakfastError import *
-from tools.labeler.Dispatcher import Dispatcher 
+from tools.labeler.Dispatcher import Dispatcher
 from tools.labeler.Database import Database
 
 
 class Handler(object):
 
-    def __init__(self, root):
+    def __init__(self):
         self.bacon = None
         self.toast = None
         self.autoToast = False
-        self.root = root
         self.currentProgress = 0
         self.database = Database()
 
         self.baconIdStr = ""
         self.mfrStr = ""
         self.baconAdcList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        
+
         self.toastIdStr = ""
         self.toastAdcList = [0, 0, 0, 0, 0, 0, 0, 0]
-        
-        self.baconSensorType = ["","","",""]
-        self.toastSensorType = ["","","","","","","",""]
-        
+
+        self.baconSensorType = ["", "", "", ""]
+        self.toastSensorType = ["", "", "", "", "", "", "", ""]
+
         self.cleanup = False
         self.autoToastDone = False
         self.maintenanceLoop()
+        self.programmingStatus = False
 
-        self.toastType = IntVar()
-        self.dbgVar = StringVar()
+        # self.toastType = IntVar()
+        # self.dbgVar = StrVar()
+        self.toastType = 0
+        self.dbgVar = ""
 
         self.TYPE_TOAST = 5
         self.TYPE_MINITOAST = 6
 
+        self.programming = False
+
     def maintenanceLoop(self):
-        #print "loop"
+        # print "loop"
 
         if self.cleanup:
             print "clean up"
             self.cleanup = False
             self.busy()
             Dispatcher.stopAll()
-            self.menuFrame.disconnect()
+            # self.menuFrame.disconnect()
             self.notbusy()
-        
+
         if self.autoToastDone:
             print "auto programming done"
             self.autoToastDone = False
-            self.menuFrame.connect()
-        
-        self.root.after(1000, self.maintenanceLoop)
+            # self.menuFrame.connect()
+
+        # self.root.after(1000, self.maintenanceLoop)
 
     def busy(self):
-        self.root.config(cursor="watch")
+        # self.root.config(cursor="watch")
+        pass
 
     def notbusy(self):
-        self.root.config(cursor="")
+        # self.root.config(cursor="")
+        pass
 
+    '''
     def addMenuFrame(self, menu):
         self.menuFrame = menu
 
@@ -114,38 +121,39 @@ class Handler(object):
 
     def addAdcFrame(self, adc):
         self.adcFrame = adc
-        
-#     def addTextFrame(self, textframe)
-#         self.textframe = textframe
+    '''
+
+    #     def addTextFrame(self, textframe)
+    #         self.textframe = textframe
 
     def connect(self, port):
+        "try to connect to toast"
         self.currentPort = port
         input = "-S 115200 -c %s -r" % self.currentPort
-        
+
         cc430 = CC430bsl(input, self.resetDone)
         cc430.start()
         cc430.join()
-        
+
         print self.currentPort
         print input
-        
+
         time.sleep(1)
-        
+
+        print("initializing bacon and toast")
         self.bacon = Bacon('serial@%s:115200' % self.currentPort, self.signalError)
         self.toast = Toast('serial@%s:115200' % self.currentPort)
-        
-        self.baconFrame.connectSignal(True)
-        self.toastFrame.connectSignal(True)
-        
-        if self.autoToast:
-            self.autoToast = False
+
+        try:
+            mfrStr = self.getMfrID()
+            self.autoToastDone=True
+        except Exception:
+            print("connection error")
             self.disconnect()
-            time.sleep(1)
-            
-            toaster_file = os.path.join('tools', 'firmware', 'toaster.ihex')        
+            toaster_file = os.path.join('tools', 'firmware', 'toaster.ihex')
+            print("programming toaster started")
             self.program(toaster_file, self.currentPort, self.programToasterDone)
-        else:   
-            self.notbusy()
+            print("after programming toaster started")
 
     def programToaster(self):
         self.autoToast = True
@@ -154,12 +162,15 @@ class Handler(object):
         pass
 
     def programToasterDone(self, status):
+        print("program toaster done")
         self.autoToastDone = True
+        self.programming=False
+        self.connect(self.currentPort)
 
     def signalError(self):
         self.cleanup = True
 
-    def disconnect(self):        
+    def disconnect(self):
         try:
             self.toast.powerOff()
         except:
@@ -172,17 +183,21 @@ class Handler(object):
             self.bacon.stop()
         except:
             pass
-        
+
         self.debugMsg("disconnecting...")
         # order is important
-        self.graphFrame.sample()
-#        self.toastFrame.connectSignal(False)
-        self.graphFrame.connectSignal(False)
-        self.baconFrame.connectSignal(False)
-        self.adcFrame.connectSignal(False)
-        self.toastFrame.connectSignal(False)
+        # self.graphFrame.sample()
+        #        self.toastFrame.connectSignal(False)
+        # self.graphFrame.connectSignal(False)
+        # self.baconFrame.connectSignal(False)
+        # self.adcFrame.connectSignal(False)
+        # self.toastFrame.connectSignal(False)
         self.debugMsg("USB device found, press any menu button to start")
 
+    def programDone(self, status):
+        print("program done")
+        self.programming = False
+        self.programmingStatus = status
 
     #
     # Bacon
@@ -196,62 +211,73 @@ class Handler(object):
 
     def getBaconADCSettings(self):
         adc = self.bacon.readAdcC()
-        
-        self.baconAdcList = []
-        for i in range(0,16,2):
-            self.baconAdcList.append((adc[i+1] << 8) + adc[i])
 
-        for i in range(18,24,2):
-            self.baconAdcList.append((adc[i+1] << 8) + adc[i])
+        self.baconAdcList = []
+        for i in range(0, 16, 2):
+            self.baconAdcList.append((adc[i + 1] << 8) + adc[i])
+
+        for i in range(18, 24, 2):
+            self.baconAdcList.append((adc[i + 1] << 8) + adc[i])
 
         return self.baconAdcList
 
     def getBaconBarcode(self):
         barcode = self.bacon.readBarcode()
-        
+
         self.baconIdStr = ""
-        for i in reversed(barcode): # byte array is little endian
+        for i in reversed(barcode):  # byte array is little endian
             self.baconIdStr += "%02X" % i
-            
+
         return self.baconIdStr
 
     def setBaconBarcode(self, barcodeStr):
         # format barcode into int array, this also validates input
         barcode = int(barcodeStr, 16)
         output = []
-        for i in range(0,8):
-            output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
-            
-        if output[7] != 0x04: # magic number
+        for i in range(0, 8):
+            output.append((barcode >> (i * 8)) & 0xFF)  # byte array is little endian
+
+        if output[7] != 0x04:  # magic number
             raise TypeError
-            
+
         self.bacon.writeBarcode(output)
-        
+
         # update successful, store in handler
         self.baconIdStr = "%016X" % barcode
 
     def program(self, name, port, callMe):
         print name, port
+        self.programming = True
         self.currentProgress = 0
-        
-        input = "-S 115200 -c %s -r -e -I -p %s" % (port, name)        
+
+        input = "-S 115200 -c %s -r -e -I -p %s" % (port, name)
         cc430 = CC430bsl(input, callMe)
         cc430.start()
 
+    def programBasestation(self, port):
+        basestation_file = os.path.join('tools', 'firmware', 'basestation.ihex')
+        self.program(basestation_file, port, self.programDone)
+
+    def programLeaf(self, port):
+        leaf_file = os.path.join('tools', 'firmware', 'leaf.ihex')
+        self.program(leaf_file, port, self.programDone)
+
+    def programRouter(self, port):
+        router_file = os.path.join('tools', 'firmware', 'router.ihex')
+        self.program(router_file, port, self.programDone)
 
     def programProgress(self):
         try:
-            while(True):
+            while (True):
                 self.currentProgress = Progress.wait(False)
         except Queue.Empty:
             pass
         return self.currentProgress
 
-
     #
     # Toast
     #    
-    def connectToast(self):                
+    def connectToast(self):
         self.powerCycle()
 
         try:
@@ -262,17 +288,17 @@ class Handler(object):
                 self.toast.writeVersion(0)
             except:
                 pass
-            
+
             try:
                 self.powerCycle()
             except:
                 pass
-                
+
             try:
                 self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
             except:
                 pass
-                
+
             try:
                 adc = self.toast.readAdcConstants()
                 self.toast.writeAdcConstants(adc)
@@ -280,7 +306,6 @@ class Handler(object):
                 pass
         except:
             pass
-
 
     def powerCycle(self):
         self.toast.powerOff()
@@ -294,53 +319,52 @@ class Handler(object):
         except:
             print "Delete assignments failed"
             pass
-        
+
         try:
             self.toast.deleteTLVEntry(Toast.TAG_GLOBAL_ID)
         except:
             print "Delete ID failed"
             pass
-            
+
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_30)
         except:
             print "Delete DCO failed"
             pass
-            
+
         try:
             self.toast.deleteTLVEntry(Toast.TAG_DCO_CUSTOM)
         except:
             print "Delete custom DCO failed"
             pass
-            
+
         self.powerCycle()
-        
+
         try:
             adc = self.toast.readAdcConstants()
             self.toast.writeAdcConstants(adc)
         except:
             pass
 
-
     def getToastBarcode(self):
         barcode = self.toast.readBarcode()
-        
+
         self.toastIdStr = ""
-        for i in reversed(barcode): # byte array is little endian
+        for i in reversed(barcode):  # byte array is little endian
             self.toastIdStr += "%02X" % i
-        
+
         return self.toastIdStr
 
     def setToastBarcode(self, barcodeStr):
-        
+
         # format barcode into int array, this also validates input
         barcode = int(barcodeStr, 16)
         output = []
-        for i in range(0,8):
-            output.append((barcode >> (i*8)) & 0xFF) # byte array is little endian
-            
+        for i in range(0, 8):
+            output.append((barcode >> (i * 8)) & 0xFF)  # byte array is little endian
+
         self.toast.writeBarcode(output)
-        
+
         # update successful, store in handler
         self.toastIdStr = "%016X" % barcode
 
@@ -348,56 +372,55 @@ class Handler(object):
         return self.toast.readAssignments()
 
     def setAssignments(self, assignments):
-        #try:
+        # try:
         #    self.toast.deleteTLVEntry(Toast.TAG_TOAST_ASSIGNMENTS)
-        #except TagNotFoundError:
+        # except TagNotFoundError:
         #    pass
         self.toastAssignments = assignments
         self.toast.writeAssignments(assignments)
-    
+
     def getToastADCSettings(self):
         adc = self.toast.readTLVEntry(Toast.TAG_ADC12_1)
-        
+
         self.toastAdcList = []
-        for i in range(0,16,2):
-            tmp = (adc[i+1] << 8) + adc[i]
-            
+        for i in range(0, 16, 2):
+            tmp = (adc[i + 1] << 8) + adc[i]
+
             self.toastAdcList.append(tmp)
         return self.toastAdcList
 
     def getDCOSettings(self):
         dco = self.toast.readTLVEntry(Toast.TAG_DCO_CUSTOM)
         dcoStr = "%02X%02X" % (dco[0], dco[1])
-        
+
         return dcoStr
 
     #
     # Sensor
     #
     def startSampling(self, sensors):
-        
+
         self.sampleThread = ToastSampling(self, sensors)
         self.sampleThread.start()
-            
-        #self.baconFrame.disableUI()
-        #self.toastFrame.disableUI()
-        self.adcFrame.disableUI()
-        self.graphFrame.sampleSignal(True)
+
+        # self.baconFrame.disableUI()
+        # self.toastFrame.disableUI()
+        # self.adcFrame.disableUI()
+        # self.graphFrame.sampleSignal(True)
 
     def stopSampling(self):
         self.sampleThread.stop()
-        
-        self.baconFrame.enableUI()
-        self.toastFrame.enableUI()
-        self.adcFrame.enableUI()
-        self.graphFrame.sampleSignal(False)
 
+        # self.baconFrame.enableUI()
+        # self.toastFrame.enableUI()
+        # self.adcFrame.enableUI()
+        # self.graphFrame.sampleSignal(False)
 
-    def readSensor(self, channel, sensorImpedance=10000, warmUpMs = 10, 
-      sref = Toast.REFERENCE_VREFplus_AVss, ref2_5v = True, samplePeriod32k = 0):
-      
-      return self.toast.readSensor(channel, sensorImpedance, warmUpMs, 
-      sref, ref2_5v, samplePeriod32k)
+    def readSensor(self, channel, sensorImpedance=10000, warmUpMs=10,
+                   sref=Toast.REFERENCE_VREFplus_AVss, ref2_5v=True, samplePeriod32k=0):
+
+        return self.toast.readSensor(channel, sensorImpedance, warmUpMs,
+                                     sref, ref2_5v, samplePeriod32k)
 
     def getToastReadings(self):
         return self.sampleThread.queue.get(False)
@@ -411,7 +434,7 @@ class Handler(object):
         bacon.append(time.time())
         bacon.append(self.mfrStr)
         bacon.extend(self.baconAdcList)
-        
+
         self.database.insertBacon(bacon)
 
     def databaseToast(self):
@@ -419,14 +442,14 @@ class Handler(object):
         toast.append(self.toastIdStr)
         toast.append(time.time())
         toast.extend(self.toastAdcList)
-        
+
         self.database.insertToast(toast)
 
     def databaseSensors(self):
         sensors = []
         sensors.append(self.toastIdStr)
         sensors.append(self.toastAssignments)
-        
+
         self.database.attachSensors(sensors)
 
     def databaseRemoveSensors(self):
@@ -434,6 +457,7 @@ class Handler(object):
 
     def exportCSV(self):
         self.database.exportCSV()
-        
-    def debugMsg(self,txt):
-        self.dbgVar.set(txt)
+
+    def debugMsg(self, txt):
+        # self.dbgVar.set(txt)
+        self.dbgVar = txt

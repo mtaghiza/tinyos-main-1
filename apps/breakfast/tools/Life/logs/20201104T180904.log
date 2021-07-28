@@ -1,0 +1,47 @@
+database0.sqlite passed integrity check
+network_membership missing
+active_period missing
+toast_sample missing
+packet missing
+log_record missing
+node_status missing
+cookie_table missing
+toast_connection missing
+bacon_sample missing
+toast_disconnection missing
+sensor_connection missing
+phoenix_reference missing
+sensor_sample missing
+bacon_settings missing
+base_reference missing
+last_bs missing
+last_ap missing
+last_connection missing
+last_status missing
+last_disconnection missing
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+Channel maps {}
+Note: mouse wheel not implemented on Mac OS
+PROG 1604531352.22 Processing data to CSV files. This may take many minutes.
+Dumping from database0.sqlite to data
+Generating timestamp information
+PROG 1604531352.22 Rebuilding timestamp tables
+PROG 1604531352.23 Computing fits
+Exception in thread csvThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 586, in csvRunner
+    self.progressMessage)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/DumpCSV.py", line 274, in dumpCSV
+    Phoenix.phoenix(dbName, progCallback=progCallback)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/Phoenix.py", line 179, in phoenix
+    computeFits(dbName)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/Phoenix.py", line 81, in computeFits
+    for (node, rc) in c.execute(q0).fetchall():
+OperationalError: no such table: base_reference
+

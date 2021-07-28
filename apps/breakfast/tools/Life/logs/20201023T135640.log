@@ -1,0 +1,87 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+Note: mouse wheel not implemented on Mac OS
+PROG 1603475807.25 Patch Download Started
+patch download 0
+serial@/dev/tty.usbserial-JH000336:115200
+DatabaseMissing() downloadThread
+receive fwd status 2
+ns 0: pi 1024 if 1 md 10 -> 327680
+ns 1: pi 1024 if 1 md 5 -> 163840
+ns 2: pi 1024 if 1 md 5 -> 163840
+Setting MDR to  1000
+write failed: [Errno 6] Device not configured
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 147, in sendMsg
+    dest.writePacket(data)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialSource.py", line 79, in writePacket
+    self.prot.writePacket(packet)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialProtocol.py", line 224, in writePacket
+    self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialProtocol.py", line 252, in writeFramedPacket
+    self.outs.write(frame)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialIO.py", line 67, in write
+    return self.serial.write(data)
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/site-packages/serial/serialposix.py", line 571, in write
+    raise SerialException('write failed: {}'.format(e))
+None
+Wakeup start 1603475809.38
+write failed: [Errno 6] Device not configured
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/message/MoteIF.py", line 147, in sendMsg
+    dest.writePacket(data)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialSource.py", line 79, in writePacket
+    self.prot.writePacket(packet)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialProtocol.py", line 224, in writePacket
+    self.writeFramedPacket(P_PACKET_ACK, self.seqNo, data)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialProtocol.py", line 252, in writeFramedPacket
+    self.outs.write(frame)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/support/sdk/python/tinyos/packet/SerialIO.py", line 67, in write
+    return self.serial.write(data)
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/site-packages/serial/serialposix.py", line 571, in write
+    raise SerialException('write failed: {}'.format(e))
+None
+explicit close

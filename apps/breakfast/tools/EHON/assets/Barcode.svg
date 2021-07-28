@@ -1,0 +1,12 @@
+<svg id="组件_241_1" data-name="组件 241 – 1" xmlns="http://www.w3.org/2000/svg" width="323" height="323" viewBox="0 0 323 323">
+  <path id="barcode" d="M0,183.011V64H5.579V183.011Zm8.324-.085V64h2.834V182.926Zm8.412,0V64h2.745V182.926Zm13.9,0V64h2.745V182.926Zm11.157,0V64h5.49V182.926Zm13.9,0V64h2.745V182.926Zm5.579,0V64h2.745V182.926Zm5.579,0V64H69.6V182.926Zm11.069,0V64H83.5V182.926Zm13.9,0V64H97.4V182.926Zm11.157,0V64h5.579V182.926Zm11.158,0V64h5.579V182.926Zm8.324,0V64h5.579V182.926Zm13.991,0V64h8.324V182.926Zm11.069,0V64h2.834V182.926h-2.834Zm5.579.085V64h5.579V183.011Z" transform="translate(91 38)" fill="rgba(0,0,0,0.79)"/>
+  <g id="组_615" data-name="组 615" transform="translate(-224 -309)">
+    <g id="组件_238_1" data-name="组件 238 – 1" transform="translate(224 309)">
+      <g id="矩形_1477" data-name="矩形 1477" fill="rgba(255,255,255,0)" stroke="#707070" stroke-width="1">
+        <rect width="323" height="323" rx="20" stroke="none"/>
+        <rect x="0.5" y="0.5" width="322" height="322" rx="19.5" fill="none"/>
+      </g>
+    </g>
+  </g>
+  <text id="Barcode-2" data-name="Barcode" transform="translate(132 292)" fill="#7e7878" stroke="#7e7878" stroke-width="1" font-size="20" font-family="HelveticaNeue, Helvetica Neue"><tspan x="0" y="0">Barcode</tspan></text>
+</svg>

@@ -1,0 +1,180 @@
+database0.sqlite passed integrity check
+network_membership OK
+active_period OK
+toast_sample OK
+packet OK
+log_record OK
+node_status OK
+cookie_table OK
+toast_connection OK
+bacon_sample OK
+toast_disconnection OK
+sensor_connection OK
+phoenix_reference OK
+sensor_sample OK
+bacon_settings OK
+base_reference OK
+last_bs OK
+last_ap OK
+last_connection OK
+last_status OK
+last_disconnection OK
+DBQ database0.sqlite
+DBQ database0.sqlite
+selection:  []
+(272, 614400, 0, 0)
+(274, 61440, 0, 0)
+(275, 614400, 0, 0)
+(276, 614400, 0, 0)
+(278, 614400, 0, 0)
+(271, 614400, 0, 0)
+(281, 614400, 0, 0)
+(282, 614400, 0, 0)
+(284, 614400, 0, 0)
+(285, 614400, 0, 0)
+(1, 614400, 0, 0)
+(0, 30720, 0, 2)
+Channel maps {0: {0: ['0x0400000000000110', '0x0400000000000112', '0x0400000000000113', '0x0400000000000114', '0x0400000000000116', '0x040000000000010f', '0x0400000000000119', '0x040000000000011a', '0x040000000000011c', '0x040000000000011d', '0xffffffffffffffff'], 2: ['0x0400000000000000']}}
+0x040000000000010f 0 0x0600000000000065
+0x0400000000000110 0 0x060000000000006f
+0x0400000000000112 0 0x0600000000000067
+0x0400000000000113 0 0x060000000000006a
+0x0400000000000114 0 0x0600000000000082
+0x0400000000000116 0 0x0600000000000068
+0x0400000000000119 0 0x0600000000000066
+0x040000000000011a 0 0x0600000000000069
+0x040000000000011c 0 0x0500000000000012
+0x040000000000011d 0 0x0500000000000011
+Note: mouse wheel not implemented on Mac OS
+PROG 1601766544.36 Processing data to CSV files. This may take many minutes.
+Dumping from database0.sqlite to data
+Generating timestamp information
+PROG 1601766544.37 Rebuilding timestamp tables
+PROG 1601766544.37 Computing fits
+single point fit for [(1961, 1600541672.1229377)] assume skewless binary ms
+single point fit for [(1964, 1600541700.2986941)] assume skewless binary ms
+single point fit for [(1962, 1600541728.9438472)] assume skewless binary ms
+single point fit for [(1955, 1600543101.440418)] assume skewless binary ms
+single point fit for [(1964, 1601226088.374716)] assume skewless binary ms
+single point fit for [(1961, 1601226141.6896791)] assume skewless binary ms
+single point fit for [(1960, 1601227988.3607764)] assume skewless binary ms
+single point fit for [(1963, 1601228015.5411124)] assume skewless binary ms
+single point fit for [(1953, 1601228437.869942)] assume skewless binary ms
+single point fit for [(1954, 1601228486.367665)] assume skewless binary ms
+single point fit for [(1959, 1601228504.150697)] assume skewless binary ms
+single point fit for [(1962, 1601229547.526968)] assume skewless binary ms
+single point fit for [(1949, 1601229802.3020616)] assume skewless binary ms
+single point fit for [(1962, 1601229847.3885934)] assume skewless binary ms
+single point fit for [(1959, 1601229865.3976965)] assume skewless binary ms
+single point fit for [(1959, 1601230266.704021)] assume skewless binary ms
+single point fit for [(1981, 1601230286.2856646)] assume skewless binary ms
+single point fit for [(1957, 1601230304.9475842)] assume skewless binary ms
+single point fit for [(1953, 1601230338.1053476)] assume skewless binary ms
+single point fit for [(1955, 1601230413.848073)] assume skewless binary ms
+single point fit for [(1953, 1601230442.6197271)] assume skewless binary ms
+single point fit for [(1978, 1601230482.575349)] assume skewless binary ms
+single point fit for [(1960, 1601230523.1006355)] assume skewless binary ms
+single point fit for [(1957, 1601745159.736099)] assume skewless binary ms
+single point fit for [(1959, 1601745213.557414)] assume skewless binary ms
+single point fit for [(1954, 1601746192.4642692)] assume skewless binary ms
+single point fit for [(1961, 1601746287.2652276)] assume skewless binary ms
+single point fit for [(1961, 1601746569.4644232)] assume skewless binary ms
+single point fit for [(1958, 1601746727.825632)] assume skewless binary ms
+single point fit for [(1959, 1601746745.8282962)] assume skewless binary ms
+single point fit for [(1964, 1601746769.3254435)] assume skewless binary ms
+single point fit for [(1961, 1601748509.9317524)] assume skewless binary ms
+single point fit for [(1964, 1601748612.220983)] assume skewless binary ms
+PROG 1601766544.41 Computing approximate fits
+PROG 1601766544.44 Fitting node 0 rc 0 (2 nodes left)
+No approximate fit for 0 0
+PROG 1601766544.51 Fitting node 1 rc 0 (2 nodes left)
+No approximate fit for 1 0
+PROG 1601766544.60 Fitting node 0 rc 1 (1 nodes left)
+No approximate fit for 0 1
+PROG 1601766544.69 Fitting node 0 rc 2 (1 nodes left)
+No approximate fit for 0 2
+PROG 1601766544.78 Fitting node 0 rc 3 (1 nodes left)
+No approximate fit for 0 3
+PROG 1601766544.86 Fitting node 0 rc 4 (1 nodes left)
+No approximate fit for 0 4
+PROG 1601766544.95 Fitting node 0 rc 5 (1 nodes left)
+No approximate fit for 0 5
+PROG 1601766545.04 Fitting node 0 rc 7 (1 nodes left)
+No approximate fit for 0 7
+PROG 1601766545.13 Fitting node 0 rc 8 (1 nodes left)
+No approximate fit for 0 8
+PROG 1601766545.22 Fitting node 0 rc 10 (1 nodes left)
+No approximate fit for 0 10
+PROG 1601766545.30 Fitting node 0 rc 11 (1 nodes left)
+No approximate fit for 0 11
+PROG 1601766545.39 Fitting node 0 rc 13 (1 nodes left)
+No approximate fit for 0 13
+PROG 1601766545.48 Fitting node 0 rc 14 (1 nodes left)
+No approximate fit for 0 14
+PROG 1601766545.56 Fitting node 0 rc 15 (1 nodes left)
+No approximate fit for 0 15
+PROG 1601766545.65 Fitting node 0 rc 16 (1 nodes left)
+No approximate fit for 0 16
+PROG 1601766545.74 Fitting node 0 rc 19 (1 nodes left)
+No approximate fit for 0 19
+PROG 1601766545.83 Fitting node 0 rc 21 (1 nodes left)
+No approximate fit for 0 21
+PROG 1601766545.92 Fitting node 0 rc 23 (1 nodes left)
+No approximate fit for 0 23
+PROG 1601766546.01 Fitting node 0 rc 25 (1 nodes left)
+No approximate fit for 0 25
+PROG 1601766546.10 Fitting node 0 rc 26 (1 nodes left)
+No approximate fit for 0 26
+PROG 1601766546.19 Fitting node 0 rc 28 (1 nodes left)
+No approximate fit for 0 28
+PROG 1601766546.28 Fitting node 0 rc 32 (1 nodes left)
+No approximate fit for 0 32
+PROG 1601766546.37 Fitting node 0 rc 33 (1 nodes left)
+No approximate fit for 0 33
+formatting data
+PROG 1601766546.46 Formatting data step 0/24
+PROG 1601766546.46 Formatting data step 1/24
+PROG 1601766546.56 Formatting data step 2/24
+PROG 1601766546.57 Formatting data step 3/24
+PROG 1601766546.69 Formatting data step 4/24
+PROG 1601766546.69 Formatting data step 5/24
+PROG 1601766546.80 Formatting data step 6/24
+PROG 1601766546.80 Formatting data step 7/24
+PROG 1601766546.85 Formatting data step 8/24
+PROG 1601766546.94 Formatting data step 9/24
+PROG 1601766547.71 Formatting data step 10/24
+PROG 1601766547.71 Formatting data step 11/24
+PROG 1601766547.75 Formatting data step 12/24
+PROG 1601766547.75 Formatting data step 13/24
+PROG 1601766547.80 Formatting data step 14/24
+PROG 1601766547.82 Formatting data step 15/24
+PROG 1601766547.87 Formatting data step 16/24
+PROG 1601766547.90 Formatting data step 17/24
+PROG 1601766547.96 Formatting data step 18/24
+PROG 1601766548.09 Formatting data step 19/24
+PROG 1601766548.41 Formatting data step 20/24
+PROG 1601766548.41 Formatting data step 21/24
+PROG 1601766548.42 Formatting data step 22/24
+PROG 1601766548.42 Formatting data step 23/24
+dumping to .csv files
+PROG 1601766548.42 Dumping internal sensors
+PROG 1601766548.81 Dumping sensor data for type 20
+PROG 1601766549.45 Dumping sensor data for type 32
+PROG 1601766549.88 Dumping sensor data for type 33
+PROG 1601766550.31 Dumping sensor data for type 0
+PROG 1601766550.33 Dumping sensor data for type 19
+PROG 1601766550.42 Dumping sensor listing
+Exception in thread csvThread:
+Traceback (most recent call last):
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 801, in __bootstrap_inner
+    self.run()
+  File "/opt/anaconda3/envs/TinyOS/lib/python2.7/threading.py", line 754, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/dashboard/ControlFrame.py", line 586, in csvRunner
+    self.progressMessage)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/DumpCSV.py", line 278, in dumpCSV
+    dump(dbName, baseDir, progCallback=progCallback)
+  File "/Users/jianingfang/Desktop/tinyos-main-1/apps/breakfast/tools/Life/tools/cx/DumpCSV.py", line 265, in dump
+    f.write(sep.join([bacon_id, toast_id, "%.2f"%unixTS, isoTS, date,
+TypeError: float argument required, not NoneType
+

@@ -1,0 +1,35 @@
+.download-node-box{
+    height: 15vh;
+    display: inline-block;
+    background-color: #2a9dff;
+    border: 1px solid white;
+    color: white;
+    align-self: center;
+    width: 9vw;
+}
+
+.battery-string{
+    font-size: smaller;
+    margin-top: 6%;
+    margin-left: 10%;
+}
+
+.lc-string {
+    font-size: smaller;
+    margin-top: 6%;
+    margin-left: 10%;
+}
+.time-string {
+    font-size: smaller;
+    margin-left: 10%;
+}
+.node-name{
+    font-size: larger;
+    margin-left: 10%;
+}
+.download-grid {
+    margin-left: 5%;
+    margin-top: 16%;
+    height: 50%;
+    overflow: auto;
+}

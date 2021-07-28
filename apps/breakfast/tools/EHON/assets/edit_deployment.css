@@ -1,0 +1,19 @@
+.deploy-edit{
+    width: 10px;
+    background-color: #f3f8e8;
+    color: #1E4B1C;
+    text-align: left;
+    vertical-align: center;
+    display:table-cell;
+    padding-left: 1px;
+}
+.deploy-delete{
+    width:50px;
+    background-color: #f8d3d1;
+    color: #774d0c;
+    text-align: left;
+    vertical-align: center;
+    margin-left: 1px;
+    display:table-cell;
+    padding-left: 1px;
+}

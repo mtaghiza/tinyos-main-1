@@ -31,4 +31,4 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-#__all__= ['MenuFrame', 'BaconFrame', 'ToastFrame', 'Handler', 'GraphFrame', 'AdcFrame'] 
+#__all__= ['MenuFrame', 'BaconFrame', 'ToastFrame', 'Handler', 'GraphFrame', 'AdcFrame']
