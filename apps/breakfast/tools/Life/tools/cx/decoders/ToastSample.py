@@ -50,12 +50,12 @@ class ToastSample(Decoder.Decoder):
         return (rc, ts, samplerId, samples)
 
     def insert(self, source, cookie, data):
-        q0='''INSERT OR IGNORE INTO toast_sample 
-             (node_id, cookie, reboot_counter, base_time, toast_id) VALUES 
-             (?,       ?,      ?,              ?,         ?)'''
-        q1='''INSERT OR IGNORE INTO sensor_sample 
-             (node_id, cookie, channel_number, sample) VALUES 
-             (?,       ?,      ?,              ?)'''
+        q0='''INSERT INTO toast_sample 
+             (node_id, cookie, reboot_counter, base_time, toast_id)  
+             SELECT ?,       ?,      ?,              ?,         ?  EXCEPT SELECT * FROM toast_sample;'''
+        q1='''INSERT INTO sensor_sample 
+             (node_id, cookie, channel_number, sample)  
+             SELECT ?,       ?,      ?,              ?  EXCEPT SELECT * from sensor_sample;'''
         (rc, ts, samplerIdBin, samples) = self.unpack(data)
         samplerIdText = Decoder.toHexStr(samplerIdBin)
         self.dbInsert.execute(q0, (source, cookie, rc, ts, samplerIdText))

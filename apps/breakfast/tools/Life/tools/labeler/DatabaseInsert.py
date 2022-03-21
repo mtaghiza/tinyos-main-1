@@ -31,9 +31,11 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import sqlite3
+#import sqlite3
 import time
 import threading
+import pyodbc
+from ..config import db_server_name, db_name
 
 class DatabaseInsert(object):
 
@@ -55,15 +57,22 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
-            self.connection.text_factory = sqlite3.OptimizedUnicode
+            connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
+
+            #self.connection.text_factory =  sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute('''INSERT OR IGNORE INTO bacon_table 
+        self.cursor.execute('''INSERT INTO bacon_table
                                     (bacon_id, time, manufacture_id, gain, offset,
                                     c15t30, c15t85, c20t30, c20t85, c25t30, c25t85,
-                                    c15vref, c20vref, c25vref) VALUES 
-                                    (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', bacon)            
+                                    c15vref, c20vref, c25vref)        
+                                    SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?   
+                                    EXCEPT SELECT * FROM  bacon_table''', bacon)
+
+
         self.connection.commit();
 
     def insertToast(self, toast):
@@ -71,15 +80,19 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
-            self.connection.text_factory = sqlite3.OptimizedUnicode
+            connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
+            #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
 
-        self.cursor.execute('''INSERT OR IGNORE INTO toast_table 
+        self.cursor.execute('''INSERT INTO toast_table
                                     (toast_id, time, gain, offset,
                                     c15t30, c15t85, c25t30, c25t85,
-                                    c15vref, c25vref) VALUES 
-                                    (?,?,?,?,?,?,?,?,?,?)''', toast)            
+                                    c15vref, c25vref)        
+                                    SELECT ?,?,?,?,?,?,?,?,?,?   
+                                    EXCEPT SELECT * FROM  toast_table''', toast)
         self.connection.commit();
 
     def attachSensors(self, sensors):
@@ -87,8 +100,11 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
-            self.connection.text_factory = sqlite3.OptimizedUnicode
+            connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
+            #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
             
         toast_id = sensors[0]
@@ -114,7 +130,7 @@ class DatabaseInsert(object):
                     
                     # sensor exists in table, close previous record
                     # note: row is not None if an open entry exists given query above 
-                    self.cursor.execute('''UPDATE OR IGNORE sensor_table
+                    self.cursor.execute('''UPDATE sensor_table
                                         SET detached = ? 
                                         WHERE sensor_id = ? AND type = ? AND detached IS NULL''', [time.time(), row[0], row[1]])
                     self.connection.commit()
@@ -126,14 +142,14 @@ class DatabaseInsert(object):
                                         FROM sensor_table WHERE toast_id = ? AND channel = ? AND detached IS NULL''', [toast_id, channel])
                 row = self.cursor.fetchone()
                 if row is not None:
-                    self.cursor.execute('''UPDATE OR IGNORE sensor_table
+                    self.cursor.execute('''UPDATE sensor_table
                                         SET detached = ? 
                                         WHERE sensor_id = ? AND type = ? AND detached IS NULL''', [time.time(), row[0], row[1]])
                     self.connection.commit()
                 
                 
                 # insert new record in sensor table
-                self.cursor.execute('''INSERT OR IGNORE INTO sensor_table 
+                self.cursor.execute('''INSERT INTO sensor_table 
                                     (sensor_id, type, time, detached, toast_id, channel) 
                                     VALUES (?,?,?,NULL,?,?)''', [sensor_id, type, time.time(), toast_id, channel])            
                 self.connection.commit()
@@ -141,7 +157,7 @@ class DatabaseInsert(object):
             # special case: both sensor_id and type are zero which means this channel should be reset
             elif assignments[0][channel] == 0 and assignments[1][channel] == 0:
                 # close entry for current toast_id and channel
-                self.cursor.execute('''UPDATE OR IGNORE sensor_table
+                self.cursor.execute('''UPDATE sensor_table
                                     SET detached = ? 
                                     WHERE toast_id = ? AND channel = ? AND detached IS NULL''', [time.time(), toast_id, channel])
                 self.connection.commit()
@@ -152,11 +168,14 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
-            self.connection.text_factory = sqlite3.OptimizedUnicode
+            connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
+            #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
         
-            self.cursor.execute('''UPDATE OR IGNORE sensor_table
+            self.cursor.execute('''UPDATE sensor_table
                                 SET detached = ? 
                                 WHERE toast_id = ? AND detached IS NULL''', [time.time(), toast])
             self.connection.commit()        

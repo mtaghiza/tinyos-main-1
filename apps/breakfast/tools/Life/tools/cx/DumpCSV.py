@@ -33,13 +33,14 @@
 
 import tools.cx.Phoenix as Phoenix
 import sys
-import sqlite3
 import os
+import pyodbc
+from ..config import db_name, db_server_name
 
 queries=[
   #connect toast_samples to their matching toast_connection's
-  '''DROP TABLE IF EXISTS ss0''',
-  '''CREATE TEMPORARY TABLE ss0 AS
+  '''DROP TABLE IF EXISTS #ss0''',
+  '''CREATE TABLE #ss0 AS
   SELECT ts.node_id, ts.reboot_counter, ts.cookie as sample_cookie,
     tc.cookie as connection_cookie
   FROM toast_sample ts
@@ -50,29 +51,29 @@ queries=[
     AND tc.cookie < ts.cookie''',
 
   #remove duplicate entries resulting from multiple toast connections
-  '''DROP TABLE IF EXISTS ss1''',
-  '''CREATE TEMPORARY TABLE ss1 AS
+  '''DROP TABLE IF EXISTS #ss1''',
+  '''CREATE TABLE #ss1 AS
   SELECT node_id, reboot_counter, sample_cookie, 
     max(connection_cookie) as connection_cookie
-  FROM ss0
+  FROM #ss0
   GROUP BY node_id, reboot_counter, sample_cookie''',
 
   #find matching bacon barcodes
-  '''DROP TABLE IF EXISTS ss2''',
-  '''CREATE TEMPORARY TABLE ss2 AS
-  SELECT ss1.node_id, ss1.sample_cookie as sample_cookie, bse.cookie as settings_cookie
-  FROM ss1 
+  '''DROP TABLE IF EXISTS #ss2''',
+  '''CREATE TABLE #ss2 AS
+  SELECT #ss1.node_id, #ss1.sample_cookie as sample_cookie, bse.cookie as settings_cookie
+  FROM #ss1 
   JOIN bacon_settings as bse 
-    ON ss1.reboot_counter=bse.rc AND bse.cookie < ss1.sample_cookie
-    AND ss1.node_id = bse.node_id
+    ON #ss1.reboot_counter=bse.rc AND bse.cookie < #ss1.sample_cookie
+    AND #ss1.node_id = bse.node_id
   WHERE bse.barcode_id != ""''',
 
   #drop duplicate bacon barcodes
-  '''DROP TABLE IF EXISTS ss3''',
-  '''CREATE TEMPORARY TABLE ss3 AS
+  '''DROP TABLE IF EXISTS #ss3''',
+  '''CREATE TABLE #ss3 AS
   SELECT node_id, sample_cookie, 
     max(settings_cookie) as settings_cookie
-  FROM ss2
+  FROM #ss2
   GROUP BY node_id, sample_cookie''',
 
   #normalize to sensor samples + raw timing info
@@ -85,20 +86,20 @@ queries=[
   FROM sensor_sample ss 
     JOIN toast_sample ts 
       ON ss.node_id = ts.node_id AND ss.cookie = ts.cookie
-    JOIN ss1 
-      ON ss.node_id = ss1.node_id AND ss.cookie=ss1.sample_cookie
+    JOIN #ss1 
+      ON ss.node_id = #ss1.node_id AND ss.cookie=#ss1.sample_cookie
     JOIN toast_connection tc
-      ON ss1.connection_cookie = tc.cookie AND ss1.node_id = tc.node_id
+      ON #ss1.connection_cookie = tc.cookie AND #ss1.node_id = tc.node_id
     JOIN sensor_connection sc
       ON sc.cookie = tc.cookie AND
       sc.channel_number = ss.channel_number AND sc.node_id=tc.node_id
-    JOIN ss3
-      ON ss3.sample_cookie = ss.cookie AND ss3.node_id = ss.node_id
+    JOIN #ss3
+      ON #ss3.sample_cookie = ss.cookie AND #ss3.node_id = ss.node_id
     JOIN bacon_settings bs
-      ON ss3.node_id = bs.node_id AND ss3.settings_cookie=bs.cookie''',
+      ON #ss3.node_id = bs.node_id AND #ss3.settings_cookie=bs.cookie''',
   #associate bacon samples to bacon_settings
-  '''DROP TABLE IF EXISTS bs0''',
-  '''CREATE TEMPORARY TABLE bs0 AS
+  '''DROP TABLE IF EXISTS #bs0''',
+  '''CREATE TABLE #bs0 AS
   SELECT bsa.node_id, bsa.cookie as sample_cookie, bse.cookie as settings_cookie
   FROM bacon_sample as bsa
   JOIN bacon_settings as bse 
@@ -106,21 +107,21 @@ queries=[
     AND bsa.node_id = bse.node_id
   WHERE bse.barcode_id != ""''',
   #remove duplicate bacon_settings mappings
-  '''DROP TABLE IF EXISTS bs1''',
-  '''CREATE TEMPORARY TABLE bs1 AS
+  '''DROP TABLE IF EXISTS #bs1''',
+  '''CREATE TABLE #bs1 AS
   SELECT node_id, sample_cookie, max(settings_cookie) as settings_cookie
-  FROM bs0
+  FROM #bs0
   GROUP BY node_id, sample_cookie''',
   #map to barcodes
   '''DROP TABLE IF EXISTS bacon_sample_flat''',
   '''CREATE TABLE bacon_sample_flat AS
   SELECT bsa.*, bse.barcode_id
   FROM bacon_sample bsa
-  JOIN bs1 
-    ON bsa.cookie = bs1.sample_cookie AND bsa.node_id = bs1.node_id
+  JOIN #bs1 
+    ON bsa.cookie = #bs1.sample_cookie AND bsa.node_id = #bs1.node_id
   JOIN bacon_settings bse
-    ON bse.cookie = bs1.settings_cookie AND bse.node_id =
-    bs1.node_id ''',
+    ON bse.cookie = #bs1.settings_cookie AND bse.node_id =
+    #bs1.node_id ''',
   #apply timing fits and convert bacon samples to voltage
   '''DROP TABLE IF EXISTS bacon_sample_final''',
   '''CREATE TABLE bacon_sample_final AS
@@ -188,7 +189,10 @@ queries=[
           AND fits.rc1 = current_sensors.rc''']
 
 def deNormalize(dbName, progCallback=None):
-    c = sqlite3.connect(dbName)
+    c = pyodbc.connect('Driver={SQL Server};'
+                        'Server=' + db_server_name + ';'
+                        'Database=' + db_name + ';'
+                        'Trusted_Connection=yes;')
     try:
         for (i,q) in enumerate(queries):
             if progCallback:
@@ -210,15 +214,18 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
       "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage", "tsQuality"]
     sensorCols = ["bacon_id", "toast_id", "unixTS", "isoTS", "date",
       "time", "channel", "sensorType", "sensorId", "tsQuality"]
-    c = sqlite3.connect(dbName)
+    c = pyodbc.connect('Driver={SQL Server};'
+                        'Server=' + db_server_name + ';'
+                        'Database=' + db_name + ';'
+                        'Trusted_Connection=yes;')
     if progCallback:
         progCallback("Dumping internal sensors\n")
     with open(os.path.join(baseDir, 'internal.csv'), 'w') as f:
         with c:
             q= ''' SELECT barcode_id, ts, 
-              datetime(ts, 'unixepoch', 'localtime'), 
-              date(ts, 'unixepoch', 'localtime'), 
-              time(ts, 'unixepoch', 'localtime'), 
+              FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd HH:mm:ss'), 
+              FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd'), 
+              FORMAT(DATEADD(s, ts, '19700101'),'HH:mm:ss'), 
               batteryVoltage, lightVoltage, thermistorVoltage, tsQuality
             FROM bacon_sample_final ORDER BY barcode_id, ts'''
             f.write(sep.join(internalCols) +'\n')
@@ -236,9 +243,9 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
                 f.write(sep.join(externalCols)+'\n')
                 q= '''SELECT sensor_type, bacon_id, toast_id,
                 channel_number+1, sensor_id, ts, 
-                datetime(ts, 'unixepoch', 'localtime') as isoTS, 
-                date(ts, 'unixepoch', 'localtime'), 
-                time(ts, 'unixepoch', 'localtime'), 
+                select FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd HH:mm:ss') as isoTS, 
+                FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd'), 
+                FORMAT(DATEADD(s, ts, '19700101'),'HH:mm:ss'), 
                 voltage, tsQuality
                 FROM sensor_sample_final WHERE sensor_type=? ORDER BY
                 bacon_id, toast_id, sensor_id, ts'''
@@ -254,9 +261,9 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
     with c:
         q = '''SELECT bacon_barcode, toast_barcode, 
                 ts as unixTS,
-                datetime(ts, 'unixepoch', 'localtime') as isoTS,
-                date(ts, 'unixepoch', 'localtime'), 
-                time(ts, 'unixepoch', 'localtime'), 
+                FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd HH:mm:ss') as isoTS,
+                FORMAT(DATEADD(s, ts, '19700101'),'yyyy-MM-dd'), 
+                FORMAT(DATEADD(s, ts, '19700101'),'HH:mm:ss'), 
                 channel_number+1,
                 sensor_type, sensor_id,
                 tsQuality

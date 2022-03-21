@@ -31,12 +31,12 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import sqlite3
 import time
 import threading
 
 import Queue
-
+import pyodbc
+from ...config import db_name, db_server_name
 
 #OK, so this needs to be running in its own thread.
 # - when it starts, connect, create a query queue, 
@@ -116,7 +116,10 @@ class DatabaseInsert(object):
     def connect(self):
         if not self.connected:
             self.connected = True
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
 
     def stop(self):
         with self.stopSynchCV:
@@ -143,14 +146,14 @@ class DatabaseInsert(object):
             # the table has a PK uniqueness constraint on (node_id, cookie)
             # duplicate data is ignored
             row = [node_id, time.time(), cookie, nextCookie, length]
-            self.execute('INSERT OR IGNORE INTO cookie_table (node_id, base_time, cookie, nextCookie, length) VALUES (?,?,?,?,?)', row)        
+            self.execute('INSERT INTO cookie_table (node_id, base_time, cookie, nextCookie, length) SELECT (?,?,?,?,?) EXCEPT SELECT * FROM cookie_table;', row)
 
     def insertRaw(self, source, message):
         self.execute('INSERT INTO packet (src, ts, amId, data) values (?, ?, ?, ?)',
             (message.addr, 
               time.time(), 
               message.am_type,
-              sqlite3.Binary(bytearray(message.data))))
+              pyodbc.Binary(bytearray(message.data))))
 
     def execute(self, query, args):
         self.taskQueue.put( (DatabaseInsert.TYPE_EXECUTE, query, args))

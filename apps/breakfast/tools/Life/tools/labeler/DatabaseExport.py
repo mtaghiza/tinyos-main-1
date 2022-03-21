@@ -31,9 +31,11 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import sqlite3
 import csv
 import datetime
+import pyodbc
+from ..config import db_server_name, db_name
+
 
 class DatabaseExport(object):
 
@@ -54,7 +56,10 @@ class DatabaseExport(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
             self.cursor = self.connection.cursor()
 
         now = datetime.datetime.now()

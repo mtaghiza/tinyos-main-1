@@ -31,7 +31,6 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from tools.cx.decoders import Decoder
-import sqlite3
 
 class BaconSample(Decoder.Decoder):
     @classmethod 
@@ -47,9 +46,9 @@ class BaconSample(Decoder.Decoder):
         return (source, cookie, rc, baseTime, battery, light, thermistor)
 
     def insert(self, source, cookie, data):
-        q='''INSERT OR IGNORE INTO bacon_sample 
+        q='''INSERT INTO bacon_sample 
              (node_id, cookie, reboot_counter, base_time, battery, light, thermistor) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)'''
+             select ?, ?, ?, ?, ?, ?, ? except select * from bacon_sample;'''
         t = self.unpack(source, cookie, data)
         print "Decoded Bacon Sample", Decoder.toHexArrayStr(data), "to", Decoder.toHexArrayStr(t)
         self.dbInsert.execute(q, t)

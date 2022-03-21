@@ -30,8 +30,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sqlite3
 import sys
+import pyodbc
+from ..config import db_name, db_server_name
 
 def fit(xy):
     '''Work out the best fit line for an array of (x, y)
@@ -74,7 +75,11 @@ def fit(xy):
 # alpha = intercept, beta = slope
 
 def computeFits(dbName):
-    c = sqlite3.connect(dbName)
+    c = pyodbc.connect('Driver={SQL Server};'
+                                'Server=' + db_server_name + ';'
+                                'Database=' + db_name + ';'
+                                'Trusted_Connection=yes;')
+
     q0 = '''SELECT distinct node1, rc1 FROM base_reference'''
     q1 = '''SELECT distinct ts1, unixTS FROM base_reference WHERE node1= ? AND rc1 = ?'''
     q2 = '''INSERT INTO fits (node1, rc1, node2, rc2, alpha, beta, r_sq) VALUES (?, ?, NULL, NULL, ?, ?, ?)'''
@@ -96,7 +101,10 @@ def computeFits(dbName):
     #            time thinking about)
 
 def approxFits(dbName, progCallback=None):
-    c = sqlite3.connect(dbName)
+    c = pyodbc.connect('Driver={SQL Server};'
+                                'Server=' + db_server_name + ';'
+                                'Database=' + db_name + ';'
+                                'Trusted_Connection=yes;')
 
     q0 = '''SELECT x.node_id as node_id, min(x.reboot_counter) as reboot_counter
       FROM 
@@ -135,11 +143,11 @@ def approxFits(dbName, progCallback=None):
       (node1, rc1, node2, rc2, alpha, beta, r_sq) 
       VALUES (?, ?, NULL, NULL, ?, ?, ?)'''
 
-    q3 = '''CREATE TEMPORARY TABLE UNMATCHED (
+    q3 = '''CREATE TABLE #UNMATCHED (
       node_id INTEGER, 
       reboot_counter INTEGER)'''
 
-    q4 = '''INSERT INTO unmatched 
+    q4 = '''INSERT INTO #unmatched 
       (node_id, reboot_counter)
       VALUES (?, ?)'''
 
@@ -162,7 +170,11 @@ def approxFits(dbName, progCallback=None):
 
 
 def rebuildTables(dbName):
-    c = sqlite3.connect(dbName)
+    c = pyodbc.connect('Driver={SQL Server};'
+                        'Server=' + db_server_name + ';'
+                        'Database=' + db_name + ';'
+                        'Trusted_Connection=yes;')
+
     q0 = '''DROP TABLE IF EXISTS fits'''
     q1 = '''CREATE TABLE FITS (node1 INTEGER, rc1 INTEGER, node2 INTEGER, rc2 INTEGER, alpha REAL, beta REAL, r_sq REAL)'''
     c.execute(q0)

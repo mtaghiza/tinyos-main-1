@@ -47,12 +47,12 @@ class ToastConnection(Decoder.Decoder):
         return (source, cookie, rc, ts, buffer(body))
 
     def insert(self, source, cookie, data):
-        q ='''INSERT OR IGNORE INTO toast_connection 
-           (node_id, cookie, reboot_counter, time, toast_id, tlv) values 
-           (?,       ?,      ?,              ?,    ?,       ?)'''
-        q1='''INSERT OR IGNORE INTO sensor_connection 
-           (node_id, cookie, channel_number, sensor_type, sensor_id) values 
-           (?,       ?,      ?,  ?,  ?)'''
+        q ='''INSERT INTO toast_connection 
+           (node_id, cookie, reboot_counter, time, toast_id, tlv)   
+           SELECT ?,       ?,      ?,              ?,    ?,       ? EXCEPT SELECT * from toast_connection'''
+        q1='''INSERT INTO sensor_connection 
+           (node_id, cookie, channel_number, sensor_type, sensor_id)   
+           SELECT ?,       ?,      ?,  ?,  ? EXCEPT SELECT * FROM sensor_connection'''
 
         (source, cookie, rc, ts, tlv) = self.unpack(source, cookie, data)
         print "Toast Connection raw:", [hex(c) for c in data]

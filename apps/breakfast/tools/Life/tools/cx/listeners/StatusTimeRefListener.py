@@ -31,7 +31,6 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time
-import sqlite3
 import tools.cx.constants as constants
 
 

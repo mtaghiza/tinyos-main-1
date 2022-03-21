@@ -45,9 +45,9 @@ class Phoenix(Decoder.Decoder):
         return (source, cookie, node2, rc1, rc2, localTime1, localTime2)
 
     def insert(self, source, cookie, data):
-        q='''INSERT OR IGNORE INTO phoenix_reference 
+        q='''INSERT INTO phoenix_reference 
              (node1, cookie, node2, rc1, rc2, ts1, ts2) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)'''
+             SELECT ?, ?, ?, ?, ?, ?, ? EXCEPT SELECT * FROM phoenix_reference;'''
         t = self.unpack(source, cookie, data)
         print "Decoded Phoenix Ref", Decoder.toHexArrayStr(data), "to", Decoder.toHexArrayStr(t)
         self.dbInsert.execute(q, t)

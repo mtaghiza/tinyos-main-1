@@ -48,9 +48,9 @@ class BaconSettings(Decoder.Decoder):
         return (source, cookie, rc, ts, offset, buffer(body))
 
     def insert(self, source, cookie, data):
-        q ='''INSERT OR IGNORE INTO bacon_settings 
-           (node_id, cookie, rc, ts, offset, data, barcode_id, bacon_interval, toast_interval) values 
-           (?,       ?,      ?,  ?,  ?,      ?,    '',         ?,              ?)'''
+        q ='''INSERT INTO bacon_settings 
+           (node_id, cookie, rc, ts, offset, data, barcode_id, bacon_interval, toast_interval)  
+           SELECT ?,       ?,      ?,  ?,  ?,      ?,    '',         ?,              ? EXCEPT SELECT * from bacon_settings;'''
         t = self.unpack(source, cookie, data)
         (node_id, cookie, rc, ts, offset, tlv ) = t
         print "Decoded Bacon Settings"

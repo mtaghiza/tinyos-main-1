@@ -31,9 +31,10 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-import sqlite3
 import threading
 import sys
+import pyodbc
+from ...config import db_name, db_server_name
 
 class DatabaseMissing(object):
 
@@ -50,7 +51,7 @@ class DatabaseMissing(object):
 #                           0 as retry
 #                           FROM base_reference
 #                         ORDER BY node_id, cookie;'''
-    SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash 
+    SORT_COOKIE_SQL = '''CREATE TABLE #sorted_flash 
                         AS SELECT node_id, cookie, nextCookie, retry
                         FROM cookie_table 
                         ORDER BY node_id, cookie;'''
@@ -59,8 +60,8 @@ class DatabaseMissing(object):
       l.cookie, l.nextCookie,
       (r.cookie - l.nextCookie -1) as missing,
       l.retry
-    FROM sorted_flash l
-    JOIN sorted_flash r
+    FROM #sorted_flash l
+    JOIN #sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
       AND missing > 6
@@ -69,8 +70,8 @@ class DatabaseMissing(object):
 
     TOTAL_MISSING_BY_NODE= '''SELECT 
         sum(r.cookie - l.nextCookie -1) as totalMissing
-      FROM sorted_flash l
-      JOIN sorted_flash r
+      FROM #sorted_flash l
+      JOIN #sorted_flash r
         ON l.node_id=r.node_id and l.ROWID+1=r.ROWID
       WHERE l.node_id=?
         AND r.cookie - l.nextCookie > 6
@@ -82,8 +83,8 @@ class DatabaseMissing(object):
       l.cookie, l.nextCookie,
       (r.cookie - l.nextCookie -1) as missing,
       l.retry
-    FROM sorted_flash l
-    JOIN sorted_flash r
+    FROM #sorted_flash l
+    JOIN #sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
       AND missing > 6
@@ -94,8 +95,8 @@ class DatabaseMissing(object):
       l.cookie, l.nextCookie,
       (r.cookie - l.nextCookie -1) as missing,
       l.retry
-    FROM sorted_flash l
-    JOIN sorted_flash r
+    FROM #sorted_flash l
+    JOIN #sorted_flash r
     ON l.node_id = r.node_id
       AND l.ROWID +1 = r.ROWID
       AND missing > 6
@@ -128,7 +129,11 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
+
             #self.cursor = self.connection.cursor()
         # sort the flash table by cookie values (ascending)
         # and find missing segments by comparing lengths and cookies
@@ -148,7 +153,10 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
             #self.cursor = self.connection.cursor()
         # sort the flash table by cookie values (ascending)
         # and find missing segments by comparing lengths and cookies
@@ -170,7 +178,10 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect('Driver={SQL Server};'
+                                        'Server=' + db_server_name + ';'
+                                        'Database=' + db_name + ';'
+                                        'Trusted_Connection=yes;')
             #self.cursor = self.connection.cursor()
 
         # sort the flash table by cookie values (ascending)
@@ -214,7 +225,7 @@ class DatabaseMissing(object):
 
 
 if __name__ == '__main__':
-    dbName = 'database0.sqlite'
+    dbName = db_name
     if len(sys.argv) > 1:
         dbName = sys.argv[1]
     dbm = DatabaseMissing(dbName)

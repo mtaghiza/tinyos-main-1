@@ -34,7 +34,8 @@
 import sqlite3
 import sys
 import threading
-
+import pyodbc
+from ..config import db_server_name, db_name
 
 #This class initializes the sqlite database file and creates xxx tables:
 #- raw_table
@@ -62,7 +63,7 @@ import threading
 class DatabaseInit(object):
 
     # constants 
-    FILE_RETRIES = 10
+    FILE_RETRIES = 1
     NO_OF_TABLES = 3
 
     # final name for db in use
@@ -84,7 +85,7 @@ class DatabaseInit(object):
                             c15vref INTEGER,
                             c20vref INTEGER,
                             c25vref INTEGER,
-                            CHECK(bacon_id <> "" and manufacture_id <> ""));'''
+                            CHECK(bacon_id != '' and manufacture_id != ''));'''
 
     TOAST_TABLE_SQL = '''CREATE TABLE toast_table
                            (toast_id TEXT NOT NULL,
@@ -97,7 +98,7 @@ class DatabaseInit(object):
                             c25t85 INTEGER,
                             c15vref INTEGER,
                             c25vref INTEGER,
-                            CHECK(toast_id <> ""));'''
+                            CHECK(toast_id != ''));'''
 
     SENSOR_TABLE_SQL = '''CREATE TABLE sensor_table
                            (sensor_id INTEGER NOT NULL,
@@ -106,7 +107,7 @@ class DatabaseInit(object):
                             detached REAL,
                             toast_id TEXT NOT NULL,
                             channel INTEGER NOT NULL,
-                            CHECK(sensor_id <> 0 and toast_id <> ""));'''
+                            CHECK(sensor_id != 0 and toast_id != '' ));'''
 
 
     # class finds suitable filename for DB and creates tables if needed
@@ -119,10 +120,15 @@ class DatabaseInit(object):
             dbFile = rootName + str(fileCounter) + '.sqlite'
 
             try:
-                connection = sqlite3.connect(dbFile)
+                connection = pyodbc.connect('Driver={SQL Server};'
+                                      'Server='+db_server_name+';'
+                                      'Database='+db_name+';'
+                                      'Trusted_Connection=yes;')
 
                 cursor = connection.cursor()
-                cursor.execute('''SELECT name FROM sqlite_master WHERE name LIKE '%_table';''')
+                #cursor.execute('''SELECT name FROM sqlite_master WHERE name LIKE '%_table';''')
+                cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%_table;''')
+
 
                 if len(cursor.fetchall()) != DatabaseInit.NO_OF_TABLES:
                     sys.stderr.write("Tables do not exist, create tables\n")
@@ -133,10 +139,12 @@ class DatabaseInit(object):
                     connection.commit();
  
                 # only set name if no exceptions thrown
-                self.dbName = dbFile
+                self.dbName = db_name
 
-            except sqlite3.Error:
-                sys.stderr.write("Error reading file: " + dbFile + "\n")
+            #except sqlite3.Error:
+            except Exception as ex:
+                #sys.stderr.write("Error reading file: " + dbFile + "\n")
+                sys.stderr.write("Error initializing database: " + str(ex) + "\n")
                 continue
             finally:
                 cursor.close()

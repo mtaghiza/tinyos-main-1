@@ -47,9 +47,9 @@ class ToastDisconnection(Decoder.Decoder):
         return (source, cookie, rc, ts, buffer(toastIdS))
 
     def insert(self, source, cookie, data):
-        q ='''INSERT OR IGNORE INTO toast_disconnection 
-           (node_id, cookie, reboot_counter, time, toast_id) values 
-           (?,       ?,      ?,              ?,    ?)'''
+        q ='''INSERT INTO toast_disconnection 
+           (node_id, cookie, reboot_counter, time, toast_id)  
+           SELECT ?,       ?,      ?,              ?,    ? EXCEPT SELECT * FROM toast_disconnection;'''
 
         (source, cookie, rc, ts, toastIdBin) = self.unpack(source, cookie, data)
         toastIdText = Decoder.toHexStr(toastIdBin)
