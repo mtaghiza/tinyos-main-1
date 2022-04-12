@@ -34,7 +34,7 @@
 import threading
 import sys
 import pyodbc
-from ...config import db_name, db_server_name
+from ...config import db_name, connection_string
 
 class DatabaseMissing(object):
 
@@ -129,10 +129,7 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
 
             #self.cursor = self.connection.cursor()
         # sort the flash table by cookie values (ascending)
@@ -153,10 +150,7 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             #self.cursor = self.connection.cursor()
         # sort the flash table by cookie values (ascending)
         # and find missing segments by comparing lengths and cookies
@@ -178,10 +172,7 @@ class DatabaseMissing(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             #self.cursor = self.connection.cursor()
 
         # sort the flash table by cookie values (ascending)

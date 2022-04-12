@@ -35,7 +35,7 @@ import tools.cx.Phoenix as Phoenix
 import sys
 import os
 import pyodbc
-from ..config import db_name, db_server_name
+from ..config import db_name, connection_string
 
 queries=[
   #connect toast_samples to their matching toast_connection's
@@ -189,10 +189,8 @@ queries=[
           AND fits.rc1 = current_sensors.rc''']
 
 def deNormalize(dbName, progCallback=None):
-    c = pyodbc.connect('Driver={SQL Server};'
-                        'Server=' + db_server_name + ';'
-                        'Database=' + db_name + ';'
-                        'Trusted_Connection=yes;')
+    c = pyodbc.connect(connection_string)
+
     try:
         for (i,q) in enumerate(queries):
             if progCallback:
@@ -214,10 +212,7 @@ def dump(dbName, baseDir, progCallback=None, sep=','):
       "sensor_channel", "sensor_id", "unixTS", "isoTS", "date", "time", "voltage", "tsQuality"]
     sensorCols = ["bacon_id", "toast_id", "unixTS", "isoTS", "date",
       "time", "channel", "sensorType", "sensorId", "tsQuality"]
-    c = pyodbc.connect('Driver={SQL Server};'
-                        'Server=' + db_server_name + ';'
-                        'Database=' + db_name + ';'
-                        'Trusted_Connection=yes;')
+    c = pyodbc.connect(connection_string)
     if progCallback:
         progCallback("Dumping internal sensors\n")
     with open(os.path.join(baseDir, 'internal.csv'), 'w') as f:

@@ -36,7 +36,7 @@ import threading
 
 import Queue
 import pyodbc
-from ...config import db_name, db_server_name
+from ...config import db_name, connection_string
 
 #OK, so this needs to be running in its own thread.
 # - when it starts, connect, create a query queue, 
@@ -116,10 +116,8 @@ class DatabaseInsert(object):
     def connect(self):
         if not self.connected:
             self.connected = True
-            self.connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
+
 
     def stop(self):
         with self.stopSynchCV:

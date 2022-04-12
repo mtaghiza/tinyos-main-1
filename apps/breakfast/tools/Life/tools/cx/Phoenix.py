@@ -32,7 +32,7 @@
 
 import sys
 import pyodbc
-from ..config import db_name, db_server_name
+from ..config import db_name, connection_string
 
 def fit(xy):
     '''Work out the best fit line for an array of (x, y)
@@ -75,10 +75,7 @@ def fit(xy):
 # alpha = intercept, beta = slope
 
 def computeFits(dbName):
-    c = pyodbc.connect('Driver={SQL Server};'
-                                'Server=' + db_server_name + ';'
-                                'Database=' + db_name + ';'
-                                'Trusted_Connection=yes;')
+    c = pyodbc.connect(connection_string)
 
     q0 = '''SELECT distinct node1, rc1 FROM base_reference'''
     q1 = '''SELECT distinct ts1, unixTS FROM base_reference WHERE node1= ? AND rc1 = ?'''
@@ -101,10 +98,7 @@ def computeFits(dbName):
     #            time thinking about)
 
 def approxFits(dbName, progCallback=None):
-    c = pyodbc.connect('Driver={SQL Server};'
-                                'Server=' + db_server_name + ';'
-                                'Database=' + db_name + ';'
-                                'Trusted_Connection=yes;')
+    c = pyodbc.connect(connection_string)
 
     q0 = '''SELECT x.node_id as node_id, min(x.reboot_counter) as reboot_counter
       FROM 
@@ -170,10 +164,7 @@ def approxFits(dbName, progCallback=None):
 
 
 def rebuildTables(dbName):
-    c = pyodbc.connect('Driver={SQL Server};'
-                        'Server=' + db_server_name + ';'
-                        'Database=' + db_name + ';'
-                        'Trusted_Connection=yes;')
+    c = pyodbc.connect(connection_string)
 
     q0 = '''DROP TABLE IF EXISTS fits'''
     q1 = '''CREATE TABLE FITS (node1 INTEGER, rc1 INTEGER, node2 INTEGER, rc2 INTEGER, alpha REAL, beta REAL, r_sq REAL)'''

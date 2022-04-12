@@ -35,7 +35,7 @@ import sqlite3
 import sys
 import threading
 import pyodbc
-from ..config import db_server_name, db_name
+from ..config import db_name, connection_string
 
 #This class initializes the sqlite database file and creates xxx tables:
 #- raw_table
@@ -71,9 +71,9 @@ class DatabaseInit(object):
 
     # Table creation strings
     BACON_TABLE_SQL = '''CREATE TABLE bacon_table
-                           (bacon_id TEXT NOT NULL, 
+                           (bacon_id NVARCHAR(128) NOT NULL, 
                             time REAL NOT NULL,
-                            manufacture_id TEXT NOT NULL,
+                            manufacture_id NVARCHAR(128) NOT NULL,
                             gain INTEGER,
                             offset INTEGER,
                             c15t30 INTEGER,
@@ -88,7 +88,7 @@ class DatabaseInit(object):
                             CHECK(bacon_id != '' and manufacture_id != ''));'''
 
     TOAST_TABLE_SQL = '''CREATE TABLE toast_table
-                           (toast_id TEXT NOT NULL,
+                           (toast_id NVARCHAR(128) NOT NULL,
                             time REAL NOT NULL,
                             gain INTEGER,
                             offset INTEGER,
@@ -105,7 +105,7 @@ class DatabaseInit(object):
                             type INTEGER NOT NULL,
                             time REAL NOT NULL,
                             detached REAL,
-                            toast_id TEXT NOT NULL,
+                            toast_id NVARCHAR(128) NOT NULL,
                             channel INTEGER NOT NULL,
                             CHECK(sensor_id != 0 and toast_id != '' ));'''
 
@@ -120,14 +120,12 @@ class DatabaseInit(object):
             dbFile = rootName + str(fileCounter) + '.sqlite'
 
             try:
-                connection = pyodbc.connect('Driver={SQL Server};'
-                                      'Server='+db_server_name+';'
-                                      'Database='+db_name+';'
-                                      'Trusted_Connection=yes;')
+                connection = pyodbc.connect(connection_string)
+
 
                 cursor = connection.cursor()
                 #cursor.execute('''SELECT name FROM sqlite_master WHERE name LIKE '%_table';''')
-                cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%_table;''')
+                cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%_table';''')
 
 
                 if len(cursor.fetchall()) != DatabaseInit.NO_OF_TABLES:

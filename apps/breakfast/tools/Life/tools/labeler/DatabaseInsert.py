@@ -35,7 +35,7 @@
 import time
 import threading
 import pyodbc
-from ..config import db_server_name, db_name
+from ..config import db_name, connection_string
 
 class DatabaseInsert(object):
 
@@ -57,10 +57,7 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
 
             #self.connection.text_factory =  sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
@@ -80,10 +77,7 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
 
@@ -100,10 +94,7 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
             
@@ -168,10 +159,7 @@ class DatabaseInsert(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             #self.connection.text_factory = sqlite3.OptimizedUnicode
             self.cursor = self.connection.cursor()
         

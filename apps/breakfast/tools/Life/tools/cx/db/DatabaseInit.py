@@ -37,7 +37,7 @@ import subprocess
 import datetime
 import os
 import pyodbc
-from ...config import db_name, db_server_name
+from ...config import db_name, connection_string
 
 #This class initializes the sqlite database file and creates xxx tables:
 #- raw_table
@@ -97,7 +97,7 @@ class DatabaseInit(object):
                          cookie INTEGER,
                          reboot_counter INTEGER,
                          base_time INTEGER,
-                         toast_id TEXT,
+                         toast_id NVARCHAR(128),
                          PRIMARY KEY (node_id, cookie))''',
               'sensor_sample': '''CREATE TABLE sensor_sample
                         (node_id INTEGER,
@@ -111,7 +111,7 @@ class DatabaseInit(object):
                             cookie INTEGER,
                             reboot_counter INTEGER,
                             time INTEGER,
-                            toast_id TEXT,
+                            toast_id NVARCHAR(128),
                             tlv BLOB,
                             PRIMARY KEY (node_id, cookie))''',
               'sensor_connection': '''CREATE TABLE sensor_connection
@@ -127,7 +127,7 @@ class DatabaseInit(object):
                               cookie INTEGER,
                               reboot_counter INTEGER,
                               time INTEGER,
-                              toast_id TEXT,
+                              toast_id NVARCHAR(128),
                               PRIMARY KEY (node_id, cookie))''',
               'phoenix_reference': '''CREATE TABLE phoenix_reference
                              (node1 INTEGER,
@@ -149,7 +149,7 @@ class DatabaseInit(object):
                               writeCookie INTEGER,
                               subnetChannel INTEGER,
                               sampleInterval INTEGER,
-                              barcode_id TEXT,
+                              barcode_id NVARCHAR(128),
                               role INTEGER)''',
 #               'bacon_id': '''CREATE TABLE bacon_id 
 #                              (node_id INTEGER,
@@ -163,7 +163,7 @@ class DatabaseInit(object):
                               ts INTEGER,
                               offset INTEGER,
                               data BLOB,
-                              barcode_id TEXT,
+                              barcode_id NVARCHAR(128),
                               bacon_interval INTEGER,
                               toast_interval INTEGER,
                               low_push_threshold INTEGER,
@@ -240,10 +240,8 @@ class DatabaseInit(object):
             
             # test db for integrity
             try:
-                connection = pyodbc.connect('Driver={SQL Server};'
-                                      'Server='+db_server_name+';'
-                                      'Database='+db_name+';'
-                                      'Trusted_Connection=yes;')
+                connection = pyodbc.connect(connection_string)
+
                 cursor = connection.cursor()
             except pyodbc.Error as ex:
                 print "Unable to create db connection cursor: " + str(e)

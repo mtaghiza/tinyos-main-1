@@ -34,7 +34,7 @@
 import csv
 import datetime
 import pyodbc
-from ..config import db_server_name, db_name
+from ..config import db_name, connection_string
 
 
 class DatabaseExport(object):
@@ -56,10 +56,7 @@ class DatabaseExport(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            connection = pyodbc.connect('Driver={SQL Server};'
-                                        'Server=' + db_server_name + ';'
-                                        'Database=' + db_name + ';'
-                                        'Trusted_Connection=yes;')
+            self.connection = pyodbc.connect(connection_string)
             self.cursor = self.connection.cursor()
 
         now = datetime.datetime.now()
