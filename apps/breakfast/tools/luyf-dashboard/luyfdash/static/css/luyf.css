@@ -1,0 +1,155 @@
+table.dataTable tbody td {
+  vertical-align: top;
+}
+
+#JobsTable tbody td {
+  vertical-align: top;
+}
+
+.mt-1 { margin-top:5px; }
+.mt-4 { margin-top:20px; }
+
+.navbar-sciui {
+    margin-bottom:0px;
+    background-color: black;
+    height: 50px;
+}
+
+.background-image {
+  background-repeat: no-repeat, repeat;
+  background-blend-mode: lighten;
+  opacity:0.3;
+}
+
+.bg-image {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 1.0;
+}
+
+.as-submit-btn{
+    background-color: rgb(221, 221, 221);
+    border:1px solid black;
+    margin-left:0.1em;
+    margin-right:0.1em;
+    margin-bottom:0.1em;
+    margin-top:0.1em;
+}
+
+#banner{
+    height:50px;
+    position: absolute;
+}
+
+#banner-clean{
+    height:50px;
+    position: absolute;
+}
+
+
+.as-remove-btn{
+    color: red;
+    background-color: white;
+    border:1px solid black;
+}
+
+
+.modal-message{
+    color: red;
+}
+
+
+#particlesModal canvas{
+    position: static;
+    z-index: 10;
+}
+
+#particles-js {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+
+}
+
+
+
+#JobsTable {
+    border: 1px solid #ddd;
+}
+
+
+
+.footer {
+   position: fixed;
+   left: 0;
+   bottom: 0;
+   width: 100%;
+   background-color: #e3f2fd;
+   color: black;
+   text-align: center;
+}
+
+
+.table-hr{
+    height:1px; border:none; background-color:#eee; width:100%; text-align:center; margin: 0 auto;
+}
+
+
+.loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.slidecontainer {
+    width: 100%;
+}
+
+
+.params tr {line-height: 40px}
+
+.waitMessage {
+
+    animation:1.1s blinker linear infinite;
+    -webkit-animation:1.1s blinker linear infinite;
+    -moz-animation:1.1s blinker linear infinite;
+
+	color: red;
+	align-content: right;
+}
+
+@-moz-keyframes blinker {
+     0% { opacity: 1.0; }
+     40% { opacity: 0.4; }
+     50% { opacity: 0.1; }
+     60% { opacity: 0.4; }
+     100% { opacity: 1.0; }
+}
+
+@-webkit-keyframes blinker {
+     0% { opacity: 1.0; }
+     40% { opacity: 0.4; }
+     50% { opacity: 0.1; }
+     60% { opacity: 0.4; }
+     100% { opacity: 1.0; }
+}
+
+@keyframes blinker {
+     0% { opacity: 1.0; }
+     40% { opacity: 0.4; }
+     50% { opacity: 0.1; }
+     60% { opacity: 0.4; }
+     100% { opacity: 1.0; }
+}

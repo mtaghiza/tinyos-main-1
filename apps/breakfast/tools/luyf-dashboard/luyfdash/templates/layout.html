@@ -1,0 +1,88 @@
+{% include 'info_message.html' %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Life Under Your Feet Dashboard</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.js"></script>
+
+        <script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.12/css/jquery.dataTables.min.css">
+
+       
+        <link rel="stylesheet" type="text/css" href="{{url_for('.static',filename='css/luyf.css')}}"/>
+        <script src="{{url_for('.static',filename='js/luyf_utils.js')}}"></script>
+        <script src="{{url_for('.static',filename='js/luyf.js')}}"></script>
+
+        <script src="http://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
+
+        <script type="text/x-mathjax-config">
+          MathJax.Hub.Config({
+            extensions: ["tex2jax.js"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+              inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+              displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+              processEscapes: true
+            },
+            "HTML-CSS": { fonts: ["TeX"] }
+          });
+        </script>
+
+        <script type="text/javascript" async
+            src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/latest.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
+
+    <body>
+
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+            <nav class="navbar navbar-inverse navbar-sciui">
+                <a class="navbar-brand navbar-center" href="#" style="color:white;"><strong>LUYF Dashboard</strong></a>
+                <div class="container-fluid">
+                    {% if session.get('logged_in') %}
+                        <ul class="nav navbar-nav navbar-right">
+                            <li class="dropdown">
+                                <a href="index.html" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"
+                                style="color:white;">
+                                    <big><strong>{{user_name}}</strong></big> <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li role="separator" class="divider"></li>
+                                    <li><a onclick="logout()"><span class="glyphicon glyphicon-log-out"></span>&nbsp;Sign out</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <ul class="nav navbar-nav navbar-right">
+                          <li><a></a></li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </nav>
+
+            {% block body %}
+                <h1>This heading is defined in the parent.</h1>
+            {% endblock %}
+    </body>
+
+<script>
+    var SCISERVER_TOKEN = "{{SCISERVER_TOKEN}}";
+    var WEBAPP_ROOT = "{{WEBAPP_ROOT}}";
+</script>
+

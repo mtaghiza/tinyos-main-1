@@ -1,0 +1,13 @@
+BCRYPT_LOG_ROUNDS = 12 # Configuration for the Flask-Bcrypt extension
+SECRET_KEY = 'fwefwDJ3YU#sFZXeiofjcbe-38gf;samgpuie5g8y2g78g;wjgsnzg;ahgo;4t'
+TEMPLATES_AUTO_RELOAD = True
+DEBUG = True
+PORT = 5000
+WEBSITE_URL = "http://localhost:5000"
+WEBSITE_ROOT = "" # "/dashboard"
+HOST_IP = "localhost"
+DEBUG = True
+USE_RELOADER = True
+SCISERVER_PORTAL_URL = "https://apps.sciserver.org/login-portal/"
+SCISERVER_PORTAL_LOGIN_URL = SCISERVER_PORTAL_URL + "login"
+SCISERVER_PORTAL_LOGOUT_URL = SCISERVER_PORTAL_URL + "Account/Logout"

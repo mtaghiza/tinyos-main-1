@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block title %}LUYF Dashboard{% endblock %}
+{% block body %}
+
+{% if error %}
+    <div class="alert alert-danger"><strong>Error: </strong> {{error}}</div>
+{% endif %}
+
+<div class="container">
+
+    <div class="row">
+
+    </div>
+
+</div>
+
+{% if message %}
+    <div class="alert alert-success"><strong>{{message}}</strong> </div>
+{% endif %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <h4>Dashboard Placeholder</h4>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.onload = initDashboardPage();
+</script>
+
+
+
+{% endblock %}

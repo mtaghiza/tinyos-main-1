@@ -1,0 +1,10 @@
+[Unit]
+Description=Serving luyfdash website based on Python Flask
+After=network.target
+
+[Service]
+WorkingDirectory=/var/www/luyfdash/prod/luyfdash
+ExecStart=/bin/bash /var/www/luyfdash/prod/luyfdash-dashboard/scripts/run-website/run.x
+
+[Install]
+WantedBy=multi-user.target
