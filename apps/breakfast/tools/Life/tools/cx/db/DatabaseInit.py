@@ -81,7 +81,7 @@ class DatabaseInit(object):
               'log_record': '''CREATE TABLE log_record
                         (node_id INTEGER,
                          cookie INTEGER,
-                         data BLOB,
+                         data varbinary(max),
                          PRIMARY KEY (node_id, cookie))''',
               'bacon_sample': '''CREATE TABLE bacon_sample
                         (node_id INTEGER,
@@ -112,7 +112,7 @@ class DatabaseInit(object):
                             reboot_counter INTEGER,
                             time INTEGER,
                             toast_id NVARCHAR(128),
-                            tlv BLOB,
+                            tlv varbinary(max),
                             PRIMARY KEY (node_id, cookie))''',
               'sensor_connection': '''CREATE TABLE sensor_connection
                            (node_id INTEGER,
@@ -162,7 +162,7 @@ class DatabaseInit(object):
                               rc INTEGER,
                               ts INTEGER,
                               offset INTEGER,
-                              data BLOB,
+                              data varbinary(max),
                               barcode_id NVARCHAR(128),
                               bacon_interval INTEGER,
                               toast_interval INTEGER,
@@ -205,8 +205,8 @@ class DatabaseInit(object):
                             (src INTEGER, 
                              ts FLOAT, 
                              amId INTEGER, 
-                             data BLOB)'''}
-    views = {'last_ap':'''CREATE VIEW last_ap AS
+                             data varbinary(max))'''}
+    views = {'last_ap': '''CREATE VIEW last_ap AS
                           SELECT master_id, network_segment, 
                             max(cookie) as cookie 
                           FROM active_period
@@ -235,52 +235,18 @@ class DatabaseInit(object):
         # retry multiple filenames by incrementing counter in filename
         # a filename is accepted if either tables exists in it or 
         # tables can be created and the db passes an integrity check
-        for fileCounter in range(0, DatabaseInit.FILE_RETRIES):
-            dbFile = rootName + str(fileCounter) + '.sqlite'
-            
-            # test db for integrity
+        for fileCounter in range(0, 1):
+
+            # check db for missing tables, create file if necessary
             try:
+
                 connection = pyodbc.connect(connection_string)
-
-                cursor = connection.cursor()
-            except pyodbc.Error as ex:
-                print "Unable to create db connection cursor: " + str(e)
-                sys.stderr.write("Unable to create db connection cursor: " + str(ex)+ "\n")
-                continue
-
-            try:
-                cursor.execute(' DBCC CHECKDB (' + db_name + ');')
-                rows = cursor.fetchone()
-            except Exception as ex:
-                # database failed integrity check
-                print "Database integrity error: " + str(ex)
-                sys.stderr.write("Database integrity error: " + str(ex)+ "\n")
-                continue
-
-                # close file
-                try:
-                    cursor.close()
-                    connection.close()
-                except:
-                    pass
-            else:
-                print "%s passed integrity check" % dbFile
-                
-            # clean up
-            # note: this cannot be in a finally: statement since the connection migth already be closed
-            try:
-                cursor.close()
-                connection.close()
-            except:
-                pass
-                
-            # check db for missing tables, create file if necessary 
-            try:
-                connection = sqlite3.connect(dbFile)
                 cursor = connection.cursor()
 
                 cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE';''')
-                foundTables = dict(cursor.fetchall())
+                c = cursor.fetchall()
+                foundTables = {x3: x3 for (x1, x2, x3, x4) in c}
+
                 for table in DatabaseInit.tables:
                     if table not in foundTables:
                         print "%s missing"%table
@@ -291,7 +257,9 @@ class DatabaseInit(object):
                         else:
                             print "%s OK"%table
                 cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.VIEWS;''')
-                foundViews = dict(cursor.fetchall())
+
+                c = cursor.fetchall()
+                foundViews = {x3: x3 for (x1, x2, x3, x4) in c}
                 for view in DatabaseInit.views:
                     if view not in foundViews:
                         print "%s missing"%view
@@ -307,9 +275,11 @@ class DatabaseInit(object):
                 sys.stderr.write("Error reading database: " + str(e)+ "\n")
                 continue
             finally:
-                cursor.close()
-                connection.close()
-                    
+                try:
+                    cursor.close()
+                    connection.close()
+                except Exception as ee:
+                    pass
             # only set name if no exceptions thrown
             self.dbName = db_name
             break

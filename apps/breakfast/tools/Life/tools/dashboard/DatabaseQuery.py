@@ -36,6 +36,8 @@ import sqlite3
 import tools.cx.constants as constants
 import time
 import traceback
+import pyodbc
+from ..config import db_name, connection_string
 
 class DatabaseQuery(object):
 
@@ -65,7 +67,7 @@ class DatabaseQuery(object):
         '''
         
         try:
-            c = sqlite3.connect(self.dbName)
+            c = pyodbc.connect(connection_string)
             ret = c.execute(query, (masterId,)).fetchone()
         except:
             traceback.print_exc()
@@ -91,7 +93,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
@@ -159,7 +161,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
@@ -210,7 +212,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
@@ -267,7 +269,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
@@ -325,7 +327,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
@@ -372,7 +374,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
@@ -422,7 +424,7 @@ class DatabaseQuery(object):
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
-            self.connection = sqlite3.connect(self.dbName)
+            self.connection = pyodbc.connect(connection_string)
             self.connection.text_factory = str
             self.cursor = self.connection.cursor()
             
