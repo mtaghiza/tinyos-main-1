@@ -259,7 +259,7 @@ class DatabaseInit(object):
                 cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.VIEWS;''')
 
                 c = cursor.fetchall()
-                foundViews = {x3: x3 for (x1, x2, x3, x4) in c}
+                foundViews = {x3: x3 for (x1, x2, x3, x4, x5, x6) in c}
                 for view in DatabaseInit.views:
                     if view not in foundViews:
                         print "%s missing"%view

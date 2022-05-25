@@ -125,7 +125,8 @@ class DatabaseInit(object):
 
                 cursor = connection.cursor()
                 #cursor.execute('''SELECT name FROM sqlite_master WHERE name LIKE '%_table';''')
-                cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%_table';''')
+                cursor.execute('''SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='sensor_table' 
+                OR TABLE_NAME='toast_table' OR TABLE_NAME='bacon_table';''')
 
 
                 if len(cursor.fetchall()) != DatabaseInit.NO_OF_TABLES:

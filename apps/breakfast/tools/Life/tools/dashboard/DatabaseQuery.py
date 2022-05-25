@@ -94,7 +94,7 @@ class DatabaseQuery(object):
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
         output = {}
@@ -162,7 +162,7 @@ class DatabaseQuery(object):
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
         output = {}
@@ -186,9 +186,10 @@ class DatabaseQuery(object):
         Get the missing cookie values for each node.
         """
 
-        SORT_COOKIE_SQL = '''CREATE TEMPORARY TABLE sorted_flash AS 
-             SELECT cookie_table.node_id as node_id, 
+        SORT_COOKIE_SQL = ''' 
+             SELECT ROW_NUMBER() OVER(ORDER BY cookie_table.node_id, cookie) as rowid, cookie_table.node_id as node_id, 
                cookie, nextCookie, retry, barcode_id
+             INTO #sorted_flash
              FROM cookie_table 
              JOIN last_status 
                ON cookie_table.node_id = last_status.node_id
@@ -200,20 +201,20 @@ class DatabaseQuery(object):
         MISSING_ORDER_SIZE_SQL = '''SELECT l.barcode_id, 
               l.cookie,
               (r.cookie - l.nextCookie -1) as missing
-            FROM sorted_flash l
-            JOIN sorted_flash r
+            FROM #sorted_flash l
+            JOIN #sorted_flash r
             ON l.node_id = r.node_id
               AND l.ROWID +1 = r.ROWID
-              AND missing > 6
+              AND (r.cookie - l.nextCookie -1) > 6
               AND l.retry < 5
-              ORDER BY l.node_id, missing desc'''
+              ORDER BY l.node_id, (r.cookie - l.nextCookie -1) desc'''
         
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
         
         output = {}
@@ -251,26 +252,25 @@ class DatabaseQuery(object):
                     (
                         SELECT barcode_id, MAX(ts) AS ts, writeCookie
                         FROM node_status
-                        GROUP BY barcode_id 
+                        GROUP BY barcode_id, writeCookie
                     ) a 
                     JOIN 
                     (
                         SELECT barcode_id, ts, writeCookie
                         FROM node_status
-                        ORDER BY barcode_id ASC, ts DESC
                     ) b
                     ON a.barcode_id = b.barcode_id 
                     AND a.ts > b.ts 
                     AND a.writeCookie <> b.writeCookie
-                GROUP BY a.barcode_id
-                '''   
-
+                GROUP BY a.barcode_id, a.ts, a.writeCookie, b.ts, b.writeCookie
+                ORDER BY a.barcode_id ASC, b.ts DESC
+                '''
         # sqlite connections can only be used from the same threads they are established from
         if self.connected == False:
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
         output = {}
@@ -306,7 +306,7 @@ class DatabaseQuery(object):
           sc.channel_number, sc.sensor_type, sc.sensor_id
           FROM (
           SELECT lc.node_id, lc.toast_id, 
-            max(lc.cookie, coalesce(lb.cookie, -1), coalesce(ld.cookie, -1)) as cookie
+          (SELECT MAX(val) FROM ( VALUES(lc.cookie), (coalesce(lb.cookie, -1)), (coalesce(ld.cookie, -1)) ) myalias(val) ) as cookie  
           FROM last_connection lc 
           LEFT JOIN last_disconnection ld
             ON lc.node_id = ld.node_id 
@@ -328,7 +328,7 @@ class DatabaseQuery(object):
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
         output = {}
@@ -375,7 +375,7 @@ class DatabaseQuery(object):
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
 
         #output = [("",""), ("",""), ("",""), ("",""), ("",""), ("",""), ("",""), ("","")]
@@ -425,7 +425,7 @@ class DatabaseQuery(object):
             self.connected == True
             # raises sqlite3 exceptions
             self.connection = pyodbc.connect(connection_string)
-            self.connection.text_factory = str
+            #self.connection.text_factory = str
             self.cursor = self.connection.cursor()
             
         output = []
