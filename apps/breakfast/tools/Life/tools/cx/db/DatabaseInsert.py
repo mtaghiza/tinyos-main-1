@@ -143,8 +143,10 @@ class DatabaseInsert(object):
         if (0 < length) and (length < 140) and (cookieDiff > 0) and (cookieDiff < 0xFF):
             # the table has a PK uniqueness constraint on (node_id, cookie)
             # duplicate data is ignored
-            row = [node_id, time.time(), cookie, nextCookie, length]
-            self.execute('INSERT INTO cookie_table (node_id, base_time, cookie, nextCookie, length) SELECT (?,?,?,?,?) EXCEPT SELECT * FROM cookie_table;', row)
+            row = [node_id, time.time(), cookie, nextCookie, length, 0]
+            self.execute(
+                'INSERT INTO cookie_table (node_id, base_time, cookie, nextCookie, length, retry) SELECT ?,?,?,?,?,? EXCEPT SELECT * FROM cookie_table;',
+                row)
 
     def insertRaw(self, source, message):
         self.execute('INSERT INTO packet (src, ts, amId, data) values (?, ?, ?, ?)',
